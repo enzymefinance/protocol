@@ -5,16 +5,17 @@ import {
   EnhancedExecute,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
+import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 
 interface RegisterVersionArgs {
   address: Address;
-  name: String;
+  name: string;
 }
 
 const prepareArgs: PrepareArgsFunction<RegisterVersionArgs> = async (
   _,
   { address, name }: RegisterVersionArgs,
-) => [`${address}`, name];
+) => [`${address}`, stringToBytes32(name)];
 
 const registerVersion: EnhancedExecute<
   RegisterVersionArgs,
