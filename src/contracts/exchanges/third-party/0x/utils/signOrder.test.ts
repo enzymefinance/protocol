@@ -11,6 +11,7 @@ import { deployToken } from '~/contracts/dependencies/token/transactions/deploy'
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { createOrder } from './createOrder';
 import { signOrder } from './signOrder';
+import { isValidSignature } from '../calls/isValidSignature';
 
 describe('signOrder', () => {
   const shared: {
@@ -56,6 +57,15 @@ describe('signOrder', () => {
     const signedDefault = await signOrder(shared.env, unsignedOrder);
     const signedPk = await signOrder(shared.withPK, unsignedOrder);
 
-    expect(signedDefault.signature).toBe(signedPk.signature);
+    expect(
+      await isValidSignature(shared.env, shared.zeroEx, {
+        signedOrder: signedDefault,
+      }),
+    ).toBe(true);
+    expect(
+      await isValidSignature(shared.env, shared.zeroEx, {
+        signedOrder: signedPk,
+      }),
+    ).toBe(true);
   });
 });

@@ -1,7 +1,31 @@
-import { signatureUtils } from '@0x/order-utils';
+import { signatureUtils, orderHashUtils } from '@0x/order-utils';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
 import { Address } from '@melonproject/token-math/address';
 import { Environment } from '~/utils/environment/Environment';
+
+const signWithWeb3Wrapper = async (environment, order, signer) => {
+  const signedOrder = await signatureUtils.ecSignOrderAsync(
+    environment.eth.currentProvider,
+    order,
+    signer,
+  );
+  return signedOrder;
+};
+
+const signWithWallet = async (environment, order, signer) => {
+  const orderHash = orderHashUtils.getOrderHashHex(order);
+  const signatureHex = await signatureUtils.ecSignHashAsync(
+    environment.eth.currentProvider,
+    orderHash,
+    signer,
+  );
+
+  const signedOrder = {
+    ...order,
+    signature: signatureHex,
+  };
+  return signedOrder;
+};
 
 // This is just a reference implementation
 const signOrder = async (
@@ -15,11 +39,11 @@ const signOrder = async (
   //   environment.wallet.address.toString(),
   // );
   const orderSigner = (signer || environment.wallet.address).toLowerCase();
-  const signedOrder = await signatureUtils.ecSignOrderAsync(
-    environment.eth.currentProvider,
-    order,
-    orderSigner,
-  );
+
+  const signedOrder = environment.wallet.signMessage
+    ? await signWithWallet(environment, order, orderSigner)
+    : await signWithWeb3Wrapper(environment, order, orderSigner);
+
   const signatureTyped =
     signedOrder.makerAddress.toLowerCase() === orderSigner
       ? signedOrder

@@ -3,6 +3,8 @@ import * as R from 'ramda';
 import { Environment, LogLevels } from '../environment/Environment';
 import { getContract } from './getContract';
 import { TransactionArgs } from './transactionFactory';
+import { ensure } from '../guards/ensure';
+import { isAddress } from '@melonproject/token-math/address';
 
 export type PrepareCallArgsFunction = (
   environment: Environment,
@@ -48,6 +50,10 @@ const callFactory = (
   };
 
   const prepare = (environment, contractAddress, params = {}) => {
+    ensure(
+      isAddress(contractAddress),
+      `Invalid contract address provided: ${contractAddress}`,
+    );
     const log = environment.logger('melon:protocol:utils:solidity:callFactory');
     const args = prepareArgs(environment, params, contractAddress);
     const txId = `${contract}@${contractAddress}.${name}(${args.join(',')})`;
