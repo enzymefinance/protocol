@@ -14,15 +14,13 @@ const signWithWeb3Wrapper = async (environment, order, signer) => {
 
 const signWithWallet = async (environment, order, signer) => {
   const orderHash = orderHashUtils.getOrderHashHex(order);
-  const signatureHex = await signatureUtils.ecSignHashAsync(
-    environment.eth.currentProvider,
-    orderHash,
-    signer,
-  );
+  const signature = await environment.wallet.signMessage(orderHash);
+
+  const converted = signatureUtils.convertECSignatureToSignatureHex(signature);
 
   const signedOrder = {
     ...order,
-    signature: signatureHex,
+    signature: converted,
   };
   return signedOrder;
 };
