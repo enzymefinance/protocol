@@ -2,12 +2,10 @@ import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';
 import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 import { toBeTrueWith } from '../utils/toBeTrueWith';
 import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
-import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
 
