@@ -92,36 +92,36 @@ describe('monitoringTool', () => {
     console.log('Engine Events: ', events);
   });
 
-  // test('Read exchange rates', async () => {
-  //   // exchange rates
-  //   let rates = {
-  //     ETHMLN: 0,
-  //     MLNUSD: 0,
-  //     ETHUSD: 0,
-  //   };
+  test('Read exchange rates', async () => {
+    // exchange rates
+    let rates = {
+      ETHMLN: 0,
+      MLNUSD: 0,
+      ETHUSD: 0,
+    };
 
-  //   let axinst = axios.create({
-  //     baseURL: 'https://rest.coinapi.io',
-  //     headers: { 'X-CoinAPI-Key': '6F388926-927B-4582-AE90-B1C8CD3D5B60' },
-  //   });
+    let axinst = axios.create({
+      baseURL: 'https://rest.coinapi.io',
+      headers: { 'X-CoinAPI-Key': '6F388926-927B-4582-AE90-B1C8CD3D5B60' },
+    });
 
-  //   const getRate = async (a, b) => {
-  //     try {
-  //       const response = await axinst.get('/v1/exchangerate/' + a + '/' + b);
-  //       return response.data;
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
+    const getRate = async (a, b) => {
+      try {
+        const response = await axinst.get('/v1/exchangerate/' + a + '/' + b);
+        return response.data;
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  //   for (let [key] of Object.entries(rates)) {
-  //     let a = key.substr(0, 3);
-  //     let b = key.substr(3, 3);
+    for (let [key] of Object.entries(rates)) {
+      let a = key.substr(0, 3);
+      let b = key.substr(3, 3);
 
-  //     rates[key] = await getRate(a, b);
-  //     // console.log(key + ': ', rates[key]);
-  //   }
-  // });
+      rates[key] = await getRate(a, b);
+      // console.log(key + ': ', rates[key]);
+    }
+  });
 
   test('Reading fund list', async () => {
     const {
@@ -136,7 +136,7 @@ describe('monitoringTool', () => {
 
     // setup fund
     const fundAddress = await setupInvestedTestFund(shared.env);
-    // console.log('Fund: ', fundAddress);
+    console.log('Fund: ', fundAddress);
 
     const investmentAmount = createQuantity(weth, 1);
 
@@ -155,10 +155,10 @@ describe('monitoringTool', () => {
       shared.env,
       fundAddress.accountingAddress,
     );
-    // console.log('Fund holdings: ', fundHoldings, '\n\n\n');
+    console.log('Fund holdings: ', fundHoldings, '\n\n\n');
 
     const hub = await getHub(shared.env, fundAddress.accountingAddress);
-    // console.log('Hub: ', hub);
+    console.log('Hub: ', hub);
 
     // setup a number of additional funds (max 9)
 
@@ -167,7 +167,7 @@ describe('monitoringTool', () => {
       const envi = await withDifferentAccount(shared.env, shared.accounts[i]);
 
       const balance = await getBalance(shared.env);
-      //console.log('Balance: ', balance);
+      console.log('Balance: ', balance);
 
       await sendEth(shared.env, {
         howMuch: createQuantity(weth, 5),
@@ -175,10 +175,10 @@ describe('monitoringTool', () => {
       });
 
       const bi = await getBalance(envi);
-      // console.log('Balance: ', bi);
+      console.log('Balance: ', bi);
 
       const fundi = await setupInvestedTestFund(envi);
-      // console.log('Fund: ', fundi);
+      console.log('Fund: ', fundi);
 
       const investmentAmount2 = createQuantity(weth, 1);
 
@@ -194,7 +194,7 @@ describe('monitoringTool', () => {
       await executeRequest(shared.env, fundi.participationAddress);
 
       const hubi = await getHub(shared.env, fundi.accountingAddress);
-      // console.log('Hub: ', hubi);
+      console.log('Hub: ', hubi);
     }
 
     // get fund list
@@ -204,7 +204,7 @@ describe('monitoringTool', () => {
     // loop through funds to get interesting quantities
     for (let f of fundList) {
       let shutDown = await isShutDown(shared.env, f.address);
-      // console.log('Is Shut Down: ', shutDown);
+      console.log('Is Shut Down: ', shutDown);
 
       let routes = await getRoutes(shared.env, f.address);
       // console.log('Route: ', routes);
@@ -214,13 +214,13 @@ describe('monitoringTool', () => {
         shared.env,
         routes.accountingAddress,
       );
-      // console.log('Holdings: ', holdings);
+      console.log('Holdings: ', holdings);
 
       let calcs = await performCalculations(
         shared.env,
         routes.accountingAddress,
       );
-      // console.log('Calculations: ', calcs);
+      console.log('Calculations: ', calcs);
     }
 
     // console.log('Share price: ', fundList[0].sharePrice.base, fundList[0].sharePrice.quote)

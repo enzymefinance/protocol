@@ -21,8 +21,8 @@ import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOas
 import { toFixed } from '@melonproject/token-math/price';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
-import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
-import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
+// import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+// import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 
 expect.extend({ toBeTrueWith });
 
@@ -161,13 +161,13 @@ describe('playground', () => {
       createQuantity(weth, 0.8),
     );
 
-    await shutDownFund(manager, melonContracts.version, {
-      hub: routes.hubAddress,
-    });
-    log.debug('Shut down fund');
+    // await shutDownFund(manager, melonContracts.version, {
+    //   hub: routes.hubAddress,
+    // });
+    // log.debug('Shut down fund');
 
-    const isFundShutDown = await isShutDown(manager, routes.hubAddress);
+    // const isFundShutDown = await isShutDown(manager, routes.hubAddress);
 
-    expect(isFundShutDown).toBeTruthy();
+    // expect(isFundShutDown).toBeTruthy();
   });
 });
