@@ -9,7 +9,6 @@ import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldin
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import { getPriceSource } from '~/contracts/engine/calls/getPriceSource';
-import { getVersion } from '~/contracts/engine/calls/getVersion';
 
 // import * as coinbase from './.coinbase.json';
 
@@ -32,7 +31,6 @@ describe('playground', () => {
     const priceSource = await getPriceSource(master, engine);
     log.debug('Price Source: ', priceSource);
 
-    // const myVersion = await getVersion(master, engine);
     log.debug('Version: ', version);
     log.debug('Engine: ', engine);
 
