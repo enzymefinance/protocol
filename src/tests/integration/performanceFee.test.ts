@@ -220,10 +220,10 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   const preFundCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
-
+  console.log('a-----asd');
   await s.fund.accounting.methods
     .triggerRewardAllFees()
-    .send({ from: s.manager });
+    .send({ from: s.manager, gas: s.gas });
 
   const currentHWM = await s.performanceFee.methods
     .highWaterMark(s.fund.feeManager.options.address)
