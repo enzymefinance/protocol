@@ -37,7 +37,7 @@ import { executeRequest } from '~/contracts/fund/participation/transactions/exec
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
-import * as coinbase from '../../../.coinbase.json';
+import * as coinbase from '../system/.coinbase.json';
 
 describe('monitoringTool', () => {
   const shared: any = {};

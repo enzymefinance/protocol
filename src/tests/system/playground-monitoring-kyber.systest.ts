@@ -13,7 +13,7 @@ import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 
-import * as coinbase from '../../../.coinbase.json';
+import * as coinbase from './.coinbase.json';
 
 expect.extend({ toBeTrueWith });
 
