@@ -1,4 +1,6 @@
-// import { createQuantity } from '@melonproject/token-math/quantity';
+import * as R from 'ramda';
+
+import { createQuantity } from '@melonproject/token-math/quantity';
 import { randomString } from '~/utils/helpers/randomString';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
@@ -10,21 +12,29 @@ import { createShares } from '~/contracts/factory/transactions/createShares';
 import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
-// import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
-// import { approve } from '~/contracts/dependencies/token/transactions/approve';
-// import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
-import { Environment } from '~/utils/environment/Environment';
+import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { Environment, LogLevels } from '~/utils/environment/Environment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
 const setupInvestedTestFund = async (environment: Environment) => {
   const fundName = `test-fund-${randomString()}`;
 
+  const debug = environment.logger(
+    'melon:protocol:tests:setupInvestedTestFund',
+    LogLevels.DEBUG,
+  );
+
+  debug('Setting up testfund', fundName);
+
   const {
     exchangeConfigs,
     melonContracts: { version, priceSource },
-    thirdPartyContracts,
   } = environment.deployment;
 
-  const [weth, mln] = thirdPartyContracts.tokens;
+  const weth = getTokenBySymbol(environment, 'WETH');
+  const mln = getTokenBySymbol(environment, 'MLN');
   const fees = [];
 
   await beginSetup(environment, version, {
@@ -46,20 +56,37 @@ const setupInvestedTestFund = async (environment: Environment) => {
   const hubAddress = await completeSetup(environment, version);
   const routes = await getRoutes(environment, hubAddress);
 
-  // const investmentAmount = createQuantity(weth, 1);
+  expect(R.keys(routes)).toEqual(
+    expect.arrayContaining([
+      'accountingAddress',
+      'feeManagerAddress',
+      'participationAddress',
+      'policyManagerAddress',
+      'priceSourceAddress',
+      'registryAddress',
+      'sharesAddress',
+      'tradingAddress',
+      'vaultAddress',
+      'versionAddress',
+    ]),
+  );
 
-  // await approve(environment, {
-  //   howMuch: investmentAmount,
-  //   spender: routes.participationAddress,
-  // });
+  const investmentAmount = createQuantity(weth, 1);
 
-  // await requestInvestment(environment, routes.participationAddress, {
-  //   investmentAmount,
-  // });
+  await approve(environment, {
+    howMuch: investmentAmount,
+    spender: routes.participationAddress,
+  });
 
-  // await executeRequest(environment, routes.participationAddress);
+  await requestInvestment(environment, routes.participationAddress, {
+    investmentAmount,
+  });
 
-  return routes;
+  await executeRequest(environment, routes.participationAddress);
+
+  debug('Testfund setup and invested', fundName, routes);
+
+  return { ...routes, hubAddress };
 };
 
 export { setupInvestedTestFund };
