@@ -13,6 +13,8 @@ import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 
+import * as coinbase from '../../../.coinbase.json';
+
 expect.extend({ toBeTrueWith });
 
 const getLog = getLogCurried('melon:protocol:systemTest:monitoring');
@@ -77,9 +79,9 @@ describe('playground', () => {
         master,
         fundList[i].routes.accountingAddress,
       );
-      // log.debug('f: ', fundList[i]);
     }
 
+    // Number of funds (active, inactive, total)
     numberOfFunds.active = fundList.filter(f => {
       return f.isShutDown === false;
     }).length;
@@ -92,6 +94,7 @@ describe('playground', () => {
 
     log.debug('Modified fund list', fundList);
 
+    // random stuff so that everything before runs and logs correctly
     let fundList2 = await getFundDetails(
       master,
       melonContracts.ranking,

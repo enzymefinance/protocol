@@ -37,6 +37,8 @@ import { executeRequest } from '~/contracts/fund/participation/transactions/exec
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 
+import * as coinbase from '../../../.coinbase.json';
+
 describe('monitoringTool', () => {
   const shared: any = {};
 
@@ -100,10 +102,7 @@ describe('monitoringTool', () => {
       ETHUSD: 0,
     };
 
-    let axinst = axios.create({
-      baseURL: 'https://rest.coinapi.io',
-      headers: { 'X-CoinAPI-Key': '6F388926-927B-4582-AE90-B1C8CD3D5B60' },
-    });
+    let axinst = axios.create(coinbase);
 
     const getRate = async (a, b) => {
       try {
