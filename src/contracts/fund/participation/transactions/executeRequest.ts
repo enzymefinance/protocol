@@ -1,5 +1,5 @@
 import { Address } from '@melonproject/token-math/address';
-import { sign } from '~/utils/environment/sign';
+import { signTransaction } from '~/utils/environment/signTransaction';
 import { executeRequestFor } from './executeRequestFor';
 import { Environment } from '~/utils/environment/Environment';
 
@@ -28,7 +28,7 @@ const execute = async (
   options = { amguPayable: true },
 ) => {
   const prepared = await prepare(environment, contractAddress, options);
-  const signedTransactionData = await sign(
+  const signedTransactionData = await signTransaction(
     environment,
     prepared.rawTransaction,
   );

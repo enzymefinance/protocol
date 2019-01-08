@@ -7,16 +7,16 @@ import {
   PostProcessFunction,
   transactionFactory,
 } from '~/utils/solidity/transactionFactory';
-import {
-  FillOrderArgs,
-  FillOrderResult,
-  getFeeToken,
-  parse0xFillReceipt,
-} from '~/contracts/exchanges/third-party/0x';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Contracts, Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import {
+  FillOrderArgs,
+  FillOrderResult,
+  parse0xFillReceipt,
+} from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+import { getFeeToken } from '~/contracts/exchanges/third-party/0x/calls/getFeeToken';
 
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 

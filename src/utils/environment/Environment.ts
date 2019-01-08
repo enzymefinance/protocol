@@ -5,10 +5,25 @@ import { MelonContracts, MelonContractsDraft } from '../deploy/deploySystem';
 import { ThirdPartyContracts } from '../deploy/deployThirdParty';
 import { ExchangeConfigs } from '~/contracts/factory/transactions/beginSetup';
 
-export type SignFunction = (
+export interface Web3Signature {
+  message: string;
+  messageHash: string;
+  v: string;
+  r: string;
+  s: string;
+  signature: string;
+}
+
+// Note: The
+export type SignTransactionFunction = (
   unsignedTransaction: UnsignedRawTransaction,
   from?: Address,
 ) => Promise<string>;
+
+export type SignMessageFunction = (
+  message: string,
+  from?: Address,
+) => Promise<Web3Signature>;
 
 export enum Tracks {
   // Track for testing with our own testing price feed
@@ -41,7 +56,8 @@ export type CurriedLogger = {
 export interface Wallet {
   // TODO: Rename this to currentAccount
   address: Address;
-  sign?: SignFunction;
+  signTransaction?: SignTransactionFunction;
+  signMessage?: SignMessageFunction;
 }
 
 export interface Options {

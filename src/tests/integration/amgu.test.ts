@@ -14,7 +14,7 @@ import {
   createPrice,
   isEqual as isEqualPrice,
 } from '@melonproject/token-math/price';
-import { sign } from '~/utils/environment/sign';
+import { signTransaction } from '~/utils/environment/signTransaction';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 
@@ -88,7 +88,10 @@ test('Set amgu and check its usage', async () => {
 
   const preBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
-  const signedTransactionData = await sign(shared.env, prepared.rawTransaction);
+  const signedTransactionData = await signTransaction(
+    shared.env,
+    prepared.rawTransaction,
+  );
 
   const result = await beginSetup.send(
     shared.env,

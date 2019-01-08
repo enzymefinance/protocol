@@ -1,4 +1,4 @@
-import web3Eth from 'web3-eth';
+import { default as Web3Eth } from 'web3-eth';
 import * as R from 'ramda';
 import { string } from 'yup';
 import {
@@ -30,12 +30,12 @@ const checkIpc = endpoint => {
 };
 
 const makeWsProvider = endpoint =>
-  new web3Eth.providers.WebsocketProvider(endpoint);
+  new Web3Eth.providers.WebsocketProvider(endpoint);
 
 const makeHttpProvider = endpoint =>
-  new web3Eth.providers.HttpProvider(endpoint);
+  new Web3Eth.providers.HttpProvider(endpoint);
 
-const makeIpcProvider = endpoint => new web3Eth.providers.IpcProvider(endpoint);
+const makeIpcProvider = endpoint => new Web3Eth.providers.IpcProvider(endpoint);
 
 const selectProvider = R.cond([
   [R.startsWith('ws'), makeWsProvider],
@@ -78,7 +78,7 @@ const dummyLogger: CurriedLogger = R.curryN(
 
 export const constructEnvironment = ({
   endpoint = undefined,
-  provider = undefined,
+  provider: givenProvider = undefined,
   deployment = undefined,
   logger = dummyLogger,
   wallet = undefined,
@@ -93,7 +93,7 @@ export const constructEnvironment = ({
   );
 
   ensure(
-    !!endpoint || !!provider,
+    !!endpoint || !!givenProvider,
     'You need to provide either an endpoint or a provider instance.',
   );
 
@@ -101,13 +101,16 @@ export const constructEnvironment = ({
     'melon:protocol:utils:environment',
     LogLevels.DEBUG,
     'Construct environment',
-    { endpoint, provider: !!provider, deployment, wallet, track, options },
+    { endpoint, provider: !!givenProvider, deployment, wallet, track, options },
   );
+
+  const provider = givenProvider || constructProvider(endpoint, logger);
+
+  const eth = new Web3Eth(provider);
 
   return {
     deployment,
-    eth: new web3Eth(provider || constructProvider(endpoint, logger)),
-    // tslint:disable-next-line:object-shorthand-properties-first
+    eth,
     logger,
     options,
     track,

@@ -10,7 +10,7 @@ import { ensure } from '~/utils/guards/ensure';
 const testMnemonic =
   'exhibit now news planet fame thank swear reform tilt accident bitter axis';
 
-const keyPairs = new Map([
+export const keyPairs = new Map([
   [
     '0xc0c82081f2ad248391cd1483ae211d56c280887a',
     '0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721',
@@ -94,7 +94,10 @@ export const initTestEnvironment = async (endpoint?: string) => {
 
   const web3Accounts = new Web3Accounts(environment.eth.currentProvider);
 
-  const signer = (unsignedTransaction, from = new Address(accounts[0])) =>
+  const signTransaction = (
+    unsignedTransaction,
+    from = new Address(accounts[0]),
+  ) =>
     web3Accounts
       .signTransaction(unsignedTransaction, keyPairs.get(from.toLowerCase()))
       .then(t => t.rawTransaction);
@@ -103,7 +106,7 @@ export const initTestEnvironment = async (endpoint?: string) => {
     ...environment,
     wallet: {
       address: accounts[0],
-      sign: signer,
+      signTransaction,
     },
   };
 

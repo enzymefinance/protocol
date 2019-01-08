@@ -5,11 +5,10 @@ import {
 } from '~/utils/constants/orderSignatures';
 import {
   createOrder,
-  signOrder,
   approveOrder,
   isValidSignatureOffChain,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils } from '@0x/order-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
@@ -33,7 +32,7 @@ import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';
-// import { deployPolicyManagerFactory } from '~/contracts/fund/policies/transactions/deployPolicyManagerFactory';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -101,6 +100,7 @@ test('investor gets initial ethToken for testing)', async () => {
   );
 });
 
+// tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
   const offeredValue = new BigInteger(10 ** 18);
   const wantedShares = new BigInteger(10 ** 18);
@@ -157,6 +157,7 @@ test('third party makes and validates an off-chain order', async () => {
   expect(signatureValid).toBeTruthy();
 });
 
+// tslint:disable-next-line:max-line-length
 test('manager takes order (half the total quantity) through 0x adapter', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const fillQuantity = s.signedOrder.takerAssetAmount;
@@ -417,6 +418,7 @@ test('Third party takes the order made by the fund', async () => {
   );
 });
 
+// tslint:disable-next-line:max-line-length
 test("Fund can make another make order for same asset (After it's inactive)", async () => {
   const makerAddress = s.fund.trading.options.address.toLowerCase();
   const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
