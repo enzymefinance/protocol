@@ -1,8 +1,3 @@
-import { getBalance } from '~/utils/evm/getBalance';
-import { withNewAccount } from '~/utils/environment/withNewAccount';
-import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { getPrice } from '~/contracts/prices/calls/getPrice';
 import { toBeTrueWith } from '../utils/toBeTrueWith';
 import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
@@ -12,6 +7,9 @@ import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
+import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
+import { getPriceSource } from '~/contracts/engine/calls/getPriceSource';
+import { getVersion } from '~/contracts/engine/calls/getVersion';
 
 // import * as coinbase from './.coinbase.json';
 
@@ -22,34 +20,21 @@ const getLog = getLogCurried('melon:protocol:systemTest:monitoring');
 describe('playground', () => {
   test('Happy path', async () => {
     const master = await getSystemTestEnvironment(Tracks.KYBER_PRICE);
-
     const log = getLog(master);
-
     const { melonContracts } = master.deployment;
 
-    const manager = await withNewAccount(master);
-    console.log('Manager address is: ', manager.wallet.address);
+    const { version, engine } = melonContracts;
 
-    const mln = getTokenBySymbol(manager, 'MLN');
+    // high level data
+    const amguPrice = await getAmguPrice(master, engine);
+    log.debug('Amgu Price: ', amguPrice);
 
-    try {
-      const mlnPrice = await getPrice(
-        master,
-        melonContracts.priceSource.toString(),
-        mln,
-      );
+    const priceSource = await getPriceSource(master, engine);
+    log.debug('Price Source: ', priceSource);
 
-      log.debug('MLN Price', mlnPrice);
-    } catch (e) {
-      throw new Error('Cannot get MLN Price from Kyber');
-    }
-
-    const masterBalance = await getBalance(master);
-
-    expect(masterBalance).toBeTrueWith(
-      greaterThan,
-      createQuantity(masterBalance.token, 6),
-    );
+    // const myVersion = await getVersion(master, engine);
+    log.debug('Version: ', version);
+    log.debug('Engine: ', engine);
 
     // fund list
 
@@ -79,6 +64,9 @@ describe('playground', () => {
         master,
         fundList[i].routes.accountingAddress,
       );
+      // fundList[i].participations = await getRequest(master, fundList[i].routes.participationAddress, {
+      //   of: master.wallet.address,
+      // });
     }
 
     // Number of funds (active, inactive, total)
