@@ -8,6 +8,10 @@ import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
+import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
+import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
+import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
+import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 
 expect.extend({ toBeTrueWith });
 
@@ -21,7 +25,7 @@ describe('playground', () => {
 
     const { melonContracts } = master.deployment;
 
-    const manager = withNewAccount(master);
+    const manager = await withNewAccount(master);
     console.log('Manager address is: ', manager.wallet.address);
 
     const mln = getTokenBySymbol(manager, 'MLN');
@@ -44,13 +48,56 @@ describe('playground', () => {
       greaterThan,
       createQuantity(masterBalance.token, 6),
     );
-    const fundList = await getFundDetails(
+
+    // fund list
+
+    let fundList = await getFundDetails(
       master,
       melonContracts.ranking,
       melonContracts.version,
     );
-    console.log('List: ', fundList);
 
     log.debug('list : ', fundList);
+
+    let numberOfFunds = {
+      active: 0,
+      inActive: 0,
+      total: 0,
+    };
+
+    // loop through funds to get interesting quantities
+    for (let i in fundList) {
+      fundList[i].isShutDown = await isShutDown(master, fundList[i].address);
+      fundList[i].routes = await getRoutes(master, fundList[i].address);
+      fundList[i].holdings = await getFundHoldings(
+        master,
+        fundList[i].routes.accountingAddress,
+      );
+      fundList[i].calcs = await performCalculations(
+        master,
+        fundList[i].routes.accountingAddress,
+      );
+      // log.debug('f: ', fundList[i]);
+    }
+
+    numberOfFunds.active = fundList.filter(f => {
+      return f.isShutDown === false;
+    }).length;
+    log.debug('Active funds: ', numberOfFunds.active);
+
+    numberOfFunds.inActive = fundList.filter(f => {
+      return f.isShutDown === true;
+    }).length;
+    log.debug('Inactive funds: ', numberOfFunds.inActive);
+
+    log.debug('Modified fund list', fundList);
+
+    let fundList2 = await getFundDetails(
+      master,
+      melonContracts.ranking,
+      melonContracts.version,
+    );
+
+    log.debug('list 2 : ', fundList2);
   });
 });
