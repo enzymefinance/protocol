@@ -2,13 +2,13 @@ import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { take0xOrder } from './take0xOrder';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import {
-  createOrder,
-  signOrder,
-  approveOrder,
-} from '~/contracts/exchanges/third-party/0x';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
+import {
+  createOrder,
+  approveOrder,
+} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 
 describe('take0xOrder', () => {
   const shared: any = {};

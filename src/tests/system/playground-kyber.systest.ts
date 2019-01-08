@@ -39,9 +39,9 @@ describe('playground', () => {
     const matchingMarket =
       master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
-    const manager = withNewAccount(master);
-    const trader = withNewAccount(master);
-    console.log('Manager address is: ', manager.wallet.address);
+    const manager = await withNewAccount(master);
+    const trader = await withNewAccount(master);
+
     const amguPrice = createQuantity('MLN', '1000000000');
     await setAmguPrice(master, melonContracts.engine, amguPrice);
     await updateKyber(master, melonContracts.priceSource);

@@ -3,21 +3,21 @@ import { UnsignedRawTransaction } from '../solidity/transactionFactory';
 import { ensureAccountAddress } from './ensureAccountAddress';
 import { ensure } from '../guards/ensure';
 
-const sign = async (
+const signTransaction = async (
   environment: Environment,
   unsignedTransaction: UnsignedRawTransaction,
 ) => {
   ensureAccountAddress(environment);
 
   ensure(
-    typeof environment.wallet.sign === 'function',
+    typeof environment.wallet.signTransaction === 'function',
     'No signer configured on environment',
   );
 
-  return environment.wallet.sign(
+  return environment.wallet.signTransaction(
     unsignedTransaction,
     environment.wallet.address,
   );
 };
 
-export { sign };
+export { signTransaction };

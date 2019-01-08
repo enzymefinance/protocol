@@ -10,16 +10,19 @@ const withPrivateKeySigner = async (
 
   const { address } = web3Accounts.privateKeyToAccount(privateKey);
 
-  const signer = unsignedTransaction =>
+  const signTransaction = unsignedTransaction =>
     web3Accounts
       .signTransaction(unsignedTransaction, privateKey)
       .then(t => t.rawTransaction);
+
+  const signMessage = message => web3Accounts.sign(message, privateKey);
 
   const withWallet = {
     ...environment,
     wallet: {
       address,
-      sign: signer,
+      signMessage,
+      signTransaction,
     },
   };
 

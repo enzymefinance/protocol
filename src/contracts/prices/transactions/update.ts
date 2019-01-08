@@ -44,7 +44,6 @@ const postProcess: PostProcessFunction<UpdateParams, UpdateParams> = async (
     environment,
     contractAddress,
     prices.map(p => p.base.token),
-    false,
   );
 
   ensure(isEqual(updatedPrices[0], prices[0]), 'Price did not update', {

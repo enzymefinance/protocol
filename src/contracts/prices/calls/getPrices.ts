@@ -12,7 +12,6 @@ export const getPrices = async (
   environment: Environment,
   contractAddress: Address,
   tokens: TokenInterface[],
-  preventCancelDown: boolean = false,
 ): Promise<PriceInterface[]> => {
   const quoteToken = await getQuoteToken(environment, contractAddress);
   const contract = await getContract(
@@ -35,7 +34,7 @@ export const getPrices = async (
   const makePrice = (t: TokenInterface, { price, timestamp }) => {
     const base = createQuantity(t, appendDecimals(t, 1));
     const quote = createQuantity(quoteToken, price);
-    return createPrice(base, quote, preventCancelDown);
+    return createPrice(base, quote);
   };
 
   const prices = R.zipWith(makePrice, tokens, processed);

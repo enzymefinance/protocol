@@ -1,15 +1,13 @@
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import {
-  createOrder,
-  signOrder,
-  fillOrder,
-} from '~/contracts/exchanges/third-party/0x';
 import { make0xOrder } from './make0xOrder';
 import { cancel0xOrder } from './cancel0xOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
+import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 describe('cancel0xOrder', () => {
   const shared: any = {};
