@@ -78,22 +78,9 @@ describe('generalWalkthrough', () => {
     const amguPrice = createQuantity(amguToken, '1000000000');
     await setAmguPrice(shared.env, engine, amguPrice);
 
-    // Deploy fees
-    const managementFee = getContract(
-      shared.env,
-      Contracts.ManagementFee,
-      await deployContract(shared.env, Contracts.ManagementFee, []),
-    );
-
-    const performanceFee = getContract(
-      shared.env,
-      Contracts.PerformanceFee,
-      await deployContract(shared.env, Contracts.PerformanceFee, []),
-    );
-
     const fees = [
       {
-        feeAddress: managementFee.options.address,
+        feeAddress: melonContracts.fees.managementFee.toLowerCase(),
         feePeriod: new BigInteger(0),
         feeRate: new BigInteger(
           multiply(
@@ -103,7 +90,7 @@ describe('generalWalkthrough', () => {
         ),
       },
       {
-        feeAddress: performanceFee.options.address,
+        feeAddress: melonContracts.fees.performanceFee.toLowerCase(),
         feePeriod: new BigInteger(86400 * 90),
         feeRate: new BigInteger(
           multiply(
