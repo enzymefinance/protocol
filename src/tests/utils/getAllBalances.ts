@@ -18,6 +18,9 @@ export async function getAllBalances(instances, accounts, fund, env) {
 
   return {
     custodian: {
+      dgx: new BigInteger(
+        await instances.dgx.methods.balanceOf(custodian).call(),
+      ),
       ether: new BigInteger(await env.eth.getBalance(custodian)),
       mln: new BigInteger(
         await instances.mln.methods.balanceOf(custodian).call(),
@@ -27,6 +30,9 @@ export async function getAllBalances(instances, accounts, fund, env) {
       ),
     },
     deployer: {
+      dgx: new BigInteger(
+        await instances.dgx.methods.balanceOf(deployer).call(),
+      ),
       ether: new BigInteger(await env.eth.getBalance(deployer)),
       mln: new BigInteger(
         await instances.mln.methods.balanceOf(deployer).call(),
@@ -36,7 +42,10 @@ export async function getAllBalances(instances, accounts, fund, env) {
       ),
     },
     exchangeOwner: {
-      ether: new BigInteger(await env.eth.getBalance(deployer)),
+      dgx: new BigInteger(
+        await instances.dgx.methods.balanceOf(exchangeOwner).call(),
+      ),
+      ether: new BigInteger(await env.eth.getBalance(exchangeOwner)),
       mln: new BigInteger(
         await instances.mln.methods.balanceOf(exchangeOwner).call(),
       ),
@@ -45,6 +54,11 @@ export async function getAllBalances(instances, accounts, fund, env) {
       ),
     },
     fund: {
+      dgx: new BigInteger(
+        await fund.accounting.methods
+          .assetHoldings(instances.dgx.options.address)
+          .call(),
+      ),
       ether: new BigInteger(
         await env.eth.getBalance(fund.vault.options.address),
       ),
@@ -60,6 +74,9 @@ export async function getAllBalances(instances, accounts, fund, env) {
       ),
     },
     investor: {
+      dgx: new BigInteger(
+        await instances.dgx.methods.balanceOf(investor).call(),
+      ),
       ether: new BigInteger(await env.eth.getBalance(investor)),
       mln: new BigInteger(
         await instances.mln.methods.balanceOf(investor).call(),
@@ -69,6 +86,9 @@ export async function getAllBalances(instances, accounts, fund, env) {
       ),
     },
     manager: {
+      dgx: new BigInteger(
+        await instances.dgx.methods.balanceOf(manager).call(),
+      ),
       ether: new BigInteger(await env.eth.getBalance(manager)),
       mln: new BigInteger(
         await instances.mln.methods.balanceOf(manager).call(),
@@ -78,6 +98,7 @@ export async function getAllBalances(instances, accounts, fund, env) {
       ),
     },
     worker: {
+      dgx: new BigInteger(await instances.dgx.methods.balanceOf(worker).call()),
       ether: new BigInteger(await env.eth.getBalance(worker)),
       mln: new BigInteger(await instances.mln.methods.balanceOf(worker).call()),
       weth: new BigInteger(

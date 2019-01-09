@@ -173,10 +173,18 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         returns (uint remainingShareQuantity)
     {
         Shares shares = Shares(routes.shares);
+
+        if (msg.sender == hub.manager()) {
+            return 0;
+        }
+
+        uint totalPerformanceFee = FeeManager(routes.feeManager).performanceFeeAmount();
+        // The denominator is augmented because performanceFeeAmount() accounts for inflation
+        // Since shares are directly transferred, we don't need to account for inflation in this case
         uint performanceFeePortion = mul(
-            FeeManager(routes.feeManager).performanceFeeAmount(),
+            totalPerformanceFee,
             shareQuantity
-        ) / shares.totalSupply();
+        ) / add(shares.totalSupply(), totalPerformanceFee);
         return performanceFeePortion;
     }
 
