@@ -18,7 +18,7 @@ contract ManagementFee is DSMath, Fee {
         Hub hub = FeeManager(msg.sender).hub();
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
-        if (shares.totalSupply() == 0 && managementFeeRate[msg.sender] == 0) {
+        if (shares.totalSupply() == 0 || managementFeeRate[msg.sender] == 0) {
             feeInShares = 0;
         } else {
             uint timePassed = sub(block.timestamp, lastPayoutTime[msg.sender]);

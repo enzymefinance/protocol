@@ -52,8 +52,9 @@ beforeAll(async () => {
     Contracts.ManagementFee,
     await deployContract(s.environment, Contracts.ManagementFee, []),
   );
-  s.managementFeeRate = new BigInteger(
-    multiply(new BigInteger(2), power(new BigInteger(10), new BigInteger(16))),
+  s.managementFeeRate = multiply(
+    new BigInteger(2),
+    power(new BigInteger(10), new BigInteger(16)),
   );
   const fees = [
     {
@@ -215,7 +216,7 @@ test(`Claims fee using triggerRewardAllFees`, async () => {
   );
   const expectedFeeInDenominationAsset = divide(
     multiply(expectedFeeShares, preFundCalculations.gav),
-    preTotalSupply,
+    add(preTotalSupply, expectedFeeShares),
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postManagerShares = new BigInteger(

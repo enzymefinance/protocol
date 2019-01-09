@@ -25,6 +25,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { increaseTime } from '~/utils/evm/increaseTime';
+import { getAllBalances } from '../utils/getAllBalances';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -211,6 +212,65 @@ test(`performance fee is calculated correctly`, async () => {
   // );
 });
 
+test(`investor redeems half his shares, performance fee deducted`, async () => {
+  const currentTotalSupply = new BigInteger(
+    await s.fund.shares.methods.totalSupply().call(),
+  );
+  const preManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
+  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const fundCalculations = await s.fund.accounting.methods
+    .performCalculations()
+    .call();
+  const redeemingQuantity = divide(s.wantedShares, new BigInteger(2));
+
+  await s.fund.participation.methods
+    .redeemQuantity(`${redeemingQuantity}`)
+    .send({ from: s.investor, gas: s.gas });
+
+  const postManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
+  const redeemSharesProportion = divide(
+    multiply(redeemingQuantity, precisionUnits),
+    currentTotalSupply,
+  );
+  const redeemSharesProportionAccountingInflation = divide(
+    multiply(redeemingQuantity, precisionUnits),
+    add(currentTotalSupply, fundCalculations.feesInShares),
+  );
+  const expectedOwedPerformanceFee = divide(
+    multiply(
+      redeemSharesProportionAccountingInflation,
+      fundCalculations.feesInShares,
+    ),
+    precisionUnits,
+  );
+
+  // TODO: Investor why there is a deviation by a factor of 1
+  expect(subtract(postManagerShares, preManagerShares)).toEqual(
+    expectedOwedPerformanceFee,
+  );
+
+  await s.fund.participation.methods
+    .redeem()
+    .send({ from: s.manager, gas: s.gas });
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+
+  expect(Number(subtract(post.manager.weth, pre.manager.weth))).toBeCloseTo(
+    Number(
+      divide(
+        multiply(
+          fundCalculations.feesInDenominationAsset,
+          redeemSharesProportion,
+        ),
+        precisionUnits,
+      ),
+    ),
+  );
+});
+
 test(`manager calls rewardAllFees to update high watermark`, async () => {
   await increaseTime(s.environment, Number(s.performanceFeePeriod));
 
@@ -220,7 +280,6 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   const preFundCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
-  console.log('a-----asd');
   await s.fund.accounting.methods
     .triggerRewardAllFees()
     .send({ from: s.manager, gas: s.gas });
