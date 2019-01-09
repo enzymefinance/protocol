@@ -96,7 +96,8 @@ contract Registry is DSAuth {
                 !(char >= 0x41 && char <= 0x5A) && // A-Z
                 !(char >= 0x61 && char <= 0x7A) && // a-z
                 !(char == 0x20 || char == 0x2D) && // space, dash
-                !(char == 0x2E || char == 0x5F)    // period, underscore
+                !(char == 0x2E || char == 0x5F) && // period, underscore
+                !(char == 0x2A) // *
             ) {
                 return false;
             }
