@@ -1,5 +1,5 @@
 import { Address } from '@melonproject/token-math/address';
-import { isSameToken } from '@melonproject/token-math/token';
+import { ensureSameToken } from '@melonproject/token-math/token';
 import { isEqual, greaterThan } from '@melonproject/token-math/quantity';
 
 import { transactionFactory } from '~/utils/solidity/transactionFactory';
@@ -13,10 +13,7 @@ const guard = async (environment, { quantity }, contractAddress: Address) => {
   const engine = getContract(environment, Contracts.Engine, contractAddress);
   const mlnAddress = await engine.methods.mlnToken().call();
   const mlnToken = await getToken(environment, mlnAddress);
-  ensure(
-    isSameToken(quantity.token, mlnToken),
-    'It is only possible to burn MLN',
-  );
+  ensureSameToken(quantity.token, mlnToken);
   const allowedMln = await allowance(environment, mlnAddress, {
     owner: environment.wallet.address,
     spender: contractAddress.toString(),

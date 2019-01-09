@@ -18,7 +18,7 @@ import {
   Options,
 } from '~/utils/solidity/prepareTransaction';
 import { ensure } from '~/utils/guards/ensure';
-import { sign } from '../environment/sign';
+import { signTransaction } from '../environment/signTransaction';
 import { EnsureError } from '../guards/EnsureError';
 import { getBalance } from '../evm/getBalance';
 import { getLogCurried } from '../environment/getLogCurried';
@@ -365,7 +365,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       options,
     );
 
-    const signedTransactionData = await sign(
+    const signedTransactionData = await signTransaction(
       environment,
       prepared.rawTransaction,
     );
@@ -457,7 +457,7 @@ const withTransactionDecorator: WithTransactionDecorator = <Args, Result>(
       decorator.options,
     );
 
-    const signedTransactionData = await sign(
+    const signedTransactionData = await signTransaction(
       environment,
       prepared.rawTransaction,
     );

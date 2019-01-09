@@ -772,10 +772,10 @@
   dependencies:
     source-map-support "^0.5.3"
 
-"@melonproject/token-math@0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.21.tgz#8cea4a8e77bb890054802ee7a49be695821a4a88"
-  integrity sha512-QaSO7r6V11zUEigloXQ6JZNn1tXPG+5HjaPFunpfrk26SQmDQeZ7lp9hREIfaMPYJcc7Nn96EBbhODit46wyIA==
+"@melonproject/token-math@^0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.24.tgz#cd7d11f102e64f9565a1ff104b8deeafd060af9c"
+  integrity sha512-DYQY1bynlkwRvgrhwDzSBzrVPzAGaK5gid5RmZCw8DP3UejjRYo5f1I50crSGBGiepj8xsINkFyAMCxlr1p7mw==
   dependencies:
     bn.js "^4.11.8"
     web3-utils "^1.0.0-beta.36"
@@ -2967,6 +2967,14 @@ eth-lib@0.2.7:
 ethereum-types@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/ethereum-types/-/ethereum-types-1.1.2.tgz#4ebadc361913e884d99b07cd794d96934b61104b"
+  dependencies:
+    "@types/node" "*"
+    bignumber.js "~4.1.0"
+
+ethereum-types@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/ethereum-types/-/ethereum-types-1.1.4.tgz#d8a5978290b2c625ce05afee2d657e042f3729e3"
+  integrity sha512-nZ/JqdTQt8LapEhHCeQoYCbT4UAw7XscFZ5V2/haUxjSC7LyFrZzrcTKQoHdFpCKHdNEX634tUplO460pwHYuQ==
   dependencies:
     "@types/node" "*"
     bignumber.js "~4.1.0"

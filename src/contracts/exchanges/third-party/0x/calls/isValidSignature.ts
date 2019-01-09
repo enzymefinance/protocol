@@ -8,7 +8,7 @@ interface IsValidSignatureArgs {
   signedOrder: SignedOrder;
 }
 
-const prepareArgs = (environment, { signedOrder }: IsValidSignatureArgs) => {
+const prepareArgs = (_, { signedOrder }: IsValidSignatureArgs) => {
   const orderHash = orderHashUtils.getOrderHashHex(signedOrder);
   const args = [orderHash, signedOrder.makerAddress, signedOrder.signature];
   return args;

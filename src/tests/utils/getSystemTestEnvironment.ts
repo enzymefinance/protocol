@@ -1,16 +1,16 @@
 import * as path from 'path';
 import * as R from 'ramda';
 
-import { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
 import { constructEnvironment } from '~/utils/environment/constructEnvironment';
 import { testLogger } from '../utils/testLogger';
-import { withDeployment } from '~/utils/environment/withDeployment';
 import {
   Deployment,
   Environment,
   Tracks,
 } from '~/utils/environment/Environment';
 import { getChainName } from '~/utils/environment/chainName';
+import { withDeployment } from '~/utils/environment/withDeployment';
+import { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
 import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 
 const getSystemTestEnvironment = async (

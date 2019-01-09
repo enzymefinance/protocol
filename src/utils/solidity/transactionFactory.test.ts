@@ -3,7 +3,7 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Address } from '@melonproject/token-math/address';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
-import { sign } from '../environment/sign';
+import { signTransaction } from '../environment/signTransaction';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 
 describe('transactionFactory', () => {
@@ -46,7 +46,7 @@ describe('transactionFactory', () => {
       skipGuards: true,
     });
 
-    const signedTransactionData = await sign(
+    const signedTransactionData = await signTransaction(
       shared.env,
       prepared.rawTransaction,
     );

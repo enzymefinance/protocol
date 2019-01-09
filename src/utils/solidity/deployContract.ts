@@ -8,7 +8,7 @@ import { TransactionArgs } from './transactionFactory';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { Address } from '@melonproject/token-math/address';
 import { ensure } from '~/utils/guards/ensure';
-import { sign } from '../environment/sign';
+import { signTransaction } from '../environment/signTransaction';
 import { EnsureError } from '../guards/EnsureError';
 
 // TODO: Refactor all callers to only use the Contract interface
@@ -94,7 +94,10 @@ export const deployContract: DeployContract = async (
       data: encodedAbi,
       ...options,
     };
-    const signedTransaction = await sign(environment, unsignedTransaction);
+    const signedTransaction = await signTransaction(
+      environment,
+      unsignedTransaction,
+    );
 
     let txHash;
     const receipt = await environment.eth
