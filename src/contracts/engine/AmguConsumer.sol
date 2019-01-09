@@ -16,8 +16,8 @@ contract AmguConsumer is DSMath {
         uint ethPerMln;
         (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnToken());
         uint ethToPay = mul(
-            sub(initialGas, gasleft()),
-            mul(mlnPerAmgu, ethPerMln)
+            sub(initialGas, gasleft()), // gas (and thus amgu) used
+            mul(mlnPerAmgu, ethPerMln)  // eth per amgu
         ) / 1 ether;
         require(msg.value >= ethToPay, "Insufficent amgu");
         Engine(engine()).payAmguInEther.value(ethToPay)();

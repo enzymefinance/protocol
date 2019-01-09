@@ -84,13 +84,13 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address asset = ownedAssets[i];
-            // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
+            // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimals)
             uint quantityHeld = assetHoldings(asset);
             // Dont bother with the calculations if the balance of the asset is 0
             if (quantityHeld == 0) {
                 continue;
             }
-            // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
+            // assetPrice formatting: mul(exchangePrice, 10 ** denominationDecimals)
             uint assetPrice;
             (assetPrice,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, DENOMINATION_ASSET);
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)

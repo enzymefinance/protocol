@@ -12,9 +12,16 @@ contract PriceTolerance is DSMath, Policy {
     bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature
     bytes4 constant public TAKE_ORDER = 0xe51be6e8; // takeOrderSignature
 
+    uint constant MULTIPLIER = 10 ** 16; // to give effect of a percentage
+    uint constant DIVISOR = 10 ** 18;
+
     // _tolerance: 10 equals to 10% of tolerance
-    function PriceTolerance(uint256 _tolerance) public {
-        tolerance = _tolerance ** uint256(17);
+    function PriceTolerance(uint _tolerancePercent) public {
+        require(
+            _tolerancePercent >= 0 && _tolerancePercent <= 100,
+            "Tolerance range is 0% - 100%"
+        );
+        tolerance = mul(_tolerancePercent, MULTIPLIER);
     }
 
     function takeOasisDex(address ofExchange, bytes32 identifier, uint fillTakerQuantity) view returns (bool) {
@@ -29,7 +36,7 @@ contract PriceTolerance is DSMath, Policy {
 
         PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
         uint referencePrice;
-        (referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
+        (referencePrice,) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
         uint orderPrice = pricefeed.getOrderPriceInfo(
             takerAsset,
@@ -38,7 +45,10 @@ contract PriceTolerance is DSMath, Policy {
             fillMakerQuantity
         );
 
-        return orderPrice >= sub(referencePrice, wmul(tolerance, referencePrice));
+        return orderPrice >= sub(
+            referencePrice,
+            mul(tolerance, referencePrice) / DIVISOR
+        );
     }
 
     function takeGenericOrder(address makerAsset, address takerAsset, uint[3] values) view returns (bool) {
@@ -56,7 +66,10 @@ contract PriceTolerance is DSMath, Policy {
             fillMakerQuantity
         );
 
-        return orderPrice >= sub(referencePrice, wmul(tolerance, referencePrice));
+        return orderPrice >= sub(
+            referencePrice,
+            mul(tolerance, referencePrice) / DIVISOR
+        );
     }
 
     function takeOrder(address[5] addresses, uint[3] values, bytes32 identifier) public view returns (bool) {

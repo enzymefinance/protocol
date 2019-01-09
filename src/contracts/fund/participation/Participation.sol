@@ -82,7 +82,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     {
         PolicyManager(routes.policyManager).preValidate(
             bytes4(sha3("requestInvestment(address)")),
-            [msg.sender, address(0), address(0), address(0), address(0)],
+            [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
         );
@@ -124,8 +124,13 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             hasValidRequest(requestOwner),
             "No valid request for this address"
         );
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
         Request memory request = requests[requestOwner];
+        PolicyManager(routes.policyManager).preValidate(
+            bytes4(sha3("executeRequestFor(address)")),
+            [requestOwner, address(0), address(0), request.investmentAsset, address(0)],
+            [uint(0), uint(0), uint(0)],
+            bytes32(0)
+        );
         require(
             investAllowed[request.investmentAsset],
             "Investment not allowed in this asset"

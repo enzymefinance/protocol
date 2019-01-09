@@ -143,7 +143,6 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     {
         isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
         uint quoteDecimals = ERC20Clone(_quoteAsset).decimals();
-        uint baseDecimals = ERC20Clone(_baseAsset).decimals();
 
         if (prices[_quoteAsset] == 0) {
             return (false, 0, 0);  // return early and avoid revert
