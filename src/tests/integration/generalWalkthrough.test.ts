@@ -6,9 +6,7 @@ import {
   multiply,
 } from '@melonproject/token-math/bigInteger';
 
-import { deployContract } from '~/utils/solidity/deployContract';
-import { Contracts, Exchanges } from '~/Contracts';
-import { getContract } from '~/utils/solidity/getContract';
+import { Exchanges } from '~/Contracts';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
 import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
