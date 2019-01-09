@@ -73,14 +73,14 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     function calcAssetGAV(address _asset) returns (uint) {
         uint quantityHeld = assetHoldings(_asset);
-        // assetPrice formatting: mul(exchangePrice, 10 ** assetDecimal)
+        // assetPrice formatting: mul(exchangePrice, 10 ** denominationDecimals)
         uint assetPrice;
         (assetPrice,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(_asset, DENOMINATION_ASSET);
         uint assetDecimals = ERC20WithFields(_asset).decimals();
         return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
     }
 
-    // prices quoted in DENOMINATION_ASSET and multiplied by 10 ** assetDecimal
+    // prices are quoted in DENOMINATION_ASSET so they use denominationDecimals
     function calcGav() public returns (uint gav) {
         for (uint i = 0; i < ownedAssets.length; ++i) {
             address asset = ownedAssets[i];
