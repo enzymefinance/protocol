@@ -1,6 +1,5 @@
 pragma solidity ^0.4.21;
 
-
 import "Shares.i.sol";
 import "Spoke.sol";
 import "StandardToken.sol";
