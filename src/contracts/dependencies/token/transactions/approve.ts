@@ -47,6 +47,18 @@ interface ApproveArgs {
 
 type ApproveResult = boolean;
 
+/**
+ * Approves the `spender` to spend `howMuch` of a specified token
+ * (as a `quantity`)
+ *
+ * @param environment The environment to execute this transaction on.
+ *   It should contain an `environment.wallet` containing the subjects address
+ *
+ * @param params.howMuch The token quantity that is allowed to spend
+ * @param params.spender The address of the approved spender
+ *
+ * @returns A boolean indicating if the transaction went through
+ */
 const approve: WithAddressQueryExecute<
   ApproveArgs,
   ApproveResult
