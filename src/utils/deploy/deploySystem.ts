@@ -46,6 +46,7 @@ import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTe
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
 import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
+import { Address } from 'cluster';
 
 const pkg = require('~/../package.json');
 
@@ -69,6 +70,7 @@ export interface MelonContracts {
     kyberAdapter: Address;
     zeroExAdapter: Address;
     matchingMarketAdapter: Address;
+    matchingMarketAccessor: Address;
     ethfinexAdapter: Address;
   };
   policies: {
@@ -90,6 +92,7 @@ export const deployAllContractsConfig = JSON.parse(`{
     "ethfinexAdapter": "DEPLOY",
     "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
+    "matchingMarketAccessor: "DEPLOY"
     "zeroExAdapter": "DEPLOY"
   },
   "policies": {
@@ -113,7 +116,6 @@ export const deployAllContractsConfig = JSON.parse(`{
   "registry": "DEPLOY",
   "version": "DEPLOY",
   "ranking": "DEPLOY",
-  "matching-market-accessor": "DEPLOY"
 }`);
 
 const getLog = getLogCurried('melon:protocol:utils:deploySystem');
@@ -195,6 +197,9 @@ export const deploySystem = async (
     ),
     maybeDeploy(['adapters', 'matchingMarketAdapter'], environment =>
       deployMatchingMarketAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'matchingMarketAccessor'], environment =>
+      deployMatchingMarketAccessor(environment),
     ),
     maybeDeploy(['adapters', 'zeroExAdapter'], environment =>
       deploy0xAdapter(environment),
@@ -282,9 +287,6 @@ export const deploySystem = async (
       },
     ),
 
-    maybeDeploy(['matching-market-accessor'], environment =>
-      deployMatchingMarketAccessor(environment),
-    ),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
