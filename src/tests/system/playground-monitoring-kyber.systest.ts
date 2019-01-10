@@ -11,10 +11,10 @@ import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import axios from 'axios';
 
 import * as coinapi from './.coinapi.json';
-import { createPrice, valueIn } from '@melonproject/token-math/price';
+import { createPrice } from '@melonproject/token-math/price';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { createToken } from '@melonproject/token-math/token';
-import { createQuantity, toFixed } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math/quantity';
 
 expect.extend({ toBeTrueWith });
 
@@ -26,7 +26,7 @@ describe('playground', () => {
     const log = getLog(master);
     const { melonContracts } = master.deployment;
 
-    const { version, engine } = melonContracts;
+    const { engine } = melonContracts;
 
     let axinst = axios.create(coinapi);
 
