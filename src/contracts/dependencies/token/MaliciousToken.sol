@@ -10,7 +10,7 @@ contract MaliciousToken is PreminedToken {
         public
         PreminedToken(_symbol, _decimals, _name)
     {}
-    
+
     function startReverting() public {
         isReverting = true;
     }

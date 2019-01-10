@@ -43,6 +43,8 @@ import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
+import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
+import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
 
 const pkg = require('~/../package.json');
 
@@ -72,6 +74,10 @@ export interface MelonContracts {
     priceTolerance: Address;
     userWhitelist: Address;
   };
+  fees: {
+    managementFee: Address;
+    performanceFee: Address;
+  };
   factories: Factories;
 }
 
@@ -88,6 +94,10 @@ export const deployAllContractsConfig = JSON.parse(`{
   "policies": {
     "priceTolerance": "DEPLOY",
     "userWhitelist": "DEPLOY"
+  },
+  "fees" : {
+    "managementFee": "DEPLOY",
+    "performanceFee": "DEPLOY"
   },
   "factories": {
     "accountingFactory": "DEPLOY",
@@ -192,6 +202,12 @@ export const deploySystem = async (
     ),
     maybeDeploy(['policies', 'userWhitelist'], environment =>
       deployUserWhitelist(environment, [environment.wallet.address]),
+    ),
+    maybeDeploy(['fees', 'managementFee'], environment =>
+      deployManagementFee(environment),
+    ),
+    maybeDeploy(['fees', 'performanceFee'], environment =>
+      deployPerformanceFee(environment),
     ),
     maybeDeploy(['factories', 'accountingFactory'], environment =>
       deployAccountingFactory(environment),

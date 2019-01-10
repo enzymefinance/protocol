@@ -1,5 +1,3 @@
-import * as R from 'ramda';
-
 import {
   deploySystem,
   deployAllContractsConfig,
@@ -8,8 +6,6 @@ import { deployThirdParty } from '../../utils/deploy/deployThirdParty';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { Environment } from '../../utils/environment/Environment';
-import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
 export const deployAndGetSystem = async (environment: Environment) => {
   const thirdParty = await deployThirdParty(environment);
@@ -19,17 +15,7 @@ export const deployAndGetSystem = async (environment: Environment) => {
     deployAllContractsConfig,
   );
 
-  // Override the price source (system one is Kyber)
-  const feedAddress = await deployTestingPriceFeed(
-    environment,
-    getTokenBySymbol(envWithDeployment, 'WETH'),
-  );
-
-  const addresses = R.assocPath(
-    ['melonContracts', 'priceSource'],
-    feedAddress,
-    envWithDeployment.deployment,
-  );
+  const addresses = envWithDeployment.deployment;
 
   const contracts = {
     dgx: getContract(

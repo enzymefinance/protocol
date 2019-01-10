@@ -55,7 +55,7 @@ contract Registry is DSAuth {
 
     struct Version {
         bool exists;
-        string name;
+        bytes32 name;
     }
 
     // FIELDS
@@ -69,8 +69,11 @@ contract Registry is DSAuth {
     address[] public registeredVersions;
 
     mapping (address => address) public fundsToVersions;
+    mapping (bytes32 => bool) public versionNameExists;
+    mapping (bytes32 => address) public fundNameHashToOwner;
 
     uint public constant MAX_REGISTERED_ENTITIES = 20;
+    uint public constant MAX_FUND_NAME_BYTES = 66;
 
     address public priceSource;
     address public mlnToken;
@@ -82,12 +85,47 @@ contract Registry is DSAuth {
 
     // PUBLIC METHODS
 
-    function registerFund(address _fund) {
+    /// @notice Whether _name has only valid characters
+    function isValidFundName(string _name) public view returns (bool) {
+        bytes memory b = bytes(_name);
+        if (b.length > MAX_FUND_NAME_BYTES) return false;
+        for (uint i; i < b.length; i++){
+            bytes1 char = b[i];
+            if(
+                !(char >= 0x30 && char <= 0x39) && // 9-0
+                !(char >= 0x41 && char <= 0x5A) && // A-Z
+                !(char >= 0x61 && char <= 0x7A) && // a-z
+                !(char == 0x20 || char == 0x2D) && // space, dash
+                !(char == 0x2E || char == 0x5F) && // period, underscore
+                !(char == 0x2A) // *
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// @notice Whether _user can use _name for their fund
+    function canUseFundName(address _user, string _name) public view returns (bool) {
+        bytes32 nameHash = keccak256(_name);
+        return (
+            isValidFundName(_name) &&
+            (
+                fundNameHashToOwner[nameHash] == address(0) ||
+                fundNameHashToOwner[nameHash] == _user
+            )
+        );
+    }
+
+    function registerFund(address _fund, address _owner, string _name) {
         require(
             versionInformation[msg.sender].exists,
             "Only a Version can register a fund"
         );
+        require(canUseFundName(_owner, _name), "Fund name cannot be used");
+
         fundsToVersions[_fund] = msg.sender;
+        fundNameHashToOwner[keccak256(_name)] = _owner;
     }
 
     /// @notice Registers an Asset information entry
@@ -158,10 +196,13 @@ contract Registry is DSAuth {
     /// @param _name Name of the version
     function registerVersion(
         address _version,
-        string _name
+        bytes32 _name
     ) auth {
         require(!versionInformation[_version].exists);
+        require(!versionNameExists[_name]);
         versionInformation[_version].exists = true;
+        versionNameExists[_name] = true;
+        versionInformation[_version].name = _name;
         registeredVersions.push(_version);
         assert(versionInformation[_version].exists);
         emit VersionRegistration(_version);

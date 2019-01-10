@@ -42,7 +42,7 @@ beforeAll(async () => {
   s = Object.assign(s, contracts);
 
   [s.deployer, s.manager, s.investor] = s.accounts;
-  s.exchanges = [s.matchingMarket]; // , matchingMarket2];
+  s.exchanges = [s.matchingMarket];
   s.gas = 8000000;
   s.numberofExchanges = 1;
   s.exchanges = [s.matchingMarket];
@@ -272,12 +272,6 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     await s.weth.methods
       .approve(s.exchanges[i].options.address, `${s.trade2.sellQuantity}`)
       .send({ from: s.deployer, gas: s.gas });
-    console.log(
-      `${s.trade2.sellQuantity}`,
-      s.weth.options.address,
-      `${s.trade2.buyQuantity}`,
-      s.mln.options.address,
-    );
 
     await s.exchanges[i].methods
       .offer(
@@ -287,6 +281,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
         s.mln.options.address,
       )
       .send({ from: s.deployer, gas: s.gas });
+
     const exchangePostMln = new BigInteger(
       await s.mln.methods.balanceOf(s.exchanges[i].options.address).call(),
     );

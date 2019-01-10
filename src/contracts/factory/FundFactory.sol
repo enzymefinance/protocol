@@ -228,7 +228,11 @@ contract FundFactory is AmguConsumer, Factory {
         hub.setRouting();
         hub.setPermissions();
         funds.push(hub);
-        Registry(registry).registerFund(address(hub));
+        Registry(registry).registerFund(
+            address(hub),
+            msg.sender,
+            managersToSettings[msg.sender].name
+        );
 
         emit NewFund(
             msg.sender,

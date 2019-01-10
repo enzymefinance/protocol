@@ -1,6 +1,10 @@
 import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';
-import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
+import {
+  createQuantity,
+  greaterThan,
+  isEqual,
+} from '@melonproject/token-math/quantity';
 import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 
@@ -21,8 +25,14 @@ import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOas
 import { toFixed } from '@melonproject/token-math/price';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
-// import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
-// import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
+import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';
+import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
+import {
+  createOrder,
+  approveOrder,
+} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
+import { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
 
 expect.extend({ toBeTrueWith });
 
@@ -38,6 +48,8 @@ describe('playground', () => {
 
     const matchingMarket =
       master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
+
+    const zeroEx = master.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
     const manager = await withNewAccount(master);
     const trader = await withNewAccount(master);
@@ -161,13 +173,29 @@ describe('playground', () => {
       createQuantity(weth, 0.8),
     );
 
-    // await shutDownFund(manager, melonContracts.version, {
-    //   hub: routes.hubAddress,
-    // });
-    // log.debug('Shut down fund');
+    const unsignedZeroExOrder = await createOrder(trader, zeroEx, {
+      makerQuantity: createQuantity(mln, 0.75),
+      takerQuantity: createQuantity(weth, 0.075),
+    });
+    const signedZeroExOrder = await signOrder(trader, unsignedZeroExOrder);
+    await approveOrder(trader, zeroEx, signedZeroExOrder);
 
-    // const isFundShutDown = await isShutDown(manager, routes.hubAddress);
+    const filledOrder = await take0xOrder(manager, routes.tradingAddress, {
+      signedOrder: signedZeroExOrder,
+    });
 
-    // expect(isFundShutDown).toBeTruthy();
+    expect(filledOrder.makerFilledAmount).toBeTrueWith(
+      isEqual,
+      createQuantity(mln, 0.75),
+    );
+
+    await shutDownFund(manager, melonContracts.version, {
+      hub: routes.hubAddress,
+    });
+    log.debug('Shut down fund');
+
+    const isFundShutDown = await isShutDown(manager, routes.hubAddress);
+
+    expect(isFundShutDown).toBeTruthy();
   });
 });

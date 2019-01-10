@@ -135,8 +135,8 @@ describe('playground', () => {
     expect(calculations.gav).toBeTrueWith(isEqual, createQuantity(weth, 0.95));
 
     const unsignedZeroExOrder = await createOrder(trader, zeroEx, {
-      makerQuantity: createQuantity(mln, 1),
-      takerQuantity: createQuantity(weth, 0.1),
+      makerQuantity: createQuantity(mln, 0.75),
+      takerQuantity: createQuantity(weth, 0.075),
     });
     const signedZeroExOrder = await signOrder(trader, unsignedZeroExOrder);
     await approveOrder(trader, zeroEx, signedZeroExOrder);
@@ -147,7 +147,7 @@ describe('playground', () => {
 
     expect(filledOrder.makerFilledAmount).toBeTrueWith(
       isEqual,
-      createQuantity(mln, 1),
+      createQuantity(mln, 0.75),
     );
   });
 });
