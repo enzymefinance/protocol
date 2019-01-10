@@ -3,6 +3,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { createPrice } from '@melonproject/token-math/price';
+import * as web3Utils from 'web3-utils';
 
 import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 
@@ -43,7 +44,7 @@ export const getFundDetails = async (
     return {
       address,
       creationTime: new Date(creationTimes[index] * 1000),
-      name: names[index],
+      name: web3Utils.hexToAscii(names[index]),
       rank: index + 1,
       sharePrice: createPrice(
         createQuantity(fundToken, 1),
