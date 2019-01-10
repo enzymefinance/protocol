@@ -19,4 +19,9 @@ interface PriceSourceInterface {
     function getReferencePriceInfo(address _base, address _quote) public view returns (uint referencePrice, uint decimal);
     function getOrderPriceInfo(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) public view returns (uint orderPrice);
     function existsPriceOnAssetPair(address sellAsset, address buyAsset) public view returns (bool isExistent);
+    function convertQuantity(
+        uint fromAssetQuantity,
+        address fromAsset,
+        address toAsset
+    ) public view returns (uint);
 }

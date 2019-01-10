@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+import "ERC20.i.sol";
 import "PriceSource.i.sol";
 import "UpdatableFeed.i.sol";
 import "math.sol";
@@ -177,5 +178,24 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
 
     function getLastUpdateId() public view returns (uint) { return updateId; }
     function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
+
+    /// @notice Get quantity of toAsset equal in value to given quantity of fromAsset
+    function convertQuantity(
+        uint fromAssetQuantity,
+        address fromAsset,
+        address toAsset
+    )
+        public
+        view
+        returns (uint)
+    {
+        uint fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(fromAsset, toAsset);
+        uint fromAssetDecimals = ERC20WithFields(fromAsset).decimals();
+        return mul(
+            fromAssetQuantity,
+            fromAssetPrice
+        ) / (10 ** fromAssetDecimals);
+    }
 }
 

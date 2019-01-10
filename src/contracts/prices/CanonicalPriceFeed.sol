@@ -4,6 +4,7 @@ import "CanonicalRegistrar.sol";
 import "SimplePriceFeed.sol";
 import "StakingPriceFeed.sol";
 import "OperatorStaking.sol";
+import "ERC20.i.sol";
 
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
@@ -392,5 +393,24 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         uint[] memory prices = priceHistory[id].prices;
         uint timestamp = priceHistory[id].timestamp;
         return (assets, prices, timestamp);
+    }
+
+    /// @notice Get quantity of toAsset equal in value to given quantity of fromAsset
+    function convertQuantity(
+        uint fromAssetQuantity,
+        address fromAsset,
+        address toAsset
+    )
+        public
+        view
+        returns (uint)
+    {
+        uint fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(fromAsset, toAsset);
+        uint fromAssetDecimals = ERC20WithFields(fromAsset).decimals();
+        return mul(
+            fromAssetQuantity,
+            fromAssetPrice
+        ) / (10 ** fromAssetDecimals);
     }
 }

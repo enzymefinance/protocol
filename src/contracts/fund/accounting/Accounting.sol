@@ -71,13 +71,11 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return (_quantities, _assets);
     }
 
-    function calcAssetGAV(address _asset) returns (uint) {
-        uint quantityHeld = assetHoldings(_asset);
-        // assetPrice formatting: mul(exchangePrice, 10 ** denominationDecimals)
-        uint assetPrice;
-        (assetPrice,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(_asset, DENOMINATION_ASSET);
-        uint assetDecimals = ERC20WithFields(_asset).decimals();
-        return mul(quantityHeld, assetPrice) / (10 ** assetDecimals);
+    function calcAssetGAV(address _queryAsset) returns (uint) {
+        uint queryAssetQuantityHeld = assetHoldings(_queryAsset);
+        return PriceSourceInterface(routes.priceSource).convertQuantity(
+            queryAssetQuantityHeld, _queryAsset, DENOMINATION_ASSET
+        );
     }
 
     // prices are quoted in DENOMINATION_ASSET so they use denominationDecimals
@@ -90,16 +88,11 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             if (quantityHeld == 0) {
                 continue;
             }
-            // assetPrice formatting: mul(exchangePrice, 10 ** denominationDecimals)
-            uint assetPrice;
-            (assetPrice,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(asset, DENOMINATION_ASSET);
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
-            uint assetDecimals = ERC20WithFields(asset).decimals();
             gav = add(
                 gav,
-                (
-                    mul(quantityHeld, assetPrice) /
-                    (10 ** assetDecimals)
+                PriceSourceInterface(routes.priceSource).convertQuantity(
+                    quantityHeld, asset, DENOMINATION_ASSET
                 )
             );
         }
@@ -155,20 +148,13 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 
     function getShareCostInAsset(uint _numShares, address _altAsset) returns (uint) {
-        uint costInDenominationAsset = mul(
+        uint denominationAssetQuantity = mul(
             _numShares,
             calcGavPerShareNetManagementFee()
         ) / 10 ** SHARES_DECIMALS;
-        uint denominationAssetPriceInAltAsset;
-        (denominationAssetPriceInAltAsset,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(
-            DENOMINATION_ASSET,
-            _altAsset
+        return PriceSourceInterface(routes.priceSource).convertQuantity(
+            denominationAssetQuantity, DENOMINATION_ASSET, _altAsset
         );
-        uint shareCostInAltAsset = mul(
-            denominationAssetPriceInAltAsset,
-            costInDenominationAsset
-        ) / 10 ** DENOMINATION_ASSET_DECIMALS;
-        return shareCostInAltAsset;
     }
 
     /// @notice Reward all fees and perform some updates

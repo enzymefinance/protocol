@@ -1,6 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "PriceSource.i.sol";
+import "ERC20.i.sol";
 import "thing.sol";
 import "KyberNetworkProxy.sol";
 import "Registry.sol";
@@ -262,5 +263,24 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         return
             hasValidPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
             hasValidPrice(buyAsset);
+    }
+
+    /// @notice Get quantity of toAsset equal in value to given quantity of fromAsset
+    function convertQuantity(
+        uint fromAssetQuantity,
+        address fromAsset,
+        address toAsset
+    )
+        public
+        view
+        returns (uint)
+    {
+        uint fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(fromAsset, toAsset);
+        uint fromAssetDecimals = ERC20WithFields(fromAsset).decimals();
+        return mul(
+            fromAssetQuantity,
+            fromAssetPrice
+        ) / (10 ** fromAssetDecimals);
     }
 }
