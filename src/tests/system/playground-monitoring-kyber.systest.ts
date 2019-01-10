@@ -8,10 +8,13 @@ import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
-import { getPriceSource } from '~/contracts/engine/calls/getPriceSource';
 import axios from 'axios';
 
 import * as coinapi from './.coinapi.json';
+import { createPrice, valueIn } from '@melonproject/token-math/price';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+import { createToken } from '@melonproject/token-math/token';
+import { createQuantity, toFixed } from '@melonproject/token-math/quantity';
 
 expect.extend({ toBeTrueWith });
 
@@ -33,8 +36,14 @@ describe('playground', () => {
         const response = await axinst.get('/v1/exchangerate/' + a + '/' + b);
         return response.data;
       } catch (error) {
-        console.error(error);
+        log.debug('CoinAPI Error', error);
       }
+    };
+
+    const tokens = {
+      USD: createToken('USD', null),
+      MLN: getTokenBySymbol(master, 'MLN'),
+      ETH: getTokenBySymbol(master, 'WETH'),
     };
 
     const rates = {
@@ -43,15 +52,26 @@ describe('playground', () => {
       ETHUSD: await getRate('ETH', 'USD'),
     };
 
+    const prices = {
+      MLNETH: createPrice(
+        createQuantity(tokens.MLN, 1),
+        createQuantity(tokens.ETH, rates.MLNETH.rate),
+      ),
+      MLNUSD: createPrice(
+        createQuantity(tokens.MLN, 1),
+        createQuantity(tokens.USD, rates.MLNUSD.rate),
+      ),
+      ETHUSD: createPrice(
+        createQuantity(tokens.ETH, 1),
+        createQuantity(tokens.USD, rates.ETHUSD.rate),
+      ),
+    };
+
+    log.debug('Prices: ', prices);
+
     // high level data
     const amguPrice = await getAmguPrice(master, engine);
     log.debug('Amgu Price: ', amguPrice);
-
-    const priceSource = await getPriceSource(master, engine);
-    log.debug('Price Source: ', priceSource);
-
-    log.debug('Version: ', version);
-    log.debug('Engine: ', engine);
 
     // fund list
 
@@ -69,8 +89,10 @@ describe('playground', () => {
       total: 0,
     };
 
-    let totalAUMETH = 0;
-    let totalAUMUSD = 0;
+    // let totalAUM = {
+    //   ETH: 0,
+    //   USD: 0
+    // };
 
     // loop through funds to get interesting quantities
     for (let i in fundList) {
@@ -92,40 +114,56 @@ describe('playground', () => {
         quoteCurrency = 'ETH';
       }
 
-      if (targetCurrency != quoteCurrency) {
-        if (!rates.hasOwnProperty(quoteCurrency + targetCurrency)) {
-          fundList[i].toETH = await getRate(quoteCurrency, targetCurrency);
-          rates[quoteCurrency + targetCurrency] = fundList[i].toETH;
+      // create price with ETH, get rate (if necessary)
+      let pair = quoteCurrency + targetCurrency;
+      if (!rates.hasOwnProperty(pair)) {
+        if (targetCurrency != quoteCurrency) {
+          rates[pair] = await getRate(quoteCurrency, targetCurrency);
         } else {
-          fundList[i].toETH = rates[quoteCurrency + targetCurrency];
+          rates[pair] = { rate: 1 };
         }
-      } else {
-        fundList[i].toETH = {
-          rate: 1,
-        };
+      }
+      if (!tokens.hasOwnProperty(quoteCurrency)) {
+        tokens[quoteCurrency] = getTokenBySymbol(master, quoteCurrency);
+      }
+      if (!prices.hasOwnProperty(pair)) {
+        prices[pair] = createPrice(
+          createQuantity(tokens[quoteCurrency], 1),
+          createQuantity(tokens[targetCurrency], rates[pair].rate),
+        );
       }
 
-      if (!rates.hasOwnProperty(quoteCurrency + 'USD')) {
-        fundList[i].toUSD = await getRate(quoteCurrency, 'USD');
-        rates[quoteCurrency + 'USD'] = fundList[i].toUSD;
-      } else {
-        fundList[i].toUSD = rates[quoteCurrency + 'USD'];
+      // create price with USD, get rate (if necessary)
+      pair = quoteCurrency + 'USD';
+      if (!rates.hasOwnProperty(pair)) {
+        rates[pair] = await getRate(quoteCurrency, 'USD');
+      }
+      if (!tokens.hasOwnProperty(quoteCurrency)) {
+        tokens[quoteCurrency] = getTokenBySymbol(master, quoteCurrency);
+      }
+      if (!prices.hasOwnProperty(pair)) {
+        prices[pair] = createPrice(
+          createQuantity(tokens[quoteCurrency], 1),
+          createQuantity(tokens.USD, rates[pair].rate),
+        );
       }
 
-      fundList[i].fundNAVETH =
-        (fundList[i].calcs.nav.quantity * fundList[i].toETH.rate) /
-        10 ** fundList[i].calcs.nav.token.decimals;
-      fundList[i].fundNAVUSD =
-        (fundList[i].calcs.nav.quantity * fundList[i].toUSD.rate) /
-        10 ** fundList[i].calcs.nav.token.decimals;
+      log.debug('Quote currency: ', quoteCurrency);
 
-      totalAUMETH += fundList[i].fundNAVETH;
-      totalAUMUSD += fundList[i].fundNAVUSD;
+      // fundList[i].fundNAV =
+      //   {
+      //     ETH: valueIn(prices[quoteCurrency + 'ETH'], fundList[i].calcs.nav),
+      //     USD: valueIn(prices[quoteCurrency + 'USD'], fundList[i].calcs.nav)
+      //   };
+
+      // totalAUM.ETH += fundList[i].fundNAV.ETH;
+      // totalAUM.USD += fundList[i].fundNAV.USD;
 
       fundList[i].numberOfShares =
         fundList[i].calcs.nav.quantity /
         fundList[i].calcs.sharePrice.quote.quantity;
     }
+
     log.debug('Modified fund list', fundList);
 
     // Number of funds (active, inactive, total)
@@ -139,33 +177,33 @@ describe('playground', () => {
     }).length;
     log.debug('Inactive funds: ', numberOfFunds.inActive);
 
-    // AuM in ETH and USD
-    log.debug('AuM in ETH:', totalAUMETH);
-    log.debug('AuM in USD:', totalAUMUSD);
+    // // AuM in ETH and USD
+    // log.debug('AuM in ETH:', totalAUM.ETH);
+    // log.debug('AuM in USD:', totalAUM.USD);
 
-    log.debug(
-      'Amgu price (MLN): ',
-      amguPrice.quantity / 10 ** amguPrice.token.decimals,
-    );
-    log.debug(
-      'Amgu price (ETH): ',
-      (amguPrice.quantity / 10 ** amguPrice.token.decimals) * rates.MLNETH.rate,
-    );
-    log.debug(
-      'Amgu price (USD): ',
-      (amguPrice.quantity / 10 ** amguPrice.token.decimals) * rates.MLNUSD.rate,
-    );
+    // log.debug(
+    //   'Amgu price (MLN): ',
+    //   toFixed(amguPrice, 18)
+    // );
+    // log.debug(
+    //   'Amgu price (ETH): ',
+    //   toFixed(valueIn(prices.MLNETH, amguPrice), 18)
+    // );
+    // log.debug(
+    //   'Amgu price (USD): ',
+    //   toFixed(valueIn(prices.MLNUSD, amguPrice), 2)
+    // );
 
     // Fund Ranking AuM (ETH)
-    const top10Funds = fundList.sort((a, b) => {
-      return a.fundNAVETH < b.fundNAVETH
-        ? 1
-        : a.fundNAVETH > b.fundNAVETH
-        ? -1
-        : 0;
-    });
+    // const top10Funds = fundList.sort((a, b) => {
+    //   return a.fundNAVETH < b.fundNAVETH
+    //     ? 1
+    //     : a.fundNAVETH > b.fundNAVETH
+    //       ? -1
+    //       : 0;
+    // });
 
-    log.debug('Top 10 Funds: ', top10Funds);
+    // log.debug('Top 10 Funds: ', top10Funds);
 
     // random stuff so that everything before runs and logs correctly
     let fundList2 = await getFundDetails(
@@ -174,6 +212,6 @@ describe('playground', () => {
       melonContracts.version,
     );
 
-    log.debug('list 2 : ', fundList2);
+    log.debug('Random fund list at the end : ', fundList2);
   });
 });
