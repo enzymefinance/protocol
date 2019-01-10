@@ -112,7 +112,7 @@ export const deployAllContractsConfig = JSON.parse(`{
   "engine": "DEPLOY",
   "registry": "DEPLOY",
   "version": "DEPLOY",
-  "ranking": "DEPLOY"
+  "ranking": "DEPLOY",
   "matching-market-accessor": "DEPLOY"
 }`);
 
