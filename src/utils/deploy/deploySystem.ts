@@ -46,7 +46,6 @@ import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTe
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
 import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
-import { Address } from 'cluster';
 
 const pkg = require('~/../package.json');
 
@@ -92,7 +91,7 @@ export const deployAllContractsConfig = JSON.parse(`{
     "ethfinexAdapter": "DEPLOY",
     "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
-    "matchingMarketAccessor: "DEPLOY"
+    "matchingMarketAccessor": "DEPLOY",
     "zeroExAdapter": "DEPLOY"
   },
   "policies": {
@@ -115,7 +114,7 @@ export const deployAllContractsConfig = JSON.parse(`{
   "engine": "DEPLOY",
   "registry": "DEPLOY",
   "version": "DEPLOY",
-  "ranking": "DEPLOY",
+  "ranking": "DEPLOY"
 }`);
 
 const getLog = getLogCurried('melon:protocol:utils:deploySystem');
@@ -177,7 +176,7 @@ export const deploySystem = async (
   };
   const log = getLog(environment);
 
-  log.info('Deploying system from:', environment.wallet.address);
+  log.info('Deploying system from:', environment.wallet!.address);
   log.debug('Deploying system', {
     adoptedContracts,
     thirdPartyContracts,
@@ -406,7 +405,7 @@ export const deploySystem = async (
   // tslint:disable:object-literal-sort-keys
   const deployment = {
     meta: {
-      deployer: environment.wallet.address,
+      deployer: environment.wallet!.address,
       timestamp: new Date().toISOString(),
       track,
       version: pkg.version,
