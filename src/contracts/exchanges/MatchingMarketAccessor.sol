@@ -18,7 +18,7 @@ contract MatchingMarketAccessor {
 
         // Iterate over all unsorted offers.
         uint id = market.getFirstUnsortedOffer();
-        while (id != 0) {
+        while (id != 0 && count <= 1000) {
             if (market.isActive(id)) {
                 var (, sellGem, , buyGem) = market.getOffer(ids[i]);
 
@@ -55,11 +55,11 @@ contract MatchingMarketAccessor {
 
         // Iterate over all sorted offers.
         uint id = market.getBestOffer(ERC20(sellAsset), ERC20(buyAsset));
-        while (id != 0) {
+        while (id != 0 && count <= 1000) {
             if (market.isActive(id)) {
                 ids[count++] = id;
             }
-            
+
             // Get the next offer and repeat.
             id = market.getWorseOffer(id);
         }
@@ -84,7 +84,7 @@ contract MatchingMarketAccessor {
         MatchingMarket market = MatchingMarket(targetExchange);
         uint[] memory sIds = getSortedOfferIds(targetExchange, sellAsset, buyAsset);
         uint[] memory uIds = getUnsortedOfferIds(targetExchange, sellAsset, buyAsset);
-        uint[] memory ids = new uint[](sIds.length + uIds.length);
+        uint[] memory ids = new uint[](uIds.length + sIds.length);
         uint[] memory sellQtys = new uint[](ids.length);
         uint[] memory buyQtys = new uint[](ids.length);
 
@@ -97,7 +97,7 @@ contract MatchingMarketAccessor {
         }
 
         for (i = 0; i < ids.length; i++) {
-            var (sellQty, , buyQty,) = market.getOffer(uIds[i]);
+            var (sellQty, , buyQty,) = market.getOffer(ids[i]);
             sellQtys[i] = sellQty;
             buyQtys[i] = buyQty;
         }

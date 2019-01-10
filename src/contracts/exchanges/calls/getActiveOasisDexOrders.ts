@@ -5,9 +5,9 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import * as web3Utils from 'web3-utils';
 
 const prepareArgs = (_, { targetExchange, sellAsset, buyAsset }) => [
-  targetExchange,
-  sellAsset,
-  buyAsset,
+  targetExchange.toString(),
+  sellAsset.toString(),
+  buyAsset.toString(),
 ];
 
 const postProcess = async (environment, result, prepared) => {
