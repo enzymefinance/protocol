@@ -144,6 +144,7 @@ contract FundFactory is AmguConsumer, Factory {
     {
         managersToRoutes[msg.sender].feeManager = feeManagerFactory.createInstance(
             managersToHubs[msg.sender],
+            managersToSettings[msg.sender].denominationAsset,
             managersToSettings[msg.sender].fees,
             managersToSettings[msg.sender].feeRates,
             managersToSettings[msg.sender].feePeriods

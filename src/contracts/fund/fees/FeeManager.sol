@@ -22,17 +22,17 @@ contract FeeManager is DSMath, Spoke {
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
-    constructor(address _hub, address[] _fees, uint[] _rates, uint[] _periods) Spoke(_hub) public {
+    constructor(address _hub, address _denominationAsset, address[] _fees, uint[] _rates, uint[] _periods) Spoke(_hub) public {
         for (uint i = 0; i < _fees.length; i++) {
-            register(_fees[i], _rates[i], _periods[i]);
+            register(_fees[i], _rates[i], _periods[i], _denominationAsset);
         }
     }
 
-    function register(address feeAddress, uint feeRate, uint feePeriod) internal {
+    function register(address feeAddress, uint feeRate, uint feePeriod, address denominationAsset) internal {
         require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
         fees.push(Fee(feeAddress));
-        Fee(feeAddress).initializeForUser(feeRate, feePeriod);  // initialize state
+        Fee(feeAddress).initializeForUser(feeRate, feePeriod, denominationAsset);  // initialize state
         emit FeeRegistration(feeAddress);
     }
 
@@ -77,11 +77,12 @@ contract FeeManager is DSMath, Spoke {
 contract FeeManagerFactory is Factory {
     function createInstance(
         address _hub,
+        address _denominationAsset,
         address[] _fees,
         uint[] _feeRates,
         uint[] _feePeriods
     ) public returns (address) {
-        address feeManager = new FeeManager(_hub, _fees, _feeRates, _feePeriods);
+        address feeManager = new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods);
         childExists[feeManager] = true;
         emit NewInstance(_hub, feeManager);
         return feeManager;

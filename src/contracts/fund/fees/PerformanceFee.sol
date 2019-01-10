@@ -23,13 +23,12 @@ contract PerformanceFee is DSMath, Fee {
     mapping(address => uint) public performanceFeePeriod;
 
     /// @notice Sets initial state of the fee for a user
-    function initializeForUser(uint feeRate, uint feePeriod) external {
+    function initializeForUser(uint feeRate, uint feePeriod, address denominationAsset) external {
         require(lastPayoutTime[msg.sender] == 0, "Already initialized");
-        Hub hub = FeeManager(msg.sender).hub();
-        initialSharePrice[msg.sender] = 10 ** Accounting(hub.accounting()).DEFAULT_SHARE_PRICE();
+        initialSharePrice[msg.sender] = 10 ** ERC20WithFields(denominationAsset).decimals();
         performanceFeeRate[msg.sender] = feeRate;
         performanceFeePeriod[msg.sender] = feePeriod;
-        highWaterMark[msg.sender] = INITIAL_SHARE_PRICE;
+        highWaterMark[msg.sender] = 10 ** ERC20WithFields(denominationAsset).decimals();
         lastPayoutTime[msg.sender] = block.timestamp;
         initializeTime[msg.sender] = block.timestamp;
     }
