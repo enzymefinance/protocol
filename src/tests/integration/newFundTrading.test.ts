@@ -13,6 +13,7 @@ import {
   multiply,
   divide,
   power,
+  toBI,
 } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -158,7 +159,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
 
     // const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
     const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
-    expect(postTotalSupply).toEqual(add(preTotalSupply, wantedShares));
+    expect(postTotalSupply).toEqual(add(toBI(preTotalSupply), wantedShares));
   });
 
   test(`Exchange ${i +
@@ -209,7 +210,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
 
     expect(exchangePostMln).toEqual(exchangePreMln);
     expect(exchangePostEthToken).toEqual(
-      add(exchangePreEthToken, s.trade1.sellQuantity),
+      add(exchangePreEthToken, toBI(s.trade1.sellQuantity)),
     );
     expect(post.fund.weth).toEqual(pre.fund.weth);
     expect(post.deployer.mln).toEqual(pre.deployer.mln);
@@ -246,21 +247,24 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
 
     expect(exchangePostMln).toEqual(exchangePreMln);
     expect(exchangePostEthToken).toEqual(
-      subtract(exchangePreEthToken, s.trade1.sellQuantity),
+      subtract(exchangePreEthToken, toBI(s.trade1.sellQuantity)),
     );
     expect(post.fund.weth).toEqual(
-      subtract(pre.fund.weth, s.trade1.sellQuantity),
+      subtract(pre.fund.weth, toBI(s.trade1.sellQuantity)),
     );
-    expect(post.fund.mln).toEqual(add(pre.fund.mln, s.trade1.buyQuantity));
+    expect(post.fund.mln).toEqual(
+      add(pre.fund.mln, toBI(s.trade1.buyQuantity)),
+    );
     expect(post.deployer.weth).toEqual(
-      add(pre.deployer.weth, s.trade1.sellQuantity),
+      add(pre.deployer.weth, toBI(s.trade1.sellQuantity)),
     );
     expect(post.deployer.mln).toEqual(
-      subtract(pre.deployer.mln, s.trade1.buyQuantity),
+      subtract(pre.deployer.mln, toBI(s.trade1.buyQuantity)),
     );
   });
 
   test(`Exchange ${i +
+    // tslint:disable-next-line:max-line-length
     1}: third party makes order (sell ETH-T for MLN-T),and ETH-T is transferred to exchange`, async () => {
     const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
     const exchangePreMln = new BigInteger(
@@ -292,10 +296,10 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
 
     expect(exchangePostMln).toEqual(exchangePreMln);
     expect(exchangePostEthToken).toEqual(
-      add(exchangePreEthToken, s.trade2.sellQuantity),
+      add(exchangePreEthToken, toBI(s.trade2.sellQuantity)),
     );
     expect(post.deployer.weth).toEqual(
-      subtract(pre.deployer.weth, s.trade2.sellQuantity),
+      subtract(pre.deployer.weth, toBI(s.trade2.sellQuantity)),
     );
     expect(post.deployer.mln).toEqual(pre.deployer.mln);
   });
@@ -341,13 +345,17 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
 
     expect(exchangePostMln).toEqual(exchangePreMln);
     expect(exchangePostEthToken).toEqual(
-      subtract(exchangePreEthToken, s.trade2.sellQuantity),
+      subtract(exchangePreEthToken, toBI(s.trade2.sellQuantity)),
     );
     expect(post.deployer.mln).toEqual(
-      add(pre.deployer.mln, s.trade2.buyQuantity),
+      add(pre.deployer.mln, toBI(s.trade2.buyQuantity)),
     );
-    expect(post.fund.mln).toEqual(subtract(pre.fund.mln, s.trade2.buyQuantity));
-    expect(post.fund.weth).toEqual(add(pre.fund.weth, s.trade2.sellQuantity));
+    expect(post.fund.mln).toEqual(
+      subtract(pre.fund.mln, toBI(s.trade2.buyQuantity)),
+    );
+    expect(post.fund.weth).toEqual(
+      add(pre.fund.weth, toBI(s.trade2.sellQuantity)),
+    );
     expect(post.fund.ether).toEqual(pre.fund.ether);
   });
 

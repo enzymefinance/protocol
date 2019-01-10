@@ -3,6 +3,7 @@ import {
   add,
   subtract,
   power,
+  toBI,
 } from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -160,7 +161,9 @@ test(`Redeem with constraints works as expected`, async () => {
 
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  expect(postTotalSupply).toEqual(subtract(preTotalSupply, investorShares));
+  expect(postTotalSupply).toEqual(
+    subtract(toBI(preTotalSupply), toBI(investorShares)),
+  );
   expect(post.investor.weth).toEqual(add(pre.investor.weth, pre.fund.weth));
   expect(post.fund.weth).toEqual(new BigInteger(0));
   expect(post.fund.mln).toEqual(pre.fund.mln);

@@ -12,7 +12,12 @@ import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder'
 import { orderHashUtils } from '@0x/order-utils';
 import { createQuantity } from '@melonproject/token-math/quantity';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
+import {
+  BigInteger,
+  add,
+  subtract,
+  toBI,
+} from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -196,16 +201,16 @@ test('manager takes order (half the total quantity) through 0x adapter', async (
 
   expect(heldInExchange).toBe('0');
   expect(post.deployer.mln).toEqual(
-    subtract(pre.deployer.mln, s.signedOrder.makerAssetAmount),
+    subtract(pre.deployer.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.fund.weth).toEqual(
-    subtract(pre.fund.weth, s.signedOrder.takerAssetAmount),
+    subtract(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
   expect(post.fund.mln).toEqual(
-    add(pre.fund.mln, s.signedOrder.makerAssetAmount),
+    add(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.deployer.weth).toEqual(
-    add(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+    add(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
 });
 
@@ -285,18 +290,20 @@ test('fund with enough ZRX takes the above order', async () => {
     .call();
 
   expect(heldInExchange).toBe('0');
-  expect(postFundZrx).toEqual(subtract(preFundZrx, s.signedOrder.takerFee));
+  expect(postFundZrx).toEqual(
+    subtract(preFundZrx, toBI(s.signedOrder.takerFee)),
+  );
   expect(post.deployer.mln).toEqual(
-    subtract(pre.deployer.mln, s.signedOrder.makerAssetAmount),
+    subtract(pre.deployer.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.fund.weth).toEqual(
-    subtract(pre.fund.weth, s.signedOrder.takerAssetAmount),
+    subtract(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
   expect(post.fund.mln).toEqual(
-    add(pre.fund.mln, s.signedOrder.makerAssetAmount),
+    add(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.deployer.weth).toEqual(
-    add(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+    add(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
 });
 
@@ -405,16 +412,16 @@ test('Third party takes the order made by the fund', async () => {
 
   expect(result).toBeTruthy();
   expect(post.fund.weth).toEqual(
-    add(pre.fund.weth, s.signedOrder.takerAssetAmount),
+    add(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
   expect(post.fund.mln).toEqual(
-    subtract(pre.fund.mln, s.signedOrder.makerAssetAmount),
+    subtract(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.deployer.weth).toEqual(
-    subtract(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+    subtract(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
   expect(post.deployer.mln).toEqual(
-    add(pre.deployer.mln, s.signedOrder.makerAssetAmount),
+    add(pre.deployer.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
 });
 
