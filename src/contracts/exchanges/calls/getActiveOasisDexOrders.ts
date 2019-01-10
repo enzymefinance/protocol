@@ -9,17 +9,17 @@ const prepareArgs = (_, { targetExchange, sellAsset, buyAsset }) => [
   sellAsset,
   buyAsset,
 ];
+
 const postProcess = async (environment, result, prepared) => {
-  const sellToken = await getToken(environment, prepared.txObject[1]);
-  const buyToken = await getToken(environment, prepared.txObject[2]);
+  const sellToken = await getToken(environment, prepared.params.sellAsset);
+  const buyToken = await getToken(environment, prepared.params.buyAsset);
 
-  const { 0: id, 1: sellQty, 2: buyQty } = result;
-
-  return {
-    id: web3Utils.toDecimal(id),
-    sell: createQuantity(sellToken, sellQty),
-    buy: createQuantity(buyToken, buyQty),
-  };
+  const { 0: ids, 1: sellQtys, 2: buyQtys } = result;
+  return Object.keys(ids).map(key => ({
+    id: web3Utils.toDecimal(ids[key]),
+    sell: createQuantity(sellToken, sellQtys[key]),
+    buy: createQuantity(buyToken, buyQtys[key]),
+  }));
 };
 
 const getActiveOasisDexOrders = callFactory(
