@@ -121,7 +121,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             uint feesInDenominationAsset,  // unclaimed amount
             uint feesInShares,             // unclaimed amount
             uint nav,
-            uint sharePrice
+            uint sharePrice,
+            uint gavPerShareNetManagementFee
         )
     {
         gav = calcGav();
@@ -137,18 +138,26 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         sharePrice = (totalSupply > 0) ?
             valuePerShare(gav, totalSupplyAccountingForFees) :
             DEFAULT_SHARE_PRICE;
-        return (gav, feesInDenominationAsset, feesInShares, nav, sharePrice);
+        gavPerShareNetManagementFee = (totalSupply > 0) ?
+            valuePerShare(gav, add(totalSupply, FeeManager(routes.feeManager).managementFeeAmount())) :
+            DEFAULT_SHARE_PRICE;
+        return (gav, feesInDenominationAsset, feesInShares, nav, sharePrice, gavPerShareNetManagementFee);
     }
 
     function calcSharePrice() returns (uint sharePrice) {
-        (,,,,sharePrice) = performCalculations();
+        (,,,,sharePrice,) = performCalculations();
         return sharePrice;
+    }
+
+    function calcGavPerShareNetManagementFee() returns (uint gavPerShareNetManagementFee) {
+        (,,,,,gavPerShareNetManagementFee) = performCalculations();
+        return gavPerShareNetManagementFee;
     }
 
     function getShareCostInAsset(uint _numShares, address _altAsset) returns (uint) {
         uint costInDenominationAsset = mul(
             _numShares,
-            calcSharePrice()
+            calcGavPerShareNetManagementFee()
         ) / 10 ** SHARES_DECIMALS;
         uint denominationAssetPriceInAltAsset;
         (denominationAssetPriceInAltAsset,) = PriceSourceInterface(routes.priceSource).getReferencePriceInfo(
@@ -174,7 +183,6 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         uint feesInDenomination;
         uint feesInShares;
         uint nav;
-        uint sharePrice;
         (gav, feesInDenomination, feesInShares, nav, ) = performCalculations();
         uint totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();

@@ -67,6 +67,13 @@ contract FeeManager is DSMath, Spoke {
     }
 
     /// @dev Convenience function
+    /// @dev Convention that management fee is 0
+    function managementFeeAmount() public view returns (uint) {
+        if (fees.length < 1) return 0;
+        return fees[0].feeAmount();
+    }
+
+    /// @dev Convenience function
     /// @dev Convention that performace fee is 1
     function performanceFeeAmount() public view returns (uint) {
         if (fees.length < 2) return 0;
