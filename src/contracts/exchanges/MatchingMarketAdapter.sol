@@ -185,7 +185,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
 
     // VIEW METHODS
 
-    function getOrder(address targetExchange, uint id, address makerAsset)
+    function getOrder(address targetExchange, uint id)
         view
         returns (address, address, uint, uint)
     {

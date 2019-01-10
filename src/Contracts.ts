@@ -31,6 +31,7 @@ export enum Contracts {
   ManagementFee = 'ManagementFee',
   MatchingMarket = 'MatchingMarket',
   MatchingMarketAdapter = 'MatchingMarketAdapter',
+  MatchingMarketAccessor = 'MatchingMarketAccessor',
   MaxConcentration = 'MaxConcentration',
   MaxPositions = 'MaxPositions',
   MockAccounting = 'MockAccounting',
@@ -121,6 +122,8 @@ export const requireMap = {
     require('../out/MatchingMarket.abi.json'),
   [Contracts.MatchingMarketAdapter]:
     require('../out/MatchingMarketAdapter.abi.json'),
+  [Contracts.MatchingMarketAccessor]:
+    require('../out/MatchingMarketAccessor.abi.json'),
   [Contracts.KyberNetwork]:
     require('../out/KyberNetwork.abi.json'),
   [Contracts.KyberPriceFeed]:

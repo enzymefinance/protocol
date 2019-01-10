@@ -3,6 +3,7 @@ import * as R from 'ramda';
 import { Exchanges } from '~/Contracts';
 
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
+import { deployMatchingMarketAccessor } from '~/contracts/exchanges/transactions/deployMatchingMarketAccessor';
 import { deployEngine } from '~/contracts/engine/transactions/deployEngine';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
@@ -112,6 +113,7 @@ export const deployAllContractsConfig = JSON.parse(`{
   "registry": "DEPLOY",
   "version": "DEPLOY",
   "ranking": "DEPLOY"
+  "matching-market-accessor": "DEPLOY"
 }`);
 
 const getLog = getLogCurried('melon:protocol:utils:deploySystem');
@@ -278,6 +280,10 @@ export const deploySystem = async (
           address: melonContracts.priceSource,
         });
       },
+    ),
+
+    maybeDeploy(['matching-market-accessor'], environment =>
+      deployMatchingMarketAccessor(environment),
     ),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
