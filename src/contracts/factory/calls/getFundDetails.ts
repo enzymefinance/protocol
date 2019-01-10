@@ -44,7 +44,7 @@ export const getFundDetails = async (
     return {
       address,
       creationTime: new Date(creationTimes[index] * 1000),
-      name: web3Utils.hexToAscii(names[index]),
+      name: web3Utils.toUtf8(names[index]),
       rank: index + 1,
       sharePrice: createPrice(
         createQuantity(fundToken, 1),

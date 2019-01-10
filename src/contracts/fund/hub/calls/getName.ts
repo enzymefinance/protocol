@@ -4,7 +4,7 @@ import { PostProcessCallFunction } from '../../../../utils/solidity/callFactory'
 import * as web3Utils from 'web3-utils';
 
 const postProcess: PostProcessCallFunction = (environment, result) => {
-  return web3Utils.hexToAscii(result);
+  return web3Utils.toUtf8(result);
 };
 
 const getName = callFactoryWithoutParams('name', Contracts.Hub, {
