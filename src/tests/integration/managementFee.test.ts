@@ -235,9 +235,9 @@ test(`Claims fee using triggerRewardAllFees`, async () => {
   const postFundCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
-  const lastConversionCalculations = await s.fund.accounting.methods
-    .atLastAllocation()
-    .call();
+  // const lastConversionCalculations = await s.fund.accounting.methods
+  //   .atLastAllocation()
+  //   .call();
 
   expect(postManagerShares).toEqual(add(preManagerShares, expectedFeeShares));
   expect(postTotalSupply).toEqual(add(preTotalSupply, expectedFeeShares));
