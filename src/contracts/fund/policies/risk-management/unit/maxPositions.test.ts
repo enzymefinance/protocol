@@ -4,7 +4,7 @@ import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import * as Web3Utils from 'web3-utils';
+import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('maxPositions', () => {
   let shared: any = {};
@@ -14,7 +14,6 @@ describe('maxPositions', () => {
     shared = Object.assign(shared, await deployMockSystem(shared.env));
     shared.user = shared.env.wallet.address;
     shared.opts = { from: shared.user, gas: 8000000 };
-    shared.testFunction = Web3Utils.sha3('func()').substring(0, 10);
   });
 
   it('Create and get max', async () => {
@@ -35,7 +34,7 @@ describe('maxPositions', () => {
     const nonQuoteAsset = `${randomAddress()}`;
     const quoteAsset = shared.weth.options.address;
     await shared.policyManager.methods
-      .register(shared.testFunction, policy.options.address)
+      .register(makeOrderSignatureBytes, policy.options.address)
       .send({ from: shared.user, gas: 8000000 });
     await shared.accounting.methods
       .setOwnedAssets([shared.weth.options.address])
@@ -44,7 +43,7 @@ describe('maxPositions', () => {
     await expect(
       shared.policyManager.methods
         .postValidate(
-          shared.testFunction,
+          makeOrderSignatureBytes,
           [emptyAddress, emptyAddress, emptyAddress, quoteAsset, emptyAddress],
           [0, 0, 0],
           '0x0',
@@ -54,7 +53,7 @@ describe('maxPositions', () => {
     await expect(
       shared.policyManager.methods
         .postValidate(
-          shared.testFunction,
+          makeOrderSignatureBytes,
           [
             emptyAddress,
             emptyAddress,
@@ -79,7 +78,7 @@ describe('maxPositions', () => {
     await expect(
       shared.policyManager.methods
         .postValidate(
-          shared.testFunction,
+          makeOrderSignatureBytes,
           [emptyAddress, emptyAddress, emptyAddress, quoteAsset, emptyAddress],
           [0, 0, 0],
           '0x0',
@@ -89,7 +88,7 @@ describe('maxPositions', () => {
     await expect(
       shared.policyManager.methods
         .postValidate(
-          shared.testFunction,
+          makeOrderSignatureBytes,
           [
             emptyAddress,
             emptyAddress,
@@ -115,7 +114,7 @@ describe('maxPositions', () => {
     await expect(
       shared.policyManager.methods
         .postValidate(
-          shared.testFunction,
+          makeOrderSignatureBytes,
           [
             emptyAddress,
             emptyAddress,

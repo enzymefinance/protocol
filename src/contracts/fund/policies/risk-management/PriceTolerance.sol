@@ -4,13 +4,11 @@ import "Hub.sol";
 import "Policy.sol";
 import "MatchingMarketAdapter.sol";
 import "PriceSource.i.sol";
+import "TradingSignatures.sol";
 import "math.sol";
 
-contract PriceTolerance is DSMath, Policy {
+contract PriceTolerance is TradingSignatures, DSMath, Policy {
     uint tolerance;
-
-    bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature
-    bytes4 constant public TAKE_ORDER = 0xe51be6e8; // takeOrderSignature
 
     uint constant MULTIPLIER = 10 ** 16; // to give effect of a percentage
     uint constant DIVISOR = 10 ** 18;

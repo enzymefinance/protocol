@@ -2,9 +2,10 @@ pragma solidity ^0.4.21;
 
 import "Policy.sol";
 import "AddressList.sol";
+import "TradingSignatures.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
-contract AssetWhitelist is AddressList, Policy {
+contract AssetWhitelist is TradingSignatures, AddressList, Policy {
     constructor(address[] _assets) AddressList(_assets) {}
 
     function removeFromWhitelist(address _asset) external auth {
@@ -24,7 +25,8 @@ contract AssetWhitelist is AddressList, Policy {
     }
 
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool) {
-        return isMember(addresses[3]);
+        address incomingToken = (sig == MAKE_ORDER) ? addresses[3] : addresses[2];
+        return isMember(incomingToken);
     }
 
     function position() external view returns (Applied) { return Applied.pre; }
