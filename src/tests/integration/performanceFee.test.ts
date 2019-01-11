@@ -152,10 +152,10 @@ test(`artificially inflate share price by inflating weth`, async () => {
     ),
     add(postTotalSupply, toBI(postFundCalculations.feesInShares)),
   );
-  const sharePriceUsingNav = divide(
-    multiply(new BigInteger(postFundCalculations.nav), precisionUnits),
-    postTotalSupply,
-  );
+  // const sharePriceUsingNav = divide(
+  //   multiply(new BigInteger(postFundCalculations.nav), precisionUnits),
+  //   postTotalSupply,
+  // );
   const sharePriceUsingGav = divide(
     multiply(
       subtract(
