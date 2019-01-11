@@ -9,6 +9,7 @@ import {
   subtract,
   greaterThan,
   BigInteger,
+  toBI,
 } from '@melonproject/token-math/bigInteger';
 import {
   createPrice,
@@ -103,7 +104,7 @@ test('Set amgu and check its usage', async () => {
 
   const postBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
-  const diffQ = subtract(preBalance, postBalance);
+  const diffQ = subtract(toBI(preBalance), toBI(postBalance));
 
   expect(result).toBeTruthy();
   expect(greaterThan(diffQ, new BigInteger(prepared.rawTransaction.gas))).toBe(
