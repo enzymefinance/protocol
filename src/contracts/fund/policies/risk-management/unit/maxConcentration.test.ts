@@ -3,7 +3,7 @@ import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import * as Web3Utils from 'web3-utils';
+import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('maxConcentration', () => {
   let shared: any = {};
@@ -58,7 +58,6 @@ describe('maxConcentration', () => {
       },
     ],
   ])('%s', async (name, trial) => {
-    const uniqueSig = Web3Utils.sha3(name).substring(0, 10);
     const policy = await deploy(shared.env, Contracts.MaxConcentration, [
       trial.max,
     ]);
@@ -67,7 +66,7 @@ describe('maxConcentration', () => {
     expect(await policy.methods.maxConcentration().call()).toBe(trial.max);
 
     await shared.policyManager.methods
-      .register(uniqueSig, policy.options.address)
+      .register(makeOrderSignatureBytes, policy.options.address)
       .send({ from: shared.user });
     await shared.accounting.methods
       .setAssetGAV(trialAsset, trial.asset_gav)
@@ -77,7 +76,7 @@ describe('maxConcentration', () => {
       .send({ from: shared.user });
 
     const evaluate = shared.policyManager.methods.postValidate(
-      uniqueSig,
+      makeOrderSignatureBytes,
       [emptyAddress, emptyAddress, emptyAddress, trialAsset, emptyAddress],
       [0, 0, 0],
       '0x0',

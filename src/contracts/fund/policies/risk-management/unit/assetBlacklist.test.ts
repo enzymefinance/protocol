@@ -4,7 +4,7 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import * as Web3Utils from 'web3-utils';
+import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('assetBlacklist', () => {
   const shared: any = {};
@@ -13,7 +13,6 @@ describe('assetBlacklist', () => {
     shared.env = await initTestEnvironment();
     shared.user = shared.env.wallet.address;
     shared.opts = { from: shared.user, gas: 8000000 };
-    shared.testBlacklist = Web3Utils.sha3('func()').substring(0, 10);
     shared.assetArray = [
       `${randomAddress()}`,
       `${randomAddress()}`,
@@ -65,11 +64,11 @@ describe('assetBlacklist', () => {
     ]);
     const mockAsset = `${randomAddress()}`;
     await contracts.policyManager.methods
-      .register(shared.testBlacklist, blacklist.options.address)
+      .register(makeOrderSignatureBytes, blacklist.options.address)
       .send({ from: shared.user });
 
     const validateArgs = [
-      shared.testBlacklist,
+      makeOrderSignatureBytes,
       [emptyAddress, emptyAddress, emptyAddress, mockAsset, emptyAddress],
       [0, 0, 0],
       '0x0',
