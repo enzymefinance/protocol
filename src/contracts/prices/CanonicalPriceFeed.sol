@@ -27,6 +27,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     uint public INTERVAL;
     mapping (address => bool) public isStakingFeed; // If the Staking Feed has been created through this contract
     HistoricalPrices[] public priceHistory;
+    uint public lastUpdate;
 
     // METHODS
 
@@ -159,6 +160,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
         );
         _updatePrices(ofAssets, newPrices);
+        lastUpdate = block.timestamp;
     }
 
     function pricesToCommit(address[] ofAssets)
@@ -413,4 +415,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             fromAssetPrice
         ) / (10 ** fromAssetDecimals);
     }
+
+    function getLastUpdate() public view returns (uint) { return lastUpdate; }
 }

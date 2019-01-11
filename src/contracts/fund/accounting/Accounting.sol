@@ -161,7 +161,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     /// @dev Anyone can call this
     function triggerRewardAllFees()
         public
-        amguPayable
+        amguPayable(0)
         payable
     {
         updateOwnedAssets();

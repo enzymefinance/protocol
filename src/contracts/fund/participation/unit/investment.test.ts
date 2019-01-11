@@ -34,9 +34,12 @@ describe('investment', () => {
     await shared.hub.methods
       .setShutDownState(false)
       .send({ from: shared.user });
+    await shared.weth.methods
+      .approve(shared.participation.options.address, amount)
+      .send({ from: shared.user });
     await shared.participation.methods
       .requestInvestment(amount, amount, shared.weth.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
 
     await shared.hub.methods.setShutDownState(true).send({ from: shared.user });
 

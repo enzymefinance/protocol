@@ -283,4 +283,6 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             fromAssetPrice
         ) / (10 ** fromAssetDecimals);
     }
+
+    function getLastUpdate() public view returns (uint) { return lastUpdate; }
 }

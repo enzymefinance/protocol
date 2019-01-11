@@ -107,7 +107,7 @@ test(`fund gets ethToken from investment`, async () => {
       `${wantedShares}`,
       s.weth.options.address,
     )
-    .send({ from: s.investor, gas: s.gas });
+    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
 
   await updateTestingPriceFeed(s, s.environment);
   await updateTestingPriceFeed(s, s.environment);

@@ -3,6 +3,7 @@ pragma solidity ^0.4.21;
 /// @notice Must return a value for an asset
 interface PriceSourceInterface {
     function getQuoteAsset() public view returns (address);
+    function getLastUpdate() public view returns (uint);
 
     /// @notice Returns false if asset not applicable, or price not recent
     function hasValidPrice(address) public view returns (bool);

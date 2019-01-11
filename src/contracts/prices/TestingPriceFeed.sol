@@ -16,6 +16,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
 
     address public QUOTE_ASSET;
     uint public updateId;
+    uint public lastUpdate;
     mapping(address => Data) public assetsToPrices;
     mapping(address => uint) public assetsToDecimals;
     bool mockIsRecent = true;
@@ -39,6 +40,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
                 price: _prices[i]
             });
         }
+        lastUpdate = block.timestamp;
     }
 
     function getPrice(address ofAsset) view returns (uint price, uint timestamp) {
@@ -197,5 +199,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
             fromAssetPrice
         ) / (10 ** fromAssetDecimals);
     }
+
+    function getLastUpdate() public view returns (uint) { return lastUpdate; }
 }
 
