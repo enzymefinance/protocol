@@ -1,6 +1,7 @@
 export { approve } from '~/contracts/dependencies/token/transactions/approve';
 export { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 export { constructEnvironment } from '~/utils/environment/constructEnvironment';
+export { Environment } from '~/utils/environment/Environment';
 export { deploySystem } from '~/utils/deploy/deploySystem';
 export { deployAllContractsConfig } from '~/utils/deploy/deploySystem';
 export { deployThirdParty } from '~/utils/deploy/deployThirdParty';
@@ -8,6 +9,9 @@ export {
   executeRequest,
 } from '~/contracts/fund/participation/transactions/executeRequest';
 export { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
+export {
+  getActiveOasisDexOrders,
+} from '~/contracts/exchanges/calls/getActiveOasisDexOrders';
 export {
   getFundHoldings,
 } from '~/contracts/fund/accounting/calls/getFundHoldings';
