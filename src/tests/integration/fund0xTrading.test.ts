@@ -1,3 +1,12 @@
+import { orderHashUtils } from '@0x/order-utils';
+import {
+  createQuantity,
+  BigInteger,
+  add,
+  subtract,
+  toBI,
+} from '@melonproject/token-math';
+
 import {
   makeOrderSignature,
   takeOrderSignature,
@@ -9,15 +18,7 @@ import {
   isValidSignatureOffChain,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
-import { orderHashUtils } from '@0x/order-utils';
-import { createQuantity } from '@melonproject/token-math/quantity';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import {
-  BigInteger,
-  add,
-  subtract,
-  toBI,
-} from '@melonproject/token-math/bigInteger';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';

@@ -1,6 +1,13 @@
+import {
+  Address,
+  BigInteger,
+  createToken,
+  power,
+  TokenInterface,
+} from '@melonproject/token-math';
+
 import { Environment } from '../environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
-import { TokenInterface, createToken } from '@melonproject/token-math/token';
 import {
   deployToken,
   deployWeth,
@@ -17,9 +24,7 @@ import {
   EthfinexEnvironment,
 } from '~/contracts/exchanges/transactions/deployEthfinex';
 import { ensure } from '../guards/ensure';
-import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
-import { BigInteger, power } from '@melonproject/token-math/bigInteger';
 
 export interface ThirdPartyContracts {
   exchanges: {

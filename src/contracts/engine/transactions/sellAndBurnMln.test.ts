@@ -1,14 +1,14 @@
 import {
-  BigInteger,
   add,
-  subtract,
+  BigInteger,
+  createPrice,
+  createQuantity,
   divide,
-  multiply,
   isEqual,
+  multiply,
+  subtract,
   toBI,
-} from '@melonproject/token-math/bigInteger';
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { createPrice } from '@melonproject/token-math/price';
+} from '@melonproject/token-math';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';

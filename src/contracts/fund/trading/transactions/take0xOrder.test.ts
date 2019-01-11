@@ -1,4 +1,4 @@
-import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
+import { createQuantity, isEqual } from '@melonproject/token-math';
 import { take0xOrder } from './take0xOrder';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';

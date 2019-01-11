@@ -1,10 +1,10 @@
-import { createPrice } from '@melonproject/token-math/price';
-import { createQuantity } from '@melonproject/token-math/quantity';
 import {
+  createPrice,
+  createQuantity,
   BigInteger,
   power,
   multiply,
-} from '@melonproject/token-math/bigInteger';
+} from '@melonproject/token-math';
 
 import { Exchanges } from '~/Contracts';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';

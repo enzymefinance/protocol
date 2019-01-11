@@ -9,7 +9,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { LogLevels } from '../environment/Environment';
 import { Environment } from '~/utils/environment/Environment';
-import { BigInteger, power } from '@melonproject/token-math/bigInteger';
+import { BigInteger, power } from '@melonproject/token-math';
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.

@@ -1,10 +1,10 @@
 import {
+  Address,
   greaterThan,
   isEqual,
   toFixed,
   QuantityInterface,
-} from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
+} from '@melonproject/token-math';
 
 import { allowance } from '../calls/allowance';
 import { ensure } from '~/utils/guards/ensure';

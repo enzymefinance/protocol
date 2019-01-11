@@ -1,6 +1,6 @@
+import { Address, QuantityInterface } from '@melonproject/token-math';
+
 import { Environment } from '../environment/Environment';
-import { Address } from '@melonproject/token-math/address';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { getWeb3Options } from '../environment/getWeb3Options';
 
 interface SendEthArgs {

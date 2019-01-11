@@ -1,7 +1,7 @@
 import { Contracts } from '~/Contracts';
 import { callFactory } from '~/utils/solidity/callFactory';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface } from '@melonproject/token-math';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
 const prepareArgs = (environment, { token }: { token: TokenInterface }) => [

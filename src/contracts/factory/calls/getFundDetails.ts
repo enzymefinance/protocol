@@ -1,10 +1,8 @@
-import { Address } from '@melonproject/token-math/address';
+import * as web3Utils from 'web3-utils';
+import { Address, createPrice, createQuantity } from '@melonproject/token-math';
+
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { createPrice } from '@melonproject/token-math/price';
-import * as web3Utils from 'web3-utils';
-
 import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 
 export const getFundDetails = async (

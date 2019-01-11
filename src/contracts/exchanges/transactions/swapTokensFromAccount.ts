@@ -3,7 +3,7 @@ import {
   GuardFunction,
   PrepareArgsFunction,
 } from '~/utils/solidity/transactionFactory';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import { QuantityInterface } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 export interface SwapTokensFromAccountArgs {

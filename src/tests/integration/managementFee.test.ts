@@ -7,7 +7,7 @@ import {
   subtract,
   divide,
   toBI,
-} from '@melonproject/token-math/bigInteger';
+} from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';

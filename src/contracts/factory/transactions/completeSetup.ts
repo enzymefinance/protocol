@@ -4,7 +4,7 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Environment } from '~/utils/environment/Environment';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 
 interface CompleteSetupArgs {}

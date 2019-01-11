@@ -772,10 +772,10 @@
   dependencies:
     source-map-support "^0.5.3"
 
-"@melonproject/token-math@^0.0.31":
-  version "0.0.31"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.31.tgz#f447eee440ca620b3f6ffb3ac17e40179f080745"
-  integrity sha512-RtUbMIZQR77hRHhaTassic/a/uB6lMhP0Jb5DgSZ1TebMai/KzqT1LBVGAdr9V9DEm9utU/jQeIeVVDwClnxWA==
+"@melonproject/token-math@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.1.2.tgz#6130f55d213bf92e0d31289a8fe4f4ce3d53c787"
+  integrity sha512-v4LNKjDwpQFjkbmZG556jZ1mtt8nTDy2k/+qUCaDVrjgjXXyv5+6bv7VsgxV9oLEFvUHz+V1lOLw+FlAgP5MBA==
   dependencies:
     jsbi "^2.0.5"
     web3-utils "^1.0.0-beta.36"

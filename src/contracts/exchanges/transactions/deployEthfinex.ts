@@ -1,7 +1,6 @@
 import * as R from 'ramda';
 
-import { TokenInterface } from '@melonproject/token-math/token';
-import { Address } from '@melonproject/token-math/address';
+import { TokenInterface, Address } from '@melonproject/token-math';
 
 // tslint:disable:max-line-length
 import { Environment } from '~/utils/environment/Environment';
@@ -52,7 +51,7 @@ export const deployEthfinex = async (
   const erc20Proxy = givenErc20Proxy || (await deployErc20Proxy(environment));
 
   const tokenWrappersPromises = tokens.map(token => async () => {
-    if (token.symbol == 'WETH') {
+    if (token.symbol === 'WETH') {
       return deployContract(environment, Contracts.WrapperLockEth, [
         'WETH',
         'WETH token',

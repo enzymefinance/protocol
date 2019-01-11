@@ -4,7 +4,7 @@ import {
   PrepareArgsFunction,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface } from '@melonproject/token-math';
 
 type SetDecimalsArgs = TokenInterface;
 type SetDecimalsResult = boolean;

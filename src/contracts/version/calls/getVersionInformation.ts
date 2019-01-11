@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 
 interface GetVersionInformationArgs {
   version: Address;

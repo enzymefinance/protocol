@@ -1,12 +1,7 @@
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils, assetDataUtils, Order } from '@0x/order-utils';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import {
-  BigInteger,
-  add,
-  subtract,
-  toBI,
-} from '@melonproject/token-math/bigInteger';
+import { BigInteger, add, subtract, toBI } from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';

@@ -1,8 +1,4 @@
-import {
-  isEqual,
-  PriceInterface,
-  toAtomic,
-} from '@melonproject/token-math/price';
+import { isEqual, PriceInterface, toAtomic } from '@melonproject/token-math';
 import { ensureAccountAddress } from '~/utils/environment/ensureAccountAddress';
 import { ensureAddress } from '~/utils/checks/isAddress';
 import { ensure } from '~/utils/guards/ensure';

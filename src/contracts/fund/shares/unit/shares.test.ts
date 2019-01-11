@@ -4,7 +4,7 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { Contracts } from '~/Contracts';
-import { BigInteger } from '@melonproject/token-math/bigInteger';
+import { BigInteger } from '@melonproject/token-math';
 
 describe('shares', () => {
   let shared: any = {};

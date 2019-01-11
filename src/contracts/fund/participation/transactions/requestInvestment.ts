@@ -5,7 +5,7 @@ import {
   PostProcessFunction,
   EnhancedExecute,
 } from '~/utils/solidity/transactionFactory';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import { QuantityInterface } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
