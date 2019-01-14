@@ -47,13 +47,16 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     function update() {
         require(msg.sender == REGISTRY.owner(), "Only registry owner can call");
         address[] memory assets = REGISTRY.getRegisteredAssets();
+        uint[] memory newPrices = new uint[](assets.length);
         for (uint i; i < assets.length; i++) {
             bool isValid;
             uint price;
             (isValid, price) = getKyberPrice(assets[i], QUOTE_ASSET);
-            prices[assets[i]] = isValid ? price : 0;
+            newPrices[i] = isValid ? price : 0;
+            prices[assets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
+        PriceUpdate(assets, newPrices);
     }
 
     // PUBLIC VIEW METHODS

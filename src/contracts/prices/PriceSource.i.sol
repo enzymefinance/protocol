@@ -2,6 +2,8 @@ pragma solidity ^0.4.21;
 
 /// @notice Must return a value for an asset
 interface PriceSourceInterface {
+    event PriceUpdate(address[] token, uint[] price);
+
     function getQuoteAsset() public view returns (address);
     function getLastUpdate() public view returns (uint);
 

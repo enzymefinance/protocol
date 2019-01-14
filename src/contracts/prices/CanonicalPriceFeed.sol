@@ -161,6 +161,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         );
         _updatePrices(ofAssets, newPrices);
         lastUpdate = block.timestamp;
+        PriceUpdate(ofAssets, newPrices);
     }
 
     function pricesToCommit(address[] ofAssets)
