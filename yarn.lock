@@ -772,7 +772,7 @@
   dependencies:
     source-map-support "^0.5.3"
 
-"@melonproject/token-math@^0.1.5":
+"@melonproject/token-math@0.1.5":
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.1.5.tgz#ec8c31355162602f448dc19996e7350da3b4479c"
   integrity sha512-kJ9FkvGXW8DUEp76V8/Rz8ynsuvWEmjRxd5qb81GrYSJhdO8/cUbJBTX8Xk6ljCRJd0vmRwSxNQlNm/XdIF5KA==
