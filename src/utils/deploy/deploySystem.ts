@@ -336,7 +336,7 @@ export const deploySystem = async (
     },
     [Exchanges.Ethfinex]: {
       adapter: melonContracts.adapters.ethfinexAdapter,
-      exchange: thirdPartyContracts.exchanges.ethfinex.exchange,
+      exchange: thirdPartyContracts.exchanges.ethfinex,
       takesCustody: true,
     },
   };
