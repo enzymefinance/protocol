@@ -26,10 +26,10 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
     /// @dev Variable naming to be close to Kyber's naming
     /// @dev For the purpose of PriceTolerance, fillTakerQuantity == takerAssetQuantity = Dest token amount
     /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Src token
-    /// @param orderAddresses [3] Dest token
-    /// @param orderValues [0] Src token amount
-    /// @param orderValues [1] Dest token amount
+    /// @param orderAddresses [2] Maker asset (Dest token)
+    /// @param orderAddresses [3] Taker asset (Src token)
+    /// @param orderValues [0] Maker asset amount (Dest token amount)
+    /// @param orderValues [1] Taker asset amount (Src token amount)
     function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -40,34 +40,32 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         bytes signature
     ) onlyManager notShutDown {
         Hub hub = getHub();
-        require(
-            orderValues[1] == orderValues[6],
-            "fillTakerQuantity must equal takerAssetQuantity"
-        );
 
-        address srcToken = orderAddresses[2];
-        address destToken = orderAddresses[3];
-        uint srcAmount = orderValues[0];
-        uint destAmount = orderValues[1];
+        address makerAsset = orderAddresses[2];
+        address takerAsset = orderAddresses[3];
+        uint makerAssetAmount = orderValues[0];
+        uint takerAssetAmount = orderValues[1];
 
         uint minRate = calcMinRate(
-            srcToken,
-            destToken,
-            srcAmount,
-            destAmount
+            takerAsset,
+            makerAsset,
+            takerAssetAmount,
+            makerAssetAmount
         );
 
-        uint actualReceiveAmount = dispatchSwap(targetExchange, srcToken, srcAmount, destToken, minRate);
+        uint actualReceiveAmount = dispatchSwap(
+            targetExchange, takerAsset, takerAssetAmount, makerAsset, minRate
+        );
 
-        getAccounting().addAssetToOwnedAssets(destToken);
-        getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(destToken);
+        getAccounting().addAssetToOwnedAssets(makerAsset);
+        getAccounting().updateOwnedAssets(); 
+        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),
             Trading.UpdateType.take,
-            [destToken, srcToken],
-            [actualReceiveAmount, srcAmount, srcAmount]
+            [makerAsset, takerAsset],
+            [actualReceiveAmount, takerAssetAmount, takerAssetAmount]
         );
     }
 

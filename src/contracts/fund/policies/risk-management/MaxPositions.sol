@@ -4,8 +4,9 @@ import "PriceSource.i.sol";
 import "Accounting.sol";
 import "Policy.sol";
 import "Trading.sol";
+import "TradingSignatures.sol";
 
-contract MaxPositions is Policy {
+contract MaxPositions is TradingSignatures, Policy {
     uint public maxPositions;
 
     /// @dev _maxPositions = 10 means max 10 different non-quote asset tokens
@@ -20,7 +21,8 @@ contract MaxPositions is Policy {
         address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
         address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
         // Always allow a trade INTO the quote asset
-        if (quoteAsset == addresses[3]) { return true; }
+        address incomingToken = (sig == MAKE_ORDER) ? addresses[3] : addresses[2];
+        if (quoteAsset == incomingToken) { return true; }
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
         return accounting.getOwnedAssetsLength() <= maxPositions;
     }

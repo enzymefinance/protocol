@@ -16,7 +16,7 @@ contract MockFee is Fee {
         return fee;
     }
 
-    function initializeForUser(uint feeRate, uint feePeriod) external {
+    function initializeForUser(uint feeRate, uint feePeriod, address denominationAsset) external {
         fee = 0;
         FEE_RATE = feeRate;
         FEE_PERIOD = feePeriod;

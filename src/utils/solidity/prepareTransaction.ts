@@ -6,6 +6,7 @@ import { ensure } from '../guards/ensure';
 
 export interface Options {
   amguPayable?: boolean;
+  incentive?: boolean;
   skipGuards?: boolean;
   skipGasEstimation?: boolean;
   from?: string;
