@@ -3,6 +3,7 @@ import * as R from 'ramda';
 import { Exchanges } from '~/Contracts';
 
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
+import { deployMatchingMarketAccessor } from '~/contracts/exchanges/transactions/deployMatchingMarketAccessor';
 import { deployEngine } from '~/contracts/engine/transactions/deployEngine';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
@@ -68,6 +69,7 @@ export interface MelonContracts {
     kyberAdapter: Address;
     zeroExAdapter: Address;
     matchingMarketAdapter: Address;
+    matchingMarketAccessor: Address;
     ethfinexAdapter: Address;
   };
   policies: {
@@ -89,6 +91,7 @@ export const deployAllContractsConfig = JSON.parse(`{
     "ethfinexAdapter": "DEPLOY",
     "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
+    "matchingMarketAccessor": "DEPLOY",
     "zeroExAdapter": "DEPLOY"
   },
   "policies": {
@@ -173,7 +176,7 @@ export const deploySystem = async (
   };
   const log = getLog(environment);
 
-  log.info('Deploying system from:', environment.wallet.address);
+  log.info('Deploying system from:', environment.wallet!.address);
   log.debug('Deploying system', {
     adoptedContracts,
     thirdPartyContracts,
@@ -193,6 +196,9 @@ export const deploySystem = async (
     ),
     maybeDeploy(['adapters', 'matchingMarketAdapter'], environment =>
       deployMatchingMarketAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'matchingMarketAccessor'], environment =>
+      deployMatchingMarketAccessor(environment),
     ),
     maybeDeploy(['adapters', 'zeroExAdapter'], environment =>
       deploy0xAdapter(environment),
@@ -279,6 +285,7 @@ export const deploySystem = async (
         });
       },
     ),
+
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
@@ -398,7 +405,7 @@ export const deploySystem = async (
   // tslint:disable:object-literal-sort-keys
   const deployment = {
     meta: {
-      deployer: environment.wallet.address,
+      deployer: environment.wallet!.address,
       timestamp: new Date().toISOString(),
       track,
       version: pkg.version,
