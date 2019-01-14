@@ -107,7 +107,6 @@ test(`fund gets non fund denomination asset from investment`, async () => {
   await s.weth.methods
     .approve(s.fund.participation.options.address, wantedShares)
     .send({ from: s.investor, gas: s.gas });
-  console.log(s.engine.options.address);
   await s.fund.participation.methods
     .requestInvestment(
       `${wantedShares}`,

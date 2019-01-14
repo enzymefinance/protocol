@@ -151,9 +151,14 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             lockedAssetsForInvestor[request.investmentAsset][msg.sender],
             request.investmentAmount
         );
+        ERC20 investmentAsset = ERC20(request.investmentAsset);
+        uint investmentAmount = request.investmentAmount;
         delete requests[msg.sender];
         msg.sender.transfer(REQUEST_INCENTIVE);
-        ERC20(request.investmentAsset).transfer(msg.sender, request.investmentAmount);
+        require(
+            investmentAsset.transfer(msg.sender, investmentAmount),
+            "InvestmentAsset refund failed"
+        );
 
         emit CancelRequest(msg.sender);
     }

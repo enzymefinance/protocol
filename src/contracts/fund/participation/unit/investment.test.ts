@@ -2,6 +2,9 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { Contracts } from '~/Contracts';
+import { increaseTime } from '~/utils/evm/increaseTime';
+
+const weekInSeconds = 60 * 60 * 24 * 7;
 
 describe('investment', () => {
   let shared: any = {};
@@ -52,9 +55,10 @@ describe('investment', () => {
     await shared.hub.methods
       .setShutDownState(false)
       .send({ from: shared.user });
+    await increaseTime(shared.env, weekInSeconds);
     await shared.participation.methods
       .cancelRequest()
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
   });
 
   it('Request must exist to execute', async () => {
@@ -72,13 +76,18 @@ describe('investment', () => {
 
     await shared.participation.methods
       .requestInvestment(0, 0, shared.weth.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
 
     await expect(
       shared.participation.methods
         .executeRequestFor(shared.user)
         .send({ from: shared.user, gas: 8000000 }),
     ).rejects.toThrow(errorMessage);
+
+    await increaseTime(shared.env, weekInSeconds);
+    await shared.participation.methods
+      .cancelRequest()
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
   });
 
   it('Need fresh price to execute request', async () => {
@@ -87,9 +96,12 @@ describe('investment', () => {
     await shared.priceSource.methods
       .setAlwaysValid(false)
       .send({ from: shared.user });
+    await shared.weth.methods
+      .approve(shared.participation.options.address, amount)
+      .send({ from: shared.user });
     await shared.participation.methods
       .requestInvestment(amount, amount, shared.weth.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
     const requestExists = await shared.participation.methods
       .hasRequest(shared.user)
       .call();
@@ -104,14 +116,16 @@ describe('investment', () => {
     await shared.priceSource.methods
       .setAlwaysValid(true)
       .send({ from: shared.user });
+    await increaseTime(shared.env, weekInSeconds);
     await shared.participation.methods
       .cancelRequest()
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
   });
 
   it('Asset must be permitted', async () => {
     const errorMessage = 'Investment not allowed in this asset';
     const asset = `${randomAddress()}`;
+    const amount = '100';
     const allowed = await shared.participation.methods
       .investAllowed(asset)
       .call();
@@ -120,23 +134,9 @@ describe('investment', () => {
 
     await expect(
       shared.participation.methods
-        .requestInvestment('100', '100', asset)
-        .send({ from: shared.user, gas: 8000000 }),
+        .requestInvestment(amount, amount, asset)
+        .send({ from: shared.user, gas: 8000000, value: 10 ** 16 }),
     ).rejects.toThrow(errorMessage);
-
-    await shared.participation.methods
-      .enableInvestment([asset])
-      .send({ from: shared.user });
-
-    await expect(
-      shared.participation.methods
-        .requestInvestment('100', '100', asset)
-        .send({ from: shared.user, gas: 8000000 }),
-    ).resolves.not.toThrow(errorMessage);
-
-    await shared.participation.methods
-      .cancelRequest()
-      .send({ from: shared.user, gas: 8000000 });
   });
 
   it('Invested amount must be above price minimum', async () => {
@@ -148,19 +148,23 @@ describe('investment', () => {
         [price, price],
       )
       .send({ from: shared.user, gas: 8000000 });
+    await shared.weth.methods
+      .approve(shared.participation.options.address, '1000')
+      .send({ from: shared.user });
     await shared.participation.methods
       .requestInvestment('1000', '1', shared.weth.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
 
     await expect(
       shared.participation.methods
         .executeRequestFor(shared.user)
-        .send({ from: shared.user, gas: 8000000 }),
+        .send({ from: shared.user, gas: 8000000, value: 10 ** 16 }),
     ).rejects.toThrow(errorMessage);
 
+    await increaseTime(shared.env, weekInSeconds);
     await shared.participation.methods
       .cancelRequest()
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
   });
 
   it('Basic investment works', async () => {
@@ -178,10 +182,10 @@ describe('investment', () => {
         investAmount,
         shared.weth.options.address,
       )
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
     await shared.participation.methods
       .executeRequestFor(shared.user)
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: shared.user, gas: 8000000, value: 10 ** 16 });
     const postVaultWeth = await shared.weth.methods
       .balanceOf(shared.vault.options.address)
       .call();
