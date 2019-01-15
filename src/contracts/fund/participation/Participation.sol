@@ -28,6 +28,9 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
     mapping (address => mapping (address => uint)) public lockedAssetsForInvestor;
+    mapping (address => bool) public hasInvested; // for information purposes only (read)
+
+    address[] public historicalInvestors; // for information purposes only (read)
 
     constructor(address _hub, address[] _defaultAssets, address _registry) Spoke(_hub) {
         routes.registry = _registry;
@@ -215,11 +218,14 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
 
         lockedAssetsForInvestor[request.investmentAsset][msg.sender] = 0;
-        delete requests[requestOwner];
         msg.sender.transfer(REQUEST_INCENTIVE);
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
+
+        if (!hasInvested[request.investmentAsset]) {
+            historicalInvestors.push(requestOwner);
+        }
 
         emit RequestExecution(
             requestOwner,
@@ -228,6 +234,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             request.investmentAmount,
             request.requestedShares
         );
+        delete requests[requestOwner];
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
@@ -332,6 +339,10 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             ownershipQuantities,
             remainingShareQuantity
         );
+    }
+
+    function getHistoricalInvestors() public view returns (address[]) {
+        return historicalInvestors;
     }
 }
 
