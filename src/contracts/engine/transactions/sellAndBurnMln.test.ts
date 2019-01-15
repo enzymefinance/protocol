@@ -1,13 +1,14 @@
 import {
-  BigInteger,
   add,
-  subtract,
+  BigInteger,
+  createPrice,
+  createQuantity,
   divide,
-  multiply,
   isEqual,
-} from '@melonproject/token-math/bigInteger';
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { createPrice } from '@melonproject/token-math/price';
+  multiply,
+  subtract,
+  toBI,
+} from '@melonproject/token-math';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -259,18 +260,22 @@ describe('sellAndBurnMln', () => {
     );
     const postMlnTotalSupply = await shared.mln.methods.totalSupply().call();
 
-    expect(burnerPostMln).toBe(`${subtract(burnerPreMln, sendMln.quantity)}`);
+    expect(burnerPostMln).toBe(
+      `${subtract(toBI(burnerPreMln), sendMln.quantity)}`,
+    );
     expect(burnerPostEth).toBe(
       `${subtract(
-        add(burnerPreEth, ethPurchased),
-        multiply(gasUsed, shared.env.options.gasPrice),
+        add(toBI(burnerPreEth), toBI(ethPurchased)),
+        multiply(toBI(gasUsed), toBI(shared.env.options.gasPrice)),
       )}`,
     );
     expect(enginePostMln).toBe(enginePostMln);
     expect(`${enginePostMln}`).toBe('0');
-    expect(enginePostEth).toBe(`${subtract(enginePreEth, ethPurchased)}`);
+    expect(enginePostEth).toBe(
+      `${subtract(toBI(enginePreEth), toBI(ethPurchased))}`,
+    );
     expect(postMlnTotalSupply).toBe(
-      `${subtract(preMlnTotalSupply, sendMln.quantity)}`,
+      `${subtract(toBI(preMlnTotalSupply), sendMln.quantity)}`,
     );
   });
 

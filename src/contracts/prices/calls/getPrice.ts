@@ -1,6 +1,11 @@
-import { createPrice, PriceInterface } from '@melonproject/token-math/price';
-import { appendDecimals, TokenInterface } from '@melonproject/token-math/token';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import {
+  appendDecimals,
+  createPrice,
+  createQuantity,
+  PriceInterface,
+  TokenInterface,
+} from '@melonproject/token-math';
+
 import { Environment } from '~/utils/environment/Environment';
 import { getQuoteToken } from '../calls/getQuoteToken';
 import { getContract } from '~/utils/solidity/getContract';

@@ -5,7 +5,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { randomAddress } from '~/utils/helpers/randomAddress';
-import { add, isEqual, BigInteger } from '@melonproject/token-math/bigInteger';
+import { add, isEqual, BigInteger } from '@melonproject/token-math';
 
 describe('trading', () => {
   let shared: any = {};

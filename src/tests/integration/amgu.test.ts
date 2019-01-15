@@ -1,19 +1,19 @@
+import {
+  BigInteger,
+  createPrice,
+  createQuantity,
+  greaterThan,
+  isEqual,
+  subtract,
+  toBI,
+} from '@melonproject/token-math';
+
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
 import { getPrices } from '~/contracts/prices/calls/getPrices';
 import { update } from '~/contracts/prices/transactions/update';
-import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
-import {
-  subtract,
-  greaterThan,
-  BigInteger,
-} from '@melonproject/token-math/bigInteger';
-import {
-  createPrice,
-  isEqual as isEqualPrice,
-} from '@melonproject/token-math/price';
+import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import { signTransaction } from '~/utils/environment/signTransaction';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { Environment, Tracks } from '~/utils/environment/Environment';
@@ -77,7 +77,7 @@ test('Set amgu and check its usage', async () => {
     const [price] = await getPrices(shared.env, melonContracts.priceSource, [
       baseToken,
     ]);
-    expect(isEqualPrice(price, newPrice)).toBe(true);
+    expect(isEqual(price, newPrice)).toBe(true);
   }
 
   const prepared = await beginSetup.prepare(
@@ -103,7 +103,7 @@ test('Set amgu and check its usage', async () => {
 
   const postBalance = await shared.env.eth.getBalance(shared.accounts[0]);
 
-  const diffQ = subtract(preBalance, postBalance);
+  const diffQ = subtract(toBI(preBalance), toBI(postBalance));
 
   expect(result).toBeTruthy();
   expect(greaterThan(diffQ, new BigInteger(prepared.rawTransaction.gas))).toBe(

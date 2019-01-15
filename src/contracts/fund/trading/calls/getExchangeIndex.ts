@@ -1,7 +1,7 @@
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts, Exchanges } from '~/Contracts';
 import { ensure } from '~/utils/guards/ensure';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { Environment } from '~/utils/environment/Environment';
 
 const getExchangeIndex = async (

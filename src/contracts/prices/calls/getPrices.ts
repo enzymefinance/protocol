@@ -1,12 +1,17 @@
 import * as R from 'ramda';
-import { createPrice, PriceInterface } from '@melonproject/token-math/price';
-import { appendDecimals, TokenInterface } from '@melonproject/token-math/token';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import {
+  Address,
+  createQuantity,
+  createPrice,
+  PriceInterface,
+  appendDecimals,
+  TokenInterface,
+} from '@melonproject/token-math';
+
 import { Environment } from '~/utils/environment/Environment';
 import { getQuoteToken } from '../calls/getQuoteToken';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { Address } from '@melonproject/token-math/address';
 
 export const getPrices = async (
   environment: Environment,

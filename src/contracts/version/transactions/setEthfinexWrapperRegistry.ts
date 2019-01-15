@@ -3,7 +3,7 @@ import {
   EnhancedExecute,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 
 interface SetEthfinexWrapperRegistryArgs {
   address: Address;

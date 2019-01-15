@@ -1,10 +1,9 @@
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface, Address } from '@melonproject/token-math';
 
 // tslint:disable:max-line-length
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { Address } from '@melonproject/token-math/address';
 import { deployErc20Proxy } from './deployErc20Proxy';
 import { addAuthorizedAddress } from '../third-party/0x/transactions/addAuthorizedAddress';
 import { registerAssetProxy } from '../third-party/0x/transactions/registerAssetProxy';

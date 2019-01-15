@@ -1,7 +1,7 @@
+import { Address, createQuantity } from '@melonproject/token-math';
+
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { Address } from '@melonproject/token-math/address';
-import { createQuantity } from '@melonproject/token-math/quantity';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { signTransaction } from '../environment/signTransaction';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';

@@ -1,7 +1,7 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math';
 
 const postProcess = async (environment, result, prepared) => {
   const engineAddress = prepared.contractAddress;

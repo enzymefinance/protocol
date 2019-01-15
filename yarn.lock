@@ -772,12 +772,12 @@
   dependencies:
     source-map-support "^0.5.3"
 
-"@melonproject/token-math@^0.0.30":
-  version "0.0.30"
-  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.0.30.tgz#24b471e1a53e1fbd3e3529aed013e0fd29874fd2"
-  integrity sha512-wXcATYTLSkCf+HuCyxwWToYTtgU6pfXjsw0eBS9zFIwRBMlzqnToN8YY8VKrcyiIMpq5nLN1M8YicalBOgXRiA==
+"@melonproject/token-math@0.1.5":
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/@melonproject/token-math/-/token-math-0.1.5.tgz#ec8c31355162602f448dc19996e7350da3b4479c"
+  integrity sha512-kJ9FkvGXW8DUEp76V8/Rz8ynsuvWEmjRxd5qb81GrYSJhdO8/cUbJBTX8Xk6ljCRJd0vmRwSxNQlNm/XdIF5KA==
   dependencies:
-    bn.js "^4.11.8"
+    jsbi "^2.0.5"
     web3-utils "^1.0.0-beta.36"
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
@@ -4794,6 +4794,11 @@ js-yaml@^3.10.0, js-yaml@^3.12.0, js-yaml@^3.7.0, js-yaml@^3.9.0, js-yaml@^3.9.1
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
+
+jsbi@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/jsbi/-/jsbi-2.0.5.tgz#82589011da87dc59b4b549d94dcef51a9155f6fe"
+  integrity sha512-TzO/62Hxeb26QMb4IGlI/5X+QLr9Uqp1FPkwp2+KOICW+Q+vSuFj61c8pkT6wAns4WcK56X7CmSHhJeDGWOqxQ==
 
 jsbn@~0.1.0:
   version "0.1.1"

@@ -1,4 +1,4 @@
-import { toFixed } from '@melonproject/token-math/price';
+import { toFixed } from '@melonproject/token-math';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import {

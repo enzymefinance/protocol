@@ -7,7 +7,7 @@ import {
   createQuantity,
   greaterThan,
   QuantityInterface,
-} from '@melonproject/token-math/quantity';
+} from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';

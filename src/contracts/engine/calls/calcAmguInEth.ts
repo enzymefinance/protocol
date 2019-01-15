@@ -1,7 +1,11 @@
-import { Address } from '@melonproject/token-math/address';
-import { multiply, BigInteger } from '@melonproject/token-math/bigInteger';
-import { toAtomic } from '@melonproject/token-math/price';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import {
+  Address,
+  multiply,
+  BigInteger,
+  toAtomic,
+  createQuantity,
+} from '@melonproject/token-math';
+
 import { getEngine } from '~/contracts/version/calls/getEngine';
 import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import { getPrices } from '~/contracts/prices/calls/getPrices';

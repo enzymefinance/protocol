@@ -1,13 +1,15 @@
 import * as R from 'ramda';
 import web3EthAbi from 'web3-eth-abi';
 import {
-  QuantityInterface,
+  add,
+  Address,
   createQuantity,
   greaterThan,
+  multiply,
+  QuantityInterface,
+  toBI,
   toFixed,
-} from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
-import { add, multiply, toBI } from '@melonproject/token-math/bigInteger';
+} from '@melonproject/token-math';
 
 import { Contracts, eventSignatureABIMap } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';

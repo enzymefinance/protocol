@@ -119,9 +119,10 @@ It is recommended to change the version in package.json before changing the code
 1. Change the version in package.json (`yarn version`)
 2. Do the code changes
 3. Check if they run (`yarn test`)
-4. Deploy the contracts to Kovan/Mainnet (`yarn compile && yarn deploy ...`)
+4. Deploy the contracts to Kovan/Mainnet (`yarn build && yarn compile && yarn deploy ...`)
 5. Run the system tests (`yarn test:system`)
-6. Publish the package to npm (`yarn build && yarn publish`)
+6. Publish the package to npm (`yarn publish`) and when asked for "New version", put in the same version as in step 1.
+7. Run `git tag v0.X` and `git push --tags`
 
 ... repeat
 

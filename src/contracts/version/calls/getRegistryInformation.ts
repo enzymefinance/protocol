@@ -1,7 +1,7 @@
+import { Address, TokenInterface } from '@melonproject/token-math';
+
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { Address } from '@melonproject/token-math/address';
-import { TokenInterface } from '@melonproject/token-math/token';
 import { getContract } from '~/utils/solidity/getContract';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';

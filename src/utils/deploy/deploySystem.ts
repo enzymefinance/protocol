@@ -29,7 +29,7 @@ import {
 } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
