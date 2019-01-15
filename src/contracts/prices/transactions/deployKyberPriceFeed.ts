@@ -1,10 +1,12 @@
-import { TokenInterface } from '@melonproject/token-math/token';
-import { Address } from '@melonproject/token-math/address';
+import {
+  Address,
+  createQuantity,
+  TokenInterface,
+} from '@melonproject/token-math';
 
 import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
-import { createQuantity } from '@melonproject/token-math/quantity';
 
 interface DeployKyberPriceFeed {
   registry: Address;

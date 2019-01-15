@@ -1,5 +1,5 @@
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { createPrice, isEqual } from '@melonproject/token-math/price';
+import { createPrice, isEqual, createQuantity } from '@melonproject/token-math';
+
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { update } from './update';
 import { deployTestingPriceFeed } from './deployTestingPriceFeed';

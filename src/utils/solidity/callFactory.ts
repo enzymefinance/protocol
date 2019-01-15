@@ -4,7 +4,7 @@ import { Environment, LogLevels } from '../environment/Environment';
 import { getContract } from './getContract';
 import { TransactionArgs } from './transactionFactory';
 import { ensure } from '../guards/ensure';
-import { isAddress } from '@melonproject/token-math/address';
+import { isAddress } from '@melonproject/token-math';
 
 export type PrepareCallArgsFunction = (
   environment: Environment,

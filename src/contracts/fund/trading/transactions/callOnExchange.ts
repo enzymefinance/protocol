@@ -1,5 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import { Address, QuantityInterface } from '@melonproject/token-math';
 
 import {
   transactionFactory,
@@ -8,7 +7,6 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
-// tslint:disable-next-line:max-line-length
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 
 export interface CallOnExchangeArgs {

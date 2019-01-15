@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import { toBI, multiply, subtract } from '@melonproject/token-math/bigInteger';
+import { toBI, multiply, subtract } from '@melonproject/token-math';
 import { defaultOptions } from '~/utils/environment/constructEnvironment';
 import { Contracts } from '~/Contracts';
 import { ensure } from '../guards/ensure';

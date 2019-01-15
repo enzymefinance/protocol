@@ -3,10 +3,10 @@ import { assetDataUtils } from '@0x/order-utils';
 import { OrderStatus } from '@0x/contract-wrappers';
 import { SignedOrder } from '@0x/types';
 import {
-  QuantityInterface,
   createQuantity,
-} from '@melonproject/token-math/quantity';
-import { TokenInterface } from '@melonproject/token-math/token';
+  QuantityInterface,
+  TokenInterface,
+} from '@melonproject/token-math';
 
 import { Contracts } from '~/Contracts';
 import {

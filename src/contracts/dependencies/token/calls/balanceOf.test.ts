@@ -2,8 +2,8 @@ import {
   createQuantity,
   isEqual,
   QuantityInterface,
-} from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
+  Address,
+} from '@melonproject/token-math';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { balanceOf } from '../calls/balanceOf';
 import { getToken } from '../calls/getToken';

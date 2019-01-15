@@ -6,9 +6,11 @@ const readline = require('readline');
 const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
-const { getPrice } = require('@melonproject/token-math/price');
-const { createQuantity } = require('@melonproject/token-math/quantity');
-const { createToken } = require('@melonproject/token-math/token');
+const {
+  getPrice,
+  createQuantity,
+  createToken,
+} = require('@melonproject/token-math');
 
 const checkPeerCount = environment => {
   let lastPeerCount;
@@ -166,10 +168,7 @@ program
     '-P, --private-key <string>',
     'Load the deployer account from a private key',
   )
-  .option(
-    '-T, --track <string>',
-    'Specify a track',
-  )
+  .option('-T, --track <string>', 'Specify a track')
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];

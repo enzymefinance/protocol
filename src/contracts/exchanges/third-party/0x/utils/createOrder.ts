@@ -15,14 +15,17 @@ import {
   orderHashUtils,
 } from '@0x/order-utils';
 import { BigNumber } from 'bignumber.js';
-import { BigInteger, add, toBI } from '@melonproject/token-math/bigInteger';
 import { Order } from '@0x/types';
 import { constants } from '@0x/order-utils/lib/src/constants';
-import { Address } from '@melonproject/token-math/address';
 import {
-  QuantityInterface,
+  add,
+  Address,
+  BigInteger,
   createQuantity,
-} from '@melonproject/token-math/quantity';
+  QuantityInterface,
+  toBI,
+} from '@melonproject/token-math';
+
 import { getLatestBlock } from '~/utils/evm';
 import { getAssetProxy } from '../calls/getAssetProxy';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';

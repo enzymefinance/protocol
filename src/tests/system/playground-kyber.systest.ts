@@ -4,7 +4,8 @@ import {
   createQuantity,
   greaterThan,
   isEqual,
-} from '@melonproject/token-math/quantity';
+  toFixed,
+} from '@melonproject/token-math';
 import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
 
@@ -22,7 +23,6 @@ import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
-import { toFixed } from '@melonproject/token-math/price';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 import { cancelOasisDexOrder } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 import { shutDownFund } from '~/contracts/fund/hub/transactions/shutDownFund';

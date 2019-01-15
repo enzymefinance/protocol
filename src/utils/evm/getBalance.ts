@@ -1,8 +1,5 @@
 import { Environment } from '../environment/Environment';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
+import { QuantityInterface, createQuantity } from '@melonproject/token-math';
 
 const getBalance = async (
   environment: Environment,

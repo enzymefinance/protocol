@@ -1,9 +1,9 @@
 import {
+  createPrice,
   createQuantity,
   greaterThan,
   isEqual,
-} from '@melonproject/token-math/quantity';
-import { createPrice } from '@melonproject/token-math/price';
+} from '@melonproject/token-math';
 
 import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';

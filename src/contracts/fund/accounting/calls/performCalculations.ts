@@ -4,11 +4,12 @@ import { getDenominationAsset } from './getDenominationAsset';
 import {
   createQuantity,
   QuantityInterface,
-} from '@melonproject/token-math/quantity';
+  createPrice,
+  PriceInterface,
+} from '@melonproject/token-math';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '../../hub/calls/getRoutes';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { createPrice, PriceInterface } from '@melonproject/token-math/price';
 
 interface PerformCalculationsResult {
   gav: QuantityInterface;

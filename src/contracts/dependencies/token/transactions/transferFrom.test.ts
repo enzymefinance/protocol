@@ -1,5 +1,5 @@
-import { createQuantity } from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
+import { createQuantity, Address } from '@melonproject/token-math';
+
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { approve } from '../transactions/approve';
 import { transferFrom } from '../transactions/transferFrom';

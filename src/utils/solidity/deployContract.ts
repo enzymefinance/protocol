@@ -1,12 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { toBI, greaterThan } from '@melonproject/token-math/bigInteger';
+import { Address, toBI, greaterThan } from '@melonproject/token-math';
+
 import { solidityCompileTarget } from '~/settings';
 import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
 import { TransactionArgs } from './transactionFactory';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
-import { Address } from '@melonproject/token-math/address';
 import { ensure } from '~/utils/guards/ensure';
 import { signTransaction } from '../environment/signTransaction';
 import { EnsureError } from '../guards/EnsureError';
