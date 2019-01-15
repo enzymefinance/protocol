@@ -23,6 +23,7 @@ contract Engine is DSMath, DSAuth {
     uint public MLN_DECIMALS = 18;
     uint public amguPrice;
     uint public totalEtherConsumed;
+    uint public totalAmguConsumed;
     uint public totalMlnBurned;
 
     constructor(uint _delay) {
@@ -64,6 +65,9 @@ contract Engine is DSMath, DSAuth {
             "Sender must be a fund or the factory"
         );
         totalEtherConsumed = add(totalEtherConsumed, msg.value);
+        if (amguPrice > 0) {
+            totalAmguConsumed = add(totalAmguConsumed, msg.value / amguPrice);
+        }
         frozenEther = add(frozenEther, msg.value);
     }
 
