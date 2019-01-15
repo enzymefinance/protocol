@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { isAddress } from '~/utils/checks/isAddress';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 import { getContract } from '~/utils/solidity/getContract';

@@ -1,7 +1,7 @@
 import * as R from 'ramda';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { Address, TokenInterface } from '@melonproject/token-math';
+
 import { Environment } from './Environment';
-import { Address } from '@melonproject/token-math/address';
 
 export const getTokenByAddress = (
   environment: Environment,

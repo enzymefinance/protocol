@@ -1,10 +1,9 @@
 import * as web3Utils from 'web3-utils';
 import { assetDataUtils } from '@0x/order-utils';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity, TokenInterface } from '@melonproject/token-math';
 
 import { Contracts, Exchanges } from '~/Contracts';
 
-// tslint:disable:max-line-length
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { NULL_ADDRESS } from './take0xOrder';
 import {
@@ -19,8 +18,6 @@ import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/e
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { Make0xOrderArgs } from './make0xOrder';
 import { getOriginalToken } from '~/contracts/exchanges/third-party/ethfinex/calls/getOriginalToken';
-import { TokenInterface } from '@melonproject/token-math/token';
-// tslint:enable:max-line-length
 
 // The order needs to be signed by the manager
 

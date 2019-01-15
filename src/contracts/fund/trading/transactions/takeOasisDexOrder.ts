@@ -1,3 +1,6 @@
+import { QuantityInterface, Address } from '@melonproject/token-math';
+import * as web3Utils from 'web3-utils';
+
 import { withTransactionDecorator } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
@@ -6,11 +9,8 @@ import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
-import * as web3Utils from 'web3-utils';
 import { Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
-import { Address } from '@melonproject/token-math/address';
 
 export type TakeOasisDexOrderResult = any;
 

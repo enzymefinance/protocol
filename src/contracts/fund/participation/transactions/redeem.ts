@@ -1,6 +1,6 @@
 import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { ensure } from '~/utils/guards/ensure';
-import { createQuantity, greaterThan } from '@melonproject/token-math/quantity';
+import { createQuantity, greaterThan } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';

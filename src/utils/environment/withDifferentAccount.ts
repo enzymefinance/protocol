@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 
 const withDifferentAccount = (environment, account: Address) => ({
   ...environment,

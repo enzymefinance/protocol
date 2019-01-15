@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { fromEvent } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { getContract } from '~/utils/solidity/getContract';

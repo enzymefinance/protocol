@@ -1,4 +1,4 @@
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math';
 
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { makeEthfinexOrder } from './makeEthfinexOrder';

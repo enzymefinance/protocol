@@ -1,8 +1,5 @@
 import * as web3Utils from 'web3-utils';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
+import { QuantityInterface, createQuantity } from '@melonproject/token-math';
 
 import {
   PrepareArgsFunction,

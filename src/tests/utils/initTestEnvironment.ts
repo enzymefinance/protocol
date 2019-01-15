@@ -1,5 +1,5 @@
 import { default as Web3Accounts } from 'web3-eth-accounts';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 
 import { testLogger } from '~/tests/utils/testLogger';
 import { constructEnvironment } from '~/utils/environment/constructEnvironment';

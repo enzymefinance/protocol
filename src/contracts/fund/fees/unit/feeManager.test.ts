@@ -3,7 +3,7 @@ import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { add, multiply, BigInteger } from '@melonproject/token-math/bigInteger';
+import { add, multiply, BigInteger } from '@melonproject/token-math';
 
 describe('feeManager', () => {
   let shared: any = {};

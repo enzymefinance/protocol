@@ -2,7 +2,7 @@ import {
   BigInteger,
   // add,
   greaterThan,
-} from '@melonproject/token-math/bigInteger';
+} from '@melonproject/token-math';
 
 import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { getContract } from '~/utils/solidity/getContract';

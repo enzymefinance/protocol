@@ -5,7 +5,7 @@ import {
   GuardFunction,
   PostProcessFunction,
 } from '~/utils/solidity/transactionFactory';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';

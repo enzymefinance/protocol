@@ -1,10 +1,7 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getDenominationAsset } from './getDenominationAsset';
-import {
-  createQuantity,
-  QuantityInterface,
-} from '@melonproject/token-math/quantity';
+import { createQuantity, QuantityInterface } from '@melonproject/token-math';
 
 type CalcGavResult = QuantityInterface;
 

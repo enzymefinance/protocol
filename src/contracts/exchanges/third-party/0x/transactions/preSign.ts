@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { orderHashUtils } from '@0x/order-utils';
 import { SignedOrder } from '@0x/types';
 import { Contracts } from '~/Contracts';

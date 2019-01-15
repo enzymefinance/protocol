@@ -6,7 +6,7 @@ import {
   multiply,
   divide,
   power,
-} from '@melonproject/token-math/bigInteger';
+} from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
