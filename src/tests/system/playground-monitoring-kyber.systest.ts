@@ -11,10 +11,10 @@ import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import axios from 'axios';
 
 import * as coinapi from './.coinapi.json';
-import { createPrice } from '@melonproject/token-math/price';
+import { createPrice } from '@melonproject/token-math';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { createToken } from '@melonproject/token-math/token';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createToken } from '@melonproject/token-math';
+import { createQuantity } from '@melonproject/token-math';
 
 expect.extend({ toBeTrueWith });
 
@@ -102,10 +102,10 @@ describe('playground', () => {
         master,
         fundList[i].routes.accountingAddress,
       );
-      // fundList[i].calcs = await performCalculations(
-      //   master,
-      //   fundList[i].routes.accountingAddress,
-      // );
+      fundList[i].calcs = await performCalculations(
+        master,
+        fundList[i].routes.accountingAddress,
+      );
 
       const targetCurrency = 'ETH';
       let quoteCurrency = fundList[i].sharePrice.quote.token.symbol;

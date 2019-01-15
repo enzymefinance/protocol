@@ -1,9 +1,6 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import {
-  QuantityInterface,
-  createQuantity,
-} from '@melonproject/token-math/quantity';
+import { QuantityInterface, createQuantity } from '@melonproject/token-math';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
