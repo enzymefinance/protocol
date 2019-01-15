@@ -172,6 +172,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         amguPayable(0)
         payable
     {
+        Request memory request = requests[requestOwner];
         require(
             hasValidRequest(requestOwner),
             "No valid request for this address"
@@ -180,7 +181,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             PriceSourceInterface(routes.priceSource).hasValidPrice(request.investmentAsset),
             "Price not valid"
         );
-        Request memory request = requests[requestOwner];
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
