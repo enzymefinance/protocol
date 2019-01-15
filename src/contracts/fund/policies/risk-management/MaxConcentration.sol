@@ -4,9 +4,10 @@ import "math.sol";
 import "PriceSource.i.sol";
 import "Accounting.sol";
 import "Trading.sol";
+import "TradingSignatures.sol";
 import "Policy.sol";
 
-contract MaxConcentration is DSMath, Policy {
+contract MaxConcentration is TradingSignatures, DSMath, Policy {
     uint internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
     uint public maxConcentration;
 
@@ -26,10 +27,11 @@ contract MaxConcentration is DSMath, Policy {
         address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
         address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
         // Max concentration is only checked for non-quote assets
-        if (quoteAsset == addresses[3]) { return true; }
+        address incomingToken = (sig == MAKE_ORDER) ? addresses[3] : addresses[2];
+        if (quoteAsset == incomingToken) { return true; }
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
         uint concentration = mul(
-            accounting.calcAssetGAV(addresses[3]),
+            accounting.calcAssetGAV(incomingToken),
             ONE_HUNDRED_PERCENT
         ) / accounting.calcGav();
         return concentration <= maxConcentration;

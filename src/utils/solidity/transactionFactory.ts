@@ -231,6 +231,10 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           )
         : createQuantity('eth', '0'); /*;*/
 
+      const incentiveInEth = options.incentive
+        ? createQuantity('eth', '10000000000000000')
+        : createQuantity('eth', '0');
+
       const melonTransaction = {
         amguInEth,
         contract,
@@ -242,7 +246,8 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           gas: `${options.gas || prepared.gasEstimation}`,
           gasPrice: `${options.gasPrice || environment.options.gasPrice}`,
           to: `${contractAddress}`,
-          value: `${options.value || amguInEth.quantity}`,
+          value: `${options.value ||
+            add(amguInEth.quantity, incentiveInEth.quantity)}`,
         },
         transactionArgs: prepared.transaction.arguments,
       };

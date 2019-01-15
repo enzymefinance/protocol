@@ -113,7 +113,7 @@ test(`fund gets non fund denomination asset from investment`, async () => {
       `${wantedShares}`,
       s.weth.options.address,
     )
-    .send({ from: s.investor, gas: s.gas });
+    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
 
   const fundDenominationAsset = await s.fund.accounting.methods
     .DENOMINATION_ASSET()
@@ -207,7 +207,7 @@ test(`fund gets non pricefeed quote asset from investment`, async () => {
       `${offeredValue}`,
       s.mln.options.address,
     )
-    .send({ from: s.investor, gas: s.gas });
+    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
 
   const fundDenominationAsset = await s.fund.accounting.methods
     .DENOMINATION_ASSET()

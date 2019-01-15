@@ -109,7 +109,7 @@ test('fund receives ETH from investment', async () => {
       `${wantedShares}`,
       s.weth.options.address,
     )
-    .send({ from: s.investor, gas: s.gas });
+    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
   await s.fund.participation.methods
     .executeRequestFor(s.investor)
     .send({ from: s.investor, gas: s.gas });
@@ -138,12 +138,12 @@ test('swap ethToken for mlnToken with specific order price (minRate)', async () 
       [
         NULL_ADDRESS,
         NULL_ADDRESS,
-        s.weth.options.address,
         s.mln.options.address,
+        s.weth.options.address,
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
+      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -175,12 +175,12 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
       [
         NULL_ADDRESS,
         NULL_ADDRESS,
-        s.mln.options.address,
         s.weth.options.address,
+        s.mln.options.address,
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
+      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -219,12 +219,12 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
       [
         NULL_ADDRESS,
         NULL_ADDRESS,
-        s.mln.options.address,
         s.eur.options.address,
+        s.mln.options.address,
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
+      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -268,12 +268,12 @@ test('takeOrder fails if minPrice is not satisfied', async () => {
         [
           NULL_ADDRESS,
           NULL_ADDRESS,
-          s.mln.options.address,
           s.eur.options.address,
+          s.mln.options.address,
           NULL_ADDRESS,
           NULL_ADDRESS,
         ],
-        [`${srcAmount}`, `${destAmount}`, 0, 0, 0, 0, `${destAmount}`, 0],
+        [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
         randomHexOfSize(20),
         '0x0',
         '0x0',
