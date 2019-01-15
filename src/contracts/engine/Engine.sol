@@ -22,6 +22,8 @@ contract Engine is DSMath, DSAuth {
     Registry public registry;
     uint public MLN_DECIMALS = 18;
     uint public amguPrice;
+    uint public totalEtherConsumed;
+    uint public totalMlnBurned;
 
     constructor(uint _delay) {
         lastThaw = block.timestamp;
@@ -61,6 +63,7 @@ contract Engine is DSMath, DSAuth {
             registry.isFund(msg.sender),
             "Sender must be a fund or the factory"
         );
+        totalEtherConsumed = add(totalEtherConsumed, msg.value);
         frozenEther = add(frozenEther, msg.value);
     }
 
@@ -101,6 +104,7 @@ contract Engine is DSMath, DSAuth {
         require(ethToSend > 0, "No ether to pay out");
         require(liquidEther >= ethToSend, "Not enough liquid ether to send");
         liquidEther = sub(liquidEther, ethToSend);
+        totalMlnBurned = add(totalMlnBurned, mlnAmount);
         msg.sender.send(ethToSend);
         mlnToken.burn(mlnAmount);
     }
