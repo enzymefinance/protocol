@@ -98,8 +98,14 @@ const postProcess: PostProcessFunction<
     environment,
     receipt.events.LogMake.returnValues.pay_gem,
   );
+
+  const buyToken = await getToken(
+    environment,
+    receipt.events.LogMake.returnValues.buy_gem,
+  );
+
   return {
-    buy: createQuantity(sellToken, receipt.events.LogMake.returnValues.buy_amt),
+    buy: createQuantity(buyToken, receipt.events.LogMake.returnValues.buy_amt),
     id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
     maker: receipt.events.LogMake.returnValues.maker,
     sell: createQuantity(

@@ -96,9 +96,8 @@ export type TransactionFactory = <Args, Result>(
 type SendFunction<Args> = (
   environment: Environment,
   contractAddress: Address,
-  // prepared: MelonTransaction<Args>,
   signedTransactionData: string,
-  params: Args,
+  params?: Args,
   options?: OptionsOrCallback,
 ) => Promise<any>;
 
