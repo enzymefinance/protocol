@@ -89,10 +89,10 @@ describe('playground', () => {
       total: 0,
     };
 
-    let totalAUM = {
-      ETH: 0,
-      USD: 0,
-    };
+    // let totalAUM = {
+    //   ETH: 0,
+    //   USD: 0,
+    // };
 
     // loop through funds to get interesting quantities
     for (let i in fundList) {
@@ -212,7 +212,7 @@ describe('playground', () => {
         melonContracts.version,
       );
 
-      // log.debug('Random fund list at the end : ', fundList2);
+      log.debug('Random fund list at the end : ', fundList2);
     }
   });
 });

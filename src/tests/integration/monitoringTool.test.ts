@@ -126,12 +126,12 @@ describe('monitoringTool', () => {
     const {
       // exchangeConfigs,
       melonContracts,
-      thirdPartyContracts,
+      // thirdPartyContracts,
     } = shared.env.deployment;
 
     const { version, ranking } = melonContracts;
 
-    const [weth] = thirdPartyContracts.tokens;
+    // const [weth] = thirdPartyContracts.tokens;
 
     // setup fund
     const fundAddress = await setupInvestedTestFund(shared.env);
