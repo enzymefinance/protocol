@@ -137,18 +137,18 @@ describe('monitoringTool', () => {
     const fundAddress = await setupInvestedTestFund(shared.env);
     console.log('Fund: ', fundAddress);
 
-    const investmentAmount = createQuantity(weth, 1);
+    // const investmentAmount = createQuantity(weth, 1);
 
-    await approve(shared.env, {
-      howMuch: investmentAmount,
-      spender: fundAddress.participationAddress,
-    });
+    // await approve(shared.env, {
+    //   howMuch: investmentAmount,
+    //   spender: fundAddress.participationAddress,
+    // });
 
-    await requestInvestment(shared.env, fundAddress.participationAddress, {
-      investmentAmount,
-    });
+    // await requestInvestment(shared.env, fundAddress.participationAddress, {
+    //   investmentAmount,
+    // });
 
-    await executeRequest(shared.env, fundAddress.participationAddress);
+    // await executeRequest(shared.env, fundAddress.participationAddress);
 
     const fundHoldings = await getFundHoldings(
       shared.env,
@@ -161,40 +161,40 @@ describe('monitoringTool', () => {
 
     // setup a number of additional funds (max 9)
 
-    const n = 3;
-    for (let i = 1; i <= n; i++) {
-      const envi = await withDifferentAccount(shared.env, shared.accounts[i]);
+    // const n = 3;
+    // for (let i = 1; i <= n; i++) {
+    //   const envi = await withDifferentAccount(shared.env, shared.accounts[i]);
 
-      const balance = await getBalance(shared.env);
-      console.log('Balance: ', balance);
+    //   const balance = await getBalance(shared.env);
+    //   console.log('Balance: ', balance);
 
-      await sendEth(shared.env, {
-        howMuch: createQuantity(weth, 5),
-        to: envi.wallet.address,
-      });
+    //   await sendEth(shared.env, {
+    //     howMuch: createQuantity(weth, 5),
+    //     to: envi.wallet.address,
+    //   });
 
-      const bi = await getBalance(envi);
-      console.log('Balance: ', bi);
+    //   const bi = await getBalance(envi);
+    //   console.log('Balance: ', bi);
 
-      const fundi = await setupInvestedTestFund(envi);
-      console.log('Fund: ', fundi);
+    //   const fundi = await setupInvestedTestFund(envi);
+    //   console.log('Fund: ', fundi);
 
-      const investmentAmount2 = createQuantity(weth, 1);
+    //   const investmentAmount2 = createQuantity(weth, 1);
 
-      await approve(shared.env, {
-        howMuch: investmentAmount2,
-        spender: fundi.participationAddress,
-      });
+    //   await approve(shared.env, {
+    //     howMuch: investmentAmount2,
+    //     spender: fundi.participationAddress,
+    //   });
 
-      await requestInvestment(shared.env, fundi.participationAddress, {
-        investmentAmount,
-      });
+    //   await requestInvestment(shared.env, fundi.participationAddress, {
+    //     investmentAmount,
+    //   });
 
-      await executeRequest(shared.env, fundi.participationAddress);
+    //   await executeRequest(shared.env, fundi.participationAddress);
 
-      const hubi = await getHub(shared.env, fundi.accountingAddress);
-      console.log('Hub: ', hubi);
-    }
+    //   const hubi = await getHub(shared.env, fundi.accountingAddress);
+    //   console.log('Hub: ', hubi);
+    // }
 
     // get fund list
     const fundList = await getFundDetails(shared.env, ranking, version);
