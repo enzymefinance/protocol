@@ -3,9 +3,9 @@
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
     "timestamp": "2019-01-15T13:46:32.609Z",
     "track": "kyberPrice",
-    "version": "0.9.2",
+    "version": "0.9.3",
     "chain": 42,
-    "description": "Add fees"
+    "description": "Add fees and fix participation"
   },
   "melonContracts": {
     "priceSource": "0x0C108c10f5f40a38321e92bF4AE1701B7375D3dB",
@@ -27,15 +27,15 @@
     "factories": {
       "accountingFactory": "0x1d388758bD6C5aF6e475d69c7Df07c74B40D1B9B",
       "feeManagerFactory": "0x9D2fF9c3bC5505dEc0C1f96E7e418EFEB40E9C53",
-      "participationFactory": "DEPLOY",
+      "participationFactory": "0x2d08e780DC690862081dA69a68B35182a76E7BB0",
       "policyManagerFactory": "0xF3C5AaAe7C9C2728e713dEf8409e7249B6ca72f8",
       "sharesFactory": "0x862952a52DCcA8bC29a42FC62DacAF1B4c3e2964",
       "tradingFactory": "0x5C9aC33111D104C843F2aD62C4a7306178319F89",
       "vaultFactory": "0xD2Cba4eF9361Ce02843ed1fc198FE408E8bDf01C"
     },
     "engine": "0xCe57C091006A48cF917De5c4C59A416179DE77D4",
-    "registry": "DEPLOY",
-    "version": "DEPLOY",
+    "registry": "0x7530021A5368C00b41763e198Ab7713E67841fE7",
+    "version": "0x944E145F13b6E44a6f808c32812b0901872a0b72",
     "ranking": "0x31f3eb2fbCB82b88b827237220c18C2AFc1519f5"
   },
   "thirdPartyContracts": {
