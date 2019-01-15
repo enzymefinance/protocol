@@ -8,7 +8,7 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
-import { NULL_ADDRESS } from './take0xOrder';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 interface Cancel0xOrderArgs {
   signedOrder: SignedOrder;
@@ -29,12 +29,12 @@ const prepareArgs: PrepareArgsFunction<Cancel0xOrderArgs> = async (
     exchangeIndex,
     FunctionSignatures.cancelOrder,
     [
-      NULL_ADDRESS,
-      NULL_ADDRESS,
-      NULL_ADDRESS,
-      NULL_ADDRESS,
-      NULL_ADDRESS,
-      NULL_ADDRESS,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
+      emptyAddress,
     ],
     [0, 0, 0, 0, 0, 0, 0, 0],
     orderHashHex,

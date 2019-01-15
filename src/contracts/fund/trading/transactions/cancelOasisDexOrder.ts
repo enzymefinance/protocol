@@ -1,17 +1,18 @@
+import * as web3Utils from 'web3-utils';
+import { Address } from '@melonproject/token-math';
+
 import { CancelOasisDexOrderResult } from './cancelOasisDexOrder';
 import {
   PrepareArgsFunction,
-  withTransactionDecorator,
   GuardFunction,
   PostProcessFunction,
+  transactionFactory,
 } from '~/utils/solidity/transactionFactory';
-import { Address } from '@melonproject/token-math';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
-import * as web3Utils from 'web3-utils';
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 export type CancelOasisDexOrderResult = any;
 
@@ -42,28 +43,25 @@ const prepareArgs: PrepareArgsFunction<CancelOasisDexOrderArgs> = async (
     exchange: Exchanges.MatchingMarket,
   });
 
-  return {
-    dexySignatureMode: 0,
+  return [
     exchangeIndex,
-    feeRecipient: '0x0000000000000000000000000000000000000000',
-    fillTakerTokenAmount: '0',
-    identifier: id,
-    maker: maker.toString(),
-    makerAsset,
-    makerAssetData: web3Utils.padLeft('0x0', 64),
-    makerFee: '0',
-    makerQuantity: '0',
-    method: FunctionSignatures.cancelOrder,
-    salt: '0',
-    senderAddress: '0x0000000000000000000000000000000000000000',
-    signature: web3Utils.padLeft('0x0', 64),
-    taker: '0x0000000000000000000000000000000000000000',
-    takerAsset,
-    takerAssetData: web3Utils.padLeft('0x0', 64),
-    takerFee: '0',
-    takerQuantity: '0',
-    timestamp: '0',
-  };
+    FunctionSignatures.cancelOrder,
+    [
+      maker.toString(),
+      emptyAddress,
+      makerAsset.toString(),
+      takerAsset.toString(),
+      emptyAddress,
+      emptyAddress,
+    ],
+    ['0', '0', '0', '0', '0', '0', '0', 0],
+    `0x${Number(id)
+      .toString(16)
+      .padStart(64, '0')}`,
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+  ];
 };
 
 const postProcess: PostProcessFunction<
@@ -77,14 +75,16 @@ const postProcess: PostProcessFunction<
 
 const options = { gas: '8000000' };
 
-const cancelOasisDexOrder = withTransactionDecorator<
+const cancelOasisDexOrder = transactionFactory<
   CancelOasisDexOrderArgs,
   CancelOasisDexOrderResult
->(callOnExchange, {
+>(
+  'callOnExchange',
+  Contracts.Trading,
   guard,
-  options,
-  postProcess,
   prepareArgs,
-});
+  postProcess,
+  options,
+);
 
 export { cancelOasisDexOrder };
