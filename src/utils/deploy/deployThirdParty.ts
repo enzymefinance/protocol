@@ -12,7 +12,10 @@ import {
   KyberEnvironment,
 } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { deployEthfinex } from '~/contracts/exchanges/transactions/deployEthfinex';
+import {
+  deployEthfinex,
+  EthfinexEnvironment,
+} from '~/contracts/exchanges/transactions/deployEthfinex';
 import { ensure } from '../guards/ensure';
 import { Address } from '@melonproject/token-math/address';
 import { Contracts } from '~/Contracts';
@@ -23,7 +26,7 @@ export interface ThirdPartyContracts {
     kyber: KyberEnvironment;
     matchingMarket: Address;
     zeroEx: Address;
-    ethfinex: any;
+    ethfinex: EthfinexEnvironment;
   };
   tokens: TokenInterface[];
 }

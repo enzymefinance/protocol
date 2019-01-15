@@ -21,10 +21,22 @@ interface DeployEthFinexArgs {
   erc20Proxy?: Address;
 }
 
+export interface WrapperPair {
+  token: Address;
+  wrapper: Address;
+}
+
+export interface EthfinexEnvironment {
+  erc20Proxy?: Address;
+  exchange: Address;
+  wrapperPairs?: WrapperPair[];
+  wrapperRegistryEFX: Address;
+}
+
 export const deployEthfinex = async (
   environment: Environment,
   { tokens, erc20Proxy: givenErc20Proxy }: DeployEthFinexArgs,
-) => {
+): Promise<EthfinexEnvironment> => {
   const ethfinex = await deployContract(
     environment,
     Contracts.EthfinexExchangeEfx,
