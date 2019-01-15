@@ -5,6 +5,7 @@ import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { createQuantity } from '@melonproject/token-math';
 import { makeOasisDexOrder } from './makeOasisDexOrder';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
+import { cancelOasisDexOrder } from './cancelOasisDexOrder';
 
 describe('makeOasisDexOrder', () => {
   const shared: {
@@ -28,15 +29,15 @@ describe('makeOasisDexOrder', () => {
     const makerQuantity = createQuantity(shared.weth, 0.05);
     const takerQuantity = createQuantity(shared.mln, 1);
 
-    const order1 = await makeOasisDexOrder(
+    const order = await makeOasisDexOrder(
       shared.env,
       shared.routes.tradingAddress,
       { makerQuantity, takerQuantity },
     );
 
-    expect(order1.buy).toEqual(takerQuantity);
-    expect(order1.sell).toEqual(makerQuantity);
-    expect(order1.maker).toEqual(shared.routes.tradingAddress);
+    expect(order.buy).toEqual(takerQuantity);
+    expect(order.sell).toEqual(makerQuantity);
+    expect(order.maker).toEqual(shared.routes.tradingAddress);
 
     await expect(
       makeOasisDexOrder(shared.env, shared.routes.tradingAddress, {
@@ -44,5 +45,18 @@ describe('makeOasisDexOrder', () => {
         takerQuantity,
       }),
     ).rejects.toThrow('open order');
+
+    await cancelOasisDexOrder(shared.env, shared.routes.tradingAddress, {
+      id: order.id,
+      maker: shared.routes.tradingAddress,
+      makerAsset: order.sell.token.address,
+      takerAsset: order.buy.token.address,
+    });
+
+    // Now it should work again
+    await makeOasisDexOrder(shared.env, shared.routes.tradingAddress, {
+      makerQuantity,
+      takerQuantity,
+    });
   });
 });

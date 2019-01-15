@@ -17,7 +17,7 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 export type CancelOasisDexOrderResult = any;
 
 export interface CancelOasisDexOrderArgs {
-  id?: number;
+  id?: string;
   maker: Address;
   makerAsset: Address;
   takerAsset: Address;
@@ -28,9 +28,6 @@ const guard: GuardFunction<CancelOasisDexOrderArgs> = async (
   { id, maker, makerAsset, takerAsset },
   contractAddress,
 ) => {
-  // const hubAddress = await getHub(environment, contractAddress);
-  // const { vaultAddress } = await getRoutes(environment, hubAddress);
-
   await ensureFundOwner(environment, contractAddress);
 };
 
