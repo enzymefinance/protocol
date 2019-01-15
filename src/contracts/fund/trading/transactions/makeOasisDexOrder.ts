@@ -1,5 +1,9 @@
 import * as web3Utils from 'web3-utils';
-import { QuantityInterface, createQuantity } from '@melonproject/token-math';
+import {
+  QuantityInterface,
+  createQuantity,
+  Address,
+} from '@melonproject/token-math';
 
 import {
   PrepareArgsFunction,
@@ -19,7 +23,13 @@ import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 
-export type MakeOasisDexOrderResult = any;
+export type MakeOasisDexOrderResult = {
+  buy: QuantityInterface;
+  sell: QuantityInterface;
+  maker: Address;
+  id: string;
+  timestamp: string;
+};
 
 export interface MakeOasisDexOrderArgs {
   makerQuantity: QuantityInterface;
