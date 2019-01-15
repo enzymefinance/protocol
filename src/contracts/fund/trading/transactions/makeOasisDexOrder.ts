@@ -22,6 +22,7 @@ import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner
 import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { ensureNotInOpenMakeOrder } from '../guards/ensureNotInOpenMakeOrder';
 
 export type MakeOasisDexOrderResult = {
   buy: QuantityInterface;
@@ -48,6 +49,9 @@ const guard: GuardFunction<MakeOasisDexOrderArgs> = async (
   await ensureSufficientBalance(environment, minBalance, vaultAddress);
   await ensureFundOwner(environment, contractAddress);
   await ensureIsNotShutDown(environment, hubAddress);
+  await ensureNotInOpenMakeOrder(environment, contractAddress, {
+    makerToken: makerQuantity.token,
+  });
 
   // Ensure fund not shut down.
   // Ensure exchange method is allowed.
