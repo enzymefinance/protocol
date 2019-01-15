@@ -5,7 +5,6 @@ import { createQuantity, TokenInterface } from '@melonproject/token-math';
 import { Contracts, Exchanges } from '~/Contracts';
 
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-import { NULL_ADDRESS } from './take0xOrder';
 import {
   GuardFunction,
   PrepareArgsFunction,
@@ -18,6 +17,7 @@ import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/e
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { Make0xOrderArgs } from './make0xOrder';
 import { getOriginalToken } from '~/contracts/exchanges/third-party/ethfinex/calls/getOriginalToken';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 // The order needs to be signed by the manager
 
@@ -67,11 +67,11 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
     FunctionSignatures.makeOrder,
     [
       contractAddress.toString(),
-      NULL_ADDRESS,
+      emptyAddress,
       makerToken.address.toString(),
       takerTokenAddress,
       signedOrder.feeRecipientAddress,
-      NULL_ADDRESS,
+      emptyAddress,
     ],
     [
       signedOrder.makerAssetAmount.toFixed(),
