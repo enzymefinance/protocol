@@ -69,7 +69,7 @@ export const prepareTransaction = async (
     const gasEstimation = options.skipGasEstimation
       ? 0
       : await transaction.estimateGas({
-          ...R.omit(['amguPayable'], amguOptions),
+          ...R.omit(['amguPayable', 'incentive'], amguOptions),
         });
 
     transaction.gasEstimation = Math.ceil(

@@ -166,7 +166,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     function executeRequestFor(address requestOwner)
         public
         notShutDown
-        amguPayable(0)
         payable
     {
         require(
@@ -199,35 +198,35 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             "Failed to transfer investment asset to vault"
         );
 
-        uint investmentAssetChange = sub(
-            request.investmentAmount,
-            totalShareCostInInvestmentAsset
-        );
+        // uint investmentAssetChange = sub(
+        //     request.investmentAmount,
+        //     totalShareCostInInvestmentAsset
+        // );
 
-        if (investmentAssetChange > 0) {
-            require(  // return investmentAsset change to request owner
-                ERC20(request.investmentAsset).transfer(
-                    requestOwner,
-                    investmentAssetChange
-                ),
-                "Failed to return investmentAsset change"
-            );
-        }
+        // if (investmentAssetChange > 0) {
+        //     require(  // return investmentAsset change to request owner
+        //         ERC20(request.investmentAsset).transfer(
+        //             requestOwner,
+        //             investmentAssetChange
+        //         ),
+        //         "Failed to return investmentAsset change"
+        //     );
+        // }
 
-        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = 0;
-        delete requests[requestOwner];
-        msg.sender.transfer(REQUEST_INCENTIVE);
+        // lockedAssetsForInvestor[request.investmentAsset][msg.sender] = 0;
+        // delete requests[requestOwner];
+        // msg.sender.transfer(REQUEST_INCENTIVE);
 
-        Shares(routes.shares).createFor(requestOwner, request.requestedShares);
-        Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
+        // Shares(routes.shares).createFor(requestOwner, request.requestedShares);
+        // Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
 
-        emit RequestExecution(
-            requestOwner,
-            msg.sender,
-            request.investmentAsset,
-            request.investmentAmount,
-            request.requestedShares
-        );
+        // emit RequestExecution(
+        //     requestOwner,
+        //     msg.sender,
+        //     request.investmentAsset,
+        //     request.investmentAmount,
+        //     request.requestedShares
+        // );
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
