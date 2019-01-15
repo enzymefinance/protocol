@@ -22,7 +22,9 @@ interface AccountingInterface {
         uint unclaimedFees,
         uint feesInShares,
         uint nav,
-        uint sharePrice
+        uint sharePrice,
+        uint gavPerShareNetManagementFee
     );
     function calcSharePrice() returns (uint);
+    function calcGavPerShareNetManagementFee() returns (uint);
 }

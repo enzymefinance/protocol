@@ -6,22 +6,28 @@ import "PriceSource.i.sol";
 import "Version.i.sol";
 import "Engine.sol";
 
-/// @notice inherit this pay AMGU
+/// @notice inherit this to pay AMGU on a function call
 contract AmguConsumer is DSMath {
 
-    modifier amguPayable() {
+    modifier amguPayable(uint deductFromRefund) {
         uint initialGas = gasleft();
         _;
         uint mlnPerAmgu = Engine(engine()).getAmguPrice();
         uint ethPerMln;
         (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnToken());
+
         uint ethToPay = mul(
-            sub(initialGas, gasleft()),
-            mul(mlnPerAmgu, ethPerMln)
-        ) / 1 ether;
+            sub(initialGas, gasleft()), // gas (and thus amgu) used
+            mul(mlnPerAmgu, ethPerMln)  // eth per amgu
+        ) / 10 ** 18;
         require(msg.value >= ethToPay, "Insufficent amgu");
         Engine(engine()).payAmguInEther.value(ethToPay)();
-        msg.sender.transfer(sub(msg.value, ethToPay));
+        msg.sender.transfer(
+            sub(
+                sub(msg.value, ethToPay),
+                deductFromRefund
+            )
+        );
     }
 
     function engine() view returns (address);

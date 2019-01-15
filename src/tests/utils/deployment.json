@@ -21,6 +21,7 @@
     "adapters": {
       "kyberAdapter": "0xE23E76C424afF6395C83251e07D6a68Ddd9E47dD",
       "matchingMarketAdapter": "0x38ed49300335A839B4ea65f47cd8BE1229f2E447",
+      "matchingMarketAccessor": "0x38ed49300335A839B4ea65f47cd8BE1229f2E447",
       "zeroExAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97",
       "ethfinexAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97"
     },

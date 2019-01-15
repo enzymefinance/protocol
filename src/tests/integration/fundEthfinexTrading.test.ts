@@ -165,7 +165,7 @@ test('fund receives ETH from investment, and gets ZRX from direct transfer', asy
       `${wantedShares}`,
       s.weth.options.address,
     )
-    .send({ from: s.investor, gas: s.gas });
+    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
   await s.fund.participation.methods
     .executeRequestFor(s.investor)
     .send({ from: s.investor, gas: s.gas });

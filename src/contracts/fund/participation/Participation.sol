@@ -20,15 +20,21 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         uint timestamp;
     }
 
-    mapping (address => Request) public requests;
-    mapping (address => bool) public investAllowed;
     uint constant public SHARES_DECIMALS = 18;
     uint constant public INVEST_DELAY = 10 minutes;
+    uint constant public REQUEST_LIFESPAN = 1 days;
+    uint constant public REQUEST_INCENTIVE = 10 finney;
+
+    mapping (address => Request) public requests;
+    mapping (address => bool) public investAllowed;
+    mapping (address => mapping (address => uint)) public lockedAssetsForInvestor;
 
     constructor(address _hub, address[] _defaultAssets, address _registry) Spoke(_hub) {
         routes.registry = _registry;
         _enableInvestment(_defaultAssets);
     }
+
+    function() public payable {}
 
     function _enableInvestment(address[] _assets) internal {
         for (uint i = 0; i < _assets.length; i++) {
@@ -56,15 +62,22 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         return requests[_who].timestamp > 0;
     }
 
+    function hasExpiredRequest(address _who) view returns (bool) {
+        return block.timestamp > add(requests[_who].timestamp, REQUEST_LIFESPAN);
+    }
+
     /// @notice Whether request is OK and invest delay is being respected
     /// @dev For the very first investment, we ignore delay
     function hasValidRequest(address _who) public view returns (bool) {
+        PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
         bool delayRespected= Shares(routes.shares).totalSupply() == 0 ||
+            block.timestamp >= priceSource.getLastUpdate() &&
             block.timestamp >= add(requests[_who].timestamp, INVEST_DELAY) &&
             block.timestamp <= add(requests[_who].timestamp, mul(2, INVEST_DELAY));
 
         return hasRequest(_who) &&
             delayRespected &&
+            !hasExpiredRequest(_who) &&
             requests[_who].investmentAmount > 0 &&
             requests[_who].requestedShares > 0;
     }
@@ -76,13 +89,13 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     )
         external
         notShutDown
-        amguPayable
         payable
+        amguPayable(REQUEST_INCENTIVE)
         onlyInitialized
     {
         PolicyManager(routes.policyManager).preValidate(
             bytes4(sha3("requestInvestment(address)")),
-            [msg.sender, address(0), address(0), address(0), address(0)],
+            [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
         );
@@ -90,12 +103,30 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             investAllowed[investmentAsset],
             "Investment not allowed in this asset"
         );
+        require(
+            msg.value >= REQUEST_INCENTIVE,
+            "Incorrect incentive amount"
+        );
+        require(
+            ERC20(investmentAsset).transferFrom(msg.sender, this, investmentAmount),
+            "InvestmentAsset transfer failed"
+        );
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp
         });
+        lockedAssetsForInvestor[investmentAsset][msg.sender] = add(
+            lockedAssetsForInvestor[investmentAsset][msg.sender],
+            investmentAmount
+        );
+        PolicyManager(routes.policyManager).postValidate(
+            bytes4(sha3("requestInvestment(address)")),
+            [msg.sender, address(0), address(0), investmentAsset, address(0)],
+            [uint(0), uint(0), uint(0)],
+            bytes32(0)
+        );
 
         emit InvestmentRequest(
             msg.sender,
@@ -105,35 +136,48 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         );
     }
 
-    function cancelRequest() external {
+    /// @notice Can only cancel when no price, request expired or fund shut down
+    function cancelRequest() external payable amguPayable(0) {
+        require(hasRequest(msg.sender), "No request to cancel");
+        PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
+        Request request = requests[msg.sender];
         require(
-            hasRequest(msg.sender),
-            "No request to cancel"
+            !priceSource.hasValidPrice(request.investmentAsset) ||
+            hasExpiredRequest(msg.sender) ||
+            hub.isShutDown(),
+            "No cancellation condition was met"
         );
+        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = sub(
+            lockedAssetsForInvestor[request.investmentAsset][msg.sender],
+            request.investmentAmount
+        );
+        ERC20 investmentAsset = ERC20(request.investmentAsset);
+        uint investmentAmount = request.investmentAmount;
         delete requests[msg.sender];
+        msg.sender.transfer(REQUEST_INCENTIVE);
+        require(
+            investmentAsset.transfer(msg.sender, investmentAmount),
+            "InvestmentAsset refund failed"
+        );
+
         emit CancelRequest(msg.sender);
     }
 
     function executeRequestFor(address requestOwner)
         public
         notShutDown
-        amguPayable
+        amguPayable(0)
         payable
     {
         require(
             hasValidRequest(requestOwner),
             "No valid request for this address"
         );
-        PolicyManager(routes.policyManager).preValidate(bytes4(sha3("executeRequestFor(address)")), [requestOwner, address(0), address(0), address(0), address(0)], [uint(0), uint(0), uint(0)], bytes32(0));
-        Request memory request = requests[requestOwner];
-        require(
-            investAllowed[request.investmentAsset],
-            "Investment not allowed in this asset"
-        );
         require(
             PriceSourceInterface(routes.priceSource).hasValidPrice(request.investmentAsset),
             "Price not valid"
         );
+        Request memory request = requests[requestOwner];
 
         FeeManager(routes.feeManager).rewardManagementFee();
 
@@ -147,15 +191,33 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
-
-        delete requests[requestOwner];
-        require(
-            ERC20(request.investmentAsset).transferFrom(
-                requestOwner, address(routes.vault),
+        require(  // send necessary amount of investmentAsset to vault
+            ERC20(request.investmentAsset).transfer(
+                address(routes.vault),
                 totalShareCostInInvestmentAsset
             ),
             "Failed to transfer investment asset to vault"
         );
+
+        uint investmentAssetChange = sub(
+            request.investmentAmount,
+            totalShareCostInInvestmentAsset
+        );
+
+        if (investmentAssetChange > 0) {
+            require(  // return investmentAsset change to request owner
+                ERC20(request.investmentAsset).transfer(
+                    requestOwner,
+                    investmentAssetChange
+                ),
+                "Failed to return investmentAsset change"
+            );
+        }
+
+        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = 0;
+        delete requests[requestOwner];
+        msg.sender.transfer(REQUEST_INCENTIVE);
+
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
 

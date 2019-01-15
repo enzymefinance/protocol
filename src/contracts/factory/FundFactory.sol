@@ -126,7 +126,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createAccounting()
         componentNotSet(managersToRoutes[msg.sender].accounting)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
@@ -139,11 +139,12 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createFeeManager()
         componentNotSet(managersToRoutes[msg.sender].feeManager)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].feeManager = feeManagerFactory.createInstance(
             managersToHubs[msg.sender],
+            managersToSettings[msg.sender].denominationAsset,
             managersToSettings[msg.sender].fees,
             managersToSettings[msg.sender].feeRates,
             managersToSettings[msg.sender].feePeriods
@@ -152,7 +153,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createParticipation()
         componentNotSet(managersToRoutes[msg.sender].participation)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].participation = participationFactory.createInstance(
@@ -164,7 +165,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createPolicyManager()
         componentNotSet(managersToRoutes[msg.sender].policyManager)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].policyManager = policyManagerFactory.createInstance(
@@ -174,7 +175,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createShares()
         componentNotSet(managersToRoutes[msg.sender].shares)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].shares = sharesFactory.createInstance(
@@ -184,7 +185,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createTrading()
         componentNotSet(managersToRoutes[msg.sender].trading)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].trading = tradingFactory.createInstance(
@@ -198,7 +199,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createVault()
         componentNotSet(managersToRoutes[msg.sender].vault)
-        amguPayable
+        amguPayable(0)
         payable
     {
         managersToRoutes[msg.sender].vault = vaultFactory.createInstance(
@@ -206,7 +207,7 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function completeSetup() amguPayable payable {
+    function completeSetup() amguPayable(0) payable {
         Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");

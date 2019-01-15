@@ -101,6 +101,7 @@ export const deployMockSystem = async (
 
   const feeManager = await deployAndGetContract(env, feeManagerContract, [
     hub.options.address.toString(),
+    quoteToken.address.toString(),
     fees.map(f => f.feeAddress.toString()),
     fees.map(f => f.feePeriod),
     fees.map(f => f.feeRate),

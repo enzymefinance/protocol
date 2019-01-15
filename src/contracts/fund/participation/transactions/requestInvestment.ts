@@ -64,7 +64,7 @@ const requestInvestment: EnhancedExecute<
   guard,
   prepareArgs,
   postProcess,
-  { amguPayable: true },
+  { amguPayable: true, incentive: true },
 );
 
 export { requestInvestment };

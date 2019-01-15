@@ -38,7 +38,7 @@ interface ParticipationInterface {
         address investmentAsset
     ) external payable;
     function hasRequest(address) view returns (bool);
-    function cancelRequest() external;
+    function cancelRequest() external payable;
     function executeRequestFor(address requestOwner) external payable;
     function redeem() public;
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public;

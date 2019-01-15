@@ -1,6 +1,7 @@
 pragma solidity ^0.4.21;
 
 import "PriceSource.i.sol";
+import "ERC20.i.sol";
 import "thing.sol";
 import "KyberNetworkProxy.sol";
 import "Registry.sol";
@@ -46,13 +47,16 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     function update() {
         require(msg.sender == REGISTRY.owner(), "Only registry owner can call");
         address[] memory assets = REGISTRY.getRegisteredAssets();
+        uint[] memory newPrices = new uint[](assets.length);
         for (uint i; i < assets.length; i++) {
             bool isValid;
             uint price;
             (isValid, price) = getKyberPrice(assets[i], QUOTE_ASSET);
-            prices[assets[i]] = isValid ? price : 0;
+            newPrices[i] = isValid ? price : 0;
+            prices[assets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
+        PriceUpdate(assets, newPrices);
     }
 
     // PUBLIC VIEW METHODS
@@ -143,7 +147,6 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     {
         isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
         uint quoteDecimals = ERC20Clone(_quoteAsset).decimals();
-        uint baseDecimals = ERC20Clone(_baseAsset).decimals();
 
         if (prices[_quoteAsset] == 0) {
             return (false, 0, 0);  // return early and avoid revert
@@ -264,4 +267,25 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             hasValidPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data
             hasValidPrice(buyAsset);
     }
+
+    /// @notice Get quantity of toAsset equal in value to given quantity of fromAsset
+    function convertQuantity(
+        uint fromAssetQuantity,
+        address fromAsset,
+        address toAsset
+    )
+        public
+        view
+        returns (uint)
+    {
+        uint fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(fromAsset, toAsset);
+        uint fromAssetDecimals = ERC20WithFields(fromAsset).decimals();
+        return mul(
+            fromAssetQuantity,
+            fromAssetPrice
+        ) / (10 ** fromAssetDecimals);
+    }
+
+    function getLastUpdate() public view returns (uint) { return lastUpdate; }
 }

@@ -4,6 +4,7 @@ import "CanonicalRegistrar.sol";
 import "SimplePriceFeed.sol";
 import "StakingPriceFeed.sol";
 import "OperatorStaking.sol";
+import "ERC20.i.sol";
 
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts
@@ -26,6 +27,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     uint public INTERVAL;
     mapping (address => bool) public isStakingFeed; // If the Staking Feed has been created through this contract
     HistoricalPrices[] public priceHistory;
+    uint public lastUpdate;
 
     // METHODS
 
@@ -158,6 +160,8 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
         );
         _updatePrices(ofAssets, newPrices);
+        lastUpdate = block.timestamp;
+        PriceUpdate(ofAssets, newPrices);
     }
 
     function pricesToCommit(address[] ofAssets)
@@ -393,4 +397,25 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         uint timestamp = priceHistory[id].timestamp;
         return (assets, prices, timestamp);
     }
+
+    /// @notice Get quantity of toAsset equal in value to given quantity of fromAsset
+    function convertQuantity(
+        uint fromAssetQuantity,
+        address fromAsset,
+        address toAsset
+    )
+        public
+        view
+        returns (uint)
+    {
+        uint fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(fromAsset, toAsset);
+        uint fromAssetDecimals = ERC20WithFields(fromAsset).decimals();
+        return mul(
+            fromAssetQuantity,
+            fromAssetPrice
+        ) / (10 ** fromAssetDecimals);
+    }
+
+    function getLastUpdate() public view returns (uint) { return lastUpdate; }
 }

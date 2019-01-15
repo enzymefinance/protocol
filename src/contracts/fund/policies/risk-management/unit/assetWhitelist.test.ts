@@ -4,7 +4,7 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import * as Web3Utils from 'web3-utils';
+import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('assetWhitelist', () => {
   const shared: any = {};
@@ -13,7 +13,6 @@ describe('assetWhitelist', () => {
     shared.env = await initTestEnvironment();
     shared.user = shared.env.wallet.address;
     shared.opts = { from: shared.user, gas: 8000000 };
-    shared.testWhitelist = Web3Utils.sha3('func()').substring(0, 10);
     shared.assetArray = [
       `${randomAddress()}`,
       `${randomAddress()}`,
@@ -69,11 +68,11 @@ describe('assetWhitelist', () => {
     ]);
     const asset = shared.assetArray[1];
     await contracts.policyManager.methods
-      .register(shared.testWhitelist, whitelist.options.address)
+      .register(makeOrderSignatureBytes, whitelist.options.address)
       .send({ from: shared.user });
 
     const validateArgs = [
-      shared.testWhitelist,
+      makeOrderSignatureBytes,
       [emptyAddress, emptyAddress, emptyAddress, asset, emptyAddress],
       [0, 0, 0],
       '0x0',

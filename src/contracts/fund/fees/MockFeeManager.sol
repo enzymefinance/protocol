@@ -20,7 +20,7 @@ contract MockFeeManager is DSMath, AmguConsumer, Spoke {
     uint performanceFees;
 
     constructor(
-        address _hub, address[] _fees, uint[] _periods, uint _rates
+        address _hub, address _denominationAsset, address[] _fees, uint[] _periods, uint _rates
     ) Spoke(_hub) public {}
 
     function setTotalFeeAmount(uint _amt) { totalFees = _amt; }

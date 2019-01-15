@@ -100,6 +100,7 @@ contract Engine is DSMath, DSAuth {
         uint ethToSend = ethPayoutForMlnAmount(mlnAmount);
         require(ethToSend > 0, "No ether to pay out");
         require(liquidEther >= ethToSend, "Not enough liquid ether to send");
+        liquidEther = sub(liquidEther, ethToSend);
         msg.sender.send(ethToSend);
         mlnToken.burn(mlnAmount);
     }
