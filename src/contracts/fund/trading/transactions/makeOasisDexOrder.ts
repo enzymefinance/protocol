@@ -3,12 +3,11 @@ import { QuantityInterface, createQuantity } from '@melonproject/token-math';
 
 import {
   PrepareArgsFunction,
-  withTransactionDecorator,
   GuardFunction,
   PostProcessFunction,
+  transactionFactory,
 } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureMakePermitted } from '~/contracts/fund/trading/guards/ensureMakePermitted';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
@@ -16,8 +15,9 @@ import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 export type MakeOasisDexOrderResult = any;
 
@@ -66,28 +66,32 @@ const prepareArgs: PrepareArgsFunction<MakeOasisDexOrderArgs> = async (
     exchange: Exchanges.MatchingMarket,
   });
 
-  return {
-    dexySignatureMode: 0,
+  return [
     exchangeIndex,
-    feeRecipient: '0x0000000000000000000000000000000000000000',
-    fillTakerTokenAmount: '0',
-    identifier: web3Utils.padLeft('0x0', 64),
-    maker: contractAddress.toString(),
-    makerAsset: makerQuantity.token.address.toString(),
-    makerAssetData: web3Utils.padLeft('0x0', 64),
-    makerFee: '0',
-    makerQuantity: makerQuantity.quantity,
-    method: FunctionSignatures.makeOrder,
-    salt: '0',
-    senderAddress: '0x0000000000000000000000000000000000000000',
-    signature: web3Utils.padLeft('0x0', 64),
-    taker: '0x0000000000000000000000000000000000000000',
-    takerAsset: takerQuantity.token.address.toString(),
-    takerAssetData: web3Utils.padLeft('0x0', 64),
-    takerFee: '0',
-    takerQuantity: takerQuantity.quantity,
-    timestamp: '0',
-  };
+    FunctionSignatures.makeOrder,
+    [
+      contractAddress.toString(),
+      emptyAddress,
+      makerQuantity.token.address.toString(),
+      takerQuantity.token.address.toString(),
+      emptyAddress,
+      emptyAddress,
+    ],
+    [
+      makerQuantity.quantity.toString(),
+      takerQuantity.quantity.toString(),
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      0,
+    ],
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+  ];
 };
 
 const postProcess: PostProcessFunction<
@@ -118,11 +122,13 @@ const postProcess: PostProcessFunction<
 
 const options = { gas: '8000000' };
 
-const makeOasisDexOrder = withTransactionDecorator(callOnExchange, {
+const makeOasisDexOrder = transactionFactory(
+  'callOnExchange',
+  Contracts.Trading,
   guard,
-  options,
-  postProcess,
   prepareArgs,
-});
+  postProcess,
+  options,
+);
 
 export { makeOasisDexOrder };
