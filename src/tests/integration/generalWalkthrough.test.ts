@@ -44,8 +44,6 @@ import {
 } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
-import { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
-import { delay } from '../utils/delay';
 
 describe('generalWalkthrough', () => {
   const shared: {
@@ -179,21 +177,6 @@ describe('generalWalkthrough', () => {
     debug(
       'Executed request',
       await calcGav(shared.env, routes.accountingAddress),
-    );
-
-    const initialCalculations = await performCalculations(
-      shared.env,
-      routes.accountingAddress,
-    );
-
-    await delay(5000);
-
-    const ranking = await getFundDetails(shared.env);
-
-    debug({ initialCalculations, ranking });
-
-    expect(initialCalculations.sharePrice.quote.quantity.toString()).toEqual(
-      ranking[0].sharePrice.quote.quantity.toString(),
     );
 
     await getFundHoldings(shared.env, routes.accountingAddress);
