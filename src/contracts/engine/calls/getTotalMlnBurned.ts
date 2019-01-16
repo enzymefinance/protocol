@@ -10,10 +10,10 @@ const postProcess = async (environment, result, prepared) => {
   return quantity;
 };
 
-const getAmguPrice = callFactoryWithoutParams(
-  'getAmguPrice',
+const getTotalMlnBurned = callFactoryWithoutParams(
+  'totalMlnBurned',
   Contracts.Engine,
   { postProcess },
 );
 
-export { getAmguPrice };
+export { getTotalMlnBurned };
