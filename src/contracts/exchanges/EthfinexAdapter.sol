@@ -7,7 +7,7 @@ import "Hub.sol";
 import "Vault.sol";
 import "Accounting.sol";
 import "Registry.sol";
-import "WETH9.sol";
+import "Weth.sol";
 import "DBC.sol";
 import "math.sol";
 import "ExchangeEfx.sol";
@@ -115,7 +115,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
             if (orderAddresses[i] == nativeAsset) {
-                WETH9(nativeAsset).deposit.value(balance)();
+                WETH(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
             getTrading().returnAssetToVault(orderAddresses[i]);
@@ -164,7 +164,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         // Handle case for WETH
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         if (makerAsset == nativeAsset) {
-            WETH9(nativeAsset).withdraw(makerQuantity);
+            WETH(nativeAsset).withdraw(makerQuantity);
             WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
         } else {
             ERC20(makerAsset).approve(wrappedToken, makerQuantity);

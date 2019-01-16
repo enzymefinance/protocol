@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "WETH9.sol";
+import "Weth.sol";
 import "Trading.sol";
 import "Hub.sol";
 import "Vault.sol";
@@ -118,7 +118,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
-        WETH9(nativeAsset).withdraw(srcAmount);
+        WETH(nativeAsset).withdraw(srcAmount);
         receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20Clone(destToken), minRate);
     }
 
@@ -146,7 +146,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20Clone(srcToken), srcAmount, minRate);
 
         // Convert ETH to WETH
-        WETH9(nativeAsset).deposit.value(receivedAmount)();
+        WETH(nativeAsset).deposit.value(receivedAmount)();
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
