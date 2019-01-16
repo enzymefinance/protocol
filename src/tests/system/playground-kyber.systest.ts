@@ -6,7 +6,7 @@ import {
   isEqual,
   toFixed,
   subtract,
-  toBI,
+  QuantityInterface,
 } from '@melonproject/token-math';
 import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
@@ -37,12 +37,17 @@ import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder'
 import { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
 import { takeOrderOnKyber } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
+import { allLogsWritten } from '../utils/testLogger';
 
 expect.extend({ toBeTrueWith });
 
 const getLog = getLogCurried('melon:protocol:systemTest:playground');
 
 describe('playground', () => {
+  afterAll(async () => {
+    await allLogsWritten();
+  });
+
   test('Happy path', async () => {
     const master = await getSystemTestEnvironment(Tracks.KYBER_PRICE);
 
@@ -55,8 +60,8 @@ describe('playground', () => {
 
     const zeroEx = master.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
-    const kyber =
-      master.deployment.exchangeConfigs[Exchanges.KyberNetwork].exchange;
+    // const kyber =
+    //   master.deployment.exchangeConfigs[Exchanges.KyberNetwork].exchange;
 
     const manager = await withNewAccount(master);
     const trader = await withNewAccount(master);
@@ -196,25 +201,32 @@ describe('playground', () => {
       createQuantity(mln, 0.75),
     );
 
-    const preMlnBalance = await balanceOf(manager, mln.address, {
-      address: routes.vaultAddress,
-    });
+    const preMlnBalance: QuantityInterface = await balanceOf(
+      manager,
+      mln.address,
+      {
+        address: routes.vaultAddress,
+      },
+    );
 
     const makerQuantity = createQuantity(mln, 0.75);
     await takeOrderOnKyber(manager, routes.tradingAddress, {
       makerQuantity,
       takerQuantity: createQuantity(weth, 0.075),
     });
-    const postMlnBalance = await balanceOf(manager, mln.address, {
-      address: routes.vaultAddress,
-    });
+    const postMlnBalance: QuantityInterface = await balanceOf(
+      manager,
+      mln.address,
+      {
+        address: routes.vaultAddress,
+      },
+    );
 
-    // expect(
-    //   greaterThan(
-    //     subtract(postMlnBalance, preMlnBalance),
-    //     toBI(makerQuantity),
-    //   ),
-    // ).toBeTruthy();
+    log.debug({ postMlnBalance, preMlnBalance, makerQuantity });
+
+    expect(
+      greaterThan(subtract(postMlnBalance, preMlnBalance), makerQuantity),
+    ).toBeTruthy();
     log.debug('Take order from Kyber');
 
     await shutDownFund(manager, melonContracts.version, {
