@@ -119,7 +119,7 @@ test('fund receives ETH from investment', async () => {
   expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
 });
 
-test('swap ethToken for mlnToken with specific order price (minRate)', async () => {
+test('swap ethToken for mln with specific order price (minRate)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const srcAmount = power(new BigInteger(10), new BigInteger(17));
   const [bestRate] = Object.values(
