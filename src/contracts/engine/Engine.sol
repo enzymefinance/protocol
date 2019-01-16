@@ -67,8 +67,13 @@ contract Engine is DSMath, DSAuth {
         );
         uint mlnPerAmgu = getAmguPrice();
         uint ethPerMln;
-        (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnToken());
-        uint amguConsumed = (mul(msg.value, 10 ** MLN_DECIMALS)) / (mul(ethPerMln, mlnPerAmgu));
+        (ethPerMln,) = priceSource.getPrice(address(mlnToken));
+        uint amguConsumed;
+        if (mlnPerAmgu > 0 && ethPerMln > 0) {
+            amguConsumed = (mul(msg.value, 10 ** MLN_DECIMALS)) / (mul(ethPerMln, mlnPerAmgu));
+        } else {
+            amguConsumed = 0;
+        }
         totalEtherConsumed = add(totalEtherConsumed, msg.value);
         totalAmguConsumed = add(totalAmguConsumed, amguConsumed);
         frozenEther = add(frozenEther, msg.value);
