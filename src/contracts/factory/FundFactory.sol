@@ -57,7 +57,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     modifier componentNotSet(address _component) {
         require(
-            _component == address(0),
+            !componentSet(_component),
             "This step has already been run"
         );
         _;
@@ -87,6 +87,10 @@ contract FundFactory is AmguConsumer, Factory {
         engine = Engine(_engine);
         factoryPriceSource = _factoryPriceSource;
         mlnToken = _mlnToken;
+    }
+
+    function componentSet(address _component) internal returns (bool) {
+        return _component != address(0);
     }
 
     function beginSetup(
@@ -211,6 +215,17 @@ contract FundFactory is AmguConsumer, Factory {
         Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");
+        require(
+            componentSet(hub) &&
+            componentSet(routes.accounting) &&
+            componentSet(routes.feeManager) &&
+            componentSet(routes.participation) &&
+            componentSet(routes.policyManager) &&
+            componentSet(routes.shares) &&
+            componentSet(routes.trading) &&
+            componentSet(routes.vault),
+            "Components must be set before completing setup"
+        );
         childExists[address(hub)] = true;
         hub.setSpokes([
             routes.accounting,
