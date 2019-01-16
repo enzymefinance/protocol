@@ -82,7 +82,7 @@ contract Engine is DSMath, DSAuth {
     function enginePrice() public view returns (uint) {
         uint ethPerMln;
         (ethPerMln, ) = priceSource.getPrice(address(mlnToken));
-        uint premium = mul(ethPerMln, (premiumPercent() / 100));
+        uint premium = (mul(ethPerMln, premiumPercent()) / 100);
         return add(ethPerMln, premium);
     }
 
