@@ -8,28 +8,9 @@ import "Factory.sol";
 /// @notice Dumb custody component
 contract Vault is VaultInterface, Spoke {
 
-    event Lock(bool status);
-
-    bool public locked;
-
-    modifier onlyUnlocked {
-        require(!locked, "Vault is locked");
-        _;
-    }
-
     constructor(address _hub) Spoke(_hub) {}
 
-    function lockdown() auth {
-        locked = true;
-        emit Lock(true);
-    }
-
-    function unlock() auth {
-        locked = false;
-        emit Lock(false);
-    }
-
-    function withdraw(address token, uint amount) onlyUnlocked auth {
+    function withdraw(address token, uint amount) auth {
         ERC20(token).transfer(msg.sender, amount);
     }
 }
