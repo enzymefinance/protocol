@@ -29,21 +29,21 @@ contract Engine is DSMath, DSAuth {
     }
 
     /// @dev only callable by deployer
-    function setRegistry(address _registry) auth {
+    function setRegistry(address _registry) public auth {
         registry = Registry(_registry);
         priceSource = PriceSourceInterface(registry.priceSource());
         mlnToken = BurnableToken(registry.mlnToken());
         emit RegistryChange(registry);
     }
 
-    function setAmguPrice(uint _price) auth {
+    function setAmguPrice(uint _price) public auth {
         amguPrice = _price;
         emit SetAmguPrice(_price);
     }
 
-    function getAmguPrice() view returns (uint) { return amguPrice; }
+    function getAmguPrice() public view returns (uint) { return amguPrice; }
 
-    function premiumPercent() view returns (uint) {
+    function premiumPercent() public view returns (uint) {
         if (liquidEther < 1 ether) {
             return 0;
         } else if (liquidEther >= 1 ether && liquidEther < 5 ether) {

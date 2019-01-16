@@ -40,7 +40,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
         address ofRegistrar,
         address ofQuoteAsset,
         address ofSuperFeed
-    ) {
+    ) public {
         registry = Registry(ofRegistrar);
         QUOTE_ASSET = ofQuoteAsset;
         superFeed = CanonicalPriceFeed(ofSuperFeed);
@@ -68,8 +68,8 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     // PUBLIC VIEW METHODS
 
     // Get pricefeed specific information
-    function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
-    function getLastUpdateId() view returns (uint) { return updateId; }
+    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
+    function getLastUpdateId() public view returns (uint) { return updateId; }
 
     /**
     @notice Gets price of an asset multiplied by ten to the power of assetDecimals
@@ -81,6 +81,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     }
     */
     function getPrice(address ofAsset)
+        public
         view
         returns (uint price, uint timestamp)
     {
@@ -98,6 +99,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     }
     */
     function getPrices(address[] ofAssets)
+        public
         view
         returns (uint[], uint[])
     {

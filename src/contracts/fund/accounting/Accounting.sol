@@ -43,7 +43,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         DEFAULT_SHARE_PRICE = 10 ** DENOMINATION_ASSET_DECIMALS;
     }
 
-    function getOwnedAssetsLength() view returns (uint) {
+    function getOwnedAssetsLength() public view returns (uint) {
         return ownedAssets.length;
     }
 
@@ -55,7 +55,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 
     /// @dev Returns sparse array
-    function getFundHoldings() returns (uint[], address[]) {
+    function getFundHoldings() public returns (uint[], address[]) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);
         for (uint i = 0; i < ownedAssets.length; i++) {
@@ -71,7 +71,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return (_quantities, _assets);
     }
 
-    function calcAssetGAV(address _queryAsset) returns (uint) {
+    function calcAssetGAV(address _queryAsset) public returns (uint) {
         uint queryAssetQuantityHeld = assetHoldings(_queryAsset);
         return PriceSourceInterface(routes.priceSource).convertQuantity(
             queryAssetQuantityHeld, _queryAsset, DENOMINATION_ASSET
@@ -103,12 +103,13 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return sub(gav, unclaimedFeesInDenominationAsset);
     }
 
-    function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) public view returns (uint) {
         require(numShares > 0, "No shares to calculate value for");
         return (totalValue * 10 ** SHARES_DECIMALS) / numShares;
     }
 
     function performCalculations()
+        public
         returns (
             uint gav,
             uint feesInDenominationAsset,  // unclaimed amount
@@ -137,17 +138,23 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return (gav, feesInDenominationAsset, feesInShares, nav, sharePrice, gavPerShareNetManagementFee);
     }
 
-    function calcSharePrice() returns (uint sharePrice) {
+    function calcSharePrice() public returns (uint sharePrice) {
         (,,,,sharePrice,) = performCalculations();
         return sharePrice;
     }
 
-    function calcGavPerShareNetManagementFee() returns (uint gavPerShareNetManagementFee) {
+    function calcGavPerShareNetManagementFee()
+        public
+        returns (uint gavPerShareNetManagementFee)
+    {
         (,,,,,gavPerShareNetManagementFee) = performCalculations();
         return gavPerShareNetManagementFee;
     }
 
-    function getShareCostInAsset(uint _numShares, address _altAsset) returns (uint) {
+    function getShareCostInAsset(uint _numShares, address _altAsset)
+        public
+        returns (uint)
+    {
         uint denominationAssetQuantity = mul(
             _numShares,
             calcGavPerShareNetManagementFee()

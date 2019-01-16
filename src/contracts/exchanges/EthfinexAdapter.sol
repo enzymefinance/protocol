@@ -34,7 +34,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
@@ -78,7 +78,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
 
         LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
@@ -104,7 +104,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
+    ) public {
         Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
@@ -125,6 +125,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
 
      /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted. To be called by Trading spoke
     function getOrder(address targetExchange, uint id, address makerAsset)
+        public
         view
         returns (address, address, uint, uint)
     {

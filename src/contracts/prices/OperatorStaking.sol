@@ -119,13 +119,13 @@ contract OperatorStaking is DBC {
 
     // VIEW FUNCTIONS
 
-    function isValidNode(uint id) view returns (bool) {
+    function isValidNode(uint id) public view returns (bool) {
         // 0 is a sentinel and therefore invalid.
         // A valid node is the head or has a previous node.
         return id != 0 && (id == stakeNodes[0].next || stakeNodes[id].prev != 0);
     }
 
-    function searchNode(address staker) view returns (uint) {
+    function searchNode(address staker) public view returns (uint) {
         uint current = stakeNodes[0].next;
         while (isValidNode(current)) {
             if (staker == stakeNodes[current].data.staker) {
@@ -136,7 +136,7 @@ contract OperatorStaking is DBC {
         return 0;
     }
 
-    function isOperator(address user) view returns (bool) {
+    function isOperator(address user) public view returns (bool) {
         address[] memory operators = getOperators();
         for (uint i; i < operators.length; i++) {
             if (operators[i] == user) {
@@ -147,6 +147,7 @@ contract OperatorStaking is DBC {
     }
 
     function getOperators()
+        public
         view
         returns (address[])
     {
@@ -163,6 +164,7 @@ contract OperatorStaking is DBC {
     }
 
     function getStakersAndAmounts()
+        public
         view
         returns (address[], uint[])
     {
@@ -178,6 +180,7 @@ contract OperatorStaking is DBC {
     }
 
     function totalStakedFor(address user)
+        public
         view
         returns (uint)
     {

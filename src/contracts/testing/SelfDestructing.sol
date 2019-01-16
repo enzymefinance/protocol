@@ -6,5 +6,5 @@ contract SelfDestructing {
         selfdestruct(_heir);
     }
 
-    function () payable {}
+    function () public payable {}
 }

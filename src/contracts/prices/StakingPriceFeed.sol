@@ -22,6 +22,7 @@ contract StakingPriceFeed is SimplePriceFeed {
         address ofQuoteAsset,
         address ofSuperFeed
     )
+        public
         SimplePriceFeed(ofRegistrar, ofQuoteAsset, ofSuperFeed)
     {
         stakingContract = OperatorStaking(ofSuperFeed); // canonical feed *is* staking contract

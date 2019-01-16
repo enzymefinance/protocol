@@ -61,11 +61,11 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
     }
 
-    function hasRequest(address _who) view returns (bool) {
+    function hasRequest(address _who) public view returns (bool) {
         return requests[_who].timestamp > 0;
     }
 
-    function hasExpiredRequest(address _who) view returns (bool) {
+    function hasExpiredRequest(address _who) public view returns (bool) {
         return block.timestamp > add(requests[_who].timestamp, REQUEST_LIFESPAN);
     }
 
@@ -238,6 +238,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
+        public
         view
         returns (uint remainingShareQuantity)
     {

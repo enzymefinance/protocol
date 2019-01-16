@@ -12,7 +12,7 @@ import "ExchangeAdapter.sol";
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is DSMath, ExchangeAdapter {
 
-    function () payable {}
+    function () public payable {}
 
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
@@ -27,7 +27,7 @@ contract EngineAdapter is DSMath, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
 
         address mlnAddress = orderAddresses[0];

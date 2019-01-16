@@ -20,7 +20,7 @@ contract MockAdapter is ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
+    ) public {
         Hub hub = getHub();
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
@@ -46,7 +46,7 @@ contract MockAdapter is ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
+    ) public {
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
@@ -71,7 +71,7 @@ contract MockAdapter is ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
+    ) public {
         Hub hub = getHub();
         address makerAsset = orderAddresses[2];
 

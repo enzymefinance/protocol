@@ -29,7 +29,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
@@ -103,7 +103,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
@@ -140,7 +140,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
         LibOrder.Order memory order = Trading(address(this)).getZeroExOrderDetails(identifier);
         address makerAsset = getAssetAddress(order.makerAssetData);
@@ -165,6 +165,7 @@ contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
 
     /// @dev Get order details
     function getOrder(address targetExchange, uint id, address makerAsset)
+        public
         view
         returns (address, address, uint, uint)
     {

@@ -44,12 +44,20 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         PriceUpdate(_assets, _prices);
     }
 
-    function getPrice(address ofAsset) view returns (uint price, uint timestamp) {
+    function getPrice(address ofAsset)
+        public
+        view
+        returns (uint price, uint timestamp)
+    {
         Data data = assetsToPrices[ofAsset];
         return (data.price, data.timestamp);
     }
 
-    function getPrices(address[] ofAssets) view returns (uint[], uint[]) {
+    function getPrices(address[] ofAssets)
+        public
+        view
+        returns (uint[], uint[])
+    {
         uint[] memory prices = new uint[](ofAssets.length);
         uint[] memory timestamps = new uint[](ofAssets.length);
         for (uint i; i < ofAssets.length; i++) {
@@ -63,6 +71,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     function getPriceInfo(address ofAsset)
+        public
         view
         returns (uint price, uint assetDecimals)
     {
@@ -71,6 +80,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     function getInvertedPriceInfo(address ofAsset)
+        public
         view
         returns (uint invertedPrice, uint assetDecimals)
     {
@@ -90,21 +100,21 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         );
     }
 
-    function setAlwaysValid(bool _state) {
+    function setAlwaysValid(bool _state) public {
         alwaysValid = _state;
     }
 
-    function setIsRecent(bool _state) {
+    function setIsRecent(bool _state) public {
         mockIsRecent = _state;
     }
 
     // NB: not permissioned; anyone can change this in a test
-    function setDecimals(address _asset, uint _decimal) {
+    function setDecimals(address _asset, uint _decimal) public {
         assetsToDecimals[_asset] = _decimal;
     }
 
     // needed just to get decimals for prices
-    function batchSetDecimals(address[] _assets, uint[] _decimals) {
+    function batchSetDecimals(address[] _assets, uint[] _decimals) public {
         require(_assets.length == _decimals.length, "Array lengths unequal");
         for (uint i = 0; i < _assets.length; i++) {
             setDecimals(_assets[i], _decimals[i]);
@@ -112,6 +122,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     function getReferencePriceInfo(address ofBase, address ofQuote)
+        public
         view
         returns (uint referencePrice, uint decimal)
     {
@@ -136,6 +147,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         uint sellQuantity,
         uint buyQuantity
     )
+        public
         view
         returns (uint orderPrice)
     {
@@ -146,6 +158,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     /// @param _asset Asset in registrar
     /// @return isValid Price information ofAsset is recent
     function hasValidPrice(address _asset)
+        public
         view
         returns (bool isValid)
     {
@@ -154,6 +167,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     function hasValidPrices(address[] _assets)
+        public
         view
         returns (bool)
     {
@@ -171,6 +185,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     /// @param buyAsset Asset for which check to be done if data exists
     /// @return Whether assets exist for given asset pair
     function existsPriceOnAssetPair(address sellAsset, address buyAsset)
+        public
         view
         returns (bool isExistent)
     {

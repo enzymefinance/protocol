@@ -10,7 +10,7 @@ contract Vault is VaultInterface, Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
-    function withdraw(address token, uint amount) auth {
+    function withdraw(address token, uint amount) public auth {
         ERC20(token).transfer(msg.sender, amount);
     }
 }

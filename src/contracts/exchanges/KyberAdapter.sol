@@ -38,7 +38,7 @@ contract KyberAdapter is DBC, DSMath, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
 
         address makerAsset = orderAddresses[2];
