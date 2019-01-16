@@ -4,6 +4,7 @@ import {
   BigInteger,
   power,
   multiply,
+  toFixed,
 } from '@melonproject/token-math';
 
 import { Exchanges } from '~/Contracts';
@@ -43,6 +44,7 @@ import {
 } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
+import { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
 
 describe('generalWalkthrough', () => {
   const shared: {
@@ -178,8 +180,18 @@ describe('generalWalkthrough', () => {
       await calcGav(shared.env, routes.accountingAddress),
     );
 
-    // const redemption = await redeem(routes.participationAddress);
-    // debug('Redeemed');
+    const initialCalculations = await performCalculations(
+      shared.env,
+      routes.accountingAddress,
+    );
+
+    const ranking = await getFundDetails(shared.env);
+
+    debug({ initialCalculations, ranking });
+
+    expect(toFixed(initialCalculations.sharePrice)).toEqual(
+      toFixed(ranking[0].sharePrice),
+    );
 
     await getFundHoldings(shared.env, routes.accountingAddress);
 
