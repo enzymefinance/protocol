@@ -1,12 +1,12 @@
 import web3EthAbi from 'web3-eth-abi';
+import { Address, QuantityInterface } from '@melonproject/token-math';
+
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts, Exchanges } from '~/Contracts';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
-import { Address } from '@melonproject/token-math/address';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
 
 const isOasisDexTakePermitted = async (
   environment: Environment,

@@ -1,4 +1,4 @@
-import { BigInteger } from '@melonproject/token-math/bigInteger';
+import { BigInteger } from '@melonproject/token-math';
 
 // TODO: JSDoc comments here
 // instances is object containing contract instances of mln and weth

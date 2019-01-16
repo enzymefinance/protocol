@@ -1,4 +1,4 @@
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface } from '@melonproject/token-math';
 
 import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';

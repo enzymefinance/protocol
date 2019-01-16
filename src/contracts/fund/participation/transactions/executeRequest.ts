@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { signTransaction } from '~/utils/environment/signTransaction';
 import { executeRequestFor } from './executeRequestFor';
 import { Environment } from '~/utils/environment/Environment';

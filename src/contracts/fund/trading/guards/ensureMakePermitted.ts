@@ -1,8 +1,8 @@
+import { QuantityInterface, Address } from '@melonproject/token-math';
+
 import { ensure } from '~/utils/guards/ensure';
 import { isOasisDexMakePermitted } from '~/contracts/fund/trading/calls/isOasisDexMakePermitted';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
 import { Environment } from '~/utils/environment/Environment';
-import { Address } from '@melonproject/token-math/address';
 
 const ensureMakePermitted = async (
   environment: Environment,

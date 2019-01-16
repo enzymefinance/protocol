@@ -1,5 +1,5 @@
 import { default as BigNumber } from 'bignumber.js';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface } from '@melonproject/token-math';
 
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';

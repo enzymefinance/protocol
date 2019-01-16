@@ -4,7 +4,7 @@ import {
 } from '~/utils/solidity/transactionFactory';
 
 import { Contracts } from '~/Contracts';
-import { QuantityInterface } from '@melonproject/token-math/quantity';
+import { QuantityInterface } from '@melonproject/token-math';
 
 export interface UnstakeArgs {
   amount: QuantityInterface;

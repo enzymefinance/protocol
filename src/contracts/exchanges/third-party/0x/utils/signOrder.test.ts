@@ -1,5 +1,5 @@
 import { Environment } from '~/utils/environment/Environment';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math';
 
 import {
   initTestEnvironment,

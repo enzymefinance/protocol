@@ -4,7 +4,7 @@ import {
   PrepareArgsFunction,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
-import { PriceInterface, toAtomic } from '@melonproject/token-math/price';
+import { PriceInterface, toAtomic } from '@melonproject/token-math';
 import { getLatestBlock } from '~/utils/evm';
 import { LogLevels } from '~/utils/environment/Environment';
 

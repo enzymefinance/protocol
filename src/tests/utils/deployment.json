@@ -52,7 +52,14 @@
       },
       "matchingMarket": "0x843C1028F40c2410531Af049eAC27F135B296247",
       "zeroEx": "0xCA3139e0D64f28202d0b2e40018059B939bE51d1",
-      "ethfinex": "0xCA3139e0D64f28202d0b2e40018059B939bE51d1"
+      "ethfinex":{
+        "exchange":"0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
+        "wrapperRegistryEFX":"0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9",
+        "wrapperPairs":[
+
+        ],
+        "erc20proxy": ""
+        }
     },
     "tokens": [
       {

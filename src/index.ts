@@ -65,3 +65,7 @@ export {
 export {
   getDenominationAsset,
 } from '~/contracts/fund/accounting/calls/getDenominationAsset';
+export {
+  makeOasisDexOrder,
+} from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
+export { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
