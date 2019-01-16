@@ -5,6 +5,8 @@ import {
   greaterThan,
   isEqual,
   toFixed,
+  subtract,
+  toBI,
 } from '@melonproject/token-math';
 import { sendEth } from '~/utils/evm/sendEth';
 import { setupInvestedTestFund } from '../utils/setupInvestedTestFund';
@@ -33,6 +35,8 @@ import {
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
+import { takeOrderOnKyber } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
+import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 
 expect.extend({ toBeTrueWith });
 
@@ -50,6 +54,9 @@ describe('playground', () => {
       master.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
 
     const zeroEx = master.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
+
+    const kyber =
+      master.deployment.exchangeConfigs[Exchanges.KyberNetwork].exchange;
 
     const manager = await withNewAccount(master);
     const trader = await withNewAccount(master);
@@ -188,6 +195,27 @@ describe('playground', () => {
       isEqual,
       createQuantity(mln, 0.75),
     );
+
+    const preMlnBalance = await balanceOf(manager, mln.address, {
+      address: routes.vaultAddress,
+    });
+
+    const makerQuantity = createQuantity(mln, 0.75);
+    await takeOrderOnKyber(manager, routes.tradingAddress, {
+      makerQuantity,
+      takerQuantity: createQuantity(weth, 0.075),
+    });
+    const postMlnBalance = await balanceOf(manager, mln.address, {
+      address: routes.vaultAddress,
+    });
+
+    // expect(
+    //   greaterThan(
+    //     subtract(postMlnBalance, preMlnBalance),
+    //     toBI(makerQuantity),
+    //   ),
+    // ).toBeTruthy();
+    log.debug('Take order from Kyber');
 
     await shutDownFund(manager, melonContracts.version, {
       hub: routes.hubAddress,
