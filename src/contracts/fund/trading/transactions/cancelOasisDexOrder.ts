@@ -14,10 +14,12 @@ import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 
-export type CancelOasisDexOrderResult = any;
+export interface CancelOasisDexOrderResult {
+  id: string;
+}
 
 export interface CancelOasisDexOrderArgs {
-  id?: string;
+  id: string;
   maker: Address;
   makerAsset: Address;
   takerAsset: Address;
