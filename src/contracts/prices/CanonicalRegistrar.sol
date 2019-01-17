@@ -11,9 +11,9 @@ contract CanonicalRegistrar is DSThing {
 
     struct Asset {
         bool exists; // True if asset is registered here
-        bytes32 name; // Human-readable name of the Asset as in ERC223 token standard
-        bytes8 symbol; // Human-readable symbol of the Asset as in ERC223 token standard
-        uint decimals; // Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard
+        bytes32 name; // Human-readable name of the Asset
+        bytes8 symbol; // Human-readable symbol of the Asset
+        uint decimals; // Decimal, order of magnitude of precision, of the Asset
         string url; // URL for additional information of Asset
         string ipfsHash; // Same as url but for ipfs
         address breakIn; // Break in contract on destination chain
@@ -49,9 +49,9 @@ contract CanonicalRegistrar is DSThing {
     /// @dev Pre: Only registrar owner should be able to register
     /// @dev Post: Address ofAsset is registered
     /// @param ofAsset Address of asset to be registered
-    /// @param inputName Human-readable name of the Asset as in ERC223 token standard
-    /// @param inputSymbol Human-readable symbol of the Asset as in ERC223 token standard
-    /// @param inputDecimals Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param inputName Human-readable name of the Asset
+    /// @param inputSymbol Human-readable symbol of the Asset
+    /// @param inputDecimals Human-readable symbol of the Asset
     /// @param inputUrl Url for extended information of the asset
     /// @param inputIpfsHash Same as url but for ipfs
     /// @param breakInBreakOut Address of break in and break out contracts on destination chain
@@ -126,8 +126,8 @@ contract CanonicalRegistrar is DSThing {
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
     /// @param ofAsset Address of the asset to be updated
-    /// @param inputName Human-readable name of the Asset as in ERC223 token standard
-    /// @param inputSymbol Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param inputName Human-readable name of the Asset
+    /// @param inputSymbol Human-readable symbol of the Asset
     /// @param inputUrl Url for extended information of the asset
     /// @param inputIpfsHash Same as url but for ipfs
     function updateAsset(

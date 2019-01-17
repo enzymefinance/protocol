@@ -134,9 +134,9 @@ contract Registry is DSAuth {
     /// @dev Pre: Only registrar owner should be able to register
     /// @dev Post: Address _asset is registered
     /// @param _asset Address of asset to be registered
-    /// @param _name Human-readable name of the Asset as in ERC223 token standard
-    /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
-    /// @param _decimals Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param _name Human-readable name of the Asset
+    /// @param _symbol Human-readable symbol of the Asset
+    /// @param _decimals Human-readable symbol of the Asset
     /// @param _url Url for extended information of the asset
     /// @param _standards Integers of EIP standards this asset adheres to
     /// @param _sigs Function signatures for whitelisted asset functions
@@ -239,8 +239,8 @@ contract Registry is DSAuth {
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
     /// @param _asset Address of the asset to be updated
-    /// @param _name Human-readable name of the Asset as in ERC223 token standard
-    /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param _name Human-readable name of the Asset
+    /// @param _symbol Human-readable symbol of the Asset
     /// @param _url Url for extended information of the asset
     function updateAsset(
         address _asset,
