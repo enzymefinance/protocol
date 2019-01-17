@@ -19,18 +19,18 @@ export interface TakeOasisDexOrderArgs {
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   maker: Address;
-  fillTakerTokenAmount?: QuantityInterface;
+  fillTakerQuantity?: QuantityInterface;
 }
 
 const guard = async (
   environment,
-  { id, makerQuantity, takerQuantity, fillTakerTokenAmount = takerQuantity },
+  { id, makerQuantity, takerQuantity, fillTakerQuantity = takerQuantity },
   contractAddress,
 ) => {
   const hubAddress = await getHub(environment, contractAddress);
   const { vaultAddress } = await getRoutes(environment, hubAddress);
 
-  const minBalance = fillTakerTokenAmount;
+  const minBalance = fillTakerQuantity;
 
   await ensureSufficientBalance(environment, minBalance, vaultAddress);
   await ensureFundOwner(environment, contractAddress);
@@ -40,10 +40,11 @@ const guard = async (
   await ensureTakePermitted(
     environment,
     contractAddress,
-    id,
+    Exchanges.MatchingMarket,
     makerQuantity,
     takerQuantity,
-    fillTakerTokenAmount,
+    fillTakerQuantity,
+    id,
   );
 };
 
@@ -54,7 +55,7 @@ const prepareArgs = async (
     makerQuantity,
     takerQuantity,
     maker,
-    fillTakerTokenAmount = takerQuantity,
+    fillTakerQuantity = takerQuantity,
   },
   contractAddress,
 ) => {
@@ -80,7 +81,7 @@ const prepareArgs = async (
       '0',
       '0',
       '0',
-      fillTakerTokenAmount.quantity.toString(),
+      fillTakerQuantity.quantity.toString(),
       0,
     ],
     `0x${Number(id)

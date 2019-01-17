@@ -27,8 +27,8 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
     /// @param targetExchange Address of the exchange
     /// @param orderAddresses [2] Maker asset (Dest token)
     /// @param orderAddresses [3] Taker asset (Src token)
-    /// @param orderValues [0] Maker asset amount (Dest token amount)
-    /// @param orderValues [1] Taker asset amount (Src token amount)
+    /// @param orderValues [0] Maker asset quantity (Dest token amount)
+    /// @param orderValues [1] Taker asset quantity (Src token amount)
     function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -39,6 +39,11 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         bytes signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
+
+        require(	
+            orderValues[1] == orderValues[6],	
+            "fillTakerQuantity must equal takerAssetQuantity"	
+        );
 
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];

@@ -144,7 +144,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             referencePrice,
             decimals
         ) = getRawReferencePriceInfo(_baseAsset, _quoteAsset);
-        require(isValid);
+        require(isValid, "Price is not valid");
         return (referencePrice, decimals);
     }
 

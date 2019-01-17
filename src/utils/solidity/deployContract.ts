@@ -5,11 +5,42 @@ import { Address, toBI, greaterThan } from '@melonproject/token-math';
 import { solidityCompileTarget } from '~/settings';
 import { getWeb3Options } from '~/utils/environment/getWeb3Options';
 import { Contracts } from '~/Contracts';
-import { TransactionArgs } from './transactionFactory';
-import { Environment, LogLevels } from '~/utils/environment/Environment';
+import { TransactionArgs, UnsignedRawTransaction } from './transactionFactory';
+import { Environment } from '~/utils/environment/Environment';
 import { ensure } from '~/utils/guards/ensure';
 import { signTransaction } from '../environment/signTransaction';
 import { EnsureError } from '../guards/EnsureError';
+import { getLogCurried } from '../environment/getLogCurried';
+
+const getLog = getLogCurried('melon:protocol:utils:solidity:deploy');
+
+interface PrepareDeployReturn {
+  unsignedTransaction: UnsignedRawTransaction;
+  txIdentifier?: string;
+}
+
+interface SendDeployArgs {
+  signedTransaction: string;
+  txIdentifier?: string;
+}
+
+type PrepareDeployFunction = {
+  (
+    environment: Environment,
+    pathToSolidityFile: string,
+    args?: TransactionArgs,
+  ): Promise<PrepareDeployReturn>;
+  (
+    environment: Environment,
+    contract: Contracts,
+    args: TransactionArgs,
+  ): Promise<PrepareDeployReturn>;
+};
+
+type SendDeployFunction = (
+  environment,
+  args: SendDeployArgs,
+) => Promise<Address>;
 
 // TODO: Refactor all callers to only use the Contract interface
 type DeployContract = {
@@ -25,19 +56,19 @@ type DeployContract = {
   ): Promise<Address>;
 };
 
-export const deployContract: DeployContract = async (
+interface DeployContractMixin {
+  prepare: PrepareDeployFunction;
+  send: SendDeployFunction;
+}
+
+type EnhancedDeploy = DeployContract & DeployContractMixin;
+
+const prepare: PrepareDeployFunction = async (
   environment: Environment,
   pathToSolidityFile,
   args = [],
 ) => {
-  const debug = environment.logger(
-    'melon:protocol:utils:solidity',
-    LogLevels.DEBUG,
-  );
-  const info = environment.logger(
-    'melon:protocol:utils:solidity',
-    LogLevels.INFO,
-  );
+  const log = getLog(environment);
 
   const txIdentifier = `${pathToSolidityFile}(${(args &&
     args.length &&
@@ -59,7 +90,7 @@ export const deployContract: DeployContract = async (
 
   const parsedABI = JSON.parse(rawABI);
 
-  debug(
+  log.debug(
     'Setup transaction for deployment of',
     txIdentifier,
     environment.wallet.address,
@@ -79,7 +110,7 @@ export const deployContract: DeployContract = async (
       from: environment.wallet.address.toString(),
     });
 
-    debug('Gas estimation:', gasEstimation, options);
+    log.debug('Gas estimation:', gasEstimation, options);
 
     ensure(
       !greaterThan(toBI(gasEstimation), toBI(options.gas || 0)),
@@ -94,12 +125,34 @@ export const deployContract: DeployContract = async (
       data: encodedAbi,
       ...options,
     };
-    const signedTransaction = await signTransaction(
-      environment,
-      unsignedTransaction,
-    );
 
+    return {
+      txIdentifier,
+      unsignedTransaction,
+    };
+  } catch (e) {
+    if (e instanceof EnsureError) {
+      throw e;
+    } else {
+      // tslint:disable-next-line:max-line-length
+      throw new Error(
+        `Error preparing deploy contract transaction: ${txIdentifier}\n${
+          e.message
+        }`,
+      );
+    }
+  }
+};
+
+const send: SendDeployFunction = async (
+  environment,
+  { txIdentifier = 'Unknown deployment', signedTransaction },
+) => {
+  const log = getLog(environment);
+
+  try {
     let txHash;
+
     const receipt = await environment.eth
       .sendSignedTransaction(signedTransaction)
       .on('error', error => {
@@ -107,10 +160,11 @@ export const deployContract: DeployContract = async (
       })
       .on('transactionHash', t => {
         txHash = t;
-        debug('TxHash', txIdentifier, txHash);
+        log.debug('TxHash', txIdentifier, txHash);
       })
-      .once('confirmation', c => debug('Confirmation', txIdentifier, c));
-    info(
+      .once('confirmation', c => log.debug('Confirmation', txIdentifier, c));
+
+    log.info(
       'Got receipt for:',
       txIdentifier,
       'at contract address:',
@@ -118,12 +172,36 @@ export const deployContract: DeployContract = async (
       'transaction hash:',
       txHash,
     );
+
     return new Address(receipt.contractAddress);
   } catch (e) {
-    if (e instanceof EnsureError) {
-      throw e;
-    } else {
-      throw new Error(`Error deploy contract ${txIdentifier}\n${e.message}`);
-    }
+    // tslint:disable-next-line:max-line-length
+    throw new Error(`Error deploying contract: ${txIdentifier}\n${e.message}`);
   }
 };
+
+const deployContract: EnhancedDeploy = async (
+  environment: Environment,
+  pathToSolidityFile,
+  args = [],
+) => {
+  const { txIdentifier, unsignedTransaction } = await prepare(
+    environment,
+    pathToSolidityFile,
+    args,
+  );
+
+  const signedTransaction = await signTransaction(
+    environment,
+    unsignedTransaction,
+  );
+
+  const address = await send(environment, { txIdentifier, signedTransaction });
+
+  return address;
+};
+
+deployContract.prepare = prepare;
+deployContract.send = send;
+
+export { deployContract };
