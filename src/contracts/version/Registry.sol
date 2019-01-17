@@ -28,6 +28,7 @@ contract Registry is DSAuth {
     event AssetRemoval (address indexed asset);
     event ExchangeRemoval (address indexed exchange);
     event VersionRegistration(address indexed version);
+    event IncentiveChange(address indexed incentiveAmount);
     event PriceSourceChange(address indexed priceSource);
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
@@ -80,6 +81,7 @@ contract Registry is DSAuth {
     address public nativeAsset;
     address public engine;
     address public ethfinexWrapperRegistry;
+    uint public incentive = 10 finney;
 
     // METHODS
 
@@ -202,6 +204,11 @@ contract Registry is DSAuth {
         versionInformation[_version].name = _name;
         registeredVersions.push(_version);
         emit VersionRegistration(_version);
+    }
+
+    function setIncentive(uint _weiAmount) public auth {
+        incentive = _weiAmount;
+        emit IncentiveChange(_weiAmount);
     }
 
     function setPriceSource(address _priceSource) public auth {

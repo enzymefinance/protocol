@@ -23,7 +23,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     uint constant public SHARES_DECIMALS = 18;
     uint constant public INVEST_DELAY = 10 minutes;
     uint constant public REQUEST_LIFESPAN = 1 days;
-    uint constant public REQUEST_INCENTIVE = 10 finney;
 
     mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
@@ -93,7 +92,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         external
         notShutDown
         payable
-        amguPayable(REQUEST_INCENTIVE)
+        amguPayable(true)
         onlyInitialized
     {
         PolicyManager(routes.policyManager).preValidate(
@@ -107,7 +106,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             "Investment not allowed in this asset"
         );
         require(
-            msg.value >= REQUEST_INCENTIVE,
+            msg.value >= Registry(routes.registry).incentive(),
             "Incorrect incentive amount"
         );
         require(
@@ -144,7 +143,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     /// @notice Can only cancel when no price, request expired or fund shut down
-    function cancelRequest() external payable amguPayable(0) {
+    function cancelRequest() external payable amguPayable(false) {
         require(hasRequest(msg.sender), "No request to cancel");
         PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
         Request request = requests[msg.sender];
@@ -161,7 +160,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         ERC20 investmentAsset = ERC20(request.investmentAsset);
         uint investmentAmount = request.investmentAmount;
         delete requests[msg.sender];
-        msg.sender.transfer(REQUEST_INCENTIVE);
+        msg.sender.transfer(Registry(routes.registry).incentive());
         require(
             investmentAsset.transfer(msg.sender, investmentAmount),
             "InvestmentAsset refund failed"
@@ -173,7 +172,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     function executeRequestFor(address requestOwner)
         public
         notShutDown
-        amguPayable(0)
+        amguPayable(false)
         payable
     {
         Request memory request = requests[requestOwner];
@@ -222,7 +221,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
 
         lockedAssetsForInvestor[requestOwner] = 0;
-        msg.sender.transfer(REQUEST_INCENTIVE);
+        msg.sender.transfer(Registry(routes.registry).incentive());
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
