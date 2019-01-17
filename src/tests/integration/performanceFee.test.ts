@@ -311,7 +311,7 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   expect(postFundCalculations.sharePrice).toEqual(
     preFundCalculations.sharePrice,
   );
-  expect(currentHWM).toEqual(preFundCalculations.sharePrice);
+  expect(currentHWM).toEqual(preFundCalculations.gavPerShareNetManagementFee);
   expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
   // expect(new BigInteger(fundCalculations.feesInDenominationAsset)).toEqual(
   //   expectedPerformanceFee,
