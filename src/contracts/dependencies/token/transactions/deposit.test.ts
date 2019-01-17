@@ -1,7 +1,7 @@
 import { Environment } from '~/utils/environment/Environment';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '../calls/getToken';
-import { createQuantity, isEqual } from '@melonproject/token-math/quantity';
+import { createQuantity, isEqual } from '@melonproject/token-math';
 import { balanceOf } from '../calls/balanceOf';
 import { deployWeth } from './deployWeth';
 import { deposit } from './deposit';

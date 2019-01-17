@@ -1,7 +1,7 @@
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils, assetDataUtils, Order } from '@0x/order-utils';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import { BigInteger, add, subtract } from '@melonproject/token-math/bigInteger';
+import { BigInteger, add, subtract, toBI } from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -268,15 +268,15 @@ test('Third party takes the order made by the fund', async () => {
 
   expect(result).toBeTruthy();
   expect(post.fund.mln).toEqual(
-    subtract(pre.fund.mln, s.signedOrder.makerAssetAmount),
+    subtract(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.fund.weth).toEqual(
-    add(pre.fund.weth, s.signedOrder.takerAssetAmount),
+    add(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
   expect(postDeployerWrappedMLN).toEqual(
-    add(preDeployerWrappedMLN, s.signedOrder.makerAssetAmount),
+    add(preDeployerWrappedMLN, toBI(s.signedOrder.makerAssetAmount)),
   );
   expect(post.deployer.weth).toEqual(
-    subtract(pre.deployer.weth, s.signedOrder.takerAssetAmount),
+    subtract(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
   );
 });

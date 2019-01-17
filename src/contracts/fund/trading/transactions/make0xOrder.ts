@@ -1,12 +1,11 @@
 import * as web3Utils from 'web3-utils';
 import { assetDataUtils } from '@0x/order-utils';
 import { SignedOrder } from '@0x/types';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math';
 
 import { Contracts, Exchanges } from '~/Contracts';
 
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-import { NULL_ADDRESS } from './take0xOrder';
 import {
   GuardFunction,
   PrepareArgsFunction,
@@ -18,6 +17,7 @@ import { getRoutes } from '../../hub/calls/getRoutes';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 // The order needs to be signed by the manager
 export interface Make0xOrderArgs {
@@ -65,11 +65,11 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
     FunctionSignatures.makeOrder,
     [
       contractAddress.toString(),
-      NULL_ADDRESS,
+      emptyAddress,
       makerTokenAddress,
       takerTokenAddress,
       signedOrder.feeRecipientAddress,
-      NULL_ADDRESS,
+      emptyAddress,
     ],
     [
       signedOrder.makerAssetAmount.toFixed(),

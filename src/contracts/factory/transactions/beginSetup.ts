@@ -1,5 +1,5 @@
-import { TokenInterface } from '@melonproject/token-math/token';
-import { Address } from '@melonproject/token-math/address';
+import { Address, BigInteger, TokenInterface } from '@melonproject/token-math';
+
 import {
   transactionFactory,
   PostProcessFunction,
@@ -9,7 +9,6 @@ import {
 import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
 import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
-import { BigInteger } from '@melonproject/token-math/bigInteger';
 
 // import ensure from '~/utils/guards/ensure';
 

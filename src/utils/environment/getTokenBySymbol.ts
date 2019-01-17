@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface } from '@melonproject/token-math';
 import { Environment } from './Environment';
 
 export const getTokenBySymbol = (

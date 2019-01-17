@@ -1,7 +1,7 @@
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { TokenInterface } from '@melonproject/token-math/token';
+import { TokenInterface } from '@melonproject/token-math';
 
 const postProcess = async (
   environment,

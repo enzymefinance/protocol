@@ -1,9 +1,9 @@
 import {
   isToken,
   hasAddress,
-  log,
+  display,
   TokenInterface,
-} from '@melonproject/token-math/token';
+} from '@melonproject/token-math';
 import { ensure } from '~/utils/guards/ensure';
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
@@ -25,11 +25,11 @@ export const guards: GuardFunction<AddTokenPairWhitelistArgs> = async (
 ) => {
   ensure(
     isToken(quoteToken) && hasAddress(quoteToken),
-    `Token ${log(quoteToken)} is invalid`,
+    `Token ${display(quoteToken)} is invalid`,
   );
   ensure(
     isToken(baseToken) && hasAddress(baseToken),
-    `Token ${log(baseToken)} is invalid`,
+    `Token ${display(baseToken)} is invalid`,
   );
 };
 

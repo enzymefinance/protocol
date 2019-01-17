@@ -1,7 +1,4 @@
-import {
-  createQuantity,
-  QuantityInterface,
-} from '@melonproject/token-math/quantity';
+import { createQuantity, QuantityInterface } from '@melonproject/token-math';
 import { callFactory } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
 import { getToken } from './getToken';

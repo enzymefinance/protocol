@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import * as web3Utils from 'web3-utils';
 
 import { ensure } from '~/utils/guards/ensure';

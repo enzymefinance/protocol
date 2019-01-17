@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { isShutDown } from '../calls/isShutDown';
 import { ensure } from '~/utils/guards/ensure';
 import { Environment } from '~/utils/environment/Environment';

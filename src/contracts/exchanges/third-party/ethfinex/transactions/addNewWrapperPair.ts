@@ -1,5 +1,4 @@
-import { TokenInterface } from '@melonproject/token-math/token';
-import { Address } from '@melonproject/token-math/address';
+import { Address, TokenInterface } from '@melonproject/token-math';
 
 import {
   transactionFactory,

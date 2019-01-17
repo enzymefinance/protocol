@@ -3,7 +3,7 @@ import {
   PrepareArgsFunction,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 
 export interface CollectAndUpdateArgs {
   ofAssets: Address[];

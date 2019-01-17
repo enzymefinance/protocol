@@ -198,8 +198,8 @@ contract Registry is DSAuth {
         address _version,
         bytes32 _name
     ) auth {
-        require(!versionInformation[_version].exists);
-        require(!versionNameExists[_name]);
+        require(!versionInformation[_version].exists, "Version already exists");
+        require(!versionNameExists[_name], "Version name already exists");
         versionInformation[_version].exists = true;
         versionNameExists[_name] = true;
         versionInformation[_version].name = _name;

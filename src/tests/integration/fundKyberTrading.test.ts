@@ -6,7 +6,7 @@ import {
   multiply,
   divide,
   power,
-} from '@melonproject/token-math/bigInteger';
+} from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -119,7 +119,7 @@ test('fund receives ETH from investment', async () => {
   expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
 });
 
-test('swap ethToken for mlnToken with specific order price (minRate)', async () => {
+test('swap ethToken for mln with specific order price (minRate)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const srcAmount = power(new BigInteger(10), new BigInteger(17));
   const [bestRate] = Object.values(
@@ -143,7 +143,7 @@ test('swap ethToken for mlnToken with specific order price (minRate)', async () 
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
+      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -180,7 +180,7 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
+      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -224,7 +224,7 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
+      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -273,7 +273,7 @@ test('takeOrder fails if minPrice is not satisfied', async () => {
           NULL_ADDRESS,
           NULL_ADDRESS,
         ],
-        [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, 0, 0],
+        [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
         randomHexOfSize(20),
         '0x0',
         '0x0',

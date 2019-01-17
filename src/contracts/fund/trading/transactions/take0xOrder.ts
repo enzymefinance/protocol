@@ -1,6 +1,6 @@
 import { assetDataUtils } from '@0x/order-utils';
 import * as web3Utils from 'web3-utils';
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math';
 import {
   GuardFunction,
   PrepareArgsFunction,
@@ -17,8 +17,7 @@ import {
   parse0xFillReceipt,
 } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { getFeeToken } from '~/contracts/exchanges/third-party/0x/calls/getFeeToken';
-
-export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 const guard: GuardFunction<FillOrderArgs> = async () => {
   /* TODO:
@@ -56,11 +55,11 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
     FunctionSignatures.takeOrder,
     [
       signedOrder.makerAddress.toString(),
-      NULL_ADDRESS /*contractAddress.toString() */,
+      emptyAddress /*contractAddress.toString() */,
       makerTokenAddress,
       takerTokenAddress,
       signedOrder.feeRecipientAddress,
-      NULL_ADDRESS,
+      emptyAddress,
     ],
     [
       signedOrder.makerAssetAmount.toFixed(),

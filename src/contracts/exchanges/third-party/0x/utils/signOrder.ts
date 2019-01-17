@@ -1,6 +1,6 @@
 import { signatureUtils, orderHashUtils } from '@0x/order-utils';
 import { Order, SignedOrder, SignatureType } from '@0x/types';
-import { Address } from '@melonproject/token-math/address';
+import { Address } from '@melonproject/token-math';
 import { Environment } from '~/utils/environment/Environment';
 
 const signWithWeb3Wrapper = async (environment, order, signer) => {

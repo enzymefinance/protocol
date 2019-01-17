@@ -1,11 +1,11 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-01-15T22:20:34.259Z",
+    "timestamp": "2019-01-15T13:46:32.609Z",
     "track": "kyberPrice",
-    "version": "0.9.2",
+    "version": "0.9.3",
     "chain": 42,
-    "description": "Add fees"
+    "description": "Add fees and fix participation"
   },
   "melonContracts": {
     "priceSource": "0x0C108c10f5f40a38321e92bF4AE1701B7375D3dB",

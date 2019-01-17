@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { createQuantity } from '@melonproject/token-math/quantity';
+import { createQuantity } from '@melonproject/token-math';
 import { randomString } from '~/utils/helpers/randomString';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
