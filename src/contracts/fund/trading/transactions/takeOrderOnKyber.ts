@@ -13,10 +13,9 @@ import { getRoutes } from '../../hub/calls/getRoutes';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
-import { ensureKyberTakePermitted } from '../guards/ensureKyberTakePermitted';
+import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 
-// The order needs to be signed by the manager
 export interface TakeOrderOnKyberArgs {
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
@@ -35,9 +34,10 @@ const guard: GuardFunction<TakeOrderOnKyberArgs> = async (
   await ensureFundOwner(environment, contractAddress);
   await ensureIsNotShutDown(environment, hubAddress);
 
-  await ensureKyberTakePermitted(
+  await ensureTakePermitted(
     environment,
     contractAddress,
+    Exchanges.KyberNetwork,
     makerQuantity,
     takerQuantity,
     fillTakerQuantity,
@@ -53,10 +53,10 @@ const prepareArgs: PrepareArgsFunction<TakeOrderOnKyberArgs> = async (
     exchange: Exchanges.KyberNetwork,
   });
 
-  const takerAddress = takerQuantity.token.address;
-  const makerAddress = makerQuantity.token.address;
-  const takerAmount = takerQuantity.quantity.toString();
-  const makerAmount = makerQuantity.quantity.toString();
+  const takerAsset = takerQuantity.token.address;
+  const makerAsset = makerQuantity.token.address;
+  const takerAssetAmount = takerQuantity.quantity.toString();
+  const makerAssetAmount = makerQuantity.quantity.toString();
   const fillTakerAmount = fillTakerQuantity.quantity.toString();
 
   const args = [
@@ -65,12 +65,12 @@ const prepareArgs: PrepareArgsFunction<TakeOrderOnKyberArgs> = async (
     [
       emptyAddress,
       emptyAddress,
-      makerAddress,
-      takerAddress,
+      makerAsset,
+      takerAsset,
       emptyAddress,
       emptyAddress,
     ],
-    [makerAmount, takerAmount, 0, 0, 0, 0, fillTakerAmount, 0],
+    [makerAssetAmount, takerAssetAmount, 0, 0, 0, 0, fillTakerAmount, 0],
     web3Utils.padLeft('0x0', 64),
     web3Utils.padLeft('0x0', 64),
     web3Utils.padLeft('0x0', 64),
