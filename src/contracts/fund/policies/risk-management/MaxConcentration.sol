@@ -27,7 +27,7 @@ contract MaxConcentration is TradingSignatures, DSMath, Policy {
         address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
         address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
         // Max concentration is only checked for non-quote assets
-        address incomingToken = (sig == MAKE_ORDER) ? addresses[3] : addresses[2];
+        address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
         if (quoteAsset == incomingToken) { return true; }
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
         uint concentration = mul(

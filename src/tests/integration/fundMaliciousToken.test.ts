@@ -50,7 +50,6 @@ beforeAll(async () => {
   await registerAsset(s.environment, s.registry.options.address, {
     assetAddress: maliciousTokenAddress.toLowerCase(),
     assetSymbol: 'MLC',
-    decimals: 18,
     name: '',
     reserveMin: '',
     sigs: [],

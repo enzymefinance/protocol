@@ -54,6 +54,7 @@ beforeAll(async () => {
     },
   };
   const envManager = withDifferentAccount(s.environment, s.manager);
+  await updateTestingPriceFeed(s, s.environment);
   await beginSetup(envManager, s.version.options.address, {
     defaultTokens: [
       s.wethTokenInterface,

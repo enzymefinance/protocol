@@ -43,6 +43,7 @@ contract FeeManager is DSMath, Spoke {
         return total;
     }
 
+    /// @dev Shares to be inflated after update state
     function _rewardFee(Fee fee) internal {
         require(feeIsRegistered[fee], "Fee is not registered");
         uint rewardShares = fee.feeAmount();

@@ -1,14 +1,13 @@
 pragma solidity ^0.4.21;
 
 import "group.sol";
-import "DBC.sol";
 import "Owned.sol";
 import "ERC20.i.sol";
 
 /// @title Operator Staking Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Enables pricefeed operators to self-select via staking
-contract OperatorStaking is DBC {
+contract OperatorStaking {
 
     // EVENTS
 
@@ -71,8 +70,8 @@ contract OperatorStaking is DBC {
         bytes data
     )
         public
-        pre_cond(amount >= minimumStake)
     {
+        require(amount >= minimumStake, "Stake must be above minimum");
         stakedAmounts[msg.sender] += amount;
         updateStakerRanking(msg.sender);
         require(
@@ -106,9 +105,15 @@ contract OperatorStaking is DBC {
 
     function withdrawStake()
         public
-        pre_cond(stakeToWithdraw[msg.sender] > 0)
-        pre_cond(block.timestamp >= latestUnstakeTime[msg.sender] + withdrawalDelay)
     {
+        require(
+            stakeToWithdraw[msg.sender] > 0,
+            "Must withdraw some amount"
+        );
+        require(
+            block.timestamp >= latestUnstakeTime[msg.sender] + withdrawalDelay,
+            "Withdrawal delay has not passed"
+        );
         uint amount = stakeToWithdraw[msg.sender];
         stakeToWithdraw[msg.sender] = 0;
         require(
@@ -119,13 +124,13 @@ contract OperatorStaking is DBC {
 
     // VIEW FUNCTIONS
 
-    function isValidNode(uint id) view returns (bool) {
+    function isValidNode(uint id) public view returns (bool) {
         // 0 is a sentinel and therefore invalid.
         // A valid node is the head or has a previous node.
         return id != 0 && (id == stakeNodes[0].next || stakeNodes[id].prev != 0);
     }
 
-    function searchNode(address staker) view returns (uint) {
+    function searchNode(address staker) public view returns (uint) {
         uint current = stakeNodes[0].next;
         while (isValidNode(current)) {
             if (staker == stakeNodes[current].data.staker) {
@@ -136,7 +141,7 @@ contract OperatorStaking is DBC {
         return 0;
     }
 
-    function isOperator(address user) view returns (bool) {
+    function isOperator(address user) public view returns (bool) {
         address[] memory operators = getOperators();
         for (uint i; i < operators.length; i++) {
             if (operators[i] == user) {
@@ -147,6 +152,7 @@ contract OperatorStaking is DBC {
     }
 
     function getOperators()
+        public
         view
         returns (address[])
     {
@@ -163,6 +169,7 @@ contract OperatorStaking is DBC {
     }
 
     function getStakersAndAmounts()
+        public
         view
         returns (address[], uint[])
     {
@@ -178,6 +185,7 @@ contract OperatorStaking is DBC {
     }
 
     function totalStakedFor(address user)
+        public
         view
         returns (uint)
     {

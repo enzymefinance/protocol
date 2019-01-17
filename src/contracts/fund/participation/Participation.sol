@@ -27,7 +27,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
-    mapping (address => mapping (address => uint)) public lockedAssetsForInvestor;
+    mapping (address => uint) public lockedAssetsForInvestor;
     mapping (address => bool) public hasInvested; // for information purposes only (read)
 
     address[] public historicalInvestors; // for information purposes only (read)
@@ -61,11 +61,11 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         }
     }
 
-    function hasRequest(address _who) view returns (bool) {
+    function hasRequest(address _who) public view returns (bool) {
         return requests[_who].timestamp > 0;
     }
 
-    function hasExpiredRequest(address _who) view returns (bool) {
+    function hasExpiredRequest(address _who) public view returns (bool) {
         return block.timestamp > add(requests[_who].timestamp, REQUEST_LIFESPAN);
     }
 
@@ -114,14 +114,18 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             ERC20(investmentAsset).transferFrom(msg.sender, this, investmentAmount),
             "InvestmentAsset transfer failed"
         );
+        require(
+            requests[msg.sender].timestamp == 0,
+            "Only one request can exist at a time"
+        );
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
             timestamp: block.timestamp
         });
-        lockedAssetsForInvestor[investmentAsset][msg.sender] = add(
-            lockedAssetsForInvestor[investmentAsset][msg.sender],
+        lockedAssetsForInvestor[msg.sender] = add(
+            lockedAssetsForInvestor[msg.sender],
             investmentAmount
         );
         PolicyManager(routes.policyManager).postValidate(
@@ -150,8 +154,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             hub.isShutDown(),
             "No cancellation condition was met"
         );
-        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = sub(
-            lockedAssetsForInvestor[request.investmentAsset][msg.sender],
+        lockedAssetsForInvestor[msg.sender] = sub(
+            lockedAssetsForInvestor[msg.sender],
             request.investmentAmount
         );
         ERC20 investmentAsset = ERC20(request.investmentAsset);
@@ -217,7 +221,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             );
         }
 
-        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = 0;
+        lockedAssetsForInvestor[requestOwner] = 0;
         msg.sender.transfer(REQUEST_INCENTIVE);
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
@@ -238,6 +242,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
+        public
         view
         returns (uint remainingShareQuantity)
     {

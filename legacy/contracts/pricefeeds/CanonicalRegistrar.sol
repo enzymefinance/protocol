@@ -71,6 +71,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         uint[] inputStandards,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
         pre_cond(!assetInformation[ofAsset].exists)
     {
@@ -103,6 +104,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         bool inputTakesCustody,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
         pre_cond(!exchangeInformation[ofExchange].exists)
     {
@@ -136,6 +138,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         uint[] inputStandards,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
         pre_cond(assetInformation[ofAsset].exists)
     {
@@ -157,6 +160,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         bool inputTakesCustody,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
         pre_cond(exchangeInformation[ofExchange].exists)
     {
@@ -174,6 +178,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         address ofAsset,
         uint assetIndex
     )
+        public
         auth
         pre_cond(assetInformation[ofAsset].exists)
     {
@@ -195,6 +200,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         address ofExchange,
         uint exchangeIndex
     )
+        public
         auth
         pre_cond(exchangeInformation[ofExchange].exists)
     {
@@ -211,14 +217,15 @@ contract CanonicalRegistrar is DSThing, DBC {
     // PUBLIC VIEW METHODS
 
     // get asset specific information
-    function getName(address ofAsset) view returns (bytes32) { return assetInformation[ofAsset].name; }
-    function getSymbol(address ofAsset) view returns (bytes8) { return assetInformation[ofAsset].symbol; }
-    function getDecimals(address ofAsset) view returns (uint) { return assetInformation[ofAsset].decimals; }
-    function assetIsRegistered(address ofAsset) view returns (bool) { return assetInformation[ofAsset].exists; }
-    function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
+    function getName(address ofAsset) public view returns (bytes32) { return assetInformation[ofAsset].name; }
+    function getSymbol(address ofAsset) public view returns (bytes8) { return assetInformation[ofAsset].symbol; }
+    function getDecimals(address ofAsset) public view returns (uint) { return assetInformation[ofAsset].decimals; }
+    function assetIsRegistered(address ofAsset) public view returns (bool) { return assetInformation[ofAsset].exists; }
+    function getRegisteredAssets() public view returns (address[]) { return registeredAssets; }
     function assetMethodIsAllowed(
         address ofAsset, bytes4 querySignature
     )
+        public
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[ofAsset].functionSignatures;
@@ -231,9 +238,10 @@ contract CanonicalRegistrar is DSThing, DBC {
     }
 
     // get exchange-specific information
-    function exchangeIsRegistered(address ofExchange) view returns (bool) { return exchangeInformation[ofExchange].exists; }
-    function getRegisteredExchanges() view returns (address[]) { return registeredExchanges; }
+    function exchangeIsRegistered(address ofExchange) public view returns (bool) { return exchangeInformation[ofExchange].exists; }
+    function getRegisteredExchanges() public view returns (address[]) { return registeredExchanges; }
     function getExchangeInformation(address ofExchange)
+        public
         view
         returns (address, bool)
     {
@@ -244,6 +252,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         );
     }
     function getExchangeFunctionSignatures(address ofExchange)
+        public
         view
         returns (bytes4[])
     {
@@ -252,6 +261,7 @@ contract CanonicalRegistrar is DSThing, DBC {
     function exchangeMethodIsAllowed(
         address ofExchange, bytes4 querySignature
     )
+        public
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[ofExchange].functionSignatures;

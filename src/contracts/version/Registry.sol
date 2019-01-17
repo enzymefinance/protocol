@@ -117,7 +117,9 @@ contract Registry is DSAuth {
         );
     }
 
-    function registerFund(address _fund, address _owner, string _name) {
+    function registerFund(address _fund, address _owner, string _name)
+        public
+    {
         require(
             versionInformation[msg.sender].exists,
             "Only a Version can register a fund"
@@ -132,9 +134,8 @@ contract Registry is DSAuth {
     /// @dev Pre: Only registrar owner should be able to register
     /// @dev Post: Address _asset is registered
     /// @param _asset Address of asset to be registered
-    /// @param _name Human-readable name of the Asset as in ERC223 token standard
-    /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
-    /// @param _decimals Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param _name Human-readable name of the Asset
+    /// @param _symbol Human-readable symbol of the Asset
     /// @param _url Url for extended information of the asset
     /// @param _standards Integers of EIP standards this asset adheres to
     /// @param _sigs Function signatures for whitelisted asset functions
@@ -142,12 +143,11 @@ contract Registry is DSAuth {
         address _asset,
         string _name,
         string _symbol,
-        uint _decimals,
         string _url,
         uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
-    ) auth {
+    ) public auth {
         require(registeredAssets.length < MAX_REGISTERED_ENTITIES);
         require(!assetInformation[_asset].exists);
         assetInformation[_asset].exists = true;
@@ -156,13 +156,11 @@ contract Registry is DSAuth {
             _asset,
             _name,
             _symbol,
-            _decimals,
             _url,
             _reserveMin,
             _standards,
             _sigs
         );
-        assert(assetInformation[_asset].exists);
     }
 
     /// @notice Register an exchange information entry
@@ -177,7 +175,7 @@ contract Registry is DSAuth {
         address _adapter,
         bool _takesCustody,
         bytes4[] _sigs
-    ) auth {
+    ) public auth {
         require(registeredExchanges.length < MAX_REGISTERED_ENTITIES);
         require(!exchangeInformation[_exchange].exists);
         exchangeInformation[_exchange].exists = true;
@@ -188,7 +186,6 @@ contract Registry is DSAuth {
             _takesCustody,
             _sigs
         );
-        assert(exchangeInformation[_exchange].exists);
     }
 
     /// @notice Versions cannot be removed from registry
@@ -197,38 +194,37 @@ contract Registry is DSAuth {
     function registerVersion(
         address _version,
         bytes32 _name
-    ) auth {
+    ) public auth {
         require(!versionInformation[_version].exists, "Version already exists");
         require(!versionNameExists[_name], "Version name already exists");
         versionInformation[_version].exists = true;
         versionNameExists[_name] = true;
         versionInformation[_version].name = _name;
         registeredVersions.push(_version);
-        assert(versionInformation[_version].exists);
         emit VersionRegistration(_version);
     }
 
-    function setPriceSource(address _priceSource) auth {
+    function setPriceSource(address _priceSource) public auth {
         priceSource = _priceSource;
         emit PriceSourceChange(_priceSource);
     }
 
-    function setMlnToken(address _mlnToken) auth {
+    function setMlnToken(address _mlnToken) public auth {
         mlnToken = _mlnToken;
         emit MlnTokenChange(_mlnToken);
     }
 
-    function setNativeAsset(address _nativeAsset) auth {
+    function setNativeAsset(address _nativeAsset) public auth {
         nativeAsset = _nativeAsset;
         emit NativeAssetChange(_nativeAsset);
     }
 
-    function setEngine(address _engine) auth {
+    function setEngine(address _engine) public auth {
         engine = _engine;
         emit EngineChange(_engine);
     }
 
-    function setEthfinexWrapperRegistry(address _registry) auth {
+    function setEthfinexWrapperRegistry(address _registry) public auth {
         ethfinexWrapperRegistry = _registry;
         emit EfxWrapperRegistryChange(_registry);
     }
@@ -237,25 +233,23 @@ contract Registry is DSAuth {
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
     /// @param _asset Address of the asset to be updated
-    /// @param _name Human-readable name of the Asset as in ERC223 token standard
-    /// @param _symbol Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param _name Human-readable name of the Asset
+    /// @param _symbol Human-readable symbol of the Asset
     /// @param _url Url for extended information of the asset
     function updateAsset(
         address _asset,
         string _name,
         string _symbol,
-        uint _decimals,
         string _url,
         uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
-    ) auth {
+    ) public auth {
         require(assetInformation[_asset].exists);
-        require(_decimals == ERC20WithFields(_asset).decimals());
         Asset asset = assetInformation[_asset];
         asset.name = _name;
         asset.symbol = _symbol;
-        asset.decimals = _decimals;
+        asset.decimals = ERC20WithFields(_asset).decimals();
         asset.url = _url;
         asset.reserveMin = _reserveMin;
         asset.standards = _standards;
@@ -264,7 +258,7 @@ contract Registry is DSAuth {
             _asset,
             _name,
             _symbol,
-            _decimals,
+            asset.decimals,
             _url,
             _reserveMin,
             _standards,
@@ -277,7 +271,7 @@ contract Registry is DSAuth {
         address _adapter,
         bool _takesCustody,
         bytes4[] _sigs
-    ) auth {
+    ) public auth {
         require(exchangeInformation[_exchange].exists);
         Exchange exchange = exchangeInformation[_exchange];
         exchange.adapter = _adapter;
@@ -297,7 +291,7 @@ contract Registry is DSAuth {
     function removeAsset(
         address _asset,
         uint _assetIndex
-    ) auth {
+    ) public auth {
         require(assetInformation[_asset].exists);
         require(registeredAssets[_assetIndex] == _asset);
         delete assetInformation[_asset];
@@ -306,7 +300,6 @@ contract Registry is DSAuth {
             registeredAssets[i] = registeredAssets[i+1];
         }
         registeredAssets.length--;
-        assert(!assetInformation[_asset].exists);
         emit AssetRemoval(_asset);
     }
 
@@ -317,7 +310,7 @@ contract Registry is DSAuth {
     function removeExchange(
         address _exchange,
         uint _exchangeIndex
-    ) auth {
+    ) public auth {
         require(exchangeInformation[_exchange].exists);
         require(registeredExchanges[_exchangeIndex] == _exchange);
         delete exchangeInformation[_exchange];
@@ -326,20 +319,32 @@ contract Registry is DSAuth {
             registeredExchanges[i] = registeredExchanges[i+1];
         }
         registeredExchanges.length--;
-        assert(!exchangeInformation[_exchange].exists);
         emit ExchangeRemoval(_exchange);
     }
 
     // PUBLIC VIEW METHODS
 
     // get asset specific information
-    function getName(address _asset) view returns (string) { return assetInformation[_asset].name; }
-    function getSymbol(address _asset) view returns (string) { return assetInformation[_asset].symbol; }
-    function getDecimals(address _asset) view returns (uint) { return assetInformation[_asset].decimals; }
-    function getReserveMin(address _asset) view returns (uint) { return assetInformation[_asset].reserveMin; }
-    function assetIsRegistered(address _asset) view returns (bool) { return assetInformation[_asset].exists; }
-    function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
+    function getName(address _asset) public view returns (string) {
+        return assetInformation[_asset].name;
+    }
+    function getSymbol(address _asset) public view returns (string) {
+        return assetInformation[_asset].symbol;
+    }
+    function getDecimals(address _asset) public view returns (uint) {
+        return assetInformation[_asset].decimals;
+    }
+    function getReserveMin(address _asset) public view returns (uint) {
+        return assetInformation[_asset].reserveMin;
+    }
+    function assetIsRegistered(address _asset) public view returns (bool) {
+        return assetInformation[_asset].exists;
+    }
+    function getRegisteredAssets() public view returns (address[]) {
+        return registeredAssets;
+    }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
+        public
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
@@ -352,9 +357,14 @@ contract Registry is DSAuth {
     }
 
     // get exchange-specific information
-    function exchangeIsRegistered(address _exchange) view returns (bool) { return exchangeInformation[_exchange].exists; }
-    function getRegisteredExchanges() view returns (address[]) { return registeredExchanges; }
+    function exchangeIsRegistered(address _exchange) public view returns (bool) {
+        return exchangeInformation[_exchange].exists;
+    }
+    function getRegisteredExchanges() public view returns (address[]) {
+        return registeredExchanges;
+    }
     function getExchangeInformation(address _exchange)
+        public
         view
         returns (address, bool)
     {
@@ -364,11 +374,12 @@ contract Registry is DSAuth {
             exchange.takesCustody
         );
     }
-    function adapterForExchange(address _exchange) view returns (address) {
+    function adapterForExchange(address _exchange) public view returns (address) {
         Exchange exchange = exchangeInformation[_exchange];
         return exchange.adapter;
     }
     function getExchangeFunctionSignatures(address _exchange)
+        public
         view
         returns (bytes4[])
     {
@@ -377,6 +388,7 @@ contract Registry is DSAuth {
     function exchangeMethodIsAllowed(
         address _exchange, bytes4 _sig
     )
+        public
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[_exchange].sigs;
@@ -389,11 +401,11 @@ contract Registry is DSAuth {
     }
 
     // get version and fund information
-    function getRegisteredVersions() view returns (address[]) {
+    function getRegisteredVersions() public view returns (address[]) {
         return registeredVersions;
     }
 
-    function isFund(address _who) view returns (bool) {
+    function isFund(address _who) public view returns (bool) {
         if (fundsToVersions[_who] != address(0)) {
             return true; // directly from a hub
         } else {
@@ -406,7 +418,7 @@ contract Registry is DSAuth {
         }
     }
 
-    function isFundFactory(address _who) view returns (bool) {
+    function isFundFactory(address _who) public view returns (bool) {
         return versionInformation[_who].exists;
     }
 }

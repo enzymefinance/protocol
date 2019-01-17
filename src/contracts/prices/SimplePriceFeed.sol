@@ -3,14 +3,13 @@ pragma solidity ^0.4.21;
 import "PriceSource.i.sol";
 import "UpdatableFeed.i.sol";
 import "CanonicalPriceFeed.sol";
-import "DBC.sol";
 import "thing.sol";
 import "Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Updates and exposes price information for consuming contracts
-contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
+contract SimplePriceFeed is UpdatableFeedInterface, DSThing {
 
     // TYPES
     struct Data {
@@ -40,7 +39,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
         address ofRegistrar,
         address ofQuoteAsset,
         address ofSuperFeed
-    ) {
+    ) public {
         registry = Registry(ofRegistrar);
         QUOTE_ASSET = ofQuoteAsset;
         superFeed = CanonicalPriceFeed(ofSuperFeed);
@@ -68,8 +67,8 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     // PUBLIC VIEW METHODS
 
     // Get pricefeed specific information
-    function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
-    function getLastUpdateId() view returns (uint) { return updateId; }
+    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
+    function getLastUpdateId() public view returns (uint) { return updateId; }
 
     /**
     @notice Gets price of an asset multiplied by ten to the power of assetDecimals
@@ -81,6 +80,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     }
     */
     function getPrice(address ofAsset)
+        public
         view
         returns (uint price, uint timestamp)
     {
@@ -98,13 +98,16 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     }
     */
     function getPrices(address[] ofAssets)
+        public
         view
         returns (uint[], uint[])
     {
         uint[] memory prices = new uint[](ofAssets.length);
         uint[] memory timestamps = new uint[](ofAssets.length);
         for (uint i; i < ofAssets.length; i++) {
-            var (price, timestamp) = getPrice(ofAssets[i]);
+            uint price;
+            uint timestamp;
+            (price, timestamp) = getPrice(ofAssets[i]);
             prices[i] = price;
             timestamps[i] = timestamp;
         }
@@ -114,10 +117,11 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     // INTERNAL METHODS
 
     /// @dev Internal so that feeds inheriting this one are not obligated to have an exposed update(...) method, but can still perform updates
-    function _updatePrices(address[] ofAssets, uint[] newPrices)
-        internal
-        pre_cond(ofAssets.length == newPrices.length)
-    {
+    function _updatePrices(address[] ofAssets, uint[] newPrices) internal {
+        require(
+            ofAssets.length == newPrices.length,
+            "Arrays must be same length"
+        );
         updateId++;
         for (uint i = 0; i < ofAssets.length; ++i) {
             require(

@@ -7,8 +7,7 @@ import "Hub.sol";
 import "Vault.sol";
 import "Accounting.sol";
 import "Registry.sol";
-import "WETH9.sol";
-import "DBC.sol";
+import "Weth.sol";
 import "math.sol";
 import "ExchangeEfx.sol";
 import "WrapperLock.sol";
@@ -19,7 +18,7 @@ import "WrapperRegistryEFX.sol";
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to EthFinex exchange
-contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
+contract EthfinexAdapter is DSMath, ExchangeAdapter {
 
     //  METHODS
 
@@ -34,7 +33,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
@@ -78,7 +77,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         bytes wrappedMakerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
 
         LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
@@ -104,7 +103,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) {
+    ) public {
         Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
@@ -115,7 +114,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
             if (orderAddresses[i] == nativeAsset) {
-                WETH9(nativeAsset).deposit.value(balance)();
+                WETH(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
             getTrading().returnAssetToVault(orderAddresses[i]);
@@ -125,11 +124,17 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
 
      /// @notice Minor: Wrapped tokens directly sent to the fund are not accounted. To be called by Trading spoke
     function getOrder(address targetExchange, uint id, address makerAsset)
+        public
         view
         returns (address, address, uint, uint)
     {
-        var (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
-        var (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
+        uint orderId;
+        uint orderIndex;
+        address takerAsset;
+        uint makerQuantity;
+        uint takerQuantity;
+        (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
+        (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
 
         // Check if order has been completely filled
         uint takerAssetFilledAmount = ExchangeEfx(targetExchange).filled(bytes32(orderId));
@@ -164,7 +169,7 @@ contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
         // Handle case for WETH
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         if (makerAsset == nativeAsset) {
-            WETH9(nativeAsset).withdraw(makerQuantity);
+            WETH(nativeAsset).withdraw(makerQuantity);
             WrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
         } else {
             ERC20(makerAsset).approve(wrappedToken, makerQuantity);

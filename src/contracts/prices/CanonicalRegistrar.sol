@@ -1,20 +1,21 @@
 pragma solidity ^0.4.21;
 
-import "DBC.sol";
 import "thing.sol";
+import "ERC20.i.sol";
+
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract CanonicalRegistrar is DSThing, DBC {
+contract CanonicalRegistrar is DSThing {
 
     // TYPES
 
     struct Asset {
         bool exists; // True if asset is registered here
-        bytes32 name; // Human-readable name of the Asset as in ERC223 token standard
-        bytes8 symbol; // Human-readable symbol of the Asset as in ERC223 token standard
-        uint decimals; // Decimal, order of magnitude of precision, of the Asset as in ERC223 token standard
+        bytes32 name; // Human-readable name of the Asset
+        bytes8 symbol; // Human-readable symbol of the Asset
+        uint decimals; // Decimal, order of magnitude of precision, of the Asset
         string url; // URL for additional information of Asset
         string ipfsHash; // Same as url but for ipfs
         address breakIn; // Break in contract on destination chain
@@ -50,9 +51,8 @@ contract CanonicalRegistrar is DSThing, DBC {
     /// @dev Pre: Only registrar owner should be able to register
     /// @dev Post: Address ofAsset is registered
     /// @param ofAsset Address of asset to be registered
-    /// @param inputName Human-readable name of the Asset as in ERC223 token standard
-    /// @param inputSymbol Human-readable symbol of the Asset as in ERC223 token standard
-    /// @param inputDecimals Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param inputName Human-readable name of the Asset
+    /// @param inputSymbol Human-readable symbol of the Asset
     /// @param inputUrl Url for extended information of the asset
     /// @param inputIpfsHash Same as url but for ipfs
     /// @param breakInBreakOut Address of break in and break out contracts on destination chain
@@ -62,23 +62,25 @@ contract CanonicalRegistrar is DSThing, DBC {
         address ofAsset,
         bytes32 inputName,
         bytes8 inputSymbol,
-        uint inputDecimals,
         string inputUrl,
         string inputIpfsHash,
         address[2] breakInBreakOut,
         uint[] inputStandards,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
-        pre_cond(!assetInformation[ofAsset].exists)
     {
+        require(
+            !assetInformation[ofAsset].exists,
+            "Asset is already registered"
+        );
         assetInformation[ofAsset].exists = true;
         registeredAssets.push(ofAsset);
         updateAsset(
             ofAsset,
             inputName,
             inputSymbol,
-            inputDecimals,
             inputUrl,
             inputIpfsHash,
             breakInBreakOut,
@@ -101,9 +103,13 @@ contract CanonicalRegistrar is DSThing, DBC {
         bool inputTakesCustody,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
-        pre_cond(!exchangeInformation[ofExchange].exists)
     {
+        require(
+            !exchangeInformation[ofExchange].exists,
+            "Exchange is already registered"
+        );
         exchangeInformation[ofExchange].exists = true;
         registeredExchanges.push(ofExchange);
         updateExchange(
@@ -119,28 +125,31 @@ contract CanonicalRegistrar is DSThing, DBC {
     /// @dev Pre: Owner can change an existing entry
     /// @dev Post: Changed Name, Symbol, URL and/or IPFSHash
     /// @param ofAsset Address of the asset to be updated
-    /// @param inputName Human-readable name of the Asset as in ERC223 token standard
-    /// @param inputSymbol Human-readable symbol of the Asset as in ERC223 token standard
+    /// @param inputName Human-readable name of the Asset
+    /// @param inputSymbol Human-readable symbol of the Asset
     /// @param inputUrl Url for extended information of the asset
     /// @param inputIpfsHash Same as url but for ipfs
     function updateAsset(
         address ofAsset,
         bytes32 inputName,
         bytes8 inputSymbol,
-        uint inputDecimals,
         string inputUrl,
         string inputIpfsHash,
         address[2] ofBreakInBreakOut,
         uint[] inputStandards,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
-        pre_cond(assetInformation[ofAsset].exists)
     {
+        require(
+            assetInformation[ofAsset].exists,
+            "Asset is not registered"
+        );
         Asset asset = assetInformation[ofAsset];
         asset.name = inputName;
         asset.symbol = inputSymbol;
-        asset.decimals = inputDecimals;
+        asset.decimals = ERC20WithFields(ofAsset).decimals();
         asset.url = inputUrl;
         asset.ipfsHash = inputIpfsHash;
         asset.breakIn = ofBreakInBreakOut[0];
@@ -155,9 +164,13 @@ contract CanonicalRegistrar is DSThing, DBC {
         bool inputTakesCustody,
         bytes4[] inputFunctionSignatures
     )
+        public
         auth
-        pre_cond(exchangeInformation[ofExchange].exists)
     {
+        require(
+            exchangeInformation[ofExchange].exists,
+            "Exchange is not registered"
+        );
         Exchange exchange = exchangeInformation[ofExchange];
         exchange.adapter = ofExchangeAdapter;
         exchange.takesCustody = inputTakesCustody;
@@ -171,9 +184,13 @@ contract CanonicalRegistrar is DSThing, DBC {
         address ofAsset,
         uint assetIndex
     )
+        public
         auth
-        pre_cond(assetInformation[ofAsset].exists)
     {
+        require(
+            assetInformation[ofAsset].exists,
+            "Asset is not registered"
+        );
         require(registeredAssets[assetIndex] == ofAsset, "Array slot mismatch");
         delete assetInformation[ofAsset]; // Sets exists boolean to false
         delete registeredAssets[assetIndex];
@@ -192,9 +209,13 @@ contract CanonicalRegistrar is DSThing, DBC {
         address ofExchange,
         uint exchangeIndex
     )
+        public
         auth
-        pre_cond(exchangeInformation[ofExchange].exists)
     {
+        require(
+            exchangeInformation[ofExchange].exists,
+            "Exchange is not registered"
+        );
         require(registeredExchanges[exchangeIndex] == ofExchange, "Array slot mismatch");
         delete exchangeInformation[ofExchange];
         delete registeredExchanges[exchangeIndex];
@@ -208,14 +229,15 @@ contract CanonicalRegistrar is DSThing, DBC {
     // PUBLIC VIEW METHODS
 
     // get asset specific information
-    function getName(address ofAsset) view returns (bytes32) { return assetInformation[ofAsset].name; }
-    function getSymbol(address ofAsset) view returns (bytes8) { return assetInformation[ofAsset].symbol; }
-    function getDecimals(address ofAsset) view returns (uint) { return assetInformation[ofAsset].decimals; }
-    function assetIsRegistered(address ofAsset) view returns (bool) { return assetInformation[ofAsset].exists; }
-    function getRegisteredAssets() view returns (address[]) { return registeredAssets; }
+    function getName(address ofAsset) public view returns (bytes32) { return assetInformation[ofAsset].name; }
+    function getSymbol(address ofAsset) public view returns (bytes8) { return assetInformation[ofAsset].symbol; }
+    function getDecimals(address ofAsset) public view returns (uint) { return assetInformation[ofAsset].decimals; }
+    function assetIsRegistered(address ofAsset) public view returns (bool) { return assetInformation[ofAsset].exists; }
+    function getRegisteredAssets() public view returns (address[]) { return registeredAssets; }
     function assetMethodIsAllowed(
         address ofAsset, bytes4 querySignature
     )
+        public
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[ofAsset].functionSignatures;
@@ -228,9 +250,10 @@ contract CanonicalRegistrar is DSThing, DBC {
     }
 
     // get exchange-specific information
-    function exchangeIsRegistered(address ofExchange) view returns (bool) { return exchangeInformation[ofExchange].exists; }
-    function getRegisteredExchanges() view returns (address[]) { return registeredExchanges; }
+    function exchangeIsRegistered(address ofExchange) public view returns (bool) { return exchangeInformation[ofExchange].exists; }
+    function getRegisteredExchanges() public view returns (address[]) { return registeredExchanges; }
     function getExchangeInformation(address ofExchange)
+        public
         view
         returns (address, bool)
     {
@@ -241,6 +264,7 @@ contract CanonicalRegistrar is DSThing, DBC {
         );
     }
     function getExchangeFunctionSignatures(address ofExchange)
+        public
         view
         returns (bytes4[])
     {
@@ -249,6 +273,7 @@ contract CanonicalRegistrar is DSThing, DBC {
     function exchangeMethodIsAllowed(
         address ofExchange, bytes4 querySignature
     )
+        public
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[ofExchange].functionSignatures;
