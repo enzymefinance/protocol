@@ -1,21 +1,21 @@
 import { QuantityInterface, Address } from '@melonproject/token-math';
 import * as web3Utils from 'web3-utils';
 
-import { withTransactionDecorator } from '~/utils/solidity/transactionFactory';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
-import { callOnExchange } from '~/contracts/fund/trading/transactions/callOnExchange';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 export type TakeOasisDexOrderResult = any;
 
 export interface TakeOasisDexOrderArgs {
-  id?: number;
+  id: number;
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   maker: Address;
@@ -24,13 +24,7 @@ export interface TakeOasisDexOrderArgs {
 
 const guard = async (
   environment,
-  {
-    id,
-    makerQuantity,
-    takerQuantity,
-    maker,
-    fillTakerTokenAmount = takerQuantity,
-  },
+  { id, makerQuantity, takerQuantity, fillTakerTokenAmount = takerQuantity },
   contractAddress,
 ) => {
   const hubAddress = await getHub(environment, contractAddress);
@@ -68,28 +62,34 @@ const prepareArgs = async (
     exchange: Exchanges.MatchingMarket,
   });
 
-  return {
-    dexySignatureMode: 0,
+  return [
     exchangeIndex,
-    feeRecipient: '0x0000000000000000000000000000000000000000',
-    fillTakerTokenAmount: fillTakerTokenAmount.quantity,
-    identifier: id,
-    maker: maker.toString(),
-    makerAsset: makerQuantity.token.address,
-    makerAssetData: web3Utils.padLeft('0x0', 64),
-    makerFee: '0',
-    makerQuantity: makerQuantity.quantity,
-    method: FunctionSignatures.takeOrder,
-    salt: '0',
-    senderAddress: '0x0000000000000000000000000000000000000000',
-    signature: web3Utils.padLeft('0x0', 64),
-    taker: contractAddress,
-    takerAsset: takerQuantity.token.address,
-    takerAssetData: web3Utils.padLeft('0x0', 64),
-    takerFee: '0',
-    takerQuantity: takerQuantity.quantity,
-    timestamp: '0',
-  };
+    FunctionSignatures.takeOrder,
+    [
+      maker.toString(),
+      contractAddress.toString(),
+      makerQuantity.token.address.toString(),
+      takerQuantity.token.address.toString(),
+      emptyAddress,
+      emptyAddress,
+    ],
+    [
+      makerQuantity.quantity.toString(),
+      takerQuantity.quantity.toString(),
+      '0',
+      '0',
+      '0',
+      '0',
+      fillTakerTokenAmount.quantity.toString(),
+      0,
+    ],
+    `0x${Number(id)
+      .toString(16)
+      .padStart(64, '0')}`,
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+    web3Utils.padLeft('0x0', 64),
+  ];
 };
 
 const postProcess = async (_, receipt) => {
@@ -101,14 +101,16 @@ const postProcess = async (_, receipt) => {
 
 const options = { gas: '8000000' };
 
-const takeOasisDexOrder = withTransactionDecorator<
+const takeOasisDexOrder = transactionFactory<
   TakeOasisDexOrderArgs,
   TakeOasisDexOrderResult
->(callOnExchange, {
+>(
+  'callOnExchange',
+  Contracts.Trading,
   guard,
-  options,
-  postProcess,
   prepareArgs,
-});
+  postProcess,
+  options,
+);
 
 export { takeOasisDexOrder };
