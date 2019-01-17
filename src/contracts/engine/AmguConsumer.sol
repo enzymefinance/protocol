@@ -9,6 +9,7 @@ import "Engine.sol";
 /// @notice inherit this to pay AMGU on a function call
 contract AmguConsumer is DSMath {
 
+    /// @dev deductFromRefund is used when sending extra eth beyond amgu
     modifier amguPayable(uint deductFromRefund) {
         uint initialGas = gasleft();
         _;

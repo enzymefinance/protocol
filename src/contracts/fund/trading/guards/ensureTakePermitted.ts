@@ -1,24 +1,27 @@
 import { QuantityInterface, Address } from '@melonproject/token-math';
 
 import { ensure } from '~/utils/guards/ensure';
-import { isOasisDexTakePermitted } from '../calls/isOasisDexTakePermitted';
+import { isTakePermitted } from '../calls/isTakePermitted';
 import { Environment } from '~/utils/environment/Environment';
+import { Exchanges } from '~/Contracts';
 
 const ensureTakePermitted = async (
   environment: Environment,
   tradingContractAddress: Address,
-  id: number,
+  exchangeName: Exchanges,
   makerQuantity: QuantityInterface,
   takerQuantity: QuantityInterface,
-  fillTakerTokenAmount: QuantityInterface,
+  fillTakerQuantity: QuantityInterface,
+  id?: number,
 ) => {
-  const isAllowed = await isOasisDexTakePermitted(
+  const isAllowed = await isTakePermitted(
     environment,
     tradingContractAddress,
-    id,
+    exchangeName,
     makerQuantity,
     takerQuantity,
-    fillTakerTokenAmount,
+    fillTakerQuantity,
+    id,
   );
 
   ensure(isAllowed, "Risk Management module doesn't allow this trade.");

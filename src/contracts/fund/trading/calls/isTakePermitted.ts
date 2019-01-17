@@ -8,13 +8,14 @@ import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
 
-const isOasisDexTakePermitted = async (
+const isTakePermitted = async (
   environment: Environment,
   tradingContractAddress: Address,
-  id: number,
+  exchangeName: Exchanges,
   makerQuantity: QuantityInterface,
   takerQuantity: QuantityInterface,
-  fillTakerTokenAmount: QuantityInterface,
+  fillTakerQuantity: QuantityInterface,
+  id?: number,
 ) => {
   const hubAddress = await getHub(environment, tradingContractAddress);
   const { policyManagerAddress, tradingAddress } = await getRoutes(
@@ -44,7 +45,7 @@ const isOasisDexTakePermitted = async (
   );
 
   const exchangeAddress =
-    environment.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange;
+    environment.deployment.exchangeConfigs[exchangeName].exchange;
 
   const result = await policyManager.methods
     .preValidate(
@@ -59,15 +60,17 @@ const isOasisDexTakePermitted = async (
       [
         makerQuantity.quantity.toString(), // orderValues[0],
         takerQuantity.quantity.toString(), // orderValues[1],
-        fillTakerTokenAmount.quantity.toString(), // orderValues[6]
+        fillTakerQuantity.quantity.toString(), // orderValues[6]
       ],
-      `0x${Number(id)
-        .toString(16)
-        .padStart(64, '0')}`, // identifier
+      id
+        ? `0x${Number(id)
+            .toString(16)
+            .padStart(64, '0')}`
+        : '0x0', // identifier
     )
     .call();
 
   return !!result;
 };
 
-export { isOasisDexTakePermitted };
+export { isTakePermitted };

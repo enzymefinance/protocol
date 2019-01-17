@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { createQuantity } from '@melonproject/token-math';
+import { createQuantity, appendDecimals, toBI } from '@melonproject/token-math';
 import { randomString } from '~/utils/helpers/randomString';
 import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
@@ -18,6 +18,8 @@ import { executeRequest } from '~/contracts/fund/participation/transactions/exec
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
+const DAY_IN_SECONDS = 60 * 60 * 24;
+
 const setupInvestedTestFund = async (environment: Environment) => {
   const fundName = `test-fund-${randomString()}`;
 
@@ -28,32 +30,40 @@ const setupInvestedTestFund = async (environment: Environment) => {
 
   debug('Setting up testfund', fundName);
 
-  const {
-    exchangeConfigs,
-    melonContracts: { version, priceSource },
-  } = environment.deployment;
+  const { exchangeConfigs, melonContracts } = environment.deployment;
 
   const weth = getTokenBySymbol(environment, 'WETH');
   const mln = getTokenBySymbol(environment, 'MLN');
-  const fees = [];
+  const fees = [
+    {
+      feeAddress: melonContracts.fees.managementFee.toLowerCase(),
+      feePeriod: toBI(0),
+      feeRate: appendDecimals(weth, 0.02),
+    },
+    {
+      feeAddress: melonContracts.fees.performanceFee.toLowerCase(),
+      feePeriod: toBI(DAY_IN_SECONDS * 90),
+      feeRate: appendDecimals(weth, 0.2),
+    },
+  ];
 
-  await beginSetup(environment, version, {
+  await beginSetup(environment, melonContracts.version, {
     defaultTokens: [weth, mln],
     exchangeConfigs,
     fees,
     fundName,
     nativeToken: weth,
-    priceSource,
+    priceSource: melonContracts.priceSource,
     quoteToken: weth,
   });
-  await createAccounting(environment, version);
-  await createFeeManager(environment, version);
-  await createParticipation(environment, version);
-  await createPolicyManager(environment, version);
-  await createShares(environment, version);
-  await createTrading(environment, version);
-  await createVault(environment, version);
-  const hubAddress = await completeSetup(environment, version);
+  await createAccounting(environment, melonContracts.version);
+  await createFeeManager(environment, melonContracts.version);
+  await createParticipation(environment, melonContracts.version);
+  await createPolicyManager(environment, melonContracts.version);
+  await createShares(environment, melonContracts.version);
+  await createTrading(environment, melonContracts.version);
+  await createVault(environment, melonContracts.version);
+  const hubAddress = await completeSetup(environment, melonContracts.version);
   const routes = await getRoutes(environment, hubAddress);
 
   expect(R.keys(routes)).toEqual(

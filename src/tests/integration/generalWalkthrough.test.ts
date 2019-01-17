@@ -99,6 +99,18 @@ describe('generalWalkthrough', () => {
       },
     ];
 
+    const mlnPrice = createPrice(
+      createQuantity(mlnToken, '1'),
+      createQuantity(ethToken, '2'),
+    );
+
+    const ethPrice = createPrice(
+      createQuantity(ethToken, '1'),
+      createQuantity(ethToken, '1'),
+    );
+
+    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
+
     await beginSetup(
       shared.env,
       version,
@@ -140,18 +152,6 @@ describe('generalWalkthrough', () => {
       policy: policies.userWhitelist,
     });
 
-    const mlnPrice = createPrice(
-      createQuantity(mlnToken, '1'),
-      createQuantity(ethToken, '2'),
-    );
-
-    const ethPrice = createPrice(
-      createQuantity(ethToken, '1'),
-      createQuantity(ethToken, '1'),
-    );
-
-    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
-
     debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
 
     const investmentAmount = createQuantity(ethToken, 1);
@@ -177,9 +177,6 @@ describe('generalWalkthrough', () => {
       'Executed request',
       await calcGav(shared.env, routes.accountingAddress),
     );
-
-    // const redemption = await redeem(routes.participationAddress);
-    // debug('Redeemed');
 
     await getFundHoldings(shared.env, routes.accountingAddress);
 

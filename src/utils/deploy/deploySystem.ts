@@ -240,26 +240,6 @@ export const deploySystem = async (
       deployEngine(environment, { delay: monthInSeconds }),
     ),
     maybeDeploy(['registry'], environment => deployRegistry(environment)),
-    maybeDoSomething(
-      true, // ensure these steps are done at each deployment
-      async environment => {
-        const { melonContracts } = environment.deployment;
-        getLog(environment).info('Setting registry & engine');
-
-        await setNativeAsset(environment, melonContracts.registry, {
-          address: wethToken.address,
-        });
-        await setMlnToken(environment, melonContracts.registry, {
-          address: mlnToken.address,
-        });
-        await setEngine(environment, melonContracts.registry, {
-          address: melonContracts.engine,
-        });
-        await setRegistry(environment, melonContracts.engine, {
-          address: melonContracts.registry,
-        });
-      },
-    ),
     maybeDeploy(['priceSource'], environment =>
       environment.track === Tracks.KYBER_PRICE
         ? deployKyberPriceFeed(environment, {
@@ -285,7 +265,26 @@ export const deploySystem = async (
         });
       },
     ),
+    maybeDoSomething(
+      true, // ensure these steps are done at each deployment
+      async environment => {
+        const { melonContracts } = environment.deployment;
+        getLog(environment).info('Setting registry & engine');
 
+        await setNativeAsset(environment, melonContracts.registry, {
+          address: wethToken.address,
+        });
+        await setMlnToken(environment, melonContracts.registry, {
+          address: mlnToken.address,
+        });
+        await setEngine(environment, melonContracts.registry, {
+          address: melonContracts.engine,
+        });
+        await setRegistry(environment, melonContracts.engine, {
+          address: melonContracts.registry,
+        });
+      },
+    ),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
