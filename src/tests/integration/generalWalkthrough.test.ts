@@ -4,7 +4,6 @@ import {
   BigInteger,
   power,
   multiply,
-  toFixed,
 } from '@melonproject/token-math';
 
 import { Exchanges } from '~/Contracts';
