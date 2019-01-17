@@ -39,6 +39,7 @@ contract Engine is DSMath, DSAuth {
         emit RegistryChange(registry);
     }
 
+    /// @dev set price of AMGU in MLN (base units)
     function setAmguPrice(uint _price) auth {
         amguPrice = _price;
         emit SetAmguPrice(_price);
@@ -64,10 +65,17 @@ contract Engine is DSMath, DSAuth {
             registry.isFund(msg.sender),
             "Sender must be a fund or the factory"
         );
-        totalEtherConsumed = add(totalEtherConsumed, msg.value);
-        if (amguPrice > 0) {
-            totalAmguConsumed = add(totalAmguConsumed, msg.value / amguPrice);
+        uint mlnPerAmgu = getAmguPrice();
+        uint ethPerMln;
+        (ethPerMln,) = priceSource.getPrice(address(mlnToken));
+        uint amguConsumed;
+        if (mlnPerAmgu > 0 && ethPerMln > 0) {
+            amguConsumed = (mul(msg.value, 10 ** MLN_DECIMALS)) / (mul(ethPerMln, mlnPerAmgu));
+        } else {
+            amguConsumed = 0;
         }
+        totalEtherConsumed = add(totalEtherConsumed, msg.value);
+        totalAmguConsumed = add(totalAmguConsumed, amguConsumed);
         frozenEther = add(frozenEther, msg.value);
     }
 
