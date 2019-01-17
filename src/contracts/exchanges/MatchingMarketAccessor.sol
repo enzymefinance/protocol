@@ -20,7 +20,9 @@ contract MatchingMarketAccessor {
         uint id = market.getFirstUnsortedOffer();
         while (id != 0 && count <= 1000) {
             if (market.isActive(id)) {
-                var (, sellGem, , buyGem) = market.getOffer(ids[i]);
+                address sellGem;
+                address buyGem;
+                (, sellGem, , buyGem) = market.getOffer(ids[i]);
 
                 if (address(sellGem) == sellAsset && address(buyGem) == buyAsset) {
                     ids[count++] = id;
@@ -97,7 +99,9 @@ contract MatchingMarketAccessor {
         }
 
         for (i = 0; i < ids.length; i++) {
-            var (sellQty, , buyQty,) = market.getOffer(ids[i]);
+            uint sellQty;
+            uint buyQty;
+            (sellQty, , buyQty,) = market.getOffer(ids[i]);
             sellQtys[i] = sellQty;
             buyQtys[i] = buyQty;
         }

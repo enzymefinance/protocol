@@ -164,7 +164,9 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             uint[] memory assetPrices = new uint[](operators.length);
             for (uint j = 0; j < operators.length; j++) {
                 SimplePriceFeed feed = SimplePriceFeed(operators[j]);
-                var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
+                uint price;
+                uint timestamp;
+                (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
                 if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
                 }
@@ -244,7 +246,8 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         pre_cond(assetIsRegistered(ofAsset))
         returns (bool isValid)
     {
-        var ( , timestamp) = getPrice(ofAsset);
+        uint timestamp;
+        ( , timestamp) = getPrice(ofAsset);
         return (sub(now, timestamp) <= VALIDITY);
     }
 

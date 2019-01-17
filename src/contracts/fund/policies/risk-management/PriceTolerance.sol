@@ -27,7 +27,11 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         bytes32 identifier,
         uint fillTakerQuantity
     ) public view returns (bool) {
-        var (
+        uint maxMakerQuantity;
+        address makerAsset;
+        uint maxTakerQuantity;
+        address takerAsset;
+        (
             maxMakerQuantity,
             makerAsset,
             maxTakerQuantity,

@@ -104,7 +104,11 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
     ) public onlyManager notShutDown {
         Hub hub = getHub();
         uint fillTakerQuantity = orderValues[6];
-        var (
+        uint maxMakerQuantity;
+        ERC20 makerAsset;
+        uint maxTakerQuantity;
+        ERC20 takerAsset;
+        (
             maxMakerQuantity,
             makerAsset,
             maxTakerQuantity,
@@ -161,7 +165,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         require(uint(identifier) != 0, "ID cannot be zero");
 
-        var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
+        address makerAsset;
+        (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
 
         require(
             address(makerAsset) == orderAddresses[2],
@@ -190,7 +195,11 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         view
         returns (address, address, uint, uint)
     {
-        var (
+        uint sellQuantity;
+        ERC20 sellAsset;
+        uint buyQuantity;
+        ERC20 buyAsset;
+        (
             sellQuantity,
             sellAsset,
             buyQuantity,

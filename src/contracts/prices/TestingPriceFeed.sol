@@ -162,7 +162,8 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         view
         returns (bool isValid)
     {
-        var (price, ) = getPrice(_asset);
+        uint price;
+        (price, ) = getPrice(_asset);
         return alwaysValid || price != 0;
     }
 
