@@ -193,11 +193,9 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         for (uint i = 0; i < ownedAssets.length; i++) {
             address asset = ownedAssets[i];
             if (
-                assetHoldings(asset) > 0 ||
-                asset == address(DENOMINATION_ASSET)
+                assetHoldings(asset) == 0 &&
+                !(asset == address(DENOMINATION_ASSET))
             ) {
-                _addAssetToOwnedAssets(asset);
-            } else {
                 _removeFromOwnedAssets(asset);
             }
         }

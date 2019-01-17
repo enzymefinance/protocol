@@ -27,7 +27,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
-    mapping (address => mapping (address => uint)) public lockedAssetsForInvestor;
+    mapping (address => uint) public lockedAssetsForInvestor;
     mapping (address => bool) public hasInvested; // for information purposes only (read)
 
     address[] public historicalInvestors; // for information purposes only (read)
@@ -120,8 +120,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             requestedShares: requestedShares,
             timestamp: block.timestamp
         });
-        lockedAssetsForInvestor[investmentAsset][msg.sender] = add(
-            lockedAssetsForInvestor[investmentAsset][msg.sender],
+        lockedAssetsForInvestor[msg.sender] = add(
+            lockedAssetsForInvestor[msg.sender],
             investmentAmount
         );
         PolicyManager(routes.policyManager).postValidate(
@@ -150,8 +150,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             hub.isShutDown(),
             "No cancellation condition was met"
         );
-        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = sub(
-            lockedAssetsForInvestor[request.investmentAsset][msg.sender],
+        lockedAssetsForInvestor[msg.sender] = sub(
+            lockedAssetsForInvestor[msg.sender],
             request.investmentAmount
         );
         ERC20 investmentAsset = ERC20(request.investmentAsset);
@@ -217,7 +217,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             );
         }
 
-        lockedAssetsForInvestor[request.investmentAsset][requestOwner] = 0;
+        lockedAssetsForInvestor[requestOwner] = 0;
         msg.sender.transfer(REQUEST_INCENTIVE);
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);

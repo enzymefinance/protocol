@@ -102,7 +102,6 @@ contract Hub is DSGuard {
         permit(routes.participation, routes.shares, bytes4(keccak256('destroyFor(address,uint256)')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(routes.participation, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
-        permit(routes.participation, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(routes.trading, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
         permit(routes.trading, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
