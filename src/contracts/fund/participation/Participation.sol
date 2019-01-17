@@ -114,6 +114,10 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             ERC20(investmentAsset).transferFrom(msg.sender, this, investmentAmount),
             "InvestmentAsset transfer failed"
         );
+        require(
+            requests[msg.sender].timestamp == 0,
+            "Only one request can exist at a time"
+        );
         requests[msg.sender] = Request({
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
