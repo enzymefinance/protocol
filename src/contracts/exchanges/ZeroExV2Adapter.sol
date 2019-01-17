@@ -6,7 +6,6 @@ import "Trading.sol";
 import "Hub.sol";
 import "Vault.sol";
 import "Accounting.sol";
-import "DBC.sol";
 import "math.sol";
 import "Exchange.sol";
 import "ExchangeAdapter.sol";
@@ -14,7 +13,7 @@ import "ExchangeAdapter.sol";
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to 0xV2 Exchange Contract
-contract ZeroExV2Adapter is DSMath, DBC, ExchangeAdapter {
+contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
 
     //  METHODS
 

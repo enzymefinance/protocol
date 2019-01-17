@@ -123,8 +123,11 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         bytes data
     )
         public
-        pre_cond(isStakingFeed[msg.sender])
     {
+        require(
+            isStakingFeed[msg.sender],
+            "Only staking feeds can call this"
+        );
         OperatorStaking.stake(amount, data);
     }
 
@@ -142,8 +145,11 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     function collectAndUpdate(address[] ofAssets)
         public
         auth
-        pre_cond(updatesAreAllowed)
     {
+        require(
+            updatesAreAllowed,
+            "Updates are not allowed right now"
+        );
         uint[] memory newPrices = pricesToCommit(ofAssets);
         priceHistory.push(
             HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
@@ -243,9 +249,12 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     function hasValidPrice(address ofAsset)
         public
         view
-        pre_cond(assetIsRegistered(ofAsset))
         returns (bool isValid)
     {
+        require(
+            assetIsRegistered(ofAsset),
+            "Asset is not registered"
+        );
         uint timestamp;
         ( , timestamp) = getPrice(ofAsset);
         return (sub(now, timestamp) <= VALIDITY);

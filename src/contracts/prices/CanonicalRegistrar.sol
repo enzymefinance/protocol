@@ -1,12 +1,11 @@
 pragma solidity ^0.4.21;
 
-import "DBC.sol";
 import "thing.sol";
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Chain independent asset registrar for the Melon protocol
-contract CanonicalRegistrar is DSThing, DBC {
+contract CanonicalRegistrar is DSThing {
 
     // TYPES
 
@@ -71,8 +70,11 @@ contract CanonicalRegistrar is DSThing, DBC {
     )
         public
         auth
-        pre_cond(!assetInformation[ofAsset].exists)
     {
+        require(
+            !assetInformation[ofAsset].exists,
+            "Asset is already registered"
+        );
         assetInformation[ofAsset].exists = true;
         registeredAssets.push(ofAsset);
         updateAsset(
@@ -104,8 +106,11 @@ contract CanonicalRegistrar is DSThing, DBC {
     )
         public
         auth
-        pre_cond(!exchangeInformation[ofExchange].exists)
     {
+        require(
+            !exchangeInformation[ofExchange].exists,
+            "Exchange is already registered"
+        );
         exchangeInformation[ofExchange].exists = true;
         registeredExchanges.push(ofExchange);
         updateExchange(
@@ -138,8 +143,11 @@ contract CanonicalRegistrar is DSThing, DBC {
     )
         public
         auth
-        pre_cond(assetInformation[ofAsset].exists)
     {
+        require(
+            assetInformation[ofAsset].exists,
+            "Asset is not registered"
+        );
         Asset asset = assetInformation[ofAsset];
         asset.name = inputName;
         asset.symbol = inputSymbol;
@@ -160,8 +168,11 @@ contract CanonicalRegistrar is DSThing, DBC {
     )
         public
         auth
-        pre_cond(exchangeInformation[ofExchange].exists)
     {
+        require(
+            exchangeInformation[ofExchange].exists,
+            "Exchange is not registered"
+        );
         Exchange exchange = exchangeInformation[ofExchange];
         exchange.adapter = ofExchangeAdapter;
         exchange.takesCustody = inputTakesCustody;
@@ -177,8 +188,11 @@ contract CanonicalRegistrar is DSThing, DBC {
     )
         public
         auth
-        pre_cond(assetInformation[ofAsset].exists)
     {
+        require(
+            assetInformation[ofAsset].exists,
+            "Asset is not registered"
+        );
         require(registeredAssets[assetIndex] == ofAsset, "Array slot mismatch");
         delete assetInformation[ofAsset]; // Sets exists boolean to false
         delete registeredAssets[assetIndex];
@@ -199,8 +213,11 @@ contract CanonicalRegistrar is DSThing, DBC {
     )
         public
         auth
-        pre_cond(exchangeInformation[ofExchange].exists)
     {
+        require(
+            exchangeInformation[ofExchange].exists,
+            "Exchange is not registered"
+        );
         require(registeredExchanges[exchangeIndex] == ofExchange, "Array slot mismatch");
         delete exchangeInformation[ofExchange];
         delete registeredExchanges[exchangeIndex];

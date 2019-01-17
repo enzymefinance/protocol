@@ -3,14 +3,13 @@ pragma solidity ^0.4.21;
 import "PriceSource.i.sol";
 import "UpdatableFeed.i.sol";
 import "CanonicalPriceFeed.sol";
-import "DBC.sol";
 import "thing.sol";
 import "Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Updates and exposes price information for consuming contracts
-contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
+contract SimplePriceFeed is UpdatableFeedInterface, DSThing {
 
     // TYPES
     struct Data {
@@ -118,10 +117,11 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing, DBC {
     // INTERNAL METHODS
 
     /// @dev Internal so that feeds inheriting this one are not obligated to have an exposed update(...) method, but can still perform updates
-    function _updatePrices(address[] ofAssets, uint[] newPrices)
-        internal
-        pre_cond(ofAssets.length == newPrices.length)
-    {
+    function _updatePrices(address[] ofAssets, uint[] newPrices) internal {
+        require(
+            ofAssets.length == newPrices.length,
+            "Arrays must be same length"
+        );
         updateId++;
         for (uint i = 0; i < ofAssets.length; ++i) {
             require(

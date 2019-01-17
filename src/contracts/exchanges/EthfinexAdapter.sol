@@ -8,7 +8,6 @@ import "Vault.sol";
 import "Accounting.sol";
 import "Registry.sol";
 import "Weth.sol";
-import "DBC.sol";
 import "math.sol";
 import "ExchangeEfx.sol";
 import "WrapperLock.sol";
@@ -19,7 +18,7 @@ import "WrapperRegistryEFX.sol";
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to EthFinex exchange
-contract EthfinexAdapter is DSMath, DBC, ExchangeAdapter {
+contract EthfinexAdapter is DSMath, ExchangeAdapter {
 
     //  METHODS
 

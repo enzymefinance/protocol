@@ -217,7 +217,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             );
         }
 
-        lockedAssetsForInvestor[request.investmentAsset][msg.sender] = 0;
+        lockedAssetsForInvestor[request.investmentAsset][requestOwner] = 0;
         msg.sender.transfer(REQUEST_INCENTIVE);
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);

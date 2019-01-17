@@ -1,14 +1,13 @@
 pragma solidity ^0.4.21;
 
 import "group.sol";
-import "DBC.sol";
 import "Owned.sol";
 import "ERC20.i.sol";
 
 /// @title Operator Staking Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Enables pricefeed operators to self-select via staking
-contract OperatorStaking is DBC {
+contract OperatorStaking {
 
     // EVENTS
 
@@ -71,8 +70,8 @@ contract OperatorStaking is DBC {
         bytes data
     )
         public
-        pre_cond(amount >= minimumStake)
     {
+        require(amount >= minimumStake, "Stake must be above minimum");
         stakedAmounts[msg.sender] += amount;
         updateStakerRanking(msg.sender);
         require(
@@ -106,9 +105,15 @@ contract OperatorStaking is DBC {
 
     function withdrawStake()
         public
-        pre_cond(stakeToWithdraw[msg.sender] > 0)
-        pre_cond(block.timestamp >= latestUnstakeTime[msg.sender] + withdrawalDelay)
     {
+        require(
+            stakeToWithdraw[msg.sender] > 0,
+            "Must withdraw some amount"
+        );
+        require(
+            block.timestamp >= latestUnstakeTime[msg.sender] + withdrawalDelay,
+            "Withdrawal delay has not passed"
+        );
         uint amount = stakeToWithdraw[msg.sender];
         stakeToWithdraw[msg.sender] = 0;
         require(
