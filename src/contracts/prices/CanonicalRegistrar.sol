@@ -1,6 +1,8 @@
 pragma solidity ^0.4.21;
 
 import "thing.sol";
+import "ERC20.i.sol";
+
 
 /// @title Asset Registar Contract
 /// @author Melonport AG <team@melonport.com>
@@ -51,7 +53,6 @@ contract CanonicalRegistrar is DSThing {
     /// @param ofAsset Address of asset to be registered
     /// @param inputName Human-readable name of the Asset
     /// @param inputSymbol Human-readable symbol of the Asset
-    /// @param inputDecimals Human-readable symbol of the Asset
     /// @param inputUrl Url for extended information of the asset
     /// @param inputIpfsHash Same as url but for ipfs
     /// @param breakInBreakOut Address of break in and break out contracts on destination chain
@@ -61,7 +62,6 @@ contract CanonicalRegistrar is DSThing {
         address ofAsset,
         bytes32 inputName,
         bytes8 inputSymbol,
-        uint inputDecimals,
         string inputUrl,
         string inputIpfsHash,
         address[2] breakInBreakOut,
@@ -81,7 +81,6 @@ contract CanonicalRegistrar is DSThing {
             ofAsset,
             inputName,
             inputSymbol,
-            inputDecimals,
             inputUrl,
             inputIpfsHash,
             breakInBreakOut,
@@ -134,7 +133,6 @@ contract CanonicalRegistrar is DSThing {
         address ofAsset,
         bytes32 inputName,
         bytes8 inputSymbol,
-        uint inputDecimals,
         string inputUrl,
         string inputIpfsHash,
         address[2] ofBreakInBreakOut,
@@ -151,7 +149,7 @@ contract CanonicalRegistrar is DSThing {
         Asset asset = assetInformation[ofAsset];
         asset.name = inputName;
         asset.symbol = inputSymbol;
-        asset.decimals = inputDecimals;
+        asset.decimals = ERC20WithFields(ofAsset).decimals();
         asset.url = inputUrl;
         asset.ipfsHash = inputIpfsHash;
         asset.breakIn = ofBreakInBreakOut[0];

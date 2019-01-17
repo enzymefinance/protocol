@@ -136,7 +136,6 @@ contract Registry is DSAuth {
     /// @param _asset Address of asset to be registered
     /// @param _name Human-readable name of the Asset
     /// @param _symbol Human-readable symbol of the Asset
-    /// @param _decimals Human-readable symbol of the Asset
     /// @param _url Url for extended information of the asset
     /// @param _standards Integers of EIP standards this asset adheres to
     /// @param _sigs Function signatures for whitelisted asset functions
@@ -144,7 +143,6 @@ contract Registry is DSAuth {
         address _asset,
         string _name,
         string _symbol,
-        uint _decimals,
         string _url,
         uint _reserveMin,
         uint[] _standards,
@@ -158,7 +156,6 @@ contract Registry is DSAuth {
             _asset,
             _name,
             _symbol,
-            _decimals,
             _url,
             _reserveMin,
             _standards,
@@ -243,18 +240,16 @@ contract Registry is DSAuth {
         address _asset,
         string _name,
         string _symbol,
-        uint _decimals,
         string _url,
         uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
     ) public auth {
         require(assetInformation[_asset].exists);
-        require(_decimals == ERC20WithFields(_asset).decimals());
         Asset asset = assetInformation[_asset];
         asset.name = _name;
         asset.symbol = _symbol;
-        asset.decimals = _decimals;
+        asset.decimals = ERC20WithFields(_asset).decimals();
         asset.url = _url;
         asset.reserveMin = _reserveMin;
         asset.standards = _standards;
@@ -263,7 +258,7 @@ contract Registry is DSAuth {
             _asset,
             _name,
             _symbol,
-            _decimals,
+            asset.decimals,
             _url,
             _reserveMin,
             _standards,

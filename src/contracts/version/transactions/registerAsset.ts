@@ -12,7 +12,6 @@ interface RegisterAssetArgs {
   assetAddress: Address;
   name: String;
   assetSymbol: String; // actually bytes8
-  decimals: Number; // actually uint
   url: String;
   reserveMin: String;
   standards: String[]; // actually uint[]
@@ -25,7 +24,6 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
     assetAddress,
     name,
     assetSymbol,
-    decimals,
     url,
     reserveMin,
     standards,
@@ -35,7 +33,6 @@ const prepareArgs: PrepareArgsFunction<RegisterAssetArgs> = async (
   `${assetAddress}`,
   name,
   assetSymbol,
-  `${decimals}`,
   url,
   reserveMin,
   standards,

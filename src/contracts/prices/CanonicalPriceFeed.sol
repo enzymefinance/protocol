@@ -38,7 +38,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     /// @param ofQuoteAsset Address of quote asset
     /// @param quoteAssetName Name of quote asset
     /// @param quoteAssetSymbol Symbol for quote asset
-    /// @param quoteAssetDecimals Decimal places for quote asset
     /// @param quoteAssetUrl URL related to quote asset
     /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
     /// @param quoteAssetBreakInBreakOut Break-in/break-out for quote asset on destination chain
@@ -52,7 +51,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
-        uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
         address[2] quoteAssetBreakInBreakOut,
@@ -72,7 +70,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             ofQuoteAsset,
             quoteAssetName,
             quoteAssetSymbol,
-            quoteAssetDecimals,
             quoteAssetUrl,
             quoteAssetIpfsHash,
             quoteAssetBreakInBreakOut,

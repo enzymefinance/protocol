@@ -378,7 +378,6 @@ export const deploySystem = async (
       await registerAsset(environment, melonContracts.registry, {
         assetAddress: `${asset.address}`,
         assetSymbol: asset.symbol,
-        decimals: asset.decimals,
         name: '',
         reserveMin: '',
         sigs: [],
