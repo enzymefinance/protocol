@@ -99,6 +99,18 @@ describe('generalWalkthrough', () => {
       },
     ];
 
+    const mlnPrice = createPrice(
+      createQuantity(mlnToken, '1'),
+      createQuantity(ethToken, '2'),
+    );
+
+    const ethPrice = createPrice(
+      createQuantity(ethToken, '1'),
+      createQuantity(ethToken, '1'),
+    );
+
+    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
+
     await beginSetup(
       shared.env,
       version,
@@ -139,18 +151,6 @@ describe('generalWalkthrough', () => {
       method: FunctionSignatures.executeRequestFor,
       policy: policies.userWhitelist,
     });
-
-    const mlnPrice = createPrice(
-      createQuantity(mlnToken, '1'),
-      createQuantity(ethToken, '2'),
-    );
-
-    const ethPrice = createPrice(
-      createQuantity(ethToken, '1'),
-      createQuantity(ethToken, '1'),
-    );
-
-    await update(shared.env, priceSource, [ethPrice, mlnPrice]);
 
     debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
 
