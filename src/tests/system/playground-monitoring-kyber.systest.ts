@@ -11,10 +11,11 @@ import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import axios from 'axios';
 
 import * as coinapi from './.coinapi.json';
-import { createPrice } from '@melonproject/token-math';
+import { createPrice, valueIn, add, toFixed } from '@melonproject/token-math';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { createToken } from '@melonproject/token-math';
 import { createQuantity } from '@melonproject/token-math';
+// import { getHistoricalInvestors } from '~/contracts/fund/participation/calls/getHistoricalInvestors';
 
 expect.extend({ toBeTrueWith });
 
@@ -81,31 +82,31 @@ describe('playground', () => {
       melonContracts.version,
     );
 
-    log.debug('list : ', fundList);
-
     let numberOfFunds = {
       active: 0,
       inActive: 0,
       total: 0,
     };
 
-    // let totalAUM = {
-    //   ETH: 0,
-    //   USD: 0,
-    // };
+    let totalAUM = {
+      ETH: createQuantity(tokens.ETH, 0),
+      USD: createQuantity(tokens.USD, 0),
+    };
 
     // loop through funds to get interesting quantities
     for (let i in fundList) {
       fundList[i].isShutDown = await isShutDown(master, fundList[i].address);
       fundList[i].routes = await getRoutes(master, fundList[i].address);
-      fundList[i].holdings = await getFundHoldings(
-        master,
-        fundList[i].routes.accountingAddress,
-      );
+      // fundList[i].holdings = await getFundHoldings(
+      //   master,
+      //   fundList[i].routes.accountingAddress,
+      // );
       fundList[i].calcs = await performCalculations(
         master,
         fundList[i].routes.accountingAddress,
       );
+
+      // fundList[i].investors = await getHistoricalInvestors(master,fundList[i].routes.participationAddress)
 
       const targetCurrency = 'ETH';
       let quoteCurrency = fundList[i].sharePrice.quote.token.symbol;
@@ -148,71 +149,72 @@ describe('playground', () => {
         );
       }
 
-      log.debug('Quote currency: ', quoteCurrency);
+      fundList[i].fundNAV = {
+        ETH: valueIn(prices[quoteCurrency + 'ETH'], fundList[i].calcs.nav),
+        USD: valueIn(prices[quoteCurrency + 'USD'], fundList[i].calcs.nav),
+      };
 
-      // fundList[i].fundNAV =
-      //   {
-      //     ETH: valueIn(prices[quoteCurrency + 'ETH'], fundList[i].calcs.nav),
-      //     USD: valueIn(prices[quoteCurrency + 'USD'], fundList[i].calcs.nav)
-      //   };
-
-      // totalAUM.ETH += fundList[i].fundNAV.ETH;
-      // totalAUM.USD += fundList[i].fundNAV.USD;
-
+      //
+      if (!fundList[i].isShutDown) {
+        totalAUM.ETH = add(totalAUM.ETH, fundList[i].fundNAV.ETH);
+        totalAUM.USD = add(totalAUM.USD, fundList[i].fundNAV.USD);
+      }
       //   fundList[i].numberOfShares =
       //     fundList[i].calcs.nav.quantity /
       //     fundList[i].calcs.sharePrice.quote.quantity;
       // }
-
-      log.debug('Modified fund list', fundList);
-
-      // Number of funds (active, inactive, total)
-      numberOfFunds.active = fundList.filter(f => {
-        return f.isShutDown === false;
-      }).length;
-      log.debug('Active funds: ', numberOfFunds.active);
-
-      numberOfFunds.inActive = fundList.filter(f => {
-        return f.isShutDown === true;
-      }).length;
-      log.debug('Inactive funds: ', numberOfFunds.inActive);
-
-      // // AuM in ETH and USD
-      // log.debug('AuM in ETH:', totalAUM.ETH);
-      // log.debug('AuM in USD:', totalAUM.USD);
-
-      // log.debug(
-      //   'Amgu price (MLN): ',
-      //   toFixed(amguPrice, 18)
-      // );
-      // log.debug(
-      //   'Amgu price (ETH): ',
-      //   toFixed(valueIn(prices.MLNETH, amguPrice), 18)
-      // );
-      // log.debug(
-      //   'Amgu price (USD): ',
-      //   toFixed(valueIn(prices.MLNUSD, amguPrice), 2)
-      // );
-
-      // Fund Ranking AuM (ETH)
-      // const top10Funds = fundList.sort((a, b) => {
-      //   return a.fundNAVETH < b.fundNAVETH
-      //     ? 1
-      //     : a.fundNAVETH > b.fundNAVETH
-      //       ? -1
-      //       : 0;
-      // });
-
-      // log.debug('Top 10 Funds: ', top10Funds);
-
-      //  random stuff so that everything before runs and logs correctly
-      let fundList2 = await getFundDetails(
-        master,
-        melonContracts.ranking,
-        melonContracts.version,
-      );
-
-      log.debug('Random fund list at the end : ', fundList2);
     }
+
+    log.debug('Modified fund list', fundList);
+
+    // Number of funds (active, inactive, total)
+    numberOfFunds.active = fundList.filter(f => {
+      return f.isShutDown === false;
+    }).length;
+    log.debug('Active funds: ', numberOfFunds.active);
+
+    numberOfFunds.inActive = fundList.filter(f => {
+      return f.isShutDown === true;
+    }).length;
+    log.debug('Inactive funds: ', numberOfFunds.inActive);
+
+    // AuM in ETH and USD
+    log.debug('AuM in ETH:', totalAUM.ETH);
+    log.debug('AuM in USD:', totalAUM.USD);
+
+    // Amgu Price in various currencies
+    log.debug('Amgu price (MLN): ', toFixed(amguPrice, 18));
+    log.debug(
+      'Amgu price (ETH): ',
+      toFixed(valueIn(prices.MLNETH, amguPrice), 18),
+    );
+    log.debug(
+      'Amgu price (USD): ',
+      toFixed(valueIn(prices.MLNUSD, amguPrice), 18),
+    );
+
+    // Fund Ranking AuM (ETH)
+    const top10Funds = fundList
+      .filter(f => {
+        return f.isShutDown === false;
+      })
+      .sort((a, b) => {
+        return a.fundNAV.ETH < b.fundNAV.ETH
+          ? 1
+          : a.fundNAV.ETH > b.fundNAV.ETH
+          ? -1
+          : 0;
+      });
+
+    log.debug('Top 10 Funds: ', top10Funds);
+
+    //  random stuff so that everything before runs and logs correctly
+    let fundList2 = await getFundDetails(
+      master,
+      melonContracts.ranking,
+      melonContracts.version,
+    );
+
+    log.debug('Random fund list at the end : ', fundList2);
   });
 });
