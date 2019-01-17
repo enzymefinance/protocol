@@ -20,7 +20,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     mapping(address => Data) public assetsToPrices;
     mapping(address => uint) public assetsToDecimals;
     bool mockIsRecent = true;
-    bool alwaysValid = true;
+    bool neverValid = false;
 
     constructor(address _quoteAsset, uint _quoteDecimals) {
         QUOTE_ASSET = _quoteAsset;
@@ -100,8 +100,8 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         );
     }
 
-    function setAlwaysValid(bool _state) public {
-        alwaysValid = _state;
+    function setNeverValid(bool _state) public {
+        neverValid = _state;
     }
 
     function setIsRecent(bool _state) public {
@@ -164,7 +164,8 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     {
         uint price;
         (price, ) = getPrice(_asset);
-        return alwaysValid || price != 0;
+
+        return !neverValid && price != 0;
     }
 
     function hasValidPrices(address[] _assets)

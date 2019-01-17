@@ -39,9 +39,8 @@ contract Engine is DSMath, DSAuth {
         emit RegistryChange(registry);
     }
 
-    function setAmguPrice(uint _price) public auth {
     /// @dev set price of AMGU in MLN (base units)
-    function setAmguPrice(uint _price) auth {
+    function setAmguPrice(uint _price) public auth {
         amguPrice = _price;
         emit SetAmguPrice(_price);
     }

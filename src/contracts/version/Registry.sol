@@ -164,7 +164,6 @@ contract Registry is DSAuth {
             _standards,
             _sigs
         );
-        assert(assetInformation[_asset].exists);
     }
 
     /// @notice Register an exchange information entry
@@ -190,7 +189,6 @@ contract Registry is DSAuth {
             _takesCustody,
             _sigs
         );
-        assert(exchangeInformation[_exchange].exists);
     }
 
     /// @notice Versions cannot be removed from registry
@@ -206,7 +204,6 @@ contract Registry is DSAuth {
         versionNameExists[_name] = true;
         versionInformation[_version].name = _name;
         registeredVersions.push(_version);
-        assert(versionInformation[_version].exists);
         emit VersionRegistration(_version);
     }
 
@@ -308,7 +305,6 @@ contract Registry is DSAuth {
             registeredAssets[i] = registeredAssets[i+1];
         }
         registeredAssets.length--;
-        assert(!assetInformation[_asset].exists);
         emit AssetRemoval(_asset);
     }
 
@@ -328,7 +324,6 @@ contract Registry is DSAuth {
             registeredExchanges[i] = registeredExchanges[i+1];
         }
         registeredExchanges.length--;
-        assert(!exchangeInformation[_exchange].exists);
         emit ExchangeRemoval(_exchange);
     }
 

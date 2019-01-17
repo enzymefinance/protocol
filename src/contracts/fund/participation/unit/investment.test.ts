@@ -11,13 +11,21 @@ describe('investment', () => {
 
   beforeAll(async () => {
     shared.env = await initTestEnvironment();
+    shared.user = shared.env.wallet.address;
     shared = Object.assign(
       shared,
       await deployMockSystem(shared.env, {
         accountingContract: Contracts.Accounting,
       }),
     );
-    shared.user = shared.env.wallet.address;
+    const price = '1000000000000000000';
+    await shared.priceSource.methods
+      .update(
+        [shared.weth.options.address, shared.mln.options.address],
+        [price, price],
+      )
+      .send({ from: shared.user, gas: 8000000 });
+
     await shared.registry.methods
       .setIsFund(shared.participation.options.address)
       .send({ from: shared.user });
@@ -94,7 +102,7 @@ describe('investment', () => {
     const errorMessage = 'Price not valid';
     const amount = '1000000000000000000';
     await shared.priceSource.methods
-      .setAlwaysValid(false)
+      .setNeverValid(true)
       .send({ from: shared.user });
     await shared.weth.methods
       .approve(shared.participation.options.address, amount)
@@ -114,7 +122,7 @@ describe('investment', () => {
     ).rejects.toThrow(errorMessage);
 
     await shared.priceSource.methods
-      .setAlwaysValid(true)
+      .setNeverValid(false)
       .send({ from: shared.user });
     await increaseTime(shared.env, weekInSeconds);
     await shared.participation.methods

@@ -107,6 +107,10 @@ contract FundFactory is AmguConsumer, Factory {
         address _priceSource
     ) public componentNotSet(managersToHubs[msg.sender]) {
         require(!version.getShutDownStatus(), "Version is shut down");
+        require(
+            _nativeAsset == Registry(registry).nativeAsset(),
+            "Native asset does not match registry"
+        );
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,
@@ -284,5 +288,6 @@ contract FundFactory is AmguConsumer, Factory {
     function mlnToken() public view returns (address) { return address(mlnToken); }
     function priceSource() public view returns (address) { return address(factoryPriceSource); }
     function version() public view returns (address) { return address(version); }
+    function registry() public view returns (address) { return address(registry); }
 }
 

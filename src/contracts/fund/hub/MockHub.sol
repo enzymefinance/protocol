@@ -15,7 +15,7 @@ contract MockHub is DSGuard {
         address trading;
         address vault;
         address priceSource;
-        address canonicalRegistrar;
+        address registry;
         address version;
         address engine;
         address mlnAddress;
@@ -42,7 +42,7 @@ contract MockHub is DSGuard {
         routes.trading = _spokes[5];
         routes.vault = _spokes[6];
         routes.priceSource = _spokes[7];
-        routes.canonicalRegistrar = _spokes[8];
+        routes.registry = _spokes[8];
         routes.version = _spokes[9];
         routes.engine = _spokes[10];
         routes.mlnAddress = _spokes[11];
@@ -52,7 +52,7 @@ contract MockHub is DSGuard {
         address[12] memory spokes = [
             routes.accounting, routes.feeManager, routes.participation,
             routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.priceSource, routes.canonicalRegistrar,
+            routes.vault, routes.priceSource, routes.registry,
             routes.version, routes.engine, routes.mlnAddress
         ];
         Spoke(routes.accounting).initialize(spokes);
@@ -96,7 +96,7 @@ contract MockHub is DSGuard {
         address[12] memory spokes = [
             routes.accounting, routes.feeManager, routes.participation,
             routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.priceSource, routes.canonicalRegistrar,
+            routes.vault, routes.priceSource, routes.registry,
             routes.version, routes.engine, routes.mlnAddress
         ];
         Spoke(_spoke).initialize(spokes);
@@ -109,5 +109,6 @@ contract MockHub is DSGuard {
     function trading() public view returns (address) { return routes.trading; }
     function shares() public view returns (address) { return routes.shares; }
     function policyManager() public view returns (address) { return routes.policyManager; }
+    function registry() public view returns (address) { return routes.registry; }
 }
 
