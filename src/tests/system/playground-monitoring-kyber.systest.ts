@@ -5,7 +5,7 @@ import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
 import { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
-import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
+// import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 import axios from 'axios';
