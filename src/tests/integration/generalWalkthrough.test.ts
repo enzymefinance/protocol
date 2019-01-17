@@ -178,9 +178,6 @@ describe('generalWalkthrough', () => {
       await calcGav(shared.env, routes.accountingAddress),
     );
 
-    // const redemption = await redeem(routes.participationAddress);
-    // debug('Redeemed');
-
     await getFundHoldings(shared.env, routes.accountingAddress);
 
     const matchingMarketAddress =
