@@ -19,8 +19,8 @@ contract AssetBlacklist is TradingSignatures, AddressList, Policy {
     }
 
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool) {
-        address incomingToken = (sig == MAKE_ORDER) ? addresses[3] : addresses[2];
-        return !isMember(addresses[3]);
+        address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
+        return !isMember(incomingToken);
     }
 
     function position() external view returns (Applied) { return Applied.pre; }

@@ -2,7 +2,6 @@ pragma solidity ^0.4.21;
 
 import "Fee.i.sol";
 import "FeeManager.sol";
-import "Accounting.sol";
 import "Hub.sol";
 import "Shares.sol";
 import "math.sol";
@@ -16,7 +15,6 @@ contract ManagementFee is DSMath, Fee {
 
     function feeAmount() public view returns (uint feeInShares) {
         Hub hub = FeeManager(msg.sender).hub();
-        Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
         if (shares.totalSupply() == 0 || managementFeeRate[msg.sender] == 0) {
             feeInShares = 0;

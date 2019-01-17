@@ -74,21 +74,25 @@ contract PerformanceFee is DSMath, Fee {
         );
     }
 
+    /// @notice Assumes management fee is zero
     function updateState() external {
         require(lastPayoutTime[msg.sender] != 0, "Not initialized");
         require(
             canUpdate(msg.sender),
             "Not within a update window or already updated this period"
         );
-        Accounting accounting = Accounting(Hub(FeeManager(msg.sender).hub()).accounting());
-        uint currentSharePrice = accounting.calcSharePrice();
+        Hub hub = FeeManager(msg.sender).hub();
+        Accounting accounting = Accounting(hub.accounting());
+        Shares shares = Shares(hub.shares());
+        uint gav = accounting.calcGav();
+        uint currentGavPerShare = accounting.valuePerShare(gav, shares.totalSupply());
         require(
-            currentSharePrice > highWaterMark[msg.sender],
+            currentGavPerShare > highWaterMark[msg.sender],
             "Current share price does not pass high water mark"
         );
         lastPayoutTime[msg.sender] = block.timestamp;
-        highWaterMark[msg.sender] = currentSharePrice;
-        emit HighWaterMarkUpdate(currentSharePrice);
+        highWaterMark[msg.sender] = currentGavPerShare;
+        emit HighWaterMarkUpdate(currentGavPerShare);
     }
 }
 

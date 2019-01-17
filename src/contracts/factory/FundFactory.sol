@@ -106,7 +106,7 @@ contract FundFactory is AmguConsumer, Factory {
         bool[] _takesCustody,
         address _priceSource
     ) public componentNotSet(managersToHubs[msg.sender]) {
-        require(!version.getShutDownStatus(), "Version cannot be shut down");
+        require(!version.getShutDownStatus(), "Version is shut down");
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,
