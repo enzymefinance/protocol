@@ -3,12 +3,7 @@ import * as R from 'ramda';
 
 import { constructEnvironment } from '~/utils/environment/constructEnvironment';
 import { testLogger } from '../utils/testLogger';
-import {
-  Deployment,
-  Environment,
-  Tracks,
-} from '~/utils/environment/Environment';
-import { getChainName } from '~/utils/environment/chainName';
+import { Environment, Tracks } from '~/utils/environment/Environment';
 import { withDeployment } from '~/utils/environment/withDeployment';
 import { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
 import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
@@ -22,13 +17,7 @@ const getSystemTestEnvironment = async (
     track,
   });
 
-  const deploymentId = `${await getChainName(baseEnvironment)}-${
-    baseEnvironment.track
-  }`;
-  // tslint:disable-next-line:max-line-length
-  const deployment: Deployment = require(`../../../deployments/${deploymentId}.json`);
-
-  const environmentWithDeployment = withDeployment(baseEnvironment, deployment);
+  const environmentWithDeployment = await withDeployment(baseEnvironment);
 
   const selectSigner = R.cond([
     [
