@@ -70,4 +70,13 @@ export {
 } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 export { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 export { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
-// Hallo velo
+export {
+  getHistoricalInvestors,
+} from '~/contracts/fund/participation/calls/getHistoricalInvestors';
+export {
+  getTotalAmguConsumed,
+} from '~/contracts/engine/calls/getTotalAmguConsumed';
+export {
+  getTotalEtherConsumed,
+} from '~/contracts/engine/calls/getTotalEtherConsumed';
+export { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';

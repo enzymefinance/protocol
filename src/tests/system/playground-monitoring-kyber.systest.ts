@@ -15,7 +15,10 @@ import { createPrice, valueIn, add, toFixed } from '@melonproject/token-math';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { createToken } from '@melonproject/token-math';
 import { createQuantity } from '@melonproject/token-math';
-// import { getHistoricalInvestors } from '~/contracts/fund/participation/calls/getHistoricalInvestors';
+import { getHistoricalInvestors } from '~/contracts/fund/participation/calls/getHistoricalInvestors';
+import { getTotalAmguConsumed } from '~/contracts/engine/calls/getTotalAmguConsumed';
+import { getTotalEtherConsumed } from '~/contracts/engine/calls/getTotalEtherConsumed';
+import { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
 
 expect.extend({ toBeTrueWith });
 
@@ -74,6 +77,15 @@ describe('playground', () => {
     const amguPrice = await getAmguPrice(master, engine);
     log.debug('Amgu Price: ', amguPrice);
 
+    const amguConsumed = await getTotalAmguConsumed(master, engine);
+    log.debug('Amgu Consumed: ', amguConsumed);
+
+    const etherConsumed = await getTotalEtherConsumed(master, engine);
+    log.debug('Ether Consumed: ', etherConsumed);
+
+    const mlnBurned = await getTotalMlnBurned(master, engine);
+    log.debug('MLN burnt: ', mlnBurned);
+
     // fund list
 
     const fundList = await getFundDetails(
@@ -106,7 +118,10 @@ describe('playground', () => {
         fundList[i].routes.accountingAddress,
       );
 
-      // fundList[i].investors = await getHistoricalInvestors(master,fundList[i].routes.participationAddress)
+      fundList[i].investors = await getHistoricalInvestors(
+        master,
+        fundList[i].routes.participationAddress,
+      );
 
       const targetCurrency = 'ETH';
       let quoteCurrency = fundList[i].sharePrice.quote.token.symbol;
