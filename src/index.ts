@@ -72,3 +72,4 @@ export { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 export {
   cancelOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
+export { deployContract } from '~/utils/solidity/deployContract';
