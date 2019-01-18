@@ -197,7 +197,9 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     }
 
     const args = await prepareArgs(environment, params, contractAddress);
-    const txId = `${contract}@${contractAddress}.${name}(${args.join(',')})`;
+    const txId = `${contract}@${contractAddress}.${name}(${args
+      .map(JSON.stringify)
+      .join(',')})`;
     log.info('Prepare transaction', txId);
 
     try {

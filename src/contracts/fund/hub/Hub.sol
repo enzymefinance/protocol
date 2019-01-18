@@ -107,7 +107,7 @@ contract Hub is DSGuard {
         permit(routes.trading, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
-        permit(manager, routes.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[]))')));
+        permit(manager, routes.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[])')));
         permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
         permissionsSet = true;
