@@ -1,5 +1,5 @@
 import web3EthAbi from 'web3-eth-abi';
-import { Address } from '@melonproject/token-math';
+import { Address, toString } from '@melonproject/token-math';
 import {
   transactionFactory,
   PrepareArgsFunction,
@@ -7,18 +7,31 @@ import {
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../../trading/utils/FunctionSignatures';
-interface RegisterArgs {
+
+interface Policy {
   method: FunctionSignatures;
   policy: Address;
 }
 
+type RegisterArgs = Policy | Policy[];
+
 const prepareArgs: PrepareArgsFunction<RegisterArgs> = async (
   _,
-  { method, policy }: RegisterArgs,
-) => [web3EthAbi.encodeFunctionSignature(method), `${policy}`];
+  args: RegisterArgs,
+) => {
+  const methods = Array.isArray(args) ? args.map(a => a.method) : [args.method];
+  const policies = Array.isArray(args)
+    ? args.map(a => a.policy)
+    : [args.policy];
+
+  return [
+    methods.map(web3EthAbi.encodeFunctionSignature),
+    policies.map(toString),
+  ];
+};
 
 const register: EnhancedExecute<RegisterArgs, boolean> = transactionFactory(
-  'register',
+  'batchRegister',
   Contracts.PolicyManager,
   undefined,
   prepareArgs,
