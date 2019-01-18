@@ -3,7 +3,7 @@
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
     "timestamp": "2019-01-18T15:52:33.783Z",
     "track": "kyberPrice",
-    "version": "0.9.4",
+    "version": "0.9.5",
     "chain": 42,
     "description": "Add fees"
   },
