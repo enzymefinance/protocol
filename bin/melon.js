@@ -271,6 +271,68 @@ program
     }
   });
 
+program
+  .command('update-kyber-pricefeed')
+  .description(
+    'Update kyber pricefeed',
+  )
+  .option(
+    '-e, --endpoint <endpoint>',
+    'The JSON RPC endpoint url. By default: https://localhost:8545',
+  )
+  .option('-g, --gas <number>', 'Default number of gas units to provide')
+  .option('-p, --gas-price <number>', 'Price (in wei) of each gas unit')
+  .option(
+    '-k, --keystore <pathToKeystore>',
+    'Load the deployer account from a keystore file',
+  )
+  .option(
+    '-P, --private-key <string>',
+    'Load the deployer account from a private key',
+  )
+  .option('-T, --track <string>', 'Specify a track')
+  .option('-I, --interval <number>', 'Gap between each pricefeed update in ms')
+
+  .action(async options => {
+    console.log(`Started Kyber Pricefeed updater`);
+    try {
+      const environmentWithoutDeployment = await getEnvironment({
+        endpoint:
+          options.endpoint ||
+          process.env.JSON_RPC_ENDPOINT ||
+          'http://localhost:8545',
+        gasLimit: options.gas || '8000000',
+        gasPrice: options.gasPrice || '2000000000',
+        pathToKeystore: options.keystore || undefined,
+        privateKey: options.privateKey || undefined,
+        track: options.track,
+      });
+
+      checkPeerCount(environmentWithoutDeployment);
+
+      const { withDeployment } = require('../lib/utils/environment/withDeployment');
+      const environment = await withDeployment(environmentWithoutDeployment);
+
+      const {
+        updateKyber,
+      } = require('../lib/contracts/prices/transactions/updateKyber');
+
+      try {
+        await updateKyber(environment, environment.deployment.melonContracts.priceSource);
+      } catch (err) {
+        console.error(err);
+      }
+
+      setTimeout(
+        updateKyber.bind(this, environment, environment.deployment.melonContracts.priceSource),
+        options.interval,
+      );
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
+  });
+
 program.on('command:*', function() {
   program.help();
   process.exit();
