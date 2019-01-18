@@ -15,6 +15,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
+    address public UPDATER;
     Registry public REGISTRY;
     uint public MAX_SPREAD;
     address public constant KYBER_ETH_TOKEN = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
@@ -41,11 +42,15 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
         REGISTRY = Registry(ofRegistrar);
+        UPDATER = REGISTRY.owner();
     }
 
     /// @dev Stores zero as a convention for invalid price
     function update() public {
-        require(msg.sender == REGISTRY.owner(), "Only registry owner can call");
+        require(
+            msg.sender == REGISTRY.owner() || msg.sender == UPDATER,
+            "Only registry owner or updater can call"
+        );
         address[] memory assets = REGISTRY.getRegisteredAssets();
         uint[] memory newPrices = new uint[](assets.length);
         for (uint i; i < assets.length; i++) {
@@ -57,6 +62,12 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         }
         lastUpdate = block.timestamp;
         PriceUpdate(assets, newPrices);
+    }
+
+    /// @dev Set updater
+    function setUpdater(address _updater) public {
+        require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
+        UPDATER = _updater;
     }
 
     // PUBLIC VIEW METHODS
