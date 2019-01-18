@@ -60,7 +60,7 @@ const getEnvironment = ({
       if (pathToKeystore) {
         console.log('Keystore file at:', pathToKeystore);
 
-        const keystore = require(`../${pathToKeystore}`);
+        const keystore = require(`${pathToKeystore}`);
         const {
           withKeystoreSigner,
         } = require('../lib/utils/environment/withKeystoreSigner');
