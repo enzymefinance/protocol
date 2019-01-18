@@ -28,7 +28,7 @@ contract Registry is DSAuth {
     event AssetRemoval (address indexed asset);
     event ExchangeRemoval (address indexed exchange);
     event VersionRegistration(address indexed version);
-    event IncentiveChange(address indexed incentiveAmount);
+    event IncentiveChange(uint indexed incentiveAmount);
     event PriceSourceChange(address indexed priceSource);
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
