@@ -25,7 +25,8 @@
   "files": [
     "bin/",
     "lib/",
-    "out/"
+    "out/",
+    "deployments/"
   ],
   "bin": {
     "melon": "./bin/melon.js"
