@@ -60,7 +60,7 @@ const getEnvironment = ({
       if (pathToKeystore) {
         console.log('Keystore file at:', pathToKeystore);
 
-        const keystore = require(`${pathToKeystore}`);
+        const keystore = JSON.parse(fs.readFileSync(pathToKeystore, 'utf8'));
         const {
           withKeystoreSigner,
         } = require('../lib/utils/environment/withKeystoreSigner');
