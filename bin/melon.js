@@ -317,16 +317,21 @@ program
         updateKyber,
       } = require('../lib/contracts/prices/transactions/updateKyber');
 
-      try {
-        await updateKyber(environment, environment.deployment.melonContracts.priceSource);
-      } catch (err) {
-        console.error(err);
+      const updatePeriodically = async (environment, interval) => {
+        try {
+          await updateKyber(environment, environment.deployment.melonContracts.priceSource);
+        } catch (err) {
+          console.error(err);
+        }
+  
+        setTimeout(
+          updatePeriodically.bind(this, environment, environment.deployment.melonContracts.priceSource),
+          interval,
+        );
       }
 
-      setTimeout(
-        updateKyber.bind(this, environment, environment.deployment.melonContracts.priceSource),
-        options.interval,
-      );
+      await updatePeriodically(environment, options.interval);
+
     } catch (e) {
       console.error(e);
       process.exit(1);
