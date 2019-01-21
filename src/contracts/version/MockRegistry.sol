@@ -14,9 +14,11 @@ contract MockRegistry is DSAuth {
     address public engine;
     address public fundFactory;
     address[] public assets;
+    uint public incentive;
     mapping (address => bool) public registered;
     mapping (address => bool) public fundExists;
     mapping (address => address) public adapterForExchange;
+
 
     function register(address _addr) public {
         registered[_addr] = true;
