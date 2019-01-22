@@ -2,7 +2,7 @@ import { Environment } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { createQuantity } from '@melonproject/token-math';
+import { createQuantity, isEqual } from '@melonproject/token-math';
 import { makeOasisDexOrder } from './makeOasisDexOrder';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { cancelOasisDexOrder } from './cancelOasisDexOrder';
@@ -78,9 +78,12 @@ describe('makeOasisDexOrder', () => {
 
     expect(orders.length).toBe(1);
 
-    await getOasisDexOrder(shared.env, shared.oasisDex, {
+    const gotOrder = await getOasisDexOrder(shared.env, shared.oasisDex, {
       id: orderToStay.id,
     });
+
+    expect(isEqual(gotOrder.buy, takerQuantity)).toBe(true);
+    expect(isEqual(gotOrder.buy, orderToStay.buy)).toBe(true);
 
     await takeOrderFromAccountOasisDex(shared.env, shared.oasisDex, {
       buy: orderToStay.buy,
