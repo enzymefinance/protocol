@@ -17,6 +17,7 @@ import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 
 const DAY_IN_SECONDS = 60 * 60 * 24;
 
@@ -82,6 +83,10 @@ const setupInvestedTestFund = async (environment: Environment) => {
   );
 
   const investmentAmount = createQuantity(weth, 1);
+
+  const calc = await performCalculations(environment, routes.accountingAddress);
+
+  debug('INITIAL CALCS ', calc);
 
   await approve(environment, {
     howMuch: investmentAmount,
