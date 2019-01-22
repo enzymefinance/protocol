@@ -72,13 +72,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier can_buy(uint id) {
-        require(isActive(id));
+        require(isActive(id), "Order not active");
         _;
     }
 
     modifier can_cancel(uint id) {
-        require(isActive(id));
-        require(getOwner(id) == msg.sender);
+        require(isActive(id), "Order not active");
+        require(getOwner(id) == msg.sender, "Order not owned by sender");
         _;
     }
 
@@ -87,7 +87,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier synchronized {
-        require(!locked);
+        require(!locked, "Already locked");
         locked = true;
         _;
         locked = false;
@@ -137,8 +137,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
         uint spend = mul(quantity, offer.buy_amt) / offer.pay_amt;
 
-        require(uint128(spend) == spend);
-        require(uint128(quantity) == quantity);
+        require(uint128(spend) == spend, "Rounding error spend");
+        require(uint128(quantity) == quantity, "Rounding error quantity");
 
         // For backwards semantic compatibility.
         if (quantity == 0 || spend == 0 ||
@@ -149,8 +149,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
             offers[id].pay_amt = sub(offer.pay_amt, quantity);
             offers[id].buy_amt = sub(offer.buy_amt, spend);
-            require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
-            require( offer.pay_gem.transfer(msg.sender, quantity) );
+            require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend), "Buy gem transfer failed" );
+            require( offer.pay_gem.transfer(msg.sender, quantity), "Pay gem transfer failed" );
 
             LogItemUpdate(id);
             LogTake(
@@ -741,7 +741,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     internal
     returns (bool)
     {
-        require(buyEnabled);
+        require(buyEnabled, "Buy not enabled");
 
         if (amount == offers[id].pay_amt && isOfferSorted(id)) {
             //offers[id] must be removed from sorted list because all of it is bought
@@ -968,20 +968,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        require(_span[pay_gem][buy_gem] > 0);
+        require(_span[pay_gem][buy_gem] > 0, "Span is 0");
 
         require(_rank[id].delb == 0 &&                    //assert id is in the sorted list
-                isOfferSorted(id));
+                isOfferSorted(id), "Offer not in sorted list");
 
         if (id != _best[pay_gem][buy_gem]) {              // offers[id] is not the highest offer
-            require(_rank[_rank[id].next].prev == id);
+            require(_rank[_rank[id].next].prev == id, "Offer is not the highest offer");
             _rank[_rank[id].next].prev = _rank[id].prev;
         } else {                                          //offers[id] is the highest offer
             _best[pay_gem][buy_gem] = _rank[id].prev;
         }
 
         if (_rank[id].prev != 0) {                        //offers[id] is not the lowest offer
-            require(_rank[_rank[id].prev].next == id);
+            require(_rank[_rank[id].prev].next == id, "Offer is not the lowest offer");
             _rank[_rank[id].prev].next = _rank[id].next;
         }
 

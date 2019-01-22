@@ -8,6 +8,7 @@ import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { cancelOasisDexOrder } from './cancelOasisDexOrder';
 import { getActiveOasisDexOrders } from '~/contracts/exchanges/calls/getActiveOasisDexOrders';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
+import { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
 
 describe('makeOasisDexOrder', () => {
   const shared: {
@@ -85,20 +86,17 @@ describe('makeOasisDexOrder', () => {
       },
     );
 
-    console.log(JSON.stringify({ orders1, orders2, orderToStay }, null, 2));
+    await getOasisDexOrder(shared.env, shared.oasisDex, {
+      id: orderToStay.id,
+    });
 
-    const taken = await takeOrderFromAccountOasisDex(
-      shared.env,
-      shared.oasisDex,
-      {
-        buy: orderToStay.sell,
-        id: orderToStay.id,
-        maxTakeAmount: orderToStay.sell,
-        sell: orderToStay.buy,
-      },
-    );
+    await takeOrderFromAccountOasisDex(shared.env, shared.oasisDex, {
+      buy: orderToStay.buy,
+      id: orderToStay.id,
+      maxTakeAmount: orderToStay.sell,
+      sell: orderToStay.sell,
+    });
 
-    console.log(JSON.stringify({ taken }, null, 2));
     expect(orders1.lenght > 0 || orders2.lenght > 0).toBe(true);
   });
 });
