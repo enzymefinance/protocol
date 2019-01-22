@@ -94,4 +94,3 @@ contract PerformanceFee is DSMath, Fee {
         emit HighWaterMarkUpdate(currentGavPerShare);
     }
 }
-
