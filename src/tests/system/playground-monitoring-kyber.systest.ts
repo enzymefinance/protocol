@@ -19,6 +19,11 @@ import { getHistoricalInvestors } from '~/contracts/fund/participation/calls/get
 import { getTotalAmguConsumed } from '~/contracts/engine/calls/getTotalAmguConsumed';
 import { getTotalEtherConsumed } from '~/contracts/engine/calls/getTotalEtherConsumed';
 import { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
+// import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
+import { getPremiumPercent } from '~/contracts/engine/calls/getPremiumPercent';
+// import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+// import { getInfo } from '~/contracts/dependencies/token/calls/getInfo';
+import { getFundComponents } from '~/utils/getFundComponents';
 
 expect.extend({ toBeTrueWith });
 
@@ -86,6 +91,9 @@ describe('playground', () => {
     const mlnBurned = await getTotalMlnBurned(master, engine);
     log.debug('MLN burnt: ', mlnBurned);
 
+    const premiumPercent = await getPremiumPercent(master, engine);
+    log.debug('Premium percent: ', premiumPercent);
+
     // fund list
 
     const fundList = await getFundDetails(
@@ -93,6 +101,8 @@ describe('playground', () => {
       melonContracts.ranking,
       melonContracts.version,
     );
+
+    log.debug('original fund list: ', fundList);
 
     let numberOfFunds = {
       active: 0,
@@ -105,8 +115,12 @@ describe('playground', () => {
       USD: createQuantity(tokens.USD, 0),
     };
 
+    let investorList = [];
+    let components = [];
+
     // loop through funds to get interesting quantities
     for (let i in fundList) {
+      components[i] = await getFundComponents(master, fundList[i].address);
       fundList[i].isShutDown = await isShutDown(master, fundList[i].address);
       fundList[i].routes = await getRoutes(master, fundList[i].address);
       // fundList[i].holdings = await getFundHoldings(
@@ -122,6 +136,12 @@ describe('playground', () => {
         master,
         fundList[i].routes.participationAddress,
       );
+
+      fundList[i].investors = await getHistoricalInvestors(
+        master,
+        fundList[i].routes.participationAddress,
+      );
+      investorList = investorList.concat(fundList[i].investors);
 
       const targetCurrency = 'ETH';
       let quoteCurrency = fundList[i].sharePrice.quote.token.symbol;
@@ -222,6 +242,19 @@ describe('playground', () => {
       });
 
     log.debug('Top 10 Funds: ', top10Funds);
+
+    // loop through investors to get balance
+    investorList = investorList.map(x => {
+      return { address: x };
+    });
+
+    for (let i in investorList) {
+      // investorList[i].balance = investorList[i].address;
+      investorList[i].balance = await components[i].shares.methods
+        .balanceOf(investorList[i].address)
+        .call();
+    }
+    console.log(investorList);
 
     //  random stuff so that everything before runs and logs correctly
     let fundList2 = await getFundDetails(

@@ -79,8 +79,11 @@ export {
 export {
   getTotalEtherConsumed,
 } from '~/contracts/engine/calls/getTotalEtherConsumed';
+export { getLiquidEther } from '~/contracts/engine/calls/getLiquidEther';
+export { getFrozenEther } from '~/contracts/engine/calls/getFrozenEther';
 export { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
 export {
   cancelOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 export { deployContract } from '~/utils/solidity/deployContract';
+export { getFundComponents } from '~/utils/getFundComponents';
