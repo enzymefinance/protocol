@@ -5,8 +5,9 @@ import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/tak
 import cancelOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/cancelOrderFromAccountOasisDex';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { Environment } from '~/utils/environment/Environment';
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
 import { getActiveOasisDexOrders } from '~/contracts/exchanges/calls/getActiveOasisDexOrders';
+import { callFactory } from '~/utils/solidity/callFactory';
 
 describe('account-trading', () => {
   const shared: {

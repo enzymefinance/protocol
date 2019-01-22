@@ -66,7 +66,7 @@ describe('makeOasisDexOrder', () => {
       },
     );
 
-    const orders1 = await getActiveOasisDexOrders(
+    const orders = await getActiveOasisDexOrders(
       shared.env,
       shared.env.deployment.melonContracts.adapters.matchingMarketAccessor,
       {
@@ -76,15 +76,7 @@ describe('makeOasisDexOrder', () => {
       },
     );
 
-    const orders2 = await getActiveOasisDexOrders(
-      shared.env,
-      shared.env.deployment.melonContracts.adapters.matchingMarketAccessor,
-      {
-        buyAsset: makerQuantity.token.address,
-        sellAsset: takerQuantity.token.address,
-        targetExchange: shared.oasisDex,
-      },
-    );
+    expect(orders.length).toBe(1);
 
     await getOasisDexOrder(shared.env, shared.oasisDex, {
       id: orderToStay.id,
@@ -96,7 +88,5 @@ describe('makeOasisDexOrder', () => {
       maxTakeAmount: orderToStay.sell,
       sell: orderToStay.sell,
     });
-
-    expect(orders1.lenght > 0 || orders2.lenght > 0).toBe(true);
   });
 });
