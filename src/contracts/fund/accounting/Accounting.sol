@@ -40,7 +40,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
         DENOMINATION_ASSET_DECIMALS = ERC20WithFields(DENOMINATION_ASSET).decimals();
-        DEFAULT_SHARE_PRICE = 10 ** DENOMINATION_ASSET_DECIMALS;
+        DEFAULT_SHARE_PRICE = 10 ** uint(DENOMINATION_ASSET_DECIMALS);
     }
 
     function getOwnedAssetsLength() public view returns (uint) {
@@ -105,7 +105,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     function valuePerShare(uint totalValue, uint numShares) public view returns (uint) {
         require(numShares > 0, "No shares to calculate value for");
-        return (totalValue * 10 ** SHARES_DECIMALS) / numShares;
+        return (totalValue * 10 ** uint(SHARES_DECIMALS)) / numShares;
     }
 
     function performCalculations()
@@ -158,7 +158,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         uint denominationAssetQuantity = mul(
             _numShares,
             calcGavPerShareNetManagementFee()
-        ) / 10 ** SHARES_DECIMALS;
+        ) / 10 ** uint(SHARES_DECIMALS);
         return PriceSourceInterface(routes.priceSource).convertQuantity(
             denominationAssetQuantity, DENOMINATION_ASSET, _altAsset
         );

@@ -12,7 +12,6 @@ contract PerformanceFee is DSMath, Fee {
     event HighWaterMarkUpdate(uint hwm);
 
     uint public constant DIVISOR = 10 ** 18;
-    uint public constant INITIAL_SHARE_PRICE = 10 ** 18;
     uint public constant REDEEM_WINDOW = 1 weeks;
 
     mapping(address => uint) public initialSharePrice;
@@ -25,10 +24,10 @@ contract PerformanceFee is DSMath, Fee {
     /// @notice Sets initial state of the fee for a user
     function initializeForUser(uint feeRate, uint feePeriod, address denominationAsset) external {
         require(lastPayoutTime[msg.sender] == 0, "Already initialized");
-        initialSharePrice[msg.sender] = 10 ** ERC20WithFields(denominationAsset).decimals();
+        initialSharePrice[msg.sender] = 10 ** uint(ERC20WithFields(denominationAsset).decimals());
         performanceFeeRate[msg.sender] = feeRate;
         performanceFeePeriod[msg.sender] = feePeriod;
-        highWaterMark[msg.sender] = 10 ** ERC20WithFields(denominationAsset).decimals();
+        highWaterMark[msg.sender] = 10 ** uint(ERC20WithFields(denominationAsset).decimals());
         lastPayoutTime[msg.sender] = block.timestamp;
         initializeTime[msg.sender] = block.timestamp;
     }
