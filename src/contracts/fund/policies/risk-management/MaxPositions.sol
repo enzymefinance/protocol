@@ -21,7 +21,7 @@ contract MaxPositions is TradingSignatures, Policy {
         address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
         address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
         // Always allow a trade INTO the quote asset
-        address incomingToken = (sig == MAKE_ORDER) ? addresses[3] : addresses[2];
+        address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
         if (quoteAsset == incomingToken) { return true; }
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
         return accounting.getOwnedAssetsLength() <= maxPositions;

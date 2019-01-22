@@ -36,7 +36,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         address ofKyberNetworkProxy,
         uint ofMaxSpread,
         address ofQuoteAsset
-    ) {
+    ) public {
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
@@ -44,7 +44,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     /// @dev Stores zero as a convention for invalid price
-    function update() {
+    function update() public {
         require(msg.sender == REGISTRY.owner(), "Only registry owner can call");
         address[] memory assets = REGISTRY.getRegisteredAssets();
         uint[] memory newPrices = new uint[](assets.length);
@@ -63,7 +63,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     // FEED INFORMATION
 
-    function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
+    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
 
     // PRICES
 
@@ -77,6 +77,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
     */
     function getPrice(address _asset)
+        public
         view
         returns (uint price, uint timestamp)
     {
@@ -85,13 +86,16 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     function getPrices(address[] _assets)
+        public
         view
         returns (uint[], uint[])
     {
         uint[] memory prices = new uint[](_assets.length);
         uint[] memory timestamps = new uint[](_assets.length);
         for (uint i; i < _assets.length; i++) {
-            var (price, timestamp) = getPrice(_assets[i]);
+            uint price;
+            uint timestamp;
+            (price, timestamp) = getPrice(_assets[i]);
             prices[i] = price;
             timestamps[i] = timestamp;
         }
@@ -99,6 +103,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     function hasValidPrice(address _asset)
+        public
         view
         returns (bool)
     {
@@ -108,6 +113,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     function hasValidPrices(address[] _assets)
+        public
         view
         returns (bool)
     {
@@ -128,6 +134,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
     */
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
+        public
         view
         returns (uint referencePrice, uint decimals)
     {
@@ -142,6 +149,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     function getRawReferencePriceInfo(address _baseAsset, address _quoteAsset)
+        public
         view
         returns (bool isValid, uint referencePrice, uint decimals)
     {
@@ -161,6 +169,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     function getPriceInfo(address _asset)
+        public
         view
         returns (uint price, uint assetDecimals)
     {
@@ -178,6 +187,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
     */
     function getInvertedPriceInfo(address _asset)
+        public
         view
         returns (uint invertedPrice, uint assetDecimals)
     {
@@ -185,7 +195,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     /// @dev Get Kyber representation of ETH if necessary
-    function getKyberMaskAsset(address _asset) returns (address) {
+    function getKyberMaskAsset(address _asset) public returns (address) {
         if (_asset == REGISTRY.nativeAsset()) {
             return KYBER_ETH_TOKEN;
         }
@@ -247,6 +257,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         uint sellQuantity,
         uint buyQuantity
     )
+        public
         view
         returns (uint orderPrice)
     {
@@ -260,6 +271,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     /// @param buyAsset Asset for which check to be done if data exists
     /// @return Whether assets exist for given asset pair
     function existsPriceOnAssetPair(address sellAsset, address buyAsset)
+        public
         view
         returns (bool isExistent)
     {

@@ -72,7 +72,11 @@ contract Trading is DSMath, Spoke, TradingInterface {
     /// @notice Fallback function to receive ETH from WETH
     function() public payable {}
 
-    function addExchange(address _exchange, address _adapter, bool _takesCustody) internal {
+    function addExchange(
+        address _exchange,
+        address _adapter,
+        bool _takesCustody
+    ) internal {
         require(!exchangeIsAdded[_exchange], "Exchange already added");
         Registry registry = Registry(routes.registry);
         require(
@@ -173,7 +177,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address sellAsset,
         uint orderId,
         uint expirationTime
-    ) delegateInternal {
+    ) public delegateInternal {
         require(!isInOpenMakeOrder[sellAsset], "Asset already in open order");
         require(orders.length > 0, "No orders in array");
 
@@ -194,7 +198,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function removeOpenMakeOrder(
         address exchange,
         address sellAsset
-    ) delegateInternal {
+    ) public delegateInternal {
         delete exchangesToOpenMakeOrders[exchange][sellAsset];
     }
 
@@ -202,7 +206,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function addZeroExOrderData(
         bytes32 orderId,
         LibOrder.Order zeroExOrderData
-    ) delegateInternal {
+    ) public delegateInternal {
         orderIdToZeroExOrder[orderId] = zeroExOrderData;
     }
 
@@ -212,7 +216,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         UpdateType updateType,
         address[2] orderAddresses,
         uint[3] orderValues
-    ) delegateInternal {
+    ) public delegateInternal {
         // only save make/take
         if (updateType == UpdateType.make || updateType == UpdateType.take) {
             orders.push(Order({
@@ -229,12 +233,12 @@ contract Trading is DSMath, Spoke, TradingInterface {
         }
     }
 
-    function updateAndGetQuantityBeingTraded(address _asset) returns (uint) {
+    function updateAndGetQuantityBeingTraded(address _asset) public returns (uint) {
         uint quantityHere = ERC20(_asset).balanceOf(this);
         return add(updateAndGetQuantityHeldInExchange(_asset), quantityHere);
     }
 
-    function updateAndGetQuantityHeldInExchange(address ofAsset) returns (uint) {
+    function updateAndGetQuantityHeldInExchange(address ofAsset) public returns (uint) {
         uint totalSellQuantity; // quantity in custody across exchanges
         uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange
         for (uint i; i < exchanges.length; i++) {
@@ -278,7 +282,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
         ERC20(_token).transfer(Vault(routes.vault), ERC20(_token).balanceOf(this));
     }
 
-    function getExchangeInfo() view returns (address[], address[], bool[]) {
+    function getExchangeInfo() public view returns (address[], address[], bool[]) {
         address[] memory ofExchanges = new address[](exchanges.length);
         address[] memory ofAdapters = new address[](exchanges.length);
         bool[] memory takesCustody = new bool[](exchanges.length);
@@ -290,21 +294,21 @@ contract Trading is DSMath, Spoke, TradingInterface {
         return (ofExchanges, ofAdapters, takesCustody);
     }
 
-    function getOpenOrderInfo(address ofExchange, address ofAsset) view returns (uint, uint, uint) {
+    function getOpenOrderInfo(address ofExchange, address ofAsset) public view returns (uint, uint, uint) {
         OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
         return (order.id, order.expiresAt, order.orderIndex);
     }
 
-    function isOrderExpired(address exchange, address asset) view returns(bool) {
+    function isOrderExpired(address exchange, address asset) public view returns(bool) {
         return exchangesToOpenMakeOrders[exchange][asset].expiresAt <= block.timestamp;
     }
 
-    function getOrderDetails(uint orderIndex) view returns (address, address, uint, uint) {
+    function getOrderDetails(uint orderIndex) public view returns (address, address, uint, uint) {
         Order memory order = orders[orderIndex];
         return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 
-    function getZeroExOrderDetails(bytes32 orderId) view returns (LibOrder.Order) {
+    function getZeroExOrderDetails(bytes32 orderId) public view returns (LibOrder.Order) {
         return orderIdToZeroExOrder[orderId];
     }
 }

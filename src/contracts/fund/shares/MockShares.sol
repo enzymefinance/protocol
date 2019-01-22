@@ -16,15 +16,15 @@ contract MockShares is Spoke, StandardToken, SharesInterface {
         decimals = 18;
     }
 
-    function createFor(address who, uint amount) {
+    function createFor(address who, uint amount) public {
         _mint(who, amount);
     }
 
-    function destroyFor(address who, uint amount) {
+    function destroyFor(address who, uint amount) public {
         _burn(who, amount);
     }
 
-    function setBalanceFor(address who, uint newBalance) {
+    function setBalanceFor(address who, uint newBalance) public {
         uint currentBalance = balances[who];
         if (currentBalance > newBalance) {
             destroyFor(who, currentBalance.sub(newBalance));

@@ -57,7 +57,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     modifier componentNotSet(address _component) {
         require(
-            _component == address(0),
+            !componentSet(_component),
             "This step has already been run"
         );
         _;
@@ -89,6 +89,10 @@ contract FundFactory is AmguConsumer, Factory {
         mlnToken = _mlnToken;
     }
 
+    function componentSet(address _component) internal returns (bool) {
+        return _component != address(0);
+    }
+
     function beginSetup(
         string _name,
         address[] _fees,
@@ -101,8 +105,12 @@ contract FundFactory is AmguConsumer, Factory {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) componentNotSet(managersToHubs[msg.sender]) {
-        require(!version.getShutDownStatus(), "Version cannot be shut down");
+    ) public componentNotSet(managersToHubs[msg.sender]) {
+        require(!version.getShutDownStatus(), "Version is shut down");
+        require(
+            _nativeAsset == Registry(registry).nativeAsset(),
+            "Native asset does not match registry"
+        );
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,
@@ -125,6 +133,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createAccounting()
+        public
         componentNotSet(managersToRoutes[msg.sender].accounting)
         amguPayable(0)
         payable
@@ -138,6 +147,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createFeeManager()
+        public
         componentNotSet(managersToRoutes[msg.sender].feeManager)
         amguPayable(0)
         payable
@@ -152,6 +162,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createParticipation()
+        public
         componentNotSet(managersToRoutes[msg.sender].participation)
         amguPayable(0)
         payable
@@ -164,6 +175,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createPolicyManager()
+        public
         componentNotSet(managersToRoutes[msg.sender].policyManager)
         amguPayable(0)
         payable
@@ -174,6 +186,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createShares()
+        public
         componentNotSet(managersToRoutes[msg.sender].shares)
         amguPayable(0)
         payable
@@ -184,6 +197,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createTrading()
+        public
         componentNotSet(managersToRoutes[msg.sender].trading)
         amguPayable(0)
         payable
@@ -198,6 +212,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createVault()
+        public
         componentNotSet(managersToRoutes[msg.sender].vault)
         amguPayable(0)
         payable
@@ -207,10 +222,21 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function completeSetup() amguPayable(0) payable {
+    function completeSetup() public amguPayable(0) payable {
         Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");
+        require(
+            componentSet(hub) &&
+            componentSet(routes.accounting) &&
+            componentSet(routes.feeManager) &&
+            componentSet(routes.participation) &&
+            componentSet(routes.policyManager) &&
+            componentSet(routes.shares) &&
+            componentSet(routes.trading) &&
+            componentSet(routes.vault),
+            "Components must be set before completing setup"
+        );
         childExists[address(hub)] = true;
         hub.setSpokes([
             routes.accounting,
@@ -258,9 +284,10 @@ contract FundFactory is AmguConsumer, Factory {
     function getFundById(uint withId) public view returns (address) { return funds[withId]; }
     function getLastFundId() public view returns (uint) { return funds.length - 1; }
 
-    function engine() view returns (address) { return address(engine); }
-    function mlnToken() view returns (address) { return address(mlnToken); }
-    function priceSource() view returns (address) { return address(factoryPriceSource); }
-    function version() view returns (address) { return address(version); }
+    function engine() public view returns (address) { return address(engine); }
+    function mlnToken() public view returns (address) { return address(mlnToken); }
+    function priceSource() public view returns (address) { return address(factoryPriceSource); }
+    function version() public view returns (address) { return address(version); }
+    function registry() public view returns (address) { return address(registry); }
 }
 

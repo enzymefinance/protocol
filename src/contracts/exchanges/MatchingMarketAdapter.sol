@@ -43,7 +43,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
@@ -101,10 +101,14 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyManager notShutDown {
+    ) public onlyManager notShutDown {
         Hub hub = getHub();
         uint fillTakerQuantity = orderValues[6];
-        var (
+        uint maxMakerQuantity;
+        ERC20 makerAsset;
+        uint maxTakerQuantity;
+        ERC20 takerAsset;
+        (
             maxMakerQuantity,
             makerAsset,
             maxTakerQuantity,
@@ -157,11 +161,12 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
         require(uint(identifier) != 0, "ID cannot be zero");
 
-        var (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
+        address makerAsset;
+        (, makerAsset, ,) = MatchingMarket(targetExchange).getOffer(uint(identifier));
 
         require(
             address(makerAsset) == orderAddresses[2],
@@ -186,10 +191,15 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
     // VIEW METHODS
 
     function getOrder(address targetExchange, uint id, address makerAsset)
+        public
         view
         returns (address, address, uint, uint)
     {
-        var (
+        uint sellQuantity;
+        ERC20 sellAsset;
+        uint buyQuantity;
+        ERC20 buyAsset;
+        (
             sellQuantity,
             sellAsset,
             buyQuantity,

@@ -22,8 +22,16 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         tolerance = mul(_tolerancePercent, MULTIPLIER);
     }
 
-    function takeOasisDex(address ofExchange, bytes32 identifier, uint fillTakerQuantity) view returns (bool) {
-        var (
+    function takeOasisDex(
+        address ofExchange,
+        bytes32 identifier,
+        uint fillTakerQuantity
+    ) public view returns (bool) {
+        uint maxMakerQuantity;
+        address makerAsset;
+        uint maxTakerQuantity;
+        address takerAsset;
+        (
             maxMakerQuantity,
             makerAsset,
             maxTakerQuantity,
@@ -49,7 +57,11 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         );
     }
 
-    function takeGenericOrder(address makerAsset, address takerAsset, uint[3] values) view returns (bool) {
+    function takeGenericOrder(
+        address makerAsset,
+        address takerAsset,
+        uint[3] values
+    ) public view returns (bool) {
         uint fillTakerQuantity = values[2];
         uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
 
@@ -70,7 +82,11 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         );
     }
 
-    function takeOrder(address[5] addresses, uint[3] values, bytes32 identifier) public view returns (bool) {
+    function takeOrder(
+        address[5] addresses,
+        uint[3] values,
+        bytes32 identifier
+    ) public view returns (bool) {
         if (identifier == 0x0) {
             return takeGenericOrder(addresses[2], addresses[3], values);
         } else {
@@ -78,7 +94,11 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         }
     }
 
-    function makeOrder(address[5] addresses, uint[3] values, bytes32 identifier) public view returns (bool) {
+    function makeOrder(
+        address[5] addresses,
+        uint[3] values,
+        bytes32 identifier
+    ) public view returns (bool) {
         PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
 
         uint ratio;
@@ -93,7 +113,12 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         }
     }
 
-    function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool) {
+    function rule(
+        bytes4 sig,
+        address[5] addresses,
+        uint[3] values,
+        bytes32 identifier
+    ) external view returns (bool) {
         if (sig == MAKE_ORDER) {
             return makeOrder(addresses, values, identifier);
         } else if (sig == TAKE_ORDER) {

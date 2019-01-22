@@ -211,7 +211,7 @@ export const requireMap = {
   [Contracts.Version]:
     require('../out/Version.abi.json'),
   [Contracts.Weth]:
-    require('../out/WETH9.abi.json'),
+    require('../out/WETH.abi.json'),
   [Contracts.WrapperLock]:
     require(`../out/${Contracts.WrapperLock}.abi.json`),
   [Contracts.WrapperLockEth]:

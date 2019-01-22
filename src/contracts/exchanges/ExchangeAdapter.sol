@@ -99,7 +99,7 @@ contract ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) { revert("Unimplemented"); }
+    ) public { revert("Unimplemented"); }
 
     // Responsibilities of takeOrder are:
     // - check sender
@@ -120,7 +120,7 @@ contract ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) { revert("Unimplemented"); }
+    ) public { revert("Unimplemented"); }
 
     // responsibilities of cancelOrder are:
     // - check sender is owner, or that order expired, or that fund shut down
@@ -134,7 +134,7 @@ contract ExchangeAdapter {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    ) { revert("Unimplemented"); }
+    ) public { revert("Unimplemented"); }
 
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
@@ -150,7 +150,7 @@ contract ExchangeAdapter {
         address onExchange,
         uint id,
         address makerAsset
-    ) view returns (
+    ) public view returns (
         address,
         address,
         uint,

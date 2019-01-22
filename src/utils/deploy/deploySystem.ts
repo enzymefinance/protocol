@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { Exchanges } from '~/Contracts';
+import { Exchanges, Contracts } from '~/Contracts';
 
 import { deployMatchingMarketAdapter } from '~/contracts/exchanges/transactions/deployMatchingMarketAdapter';
 import { deployMatchingMarketAccessor } from '~/contracts/exchanges/transactions/deployMatchingMarketAccessor';
@@ -43,6 +43,8 @@ import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKybe
 import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
+import { getConvertedPrices } from '~/tests/utils/updateTestingPriceFeed';
+import { getContract } from '~/utils/solidity/getContract';
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
 import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
@@ -376,7 +378,6 @@ export const deploySystem = async (
       await registerAsset(environment, melonContracts.registry, {
         assetAddress: `${asset.address}`,
         assetSymbol: asset.symbol,
-        decimals: asset.decimals,
         name: '',
         reserveMin: '',
         sigs: [],
@@ -395,6 +396,16 @@ export const deploySystem = async (
       environmentWithDeployment,
       environmentWithDeployment.deployment.melonContracts.priceSource,
     );
+  } else if (environment.track === Tracks.TESTING) {
+    const prices = await getConvertedPrices(environmentWithDeployment, 'ETH');
+    const testingPriceFeed = await getContract(
+      environmentWithDeployment,
+      Contracts.TestingPriceFeed,
+      environmentWithDeployment.deployment.melonContracts.priceSource,
+    );
+    await testingPriceFeed.methods
+      .update(Object.keys(prices), Object.values(prices).map(e => e.toString()))
+      .send({ from: environmentWithDeployment.wallet.address, gas: 8000000 });
   }
 
   const track = environment.track;

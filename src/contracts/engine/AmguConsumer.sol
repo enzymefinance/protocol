@@ -5,6 +5,7 @@ import "ERC20.i.sol";
 import "PriceSource.i.sol";
 import "Version.i.sol";
 import "Engine.sol";
+import "Registry.sol";
 
 /// @notice inherit this to pay AMGU on a function call
 contract AmguConsumer is DSMath {
@@ -14,14 +15,20 @@ contract AmguConsumer is DSMath {
         uint initialGas = gasleft();
         _;
         uint mlnPerAmgu = Engine(engine()).getAmguPrice();
-        uint ethPerMln;
-        (ethPerMln,) = PriceSourceInterface(priceSource()).getPrice(mlnToken());
-
-        uint ethToPay = mul(
-            sub(initialGas, gasleft()), // gas (and thus amgu) used
-            mul(mlnPerAmgu, ethPerMln)  // eth per amgu
-        ) / 10 ** 18;
-        require(msg.value >= ethToPay, "Insufficent amgu");
+        uint mlnQuantity = mul(
+            mlnPerAmgu,
+            sub(initialGas, gasleft())
+        );
+        address nativeAsset = Registry(registry()).nativeAsset();
+        uint ethToPay = PriceSourceInterface(priceSource()).convertQuantity(
+            mlnQuantity,
+            mlnToken(),
+            nativeAsset
+        );
+        require(
+            msg.value >= add(ethToPay, deductFromRefund),
+            "Insufficent AMGU and/or incentive"
+        );
         Engine(engine()).payAmguInEther.value(ethToPay)();
         msg.sender.transfer(
             sub(
@@ -34,5 +41,6 @@ contract AmguConsumer is DSMath {
     function engine() view returns (address);
     function mlnToken() view returns (address);
     function priceSource() view returns (address);
+    function registry() view returns (address);
 }
 

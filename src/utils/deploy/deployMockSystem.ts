@@ -76,6 +76,9 @@ export const deployMockSystem = async (
     .setMlnToken(`${mlnTokenAddress}`)
     .send({ from: accounts[0] });
   await registry.methods
+    .setNativeAsset(`${wethTokenAddress}`)
+    .send({ from: accounts[0] });
+  await registry.methods
     .registerAdapterForExchange(
       matchingMarketAddress.toString(),
       matchingMarketAdapter.options.address.toString(),

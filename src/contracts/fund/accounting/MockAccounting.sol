@@ -29,18 +29,18 @@ contract MockAccounting is Spoke {
         DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
     }
 
-    function setOwnedAssets(address[] _assets) { ownedAssets = _assets; }
-    function getOwnedAssetsLength() returns (uint) { return ownedAssets.length; }
-    function setGav(uint _gav) { gav = _gav; }
-    function setNav(uint _nav) { nav = _nav; }
-    function setAssetGAV(address _asset, uint _amt) { assetGav[_asset] = _amt; }
-    function setFundHoldings(uint[] _amounts, address[] _assets) {
+    function setOwnedAssets(address[] _assets) public { ownedAssets = _assets; }
+    function getOwnedAssetsLength() public returns (uint) { return ownedAssets.length; }
+    function setGav(uint _gav) public { gav = _gav; }
+    function setNav(uint _nav) public { nav = _nav; }
+    function setAssetGAV(address _asset, uint _amt) public { assetGav[_asset] = _amt; }
+    function setFundHoldings(uint[] _amounts, address[] _assets) public {
         for (uint i = 0; i < _assets.length; i++) {
             held[_assets[i]] = _amounts[i];
         }
     }
 
-    function getFundHoldings() returns (uint[], address[]) {
+    function getFundHoldings() public returns (uint[], address[]) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);
         for (uint i = 0; i < ownedAssets.length; i++) {
@@ -59,17 +59,17 @@ contract MockAccounting is Spoke {
     function calcGav() public returns (uint) { return gav; }
     function calcNav() public returns (uint) { return nav; }
 
-    function calcAssetGAV(address _a) returns (uint) { return assetGav[_a]; }
+    function calcAssetGAV(address _a) public returns (uint) { return assetGav[_a]; }
 
-    function valuePerShare(uint totalValue, uint numShares) view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) public view returns (uint) {
         return valuePerShare;
     }
 
-    function performCalculations() view returns (uint, uint, uint, uint, uint) {
+    function performCalculations() public view returns (uint, uint, uint, uint, uint) {
         return (gav, unclaimedFees, 0, nav, valuePerShare);
     }
 
-    function calcSharePrice() view returns (uint sharePrice) {
+    function calcSharePrice() public view returns (uint sharePrice) {
         (,,,,sharePrice) = performCalculations();
         return sharePrice;
     }

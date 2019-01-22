@@ -4,11 +4,12 @@ import { Address, createPrice, createQuantity } from '@melonproject/token-math';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
+import { Environment } from '~/utils/environment/Environment';
 
 export const getFundDetails = async (
-  environment,
-  contractAddress: Address,
-  versionAddress: Address,
+  environment: Environment,
+  contractAddress: Address = environment.deployment.melonContracts.ranking,
+  versionAddress: Address = environment.deployment.melonContracts.version,
 ) => {
   const contract = getContract(
     environment,

@@ -9,10 +9,10 @@ import { balanceOf } from '../calls/balanceOf';
 import { getToken } from '../calls/getToken';
 import { deployToken } from '../transactions/deploy';
 import { transfer } from '../transactions/transfer';
+import { delay } from 'rxjs/operators';
 
 describe('balanceOf', () => {
   const shared: any = {};
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   beforeAll(async () => {
     shared.env = await initTestEnvironment();

@@ -16,11 +16,11 @@ contract Shares is Spoke, StandardToken, SharesInterface {
         decimals = 18;
     }
 
-    function createFor(address who, uint amount) auth {
+    function createFor(address who, uint amount) public auth {
         _mint(who, amount);
     }
 
-    function destroyFor(address who, uint amount) auth {
+    function destroyFor(address who, uint amount) public auth {
         _burn(who, amount);
     }
 

@@ -38,7 +38,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     /// @param ofQuoteAsset Address of quote asset
     /// @param quoteAssetName Name of quote asset
     /// @param quoteAssetSymbol Symbol for quote asset
-    /// @param quoteAssetDecimals Decimal places for quote asset
     /// @param quoteAssetUrl URL related to quote asset
     /// @param quoteAssetIpfsHash IPFS hash associated with quote asset
     /// @param quoteAssetBreakInBreakOut Break-in/break-out for quote asset on destination chain
@@ -52,7 +51,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
         bytes8 quoteAssetSymbol,
-        uint quoteAssetDecimals,
         string quoteAssetUrl,
         string quoteAssetIpfsHash,
         address[2] quoteAssetBreakInBreakOut,
@@ -62,6 +60,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         uint[3] stakingInfo, // minStake, numOperators, unstakeDelay
         address ofGovernance
     )
+        public
         OperatorStaking(
             ERC20(ofStakingAsset), stakingInfo[0], stakingInfo[1], stakingInfo[2]
         )
@@ -71,7 +70,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             ofQuoteAsset,
             quoteAssetName,
             quoteAssetSymbol,
-            quoteAssetDecimals,
             quoteAssetUrl,
             quoteAssetIpfsHash,
             quoteAssetBreakInBreakOut,
@@ -122,22 +120,13 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         bytes data
     )
         public
-        pre_cond(isStakingFeed[msg.sender])
     {
+        require(
+            isStakingFeed[msg.sender],
+            "Only staking feeds can call this"
+        );
         OperatorStaking.stake(amount, data);
     }
-
-    // function stakeFor(
-    //     address user,
-    //     uint amount,
-    //     bytes data
-    // )
-    //     public
-    //     pre_cond(isStakingFeed[user])
-    // {
-
-    //     OperatorStaking.stakeFor(user, amount, data);
-    // }
 
     // AGGREGATION
 
@@ -153,8 +142,11 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     function collectAndUpdate(address[] ofAssets)
         public
         auth
-        pre_cond(updatesAreAllowed)
     {
+        require(
+            updatesAreAllowed,
+            "Updates are not allowed right now"
+        );
         uint[] memory newPrices = pricesToCommit(ofAssets);
         priceHistory.push(
             HistoricalPrices({assets: ofAssets, prices: newPrices, timestamp: block.timestamp})
@@ -165,6 +157,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     }
 
     function pricesToCommit(address[] ofAssets)
+        public
         view
         returns (uint[])
     {
@@ -174,7 +167,9 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
             uint[] memory assetPrices = new uint[](operators.length);
             for (uint j = 0; j < operators.length; j++) {
                 SimplePriceFeed feed = SimplePriceFeed(operators[j]);
-                var (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
+                uint price;
+                uint timestamp;
+                (price, timestamp) = feed.assetsToPrices(ofAssets[i]);
                 if (now > add(timestamp, VALIDITY)) {
                     continue; // leaves a zero in the array (dealt with later)
                 }
@@ -187,6 +182,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
 
     /// @dev from MakerDao medianizer contract
     function medianize(uint[] unsorted)
+        public
         view
         returns (uint)
     {
@@ -229,18 +225,18 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         return value;
     }
 
-    function setMinimumPriceCount(uint newCount) auth { minimumPriceCount = newCount; }
-    function enableUpdates() auth { updatesAreAllowed = true; }
-    function disableUpdates() auth { updatesAreAllowed = false; }
+    function setMinimumPriceCount(uint newCount) public auth { minimumPriceCount = newCount; }
+    function enableUpdates() public auth { updatesAreAllowed = true; }
+    function disableUpdates() public auth { updatesAreAllowed = false; }
 
     // PUBLIC VIEW METHODS
 
     // FEED INFORMATION
 
-    function getQuoteAsset() view returns (address) { return QUOTE_ASSET; }
-    function getInterval() view returns (uint) { return INTERVAL; }
-    function getValidity() view returns (uint) { return VALIDITY; }
-    function getLastUpdateId() view returns (uint) { return updateId; }
+    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
+    function getInterval() public view returns (uint) { return INTERVAL; }
+    function getValidity() public view returns (uint) { return VALIDITY; }
+    function getLastUpdateId() public view returns (uint) { return updateId; }
 
     // PRICES
 
@@ -248,11 +244,16 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     /// @param ofAsset Asset in registrar
     /// @return isValid Price information ofAsset is recent
     function hasValidPrice(address ofAsset)
+        public
         view
-        pre_cond(assetIsRegistered(ofAsset))
         returns (bool isValid)
     {
-        var ( , timestamp) = getPrice(ofAsset);
+        require(
+            assetIsRegistered(ofAsset),
+            "Asset is not registered"
+        );
+        uint timestamp;
+        ( , timestamp) = getPrice(ofAsset);
         return (sub(now, timestamp) <= VALIDITY);
     }
 
@@ -260,6 +261,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     /// @param ofAssets All assets in registrar
     /// @return isValid Price information ofAssets array is recent
     function hasValidPrices(address[] ofAssets)
+        public
         view
         returns (bool areRecent)
     {
@@ -272,6 +274,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     }
 
     function getPriceInfo(address ofAsset)
+        public
         view
         returns (uint price, uint assetDecimals)
     {
@@ -291,6 +294,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     }
     */
     function getInvertedPriceInfo(address ofAsset)
+        public
         view
         returns (uint invertedPrice, uint assetDecimals)
     {
@@ -323,6 +327,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     }
     */
     function getReferencePriceInfo(address ofBase, address ofQuote)
+        public
         view
         returns (uint referencePrice, uint decimal)
     {
@@ -349,6 +354,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         uint sellQuantity,
         uint buyQuantity
     )
+        public
         view
         returns (uint orderPrice)
     {
@@ -361,6 +367,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     /// @param buyAsset Asset for which check to be done if data exists
     /// @return Whether assets exist for given asset pair
     function existsPriceOnAssetPair(address sellAsset, address buyAsset)
+        public
         view
         returns (bool isExistent)
     {
@@ -373,6 +380,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
 
     /// @return Sparse array of addresses of owned pricefeeds
     function getPriceFeedsByOwner(address _owner)
+        public
         view
         returns(address[])
     {
@@ -389,9 +397,9 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         return ofPriceFeeds;
     }
 
-    function getHistoryLength() returns (uint) { return priceHistory.length; }
+    function getHistoryLength() public returns (uint) { return priceHistory.length; }
 
-    function getHistoryAt(uint id) returns (address[], uint[], uint) {
+    function getHistoryAt(uint id) public returns (address[], uint[], uint) {
         address[] memory assets = priceHistory[id].assets;
         uint[] memory prices = priceHistory[id].prices;
         uint timestamp = priceHistory[id].timestamp;

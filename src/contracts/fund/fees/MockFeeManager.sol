@@ -23,10 +23,10 @@ contract MockFeeManager is DSMath, AmguConsumer, Spoke {
         address _hub, address _denominationAsset, address[] _fees, uint[] _periods, uint _rates
     ) Spoke(_hub) public {}
 
-    function setTotalFeeAmount(uint _amt) { totalFees = _amt; }
-    function setPerformanceFeeAmount(uint _amt) { performanceFees = _amt; }
+    function setTotalFeeAmount(uint _amt) public { totalFees = _amt; }
+    function setPerformanceFeeAmount(uint _amt) public { performanceFees = _amt; }
 
-    function rewardManagementFee() { return; }
-    function performanceFeeAmount() view returns (uint) { return performanceFees; }
+    function rewardManagementFee() public { return; }
+    function performanceFeeAmount() public view returns (uint) { return performanceFees; }
     function totalFeeAmount() public view returns (uint) { return totalFees; }
 }
