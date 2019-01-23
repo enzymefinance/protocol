@@ -97,11 +97,11 @@ describe('kyber-price-feed', () => {
       },
       {
         buy: createPrice(
-          createQuantity(shared.tokens.eur, 125),
+          createQuantity(shared.tokens.eur, 0.008),
           createQuantity(shared.tokens.weth, 1),
         ),
         sell: createPrice(
-          createQuantity(shared.tokens.eur, 0.008),
+          createQuantity(shared.tokens.eur, 125),
           createQuantity(shared.tokens.weth, 1),
         ),
       },
@@ -125,6 +125,6 @@ describe('kyber-price-feed', () => {
     );
 
     expect(toFixed(mlnPrice)).toBe('0.050000');
-    expect(toFixed(eurPrice)).toBe('125.000000');
+    expect(toFixed(eurPrice)).toBe('0.008000');
   });
 });

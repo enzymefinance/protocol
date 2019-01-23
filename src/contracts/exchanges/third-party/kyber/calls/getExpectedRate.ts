@@ -1,31 +1,20 @@
-import {
-  createPrice,
-  createQuantity,
-  PriceInterface,
-  TokenInterface,
-  QuantityInterface,
-} from '@melonproject/token-math';
+import { createPrice, createQuantity } from '@melonproject/token-math';
 
-import { Environment } from '~/utils/environment/Environment';
-import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
+import { callFactory } from '~/utils/solidity/callFactory';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
 const kyberEthAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
-export const getExpectedRate = async (
-  environment: Environment,
-  contractAddress: string,
-  nativeAsset: TokenInterface,
-  makerAsset: TokenInterface,
-  takerAsset: TokenInterface,
-  fillTakerQuantity: QuantityInterface,
-): Promise<PriceInterface> => {
-  const contract = await getContract(
-    environment,
-    Contracts.KyberNetworkProxy,
-    contractAddress,
-  );
-
+const prepareArgs = (
+  environment,
+  {
+    nativeAsset = getTokenBySymbol(environment, 'WETH'),
+    makerAsset,
+    takerAsset,
+    fillTakerQuantity,
+  },
+) => {
   const srcTokenAddress =
     takerAsset.address === nativeAsset.address
       ? kyberEthAddress
@@ -34,16 +23,28 @@ export const getExpectedRate = async (
     makerAsset.address === nativeAsset.address
       ? kyberEthAddress
       : makerAsset.address;
+  const args = [
+    srcTokenAddress,
+    destTokenAddress,
+    fillTakerQuantity.quantity.toString(),
+  ];
+  return args;
+};
 
-  const { 1: price } = await contract.methods
-    .getExpectedRate(
-      srcTokenAddress,
-      destTokenAddress,
-      `${fillTakerQuantity.quantity}`,
-    )
-    .call();
-
-  const base = createQuantity(takerAsset, 1);
-  const quote = createQuantity(makerAsset, price);
+const postProcess = async (environment, result, prepared) => {
+  const { 1: price } = result;
+  const base = createQuantity(prepared.params.takerAsset, 1);
+  const quote = createQuantity(prepared.params.makerAsset, price);
   return createPrice(base, quote);
 };
+
+const getExpectedRate = callFactory(
+  'getExpectedRate',
+  Contracts.KyberNetworkProxy,
+  {
+    postProcess,
+    prepareArgs,
+  },
+);
+
+export { getExpectedRate };

@@ -33,14 +33,11 @@ describe('Happy Path', () => {
     const weth = getTokenBySymbol(shared.env, 'WETH');
     const mln = getTokenBySymbol(shared.env, 'MLN');
     const takerQuantity = createQuantity(weth, 1);
-    const expectedRate = await getExpectedRate(
-      shared.env,
-      shared.kyber,
-      weth,
-      mln,
-      weth,
-      takerQuantity,
-    );
+    const expectedRate = await getExpectedRate(shared.env, shared.kyber, {
+      fillTakerQuantity: takerQuantity,
+      makerAsset: mln,
+      takerAsset: weth,
+    });
     // Minimum quantity of dest asset expected to get in return in the trade
     const minMakerQuantity = valueIn(expectedRate, takerQuantity);
 
