@@ -1,13 +1,6 @@
 import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';
-import {
-  createQuantity,
-  greaterThan,
-  isEqual,
-  toFixed,
-  subtract,
-  QuantityInterface,
-} from '@melonproject/token-math';
+import { createQuantity, greaterThan, toFixed } from '@melonproject/token-math';
 import { sendEth } from '~/utils/evm/sendEth';
 import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
@@ -20,13 +13,9 @@ import { performCalculations } from '~/contracts/fund/accounting/calls/performCa
 import { allLogsWritten } from '../utils/testLogger';
 import { setupFund } from '~/contracts/fund/hub/transactions/setupFund';
 import { invest } from '~/contracts/fund/participation/transactions/invest';
-import { debug } from 'util';
-import { redeem } from '~/contracts/fund/participation/transactions/redeem';
-import { redeemQuantity } from '~/contracts/fund/participation/transactions/redeemQuantity';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { delay } from 'rxjs/operators';
-import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
 
 expect.extend({ toBeTrueWith });
@@ -52,11 +41,7 @@ describe('playground', () => {
     const investor2 = await withNewAccount(master);
     const investor3 = await withNewAccount(master);
 
-    log.debug(
-      'ADDRESSES ------- ',
-      manager.wallet.address,
-      investor1.wallet.address,
-    );
+    // log.debug('Addresses ', manager, investor1, investor2, investor3);
 
     const weth = getTokenBySymbol(manager, 'WETH');
     const mln = getTokenBySymbol(manager, 'MLN');
@@ -102,8 +87,6 @@ describe('playground', () => {
 
     log.debug('Manager investment ', managerInvestment);
 
-    // await redeem(manager, routes.participationAddress);
-
     // Investor 1 invests 1 WETH
     await sendEth(master, {
       howMuch: createQuantity('ETH', 3),
@@ -123,7 +106,7 @@ describe('playground', () => {
       investmentAmount: investor1Quantity,
     });
 
-    await delay(120000);
+    await delay(180000);
 
     const investor1Investment = await executeRequestFor(
       investor1,
@@ -152,7 +135,7 @@ describe('playground', () => {
       investmentAmount: investor2Quantity,
     });
 
-    await delay(120000);
+    await delay(180000);
 
     const investor2Investment = await executeRequestFor(
       investor2,
@@ -182,7 +165,7 @@ describe('playground', () => {
       investmentAmount: investor3Quantity,
     });
 
-    await delay(120000);
+    await delay(180000);
 
     const investor3Investment = await executeRequestFor(
       investor3,
