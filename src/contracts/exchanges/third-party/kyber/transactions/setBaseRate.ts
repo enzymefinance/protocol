@@ -59,15 +59,12 @@ const prepareArgs: PrepareArgsFunction<SetBaseRateArgs> = async (
   environment.logger('debug', LogLevels.DEBUG, prices);
 
   const numberOfTokens = prices.length;
-  let enhancedPrices: BuySell[] = [];
-  if (!isBuySell(prices)) {
-    enhancedPrices = prices.map(p => ({
-      buy: createPrice(p.quote, p.base),
-      sell: p,
-    }));
-  } else {
-    enhancedPrices = prices;
-  }
+  const enhancedPrices: BuySell[] = isBuySell(prices)
+    ? prices
+    : prices.map(p => ({
+        buy: createPrice(p.quote, p.base),
+        sell: p,
+      }));
 
   const tokens = enhancedPrices.map(p => p.sell.base.token.address.toString());
 

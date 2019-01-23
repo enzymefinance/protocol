@@ -87,8 +87,8 @@ describe('kyber-price-feed', () => {
     const prices = [
       {
         buy: createPrice(
-          createQuantity(shared.tokens.mln, 0.05),
-          createQuantity(shared.tokens.weth, 1),
+          createQuantity(shared.tokens.weth, 0.05),
+          createQuantity(shared.tokens.mln, 1),
         ),
         sell: createPrice(
           createQuantity(shared.tokens.mln, 20),
@@ -97,14 +97,47 @@ describe('kyber-price-feed', () => {
       },
       {
         buy: createPrice(
-          createQuantity(shared.tokens.eur, 0.008),
-          createQuantity(shared.tokens.weth, 1),
+          createQuantity(shared.tokens.weth, 0.008),
+          createQuantity(shared.tokens.eur, 1),
         ),
         sell: createPrice(
           createQuantity(shared.tokens.eur, 125),
           createQuantity(shared.tokens.weth, 1),
         ),
       },
+    ];
+    await setBaseRate(shared.env, shared.kyberDeploy.conversionRates, {
+      prices,
+    });
+
+    await updateKyber(shared.env, shared.kyberPriceFeed);
+
+    const mlnPrice = await getPrice(
+      shared.env,
+      shared.kyberPriceFeed,
+      shared.tokens.mln,
+    );
+
+    const eurPrice = await getPrice(
+      shared.env,
+      shared.kyberPriceFeed,
+      shared.tokens.eur,
+    );
+
+    expect(toFixed(mlnPrice)).toBe('0.050000');
+    expect(toFixed(eurPrice)).toBe('0.008000');
+  });
+
+  it('Update mln price without explicity passing buy-sell prices', async () => {
+    const prices = [
+      createPrice(
+        createQuantity(shared.tokens.mln, 20),
+        createQuantity(shared.tokens.weth, 1),
+      ),
+      createPrice(
+        createQuantity(shared.tokens.eur, 125),
+        createQuantity(shared.tokens.weth, 1),
+      ),
     ];
     await setBaseRate(shared.env, shared.kyberDeploy.conversionRates, {
       prices,
