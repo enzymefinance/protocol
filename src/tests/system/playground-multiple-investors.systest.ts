@@ -15,7 +15,6 @@ import { setupFund } from '~/contracts/fund/hub/transactions/setupFund';
 import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { delay } from 'rxjs/operators';
 import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
 
 expect.extend({ toBeTrueWith });
@@ -41,7 +40,9 @@ describe('playground', () => {
     const investor2 = await withNewAccount(master);
     const investor3 = await withNewAccount(master);
 
-    // log.debug('Addresses ', manager, investor1, investor2, investor3);
+    log.debug('Manager ', manager.wallet.address);
+    log.debug('Investor 1 ', investor1.wallet.address);
+    log.debug('Investor 2 ', investor2.wallet.address);
 
     const weth = getTokenBySymbol(manager, 'WETH');
     const mln = getTokenBySymbol(manager, 'MLN');
@@ -87,7 +88,7 @@ describe('playground', () => {
 
     log.debug('Manager investment ', managerInvestment);
 
-    // Investor 1 invests 1 WETH
+    // Investor 1 requests investment 1 WETH
     await sendEth(master, {
       howMuch: createQuantity('ETH', 3),
       to: investor1.wallet.address,
@@ -106,17 +107,7 @@ describe('playground', () => {
       investmentAmount: investor1Quantity,
     });
 
-    await delay(180000);
-
-    const investor1Investment = await executeRequestFor(
-      investor1,
-      routes.participationAddress,
-      { who: investor1 },
-    );
-
-    log.debug('Investor 1 investment ', investor1Investment);
-
-    // Investor 2 invests 2 WETH
+    // Investor 2 requests investment 2 WETH
     await sendEth(master, {
       howMuch: createQuantity('ETH', 4),
       to: investor2.wallet.address,
@@ -135,17 +126,7 @@ describe('playground', () => {
       investmentAmount: investor2Quantity,
     });
 
-    await delay(180000);
-
-    const investor2Investment = await executeRequestFor(
-      investor2,
-      routes.participationAddress,
-      { who: investor2 },
-    );
-
-    log.debug('Investor 2 investment ', investor2Investment);
-
-    // Investor 3 invests 3 WETH
+    // Investor 3 requests investment 3 WETH
 
     await sendEth(master, {
       howMuch: createQuantity('ETH', 5),
@@ -165,23 +146,41 @@ describe('playground', () => {
       investmentAmount: investor3Quantity,
     });
 
-    await delay(180000);
+    /// Execute 3 requests after some time has passed
 
-    const investor3Investment = await executeRequestFor(
-      investor3,
-      routes.participationAddress,
-      { who: investor3 },
-    );
+    setTimeout(async () => {
+      const investor1Investment = await executeRequestFor(
+        investor1,
+        routes.participationAddress,
+        { who: investor1.wallet.address },
+      );
 
-    log.debug('Investor 3 investment ', investor3Investment);
+      log.debug('Investor 1 investment ', investor1Investment);
 
-    const finalCalculations = await performCalculations(
-      manager,
-      routes.accountingAddress,
-    );
+      const investor2Investment = await executeRequestFor(
+        investor2,
+        routes.participationAddress,
+        { who: investor2.wallet.address },
+      );
 
-    log.debug({ finalCalculations });
+      log.debug('Investor 2 investment ', investor2Investment);
 
-    expect(toFixed(finalCalculations.gav)).toEqual('6.500000');
+      const investor3Investment = await executeRequestFor(
+        investor3,
+        routes.participationAddress,
+        { who: investor3.wallet.address },
+      );
+
+      log.debug('Investor 3 investment ', investor3Investment);
+
+      const finalCalculations = await performCalculations(
+        manager,
+        routes.accountingAddress,
+      );
+
+      log.debug({ finalCalculations });
+
+      expect(toFixed(finalCalculations.gav)).toEqual('6.500000');
+    }, 300000);
   });
 });

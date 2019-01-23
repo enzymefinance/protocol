@@ -4,17 +4,17 @@ import { hasValidRequest } from '../calls/hasValidRequest';
 const ensureHasValidRequest = async (
   environment,
   participationContractAddress,
+  investor,
 ) => {
   const validRequest = await hasValidRequest(
     environment,
     participationContractAddress,
-    { investor: environment.wallet.address },
+    { investor },
   );
+
   ensure(
     validRequest,
-    `Investor ${
-      environment.wallet.address
-    } does not have a valid/executable request.`,
+    `Investor ${investor} does not have a valid/executable request.`,
   );
 };
 

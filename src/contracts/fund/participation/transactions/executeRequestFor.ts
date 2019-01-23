@@ -31,7 +31,7 @@ const guard = async (environment, params, contractAddress) => {
     'Amount of requested shares is null',
   );
 
-  await ensureHasValidRequest(environment, contractAddress);
+  await ensureHasValidRequest(environment, contractAddress, params.who);
 };
 
 const prepareArgs: PrepareArgsFunction<ExecuteRequestForArgs> = async (
