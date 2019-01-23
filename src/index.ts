@@ -96,3 +96,6 @@ export {
   takeOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 export { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
+export {
+  getExpectedRate,
+} from '~/contracts/exchanges/third-party/kyber/calls/getExpectedRate';

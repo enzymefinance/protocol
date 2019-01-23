@@ -31,7 +31,7 @@ const prepareArgs = (
   return args;
 };
 
-const postProcess = async (environment, result, prepared) => {
+const postProcess = async (_, result, prepared) => {
   const { 1: price } = result;
   const base = createQuantity(prepared.params.takerAsset, 1);
   const quote = createQuantity(prepared.params.makerAsset, price);
