@@ -72,7 +72,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     /// @dev If no shares exist and not expired, request can be executed immediately
     function hasValidRequest(address _who) public view returns (bool) {
         PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
-        bool delayRespectedOrNoShares = request.timestamp < priceSource.getLastUpdate() ||
+        bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.getLastUpdate() ||
             Shares(routes.shares).totalSupply() == 0;
 
         return hasRequest(_who) &&
