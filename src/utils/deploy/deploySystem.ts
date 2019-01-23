@@ -239,9 +239,14 @@ export const deploySystem = async (
       deployVaultFactory(environment),
     ),
     maybeDeploy(['engine'], environment =>
-      deployEngine(environment, { delay: monthInSeconds }),
+      deployEngine(environment, {
+        delay: monthInSeconds,
+        postDeployOwner: environment.wallet.address,
+      }),
     ),
-    maybeDeploy(['registry'], environment => deployRegistry(environment)),
+    maybeDeploy(['registry'], environment =>
+      deployRegistry(environment, environment.wallet.address),
+    ),
     maybeDeploy(['priceSource'], environment =>
       environment.track === Tracks.KYBER_PRICE
         ? deployKyberPriceFeed(environment, {
@@ -290,10 +295,8 @@ export const deploySystem = async (
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
-        engine: environment.deployment.melonContracts.engine,
         factories: environment.deployment.melonContracts.factories,
-        mlnToken,
-        priceSource: environment.deployment.melonContracts.priceSource,
+        postDeployOwner: environment.wallet.address,
         registry: environment.deployment.melonContracts.registry,
       }),
     ),

@@ -79,10 +79,8 @@ contract FundFactory is AmguConsumer, Factory {
         address _tradingFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _version,
-        address _engine,
-        address _factoryPriceSource,
-        address _mlnToken
+        address _registry,
+        address _version
     ) {
         accountingFactory = AccountingFactory(_accountingFactory);
         feeManagerFactory = FeeManagerFactory(_feeManagerFactory);
@@ -92,9 +90,9 @@ contract FundFactory is AmguConsumer, Factory {
         vaultFactory = VaultFactory(_vaultFactory);
         policyManagerFactory = PolicyManagerFactory(_policyManagerFactory);
         version = VersionInterface(_version);
-        engine = Engine(_engine);
-        factoryPriceSource = _factoryPriceSource;
-        mlnToken = _mlnToken;
+        engine = Engine(Registry(_registry).engine());
+        factoryPriceSource = Registry(_registry).priceSource();
+        mlnToken = Registry(_registry).mlnToken();
     }
 
     function componentExists(address _component) internal returns (bool) {
@@ -117,7 +115,6 @@ contract FundFactory is AmguConsumer, Factory {
         public
         componentNotSet(managersToHubs[msg.sender])
     {
-        require(!version.getShutDownStatus(), "Version is shut down");
         require(
             _nativeAsset == Registry(registry).nativeAsset(),
             "Native asset does not match registry"
