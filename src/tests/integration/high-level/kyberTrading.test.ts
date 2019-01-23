@@ -4,6 +4,7 @@ import {
   greaterThan,
   subtract,
   valueIn,
+  createPrice,
 } from '@melonproject/token-math';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
@@ -13,6 +14,10 @@ import { Exchanges } from '~/Contracts';
 import { takeOrderOnKyber } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+import { register } from '~/contracts/fund/policies/transactions/register';
+import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { getPrice } from '~/contracts/prices/calls/getPrice';
+import { setBaseRate } from '~/contracts/exchanges/third-party/kyber/transactions/setBaseRate';
 
 describe('Happy Path', () => {
   const shared: {
@@ -27,23 +32,49 @@ describe('Happy Path', () => {
     shared.kyber =
       shared.env.deployment.exchangeConfigs[Exchanges.KyberNetwork].exchange;
     shared.routes = await setupInvestedTestFund(shared.env);
+    shared.weth = getTokenBySymbol(shared.env, 'WETH');
+    shared.mln = getTokenBySymbol(shared.env, 'MLN');
+    await register(shared.env, shared.routes.policyManagerAddress, {
+      method: FunctionSignatures.takeOrder,
+      policy: shared.env.deployment.melonContracts.policies.priceTolerance,
+    });
+
+    // Setting rates on kyber reserve
+    const mlnPrice = await getPrice(
+      shared.env,
+      shared.env.deployment.melonContracts.priceSource.toString(),
+      shared.mln,
+    );
+    const ethPriceInMln = createPrice(mlnPrice.quote, mlnPrice.base);
+
+    const prices = [
+      {
+        buy: ethPriceInMln,
+        sell: mlnPrice,
+      },
+    ];
+    await setBaseRate(
+      shared.env,
+      shared.env.deployment.thirdPartyContracts.exchanges.kyber.conversionRates,
+      {
+        prices,
+      },
+    );
   });
 
-  test('Happy path', async () => {
-    const weth = getTokenBySymbol(shared.env, 'WETH');
-    const mln = getTokenBySymbol(shared.env, 'MLN');
-    const takerQuantity = createQuantity(weth, 1);
+  test('Trade on kyber', async () => {
+    const takerQuantity = createQuantity(shared.weth, 0.1);
     const expectedRate = await getExpectedRate(shared.env, shared.kyber, {
       fillTakerQuantity: takerQuantity,
-      makerAsset: mln,
-      takerAsset: weth,
+      makerAsset: shared.mln,
+      takerAsset: shared.weth,
     });
     // Minimum quantity of dest asset expected to get in return in the trade
     const minMakerQuantity = valueIn(expectedRate, takerQuantity);
 
     const preMlnBalance: QuantityInterface = await balanceOf(
       shared.env,
-      mln.address,
+      shared.mln.address,
       {
         address: shared.routes.vaultAddress,
       },
@@ -56,7 +87,7 @@ describe('Happy Path', () => {
 
     const postMlnBalance: QuantityInterface = await balanceOf(
       shared.env,
-      mln.address,
+      shared.mln.address,
       {
         address: shared.routes.vaultAddress,
       },
@@ -65,5 +96,18 @@ describe('Happy Path', () => {
     expect(
       greaterThan(subtract(postMlnBalance, preMlnBalance), minMakerQuantity),
     ).toBeTruthy();
+  });
+
+  test('Price tolerance prevents ill priced trade', async () => {
+    const takerQuantity = createQuantity(shared.weth, 0.1);
+    // Minimum quantity of dest asset expected to get in return in the trade
+    const minMakerQuantity = createQuantity(shared.mln, 0);
+
+    await expect(
+      takeOrderOnKyber(shared.env, shared.routes.tradingAddress, {
+        makerQuantity: minMakerQuantity,
+        takerQuantity,
+      }),
+    ).rejects.toThrow();
   });
 });
