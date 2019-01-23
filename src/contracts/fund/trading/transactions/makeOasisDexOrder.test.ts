@@ -2,10 +2,13 @@ import { Environment } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { createQuantity } from '@melonproject/token-math';
+import { createQuantity, isEqual } from '@melonproject/token-math';
 import { makeOasisDexOrder } from './makeOasisDexOrder';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { cancelOasisDexOrder } from './cancelOasisDexOrder';
+import { getActiveOasisDexOrders } from '~/contracts/exchanges/calls/getActiveOasisDexOrders';
+import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
+import { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
 
 describe('makeOasisDexOrder', () => {
   const shared: {
@@ -29,15 +32,15 @@ describe('makeOasisDexOrder', () => {
     const makerQuantity = createQuantity(shared.weth, 0.05);
     const takerQuantity = createQuantity(shared.mln, 1);
 
-    const order = await makeOasisDexOrder(
+    const orderToCancel = await makeOasisDexOrder(
       shared.env,
       shared.routes.tradingAddress,
       { makerQuantity, takerQuantity },
     );
 
-    expect(order.buy).toEqual(takerQuantity);
-    expect(order.sell).toEqual(makerQuantity);
-    expect(order.maker).toEqual(shared.routes.tradingAddress);
+    expect(orderToCancel.buy).toEqual(takerQuantity);
+    expect(orderToCancel.sell).toEqual(makerQuantity);
+    expect(orderToCancel.maker).toEqual(shared.routes.tradingAddress);
 
     await expect(
       makeOasisDexOrder(shared.env, shared.routes.tradingAddress, {
@@ -47,16 +50,46 @@ describe('makeOasisDexOrder', () => {
     ).rejects.toThrow('open order');
 
     await cancelOasisDexOrder(shared.env, shared.routes.tradingAddress, {
-      id: order.id,
+      id: orderToCancel.id,
       maker: shared.routes.tradingAddress,
-      makerAsset: order.sell.token.address,
-      takerAsset: order.buy.token.address,
+      makerAsset: orderToCancel.sell.token.address,
+      takerAsset: orderToCancel.buy.token.address,
     });
 
     // Now it should work again
-    await makeOasisDexOrder(shared.env, shared.routes.tradingAddress, {
-      makerQuantity,
-      takerQuantity,
+    const orderToStay = await makeOasisDexOrder(
+      shared.env,
+      shared.routes.tradingAddress,
+      {
+        makerQuantity,
+        takerQuantity,
+      },
+    );
+
+    const orders = await getActiveOasisDexOrders(
+      shared.env,
+      shared.env.deployment.melonContracts.adapters.matchingMarketAccessor,
+      {
+        buyAsset: takerQuantity.token.address,
+        sellAsset: makerQuantity.token.address,
+        targetExchange: shared.oasisDex,
+      },
+    );
+
+    expect(orders.length).toBe(1);
+
+    const gotOrder = await getOasisDexOrder(shared.env, shared.oasisDex, {
+      id: orderToStay.id,
+    });
+
+    expect(isEqual(gotOrder.buy, takerQuantity)).toBe(true);
+    expect(isEqual(gotOrder.buy, orderToStay.buy)).toBe(true);
+
+    await takeOrderFromAccountOasisDex(shared.env, shared.oasisDex, {
+      buy: orderToStay.buy,
+      id: orderToStay.id,
+      maxTakeAmount: orderToStay.sell,
+      sell: orderToStay.sell,
     });
   });
 });

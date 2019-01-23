@@ -73,3 +73,26 @@ export {
   cancelOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 export { deployContract } from '~/utils/solidity/deployContract';
+export {
+  FunctionSignatures,
+} from '~/contracts/fund/trading/utils/FunctionSignatures';
+export { Exchanges, Contracts } from '~/Contracts';
+export { register } from '~/contracts/fund/policies/transactions/register';
+export {
+  createOrder,
+} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+export {
+  getWrapperLock,
+} from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
+export { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
+export { withNewAccount } from '~/utils/environment/withNewAccount';
+export { sendEth } from '~/utils/evm/sendEth';
+export { deposit } from '~/contracts/dependencies/token/transactions/deposit';
+export { randomString } from '~/utils/helpers/randomString';
+export {
+  makeOrderFromAccountOasisDex,
+} from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
+export {
+  takeOasisDexOrder,
+} from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
+export { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';

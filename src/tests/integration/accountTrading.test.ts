@@ -42,9 +42,9 @@ describe('account-trading', () => {
       shared.env,
       matchingMarketAccessorAddress,
       {
-        targetExchange: matchingMarketAddress,
         buyAsset: mlnToken.address,
         sellAsset: wethToken.address,
+        targetExchange: matchingMarketAddress,
       },
     );
 
@@ -62,9 +62,9 @@ describe('account-trading', () => {
       shared.env,
       matchingMarketAccessorAddress,
       {
-        targetExchange: matchingMarketAddress,
         buyAsset: mlnToken.address,
         sellAsset: wethToken.address,
+        targetExchange: matchingMarketAddress,
       },
     );
 
@@ -86,9 +86,9 @@ describe('account-trading', () => {
       shared.env,
       matchingMarketAccessorAddress,
       {
-        targetExchange: matchingMarketAddress,
         buyAsset: mlnToken.address,
         sellAsset: wethToken.address,
+        targetExchange: matchingMarketAddress,
       },
     );
 
@@ -103,9 +103,9 @@ describe('account-trading', () => {
       shared.env,
       matchingMarketAccessorAddress,
       {
-        targetExchange: matchingMarketAddress,
         buyAsset: mlnToken.address,
         sellAsset: wethToken.address,
+        targetExchange: matchingMarketAddress,
       },
     );
 
