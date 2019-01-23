@@ -23,6 +23,11 @@ import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { debug } from 'util';
 import { redeem } from '~/contracts/fund/participation/transactions/redeem';
 import { redeemQuantity } from '~/contracts/fund/participation/transactions/redeemQuantity';
+import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
+import { approve } from '~/contracts/dependencies/token/transactions/approve';
+import { delay } from 'rxjs/operators';
+import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
+import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
 
 expect.extend({ toBeTrueWith });
 
@@ -109,10 +114,22 @@ describe('playground', () => {
       value: investor1Quantity.quantity.toString(),
     });
 
-    const investor1Investment = await invest(investor1, {
-      hubAddress: routes.hubAddress,
+    await approve(investor1, {
+      howMuch: investor1Quantity,
+      spender: routes.participationAddress,
+    });
+
+    await requestInvestment(investor1, routes.participationAddress, {
       investmentAmount: investor1Quantity,
     });
+
+    await delay(120000);
+
+    const investor1Investment = await executeRequestFor(
+      investor1,
+      routes.participationAddress,
+      { who: investor1 },
+    );
 
     log.debug('Investor 1 investment ', investor1Investment);
 
@@ -126,10 +143,22 @@ describe('playground', () => {
       value: investor2Quantity.quantity.toString(),
     });
 
-    const investor2Investment = await invest(investor2, {
-      hubAddress: routes.hubAddress,
+    await approve(investor2, {
+      howMuch: investor2Quantity,
+      spender: routes.participationAddress,
+    });
+
+    await requestInvestment(investor2, routes.participationAddress, {
       investmentAmount: investor2Quantity,
     });
+
+    await delay(120000);
+
+    const investor2Investment = await executeRequestFor(
+      investor2,
+      routes.participationAddress,
+      { who: investor2 },
+    );
 
     log.debug('Investor 2 investment ', investor2Investment);
 
@@ -144,10 +173,22 @@ describe('playground', () => {
       value: investor3Quantity.quantity.toString(),
     });
 
-    const investor3Investment = await invest(investor3, {
-      hubAddress: routes.hubAddress,
+    await approve(investor3, {
+      howMuch: investor3Quantity,
+      spender: routes.participationAddress,
+    });
+
+    await requestInvestment(investor3, routes.participationAddress, {
       investmentAmount: investor3Quantity,
     });
+
+    await delay(120000);
+
+    const investor3Investment = await executeRequestFor(
+      investor3,
+      routes.participationAddress,
+      { who: investor3 },
+    );
 
     log.debug('Investor 3 investment ', investor3Investment);
 
