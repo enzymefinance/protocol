@@ -21,7 +21,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     uint constant public SHARES_DECIMALS = 18;
-    uint constant public INVEST_DELAY = 10 minutes;
     uint constant public REQUEST_LIFESPAN = 1 days;
 
     mapping (address => Request) public requests;
