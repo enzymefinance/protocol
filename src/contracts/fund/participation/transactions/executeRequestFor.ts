@@ -12,6 +12,7 @@ import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 // tslint:disable-next-line:max-line-length
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { ensureHasValidRequest } from '../guards/ensureHasValidRequest';
 
 export interface ExecuteRequestForArgs {
   who: Address;
@@ -30,9 +31,7 @@ const guard = async (environment, params, contractAddress) => {
     'Amount of requested shares is null',
   );
 
-  // TODO: remaining pre flights
-  // ensure isRecent
-  // ensure isPriceRecent
+  await ensureHasValidRequest(environment, contractAddress);
 };
 
 const prepareArgs: PrepareArgsFunction<ExecuteRequestForArgs> = async (
