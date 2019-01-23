@@ -1,11 +1,11 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-01-22T16:05:37.322Z",
+    "timestamp": "2019-01-23T14:59:01.461Z",
     "track": "kyberPrice",
-    "version": "0.9.13",
+    "version": "0.9.14",
     "chain": 42,
-    "description": "Add fees"
+    "description": "Fix delay in investment request"
   },
   "melonContracts": {
     "priceSource": "0x01778e57366476136a1A9355CFB69eE600657E05",
@@ -27,7 +27,7 @@
     "factories": {
       "accountingFactory": "0x8Aa79254Ccf972fadECcd2d3D5a10D20E2d095c1",
       "feeManagerFactory": "0xeE339A7F5e7B2Cf10eFa14b545273460a96EDc41",
-      "participationFactory": "0xe3a7885422a8fCa297FD35cdb460BB8DB1fca0c5",
+      "participationFactory": "0xdD4573a847d006Bf690621015B902f6c5905Fc1a",
       "policyManagerFactory": "0x634E75D597b9FCf52bd4b42117F33983921B8D22",
       "sharesFactory": "0xA84ee856b61b0CDCD585D61BB4Dc31c666CF1349",
       "tradingFactory": "0x1A8637DB7F4c208A1b07c15666B40Cbb85551484",
@@ -35,7 +35,7 @@
     },
     "engine": "0x83BB2CCaeA4b09D417212F896A8600Ba4035703f",
     "registry": "0x230e7e04c877ADcf8a2A778DD1BDC09381968d07",
-    "version": "0x96c1BD7ebF0455Cc885426b9D300D9db60718f4D",
+    "version": "0xa70E4022aE35959E9A4B0E714B537cC0743Af2Ea",
     "ranking": "0x90907Edab4ce23c96016ea29044bE9783f7Ddf4e"
   },
   "thirdPartyContracts": {
