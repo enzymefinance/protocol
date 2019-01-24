@@ -10,13 +10,13 @@ import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
 import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
-// import { makeEthfinexOrder } from '~/contracts/fund/trading/transactions/makeEthfinexOrder';
 import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
 import { getWrapperLock } from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
+import { isValidSignature } from '~/contracts/exchanges/third-party/0x/calls/isValidSignature';
+import { makeEthfinexOrder } from '~/contracts/fund/trading/transactions/makeEthfinexOrder';
+import { Exchanges } from '~/Contracts';
 
 expect.extend({ toBeTrueWith });
-
-// const getLog = getLogCurried('melon:protocol:systemTest:playground');
 
 describe('playground', () => {
   test('Happy path', async () => {
@@ -43,10 +43,8 @@ describe('playground', () => {
 
     const routes = await setupInvestedTestFund(manager);
 
-    // const ethfinex =
-    //   manager.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
-
-    const ethfinex = '0x35dd2932454449b14cee11a94d3674a936d5d7b2';
+    const ethfinex =
+      manager.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
 
     await setEthfinexWrapperRegistry(
       master,
@@ -55,16 +53,6 @@ describe('playground', () => {
         address: wrapperRegistryEFX,
       },
     );
-    // const howMuch = createQuantity(weth, 1);
-
-    // console.log('asdasdasd');
-    // const receipt = await transfer(manager, {
-    //   howMuch,
-    //   to: routes.vaultAddress,
-    // });
-    // console.log('asdasdasd');
-
-    // expect(receipt).toBeTruthy();
 
     const makerQuantity = createQuantity(wethWrapperLock, 0.05);
     const takerQuantity = createQuantity(mln, 1);
@@ -75,6 +63,21 @@ describe('playground', () => {
       takerQuantity,
     });
     const signedOrder = await signOrder(manager, unsignedEthfinexOrder);
-    console.log(signedOrder);
+
+    const isSignatureValidBefore = await isValidSignature(manager, ethfinex, {
+      signedOrder,
+    });
+
+    const result = await makeEthfinexOrder(manager, routes.tradingAddress, {
+      signedOrder,
+    });
+
+    const isSignatureValidAfter = await isValidSignature(manager, ethfinex, {
+      signedOrder,
+    });
+
+    expect(result).toBeTruthy();
+    expect(isSignatureValidBefore).toBeFalsy();
+    expect(isSignatureValidAfter).toBeTruthy();
   });
 });
