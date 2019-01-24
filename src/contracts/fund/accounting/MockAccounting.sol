@@ -26,7 +26,7 @@ contract MockAccounting is Spoke {
         DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
         SHARES_DECIMALS = 18;
-        DEFAULT_SHARE_PRICE = 10 ** SHARES_DECIMALS;
+        DEFAULT_SHARE_PRICE = 10 ** uint(SHARES_DECIMALS);
     }
 
     function setOwnedAssets(address[] _assets) public { ownedAssets = _assets; }

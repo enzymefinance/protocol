@@ -173,7 +173,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
         referencePrice = mul(
             prices[_baseAsset],
-            10 ** quoteDecimals
+            10 ** uint(quoteDecimals)
         ) / prices[_quoteAsset];
 
         return (isValid, referencePrice, quoteDecimals);
@@ -242,13 +242,13 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         // Check the the spread and average the price on both sides
         uint spreadFromKyber = mul(
             sub(askRate, bidRate),
-            10 ** KYBER_PRECISION
+            10 ** uint(KYBER_PRECISION)
         ) / bidRate;
         uint averagePriceFromKyber = add(bidRate, askRate) / 2;
         kyberPrice = mul(
             averagePriceFromKyber,
-            10 ** ERC20Clone(_quoteAsset).decimals() // use original quote decimals (not defined on mask)
-        ) / 10 ** KYBER_PRECISION;
+            10 ** uint(ERC20Clone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
+        ) / 10 ** uint(KYBER_PRECISION);
 
         return (
             spreadFromKyber <= MAX_SPREAD && averagePriceFromKyber != 0,
@@ -307,7 +307,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         return mul(
             fromAssetQuantity,
             fromAssetPrice
-        ) / (10 ** fromAssetDecimals);
+        ) / (10 ** uint(fromAssetDecimals));
     }
 
     function getLastUpdate() public view returns (uint) { return lastUpdate; }

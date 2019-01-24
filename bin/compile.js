@@ -33,7 +33,7 @@ var writeFiles = function (compileOutput, contract) {
     debug('Writing', contract);
     mkdirp.sync(targetDir);
     if (fs.existsSync(targetBasePath + ".abi")) {
-        throw new Error(
+        console.warn(
         // tslint:disable-next-line:max-line-length
         "Contract name duplication detected: " + targetBasePath + ".abi. Please make sure that every contract is uniquely named across all dirctories.");
     }
@@ -69,9 +69,11 @@ exports.compileGlob = function (query) {
         process.stderr.write(msg);
     });
     debug('Writing compilation results');
-    // Delete and recreate out/
-    rimraf.sync(solidityCompileTarget);
-    mkdirp.sync(solidityCompileTarget);
+    if (query === path.join(soliditySourceDirectory, '**', '*.sol')) {
+        // Delete and recreate out/
+        rimraf.sync(solidityCompileTarget);
+        mkdirp.sync(solidityCompileTarget);
+    }
     fs.writeFileSync(path.join(solidityCompileTarget, 'compilerResult.json'), JSON.stringify(output, null, 2));
     if (messages.length > 0) {
         fs.writeFileSync(path.join(solidityCompileTarget, 'compilerMessages.txt'), output.errors.join('\n\n'));

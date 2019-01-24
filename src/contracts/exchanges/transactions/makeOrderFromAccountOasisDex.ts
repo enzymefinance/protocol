@@ -15,6 +15,7 @@ import { ensure } from '~/utils/guards/ensure';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import * as web3Utils from 'web3-utils';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
+
 export interface CallOnExchangeArgs {
   sell: QuantityInterface;
   buy: QuantityInterface;

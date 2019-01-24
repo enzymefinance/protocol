@@ -422,7 +422,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         return mul(
             fromAssetQuantity,
             fromAssetPrice
-        ) / (10 ** fromAssetDecimals);
+        ) / (10 ** uint(fromAssetDecimals));
     }
 
     function getLastUpdate() public view returns (uint) { return lastUpdate; }

@@ -70,7 +70,7 @@ contract Engine is DSMath, DSAuth {
         (ethPerMln,) = priceSource.getPrice(address(mlnToken));
         uint amguConsumed;
         if (mlnPerAmgu > 0 && ethPerMln > 0) {
-            amguConsumed = (mul(msg.value, 10 ** MLN_DECIMALS)) / (mul(ethPerMln, mlnPerAmgu));
+            amguConsumed = (mul(msg.value, 10 ** uint(MLN_DECIMALS))) / (mul(ethPerMln, mlnPerAmgu));
         } else {
             amguConsumed = 0;
         }
@@ -102,7 +102,7 @@ contract Engine is DSMath, DSAuth {
     }
 
     function ethPayoutForMlnAmount(uint mlnAmount) public view returns (uint) {
-        return mul(mlnAmount, enginePrice()) / 10 ** MLN_DECIMALS;
+        return mul(mlnAmount, enginePrice()) / 10 ** uint(MLN_DECIMALS);
     }
 
     /// @notice MLN must be approved first

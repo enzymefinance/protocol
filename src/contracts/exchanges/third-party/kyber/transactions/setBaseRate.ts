@@ -4,10 +4,17 @@ import {
   PrepareArgsFunction,
 } from '~/utils/solidity/transactionFactory';
 import { Contracts } from '~/Contracts';
-import { PriceInterface, toAtomic } from '@melonproject/token-math';
+import {
+  PriceInterface,
+  toAtomic,
+  createPrice,
+} from '@melonproject/token-math';
 import { getLatestBlock } from '~/utils/evm';
 import { LogLevels } from '~/utils/environment/Environment';
 
+// Buy / sell rate in Kyber is different from Melon's conventions
+// Buy rate in reserve is price of 1 ETH in Token (E.g 10 where 1 ETH = 10 MLN)
+// Sell Rate is the price of 1 Token in ETH (E.g 0.1 where 1 MLN = 0.1 ETH)
 interface BuySell {
   buy: PriceInterface;
   sell: PriceInterface;
@@ -44,6 +51,7 @@ const splitArray = (arr: number[], length: number): number[][] => {
 
 type SetBaseRateResult = boolean;
 
+// If buy-sell prices are not explicity passed, assumes passed price to be sell
 const prepareArgs: PrepareArgsFunction<SetBaseRateArgs> = async (
   environment,
   { prices, blockNumber: givenBlockNumber },
@@ -51,18 +59,18 @@ const prepareArgs: PrepareArgsFunction<SetBaseRateArgs> = async (
   environment.logger('debug', LogLevels.DEBUG, prices);
 
   const numberOfTokens = prices.length;
+  const enhancedPrices: BuySell[] = isBuySell(prices)
+    ? prices
+    : prices.map(p => ({
+        buy: createPrice(p.quote, p.base),
+        sell: p,
+      }));
 
-  const tokens = isBuySell(prices)
-    ? prices.map(p => p.buy.base.token.address.toString())
-    : prices.map(p => p.base.token.address.toString());
+  const tokens = enhancedPrices.map(p => p.sell.base.token.address.toString());
 
-  const baseBuy = isBuySell(prices)
-    ? prices.map(p => `${toAtomic(p.buy)}`)
-    : prices.map(p => `${toAtomic(p)}`);
+  const baseBuy = enhancedPrices.map(p => `${toAtomic(p.buy)}`);
 
-  const baseSell = isBuySell(prices)
-    ? prices.map(p => `${toAtomic(p.sell)}`)
-    : prices.map(p => `${toAtomic(p)}`);
+  const baseSell = enhancedPrices.map(p => `${toAtomic(p.sell)}`);
 
   const blockNumber =
     givenBlockNumber || (await getLatestBlock(environment)).number;

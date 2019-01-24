@@ -1,5 +1,6 @@
 pragma solidity ^0.4.21;
 
+import "ERC20.i.sol";
 import "MatchingMarket.sol";
 
 contract MatchingMarketAccessor {
@@ -16,15 +17,19 @@ contract MatchingMarketAccessor {
         uint[] memory ids = new uint[](1000);
         uint count = 0;
 
-        // Iterate over all unsorted offers.
+        // Iterate over all unsorted offers up to 1000 iterations.
         uint id = market.getFirstUnsortedOffer();
-        while (id != 0 && count <= 1000) {
+        for (uint i = 0; i < 1000; i++) {
+            if (id == 0) {
+                break;
+            }
+
             if (market.isActive(id)) {
                 address sellGem;
                 address buyGem;
-                (, sellGem, , buyGem) = market.getOffer(ids[i]);
+                (, sellGem, , buyGem) = market.getOffer(id);
 
-                if (address(sellGem) == sellAsset && address(buyGem) == buyAsset) {
+                if (sellGem == sellAsset && buyGem == buyAsset) {
                     ids[count++] = id;
                 }
             }
@@ -32,14 +37,14 @@ contract MatchingMarketAccessor {
             // Get the next offer and repeat.
             id = market.getNextUnsortedOffer(id);
         }
-        
+
         // Create a new array of offers with the correct size.
         uint[] memory copy = new uint[](count);
-        for (uint i = 0; i < count; i++) {
+        for (i = 0; i < count; i++) {
             copy[i] = ids[i];
         }
-        
-        return copy;        
+
+        return copy;
     }
 
     function getSortedOfferIds(
@@ -57,7 +62,11 @@ contract MatchingMarketAccessor {
 
         // Iterate over all sorted offers.
         uint id = market.getBestOffer(ERC20(sellAsset), ERC20(buyAsset));
-        while (id != 0 && count <= 1000) {
+        for (uint i = 0; i < 1000 ; i++ ) {
+            if (id == 0) {
+                break;
+            }
+
             if (market.isActive(id)) {
                 ids[count++] = id;
             }
@@ -68,7 +77,7 @@ contract MatchingMarketAccessor {
 
         // Create a new array of offers with the correct size.
         uint[] memory copy = new uint[](count);
-        for (uint i = 0; i < count; i++) {
+        for (i = 0; i < count; i++) {
             copy[i] = ids[i];
         }
 
