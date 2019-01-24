@@ -237,7 +237,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         returns (address wrapperToken)
     {
         address wrapperRegistry = Registry(Trading(address(this)).registry()).ethfinexWrapperRegistry();
-        return WrapperRegistryEFX(wrapperRegistry).wrapper2TokenLookup(token);
+        return WrapperRegistryEFX(wrapperRegistry).token2WrapperLookup(token);
     }
 
     /// @dev Function to be called by Trading spoke without change of context (Non delegate call)
@@ -247,6 +247,6 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         returns (address wrapperToken)
     {
         address wrapperRegistry = Registry(Trading(msg.sender).registry()).ethfinexWrapperRegistry();
-        return WrapperRegistryEFX(wrapperRegistry).wrapper2TokenLookup(token);
+        return WrapperRegistryEFX(wrapperRegistry).token2WrapperLookup(token);
     }
 }

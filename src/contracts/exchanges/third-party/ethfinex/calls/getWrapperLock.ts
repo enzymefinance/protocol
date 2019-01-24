@@ -15,7 +15,7 @@ const postProcess = async (environment, result, prepared) => {
 };
 
 const getWrapperLock = callFactory(
-  'wrapper2TokenLookup',
+  'token2WrapperLookup',
   Contracts.WrapperRegistryEFX,
   {
     postProcess,
