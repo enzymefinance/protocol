@@ -9,7 +9,7 @@ import "Accounting.sol";
 import "Registry.sol";
 import "Weth.sol";
 import "math.sol";
-import "ExchangeEfx.sol";
+import "Exchange.sol";
 import "WrapperLock.sol";
 import "WrapperLockEth.sol";
 import "ExchangeAdapter.sol";
@@ -45,11 +45,11 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         ensureNotInOpenMakeOrder(makerAsset);
 
         wrapMakerAsset(targetExchange, makerAsset, wrappedMakerAssetData, order.makerAssetAmount, order.expirationTimeSeconds);
-        LibOrder.OrderInfo memory orderInfo = ExchangeEfx(targetExchange).getOrderInfo(order);
-        ExchangeEfx(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
+        LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
+        Exchange(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
 
         require(
-            ExchangeEfx(targetExchange).isValidSignature(
+            Exchange(targetExchange).isValidSignature(
                 orderInfo.orderHash,
                 address(this),
                 signature
@@ -81,7 +81,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
 
         LibOrder.Order memory order = getTrading().getZeroExOrderDetails(identifier);
-        ExchangeEfx(targetExchange).cancelOrder(order);
+        Exchange(targetExchange).cancelOrder(order);
 
         getAccounting().updateOwnedAssets();
         // Order is not removed from OpenMakeOrder mapping as it's needed for accounting (wrapped tokens)
@@ -137,7 +137,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
 
         // Check if order has been completely filled
-        uint takerAssetFilledAmount = ExchangeEfx(targetExchange).filled(bytes32(orderId));
+        uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
         if (sub(takerQuantity, takerAssetFilledAmount) == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
@@ -217,7 +217,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
                 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
             )
         }
-        assetProxy = ExchangeEfx(targetExchange).getAssetProxy(assetProxyId);
+        assetProxy = Exchange(targetExchange).getAssetProxy(assetProxyId);
     }
 
     function getAssetAddress(bytes assetData)
