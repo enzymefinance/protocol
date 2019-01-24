@@ -5,6 +5,7 @@ import {
   subtract,
   valueIn,
   createPrice,
+  isEqual,
 } from '@melonproject/token-math';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
@@ -18,6 +19,10 @@ import { register } from '~/contracts/fund/policies/transactions/register';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 import { setBaseRate } from '~/contracts/exchanges/third-party/kyber/transactions/setBaseRate';
+import { toBeTrueWith } from '~/tests/utils/toBeTrueWith';
+// import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
+
+expect.extend({ toBeTrueWith });
 
 describe('Happy Path', () => {
   const shared: {
@@ -72,6 +77,11 @@ describe('Happy Path', () => {
     // Minimum quantity of dest asset expected to get in return in the trade
     const minMakerQuantity = valueIn(expectedRate, takerQuantity);
 
+    // const preHoldings = await getFundHoldings(
+    //   shared.env,
+    //   shared.routes.accountingAddress,
+    // );
+
     const preMlnBalance: QuantityInterface = await balanceOf(
       shared.env,
       shared.mln.address,
@@ -80,10 +90,14 @@ describe('Happy Path', () => {
       },
     );
 
-    await takeOrderOnKyber(shared.env, shared.routes.tradingAddress, {
-      makerQuantity: minMakerQuantity,
-      takerQuantity,
-    });
+    const result = await takeOrderOnKyber(
+      shared.env,
+      shared.routes.tradingAddress,
+      {
+        makerQuantity: minMakerQuantity,
+        takerQuantity,
+      },
+    );
 
     const postMlnBalance: QuantityInterface = await balanceOf(
       shared.env,
@@ -92,6 +106,14 @@ describe('Happy Path', () => {
         address: shared.routes.vaultAddress,
       },
     );
+
+    // const postHoldings = await getFundHoldings(
+    // shared.env,
+    // shared.routes.accountingAddress,
+    // );
+
+    expect(result.takerQuantity).toBeTrueWith(isEqual, takerQuantity);
+    expect(result.makerQuantity).toBeTrueWith(greaterThan, minMakerQuantity);
 
     expect(
       greaterThan(subtract(postMlnBalance, preMlnBalance), minMakerQuantity),

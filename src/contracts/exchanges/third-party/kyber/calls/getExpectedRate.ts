@@ -3,8 +3,7 @@ import { createPrice, createQuantity } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { callFactory } from '~/utils/solidity/callFactory';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-
-const kyberEthAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 
 const prepareArgs = (
   environment,
