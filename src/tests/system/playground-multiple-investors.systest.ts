@@ -149,7 +149,7 @@ describe('playground', () => {
 
     /// Execute 3 requests after some time has passed
 
-    delay(300000);
+    await delay(300000);
 
     const investor1Investment = await executeRequestFor(
       investor1,
