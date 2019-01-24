@@ -132,7 +132,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createAccounting()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].accounting)
         amguPayable(false)
@@ -147,7 +147,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createFeeManager()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].feeManager)
         amguPayable(false)
@@ -163,7 +163,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createParticipation()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].participation)
         amguPayable(false)
@@ -177,7 +177,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createPolicyManager()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].policyManager)
         amguPayable(false)
@@ -189,7 +189,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createShares()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].shares)
         amguPayable(false)
@@ -201,7 +201,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createTrading()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].trading)
         amguPayable(false)
@@ -217,7 +217,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function createVault()
-        public
+        external
         componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].vault)
         amguPayable(false)
@@ -228,7 +228,7 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function completeSetup() public amguPayable(false) payable {
+    function completeSetup() external amguPayable(false) payable {
         Hub.Routes routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");
@@ -287,8 +287,8 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function getFundById(uint withId) public view returns (address) { return funds[withId]; }
-    function getLastFundId() public view returns (uint) { return funds.length - 1; }
+    function getFundById(uint withId) external view returns (address) { return funds[withId]; }
+    function getLastFundId() external view returns (uint) { return funds.length - 1; }
 
     function mlnToken() public view returns (address) {
         return address(Registry(registry).mlnToken());

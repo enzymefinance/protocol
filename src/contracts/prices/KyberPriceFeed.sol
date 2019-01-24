@@ -32,12 +32,12 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     // CONSTRUCTOR
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
-    function KyberPriceFeed(
+    constructor(
         address ofRegistrar,
         address ofKyberNetworkProxy,
         uint ofMaxSpread,
         address ofQuoteAsset
-    ) public {
+    ) {
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
@@ -46,7 +46,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     /// @dev Stores zero as a convention for invalid price
-    function update() public {
+    function update() external {
         require(
             msg.sender == REGISTRY.owner() || msg.sender == UPDATER,
             "Only registry owner or updater can call"
@@ -65,7 +65,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     /// @dev Set updater
-    function setUpdater(address _updater) public {
+    function setUpdater(address _updater) external {
         require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
         UPDATER = _updater;
     }

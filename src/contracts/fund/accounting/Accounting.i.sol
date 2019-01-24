@@ -11,13 +11,13 @@ interface AccountingInterface {
         address indexed asset
     );
 
-    function getOwnedAssetsLength() view returns (uint);
-    function getFundHoldings() returns (uint[], address[]);
-    function calcAssetGAV(address ofAsset) returns (uint);
-    function calcGav() returns (uint gav);
+    function getOwnedAssetsLength() external view returns (uint);
+    function getFundHoldings() external returns (uint[], address[]);
+    function calcAssetGAV(address ofAsset) external returns (uint);
+    function calcGav() public returns (uint gav);
     function calcNav(uint gav, uint unclaimedFees) pure returns (uint);
-    function valuePerShare(uint totalValue, uint numShares) view returns (uint);
-    function performCalculations() returns (
+    function valuePerShare(uint totalValue, uint numShares) public view returns (uint);
+    function performCalculations() public returns (
         uint gav,
         uint unclaimedFees,
         uint feesInShares,
@@ -25,6 +25,6 @@ interface AccountingInterface {
         uint sharePrice,
         uint gavPerShareNetManagementFee
     );
-    function calcSharePrice() returns (uint);
-    function calcGavPerShareNetManagementFee() returns (uint);
+    function calcSharePrice() external returns (uint);
+    function calcGavPerShareNetManagementFee() public returns (uint);
 }

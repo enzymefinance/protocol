@@ -22,18 +22,18 @@ interface TradingInterface {
         bytes makerAssetData,
         bytes takerAssetData,
         bytes signature
-    );
+    ) public;
 
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
         uint orderId,
         uint expiryTime
-    );
+    ) public;
 
     function removeOpenMakeOrder(
         address ofExchange,
         address ofSellAsset
-    );
+    ) public;
 }
 
