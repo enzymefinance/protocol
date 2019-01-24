@@ -127,18 +127,19 @@ contract Trading is DSMath, Spoke, TradingInterface {
         public
         onlyInitialized
     {
+        bytes4 methodSelector = bytes4(keccak256(methodSignature));
         require(
             Registry(routes.registry).adapterMethodIsAllowed(
                 exchanges[exchangeIndex].adapter,
-                bytes4(keccak256(methodSignature))
+                methodSelector
             )
         );
-        PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        if (bytes4(keccak256(methodSignature)) == bytes4(hex'e51be6e8')) { // take
+        PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        if (methodSelector == bytes4(hex'e51be6e8')) { // take
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[2]), 'Maker asset not registered'
             );
-        } else if (bytes4(keccak256(methodSignature)) == bytes4(hex'79705be7')) { // make
+        } else if (methodSelector == bytes4(hex'79705be7')) { // make
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[3]), 'Taker asset not registered'
             );
@@ -158,7 +159,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             ),
             "Delegated call to exchange failed"
         );
-        PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        PolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         emit ExchangeMethodCall(
             exchanges[exchangeIndex].exchange,
             methodSignature,
