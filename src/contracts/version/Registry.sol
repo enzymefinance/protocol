@@ -28,7 +28,7 @@ contract Registry is DSAuth {
     event AssetRemoval (address indexed asset);
     event ExchangeRemoval (address indexed exchange);
     event VersionRegistration(address indexed version);
-    event IncentiveChange(uint indexed incentiveAmount);
+    event IncentiveChange(uint incentiveAmount);
     event PriceSourceChange(address indexed priceSource);
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
@@ -84,6 +84,10 @@ contract Registry is DSAuth {
     uint public incentive = 10 finney;
 
     // METHODS
+
+    constructor(address _postDeployOwner) {
+        setOwner(_postDeployOwner);
+    }
 
     // PUBLIC METHODS
 

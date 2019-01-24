@@ -1,10 +1,8 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-01-23T21:08:57.631Z",
     "track": "kyberPrice",
-    "version": "0.9.15",
-    "chain": 42,
+    "version": "0.9.16",
     "description": "Owner and deployer can be different"
   },
   "melonContracts": {

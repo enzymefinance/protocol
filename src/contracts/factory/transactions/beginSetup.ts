@@ -33,7 +33,6 @@ interface BeginSetupArgs {
   quoteToken: TokenInterface;
   nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];
-  priceSource: Address;
 }
 
 type BeginSetupResult = string;
@@ -46,15 +45,7 @@ const guard: GuardFunction<BeginSetupArgs> = async (
 
 const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   _,
-  {
-    fundName,
-    fees,
-    exchangeConfigs,
-    quoteToken,
-    nativeToken,
-    defaultTokens,
-    priceSource,
-  },
+  { fundName, fees, exchangeConfigs, quoteToken, nativeToken, defaultTokens },
 ) => {
   const exchangeAddresses = Object.values(exchangeConfigs).map(e =>
     e.exchange.toString(),
@@ -82,7 +73,6 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
     nativeTokenAddress,
     defaultTokenAddresses,
     takesCustody,
-    priceSource.toString(),
   ];
 
   return args;

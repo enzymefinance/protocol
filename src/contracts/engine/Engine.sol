@@ -26,9 +26,10 @@ contract Engine is DSMath, DSAuth {
     uint public totalAmguConsumed;
     uint public totalMlnBurned;
 
-    constructor(uint _delay) {
+    constructor(uint _delay, address _postDeployOwner) {
         lastThaw = block.timestamp;
         THAWING_DELAY = _delay;
+        setOwner(_postDeployOwner);
     }
 
     /// @dev only callable by deployer

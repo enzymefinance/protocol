@@ -120,7 +120,6 @@ describe('generalWalkthrough', () => {
         fees,
         fundName,
         nativeToken: ethToken,
-        priceSource,
         quoteToken: ethToken,
       },
       { gas: '8000000' },

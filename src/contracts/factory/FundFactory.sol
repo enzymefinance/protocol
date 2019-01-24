@@ -22,10 +22,7 @@ contract FundFactory is AmguConsumer, Factory {
         address[12] routes
     );
 
-    address public factoryPriceSource;
-    address public mlnToken;
     VersionInterface public version;
-    address public engine;
     address public registry;
     AccountingFactory public accountingFactory;
     FeeManagerFactory public feeManagerFactory;
@@ -49,7 +46,6 @@ contract FundFactory is AmguConsumer, Factory {
         address nativeAsset;
         address[] defaultAssets;
         bool[] takesCustody;
-        address priceSource;
         address[] fees;
         uint[] feeRates;
         uint[] feePeriods;
@@ -79,10 +75,8 @@ contract FundFactory is AmguConsumer, Factory {
         address _tradingFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _version,
-        address _engine,
-        address _factoryPriceSource,
-        address _mlnToken
+        address _registry,
+        address _version
     ) {
         accountingFactory = AccountingFactory(_accountingFactory);
         feeManagerFactory = FeeManagerFactory(_feeManagerFactory);
@@ -92,9 +86,6 @@ contract FundFactory is AmguConsumer, Factory {
         vaultFactory = VaultFactory(_vaultFactory);
         policyManagerFactory = PolicyManagerFactory(_policyManagerFactory);
         version = VersionInterface(_version);
-        engine = Engine(_engine);
-        factoryPriceSource = _factoryPriceSource;
-        mlnToken = _mlnToken;
     }
 
     function componentExists(address _component) internal returns (bool) {
@@ -111,13 +102,11 @@ contract FundFactory is AmguConsumer, Factory {
         address _denominationAsset,
         address _nativeAsset,
         address[] _defaultAssets,
-        bool[] _takesCustody,
-        address _priceSource
+        bool[] _takesCustody
     )
         public
         componentNotSet(managersToHubs[msg.sender])
     {
-        require(!version.getShutDownStatus(), "Version is shut down");
         require(
             _nativeAsset == Registry(registry).nativeAsset(),
             "Native asset does not match registry"
@@ -131,16 +120,15 @@ contract FundFactory is AmguConsumer, Factory {
             _nativeAsset,
             _defaultAssets,
             _takesCustody,
-            _priceSource,
             _fees,
             _feeRates,
             _feePeriods
         );
-        managersToRoutes[msg.sender].priceSource = managersToSettings[msg.sender].priceSource;
+        managersToRoutes[msg.sender].priceSource = priceSource();
         managersToRoutes[msg.sender].registry = registry;
         managersToRoutes[msg.sender].version = address(version);
-        managersToRoutes[msg.sender].engine = engine;
-        managersToRoutes[msg.sender].mlnToken = mlnToken;
+        managersToRoutes[msg.sender].engine = engine();
+        managersToRoutes[msg.sender].mlnToken = mlnToken();
     }
 
     function createAccounting()
@@ -302,9 +290,15 @@ contract FundFactory is AmguConsumer, Factory {
     function getFundById(uint withId) public view returns (address) { return funds[withId]; }
     function getLastFundId() public view returns (uint) { return funds.length - 1; }
 
-    function engine() public view returns (address) { return address(engine); }
-    function mlnToken() public view returns (address) { return address(mlnToken); }
-    function priceSource() public view returns (address) { return address(factoryPriceSource); }
+    function mlnToken() public view returns (address) {
+        return address(Registry(registry).mlnToken());
+    }
+    function engine() public view returns (address) {
+        return address(Registry(registry).engine());
+    }
+    function priceSource() public view returns (address) {
+        return address(Registry(registry).priceSource());
+    }
     function version() public view returns (address) { return address(version); }
     function registry() public view returns (address) { return address(registry); }
 }
