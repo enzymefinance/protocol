@@ -16,6 +16,7 @@ import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
+import { delay } from 'rxjs/operators';
 
 expect.extend({ toBeTrueWith });
 
@@ -148,39 +149,38 @@ describe('playground', () => {
 
     /// Execute 3 requests after some time has passed
 
-    setTimeout(async () => {
-      const investor1Investment = await executeRequestFor(
-        investor1,
-        routes.participationAddress,
-        { who: investor1.wallet.address },
-      );
+    delay(300000);
 
-      log.debug('Investor 1 investment ', investor1Investment);
+    const investor1Investment = await executeRequestFor(
+      investor1,
+      routes.participationAddress,
+      { who: investor1.wallet.address },
+    );
 
-      const investor2Investment = await executeRequestFor(
-        investor2,
-        routes.participationAddress,
-        { who: investor2.wallet.address },
-      );
+    log.debug('Investor 1 investment ', investor1Investment);
 
-      log.debug('Investor 2 investment ', investor2Investment);
+    const investor2Investment = await executeRequestFor(
+      investor2,
+      routes.participationAddress,
+      { who: investor2.wallet.address },
+    );
 
-      const investor3Investment = await executeRequestFor(
-        investor3,
-        routes.participationAddress,
-        { who: investor3.wallet.address },
-      );
+    log.debug('Investor 2 investment ', investor2Investment);
 
-      log.debug('Investor 3 investment ', investor3Investment);
+    const investor3Investment = await executeRequestFor(
+      investor3,
+      routes.participationAddress,
+      { who: investor3.wallet.address },
+    );
 
-      const finalCalculations = await performCalculations(
-        manager,
-        routes.accountingAddress,
-      );
+    log.debug('Investor 3 investment ', investor3Investment);
 
-      log.debug({ finalCalculations });
+    const finalCalculations = await performCalculations(
+      manager,
+      routes.accountingAddress,
+    );
 
-      expect(toFixed(finalCalculations.gav)).toEqual('6.500000');
-    }, 300000);
+    expect(toFixed(finalCalculations.gav)).toEqual('6.500000');
+    log.debug('Final calculations ', finalCalculations);
   });
 });
