@@ -71,6 +71,8 @@ describe('Happy Path', () => {
   });
 
   test('Trade on kyber', async () => {
+    await getFundHoldings(shared.env, shared.routes.accountingAddress);
+
     const takerQuantity = createQuantity(shared.weth, 0.1);
     const expectedRate = await getExpectedRate(shared.env, shared.kyber, {
       fillTakerQuantity: takerQuantity,
