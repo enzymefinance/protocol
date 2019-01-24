@@ -101,4 +101,6 @@ export {
 } from '~/contracts/exchanges/third-party/kyber/calls/getExpectedRate';
 export {
   takeOrderOnKyber,
+  TakeOrderOnKyberResult,
+  TakeOrderOnKyberArgs,
 } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
