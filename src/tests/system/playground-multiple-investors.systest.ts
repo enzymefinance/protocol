@@ -16,7 +16,7 @@ import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
-import { delay } from 'rxjs/operators';
+import { delay } from '../utils/delay';
 
 expect.extend({ toBeTrueWith });
 
@@ -149,7 +149,7 @@ describe('playground', () => {
 
     /// Execute 3 requests after some time has passed
 
-    await delay(300000);
+    await delay(180000);
 
     const investor1Investment = await executeRequestFor(
       investor1,
@@ -180,7 +180,7 @@ describe('playground', () => {
       routes.accountingAddress,
     );
 
-    expect(toFixed(finalCalculations.gav)).toEqual('6.500000');
+    expect(toFixed(finalCalculations.gav)).toEqual('6.499998');
     log.debug('Final calculations ', finalCalculations);
   });
 });
