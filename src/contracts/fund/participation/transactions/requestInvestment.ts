@@ -47,7 +47,7 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
 
   const sharePriceInInvestmentAsset = await getShareCostInAsset(
     environment,
-    routes.accountingAddress,
+    routes.accountingAddress.toString(),
     { assetToken: investmentAmount.token, fundToken },
   );
 

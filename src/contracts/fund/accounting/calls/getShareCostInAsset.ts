@@ -1,7 +1,6 @@
 import { createQuantity, createPrice } from '@melonproject/token-math';
 
 import { Contracts } from '~/Contracts';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { callFactory } from '~/utils/solidity/callFactory';
 
 const prepareArgs = async (_, { assetToken, fundToken }) => {
