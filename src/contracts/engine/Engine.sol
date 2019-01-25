@@ -33,7 +33,7 @@ contract Engine is DSMath, DSAuth {
     }
 
     /// @dev only callable by deployer
-    function setRegistry(address _registry) public auth {
+    function setRegistry(address _registry) external auth {
         registry = Registry(_registry);
         priceSource = PriceSourceInterface(registry.priceSource());
         mlnToken = BurnableToken(registry.mlnToken());
@@ -41,7 +41,7 @@ contract Engine is DSMath, DSAuth {
     }
 
     /// @dev set price of AMGU in MLN (base units)
-    function setAmguPrice(uint _price) public auth {
+    function setAmguPrice(uint _price) external auth {
         amguPrice = _price;
         emit SetAmguPrice(_price);
     }
@@ -60,7 +60,7 @@ contract Engine is DSMath, DSAuth {
         }
     }
 
-    function payAmguInEther() public payable {
+    function payAmguInEther() external payable {
         require(
             registry.isFundFactory(msg.sender) ||
             registry.isFund(msg.sender),
@@ -82,7 +82,7 @@ contract Engine is DSMath, DSAuth {
 
     /// @notice Move frozen ether to liquid pool after delay
     /// @dev Delay only restarts when this function is called
-    function thaw() public {
+    function thaw() external {
         require(
             block.timestamp >= add(lastThaw, THAWING_DELAY),
             "Thawing delay has not passed"
@@ -107,7 +107,7 @@ contract Engine is DSMath, DSAuth {
     }
 
     /// @notice MLN must be approved first
-    function sellAndBurnMln(uint mlnAmount) public {
+    function sellAndBurnMln(uint mlnAmount) external {
         require(registry.isFund(msg.sender), "Only funds can use the engine");
         require(
             mlnToken.transferFrom(msg.sender, address(this), mlnAmount),

@@ -184,7 +184,7 @@ contract CanonicalRegistrar is DSThing {
         address ofAsset,
         uint assetIndex
     )
-        public
+        external
         auth
     {
         require(
@@ -209,7 +209,7 @@ contract CanonicalRegistrar is DSThing {
         address ofExchange,
         uint exchangeIndex
     )
-        public
+        external
         auth
     {
         require(
@@ -229,15 +229,15 @@ contract CanonicalRegistrar is DSThing {
     // PUBLIC VIEW METHODS
 
     // get asset specific information
-    function getName(address ofAsset) public view returns (bytes32) { return assetInformation[ofAsset].name; }
-    function getSymbol(address ofAsset) public view returns (bytes8) { return assetInformation[ofAsset].symbol; }
+    function getName(address ofAsset) external view returns (bytes32) { return assetInformation[ofAsset].name; }
+    function getSymbol(address ofAsset) external view returns (bytes8) { return assetInformation[ofAsset].symbol; }
     function getDecimals(address ofAsset) public view returns (uint) { return assetInformation[ofAsset].decimals; }
     function assetIsRegistered(address ofAsset) public view returns (bool) { return assetInformation[ofAsset].exists; }
-    function getRegisteredAssets() public view returns (address[]) { return registeredAssets; }
+    function getRegisteredAssets() external view returns (address[]) { return registeredAssets; }
     function assetMethodIsAllowed(
         address ofAsset, bytes4 querySignature
     )
-        public
+        external
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[ofAsset].functionSignatures;
@@ -250,10 +250,10 @@ contract CanonicalRegistrar is DSThing {
     }
 
     // get exchange-specific information
-    function exchangeIsRegistered(address ofExchange) public view returns (bool) { return exchangeInformation[ofExchange].exists; }
-    function getRegisteredExchanges() public view returns (address[]) { return registeredExchanges; }
+    function exchangeIsRegistered(address ofExchange) external view returns (bool) { return exchangeInformation[ofExchange].exists; }
+    function getRegisteredExchanges() external view returns (address[]) { return registeredExchanges; }
     function getExchangeInformation(address ofExchange)
-        public
+        external
         view
         returns (address, bool)
     {
@@ -264,7 +264,7 @@ contract CanonicalRegistrar is DSThing {
         );
     }
     function getExchangeFunctionSignatures(address ofExchange)
-        public
+        external
         view
         returns (bytes4[])
     {
@@ -273,7 +273,8 @@ contract CanonicalRegistrar is DSThing {
     function exchangeMethodIsAllowed(
         address ofExchange, bytes4 querySignature
     )
-        public
+        external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[ofExchange].functionSignatures;

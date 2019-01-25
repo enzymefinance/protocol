@@ -47,13 +47,13 @@ contract Hub is DSGuard {
         _;
     }
 
-    function shutDownFund() public {
+    function shutDownFund() external {
         require(msg.sender == routes.version);
         isShutDown = true;
         emit FundShutDown();
     }
 
-    function setSpokes(address[12] _spokes) public onlyCreator {
+    function setSpokes(address[12] _spokes) external onlyCreator {
         require(!spokesSet, "Spokes already set");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
@@ -73,7 +73,7 @@ contract Hub is DSGuard {
         spokesSet = true;
     }
 
-    function setRouting() public onlyCreator {
+    function setRouting() external onlyCreator {
         require(spokesSet, "Spokes must be set");
         require(!routingSet, "Routing already set");
         address[12] memory spokes = [
@@ -92,7 +92,7 @@ contract Hub is DSGuard {
         routingSet = true;
     }
 
-    function setPermissions() public onlyCreator {
+    function setPermissions() external onlyCreator {
         require(spokesSet, "Spokes must be set");
         require(routingSet, "Routing must be set");
         require(!permissionsSet, "Permissioning already set");
@@ -112,13 +112,13 @@ contract Hub is DSGuard {
         permissionsSet = true;
     }
 
-    function vault() public view returns (address) { return routes.vault; }
-    function accounting() public view returns (address) { return routes.accounting; }
-    function priceSource() public view returns (address) { return routes.priceSource; }
-    function participation() public view returns (address) { return routes.participation; }
-    function trading() public view returns (address) { return routes.trading; }
-    function shares() public view returns (address) { return routes.shares; }
-    function registry() public view returns (address) { return routes.registry; }
-    function policyManager() public view returns (address) { return routes.policyManager; }
+    function vault() external view returns (address) { return routes.vault; }
+    function accounting() external view returns (address) { return routes.accounting; }
+    function priceSource() external view returns (address) { return routes.priceSource; }
+    function participation() external view returns (address) { return routes.participation; }
+    function trading() external view returns (address) { return routes.trading; }
+    function shares() external view returns (address) { return routes.shares; }
+    function registry() external view returns (address) { return routes.registry; }
+    function policyManager() external view returns (address) { return routes.policyManager; }
 }
 

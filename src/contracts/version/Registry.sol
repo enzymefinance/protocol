@@ -125,7 +125,7 @@ contract Registry is DSAuth {
     }
 
     function registerFund(address _fund, address _owner, string _name)
-        public
+        external
     {
         require(
             versionInformation[msg.sender].exists,
@@ -154,7 +154,7 @@ contract Registry is DSAuth {
         uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
-    ) public auth {
+    ) external auth {
         require(registeredAssets.length < MAX_REGISTERED_ENTITIES);
         require(!assetInformation[_asset].exists);
         assetInformation[_asset].exists = true;
@@ -183,7 +183,7 @@ contract Registry is DSAuth {
         address _adapter,
         bool _takesCustody,
         bytes4[] _sigs
-    ) public auth {
+    ) external auth {
         require(!exchangeInformation[_adapter].exists, "Adapter already exists");
         exchangeInformation[_adapter].exists = true;
         require(registeredExchangeAdapters.length < MAX_REGISTERED_ENTITIES, "Exchange limit reached");
@@ -202,7 +202,7 @@ contract Registry is DSAuth {
     function registerVersion(
         address _version,
         bytes32 _name
-    ) public auth {
+    ) external auth {
         require(!versionInformation[_version].exists, "Version already exists");
         require(!versionNameExists[_name], "Version name already exists");
         versionInformation[_version].exists = true;
@@ -212,32 +212,32 @@ contract Registry is DSAuth {
         emit VersionRegistration(_version);
     }
 
-    function setIncentive(uint _weiAmount) public auth {
+    function setIncentive(uint _weiAmount) external auth {
         incentive = _weiAmount;
         emit IncentiveChange(_weiAmount);
     }
 
-    function setPriceSource(address _priceSource) public auth {
+    function setPriceSource(address _priceSource) external auth {
         priceSource = _priceSource;
         emit PriceSourceChange(_priceSource);
     }
 
-    function setMlnToken(address _mlnToken) public auth {
+    function setMlnToken(address _mlnToken) external auth {
         mlnToken = _mlnToken;
         emit MlnTokenChange(_mlnToken);
     }
 
-    function setNativeAsset(address _nativeAsset) public auth {
+    function setNativeAsset(address _nativeAsset) external auth {
         nativeAsset = _nativeAsset;
         emit NativeAssetChange(_nativeAsset);
     }
 
-    function setEngine(address _engine) public auth {
+    function setEngine(address _engine) external auth {
         engine = _engine;
         emit EngineChange(_engine);
     }
 
-    function setEthfinexWrapperRegistry(address _registry) public auth {
+    function setEthfinexWrapperRegistry(address _registry) external auth {
         ethfinexWrapperRegistry = _registry;
         emit EfxWrapperRegistryChange(_registry);
     }
@@ -304,7 +304,7 @@ contract Registry is DSAuth {
     function removeAsset(
         address _asset,
         uint _assetIndex
-    ) public auth {
+    ) external auth {
         require(assetInformation[_asset].exists);
         require(registeredAssets[_assetIndex] == _asset);
         delete assetInformation[_asset];
@@ -323,7 +323,7 @@ contract Registry is DSAuth {
     function removeExchangeAdapter(
         address _adapter,
         uint _adapterIndex
-    ) public auth {
+    ) external auth {
         require(exchangeInformation[_adapter].exists, "Exchange with adapter doesn't exist");
         require(registeredExchangeAdapters[_adapterIndex] == _adapter, "Incorrect adapter index");
         delete exchangeInformation[_adapter];
@@ -338,26 +338,26 @@ contract Registry is DSAuth {
     // PUBLIC VIEW METHODS
 
     // get asset specific information
-    function getName(address _asset) public view returns (string) {
+    function getName(address _asset) external view returns (string) {
         return assetInformation[_asset].name;
     }
-    function getSymbol(address _asset) public view returns (string) {
+    function getSymbol(address _asset) external view returns (string) {
         return assetInformation[_asset].symbol;
     }
-    function getDecimals(address _asset) public view returns (uint) {
+    function getDecimals(address _asset) external view returns (uint) {
         return assetInformation[_asset].decimals;
     }
-    function getReserveMin(address _asset) public view returns (uint) {
+    function getReserveMin(address _asset) external view returns (uint) {
         return assetInformation[_asset].reserveMin;
     }
-    function assetIsRegistered(address _asset) public view returns (bool) {
+    function assetIsRegistered(address _asset) external view returns (bool) {
         return assetInformation[_asset].exists;
     }
-    function getRegisteredAssets() public view returns (address[]) {
+    function getRegisteredAssets() external view returns (address[]) {
         return registeredAssets;
     }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
-        public
+        external
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
@@ -370,10 +370,10 @@ contract Registry is DSAuth {
     }
 
     // get exchange-specific information
-    function exchangeAdapterIsRegistered(address _adapter) public view returns (bool) {
+    function exchangeAdapterIsRegistered(address _adapter) external view returns (bool) {
         return exchangeInformation[_adapter].exists;
     }
-    function getRegisteredExchangeAdapters() public view returns (address[]) {
+    function getRegisteredExchangeAdapters() external view returns (address[]) {
         return registeredExchangeAdapters;
     }
     function getExchangeInformation(address _adapter)
@@ -387,7 +387,7 @@ contract Registry is DSAuth {
             exchange.takesCustody
         );
     }
-    function exchangeForAdapter(address _adapter) public view returns (address) {
+    function exchangeForAdapter(address _adapter) external view returns (address) {
         Exchange exchange = exchangeInformation[_adapter];
         return exchange.exchangeAddress;
     }
@@ -401,7 +401,7 @@ contract Registry is DSAuth {
     function adapterMethodIsAllowed(
         address _adapter, bytes4 _sig
     )
-        public
+        external
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[_adapter].sigs;
@@ -414,11 +414,11 @@ contract Registry is DSAuth {
     }
 
     // get version and fund information
-    function getRegisteredVersions() public view returns (address[]) {
+    function getRegisteredVersions() external view returns (address[]) {
         return registeredVersions;
     }
 
-    function isFund(address _who) public view returns (bool) {
+    function isFund(address _who) external view returns (bool) {
         if (fundsToVersions[_who] != address(0)) {
             return true; // directly from a hub
         } else {
@@ -431,7 +431,7 @@ contract Registry is DSAuth {
         }
     }
 
-    function isFundFactory(address _who) public view returns (bool) {
+    function isFundFactory(address _who) external view returns (bool) {
         return versionInformation[_who].exists;
     }
 }

@@ -47,11 +47,11 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         emit EnableInvestment(_assets);
     }
 
-    function enableInvestment(address[] _assets) public auth {
+    function enableInvestment(address[] _assets) external auth {
         _enableInvestment(_assets);
     }
 
-    function disableInvestment(address[] _assets) public auth {
+    function disableInvestment(address[] _assets) external auth {
         for (uint i = 0; i < _assets.length; i++) {
             investAllowed[_assets[i]] = false;
             emit DisableInvestment(_assets);
@@ -160,7 +160,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     function executeRequestFor(address requestOwner)
-        public
+        external
         notShutDown
         amguPayable(false)
         payable
@@ -252,7 +252,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares and across all assets
-    function redeem() public {
+    function redeem() external {
         uint ownedShares = Shares(routes.shares).balanceOf(msg.sender);
         redeemQuantity(ownedShares);
     }
@@ -334,7 +334,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         );
     }
 
-    function getHistoricalInvestors() public view returns (address[]) {
+    function getHistoricalInvestors() external view returns (address[]) {
         return historicalInvestors;
     }
 }
@@ -348,7 +348,7 @@ contract ParticipationFactory is Factory {
     );
 
     function createInstance(address _hub, address[] _defaultAssets, address _registry)
-        public
+        external
         returns (address)
     {
         address participation = new Participation(_hub, _defaultAssets, _registry);

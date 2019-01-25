@@ -1,10 +1,8 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-01-25T14:46:57.893Z",
     "track": "kyberPrice",
-    "version": "0.9.16",
-    "chain": 42,
+    "version": "0.9.17",
     "description": "Last of the audit fixes"
   },
   "melonContracts": {
@@ -176,3 +174,4 @@
     }
   }
 }
+
