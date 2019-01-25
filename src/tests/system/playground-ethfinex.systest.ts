@@ -25,26 +25,27 @@ describe('playground', () => {
     const manager = await withNewAccount(master);
     const weth = getTokenBySymbol(master, 'WETH');
     const mln = getTokenBySymbol(master, 'MLN');
-    const wrapperRegistryEFX = '0x750DeaE872619eb2Cf6c65FD07FCbc60E8D98b73';
+    const ethfinex =
+      manager.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
+    const wrapperRegistryEFX =
+      manager.deployment.thirdPartyContracts.exchanges.ethfinex
+        .wrapperRegistryEFX;
     const wethWrapperLock = await getWrapperLock(master, wrapperRegistryEFX, {
       token: weth,
     });
 
     await sendEth(master, {
-      howMuch: createQuantity('ETH', 3),
+      howMuch: createQuantity('ETH', 2),
       to: manager.wallet.address,
     });
 
-    const quantity = createQuantity(weth, 2);
+    const quantity = createQuantity(weth, 1);
 
     await deposit(manager, quantity.token.address, undefined, {
       value: quantity.quantity.toString(),
     });
 
     const routes = await setupInvestedTestFund(manager);
-
-    const ethfinex =
-      manager.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
 
     await setEthfinexWrapperRegistry(
       master,
