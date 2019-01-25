@@ -17,6 +17,7 @@ import { requestInvestment } from '~/contracts/fund/participation/transactions/r
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
 import { delay } from '../utils/delay';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 expect.extend({ toBeTrueWith });
 
