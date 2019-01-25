@@ -3,7 +3,7 @@ import { Contracts } from '~/Contracts';
 
 const registerAssetProxy = transactionFactory(
   'registerAssetProxy',
-  Contracts.EthfinexExchangeEfx,
+  Contracts.ZeroExExchange,
 );
 
 export { registerAssetProxy };

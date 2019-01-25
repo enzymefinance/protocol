@@ -42,7 +42,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     Exchange[] public exchanges;
     Order[] public orders;
-    mapping (address => bool) public exchangeIsAdded;
+    mapping (address => bool) public adapterIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
@@ -77,19 +77,19 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address _adapter,
         bool _takesCustody
     ) internal {
-        require(!exchangeIsAdded[_exchange], "Exchange already added");
+        require(!adapterIsAdded[_adapter], "Adapter already added");
         Registry registry = Registry(routes.registry);
         require(
-            registry.exchangeIsRegistered(_exchange),
-            "Exchange is not registered"
+            registry.exchangeAdapterIsRegistered(_adapter),
+            "Adapter is not registered"
         );
-        address registeredAdapter;
-        registeredAdapter = registry.adapterForExchange(_exchange);
+        address registeredExchange;
+        registeredExchange = registry.exchangeForAdapter(_adapter);
         require(
-            registeredAdapter == _adapter,
+            registeredExchange == _exchange,
             "Exchange and adapter do not match"
         );
-        exchangeIsAdded[_exchange] = true;
+        adapterIsAdded[_adapter] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
 
@@ -129,9 +129,9 @@ contract Trading is DSMath, Spoke, TradingInterface {
     {
         bytes4 methodSelector = bytes4(keccak256(methodSignature));
         require(
-            Registry(routes.registry).exchangeMethodIsAllowed(
-                exchanges[exchangeIndex].exchange,
-                bytes4(keccak256(methodSignature))
+            Registry(routes.registry).adapterMethodIsAllowed(
+                exchanges[exchangeIndex].adapter,
+                methodSelector
             )
         );
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
