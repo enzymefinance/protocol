@@ -1,11 +1,11 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-01-23T14:59:01.461Z",
+    "timestamp": "2019-01-23T21:08:57.631Z",
     "track": "kyberPrice",
-    "version": "0.9.14",
+    "version": "0.9.15",
     "chain": 42,
-    "description": "Fix delay in investment request"
+    "description": "Owner and deployer can be different"
   },
   "melonContracts": {
     "priceSource": "0x01778e57366476136a1A9355CFB69eE600657E05",
@@ -27,15 +27,15 @@
     "factories": {
       "accountingFactory": "0x8Aa79254Ccf972fadECcd2d3D5a10D20E2d095c1",
       "feeManagerFactory": "0xeE339A7F5e7B2Cf10eFa14b545273460a96EDc41",
-      "participationFactory": "0xdD4573a847d006Bf690621015B902f6c5905Fc1a",
+      "participationFactory": "0xCa4d67f41512a5f09590321D574730ce689d012A",
       "policyManagerFactory": "0x634E75D597b9FCf52bd4b42117F33983921B8D22",
       "sharesFactory": "0xA84ee856b61b0CDCD585D61BB4Dc31c666CF1349",
       "tradingFactory": "0x1A8637DB7F4c208A1b07c15666B40Cbb85551484",
       "vaultFactory": "0xEDd0D7fAD16B47bf7094d5aacD4F0DFaf04dE8f3"
     },
-    "engine": "0x83BB2CCaeA4b09D417212F896A8600Ba4035703f",
-    "registry": "0x230e7e04c877ADcf8a2A778DD1BDC09381968d07",
-    "version": "0xa70E4022aE35959E9A4B0E714B537cC0743Af2Ea",
+    "engine": "0xd327Bd85704165BFA2C65Fc60d52E86748fea0b8",
+    "registry": "0xc5aE67F503B6b16203f7A072C8F0F6425C4073F0",
+    "version": "0x2eCE1750d49833d83eDc381FDB1F933Ef8c29185",
     "ranking": "0x90907Edab4ce23c96016ea29044bE9783f7Ddf4e"
   },
   "thirdPartyContracts": {

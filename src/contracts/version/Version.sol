@@ -7,9 +7,7 @@ import "Hub.sol";
 
 /// @notice Controlled by governance
 contract Version is FundFactory, DSAuth, VersionInterface {
-    bool public isShutDown;
 
-    /// @dev Assumes governance is the deployer
     constructor(
         address _accountingFactory,
         address _feeManagerFactory,
@@ -18,10 +16,8 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         address _tradingFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _engine,
-        address _priceSource,
-        address _mlnAddress,
-        address _registry
+        address _registry,
+        address _postDeployOwner
     )
         FundFactory(
             _accountingFactory,
@@ -31,20 +27,12 @@ contract Version is FundFactory, DSAuth, VersionInterface {
             _tradingFactory,
             _vaultFactory,
             _policyManagerFactory,
-            address(this),
-            _engine,
-            _priceSource,
-            _mlnAddress
+            _registry,
+            address(this)
         )
     {
         registry = _registry;
-        require(_mlnAddress == Registry(registry).mlnToken(), "Wrong MLN token passed");
-        require(_priceSource == Registry(registry).priceSource(), "Wrong price source passed");
-    }
-
-    function securityShutDown() external auth {
-        isShutDown = true;
-        emit ShutDownVersion();
+        setOwner(_postDeployOwner);
     }
 
     function shutDownFund(address _hub) external {
@@ -54,7 +42,5 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         );
         Hub(_hub).shutDownFund();
     }
-
-    function getShutDownStatus() external returns (bool) { return isShutDown; }
 }
 
