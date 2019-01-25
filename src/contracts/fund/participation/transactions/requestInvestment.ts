@@ -9,6 +9,7 @@ import {
   QuantityInterface,
   greaterThan,
   valueIn,
+  isEqual,
 } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
@@ -51,11 +52,23 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
     { assetToken: investmentAmount.token, fundToken },
   );
 
-  ensure(
-    greaterThan(
-      investmentAmount,
-      valueIn(sharePriceInInvestmentAsset, requestedShares),
+  console.log(
+    JSON.stringify(
+      {
+        investmentAmount,
+        requestedShares,
+        sharePriceInInvestmentAsset,
+      },
+      null,
+      2,
     ),
+  );
+
+  const priceForShares = valueIn(sharePriceInInvestmentAsset, requestedShares);
+
+  ensure(
+    greaterThan(investmentAmount, priceForShares) ||
+      isEqual(investmentAmount, priceForShares),
     `Investment asset quantity provided is not enough to purchase ${requestedShares.quantity.toString()} shares`,
   );
   const requestedSharesArg = requestedShares.quantity.toString();
