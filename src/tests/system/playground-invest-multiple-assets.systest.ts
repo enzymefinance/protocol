@@ -1,6 +1,6 @@
 import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';
-import { createQuantity, greaterThan } from '@melonproject/token-math';
+import { createQuantity, greaterThan, valueIn } from '@melonproject/token-math';
 import { sendEth } from '~/utils/evm/sendEth';
 import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
@@ -22,6 +22,7 @@ import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { enableInvestment } from '~/contracts/fund/participation/transactions/enableInvestment';
 import { investAllowed } from '~/contracts/fund/participation/calls/investAllowed';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { getShareCostInAsset } from '~/contracts/fund/accounting/calls/getShareCostInAsset';
 
 expect.extend({ toBeTrueWith });
 
@@ -78,20 +79,6 @@ describe('playground', () => {
 
     log.debug('Routes of new fund are ', routes);
 
-    // Manager invests in his own fund
-    const managerQuantity = createQuantity(weth, 0.5);
-
-    await deposit(manager, managerQuantity.token.address, undefined, {
-      value: managerQuantity.quantity.toString(),
-    });
-    const managerInvestment = await invest(manager, {
-      hubAddress: routes.hubAddress,
-      investmentAmount: managerQuantity,
-      requestedShares: createQuantity(fundToken, 1),
-    });
-
-    log.debug('Manager investment ', managerInvestment);
-
     // Manager enables investment in MLN
 
     await enableInvestment(manager, routes.participationAddress, {
@@ -105,31 +92,37 @@ describe('playground', () => {
 
     expect(allowed).toBeTruthy();
 
-    // Investor 1 requests investment 15 MLN
+    // Investor 1 requests investment 80 MLN
     await sendEth(master, {
       howMuch: createQuantity('ETH', 3),
       to: investor1.wallet.address,
     });
     await transfer(master, {
-      howMuch: createQuantity(mln, 15),
+      howMuch: createQuantity(mln, 80),
       to: investor1.wallet.address,
     });
 
-    const investor1Quantity = createQuantity(mln, 15);
+    const investor1Quantity = createQuantity(mln, 80);
 
     await approve(investor1, {
       howMuch: investor1Quantity,
       spender: routes.participationAddress,
     });
 
+    const shareCostInMLN = await getShareCostInAsset(
+      investor1,
+      routes.accountingAddress,
+      { assetToken: mln, fundToken },
+    );
+
+    const requestedShares = createQuantity(fundToken, 5);
+
+    const investmentAmount = valueIn(shareCostInMLN, requestedShares);
+
     await requestInvestment(investor1, routes.participationAddress, {
-      investmentAmount: investor1Quantity,
-      requestedShares: createQuantity(fundToken, 1),
+      investmentAmount,
+      requestedShares,
     });
-
-    /// Execute request after some time has passed
-
-    // await delay(180000);
 
     const investor1Investment = await executeRequestFor(
       investor1,
@@ -143,8 +136,6 @@ describe('playground', () => {
       manager,
       routes.accountingAddress,
     );
-
-    // expect(toFixed(finalCalculations.gav)).toEqual('6.499998');
     log.debug('Final calculations ', finalCalculations);
   });
 });

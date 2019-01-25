@@ -10,6 +10,7 @@ import {
   greaterThan,
   valueIn,
   isEqual,
+  toFixed,
 } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
@@ -41,7 +42,6 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
   { investmentAmount, requestedShares },
   contractAddress,
 ) => {
-  // TODO: check how many shares the investAmount is worth
   const hubAddress = await getHub(environment, contractAddress);
   const routes = await getRoutes(environment, hubAddress);
   const fundToken = await getToken(environment, routes.sharesAddress);
@@ -52,24 +52,14 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
     { assetToken: investmentAmount.token, fundToken },
   );
 
-  console.log(
-    JSON.stringify(
-      {
-        investmentAmount,
-        requestedShares,
-        sharePriceInInvestmentAsset,
-      },
-      null,
-      2,
-    ),
-  );
-
   const priceForShares = valueIn(sharePriceInInvestmentAsset, requestedShares);
 
   ensure(
     greaterThan(investmentAmount, priceForShares) ||
       isEqual(investmentAmount, priceForShares),
-    `Investment asset quantity provided is not enough to purchase ${requestedShares.quantity.toString()} shares`,
+    `Investment asset quantity provided is not enough to purchase ${toFixed(
+      requestedShares,
+    )} shares`,
   );
   const requestedSharesArg = requestedShares.quantity.toString();
   const investmentAmountArg = investmentAmount.quantity.toString();
