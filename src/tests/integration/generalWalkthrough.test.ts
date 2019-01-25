@@ -43,6 +43,7 @@ import {
 } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 describe('generalWalkthrough', () => {
   const shared: {
@@ -154,10 +155,12 @@ describe('generalWalkthrough', () => {
     debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
 
     const investmentAmount = createQuantity(ethToken, 1);
+    const fundToken = await getToken(shared.env, routes.sharesAddress);
 
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
         investmentAmount,
+        requestedShares: createQuantity(fundToken, 1),
       }),
     ).rejects.toThrow(`Insufficient allowance`);
 
@@ -168,6 +171,7 @@ describe('generalWalkthrough', () => {
 
     await requestInvestment(shared.env, routes.participationAddress, {
       investmentAmount,
+      requestedShares: createQuantity(fundToken, 1),
     });
 
     await executeRequest(shared.env, routes.participationAddress);
@@ -277,6 +281,7 @@ describe('generalWalkthrough', () => {
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
         investmentAmount: createQuantity(ethToken, 1),
+        requestedShares: createQuantity(fundToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   });

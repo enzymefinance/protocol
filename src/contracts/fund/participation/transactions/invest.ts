@@ -6,7 +6,7 @@ import { Environment } from '~/utils/environment/Environment';
 
 const invest = async (
   environment: Environment,
-  { hubAddress, investmentAmount },
+  { hubAddress, investmentAmount, requestedShares },
 ) => {
   const routes = await getRoutes(environment, hubAddress);
 
@@ -17,6 +17,7 @@ const invest = async (
 
   await requestInvestment(environment, routes.participationAddress, {
     investmentAmount,
+    requestedShares,
   });
 
   const result = await executeRequestFor(
