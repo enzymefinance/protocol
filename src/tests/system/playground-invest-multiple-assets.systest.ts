@@ -2,7 +2,6 @@ import { getBalance } from '~/utils/evm/getBalance';
 import { withNewAccount } from '~/utils/environment/withNewAccount';
 import { createQuantity, greaterThan, valueIn } from '@melonproject/token-math';
 import { sendEth } from '~/utils/evm/sendEth';
-import { deposit } from '~/contracts/dependencies/token/transactions/deposit';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 import { toBeTrueWith } from '../utils/toBeTrueWith';
@@ -12,13 +11,10 @@ import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
 import { allLogsWritten } from '../utils/testLogger';
 import { setupFund } from '~/contracts/fund/hub/transactions/setupFund';
-import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequestFor } from '~/contracts/fund/participation/transactions/executeRequestFor';
-// import { delay } from '../utils/delay';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
-// import { isEnvironment } from '~/utils/environment/isEnvironment';
 import { enableInvestment } from '~/contracts/fund/participation/transactions/enableInvestment';
 import { investAllowed } from '~/contracts/fund/participation/calls/investAllowed';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -49,7 +45,6 @@ describe('playground', () => {
     log.debug('Investor 1 ', investor1.wallet.address);
 
     const mln = getTokenBySymbol(manager, 'MLN');
-    const weth = getTokenBySymbol(manager, 'WETH');
     try {
       const mlnPrice = await getPrice(
         master,
