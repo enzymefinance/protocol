@@ -8,16 +8,16 @@ import {
 import { Contracts } from '~/Contracts';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 
-export interface RegisterExchangeArgs {
+export interface RegisterExchangeAdapterArgs {
   exchange: Address;
   adapter: Address;
   takesCustody: Boolean;
   sigs: FunctionSignatures[];
 }
 
-const prepareArgs: PrepareArgsFunction<RegisterExchangeArgs> = async (
+const prepareArgs: PrepareArgsFunction<RegisterExchangeAdapterArgs> = async (
   _,
-  { exchange, adapter, takesCustody, sigs }: RegisterExchangeArgs,
+  { exchange, adapter, takesCustody, sigs }: RegisterExchangeAdapterArgs,
 ) => [
   `${exchange}`,
   `${adapter}`,
@@ -25,14 +25,14 @@ const prepareArgs: PrepareArgsFunction<RegisterExchangeArgs> = async (
   sigs.map(sig => web3EthAbi.encodeFunctionSignature(sig)),
 ];
 
-const registerExchange: EnhancedExecute<
-  RegisterExchangeArgs,
+const registerExchangeAdapter: EnhancedExecute<
+  RegisterExchangeAdapterArgs,
   boolean
 > = transactionFactory(
-  'registerExchange',
+  'registerExchangeAdapter',
   Contracts.Registry,
   undefined,
   prepareArgs,
 );
 
-export { registerExchange };
+export { registerExchangeAdapter };

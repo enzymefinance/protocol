@@ -94,6 +94,7 @@ const deployThirdParty = async (
   ]);
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
   const ethfinex = await deployEthfinex(environment, {
+    zeroExExchangeAddress: zeroEx,
     tokens: deployedTokens,
   });
 

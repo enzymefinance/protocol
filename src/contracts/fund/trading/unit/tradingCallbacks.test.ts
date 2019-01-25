@@ -22,7 +22,7 @@ describe('tradingCallbacks', () => {
       await deployContract(shared.env, Contracts.MockAdapter),
     );
     await shared.registry.methods
-      .registerAdapterForExchange(mockExchange, mockAdapter.options.address)
+      .registerExchangeAdapter(mockExchange, mockAdapter.options.address)
       .send({ from: shared.user });
     shared.trading = await getContract(
       shared.env,

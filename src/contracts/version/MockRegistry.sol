@@ -17,7 +17,7 @@ contract MockRegistry is DSAuth {
     uint public incentive;
     mapping (address => bool) public registered;
     mapping (address => bool) public fundExists;
-    mapping (address => address) public adapterForExchange;
+    mapping (address => address) public exchangeForAdapter;
 
 
     function register(address _addr) public {
@@ -33,19 +33,19 @@ contract MockRegistry is DSAuth {
         return alwaysRegistered || registered[_asset];
     }
 
-    function exchangeIsRegistered(address _exchange) public view returns (bool) {
-        return alwaysRegistered || registered[_exchange];
+    function exchangeAdapterIsRegistered(address _adapter) public view returns (bool) {
+        return alwaysRegistered || registered[_adapter];
     }
 
-    function registerAdapterForExchange(
+    function registerExchangeAdapter(
         address _exchange,
         address _adapter
     ) public {
-        adapterForExchange[_exchange] = _adapter;
+        exchangeForAdapter[_adapter] = _exchange;
     }
 
-    function exchangeMethodIsAllowed(
-        address _exchange,
+    function adapterMethodIsAllowed(
+        address _adapter,
         bytes4 _sig
     ) public view returns (bool) { return methodAllowed; }
 
