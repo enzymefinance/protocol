@@ -104,3 +104,7 @@ export {
   TakeOrderOnKyberResult,
   TakeOrderOnKyberArgs,
 } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
+export {
+  getFundOpenOrder,
+} from '~/contracts/fund/trading/calls/getFundOpenOrder';
+export { getOpenOrders } from '~/contracts/fund/trading/calls/getOpenOrders';

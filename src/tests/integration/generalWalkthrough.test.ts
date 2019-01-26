@@ -44,12 +44,18 @@ import {
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { getOpenOrders } from '~/contracts/fund/trading/calls/getOpenOrders';
+import { allLogsWritten } from '../utils/testLogger';
 
 describe('generalWalkthrough', () => {
   const shared: {
     env?: Environment;
     [p: string]: any;
   } = {};
+
+  afterAll(async () => {
+    await allLogsWritten();
+  });
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
@@ -235,6 +241,12 @@ describe('generalWalkthrough', () => {
       },
     );
     debug(`Made order from fund with id ${orderFromFund.id}`);
+
+    const openOrders = await getOpenOrders(shared.env, routes.tradingAddress);
+
+    debug({ openOrders });
+
+    expect(openOrders).toHaveLength(1);
 
     const fundOrder = await getFundOpenOrder(
       shared.env,

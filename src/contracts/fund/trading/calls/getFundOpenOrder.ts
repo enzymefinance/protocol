@@ -11,6 +11,7 @@ const getFundOpenOrder = async (environment, tradingAddress, index) => {
     tradingAddress,
   );
   const order = await tradingContract.methods.orders(index).call();
+
   const makerToken = await getToken(environment, order.makerAsset);
   const takerToken = await getToken(environment, order.takerAsset);
   return {
