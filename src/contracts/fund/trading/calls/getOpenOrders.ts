@@ -17,12 +17,23 @@ const postProcess: PostProcessCallFunction = async (
     environment.deployment.thirdPartyContracts.tokens,
   );
 
-  const openOrdersPromises = exchangesXtokens.map(([exchange, token]) =>
-    exchangesToOpenMakeOrders(environment, prepared.contractAddress, {
-      exchange,
-      token,
-    }),
-  );
+  const openOrdersPromises = exchangesXtokens.map(async ([exchange, token]) => {
+    const order = await exchangesToOpenMakeOrders(
+      environment,
+      prepared.contractAddress,
+      {
+        exchange,
+        token,
+      },
+    );
+
+    return (
+      order && {
+        ...order,
+        exchange,
+      }
+    );
+  });
 
   const openOrders = await Promise.all(openOrdersPromises);
 
