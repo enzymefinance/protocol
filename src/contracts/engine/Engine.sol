@@ -12,6 +12,7 @@ contract Engine is DSMath, DSAuth {
     event RegistryChange(address registry);
     event SetAmguPrice(uint amguPrice);
     event Thaw(uint amount);
+    event Burn(uint amount);
 
     uint public frozenEther;
     uint public liquidEther;
@@ -120,6 +121,7 @@ contract Engine is DSMath, DSAuth {
         totalMlnBurned = add(totalMlnBurned, mlnAmount);
         msg.sender.send(ethToSend);
         mlnToken.burn(mlnAmount);
+        emit Burn(mlnAmount);
     }
 }
 
