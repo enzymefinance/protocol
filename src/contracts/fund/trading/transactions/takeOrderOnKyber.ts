@@ -1,5 +1,8 @@
+import * as R from 'ramda';
 import * as web3Utils from 'web3-utils';
-import { QuantityInterface } from '@melonproject/token-math';
+
+import { QuantityInterface, createQuantity } from '@melonproject/token-math';
+
 import { Contracts, Exchanges } from '~/Contracts';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
@@ -7,6 +10,7 @@ import {
   GuardFunction,
   PrepareArgsFunction,
   transactionFactory,
+  PostProcessFunction,
 } from '~/utils/solidity/transactionFactory';
 import { getHub } from '../../hub/calls/getHub';
 import { getRoutes } from '../../hub/calls/getRoutes';
@@ -15,11 +19,20 @@ import { ensureFundOwner } from '~/contracts/fund/trading/guards/ensureFundOwner
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
+import { ensure } from '~/utils/guards/ensure';
+import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
 export interface TakeOrderOnKyberArgs {
   makerQuantity: QuantityInterface;
   takerQuantity: QuantityInterface;
   fillTakerQuantity?: QuantityInterface;
+}
+
+export interface TakeOrderOnKyberResult {
+  makerQuantity: QuantityInterface;
+  takerQuantity: QuantityInterface;
 }
 
 const guard: GuardFunction<TakeOrderOnKyberArgs> = async (
@@ -80,11 +93,40 @@ const prepareArgs: PrepareArgsFunction<TakeOrderOnKyberArgs> = async (
   return args;
 };
 
+const postProcess: PostProcessFunction<
+  TakeOrderOnKyberArgs,
+  TakeOrderOnKyberResult
+> = async (environment, receipt) => {
+  const kyberTrade = R.path(['events', 'KyberTrade', 'returnValues'], receipt);
+  ensure(!!kyberTrade, 'No KyberTrade event log found in receipt');
+
+  const weth = getTokenBySymbol(environment, 'WETH');
+
+  const sellToken =
+    kyberTrade.srcToken === kyberEthAddress
+      ? weth
+      : await getToken(environment, kyberTrade.srcToken);
+
+  const buyToken =
+    kyberTrade.destToken === kyberEthAddress
+      ? weth
+      : await getToken(environment, kyberTrade.destToken);
+
+  const makerQuantity = createQuantity(buyToken, kyberTrade.destAmount);
+  const takerQuantity = createQuantity(sellToken, kyberTrade.srcAmount);
+
+  return {
+    makerQuantity,
+    takerQuantity,
+  };
+};
+
 const takeOrderOnKyber = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
   guard,
   prepareArgs,
+  postProcess,
 );
 
 export { takeOrderOnKyber };

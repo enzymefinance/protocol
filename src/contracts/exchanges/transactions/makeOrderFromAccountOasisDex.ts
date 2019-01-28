@@ -90,19 +90,23 @@ const prepareArgs: PrepareArgsFunction<CallOnExchangeArgs> = async (
 };
 
 const postProcess = async (environment, receipt, params, contractAddress) => {
+  const logEntry = receipt.events.LogMake || receipt.events.LogTake;
+
+  ensure(
+    !!logEntry,
+    `No LogMake nor LogTake found in transaction: ${receipt.transactionHash}`,
+  );
+
+  const matched = !!receipt.events.LogTrade;
+
   return {
-    id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
-    maker: receipt.events.LogMake.returnValues.maker,
-    taker: receipt.events.LogMake.returnValues.taker,
-    sell: createQuantity(
-      params.sell.token,
-      receipt.events.LogMake.returnValues.pay_amt,
-    ),
-    buy: createQuantity(
-      params.buy.token,
-      receipt.events.LogMake.returnValues.buy_amt,
-    ),
-    timestamp: receipt.events.LogMake.returnValues.timestamp,
+    buy: createQuantity(params.buy.token, logEntry.returnValues.buy_amt),
+    id: web3Utils.toDecimal(logEntry.returnValues.id),
+    maker: logEntry.returnValues.maker,
+    matched,
+    sell: createQuantity(params.sell.token, logEntry.returnValues.pay_amt),
+    taker: logEntry.returnValues.taker,
+    timestamp: logEntry.returnValues.timestamp,
   };
 };
 
