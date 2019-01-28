@@ -9,8 +9,8 @@ import "TradingSignatures.sol";
 contract MaxPositions is TradingSignatures, Policy {
     uint public maxPositions;
 
-    /// @dev _maxPositions = 10 means max 10 different non-quote asset tokens
-    /// @dev _maxPositions = 0 means no non-quote asset tokens are investable
+    /// @dev _maxPositions = 10 means max 10 different asset tokens
+    /// @dev _maxPositions = 0 means no asset tokens are investable
     constructor(uint _maxPositions) { maxPositions = _maxPositions; }
 
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier)
@@ -18,12 +18,11 @@ contract MaxPositions is TradingSignatures, Policy {
         view
         returns (bool)
     {
-        address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
-        address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
+        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
+        address denominationAsset = accounting.DENOMINATION_ASSET();
         // Always allow a trade INTO the quote asset
         address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
-        if (quoteAsset == incomingToken) { return true; }
-        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
+        if (denominationAsset == incomingToken) { return true; }
         return accounting.getOwnedAssetsLength() <= maxPositions;
     }
 
