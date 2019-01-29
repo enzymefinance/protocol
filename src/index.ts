@@ -69,10 +69,25 @@ export {
   makeOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 export { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
+export { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
+export {
+  getHistoricalInvestors,
+} from '~/contracts/fund/participation/calls/getHistoricalInvestors';
+export {
+  getTotalAmguConsumed,
+} from '~/contracts/engine/calls/getTotalAmguConsumed';
+export {
+  getTotalEtherConsumed,
+} from '~/contracts/engine/calls/getTotalEtherConsumed';
+export { getLiquidEther } from '~/contracts/engine/calls/getLiquidEther';
+export { getFrozenEther } from '~/contracts/engine/calls/getFrozenEther';
+export { getPremiumPercent } from '~/contracts/engine/calls/getPremiumPercent';
+export { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
 export {
   cancelOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/cancelOasisDexOrder';
 export { deployContract } from '~/utils/solidity/deployContract';
+export { getFundComponents } from '~/utils/getFundComponents';
 export {
   FunctionSignatures,
 } from '~/contracts/fund/trading/utils/FunctionSignatures';
