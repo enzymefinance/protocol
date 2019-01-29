@@ -2,11 +2,11 @@
   "meta": {
     "deployer": "0x0d580ae50b58fe08514deab4e38c0dfdb0d30adc",
     "track": "kyberPrice",
-    "version": "0.9.17",
+    "version": "0.9.20",
     "description": "Test mainnet deployment"
   },
   "melonContracts": {
-    "priceSource": "DEPLOY",
+    "priceSource": "0xf825Bc8A15B0544A3CFcB01A0e7248Db6e784aB2",
     "adapters": {
       "ethfinexAdapter": "0x01C1E7D4fDEa728f75aFc9eDE1d85b00E8d79184",
       "kyberAdapter": "0x469adD0f8447d1f6c114076131929B87f7700F89",
@@ -16,25 +16,25 @@
     },
     "policies": {
       "priceTolerance": "0x884ed204cE495A271019664C56B87cEC8aaF1c4F",
-      "userWhitelist": "DEPLOY"
+      "userWhitelist": "0xff8b99fa5acb93edf7c0d78ac2208b0af7f35752"
     },
     "fees": {
-      "managementFee": "DEPLOY",
-      "performanceFee": "DEPLOY"
+      "managementFee": "0x3fC49b0BE15DbEc989BcAa91039d46d3168dfA0b",
+      "performanceFee": "0xed7E30040fe51e171c65D8Cb6cdE82decE710704"
     },
     "factories": {
-      "accountingFactory": "DEPLOY",
-      "feeManagerFactory": "DEPLOY",
-      "participationFactory": "DEPLOY",
-      "policyManagerFactory": "DEPLOY",
-      "sharesFactory": "DEPLOY",
-      "tradingFactory": "DEPLOY",
-      "vaultFactory": "DEPLOY"
+      "accountingFactory": "0x70873794c88826869051ae48e675d2a118dd4cad",
+      "feeManagerFactory": "0x81cc39d2d954D2D54A8bfe08ef71931e5Df23cdD",
+      "participationFactory": "0xDC7F8a1261D3dbecDd3831F833878177587CdfDc",
+      "policyManagerFactory": "0x3c0d7e71658Dc4c0Ac92B4A65f958d9Ae328B03E",
+      "sharesFactory": "0x9cA9bA9aF817260ec5c31853db47aeB37A9c4085",
+      "tradingFactory": "0xc9ebCdE59036935B5200e929A73c82fA58BFb10E",
+      "vaultFactory": "0x144624D8D333291B905E19F2e57762B158E5729E"
     },
-    "engine": "DEPLOY",
-    "registry": "DEPLOY",
-    "version": "DEPLOY",
-    "ranking": "DEPLOY"
+    "engine": "0x1379C304260e29FB25CE3496aEE83ae1f50138B5",
+    "registry": "0x9cBe84ecef934DBe32a7Ba0FA3941826799Cd42a",
+    "version": "0x660490F4c0F262894CaB4E8604F3eE5AE129686E",
+    "ranking": "0x660490F4c0F262894CaB4E8604F3eE5AE129686E"
   },
   "thirdPartyContracts": {
     "exchanges": {
