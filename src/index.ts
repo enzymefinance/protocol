@@ -81,6 +81,7 @@ export {
 } from '~/contracts/engine/calls/getTotalEtherConsumed';
 export { getLiquidEther } from '~/contracts/engine/calls/getLiquidEther';
 export { getFrozenEther } from '~/contracts/engine/calls/getFrozenEther';
+export { getPremiumPercent } from '~/contracts/engine/calls/getPremiumPercent';
 export { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
 export {
   cancelOasisDexOrder,
