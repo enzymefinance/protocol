@@ -96,6 +96,7 @@ export { register } from '~/contracts/fund/policies/transactions/register';
 export {
   createOrder,
   approveOrder,
+  isValidSignatureOffChain,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 export {
   getWrapperLock,

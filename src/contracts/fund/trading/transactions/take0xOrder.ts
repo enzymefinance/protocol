@@ -1,6 +1,6 @@
 import { assetDataUtils } from '@0x/order-utils';
 import * as web3Utils from 'web3-utils';
-import { createQuantity } from '@melonproject/token-math';
+import { createQuantity, ensureSameToken } from '@melonproject/token-math';
 import {
   GuardFunction,
   PrepareArgsFunction,
@@ -18,14 +18,65 @@ import {
 } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { getFeeToken } from '~/contracts/exchanges/third-party/0x/calls/getFeeToken';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { isValidSignature } from '~/contracts/exchanges/third-party/0x/calls/isValidSignature';
+import { ensure } from '~/utils/guards/ensure';
+import { ensureTakePermitted } from '../guards/ensureTakePermitted';
+import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
+import { getHub } from '../../hub/calls/getHub';
+import { getRoutes } from '../../hub/calls/getRoutes';
 
-const guard: GuardFunction<FillOrderArgs> = async () => {
-  /* TODO:
-  - [ ] Check if takerQuantity is the token in signedOrder
-  - [ ] Check policy (policyManager.methods.preValidate)
+const guard: GuardFunction<FillOrderArgs> = async (
+  environment,
+  { signedOrder, takerQuantity: providedTakerQuantity },
+  contractAddress,
+) => {
+  const hubAddress = await getHub(environment, contractAddress);
+  const { vaultAddress } = await getRoutes(environment, hubAddress);
+  const zeroExAddress =
+    environment.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
 
-  See: makeOasisDexOrder.ts
-  */
+  const validSignature = await isValidSignature(environment, zeroExAddress, {
+    signedOrder,
+  });
+
+  ensure(validSignature, 'Signature invalid');
+
+  const takerTokenAddress = assetDataUtils.decodeERC20AssetData(
+    signedOrder.takerAssetData,
+  ).tokenAddress;
+
+  const takerToken = await getToken(environment, takerTokenAddress);
+
+  const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
+    signedOrder.makerAssetData,
+  ).tokenAddress;
+
+  const makerToken = await getToken(environment, makerTokenAddress);
+
+  const fillTakerQuantity =
+    providedTakerQuantity ||
+    createQuantity(takerToken, signedOrder.takerAssetAmount.toString());
+
+  const makerQuantity = createQuantity(
+    makerToken,
+    signedOrder.makerAssetAmount.toString(),
+  );
+  const takerQuantity = createQuantity(
+    takerToken,
+    signedOrder.takerAssetAmount.toString(),
+  );
+
+  await ensureSameToken(fillTakerQuantity.token, takerQuantity.token);
+  await ensureSufficientBalance(environment, fillTakerQuantity, vaultAddress);
+
+  await ensureTakePermitted(
+    environment,
+    contractAddress,
+    Exchanges.KyberNetwork,
+    makerQuantity,
+    takerQuantity,
+    fillTakerQuantity,
+  );
 };
 
 const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
@@ -50,34 +101,39 @@ const prepareArgs: PrepareArgsFunction<FillOrderArgs> = async (
     providedTakerQuantity ||
     createQuantity(takerToken, signedOrder.takerAssetAmount.toString());
 
-  const args = [
-    exchangeIndex,
-    FunctionSignatures.takeOrder,
-    [
-      signedOrder.makerAddress.toString(),
-      emptyAddress /*contractAddress.toString() */,
-      makerTokenAddress,
-      takerTokenAddress,
-      signedOrder.feeRecipientAddress,
-      emptyAddress,
-    ],
-    [
-      signedOrder.makerAssetAmount.toString(),
-      signedOrder.takerAssetAmount.toString(),
-      signedOrder.makerFee.toString(),
-      signedOrder.takerFee.toString(),
-      signedOrder.expirationTimeSeconds.toString(),
-      signedOrder.salt.toString(),
-      takerQuantity.quantity.toString(),
-      0,
-    ],
-    web3Utils.padLeft('0x0', 64),
-    signedOrder.makerAssetData,
-    signedOrder.takerAssetData,
-    signedOrder.signature,
-  ];
+  try {
+    const args = [
+      exchangeIndex,
+      FunctionSignatures.takeOrder,
+      [
+        signedOrder.makerAddress.toString(),
+        emptyAddress /*contractAddress.toString() */,
+        makerTokenAddress,
+        takerTokenAddress,
+        signedOrder.feeRecipientAddress,
+        emptyAddress,
+      ],
+      [
+        signedOrder.makerAssetAmount.toString(),
+        signedOrder.takerAssetAmount.toString(),
+        signedOrder.makerFee.toString(),
+        signedOrder.takerFee.toString(),
+        signedOrder.expirationTimeSeconds.toString(),
+        signedOrder.salt.toString(),
+        takerQuantity.quantity.toString(),
+        0,
+      ],
+      web3Utils.padLeft('0x0', 64),
+      signedOrder.makerAssetData,
+      signedOrder.takerAssetData,
+      signedOrder.signature,
+    ];
 
-  return args;
+    return args;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 };
 
 const postProcess: PostProcessFunction<FillOrderArgs, FillOrderResult> = async (
