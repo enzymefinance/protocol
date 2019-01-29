@@ -1,20 +1,18 @@
-import { Address, TokenInterface } from '@melonproject/token-math';
+import { Address } from '@melonproject/token-math';
 import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { Factories } from '~/utils/deploy/deploySystem';
 
 interface VersionArgs {
-  engine: Address;
   factories: Factories;
-  mlnToken: TokenInterface;
-  priceSource: Address;
   registry: Address;
+  postDeployOwner: Address;
 }
 
 export const deployVersion = async (
   environment: Environment,
-  { factories, engine, mlnToken, priceSource, registry }: VersionArgs,
+  { factories, registry, postDeployOwner }: VersionArgs,
 ) => {
   const argsRaw = [
     factories.accountingFactory,
@@ -24,10 +22,8 @@ export const deployVersion = async (
     factories.tradingFactory,
     factories.vaultFactory,
     factories.policyManagerFactory,
-    engine,
-    priceSource,
-    mlnToken.address,
     registry,
+    postDeployOwner,
   ];
 
   const args = argsRaw.map(a => a.toString());

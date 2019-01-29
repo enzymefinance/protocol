@@ -117,6 +117,10 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
         require(
+            address(makerAsset) == orderAddresses[2] && address(takerAsset) == orderAddresses[3],
+            "Maker and taker assets do not match the order addresses"
+        );
+        require(
             address(makerAsset) != address(takerAsset),
             "Maker and taker assets cannot be the same"
         );

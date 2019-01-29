@@ -4,8 +4,8 @@ pragma solidity ^0.4.21;
 interface PriceSourceInterface {
     event PriceUpdate(address[] token, uint[] price);
 
-    function getQuoteAsset() public view returns (address);
-    function getLastUpdate() public view returns (uint);
+    function getQuoteAsset() external view returns (address);
+    function getLastUpdate() external view returns (uint);
 
     /// @notice Returns false if asset not applicable, or price not recent
     function hasValidPrice(address) public view returns (bool);

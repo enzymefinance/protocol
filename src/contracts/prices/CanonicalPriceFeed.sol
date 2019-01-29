@@ -46,7 +46,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
     // /// @param interval Number of seconds between pricefeed updates (this interval is not enforced on-chain, but should be followed by the datafeed maintainer)
     // /// @param validity Number of seconds that datafeed update information is valid for
     /// @param ofGovernance Address of contract governing the Canonical PriceFeed
-    function CanonicalPriceFeed(
+    constructor(
         address ofStakingAsset,
         address ofQuoteAsset, // Inital entry in asset registrar contract is Melon (QUOTE_ASSET)
         bytes32 quoteAssetName,
@@ -60,7 +60,6 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         uint[3] stakingInfo, // minStake, numOperators, unstakeDelay
         address ofGovernance
     )
-        public
         OperatorStaking(
             ERC20(ofStakingAsset), stakingInfo[0], stakingInfo[1], stakingInfo[2]
         )

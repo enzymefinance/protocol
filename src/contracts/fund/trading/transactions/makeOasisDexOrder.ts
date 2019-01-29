@@ -23,6 +23,7 @@ import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { ensureNotInOpenMakeOrder } from '../guards/ensureNotInOpenMakeOrder';
+import { ensure } from '~/utils/guards/ensure';
 
 export type MakeOasisDexOrderResult = {
   buy: QuantityInterface;
@@ -112,25 +113,26 @@ const postProcess: PostProcessFunction<
   MakeOasisDexOrderArgs,
   MakeOasisDexOrderResult
 > = async (environment, receipt) => {
-  const sellToken = await getToken(
-    environment,
-    receipt.events.LogMake.returnValues.pay_gem,
+  const logEntry = receipt.events.LogMake || receipt.events.LogTake;
+
+  ensure(
+    !!logEntry,
+    `No LogMake nor LogTake found in transaction: ${receipt.transactionHash}`,
   );
 
-  const buyToken = await getToken(
-    environment,
-    receipt.events.LogMake.returnValues.buy_gem,
-  );
+  const matched = !!receipt.events.LogTrade;
+
+  const sellToken = await getToken(environment, logEntry.returnValues.pay_gem);
+
+  const buyToken = await getToken(environment, logEntry.returnValues.buy_gem);
 
   return {
-    buy: createQuantity(buyToken, receipt.events.LogMake.returnValues.buy_amt),
-    id: web3Utils.toDecimal(receipt.events.LogMake.returnValues.id),
-    maker: receipt.events.LogMake.returnValues.maker,
-    sell: createQuantity(
-      sellToken,
-      receipt.events.LogMake.returnValues.pay_amt,
-    ),
-    timestamp: receipt.events.LogMake.returnValues.timestamp,
+    buy: createQuantity(buyToken, logEntry.returnValues.buy_amt),
+    id: web3Utils.toDecimal(logEntry.returnValues.id),
+    maker: logEntry.returnValues.maker,
+    matched,
+    sell: createQuantity(sellToken, logEntry.returnValues.pay_amt),
+    timestamp: logEntry.returnValues.timestamp,
   };
 };
 

@@ -1,4 +1,8 @@
-import { QuantityInterface, Address } from '@melonproject/token-math';
+import {
+  QuantityInterface,
+  Address,
+  createQuantity,
+} from '@melonproject/token-math';
 import * as web3Utils from 'web3-utils';
 
 import { transactionFactory } from '~/utils/solidity/transactionFactory';
@@ -11,6 +15,8 @@ import { ensureTakePermitted } from '../guards/ensureTakePermitted';
 import { Exchanges, Contracts } from '~/Contracts';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { ensure } from '~/utils/guards/ensure';
 
 export type TakeOasisDexOrderResult = any;
 
@@ -93,10 +99,21 @@ const prepareArgs = async (
   ];
 };
 
-const postProcess = async (_, receipt) => {
+const postProcess = async (environment, receipt) => {
+  const logTake = receipt.events.LogTake.returnValues;
+
+  ensure(!!logTake, 'No LogTake found in logs');
+
+  const sellToken = await getToken(environment, logTake.pay_gem);
+  const buyToken = await getToken(environment, logTake.buy_gem);
+
   return {
-    id: web3Utils.toDecimal(receipt.events.LogTake.returnValues.id),
-    timestamp: receipt.events.LogTake.returnValues.timestamp,
+    buy: createQuantity(buyToken, logTake.take_amt),
+    id: web3Utils.toDecimal(logTake.id),
+    maker: new Address(logTake.maker),
+    sell: createQuantity(sellToken, logTake.give_amt),
+    taker: new Address(logTake.taker),
+    timestamp: logTake.timestamp,
   };
 };
 

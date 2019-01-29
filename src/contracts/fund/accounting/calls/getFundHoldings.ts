@@ -1,28 +1,35 @@
+import * as R from 'ramda';
+
 import { callFactoryWithoutParams } from '~/utils/solidity/callFactory';
 import { Contracts } from '~/Contracts';
-import { QuantityInterface, createQuantity } from '@melonproject/token-math';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import {
+  createQuantity,
+  createToken,
+  QuantityInterface,
+} from '@melonproject/token-math';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
-type GetFundHoldingsResult = Array<QuantityInterface>;
+const postProcess = async (environment, result) => {
+  const { '0': holdings, '1': tokenAddresses } = result;
+  const zipped = R.zip(holdings, tokenAddresses);
 
-const postProcess = async (
-  environment,
-  result,
-  prepared,
-): Promise<GetFundHoldingsResult> => {
-  let fundHoldings = [];
+  const fundHoldingsPromises: Promise<QuantityInterface>[] = zipped.map(
+    async ([holding, tokenAddress]) => {
+      const token = isEmptyAddress(tokenAddress)
+        ? createToken('ZERO', tokenAddress)
+        : await getToken(environment, tokenAddress);
+      return createQuantity(token, holding);
+    },
+  );
 
-  for (let i = 0; i < result[1].length; i++) {
-    const address = result[1][i];
-    const quantity = result[0][i];
-    if (!isEmptyAddress(address)) {
-      const token = await getToken(environment, address);
-      fundHoldings[i] = createQuantity(token, quantity);
-    }
-  }
+  const fundHoldings = await Promise.all(fundHoldingsPromises);
 
-  return fundHoldings;
+  const filtered = fundHoldings.filter(
+    holding => !isEmptyAddress(holding.token.address),
+  );
+
+  return filtered;
 };
 
 const getFundHoldings = callFactoryWithoutParams(

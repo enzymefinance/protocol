@@ -5,6 +5,8 @@ import {
   makeOrderSignature,
   takeOrderSignature,
   cancelOrderSignature,
+  makeOrderSignatureBytes,
+  takeOrderSignatureBytes,
 } from '~/utils/constants/orderSignatures';
 import {
   BigInteger,
@@ -64,7 +66,6 @@ beforeAll(async () => {
     fees: [],
     fundName: 'Test fund',
     nativeToken: s.wethTokenInterface,
-    priceSource: s.priceSource.options.address,
     quoteToken: s.wethTokenInterface,
   });
   await createAccounting(envManager, s.version.options.address);
@@ -83,7 +84,7 @@ beforeAll(async () => {
       .getReferencePriceInfo(s.weth.options.address, s.mln.options.address)
       .call(),
   ).map(e => new BigInteger(e));
-  const sellQuantity1 = power(new BigInteger(10), new BigInteger(18));
+  const sellQuantity1 = power(new BigInteger(10), new BigInteger(20));
   s.trade1 = {
     buyQuantity: divide(
       multiply(referencePrice, sellQuantity1),
@@ -100,26 +101,19 @@ beforeAll(async () => {
     ),
     sellQuantity: sellQuantity2,
   };
-  // TODO: Add back later
-  // const managementFee = await deployContract('fund/fees/FixedManagementFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
-  // const performanceFee = await deployContract('fund/fees/FixedPerformanceFee', { from: manager, gas: config.gas, gasPrice: config.gasPrice });
-  // await fund.feeManager.methods.batchRegister([managementFee.options.address, performanceFee.options.address]).send({ from: manager, gas: config.gas, gasPrice: config.gasPrice });
 
   // Register price tolerance policy
-  // const priceTolerance = await deploy(
-  //   Contracts.PriceTolerance, // TODO: go here
-  //   [10],
-  // );
-  // await expect(
-  //   fund.policyManager.methods
-  //     .register(makeOrderSignatureBytes, priceTolerance.options.address)
-  //     .send({ from: manager, gasPrice: config.gasPrice }),
-  // ).resolves.not.toThrow();
-  // await expect(
-  //   fund.policyManager.methods
-  //     .register(takeOrderSignatureBytes, priceTolerance.options.address)
-  //     .send({ from: manager, gasPrice: config.gasPrice }),
-  // ).resolves.not.toThrow();
+  const priceTolerance = s.priceTolerance;
+  await expect(
+    s.fund.policyManager.methods
+      .register(makeOrderSignatureBytes, priceTolerance.options.address)
+      .send({ from: s.manager }),
+  ).resolves.not.toThrow();
+  await expect(
+    s.fund.policyManager.methods
+      .register(takeOrderSignatureBytes, priceTolerance.options.address)
+      .send({ from: s.manager }),
+  ).resolves.not.toThrow();
 });
 
 test('Transfer ethToken to the investor', async () => {
@@ -431,5 +425,44 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     expect(exchangePostEthToken).toEqual(exchangePreEthToken);
     expect(post.fund.mln).toEqual(pre.fund.mln);
     expect(post.fund.weth).toEqual(pre.fund.weth);
+  });
+
+  test(`Exchange ${i +
+    1}: Risk management prevents from taking an ill-priced order`, async () => {
+    await s.weth.methods
+      .approve(s.exchanges[i].options.address, `${s.trade2.sellQuantity}`)
+      .send({ from: s.deployer, gas: s.gas });
+    await s.exchanges[i].methods
+      .offer(
+        `${divide(s.trade2.sellQuantity, 2)}`,
+        s.weth.options.address,
+        `${s.trade2.buyQuantity}`,
+        s.mln.options.address,
+      )
+      .send({ from: s.deployer, gas: s.gas });
+    const orderId = await s.exchanges[i].methods.last_offer_id().call();
+    await expect(
+      s.fund.trading.methods
+        .callOnExchange(
+          i,
+          takeOrderSignature,
+          [
+            randomHexOfSize(20),
+            randomHexOfSize(20),
+            s.weth.options.address,
+            s.mln.options.address,
+            randomHexOfSize(20),
+            randomHexOfSize(20),
+          ],
+          [0, 0, 0, 0, 0, 0, `${s.trade2.buyQuantity}`, 0],
+          `0x${Number(orderId)
+            .toString(16)
+            .padStart(64, '0')}`,
+          '0x0',
+          '0x0',
+          '0x0',
+        )
+        .send({ from: s.manager, gas: s.gas }),
+    ).rejects.toThrow();
   });
 });

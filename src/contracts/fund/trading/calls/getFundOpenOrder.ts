@@ -11,18 +11,19 @@ const getFundOpenOrder = async (environment, tradingAddress, index) => {
     tradingAddress,
   );
   const order = await tradingContract.methods.orders(index).call();
+
   const makerToken = await getToken(environment, order.makerAsset);
   const takerToken = await getToken(environment, order.takerAsset);
   return {
     exchangeAddress: order.exchangeAddress,
+    fillTakerQuantity: order.fillTakerQuantity,
     id: web3Utils.toDecimal(order.orderId),
-    updateType: order.updateType,
     makerAsset: order.makerAsset,
-    takerAsset: order.takerAsset,
     makerQuantity: createQuantity(makerToken, order.makerQuantity),
+    takerAsset: order.takerAsset,
     takerQuantity: createQuantity(takerToken, order.takerQuantity),
     timestamp: order.timestamp,
-    fillTakerQuantity: order.fillTakerQuantity,
+    updateType: order.updateType,
   };
 };
 

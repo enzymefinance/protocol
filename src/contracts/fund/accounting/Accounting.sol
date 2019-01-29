@@ -43,7 +43,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         DEFAULT_SHARE_PRICE = 10 ** uint(DENOMINATION_ASSET_DECIMALS);
     }
 
-    function getOwnedAssetsLength() public view returns (uint) {
+    function getOwnedAssetsLength() external view returns (uint) {
         return ownedAssets.length;
     }
 
@@ -55,7 +55,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 
     /// @dev Returns sparse array
-    function getFundHoldings() public returns (uint[], address[]) {
+    function getFundHoldings() external returns (uint[], address[]) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);
         for (uint i = 0; i < ownedAssets.length; i++) {
@@ -71,7 +71,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return (_quantities, _assets);
     }
 
-    function calcAssetGAV(address _queryAsset) public returns (uint) {
+    function calcAssetGAV(address _queryAsset) external returns (uint) {
         uint queryAssetQuantityHeld = assetHoldings(_queryAsset);
         return PriceSourceInterface(routes.priceSource).convertQuantity(
             queryAssetQuantityHeld, _queryAsset, DENOMINATION_ASSET
@@ -138,7 +138,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return (gav, feesInDenominationAsset, feesInShares, nav, sharePrice, gavPerShareNetManagementFee);
     }
 
-    function calcSharePrice() public returns (uint sharePrice) {
+    function calcSharePrice() external returns (uint sharePrice) {
         (,,,,sharePrice,) = performCalculations();
         return sharePrice;
     }
@@ -152,7 +152,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 
     function getShareCostInAsset(uint _numShares, address _altAsset)
-        public
+        external
         returns (uint)
     {
         uint denominationAssetQuantity = mul(
@@ -167,7 +167,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     /// @notice Reward all fees and perform some updates
     /// @dev Anyone can call this
     function triggerRewardAllFees()
-        public
+        external
         amguPayable(false)
         payable
     {
@@ -201,11 +201,11 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         }
     }
 
-    function addAssetToOwnedAssets(address _asset) public auth {
+    function addAssetToOwnedAssets(address _asset) external auth {
         _addAssetToOwnedAssets(_asset);
     }
 
-    function removeFromOwnedAssets(address _asset) public auth {
+    function removeFromOwnedAssets(address _asset) external auth {
         _removeFromOwnedAssets(_asset);
     }
 
@@ -247,7 +247,7 @@ contract AccountingFactory is Factory {
         address[] defaultAssets
     );
 
-    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) public returns (address) {
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) external returns (address) {
         address accounting = new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets);
         childExists[accounting] = true;
         emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset, _defaultAssets);

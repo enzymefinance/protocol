@@ -23,7 +23,7 @@ const prepareArgs: PrepareArgsFunction<changeZRXAssetArgs> = async (
 
 const changeZRXAsset = transactionFactory(
   'changeZRXAssetData',
-  Contracts.EthfinexExchangeEfx,
+  Contracts.ZeroExExchange,
   undefined,
   prepareArgs,
 );
