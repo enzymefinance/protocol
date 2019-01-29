@@ -23,7 +23,8 @@ import { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
 import { getPremiumPercent } from '~/contracts/engine/calls/getPremiumPercent';
 // import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 // import { getInfo } from '~/contracts/dependencies/token/calls/getInfo';
-import { getFundComponents } from '~/utils/getFundComponents';
+// import { getFundComponents } from '~/utils/getFundComponents';
+import { getInfo } from '~/contracts/dependencies/token/calls/getInfo';
 
 expect.extend({ toBeTrueWith });
 
@@ -45,7 +46,8 @@ describe('playground', () => {
         const response = await axinst.get('/v1/exchangerate/' + a + '/' + b);
         return response.data;
       } catch (error) {
-        log.debug('CoinAPI Error', error);
+        return { rate: 1 };
+        // log.debug('CoinAPI Error', error);
       }
     };
 
@@ -94,6 +96,9 @@ describe('playground', () => {
     const premiumPercent = await getPremiumPercent(master, engine);
     log.debug('Premium percent: ', premiumPercent);
 
+    const mlnInfo = await getInfo(master, tokens.MLN.address);
+    log.debug('MLN Info', mlnInfo);
+
     // fund list
 
     const fundList = await getFundDetails(
@@ -116,11 +121,11 @@ describe('playground', () => {
     };
 
     let investorList = [];
-    let components = [];
+    // let components = [];
 
     // loop through funds to get interesting quantities
     for (let i in fundList) {
-      components[i] = await getFundComponents(master, fundList[i].address);
+      // fundList[i].components = await getFundComponents(master, fundList[i].address);
       fundList[i].isShutDown = await isShutDown(master, fundList[i].address);
       fundList[i].routes = await getRoutes(master, fundList[i].address);
       // fundList[i].holdings = await getFundHoldings(
@@ -248,13 +253,13 @@ describe('playground', () => {
       return { address: x };
     });
 
-    for (let i in investorList) {
-      // investorList[i].balance = investorList[i].address;
-      investorList[i].balance = await components[i].shares.methods
-        .balanceOf(investorList[i].address)
-        .call();
-    }
-    console.log(investorList);
+    // for (let i in investorList) {
+    //   // investorList[i].balance = investorList[i].address;
+    //   investorList[i].balance = await fundList[i].components.shares.methods
+    //     .balanceOf(investorList[i].address)
+    //     .call();
+    // }
+    // console.log(investorList);
 
     //  random stuff so that everything before runs and logs correctly
     let fundList2 = await getFundDetails(

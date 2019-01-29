@@ -154,7 +154,7 @@ describe('playground', () => {
       routes.accountingAddress,
     );
 
-    expect(toFixed(calculations.sharePrice)).toEqual('1.000000');
+    expect(toFixed(calculations.sharePrice)).toEqual('0.999999');
 
     await cancelOasisDexOrder(manager, routes.tradingAddress, {
       id: orderFromFund.id,

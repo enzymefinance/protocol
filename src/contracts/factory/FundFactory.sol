@@ -57,8 +57,16 @@ contract FundFactory is AmguConsumer, Factory {
 
     modifier componentNotSet(address _component) {
         require(
-            !componentSet(_component),
+            !componentExists(_component),
             "This step has already been run"
+        );
+        _;
+    }
+
+    modifier componentSet(address _component) {
+        require(
+            componentExists(_component),
+            "Component preprequisites not met"
         );
         _;
     }
@@ -89,7 +97,7 @@ contract FundFactory is AmguConsumer, Factory {
         mlnToken = _mlnToken;
     }
 
-    function componentSet(address _component) internal returns (bool) {
+    function componentExists(address _component) internal returns (bool) {
         return _component != address(0);
     }
 
@@ -105,7 +113,10 @@ contract FundFactory is AmguConsumer, Factory {
         address[] _defaultAssets,
         bool[] _takesCustody,
         address _priceSource
-    ) public componentNotSet(managersToHubs[msg.sender]) {
+    )
+        public
+        componentNotSet(managersToHubs[msg.sender])
+    {
         require(!version.getShutDownStatus(), "Version is shut down");
         require(
             _nativeAsset == Registry(registry).nativeAsset(),
@@ -134,6 +145,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createAccounting()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].accounting)
         amguPayable(false)
         payable
@@ -148,6 +160,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createFeeManager()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].feeManager)
         amguPayable(false)
         payable
@@ -163,6 +176,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createParticipation()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].participation)
         amguPayable(false)
         payable
@@ -176,6 +190,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createPolicyManager()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].policyManager)
         amguPayable(false)
         payable
@@ -187,6 +202,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createShares()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].shares)
         amguPayable(false)
         payable
@@ -198,6 +214,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createTrading()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].trading)
         amguPayable(false)
         payable
@@ -213,6 +230,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     function createVault()
         public
+        componentSet(managersToHubs[msg.sender])
         componentNotSet(managersToRoutes[msg.sender].vault)
         amguPayable(false)
         payable
@@ -227,14 +245,14 @@ contract FundFactory is AmguConsumer, Factory {
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");
         require(
-            componentSet(hub) &&
-            componentSet(routes.accounting) &&
-            componentSet(routes.feeManager) &&
-            componentSet(routes.participation) &&
-            componentSet(routes.policyManager) &&
-            componentSet(routes.shares) &&
-            componentSet(routes.trading) &&
-            componentSet(routes.vault),
+            componentExists(hub) &&
+            componentExists(routes.accounting) &&
+            componentExists(routes.feeManager) &&
+            componentExists(routes.participation) &&
+            componentExists(routes.policyManager) &&
+            componentExists(routes.shares) &&
+            componentExists(routes.trading) &&
+            componentExists(routes.vault),
             "Components must be set before completing setup"
         );
         childExists[address(hub)] = true;

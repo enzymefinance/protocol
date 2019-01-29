@@ -26,7 +26,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
 
     mapping (address => Request) public requests;
     mapping (address => bool) public investAllowed;
-    mapping (address => uint) public lockedAssetsForInvestor;
     mapping (address => bool) public hasInvested; // for information purposes only (read)
 
     address[] public historicalInvestors; // for information purposes only (read)
@@ -69,16 +68,15 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     /// @notice Whether request is OK and invest delay is being respected
-    /// @dev For the very first investment, we ignore delay
+    /// @dev Request valid if price update happened since request and not expired
+    /// @dev If no shares exist and not expired, request can be executed immediately
     function hasValidRequest(address _who) public view returns (bool) {
         PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
-        bool delayRespected= Shares(routes.shares).totalSupply() == 0 ||
-            block.timestamp >= priceSource.getLastUpdate() &&
-            block.timestamp >= add(requests[_who].timestamp, INVEST_DELAY) &&
-            block.timestamp <= add(requests[_who].timestamp, mul(2, INVEST_DELAY));
+        bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.getLastUpdate() ||
+            Shares(routes.shares).totalSupply() == 0;
 
         return hasRequest(_who) &&
-            delayRespected &&
+            delayRespectedOrNoShares &&
             !hasExpiredRequest(_who) &&
             requests[_who].investmentAmount > 0 &&
             requests[_who].requestedShares > 0;
@@ -123,10 +121,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             requestedShares: requestedShares,
             timestamp: block.timestamp
         });
-        lockedAssetsForInvestor[msg.sender] = add(
-            lockedAssetsForInvestor[msg.sender],
-            investmentAmount
-        );
         PolicyManager(routes.policyManager).postValidate(
             bytes4(sha3("requestInvestment(address)")),
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
@@ -143,6 +137,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
     }
 
     /// @notice Can only cancel when no price, request expired or fund shut down
+    /// @dev Only request owner can cancel their request
     function cancelRequest() external payable amguPayable(false) {
         require(hasRequest(msg.sender), "No request to cancel");
         PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
@@ -152,10 +147,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             hasExpiredRequest(msg.sender) ||
             hub.isShutDown(),
             "No cancellation condition was met"
-        );
-        lockedAssetsForInvestor[msg.sender] = sub(
-            lockedAssetsForInvestor[msg.sender],
-            request.investmentAmount
         );
         ERC20 investmentAsset = ERC20(request.investmentAsset);
         uint investmentAmount = request.investmentAmount;
@@ -220,7 +211,6 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             );
         }
 
-        lockedAssetsForInvestor[requestOwner] = 0;
         msg.sender.transfer(Registry(routes.registry).incentive());
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
