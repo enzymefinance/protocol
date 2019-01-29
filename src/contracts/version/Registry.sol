@@ -18,7 +18,7 @@ contract Registry is DSAuth {
         bytes4[] sigs
     );
 
-    event ExchangeUpsert (
+    event ExchangeAdapterUpsert (
         address indexed exchange,
         address indexed adapter,
         bool takesCustody,
@@ -26,9 +26,9 @@ contract Registry is DSAuth {
     );
 
     event AssetRemoval (address indexed asset);
-    event ExchangeRemoval (address indexed exchange);
+    event ExchangeAdapterRemoval (address indexed exchange);
     event VersionRegistration(address indexed version);
-    event IncentiveChange(uint indexed incentiveAmount);
+    event IncentiveChange(uint incentiveAmount);
     event PriceSourceChange(address indexed priceSource);
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
@@ -49,7 +49,7 @@ contract Registry is DSAuth {
 
     struct Exchange {
         bool exists;
-        address adapter;
+        address exchangeAddress;
         bool takesCustody;
         bytes4[] sigs;
     }
@@ -63,8 +63,9 @@ contract Registry is DSAuth {
     mapping (address => Asset) public assetInformation;
     address[] public registeredAssets;
 
+    // Mapping from adapter address to exchange Information (Adapters are unique)
     mapping (address => Exchange) public exchangeInformation;
-    address[] public registeredExchanges;
+    address[] public registeredExchangeAdapters;
 
     mapping (address => Version) public versionInformation;
     address[] public registeredVersions;
@@ -84,6 +85,10 @@ contract Registry is DSAuth {
     uint public incentive = 10 finney;
 
     // METHODS
+
+    constructor(address _postDeployOwner) {
+        setOwner(_postDeployOwner);
+    }
 
     // PUBLIC METHODS
 
@@ -120,7 +125,7 @@ contract Registry is DSAuth {
     }
 
     function registerFund(address _fund, address _owner, string _name)
-        public
+        external
     {
         require(
             versionInformation[msg.sender].exists,
@@ -149,7 +154,7 @@ contract Registry is DSAuth {
         uint _reserveMin,
         uint[] _standards,
         bytes4[] _sigs
-    ) public auth {
+    ) external auth {
         require(registeredAssets.length < MAX_REGISTERED_ENTITIES);
         require(!assetInformation[_asset].exists);
         assetInformation[_asset].exists = true;
@@ -165,24 +170,25 @@ contract Registry is DSAuth {
         );
     }
 
-    /// @notice Register an exchange information entry
+    /// @notice Register an exchange information entry (A mapping from exchange adapter -> Exchange information)
+    /// @dev Adapters are unique so are used as the mapping key. There may be different adapters for same exchange (0x / Ethfinex)
     /// @dev Pre: Only registrar owner should be able to register
     /// @dev Post: Address _exchange is registered
-    /// @param _exchange Address of the exchange
-    /// @param _adapter Address of exchange adapter for this exchange
+    /// @param _exchange Address of the exchange for the adapter
+    /// @param _adapter Address of exchange adapter
     /// @param _takesCustody Whether this exchange takes custody of tokens before trading
     /// @param _sigs Function signatures for whitelisted exchange functions
-    function registerExchange(
+    function registerExchangeAdapter(
         address _exchange,
         address _adapter,
         bool _takesCustody,
         bytes4[] _sigs
-    ) public auth {
-        require(registeredExchanges.length < MAX_REGISTERED_ENTITIES);
-        require(!exchangeInformation[_exchange].exists);
-        exchangeInformation[_exchange].exists = true;
-        registeredExchanges.push(_exchange);
-        updateExchange(
+    ) external auth {
+        require(!exchangeInformation[_adapter].exists, "Adapter already exists");
+        exchangeInformation[_adapter].exists = true;
+        require(registeredExchangeAdapters.length < MAX_REGISTERED_ENTITIES, "Exchange limit reached");
+        registeredExchangeAdapters.push(_adapter);
+        updateExchangeAdapter(
             _exchange,
             _adapter,
             _takesCustody,
@@ -196,7 +202,7 @@ contract Registry is DSAuth {
     function registerVersion(
         address _version,
         bytes32 _name
-    ) public auth {
+    ) external auth {
         require(!versionInformation[_version].exists, "Version already exists");
         require(!versionNameExists[_name], "Version name already exists");
         versionInformation[_version].exists = true;
@@ -206,32 +212,32 @@ contract Registry is DSAuth {
         emit VersionRegistration(_version);
     }
 
-    function setIncentive(uint _weiAmount) public auth {
+    function setIncentive(uint _weiAmount) external auth {
         incentive = _weiAmount;
         emit IncentiveChange(_weiAmount);
     }
 
-    function setPriceSource(address _priceSource) public auth {
+    function setPriceSource(address _priceSource) external auth {
         priceSource = _priceSource;
         emit PriceSourceChange(_priceSource);
     }
 
-    function setMlnToken(address _mlnToken) public auth {
+    function setMlnToken(address _mlnToken) external auth {
         mlnToken = _mlnToken;
         emit MlnTokenChange(_mlnToken);
     }
 
-    function setNativeAsset(address _nativeAsset) public auth {
+    function setNativeAsset(address _nativeAsset) external auth {
         nativeAsset = _nativeAsset;
         emit NativeAssetChange(_nativeAsset);
     }
 
-    function setEngine(address _engine) public auth {
+    function setEngine(address _engine) external auth {
         engine = _engine;
         emit EngineChange(_engine);
     }
 
-    function setEthfinexWrapperRegistry(address _registry) public auth {
+    function setEthfinexWrapperRegistry(address _registry) external auth {
         ethfinexWrapperRegistry = _registry;
         emit EfxWrapperRegistryChange(_registry);
     }
@@ -273,18 +279,18 @@ contract Registry is DSAuth {
         );
     }
 
-    function updateExchange(
+    function updateExchangeAdapter(
         address _exchange,
         address _adapter,
         bool _takesCustody,
         bytes4[] _sigs
     ) public auth {
-        require(exchangeInformation[_exchange].exists);
-        Exchange exchange = exchangeInformation[_exchange];
-        exchange.adapter = _adapter;
+        require(exchangeInformation[_adapter].exists, "Exchange with adapter doesn't exist");
+        Exchange exchange = exchangeInformation[_adapter];
+        exchange.exchangeAddress = _exchange;
         exchange.takesCustody = _takesCustody;
         exchange.sigs = _sigs;
-        emit ExchangeUpsert(
+        emit ExchangeAdapterUpsert(
             _exchange,
             _adapter,
             _takesCustody,
@@ -298,7 +304,7 @@ contract Registry is DSAuth {
     function removeAsset(
         address _asset,
         uint _assetIndex
-    ) public auth {
+    ) external auth {
         require(assetInformation[_asset].exists);
         require(registeredAssets[_assetIndex] == _asset);
         delete assetInformation[_asset];
@@ -312,46 +318,46 @@ contract Registry is DSAuth {
 
     /// @notice Deletes an existing entry
     /// @dev Owner can delete an existing entry
-    /// @param _exchange address for which specific information is requested
-    /// @param _exchangeIndex index of the exchange in array
-    function removeExchange(
-        address _exchange,
-        uint _exchangeIndex
-    ) public auth {
-        require(exchangeInformation[_exchange].exists);
-        require(registeredExchanges[_exchangeIndex] == _exchange);
-        delete exchangeInformation[_exchange];
-        delete registeredExchanges[_exchangeIndex];
-        for (uint i = _exchangeIndex; i < registeredExchanges.length-1; i++) {
-            registeredExchanges[i] = registeredExchanges[i+1];
+    /// @param _adapter address of the adapter of the exchange that is to be removed
+    /// @param _adapterIndex index of the exchange in array
+    function removeExchangeAdapter(
+        address _adapter,
+        uint _adapterIndex
+    ) external auth {
+        require(exchangeInformation[_adapter].exists, "Exchange with adapter doesn't exist");
+        require(registeredExchangeAdapters[_adapterIndex] == _adapter, "Incorrect adapter index");
+        delete exchangeInformation[_adapter];
+        delete registeredExchangeAdapters[_adapterIndex];
+        for (uint i = _adapterIndex; i < registeredExchangeAdapters.length-1; i++) {
+            registeredExchangeAdapters[i] = registeredExchangeAdapters[i+1];
         }
-        registeredExchanges.length--;
-        emit ExchangeRemoval(_exchange);
+        registeredExchangeAdapters.length--;
+        emit ExchangeAdapterRemoval(_adapter);
     }
 
     // PUBLIC VIEW METHODS
 
     // get asset specific information
-    function getName(address _asset) public view returns (string) {
+    function getName(address _asset) external view returns (string) {
         return assetInformation[_asset].name;
     }
-    function getSymbol(address _asset) public view returns (string) {
+    function getSymbol(address _asset) external view returns (string) {
         return assetInformation[_asset].symbol;
     }
-    function getDecimals(address _asset) public view returns (uint) {
+    function getDecimals(address _asset) external view returns (uint) {
         return assetInformation[_asset].decimals;
     }
-    function getReserveMin(address _asset) public view returns (uint) {
+    function getReserveMin(address _asset) external view returns (uint) {
         return assetInformation[_asset].reserveMin;
     }
-    function assetIsRegistered(address _asset) public view returns (bool) {
+    function assetIsRegistered(address _asset) external view returns (bool) {
         return assetInformation[_asset].exists;
     }
-    function getRegisteredAssets() public view returns (address[]) {
+    function getRegisteredAssets() external view returns (address[]) {
         return registeredAssets;
     }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
-        public
+        external
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
@@ -364,41 +370,41 @@ contract Registry is DSAuth {
     }
 
     // get exchange-specific information
-    function exchangeIsRegistered(address _exchange) public view returns (bool) {
-        return exchangeInformation[_exchange].exists;
+    function exchangeAdapterIsRegistered(address _adapter) external view returns (bool) {
+        return exchangeInformation[_adapter].exists;
     }
-    function getRegisteredExchanges() public view returns (address[]) {
-        return registeredExchanges;
+    function getRegisteredExchangeAdapters() external view returns (address[]) {
+        return registeredExchangeAdapters;
     }
-    function getExchangeInformation(address _exchange)
+    function getExchangeInformation(address _adapter)
         public
         view
         returns (address, bool)
     {
-        Exchange exchange = exchangeInformation[_exchange];
+        Exchange exchange = exchangeInformation[_adapter];
         return (
-            exchange.adapter,
+            exchange.exchangeAddress,
             exchange.takesCustody
         );
     }
-    function adapterForExchange(address _exchange) public view returns (address) {
-        Exchange exchange = exchangeInformation[_exchange];
-        return exchange.adapter;
+    function exchangeForAdapter(address _adapter) external view returns (address) {
+        Exchange exchange = exchangeInformation[_adapter];
+        return exchange.exchangeAddress;
     }
-    function getExchangeFunctionSignatures(address _exchange)
+    function getAdapterFunctionSignatures(address _adapter)
         public
         view
         returns (bytes4[])
     {
-        return exchangeInformation[_exchange].sigs;
+        return exchangeInformation[_adapter].sigs;
     }
-    function exchangeMethodIsAllowed(
-        address _exchange, bytes4 _sig
+    function adapterMethodIsAllowed(
+        address _adapter, bytes4 _sig
     )
-        public
+        external
         returns (bool)
     {
-        bytes4[] memory signatures = exchangeInformation[_exchange].sigs;
+        bytes4[] memory signatures = exchangeInformation[_adapter].sigs;
         for (uint i = 0; i < signatures.length; i++) {
             if (signatures[i] == _sig) {
                 return true;
@@ -408,11 +414,11 @@ contract Registry is DSAuth {
     }
 
     // get version and fund information
-    function getRegisteredVersions() public view returns (address[]) {
+    function getRegisteredVersions() external view returns (address[]) {
         return registeredVersions;
     }
 
-    function isFund(address _who) public view returns (bool) {
+    function isFund(address _who) external view returns (bool) {
         if (fundsToVersions[_who] != address(0)) {
             return true; // directly from a hub
         } else {
@@ -425,7 +431,7 @@ contract Registry is DSAuth {
         }
     }
 
-    function isFundFactory(address _who) public view returns (bool) {
+    function isFundFactory(address _who) external view returns (bool) {
         return versionInformation[_who].exists;
     }
 }

@@ -40,7 +40,7 @@ interface ParticipationInterface {
     function hasRequest(address) view returns (bool);
     function cancelRequest() external payable;
     function executeRequestFor(address requestOwner) external payable;
-    function redeem() public;
+    function redeem() external;
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public;
 }
 

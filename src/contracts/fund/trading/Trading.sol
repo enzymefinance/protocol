@@ -42,7 +42,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
 
     Exchange[] public exchanges;
     Order[] public orders;
-    mapping (address => bool) public exchangeIsAdded;
+    mapping (address => bool) public adapterIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
@@ -77,19 +77,19 @@ contract Trading is DSMath, Spoke, TradingInterface {
         address _adapter,
         bool _takesCustody
     ) internal {
-        require(!exchangeIsAdded[_exchange], "Exchange already added");
+        require(!adapterIsAdded[_adapter], "Adapter already added");
         Registry registry = Registry(routes.registry);
         require(
-            registry.exchangeIsRegistered(_exchange),
-            "Exchange is not registered"
+            registry.exchangeAdapterIsRegistered(_adapter),
+            "Adapter is not registered"
         );
-        address registeredAdapter;
-        registeredAdapter = registry.adapterForExchange(_exchange);
+        address registeredExchange;
+        registeredExchange = registry.exchangeForAdapter(_adapter);
         require(
-            registeredAdapter == _adapter,
+            registeredExchange == _exchange,
             "Exchange and adapter do not match"
         );
-        exchangeIsAdded[_exchange] = true;
+        adapterIsAdded[_adapter] = true;
         exchanges.push(Exchange(_exchange, _adapter, _takesCustody));
     }
 
@@ -127,18 +127,19 @@ contract Trading is DSMath, Spoke, TradingInterface {
         public
         onlyInitialized
     {
+        bytes4 methodSelector = bytes4(keccak256(methodSignature));
         require(
-            Registry(routes.registry).exchangeMethodIsAllowed(
-                exchanges[exchangeIndex].exchange,
-                bytes4(keccak256(methodSignature))
+            Registry(routes.registry).adapterMethodIsAllowed(
+                exchanges[exchangeIndex].adapter,
+                methodSelector
             )
         );
-        PolicyManager(routes.policyManager).preValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        if (bytes4(keccak256(methodSignature)) == bytes4(hex'e51be6e8')) { // take
+        PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        if (methodSelector == bytes4(hex'e51be6e8')) { // take
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[2]), 'Maker asset not registered'
             );
-        } else if (bytes4(keccak256(methodSignature)) == bytes4(hex'79705be7')) { // make
+        } else if (methodSelector == bytes4(hex'79705be7')) { // make
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[3]), 'Taker asset not registered'
             );
@@ -158,7 +159,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             ),
             "Delegated call to exchange failed"
         );
-        PolicyManager(routes.policyManager).postValidate(bytes4(keccak256(methodSignature)), [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        PolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         emit ExchangeMethodCall(
             exchanges[exchangeIndex].exchange,
             methodSignature,

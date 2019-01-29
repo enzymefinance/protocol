@@ -29,7 +29,7 @@ describe('trading', () => {
     shared.user = shared.env.wallet.address;
     for (let i = 0; i < mockExchanges.length; i = i + 1) {
       await shared.registry.methods
-        .registerAdapterForExchange(mockExchanges[i], mockExchangeAdapters[i])
+        .registerExchangeAdapter(mockExchanges[i], mockExchangeAdapters[i])
         .send({ from: shared.user });
     }
 
@@ -72,7 +72,7 @@ describe('trading', () => {
       expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
       expect(exchangeObject.takesCustody).toBe(takesCustodyMasks[i]);
       const exchangeAdded = await shared.trading.methods
-        .exchangeIsAdded(mockExchanges[i])
+        .adapterIsAdded(exchangeObject.adapter)
         .call();
       expect(exchangeAdded).toBe(true);
     }

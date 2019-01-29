@@ -10,7 +10,7 @@ const getExchangeIndex = async (
   { exchange }: { exchange: Exchanges },
 ) => {
   const exchangeAddress: Address =
-    environment.deployment.exchangeConfigs[exchange].exchange;
+    environment.deployment.exchangeConfigs[exchange].adapter;
 
   const tradingContract = getContract(
     environment,
@@ -18,7 +18,7 @@ const getExchangeIndex = async (
     tradingAddress,
   );
   const exchanges = await tradingContract.methods.getExchangeInfo().call();
-  const index = exchanges[0].findIndex(
+  const index = exchanges[1].findIndex(
     e => e.toLowerCase() === exchangeAddress.toLowerCase(),
   );
   ensure(

@@ -83,8 +83,8 @@ const postProcess = async (environment, result, prepared) => {
     const registeredAssets = await registryContract.methods
       .getRegisteredAssets()
       .call();
-    const registeredExchanges = await registryContract.methods
-      .getRegisteredExchanges()
+    const registeredExchangeAdapters = await registryContract.methods
+      .getRegisteredExchangeAdapters()
       .call();
     const registeredVersions = await registryContract.methods
       .getRegisteredVersions()
@@ -106,14 +106,14 @@ const postProcess = async (environment, result, prepared) => {
       };
     }
 
-    for (const exchange of registeredExchanges) {
+    for (const adapter of registeredExchangeAdapters) {
       const exchangeInfo = await registryContract.methods
-        .exchangeInformation(exchange)
+        .exchangeInformation(adapter)
         .call();
 
-      registryInformation.registeredExchanges[exchange.toLowerCase()] = {
+      registryInformation.registeredExchanges[adapter.toLowerCase()] = {
         adapter: new Address(exchangeInfo.adapter),
-        address: new Address(exchange),
+        address: new Address(exchangeInfo.exchangeAddress),
         sigs: exchangeInfo.sigs,
         takesCustody: exchangeInfo.takesCustody,
       };

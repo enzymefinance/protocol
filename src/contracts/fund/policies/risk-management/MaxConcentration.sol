@@ -24,12 +24,11 @@ contract MaxConcentration is TradingSignatures, DSMath, Policy {
         view
         returns (bool)
     {
-        address pricefeed = Hub(Trading(msg.sender).hub()).priceSource();
-        address quoteAsset = PriceSourceInterface(pricefeed).getQuoteAsset();
+        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
+        address denominationAsset = accounting.DENOMINATION_ASSET();
         // Max concentration is only checked for non-quote assets
         address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
-        if (quoteAsset == incomingToken) { return true; }
-        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
+        if (denominationAsset == incomingToken) { return true; }
         uint concentration = mul(
             accounting.calcAssetGAV(incomingToken),
             ONE_HUNDRED_PERCENT

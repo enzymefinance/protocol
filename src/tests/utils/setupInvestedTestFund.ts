@@ -17,6 +17,7 @@ import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { executeRequest } from '~/contracts/fund/participation/transactions/executeRequest';
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 const DAY_IN_SECONDS = 60 * 60 * 24;
 
@@ -53,7 +54,6 @@ const setupInvestedTestFund = async (environment: Environment) => {
     fees,
     fundName,
     nativeToken: weth,
-    priceSource: melonContracts.priceSource,
     quoteToken: weth,
   });
   await createAccounting(environment, melonContracts.version);
@@ -65,6 +65,7 @@ const setupInvestedTestFund = async (environment: Environment) => {
   await createVault(environment, melonContracts.version);
   const hubAddress = await completeSetup(environment, melonContracts.version);
   const routes = await getRoutes(environment, hubAddress);
+  const fundToken = await getToken(environment, routes.sharesAddress);
 
   expect(R.keys(routes)).toEqual(
     expect.arrayContaining([
@@ -90,6 +91,7 @@ const setupInvestedTestFund = async (environment: Environment) => {
 
   await requestInvestment(environment, routes.participationAddress, {
     investmentAmount,
+    requestedShares: createQuantity(fundToken, 1),
   });
 
   await executeRequest(environment, routes.participationAddress);

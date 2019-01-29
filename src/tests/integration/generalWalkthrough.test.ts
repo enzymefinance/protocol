@@ -43,12 +43,19 @@ import {
 } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { calcGav } from '~/contracts/fund/accounting/calls/calcGav';
+import { getToken } from '~/contracts/dependencies/token/calls/getToken';
+import { getOpenOrders } from '~/contracts/fund/trading/calls/getOpenOrders';
+import { allLogsWritten } from '../utils/testLogger';
 
 describe('generalWalkthrough', () => {
   const shared: {
     env?: Environment;
     [p: string]: any;
   } = {};
+
+  afterAll(async () => {
+    await allLogsWritten();
+  });
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
@@ -120,7 +127,6 @@ describe('generalWalkthrough', () => {
         fees,
         fundName,
         nativeToken: ethToken,
-        priceSource,
         quoteToken: ethToken,
       },
       { gas: '8000000' },
@@ -155,10 +161,12 @@ describe('generalWalkthrough', () => {
     debug('GAV empty', await calcGav(shared.env, routes.accountingAddress));
 
     const investmentAmount = createQuantity(ethToken, 1);
+    const fundToken = await getToken(shared.env, routes.sharesAddress);
 
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
         investmentAmount,
+        requestedShares: createQuantity(fundToken, 1),
       }),
     ).rejects.toThrow(`Insufficient allowance`);
 
@@ -169,6 +177,7 @@ describe('generalWalkthrough', () => {
 
     await requestInvestment(shared.env, routes.participationAddress, {
       investmentAmount,
+      requestedShares: createQuantity(fundToken, 1),
     });
 
     await executeRequest(shared.env, routes.participationAddress);
@@ -233,6 +242,12 @@ describe('generalWalkthrough', () => {
     );
     debug(`Made order from fund with id ${orderFromFund.id}`);
 
+    const openOrders = await getOpenOrders(shared.env, routes.tradingAddress);
+
+    debug({ openOrders });
+
+    expect(openOrders).toHaveLength(1);
+
     const fundOrder = await getFundOpenOrder(
       shared.env,
       routes.tradingAddress,
@@ -278,6 +293,7 @@ describe('generalWalkthrough', () => {
     await expect(
       requestInvestment(shared.env, routes.participationAddress, {
         investmentAmount: createQuantity(ethToken, 1),
+        requestedShares: createQuantity(fundToken, 1),
       }),
     ).rejects.toThrow(`Fund with hub address: ${hubAddress} is shut down`);
   });

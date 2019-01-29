@@ -14,7 +14,7 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
     uint constant DIVISOR = 10 ** 18;
 
     // _tolerance: 10 equals to 10% of tolerance
-    function PriceTolerance(uint _tolerancePercent) public {
+    constructor(uint _tolerancePercent) {
         require(
             _tolerancePercent >= 0 && _tolerancePercent <= 100,
             "Tolerance range is 0% - 100%"

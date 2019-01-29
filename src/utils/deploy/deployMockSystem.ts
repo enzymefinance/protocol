@@ -79,7 +79,7 @@ export const deployMockSystem = async (
     .setNativeAsset(`${wethTokenAddress}`)
     .send({ from: accounts[0] });
   await registry.methods
-    .registerAdapterForExchange(
+    .registerExchangeAdapter(
       matchingMarketAddress.toString(),
       matchingMarketAdapter.options.address.toString(),
     )
@@ -139,6 +139,7 @@ export const deployMockSystem = async (
   // TODO: replace with raw function when MockEngine is available
   const engine = await deployAndGetContract(env, engineContract, [
     30 * 24 * 60 * 60, // month
+    env.wallet.address.toString(),
   ]);
   await registry.methods
     .setEngine(engine.options.address.toString())

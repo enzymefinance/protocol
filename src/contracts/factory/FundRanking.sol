@@ -6,7 +6,7 @@ import "Accounting.sol";
 
 contract FundRanking {
     function getFundDetails(address _factory)
-        public
+        external
         view
         returns(address[], uint[], uint[], string[], address[])
     {
