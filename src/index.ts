@@ -131,3 +131,4 @@ export {
 } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 export { stringifyStruct } from '~/utils/solidity/stringifyStruct';
 export { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
+export { make0xOrder } from '~/contracts/fund/trading/transactions/make0xOrder';
