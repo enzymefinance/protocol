@@ -23,7 +23,7 @@ import { getTotalMlnBurned } from '~/contracts/engine/calls/getTotalMlnBurned';
 import { getPremiumPercent } from '~/contracts/engine/calls/getPremiumPercent';
 // import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 // import { getInfo } from '~/contracts/dependencies/token/calls/getInfo';
-import { getFundComponents } from '~/utils/getFundComponents';
+// import { getFundComponents } from '~/utils/getFundComponents';
 import { getInfo } from '~/contracts/dependencies/token/calls/getInfo';
 
 expect.extend({ toBeTrueWith });
@@ -121,7 +121,7 @@ describe('playground', () => {
     };
 
     let investorList = [];
-    let components = [];
+    // let components = [];
 
     // loop through funds to get interesting quantities
     for (let i in fundList) {
