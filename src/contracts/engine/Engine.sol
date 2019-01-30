@@ -11,6 +11,7 @@ contract Engine is DSMath, DSAuth {
 
     event RegistryChange(address registry);
     event SetAmguPrice(uint amguPrice);
+    event AmguPaid(uint amount);
     event Thaw(uint amount);
     event Burn(uint amount);
 
@@ -79,6 +80,7 @@ contract Engine is DSMath, DSAuth {
         totalEtherConsumed = add(totalEtherConsumed, msg.value);
         totalAmguConsumed = add(totalAmguConsumed, amguConsumed);
         frozenEther = add(frozenEther, msg.value);
+        emit AmguPaid(amguConsumed);
     }
 
     /// @notice Move frozen ether to liquid pool after delay
