@@ -39,6 +39,7 @@ const postProcess: PostProcessCallFunction = async (
   );
 
   const order = {
+    exchangeAddress: prepared.contractAddress,
     fillTakerQuantity: createQuantity(
       openOrder.takerQuantity.token,
       openOrder.fillTakerQuantity,

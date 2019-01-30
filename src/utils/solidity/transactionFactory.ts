@@ -279,7 +279,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
 
       return melonTransaction;
     } catch (e) {
-      log.error(txId, e);
+      log.error(txId, e, args);
 
       if (e instanceof EnsureError) {
         throw e;

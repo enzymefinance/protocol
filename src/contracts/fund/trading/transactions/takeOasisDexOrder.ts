@@ -2,6 +2,7 @@ import {
   QuantityInterface,
   Address,
   createQuantity,
+  ensureSameToken,
 } from '@melonproject/token-math';
 import * as web3Utils from 'web3-utils';
 
@@ -36,10 +37,9 @@ const guard = async (
   const hubAddress = await getHub(environment, contractAddress);
   const { vaultAddress } = await getRoutes(environment, hubAddress);
 
-  const minBalance = fillTakerQuantity;
-
-  await ensureSufficientBalance(environment, minBalance, vaultAddress);
+  await ensureSufficientBalance(environment, fillTakerQuantity, vaultAddress);
   await ensureFundOwner(environment, contractAddress);
+  await ensureSameToken(fillTakerQuantity.token, takerQuantity.token);
 
   // TODO: add all preflights
 
