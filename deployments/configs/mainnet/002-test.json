@@ -5,6 +5,11 @@
     "version": "0.9.21",
     "description": "Test mainnet deployment"
   },
+  "control": {
+    "engineOwner": "",
+    "registryOwner": "",
+    "versionOwner": ""
+  },
   "melonContracts": {
     "priceSource": "0xf825Bc8A15B0544A3CFcB01A0e7248Db6e784aB2",
     "adapters": {

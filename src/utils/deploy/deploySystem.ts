@@ -86,6 +86,12 @@ export interface MelonContracts {
   factories: Factories;
 }
 
+export interface ContractControl {
+  engineOwner: Address;
+  registryOwner: Address;
+  versionOwner: Address;
+}
+
 export type MelonContractsDraft = Partial<MelonContracts>;
 
 export const deployAllContractsConfig = JSON.parse(`{
@@ -118,6 +124,12 @@ export const deployAllContractsConfig = JSON.parse(`{
   "registry": "DEPLOY",
   "version": "DEPLOY",
   "ranking": "DEPLOY"
+}`);
+
+export const defaultControlConfig = JSON.parse(`{
+  "engineOwner": "",
+  "registryOwner": "",
+  "versionOwner": ""
 }`);
 
 const getLog = getLogCurried('melon:protocol:utils:deploySystem');
@@ -170,6 +182,7 @@ export const deploySystem = async (
   environmentWithoutDeployment: Environment,
   thirdPartyContracts: ThirdPartyContracts,
   adoptedContracts: MelonContractsDraft,
+  control: ContractControl,
   description?: string,
 ): Promise<WithDeployment> => {
   // Set thirdPartyContracts already to have them available in subsequent calls
@@ -242,11 +255,14 @@ export const deploySystem = async (
     maybeDeploy(['engine'], environment =>
       deployEngine(environment, {
         delay: monthInSeconds,
-        postDeployOwner: environment.wallet.address,
+        postDeployOwner: control.engineOwner || environment.wallet.address,
       }),
     ),
     maybeDeploy(['registry'], environment =>
-      deployRegistry(environment, environment.wallet.address),
+      deployRegistry(
+        environment,
+        control.registryOwner || environment.wallet.address,
+      ),
     ),
     maybeDeploy(['priceSource'], environment =>
       environment.track === Tracks.KYBER_PRICE
@@ -328,7 +344,7 @@ export const deploySystem = async (
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
         factories: environment.deployment.melonContracts.factories,
-        postDeployOwner: environment.wallet.address,
+        postDeployOwner: control.versionOwner || environment.wallet.address,
         registry: environment.deployment.melonContracts.registry,
       }),
     ),
