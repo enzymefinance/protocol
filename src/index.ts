@@ -132,3 +132,6 @@ export {
 export { stringifyStruct } from '~/utils/solidity/stringifyStruct';
 export { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
 export { make0xOrder } from '~/contracts/fund/trading/transactions/make0xOrder';
+export {
+  cancel0xOrder,
+} from './contracts/fund/trading/transactions//cancel0xOrder';
