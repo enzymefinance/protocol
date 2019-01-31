@@ -11,11 +11,9 @@ import { toBeTrueWith } from '../utils/toBeTrueWith';
 import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
-import { Exchanges, Contracts } from '~/Contracts';
+import { Contracts } from '~/Contracts';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
-import { makeOrderFromAccountOasisDex } from '~/contracts/exchanges/transactions/makeOrderFromAccountOasisDex';
-import { takeOasisDexOrder } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
 import { makeOasisDexOrder } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 import { allLogsWritten } from '../utils/testLogger';
 import { register } from '~/contracts/fund/policies/transactions/register';
@@ -42,9 +40,9 @@ describe('playground', () => {
 
     const { melonContracts } = shared.master.deployment;
 
-    const matchingMarket =
-      shared.master.deployment.exchangeConfigs[Exchanges.MatchingMarket]
-        .exchange;
+    // const matchingMarket =
+    //   shared.master.deployment.exchangeConfigs[Exchanges.MatchingMarket]
+    //     .exchange;
 
     const manager = await withNewAccount(shared.master);
     const trader = await withNewAccount(shared.master);
@@ -91,14 +89,14 @@ describe('playground', () => {
       value: quantity.quantity.toString(),
     });
 
-    const orderFromTrader = await makeOrderFromAccountOasisDex(
-      trader,
-      matchingMarket,
-      {
-        buy: createQuantity(weth, 0.1),
-        sell: createQuantity(mln, 3),
-      },
-    );
+    // const orderFromTrader = await makeOrderFromAccountOasisDex(
+    //   trader,
+    //   matchingMarket,
+    //   {
+    //     buy: createQuantity(weth, 0.1),
+    //     sell: createQuantity(mln, 3),
+    //   },
+    // );
 
     const assetBlacklist = await deploy(
       shared.master,
@@ -197,11 +195,12 @@ describe('playground', () => {
         makerQuantity,
         takerQuantity: wethBalance,
       }),
-    );
+    ).rejects.toThrow();
   });
 
   test('Happy path: Fund 2', async () => {
     const manager = await withNewAccount(shared.master);
+    const mln = getTokenBySymbol(manager, 'MLN');
     const dgx = getTokenBySymbol(manager, 'DGX');
     const weth = getTokenBySymbol(manager, 'WETH');
 
@@ -218,19 +217,19 @@ describe('playground', () => {
 
     const routes = await setupInvestedTestFund(manager);
 
-    const assetBlacklist = await deploy(
+    const assetWhitelist = await deploy(
       shared.master,
-      Contracts.AssetBlacklist,
-      [dgx.address],
+      Contracts.AssetWhitelist,
+      [[mln.address]],
     );
     await register(manager, routes.policyManagerAddress, [
       {
         method: FunctionSignatures.makeOrder,
-        policy: assetBlacklist,
+        policy: assetWhitelist,
       },
       {
         method: FunctionSignatures.takeOrder,
-        policy: assetBlacklist,
+        policy: assetWhitelist,
       },
     ]);
 
