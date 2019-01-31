@@ -1,7 +1,7 @@
+import { createQuantity } from '@melonproject/token-math';
+
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { createQuantity } from '@melonproject/token-math';
-import * as web3Utils from 'web3-utils';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 const getFundOpenOrder = async (environment, tradingAddress, index) => {
@@ -17,7 +17,7 @@ const getFundOpenOrder = async (environment, tradingAddress, index) => {
   return {
     exchangeAddress: order.exchangeAddress,
     fillTakerQuantity: order.fillTakerQuantity,
-    id: web3Utils.toDecimal(order.orderId),
+    id: order.orderId.toString(),
     makerAsset: order.makerAsset,
     makerQuantity: createQuantity(makerToken, order.makerQuantity),
     takerAsset: order.takerAsset,

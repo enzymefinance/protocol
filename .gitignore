@@ -37,3 +37,6 @@ deployments/development-*.json
 
 # Keystore
 .keystore*.json
+
+# API key
+tests/system/.coinapi.json

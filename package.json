@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.9.18",
+  "version": "0.9.22",
   "description": "Technology Regulated and Operated Investment Funds",
   "main": "lib/index.umd.js",
   "module": "lib/index.js",
@@ -41,6 +41,7 @@
     "deploy": "node bin/melon.js deploy",
     "deploy:dev": "yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 -T testing && yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 -T kyberPrice",
     "deploy:kovan": "node bin/melon.js deploy -c ./deployments/configs/kovan.json",
+    "deploy:mainnet": "node bin/melon.js deploy -c ./deployments/configs/mainnet.json",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
     "devchain": "ganache-cli --gasLimit 0x7a1200 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'",
     "format": "prettier --write src/**/*.ts",
