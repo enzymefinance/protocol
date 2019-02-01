@@ -18,6 +18,9 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { ensureSufficientBalance } from '~/contracts/dependencies/token/guards/ensureSufficientBalance';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { isValidSignature } from '~/contracts/exchanges/third-party/0x/calls/isValidSignature';
+import { ensure } from '~/utils/guards/ensure';
+import { ensureNotInOpenMakeOrder } from '../guards/ensureNotInOpenMakeOrder';
 
 // The order needs to be signed by the manager
 export interface Make0xOrderArgs {
@@ -42,6 +45,7 @@ const guard: GuardFunction<Make0xOrderArgs> = async (
   );
 
   await ensureSufficientBalance(environment, makerQuantity, vaultAddress);
+  await ensureNotInOpenMakeOrder(environment, contractAddress, { makerToken });
 };
 
 const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
@@ -72,12 +76,12 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
       emptyAddress,
     ],
     [
-      signedOrder.makerAssetAmount.toFixed(),
-      signedOrder.takerAssetAmount.toFixed(),
-      signedOrder.makerFee.toFixed(),
-      signedOrder.takerFee.toFixed(),
-      signedOrder.expirationTimeSeconds.toFixed(),
-      signedOrder.salt.toFixed(),
+      signedOrder.makerAssetAmount.toString(),
+      signedOrder.takerAssetAmount.toString(),
+      signedOrder.makerFee.toString(),
+      signedOrder.takerFee.toString(),
+      signedOrder.expirationTimeSeconds.toString(),
+      signedOrder.salt.toString(),
       0,
       0,
     ],
@@ -90,7 +94,31 @@ const prepareArgs: PrepareArgsFunction<Make0xOrderArgs> = async (
   return args;
 };
 
-const postProcess: PostProcessFunction<Make0xOrderArgs, boolean> = async () => {
+const postProcess: PostProcessFunction<Make0xOrderArgs, boolean> = async (
+  environment,
+  _,
+  { signedOrder },
+  contractAddress,
+) => {
+  // Check after the transaction if the signature is valid
+  const zeroExAddress =
+    environment.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
+  const validSignature = await isValidSignature(environment, zeroExAddress, {
+    signedOrder,
+  });
+
+  ensure(validSignature, 'Signature invalid');
+
+  // console.log(signedOrder, contractAddress);
+  // TODO: This fails
+  // const validSignatureOffChain = await isValidSignatureOffChain(
+  //   environment,
+  //   R.omit(['signature'], signedOrder),
+  //   signedOrder.signature,
+  //   zeroExAddress.toString(),
+  // );
+
+  // ensure(validSignatureOffChain, 'Off-chain Signature invalid');
   return true;
 };
 

@@ -83,7 +83,11 @@ const createOrder = async (
     expirationTimeSeconds: new BigNumber(
       add(toBI(latestBlock.timestamp), toBI(duration)).toString(),
     ),
-    salt: generatePseudoRandomSalt(),
+    salt: new BigNumber(
+      generatePseudoRandomSalt()
+        .toString()
+        .slice(0, 10),
+    ),
     makerAssetAmount: new BigNumber(`${makerQuantity.quantity}`),
     takerAssetAmount: new BigNumber(`${takerQuantity.quantity}`),
     makerAssetData,
@@ -127,7 +131,7 @@ const isValidSignatureOffChain = async (
     environment.eth.currentProvider,
     orderHashHex,
     signature,
-    (makerAddress || environment.wallet.address).toString(),
+    (makerAddress || environment.wallet.address).toLowerCase(),
   );
 };
 
