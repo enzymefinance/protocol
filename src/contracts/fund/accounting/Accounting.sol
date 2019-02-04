@@ -62,11 +62,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             address ofAsset = ownedAssets[i];
             // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
             uint quantityHeld = assetHoldings(ofAsset);
-
-            if (quantityHeld != 0) {
-                _assets[i] = ofAsset;
-                _quantities[i] = quantityHeld;
-            }
+            _assets[i] = ofAsset;
+            _quantities[i] = quantityHeld;
         }
         return (_quantities, _assets);
     }

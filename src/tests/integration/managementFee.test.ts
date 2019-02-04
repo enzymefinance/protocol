@@ -26,6 +26,7 @@ import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
+import { increaseTime } from '~/utils/evm/increaseTime';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -42,7 +43,6 @@ beforeAll(async () => {
   s.gas = 8000000;
 
   s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
-  s.dgxTokenInterface = await getToken(s.environment, s.dgx.options.address);
   s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
   const exchangeConfigs = {};
 
@@ -67,11 +67,7 @@ beforeAll(async () => {
 
   const envManager = withDifferentAccount(s.environment, s.manager);
   await beginSetup(envManager, s.version.options.address, {
-    defaultTokens: [
-      s.wethTokenInterface,
-      s.mlnTokenInterface,
-      s.dgxTokenInterface,
-    ],
+    defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
     exchangeConfigs,
     fees,
     fundName: 'Test fund',
@@ -96,7 +92,6 @@ test(`fund gets ethToken from investment`, async () => {
     .transfer(s.investor, `${initialTokenAmount}`)
     .send({ from: s.deployer });
   const wantedShares = power(new BigInteger(10), new BigInteger(20));
-  // const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
   await s.weth.methods
     .approve(s.fund.participation.options.address, wantedShares)
@@ -116,7 +111,6 @@ test(`fund gets ethToken from investment`, async () => {
     .executeRequestFor(s.investor)
     .send({ from: s.investor, gas: s.gas });
 
-  // const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
   expect(postTotalSupply).toEqual(add(toBI(preTotalSupply), wantedShares));
 });
@@ -174,6 +168,8 @@ test(`Reward fee rewards management fee in the form of shares`, async () => {
   expect(postManagerShares).toEqual(add(preManagerShares, expectedFeeShares));
   expect(postTotalSupply).toEqual(add(preTotalSupply, expectedFeeShares));
   expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
+  // Find out a way to assert this
+  // Share price is supposed to change due to time difference (keep constant)
   // expect(postFundCalculations.sharePrice).toEqual(
   //   preFundCalculations.sharePrice,
   // );
@@ -220,10 +216,10 @@ test(`Claims fee using triggerRewardAllFees`, async () => {
     multiply(preTotalSupply, expectedPreDilutionFeeShares),
     subtract(preTotalSupply, expectedPreDilutionFeeShares),
   );
-  // const expectedFeeInDenominationAsset = divide(
-  //   multiply(expectedFeeShares, toBI(preFundCalculations.gav)),
-  //   add(preTotalSupply, expectedFeeShares),
-  // );
+  const expectedFeeInDenominationAsset = divide(
+    multiply(expectedFeeShares, toBI(preFundCalculations.gav)),
+    add(preTotalSupply, expectedFeeShares),
+  );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postManagerShares = new BigInteger(
     await s.fund.shares.methods.balanceOf(s.manager).call(),
@@ -234,23 +230,22 @@ test(`Claims fee using triggerRewardAllFees`, async () => {
   const postFundCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
-  // const lastConversionCalculations = await s.fund.accounting.methods
-  //   .atLastAllocation()
-  //   .call();
+  const lastConversionCalculations = await s.fund.accounting.methods
+    .atLastAllocation()
+    .call();
 
   expect(postManagerShares).toEqual(add(preManagerShares, expectedFeeShares));
   expect(postTotalSupply).toEqual(add(preTotalSupply, expectedFeeShares));
   expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
-  // TODO: Uncomment these and fix them
   // expect(postFundCalculations.sharePrice).toEqual(
   //   preFundCalculations.sharePrice,
   // );
-  // expect(new BigInteger(preFundCalculations.feesInDenominationAsset)).toBe(
-  //   expectedFeeInDenominationAsset,
-  // );
-  // expect(new BigInteger(lastConversionCalculations.allocatedFees)).toEqual(
-  //   expectedFeeInDenominationAsset,
-  // );
+  expect(new BigInteger(preFundCalculations.feesInDenominationAsset)).toEqual(
+    expectedFeeInDenominationAsset,
+  );
+  expect(new BigInteger(lastConversionCalculations.allocatedFees)).toEqual(
+    expectedFeeInDenominationAsset,
+  );
   expect(post.fund.weth).toEqual(pre.fund.weth);
   expect(post.manager.weth).toEqual(pre.manager.weth);
 });
@@ -269,9 +264,11 @@ test(`investor redeems his shares`, async () => {
     await s.fund.shares.methods.totalSupply().call(),
   );
 
+  await increaseTime(s.environment, 1000);
   await s.fund.participation.methods
     .redeem()
     .send({ from: s.investor, gas: s.gas });
+
   const payoutTime = new BigInteger(
     await s.managementFee.methods
       .lastPayoutTime(s.fund.feeManager.options.address)
@@ -279,10 +276,7 @@ test(`investor redeems his shares`, async () => {
   );
   const expectedPreDilutionFeeShares = divide(
     multiply(
-      divide(
-        multiply(preTotalSupply, toBI(s.managementFeeRate)),
-        precisionUnits,
-      ),
+      divide(multiply(preTotalSupply, s.managementFeeRate), precisionUnits),
       subtract(payoutTime, fundCreationTime),
     ),
     s.yearInSeconds,
@@ -291,34 +285,27 @@ test(`investor redeems his shares`, async () => {
     multiply(preTotalSupply, expectedPreDilutionFeeShares),
     subtract(preTotalSupply, expectedPreDilutionFeeShares),
   );
-
+  console.log(expectedFeeShares);
+  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postFundGav = new BigInteger(
     await s.fund.accounting.methods.calcGav().call(),
   );
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postTotalSupply = new BigInteger(
     await s.fund.shares.methods.totalSupply().call(),
   );
-  // const expectedFeeShareProportion = divide(
-  //   multiply(expectedFeeShares, precisionUnits),
-  //   add(preTotalSupply, expectedFeeShares),
-  // );
 
   expect(postTotalSupply).toEqual(
     add(subtract(preTotalSupply, toBI(investorShares)), expectedFeeShares),
   );
-  // expect(post.investor.weth).toEqual(
-  //   add(
-  //     pre.investor.weth,
-  //     divide(
-  //       multiply(
-  //         pre.fund.weth,
-  //         subtract(precisionUnits, expectedFeeShareProportion),
-  //       ),
-  //       precisionUnits,
-  //     ),
-  //   ),
-  // );
+  expect(post.investor.weth).toEqual(
+    add(
+      pre.investor.weth,
+      divide(
+        multiply(pre.fund.weth, investorShares),
+        add(preTotalSupply, expectedFeeShares),
+      ),
+    ),
+  );
   expect(post.fund.weth).toEqual(
     subtract(pre.fund.weth, subtract(post.investor.weth, pre.investor.weth)),
   );
