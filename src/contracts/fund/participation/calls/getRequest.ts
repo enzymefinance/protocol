@@ -4,6 +4,7 @@ import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
+import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
 export interface RequestInvestmentResult {
   investmentAmount: QuantityInterface;
@@ -16,7 +17,8 @@ const postProcess = async (
   environment,
   result,
   prepared,
-): Promise<RequestInvestmentResult> => {
+): Promise<RequestInvestmentResult | null> => {
+  if (isEmptyAddress(result.investmentAsset)) return null;
   const investToken = await getToken(environment, result.investmentAsset);
   const hub = await getHub(environment, prepared.contractAddress);
   const routes = await getRoutes(environment, hub);
