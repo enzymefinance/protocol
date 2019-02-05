@@ -364,6 +364,9 @@ program
       };
 
       setInterval(updatePeriodically, options.interval);
+      
+      // Run it once immediately.
+      updatePeriodically();
     } catch (e) {
       console.error(e);
       process.exit(1);
