@@ -59,7 +59,9 @@ const prepareArgs: PrepareArgsFunction<RequestInvestmentArgs> = async (
       isEqual(investmentAmount, priceForShares),
     `Investment asset quantity provided is not enough to purchase ${toFixed(
       requestedShares,
-    )} shares`,
+    )} shares. Share price for ${investmentAmount.token.symbol}: ${toFixed(
+      sharePriceInInvestmentAsset,
+    )}`,
   );
   const requestedSharesArg = requestedShares.quantity.toString();
   const investmentAmountArg = investmentAmount.quantity.toString();
