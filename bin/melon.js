@@ -324,9 +324,11 @@ program
           console.error(err);
         }
       }
-        
-      setInterval(updatePeriodically, options.interval);
 
+      setInterval(updatePeriodically, options.interval);
+      
+      // Run it once immediately.
+      updatePeriodically();
     } catch (e) {
       console.error(e);
       process.exit(1);
