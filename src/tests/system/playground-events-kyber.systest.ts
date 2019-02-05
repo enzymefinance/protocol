@@ -45,15 +45,51 @@ describe('playground', () => {
 
     const { engine } = melonContracts;
 
+    // Engine events
     const engineContract = getContract(master, Contracts.Engine, engine);
 
-    master.eth.getBlock(1).then(b => log.debug(b));
+    // const engineEvents = await engineContract.getPastEvents('allEvents', {
+    //   fromBlock: 0,
+    //   toBlock: 'latest',
+    // });
+    // log.debug('Engine Events', engineEvents);
 
-    const engineEvents = await engineContract.getPastEvents('allEvents', {
+    let amguPaidEvents = await engineContract.getPastEvents('AmguPaid', {
       fromBlock: 0,
       toBlock: 'latest',
     });
-    log.debug('Engine Events', engineEvents);
+
+    amguPaidEvents = await Promise.all(
+      amguPaidEvents.map(async x => {
+        return {
+          event: x.event,
+          returnValues: x.returnValues,
+          timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
+        };
+      }),
+    );
+    log.debug('AmguPaid Events:', amguPaidEvents);
+
+    // Version events
+    const versionContract = getContract(
+      master,
+      Contracts.Version,
+      melonContracts.version,
+    );
+    let versionEvents = await versionContract.getPastEvents('NewFund', {
+      fromBlock: 0,
+      toBlock: 'latest',
+    });
+    versionEvents = await Promise.all(
+      versionEvents.map(async x => {
+        return {
+          event: x.event,
+          returnValues: x.returnValues,
+          timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
+        };
+      }),
+    );
+    log.debug('Version Events: ', versionEvents);
 
     // go through funds
     const fundList = await getFundDetails(
@@ -72,7 +108,7 @@ describe('playground', () => {
       'shares',
       'trading',
       'vault',
-      'version',
+      // 'version',
     ];
 
     // const c = getContract(master, Contracts.FundFactory, melonContracts);
@@ -101,18 +137,21 @@ describe('playground', () => {
           toBlock: 'latest',
         });
 
-        fundList[i][contracts[j] + 'Events'] = e.map(x => {
-          return {
-            event: x.event,
-            // returnValues: x.returnValues,
-            // timeStamp: master.eth.getBlock(x.blockNumber).then((b) => {
-            //   log.debug('Timestamp: ', b.timestamp); // works
-            //   return b.timestamp; // doesn't log...
-            // })
-          };
-        });
+        fundList[i][contracts[j] + 'Events'] = await Promise.all(
+          e.map(async x => {
+            return {
+              event: x.event,
+              returnValues: x.returnValues,
+              time: new Date(
+                (await master.eth.getBlock(x.blockNumber)).timestamp * 1000,
+              ),
+            };
+          }),
+        );
       }
     }
+
+    // await sleep(5000);
 
     log.debug('Fund List: ', fundList);
 
