@@ -76,7 +76,9 @@ const postProcess = async (environment, receipt, _, contractAddress) => {
 
   return {
     redeemedShares,
-    redemptions: redemptions.filter((q: QuantityInterface) => !isZero(q)),
+    redemptions: redemptions.filter(
+      (q: QuantityInterface) => !isZero(q) && q.token.symbol !== 'EMPTY',
+    ),
   };
 };
 
