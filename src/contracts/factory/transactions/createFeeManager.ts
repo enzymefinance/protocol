@@ -7,5 +7,5 @@ export const createFeeManager = transactionFactory(
   undefined,
   undefined,
   undefined,
-  { amguPayable: true },
+  { amguPayable: true, gas: '7500000' },
 );
