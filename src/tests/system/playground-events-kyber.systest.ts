@@ -54,21 +54,21 @@ describe('playground', () => {
     // });
     // log.debug('Engine Events', engineEvents);
 
-    let amguPaidEvents = await engineContract.getPastEvents('AmguPaid', {
-      fromBlock: 0,
-      toBlock: 'latest',
-    });
+    // let amguPaidEvents = await engineContract.getPastEvents('AmguPaid', {
+    //   fromBlock: 0,
+    //   toBlock: 'latest',
+    // });
 
-    amguPaidEvents = await Promise.all(
-      amguPaidEvents.map(async x => {
-        return {
-          event: x.event,
-          returnValues: x.returnValues,
-          timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
-        };
-      }),
-    );
-    log.debug('AmguPaid Events:', amguPaidEvents);
+    // amguPaidEvents = await Promise.all(
+    //   amguPaidEvents.map(async x => {
+    //     return {
+    //       event: x.event,
+    //       returnValues: x.returnValues,
+    //       timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
+    //     };
+    //   }),
+    // );
+    // log.debug('AmguPaid Events:', amguPaidEvents);
 
     // Version events
     const versionContract = getContract(
@@ -76,7 +76,7 @@ describe('playground', () => {
       Contracts.Version,
       melonContracts.version,
     );
-    let versionEvents = await versionContract.getPastEvents('NewFund', {
+    let versionEvents = await versionContract.getPastEvents('allEvents', {
       fromBlock: 0,
       toBlock: 'latest',
     });
@@ -91,6 +91,27 @@ describe('playground', () => {
     );
     log.debug('Version Events: ', versionEvents);
 
+    // Registry events
+    const registryContract = getContract(
+      master,
+      Contracts.Registry,
+      melonContracts.registry,
+    );
+    let registryEvents = await registryContract.getPastEvents('allEvents', {
+      fromBlock: 0,
+      toBlock: 'latest',
+    });
+    registryEvents = await Promise.all(
+      registryEvents.map(async x => {
+        return {
+          event: x.event,
+          returnValues: x.returnValues,
+          timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
+        };
+      }),
+    );
+    log.debug('Registry Events: ', registryEvents);
+
     // go through funds
     const fundList = await getFundDetails(
       master,
@@ -99,15 +120,15 @@ describe('playground', () => {
     );
 
     const contracts = [
-      'accounting',
-      'feeManager',
-      'participation',
-      'policyManager',
+      // 'accounting',
+      // 'feeManager',
+      // 'participation',
+      // 'policyManager',
       // 'priceSource',
-      'registry',
-      'shares',
-      'trading',
-      'vault',
+      // 'registry',
+      // 'shares',
+      // 'trading',
+      // 'vault',
       // 'version',
     ];
 
@@ -142,9 +163,8 @@ describe('playground', () => {
             return {
               event: x.event,
               returnValues: x.returnValues,
-              time: new Date(
-                (await master.eth.getBlock(x.blockNumber)).timestamp * 1000,
-              ),
+              time: new Date(),
+              // (await master.eth.getBlock(x.blockNumber)).timestamp * 1000,
             };
           }),
         );
@@ -153,7 +173,7 @@ describe('playground', () => {
 
     // await sleep(5000);
 
-    log.debug('Fund List: ', fundList);
+    log.debug('Fund List: ', fundList.registryEvents);
 
     for (let i in fundList) {
       fundList[i].calcs = await performCalculations(
