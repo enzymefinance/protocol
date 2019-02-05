@@ -11,6 +11,7 @@ import {
   QuantityInterface,
   toFixed,
   isZero,
+  createToken,
 } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -18,6 +19,7 @@ import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
 export interface RedeemQuantityArgs {
   sharesQuantity: QuantityInterface;
@@ -61,7 +63,9 @@ const postProcess = async (environment, receipt, _, contractAddress) => {
 
   const redemptionsPromises = redemptionAddressQuantityPairs.map(
     async ([tokenAddress, quantity]) => {
-      const token = await getToken(environment, tokenAddress);
+      const token = isEmptyAddress(tokenAddress)
+        ? createToken('EMPTY')
+        : await getToken(environment, tokenAddress);
       return createQuantity(token, quantity);
     },
   );
