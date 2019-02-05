@@ -15,6 +15,8 @@ import { cancelEthfinexOrder } from './cancelEthfinexOrder';
 import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+import { withdrawTokensEthfinex } from './withdrawTokensEthfinex';
+import { increaseTime } from '~/utils/evm/increaseTime';
 
 const shared: any = {};
 
@@ -92,4 +94,15 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
       signedOrder: shared.signedOrder,
     }),
   ).rejects.toThrow('CANCELLED');
+});
+
+test('Withdraw (unwrap) maker asset of cancelled order', async () => {
+  await increaseTime(shared.env, 25 * 60 * 60);
+  const result = await withdrawTokensEthfinex(
+    shared.env,
+    shared.routes.tradingAddress,
+    { tokens: [shared.zx.address] },
+  );
+
+  expect(result).toBe(true);
 });
