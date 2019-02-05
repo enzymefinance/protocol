@@ -87,7 +87,7 @@
     jsonschema "^1.2.0"
     lodash.values "^4.3.0"
 
-"@0x/order-utils@^3.0.2", "@0x/order-utils@^3.0.4":
+"@0x/order-utils@^3.0.4":
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/@0x/order-utils/-/order-utils-3.0.4.tgz#05702536900a0c5f364bf0e01ed635e2539f15ee"
   dependencies:

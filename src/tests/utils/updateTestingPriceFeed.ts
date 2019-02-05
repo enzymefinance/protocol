@@ -11,7 +11,13 @@ async function requestWithRetries(options, maxRetries) {
     try {
       return await rp(options);
     } catch (err) {
-      console.error(`Error during request:\n${err.message}`);
+      console.error(
+        `Error during request:\n${err.message}\n\n${JSON.stringify(
+          options,
+          null,
+          2,
+        )}`,
+      );
       return requestWithRetries(options, maxRetries - 1);
     }
   }

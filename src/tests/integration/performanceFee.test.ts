@@ -151,10 +151,10 @@ test(`artificially inflate share price by inflating weth`, async () => {
     ),
     add(postTotalSupply, toBI(postFundCalculations.feesInShares)),
   );
-  // const sharePriceUsingNav = divide(
-  //   multiply(new BigInteger(postFundCalculations.nav), precisionUnits),
-  //   postTotalSupply,
-  // );
+  const sharePriceUsingNav = divide(
+    multiply(new BigInteger(postFundCalculations.nav), precisionUnits),
+    postTotalSupply,
+  );
   const sharePriceUsingGav = divide(
     multiply(
       subtract(
@@ -173,10 +173,9 @@ test(`artificially inflate share price by inflating weth`, async () => {
   expect(new BigInteger(postFundCalculations.sharePrice)).toEqual(
     sharePriceUsingGav,
   );
-  // TODO: Fix this
-  // expect(toBI(postFundCalculations.sharePrice).toString()).toEqual(
-  //   sharePriceUsingNav.toString(),
-  // );
+  expect(toBI(postFundCalculations.sharePrice).toString()).toEqual(
+    sharePriceUsingNav.toString(),
+  );
 });
 
 test(`performance fee is calculated correctly`, async () => {
@@ -216,52 +215,48 @@ test(`performance fee is calculated correctly`, async () => {
   expect(new BigInteger(fundCalculations.feesInShares)).toEqual(
     expectedFeeShares,
   );
-  // expect(new BigInteger(fundCalculations.feesInDenominationAsset)).toEqual(
-  //   expectedPerformanceFee,
-  // );
+  expect(Number(fundCalculations.feesInDenominationAsset)).toBeCloseTo(
+    Number(expectedPerformanceFee),
+  );
 });
 
-// tslint:disable-next-line:max-line-length
-test.skip(`investor redeems half his shares, performance fee deducted`, async () => {
+test(`investor redeems half his shares, performance fee deducted`, async () => {
   const currentTotalSupply = new BigInteger(
     await s.fund.shares.methods.totalSupply().call(),
   );
-  // const preManagerShares = new BigInteger(
-  //   await s.fund.shares.methods.balanceOf(s.manager).call(),
-  // );
+  const preManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const fundCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
   const redeemingQuantity = divide(s.wantedShares, new BigInteger(2));
-
   await s.fund.participation.methods
     .redeemQuantity(`${redeemingQuantity}`)
     .send({ from: s.investor, gas: s.gas });
+  const postManagerShares = new BigInteger(
+    await s.fund.shares.methods.balanceOf(s.manager).call(),
+  );
 
-  // const postManagerShares = new BigInteger(
-  //   await s.fund.shares.methods.balanceOf(s.manager).call(),
-  // );
   const redeemSharesProportion = divide(
     multiply(redeemingQuantity, precisionUnits),
     currentTotalSupply,
   );
-  // const redeemSharesProportionAccountingInflation = divide(
-  //   multiply(redeemingQuantity, precisionUnits),
-  //   add(currentTotalSupply, toBI(fundCalculations.feesInShares)),
-  // );
-  // const expectedOwedPerformanceFee = divide(
-  //   multiply(
-  //     redeemSharesProportionAccountingInflation,
-  //     toBI(fundCalculations.feesInShares),
-  //   ),
-  //   precisionUnits,
-  // );
-
-  // TODO: Investor why there is a deviation by a factor of 1
-  // expect(subtract(postManagerShares, preManagerShares).toString()).toEqual(
-  //   expectedOwedPerformanceFee.toString(),
-  // );
+  const redeemSharesProportionAccountingInflation = divide(
+    multiply(redeemingQuantity, precisionUnits),
+    add(currentTotalSupply, toBI(fundCalculations.feesInShares)),
+  );
+  const expectedOwedPerformanceFee = divide(
+    multiply(
+      redeemSharesProportionAccountingInflation,
+      toBI(fundCalculations.feesInShares),
+    ),
+    precisionUnits,
+  );
+  expect(subtract(postManagerShares, preManagerShares).toString()).toEqual(
+    expectedOwedPerformanceFee.toString(),
+  );
 
   await s.fund.participation.methods
     .redeem()
