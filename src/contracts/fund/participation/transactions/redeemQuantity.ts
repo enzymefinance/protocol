@@ -12,13 +12,13 @@ import {
   toFixed,
   isZero,
   createToken,
+  isEqual,
 } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
-import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 
 export interface RedeemQuantityArgs {
@@ -27,14 +27,13 @@ export interface RedeemQuantityArgs {
 
 const guard = async (environment, { sharesQuantity }, contractAddress) => {
   const hub = await getHub(environment, contractAddress);
-  await ensureIsNotShutDown(environment, hub);
   const routes = await getRoutes(environment, hub);
   const balance = await balanceOf(environment, routes.sharesAddress, {
     address: environment.wallet.address,
   });
 
   ensure(
-    greaterThan(balance, sharesQuantity),
+    greaterThan(balance, sharesQuantity) || isEqual(balance, sharesQuantity),
     `Address ${environment.wallet.address} doesn't have ${toFixed(
       sharesQuantity,
     )} shares of the fund ${hub}. Only: ${toFixed(balance)}`,
