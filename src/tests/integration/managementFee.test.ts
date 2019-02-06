@@ -240,12 +240,12 @@ test(`Claims fee using triggerRewardAllFees`, async () => {
   // expect(postFundCalculations.sharePrice).toEqual(
   //   preFundCalculations.sharePrice,
   // );
-  expect(new BigInteger(preFundCalculations.feesInDenominationAsset)).toEqual(
-    expectedFeeInDenominationAsset,
-  );
-  expect(new BigInteger(lastConversionCalculations.allocatedFees)).toEqual(
-    expectedFeeInDenominationAsset,
-  );
+  expect(
+    new BigInteger(preFundCalculations.feesInDenominationAsset).toString(),
+  ).toEqual(expectedFeeInDenominationAsset.toString());
+  expect(
+    new BigInteger(lastConversionCalculations.allocatedFees).toString(),
+  ).toEqual(expectedFeeInDenominationAsset.toString());
   expect(post.fund.weth).toEqual(pre.fund.weth);
   expect(post.manager.weth).toEqual(pre.manager.weth);
 });

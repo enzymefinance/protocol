@@ -33,5 +33,5 @@ export const completeSetup = transactionFactory(
   undefined,
   undefined,
   postProcess,
-  { amguPayable: true },
+  { amguPayable: true, gas: '7500000' },
 );
