@@ -48,6 +48,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
 import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
+import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
 
 const pkg = require('~/../package.json');
 
@@ -289,6 +290,9 @@ export const deploySystem = async (
         });
         await setRegistry(environment, melonContracts.engine, {
           address: melonContracts.registry,
+        });
+        await setEthfinexWrapperRegistry(environment, melonContracts.registry, {
+          address: thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX,
         });
       },
     ),
