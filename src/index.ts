@@ -142,3 +142,8 @@ export { getRequest } from './contracts/fund/participation/calls/getRequest';
 export {
   hasValidRequest,
 } from './contracts/fund/participation/calls/hasValidRequest';
+export { getFundToken } from './contracts/fund/hub/calls/getFundToken';
+export {
+  redeemQuantity,
+} from '~/contracts/fund/participation/transactions/redeemQuantity';
+export { getToken } from '~/contracts/dependencies/token/calls/getToken';

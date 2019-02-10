@@ -7,7 +7,7 @@ const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
 const {
-  getPrice,
+  createPrice,
   createQuantity,
   createToken,
 } = require('@melonproject/token-math');
@@ -238,7 +238,22 @@ program
 program
   .command('set-price <symbol> <value>')
   .description('Sets a price on the price feed.')
-  .action(async (symbol, value) => {
+  .option(
+    '-e, --endpoint <endpoint>',
+    'The JSON RPC endpoint url. By default: https://localhost:8545',
+  )
+  .option('-g, --gas <number>', 'Default number of gas units to provide')
+  .option('-p, --gas-price <number>', 'Price (in wei) of each gas unit')
+  .option(
+    '-k, --keystore <pathToKeystore>',
+    'Load the deployer account from a keystore file',
+  )
+  .option(
+    '-P, --private-key <string>',
+    'Load the deployer account from a private key',
+  )
+  .option('-T, --track <string>', 'Specify a track')
+  .action(async (symbol, value, options) => {
     console.log(`Setting the price for ${symbol} to ${value}`);
     const {
       initTestEnvironment,
@@ -247,21 +262,41 @@ program
     const {
       getQuoteToken,
     } = require('../lib/contracts/prices/calls/getQuoteToken');
-    const { getDeployment } = require('../lib/utils/solidity/getDeployment');
+
     try {
-      const environment = await initTestEnvironment();
-      const { priceSource, tokens } = await getDeployment(environment);
-      const quoteToken = await getQuoteToken(priceSource, environment);
+      const environmentWithoutDeployment = await getEnvironment({
+        endpoint:
+          options.endpoint ||
+          process.env.JSON_RPC_ENDPOINT ||
+          'http://localhost:8545',
+        gasLimit: options.gas || '8000000',
+        gasPrice: options.gasPrice || '2000000000',
+        pathToKeystore: options.keystore || undefined,
+        privateKey: options.privateKey || undefined,
+        track: options.track,
+      });
+
+      checkPeerCount(environmentWithoutDeployment);
+
+      const {
+        withDeployment,
+      } = require('../lib/utils/environment/withDeployment');
+      const environment = await withDeployment(environmentWithoutDeployment);
+
+      const { priceSource } = environment.deployment.melonContracts;
+      const { tokens } = environment.deployment.thirdPartyContracts;
+
+      const quoteToken = await getQuoteToken(environment, priceSource);
       const baseToken = tokens.find(token => {
         return token.symbol === symbol.toUpperCase();
       });
 
-      const newPrice = getPrice(
+      const newPrice = createPrice(
         createQuantity(baseToken, 1),
         createQuantity(quoteToken, value),
       );
 
-      await update(priceSource, [newPrice]);
+      await update(environment, priceSource, [newPrice]);
 
       console.log(`Successfully updated the price for ${symbol}.`);
       process.exit();
@@ -273,9 +308,7 @@ program
 
 program
   .command('update-kyber-pricefeed')
-  .description(
-    'Update kyber pricefeed',
-  )
+  .description('Update kyber pricefeed')
   .option(
     '-e, --endpoint <endpoint>',
     'The JSON RPC endpoint url. By default: https://localhost:8545',
@@ -310,7 +343,9 @@ program
 
       checkPeerCount(environmentWithoutDeployment);
 
-      const { withDeployment } = require('../lib/utils/environment/withDeployment');
+      const {
+        withDeployment,
+      } = require('../lib/utils/environment/withDeployment');
       const environment = await withDeployment(environmentWithoutDeployment);
 
       const {
@@ -319,14 +354,19 @@ program
 
       const updatePeriodically = async () => {
         try {
-          await updateKyber(environment, environment.deployment.melonContracts.priceSource);
+          await updateKyber(
+            environment,
+            environment.deployment.melonContracts.priceSource,
+          );
         } catch (err) {
           console.error(err);
         }
-      }
-        
-      setInterval(updatePeriodically, options.interval);
+      };
 
+      setInterval(updatePeriodically, options.interval);
+      
+      // Run it once immediately.
+      updatePeriodically();
     } catch (e) {
       console.error(e);
       process.exit(1);
