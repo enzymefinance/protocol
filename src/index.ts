@@ -138,6 +138,9 @@ export {
 export {
   makeEthfinexOrder,
 } from '~/contracts/fund/trading/transactions/makeEthfinexOrder';
+export {
+  cancelEthfinexOrder,
+} from '~/contracts/fund/trading/transactions/cancelEthfinexOrder';
 export { getRequest } from './contracts/fund/participation/calls/getRequest';
 export {
   hasValidRequest,
