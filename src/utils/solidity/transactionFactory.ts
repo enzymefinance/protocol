@@ -47,6 +47,7 @@ export interface UnsignedRawTransaction {
 
 export interface MelonTransaction<Args> {
   amguInEth: QuantityInterface;
+  incentiveInEth: QuantityInterface;
   params: Args;
   rawTransaction: UnsignedRawTransaction;
   // Already signed transaction in HEX as described here:
@@ -241,6 +242,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       const melonTransaction = {
         amguInEth,
         contract,
+        incentiveInEth,
         name,
         params,
         rawTransaction: {
