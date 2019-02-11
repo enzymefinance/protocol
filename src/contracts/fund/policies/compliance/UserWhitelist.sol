@@ -21,7 +21,7 @@ contract UserWhitelist is Policy, DSAuth {
 
     function removeFromWhitelist(address _who) public auth {
         whitelisted[_who] = false;
-        emit ListAddition(_who);
+        emit ListRemoval(_who);
     }
 
     function batchAddToWhitelist(address[] _members) public auth {
