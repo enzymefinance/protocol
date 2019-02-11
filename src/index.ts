@@ -135,6 +135,12 @@ export { make0xOrder } from '~/contracts/fund/trading/transactions/make0xOrder';
 export {
   cancel0xOrder,
 } from './contracts/fund/trading/transactions/cancel0xOrder';
+export {
+  makeEthfinexOrder,
+} from '~/contracts/fund/trading/transactions/makeEthfinexOrder';
+export {
+  cancelEthfinexOrder,
+} from '~/contracts/fund/trading/transactions/cancelEthfinexOrder';
 export { getRequest } from './contracts/fund/participation/calls/getRequest';
 export {
   hasValidRequest,

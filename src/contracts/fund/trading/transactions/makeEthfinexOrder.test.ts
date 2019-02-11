@@ -5,7 +5,6 @@ import { makeEthfinexOrder } from './makeEthfinexOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { Exchanges } from '~/Contracts';
 import { getWrapperLock } from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
-import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
 import { getHub } from '../../hub/calls/getHub';
 import { getRoutes } from '../../hub/calls/getRoutes';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
@@ -18,7 +17,6 @@ const shared: any = {};
 
 beforeAll(async () => {
   const env = await deployAndInitTestEnv();
-  const registry = env.deployment.melonContracts.registry;
   const wrapperRegistryEFX =
     env.deployment.thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX;
 
@@ -27,10 +25,6 @@ beforeAll(async () => {
   shared.routes = await setupInvestedTestFund(env);
   shared.ethfinexAddress =
     env.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
-
-  await setEthfinexWrapperRegistry(env, registry, {
-    address: wrapperRegistryEFX,
-  });
 
   shared.mln = getTokenBySymbol(env, 'MLN');
   shared.weth = getTokenBySymbol(env, 'WETH');

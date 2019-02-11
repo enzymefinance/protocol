@@ -11,19 +11,21 @@ import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 
 interface CancelEthfinexOrderArgs {
-  signedOrder: SignedOrder;
+  signedOrder?: SignedOrder;
+  orderHashHex?: string;
 }
 
 const prepareArgs: PrepareArgsFunction<CancelEthfinexOrderArgs> = async (
   environment,
-  { signedOrder },
+  { signedOrder, orderHashHex: givenOrderHashHex },
   contractAddress,
 ) => {
   const exchangeIndex = await getExchangeIndex(environment, contractAddress, {
     exchange: Exchanges.Ethfinex,
   });
 
-  const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
+  const orderHashHex =
+    givenOrderHashHex || orderHashUtils.getOrderHashHex(signedOrder);
 
   const args = [
     exchangeIndex,

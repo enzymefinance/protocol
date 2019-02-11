@@ -285,7 +285,6 @@ test(`investor redeems his shares`, async () => {
     multiply(preTotalSupply, expectedPreDilutionFeeShares),
     subtract(preTotalSupply, expectedPreDilutionFeeShares),
   );
-  console.log(expectedFeeShares);
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postFundGav = new BigInteger(
     await s.fund.accounting.methods.calcGav().call(),
