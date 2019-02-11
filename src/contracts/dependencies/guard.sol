@@ -1,6 +1,6 @@
 /// @notice Retrieved from DappHub (https://git.io/fpwMi)
 
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "auth.sol";
 

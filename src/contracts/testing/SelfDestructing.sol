@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 /// @dev Useful for testing force-sending of funds
 contract SelfDestructing {

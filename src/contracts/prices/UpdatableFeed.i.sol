@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 /// @notice Updates values stored internally
 interface UpdatableFeedInterface {

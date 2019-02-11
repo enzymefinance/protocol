@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 /// @dev Exposes "feeAmount", which maps fund state and fee state to uint
 /// @dev Also exposes "updateState", which changes fee's internal state
