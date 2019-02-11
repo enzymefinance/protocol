@@ -5,14 +5,14 @@ import "Trading.i.sol";
 import "Spoke.sol";
 import "Vault.sol";
 import "PolicyManager.sol";
-import "ERC20.i.sol";
 import "Factory.sol";
 import "math.sol";
 import "ExchangeAdapter.sol";
 import "LibOrder.sol";
 import "Registry.sol";
+import "TokenUser.sol";
 
-contract Trading is DSMath, Spoke, TradingInterface {
+contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
 
     struct Exchange {
         address exchange;
@@ -280,7 +280,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
             "Sender is not this contract or manager"
         );
-        ERC20(_token).transfer(Vault(routes.vault), ERC20(_token).balanceOf(this));
+        safeTransfer(_token, routes.vault, ERC20(_token).balanceOf(this));
     }
 
     function getExchangeInfo() public view returns (address[], address[], bool[]) {

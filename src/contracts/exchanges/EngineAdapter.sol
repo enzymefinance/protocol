@@ -8,9 +8,10 @@ import "math.sol";
 import "Weth.sol";
 import "ERC20.i.sol";
 import "ExchangeAdapter.sol";
+import "TokenUser.sol";
 
 /// @notice Trading adapter to Melon Engine
-contract EngineAdapter is DSMath, ExchangeAdapter {
+contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
 
     function () public payable {}
 
@@ -44,7 +45,7 @@ contract EngineAdapter is DSMath, ExchangeAdapter {
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(wethAddress).deposit.value(ethToReceive)();
-        WETH(wethAddress).transfer(address(vault), ethToReceive);
+        safeTransfer(wethAddress, address(vault), ethToReceive);
 
         getAccounting().addAssetToOwnedAssets(wethAddress);
         getAccounting().updateOwnedAssets();

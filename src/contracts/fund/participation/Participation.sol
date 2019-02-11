@@ -10,9 +10,10 @@ import "math.sol";
 import "PriceSource.i.sol";
 import "AmguConsumer.sol";
 import "Participation.i.sol";
+import "TokenUser.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
+contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke {
     struct Request {
         address investmentAsset;
         uint investmentAmount;
@@ -106,9 +107,8 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             msg.value >= Registry(routes.registry).incentive(),
             "Incorrect incentive amount"
         );
-        require(
-            ERC20(investmentAsset).transferFrom(msg.sender, this, investmentAmount),
-            "InvestmentAsset transfer failed"
+        safeTransferFrom(
+            investmentAsset, msg.sender, address(this), investmentAmount
         );
         require(
             requests[msg.sender].timestamp == 0,
@@ -151,10 +151,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
         uint investmentAmount = request.investmentAmount;
         delete requests[msg.sender];
         msg.sender.transfer(Registry(routes.registry).incentive());
-        require(
-            investmentAsset.transfer(msg.sender, investmentAmount),
-            "InvestmentAsset refund failed"
-        );
+        safeTransfer(investmentAsset, msg.sender, investmentAmount);
 
         emit CancelRequest(msg.sender);
     }
@@ -187,12 +184,11 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
-        require(  // send necessary amount of investmentAsset to vault
-            ERC20(request.investmentAsset).transfer(
-                address(routes.vault),
-                totalShareCostInInvestmentAsset
-            ),
-            "Failed to transfer investment asset to vault"
+        // send necessary amount of investmentAsset to vault
+        safeTransfer(
+            request.investmentAsset,
+            routes.vault,
+            totalShareCostInInvestmentAsset
         );
 
         uint investmentAssetChange = sub(
@@ -200,13 +196,12 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
             totalShareCostInInvestmentAsset
         );
 
+        // return investmentAsset change to request owner
         if (investmentAssetChange > 0) {
-            require(  // return investmentAsset change to request owner
-                ERC20(request.investmentAsset).transfer(
-                    requestOwner,
-                    investmentAssetChange
-                ),
-                "Failed to return investmentAsset change"
+            safeTransfer(
+                request.investmentAsset,
+                requestOwner,
+                investmentAssetChange
             );
         }
 
@@ -320,10 +315,7 @@ contract Participation is ParticipationInterface, DSMath, AmguConsumer, Spoke {
                 continue;
             } else {
                 Vault(routes.vault).withdraw(ofAsset, ownershipQuantities[k]);
-                require(
-                    ERC20(ofAsset).transfer(msg.sender, ownershipQuantities[k]),
-                    "Asset transfer failed"
-                );
+                safeTransfer(ofAsset, msg.sender, ownershipQuantities[k]);
             }
         }
         emit Redemption(

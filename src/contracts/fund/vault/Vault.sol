@@ -2,16 +2,16 @@ pragma solidity ^0.4.21;
 
 import "Vault.i.sol";
 import "Spoke.sol";
-import "ERC20.i.sol";
 import "Factory.sol";
+import "TokenUser.sol";
 
 /// @notice Dumb custody component
-contract Vault is VaultInterface, Spoke {
+contract Vault is VaultInterface, TokenUser, Spoke {
 
     constructor(address _hub) Spoke(_hub) {}
 
     function withdraw(address token, uint amount) external auth {
-        ERC20(token).transfer(msg.sender, amount);
+        safeTransfer(token, msg.sender, amount);
     }
 }
 
