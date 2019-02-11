@@ -8,6 +8,9 @@ export { deployThirdParty } from '~/utils/deploy/deployThirdParty';
 export {
   executeRequest,
 } from '~/contracts/fund/participation/transactions/executeRequest';
+export {
+  cancelRequest,
+} from '~/contracts/fund/participation/transactions/cancelRequest';
 export { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
 export {
   getActiveOasisDexOrders,
@@ -26,6 +29,9 @@ export { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
+export {
+  hasExpiredRequest,
+} from '~/contracts/fund/participation/calls/hasExpiredRequest';
 export { isAddress } from '~/utils/checks/isAddress';
 export { isEmptyAddress } from '~/utils/checks/isEmptyAddress';
 export { childExists } from '~/contracts/factory/calls/childExists';
