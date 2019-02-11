@@ -37,9 +37,16 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
-
+        address makerAsset = getAssetAddress(makerAssetData);
+        address takerAsset = getAssetAddress(takerAssetData);
+        require(
+            makerAsset == orderAddresses[2],
+            "Maker asset data does not match order address in array"
+        );
+        require(
+            takerAsset == orderAddresses[3],
+            "Taker asset data does not match order address in array"
+        );
         // Order parameter checks
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
