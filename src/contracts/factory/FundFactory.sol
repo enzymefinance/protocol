@@ -111,10 +111,12 @@ contract FundFactory is AmguConsumer, Factory {
             _nativeAsset == Registry(registry).nativeAsset(),
             "Native asset does not match registry"
         );
-        require(
-            Registry(registry).canUseFundName(msg.sender, _name),
-            "Fund name is already used"
+
+        Registry(registry).reserveFundName(
+            msg.sender,
+            managersToSettings[msg.sender].name
         );
+
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
         managersToSettings[msg.sender] = Settings(
             _name,

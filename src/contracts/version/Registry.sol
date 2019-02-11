@@ -124,6 +124,13 @@ contract Registry is DSAuth {
         );
     }
 
+    function reserveFundName(address _owner, string _name)
+        external
+    {
+        require(canUseFundName(_owner, _name), "Fund name cannot be used");
+        fundNameHashToOwner[keccak256(_name)] = _owner;
+    }
+
     function registerFund(address _fund, address _owner, string _name)
         external
     {
@@ -134,7 +141,6 @@ contract Registry is DSAuth {
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
 
         fundsToVersions[_fund] = msg.sender;
-        fundNameHashToOwner[keccak256(_name)] = _owner;
     }
 
     /// @notice Registers an Asset information entry
