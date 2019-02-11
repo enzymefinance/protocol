@@ -1,6 +1,7 @@
 import {
   deploySystem,
   deployAllContractsConfig,
+  defaultControlConfig,
 } from '../../utils/deploy/deploySystem';
 import { deployThirdParty } from '../../utils/deploy/deployThirdParty';
 import { Contracts } from '~/Contracts';
@@ -13,6 +14,7 @@ export const deployAndGetSystem = async (environment: Environment) => {
     environment,
     thirdParty,
     deployAllContractsConfig,
+    defaultControlConfig,
   );
 
   const addresses = envWithDeployment.deployment;

@@ -188,6 +188,7 @@ program
     const {
       deploySystem,
       deployAllContractsConfig,
+      detfaultControlConfig,
     } = require('../lib/utils/deploy/deploySystem');
 
     try {
@@ -213,6 +214,7 @@ program
         environment,
         thirdPartyContracts,
         (config && config.melonContracts) || deployAllContractsConfig,
+        (config && config.control) || defaultControlConfig,
         R.path(['meta', 'description'], config),
       );
       const chainId = await environment.eth.net.getId();

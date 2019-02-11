@@ -1,5 +1,9 @@
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deploySystem, deployAllContractsConfig } from './deploySystem';
+import {
+  deploySystem,
+  deployAllContractsConfig,
+  defaultControlConfig,
+} from './deploySystem';
 import { deployThirdParty } from './deployThirdParty';
 
 describe('deploySystem', () => {
@@ -10,6 +14,7 @@ describe('deploySystem', () => {
       environment,
       thirdPartyContracts,
       deployAllContractsConfig,
+      defaultControlConfig,
     );
   });
 });
