@@ -358,6 +358,7 @@ contract Registry is DSAuth {
     }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
         external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
@@ -402,6 +403,7 @@ contract Registry is DSAuth {
         address _adapter, bytes4 _sig
     )
         external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[_adapter].sigs;
