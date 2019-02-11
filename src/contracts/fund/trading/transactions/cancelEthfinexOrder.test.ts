@@ -6,7 +6,6 @@ import { getHub } from '../../hub/calls/getHub';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { getWrapperLock } from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
-import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
 import { Exchanges } from '~/Contracts';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 
@@ -15,12 +14,13 @@ import { cancelEthfinexOrder } from './cancelEthfinexOrder';
 import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+import { withdrawTokensEthfinex } from './withdrawTokensEthfinex';
+import { increaseTime } from '~/utils/evm/increaseTime';
 
 const shared: any = {};
 
 beforeAll(async () => {
   const env = await deployAndInitTestEnv();
-  const registry = env.deployment.melonContracts.registry;
   const wrapperRegistryEFX =
     env.deployment.thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX;
 
@@ -29,11 +29,6 @@ beforeAll(async () => {
   shared.routes = await setupInvestedTestFund(env);
   shared.ethfinexAddress =
     env.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
-
-  await setEthfinexWrapperRegistry(env, registry, {
-    address: wrapperRegistryEFX,
-  });
-
   shared.mln = getTokenBySymbol(env, 'MLN');
   shared.weth = getTokenBySymbol(env, 'WETH');
   shared.zx = getTokenBySymbol(env, 'ZRX');
@@ -92,4 +87,15 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
       signedOrder: shared.signedOrder,
     }),
   ).rejects.toThrow('CANCELLED');
+});
+
+test('Withdraw (unwrap) maker asset of cancelled order', async () => {
+  await increaseTime(shared.env, 25 * 60 * 60);
+  const result = await withdrawTokensEthfinex(
+    shared.env,
+    shared.routes.tradingAddress,
+    { tokens: [shared.zx.address] },
+  );
+
+  expect(result).toBe(true);
 });

@@ -13,8 +13,11 @@ import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 interface PerformCalculationsResult {
   gav: QuantityInterface;
+  feesInDenominationAsset: QuantityInterface;
+  feesInShares: QuantityInterface;
   nav: QuantityInterface;
   sharePrice: PriceInterface;
+  gavPerShareNetManagementFee: PriceInterface;
 }
 
 const postProcess = async (
@@ -31,7 +34,16 @@ const postProcess = async (
   const fundToken = await getToken(environment, settings.sharesAddress);
 
   const calculations = {
+    feesInDenominationAsset: createQuantity(
+      quoteToken,
+      result.feesInDenominationAsset,
+    ),
+    feesInShares: createQuantity(fundToken, result.feesInShares),
     gav: createQuantity(quoteToken, result.gav),
+    gavPerShareNetManagementFee: createPrice(
+      createQuantity(fundToken, 1),
+      createQuantity(quoteToken, result.gavPerShareNetManagementFee),
+    ),
     nav: createQuantity(quoteToken, result.nav),
     sharePrice: createPrice(
       createQuantity(fundToken, 1),

@@ -10,7 +10,6 @@ import { getSystemTestEnvironment } from '../utils/getSystemTestEnvironment';
 import { Tracks } from '~/utils/environment/Environment';
 import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
-import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
 import { getWrapperLock } from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
 import { isValidSignature } from '~/contracts/exchanges/third-party/0x/calls/isValidSignature';
 import { makeEthfinexOrder } from '~/contracts/fund/trading/transactions/makeEthfinexOrder';
@@ -46,15 +45,6 @@ describe('playground', () => {
     });
 
     const routes = await setupInvestedTestFund(manager);
-
-    await setEthfinexWrapperRegistry(
-      master,
-      manager.deployment.melonContracts.registry,
-      {
-        address: wrapperRegistryEFX,
-      },
-    );
-
     const makerQuantity = createQuantity(wethWrapperLock, 0.05);
     const takerQuantity = createQuantity(mln, 1);
 
@@ -64,7 +54,6 @@ describe('playground', () => {
       takerQuantity,
     });
     const signedOrder = await signOrder(manager, unsignedEthfinexOrder);
-
     const isSignatureValidBefore = await isValidSignature(manager, ethfinex, {
       signedOrder,
     });

@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "0.9.20",
+  "version": "0.9.29",
   "description": "Technology Regulated and Operated Investment Funds",
   "main": "lib/index.umd.js",
   "module": "lib/index.js",
@@ -95,7 +95,7 @@
   },
   "dependencies": {
     "@0x/contract-wrappers": "^4.1.1",
-    "@0x/order-utils": "^3.0.2",
+    "@0x/order-utils": "^3.0.4",
     "@melonproject/ganache-cli": "^6.1.9",
     "@melonproject/token-math": "0.1.5",
     "ava": "0.25.0",

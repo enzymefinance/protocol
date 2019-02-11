@@ -95,6 +95,8 @@ export { Exchanges, Contracts } from '~/Contracts';
 export { register } from '~/contracts/fund/policies/transactions/register';
 export {
   createOrder,
+  approveOrder,
+  isValidSignatureOffChain,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 export {
   getWrapperLock,
@@ -123,3 +125,28 @@ export {
   getFundOpenOrder,
 } from '~/contracts/fund/trading/calls/getFundOpenOrder';
 export { getOpenOrders } from '~/contracts/fund/trading/calls/getOpenOrders';
+export { getChainName } from '~/utils/environment/chainName';
+export {
+  signOrder,
+} from '~/contracts/exchanges/third-party/0x/utils/signOrder';
+export { stringifyStruct } from '~/utils/solidity/stringifyStruct';
+export { take0xOrder } from '~/contracts/fund/trading/transactions/take0xOrder';
+export { make0xOrder } from '~/contracts/fund/trading/transactions/make0xOrder';
+export {
+  cancel0xOrder,
+} from './contracts/fund/trading/transactions/cancel0xOrder';
+export {
+  makeEthfinexOrder,
+} from '~/contracts/fund/trading/transactions/makeEthfinexOrder';
+export {
+  cancelEthfinexOrder,
+} from '~/contracts/fund/trading/transactions/cancelEthfinexOrder';
+export { getRequest } from './contracts/fund/participation/calls/getRequest';
+export {
+  hasValidRequest,
+} from './contracts/fund/participation/calls/hasValidRequest';
+export { getFundToken } from './contracts/fund/hub/calls/getFundToken';
+export {
+  redeemQuantity,
+} from '~/contracts/fund/participation/transactions/redeemQuantity';
+export { getToken } from '~/contracts/dependencies/token/calls/getToken';
