@@ -32,7 +32,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         Hub hub = getHub();
 
         address mlnAddress = orderAddresses[0];
-        address wethAddress = orderAddresses[1];
+        address wethAddress = Registry(hub.registry()).nativeAsset();
         uint mlnQuantity = orderValues[0];
 
         Vault vault = Vault(hub.vault());
