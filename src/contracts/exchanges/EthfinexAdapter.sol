@@ -112,13 +112,13 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             if (orderAddresses[i] == address(0)) continue;
             address wrappedToken = getWrapperToken(orderAddresses[i]);
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
+            require(balance > 0, "Insufficient balance");
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
             if (orderAddresses[i] == nativeAsset) {
                 WETH(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
             getTrading().returnAssetToVault(orderAddresses[i]);
-            getAccounting().addAssetToOwnedAssets(orderAddresses[i]);
         }
     }
 
