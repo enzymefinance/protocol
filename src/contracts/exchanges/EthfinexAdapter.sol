@@ -37,12 +37,8 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
-        address makerAsset = getAssetAddress(makerAssetData);
+        address makerAsset = orderAddresses[2];
         address takerAsset = getAssetAddress(takerAssetData);
-        require(
-            makerAsset == orderAddresses[2],
-            "Maker asset data does not match order address in array"
-        );
         require(
             takerAsset == orderAddresses[3],
             "Taker asset data does not match order address in array"
@@ -168,6 +164,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = getWrapperToken(makerAsset);
+        require(
+            wrappedToken == getAssetAddress(wrappedMakerAssetData),
+            "Wrapped maker asset data does not match order address in array"
+        );
         // Deposit to rounded up value of time difference of expiration time and current time (in hours)
         uint depositTime = (
             sub(orderExpirationTime, block.timestamp) / 1 hours
