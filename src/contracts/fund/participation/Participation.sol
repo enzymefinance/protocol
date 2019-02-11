@@ -210,7 +210,8 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
 
-        if (!hasInvested[request.investmentAsset]) {
+        if (!hasInvested[requestOwner]) {
+            hasInvested[requestOwner] = true;
             historicalInvestors.push(requestOwner);
         }
 
