@@ -240,14 +240,19 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             sub(askRate, bidRate),
             10 ** uint(KYBER_PRECISION)
         ) / bidRate;
-        uint averagePriceFromKyber = add(bidRate, askRate) / 2;
+        /**
+          avgPriceFromKyber = (bidRate + astRate) / 2
+          kyberPrice = (avgPriceFromKyber * 10^quoteDecimals) / 10^kyberPrecision
+          or, rearranged:
+          kyberPrice = ((bidRate + askRate) * 10^quoteDecimals) / 2 * 10^kyberPrecision
+        */
         kyberPrice = mul(
-            averagePriceFromKyber,
+            add(bidRate, askRate),
             10 ** uint(ERC20Clone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
-        ) / 10 ** uint(KYBER_PRECISION);
+        ) / mul(2, 10 ** uint(KYBER_PRECISION));
 
         return (
-            spreadFromKyber <= MAX_SPREAD && averagePriceFromKyber != 0,
+            spreadFromKyber <= MAX_SPREAD && bidRate != 0 && askRate != 0,
             kyberPrice
         );
     }
