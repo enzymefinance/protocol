@@ -38,12 +38,14 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
         uint orderIndex; // Index of the order in the orders array
+        address buyAsset; // Address of the buy asset in the order
     }
 
     Exchange[] public exchanges;
     Order[] public orders;
     mapping (address => bool) public adapterIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
+    mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
 
@@ -176,6 +178,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     function addOpenMakeOrder(
         address ofExchange,
         address sellAsset,
+        address buyAsset,
         uint orderId,
         uint expirationTime
     ) public delegateInternal {
@@ -191,16 +194,30 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             "Expiry time greater than max order lifespan or has already passed"
         );
         isInOpenMakeOrder[sellAsset] = true;
+        openMakeOrdersAgainstAsset[buyAsset] = add(openMakeOrdersAgainstAsset[buyAsset], 1);
         exchangesToOpenMakeOrders[ofExchange][sellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = actualExpirationTime;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].orderIndex = sub(orders.length, 1);
+        exchangesToOpenMakeOrders[ofExchange][sellAsset].buyAsset = buyAsset;
+
+    }
+
+    function _removeOpenMakeOrder(
+        address exchange,
+        address sellAsset
+    ) internal {
+        if (isInOpenMakeOrder[sellAsset]) {
+            address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
+            delete exchangesToOpenMakeOrders[exchange][sellAsset];
+            openMakeOrdersAgainstAsset[buyAsset] = sub(openMakeOrdersAgainstAsset[buyAsset], 1);
+        }
     }
 
     function removeOpenMakeOrder(
         address exchange,
         address sellAsset
     ) public delegateInternal {
-        delete exchangesToOpenMakeOrders[exchange][sellAsset];
+        _removeOpenMakeOrder(exchange, sellAsset);
     }
 
     /// @dev Bit of Redundancy for now
@@ -256,7 +273,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
                     ofAsset
                 );
             if (remainingSellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
-                delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
+                _removeOpenMakeOrder(exchanges[i].exchange, ofAsset);
             }
             totalSellQuantity = add(totalSellQuantity, remainingSellQuantity);
             if (!exchanges[i].takesCustody) {

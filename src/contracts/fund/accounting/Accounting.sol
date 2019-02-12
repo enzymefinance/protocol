@@ -191,7 +191,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             address asset = ownedAssets[i];
             if (
                 assetHoldings(asset) == 0 &&
-                !(asset == address(DENOMINATION_ASSET))
+                !(asset == address(DENOMINATION_ASSET)) &&
+                Trading(routes.trading).openMakeOrdersAgainstAsset(asset) == 0
             ) {
                 _removeFromOwnedAssets(asset);
             }
