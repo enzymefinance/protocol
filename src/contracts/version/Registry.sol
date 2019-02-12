@@ -70,6 +70,8 @@ contract Registry is DSAuth {
     mapping (address => Version) public versionInformation;
     address[] public registeredVersions;
 
+    mapping (address => bool) public isFeeRegistered;
+
     mapping (address => address) public fundsToVersions;
     mapping (bytes32 => bool) public versionNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
@@ -339,6 +341,18 @@ contract Registry is DSAuth {
         }
         registeredExchangeAdapters.length--;
         emit ExchangeAdapterRemoval(_adapter);
+    }
+
+    function registerFees(address[] _fees) external auth {
+        for (uint i; i < _fees.length; i++) {
+            isFeeRegistered[_fees[i]] = true;
+        }
+    }
+
+    function deregisterFees(address[] _fees) external auth {
+        for (uint i; i < _fees.length; i++) {
+            delete isFeeRegistered[_fees[i]];
+        }
     }
 
     // PUBLIC VIEW METHODS

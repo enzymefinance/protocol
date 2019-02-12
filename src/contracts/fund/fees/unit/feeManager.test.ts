@@ -39,6 +39,7 @@ describe('feeManager', () => {
         feeRate: mockFeeRate,
       },
     ];
+
     const deployment = await deployMockSystem(shared.env, {
       feeManagerContract: Contracts.FeeManager,
       fees: shared.feeArray,

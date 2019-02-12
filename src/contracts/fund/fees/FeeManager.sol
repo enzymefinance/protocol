@@ -5,6 +5,7 @@ import "Fee.i.sol";
 import "Spoke.sol";
 import "Shares.sol";
 import "Factory.sol";
+import "Registry.sol";
 import "math.sol";
 
 /// @notice Manages and allocates fees for a particular fund
@@ -22,8 +23,12 @@ contract FeeManager is DSMath, Spoke {
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
-    constructor(address _hub, address _denominationAsset, address[] _fees, uint[] _rates, uint[] _periods) Spoke(_hub) public {
+    constructor(address _hub, address _denominationAsset, address[] _fees, uint[] _rates, uint[] _periods, address _registry) Spoke(_hub) public {
         for (uint i = 0; i < _fees.length; i++) {
+            require(
+                Registry(_registry).isFeeRegistered(_fees[i]),
+                "Fee must be known to Registry"
+            );
             register(_fees[i], _rates[i], _periods[i], _denominationAsset);
         }
     }
@@ -88,9 +93,10 @@ contract FeeManagerFactory is Factory {
         address _denominationAsset,
         address[] _fees,
         uint[] _feeRates,
-        uint[] _feePeriods
+        uint[] _feePeriods,
+        address _registry
     ) public returns (address) {
-        address feeManager = new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods);
+        address feeManager = new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods, _registry);
         childExists[feeManager] = true;
         emit NewInstance(_hub, feeManager);
         return feeManager;

@@ -43,7 +43,6 @@ contract FundFactory is AmguConsumer, Factory {
         address[] exchanges;
         address[] adapters;
         address denominationAsset;
-        address nativeAsset;
         address[] defaultAssets;
         bool[] takesCustody;
         address[] fees;
@@ -75,7 +74,6 @@ contract FundFactory is AmguConsumer, Factory {
         address _tradingFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _registry,
         address _version
     ) {
         accountingFactory = AccountingFactory(_accountingFactory);
@@ -100,21 +98,19 @@ contract FundFactory is AmguConsumer, Factory {
         address[] _exchanges,
         address[] _adapters,
         address _denominationAsset,
-        address _nativeAsset,
         address[] _defaultAssets,
         bool[] _takesCustody
     )
         public
         componentNotSet(managersToHubs[msg.sender])
     {
-        require(
-            _nativeAsset == Registry(registry).nativeAsset(),
-            "Native asset does not match registry"
-        );
-
         Registry(registry).reserveFundName(
             msg.sender,
             managersToSettings[msg.sender].name
+        );
+        require(
+            Registry(registry).assetIsRegistered(_denominationAsset),
+            "Denomination asset must be registered"
         );
 
         managersToHubs[msg.sender] = new Hub(msg.sender, _name);
@@ -123,7 +119,6 @@ contract FundFactory is AmguConsumer, Factory {
             _exchanges,
             _adapters,
             _denominationAsset,
-            _nativeAsset,
             _defaultAssets,
             _takesCustody,
             _fees,
@@ -147,7 +142,7 @@ contract FundFactory is AmguConsumer, Factory {
         managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].denominationAsset,
-            managersToSettings[msg.sender].nativeAsset,
+            Registry(registry).nativeAsset(),
             managersToSettings[msg.sender].defaultAssets
         );
     }
@@ -164,7 +159,8 @@ contract FundFactory is AmguConsumer, Factory {
             managersToSettings[msg.sender].denominationAsset,
             managersToSettings[msg.sender].fees,
             managersToSettings[msg.sender].feeRates,
-            managersToSettings[msg.sender].feePeriods
+            managersToSettings[msg.sender].feePeriods,
+            registry
         );
     }
 

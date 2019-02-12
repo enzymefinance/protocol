@@ -19,24 +19,24 @@ contract PolicyManager is Spoke {
 
     mapping(bytes4 => Entry) policies;
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor (address _hub) Spoke(_hub) {}
 
-    function register(bytes4 sig, address ofPolicy) public auth {
-        Policy.Applied position = Policy(ofPolicy).position();
+    function register(bytes4 sig, address _policy) public auth {
+        Policy.Applied position = Policy(_policy).position();
         if (position == Policy.Applied.pre) {
-            policies[sig].pre.push(Policy(ofPolicy));
+            policies[sig].pre.push(Policy(_policy));
         } else if (position == Policy.Applied.post) {
-            policies[sig].post.push(Policy(ofPolicy));
+            policies[sig].post.push(Policy(_policy));
         } else {
             revert("Only pre and post allowed");
         }
-        emit Registration(sig, position, ofPolicy);
+        emit Registration(sig, position, _policy);
     }
 
-    function batchRegister(bytes4[] sig, address[] ofPolicies) public auth {
-        require(sig.length == ofPolicies.length, "Arrays lengths unequal");
+    function batchRegister(bytes4[] sig, address[] _policies) public auth {
+        require(sig.length == _policies.length, "Arrays lengths unequal");
         for (uint i = 0; i < sig.length; i++) {
-            register(sig[i], ofPolicies[i]);
+            register(sig[i], _policies[i]);
         }
     }
 

@@ -27,7 +27,6 @@ contract Version is FundFactory, DSAuth, VersionInterface {
             _tradingFactory,
             _vaultFactory,
             _policyManagerFactory,
-            _registry,
             address(this)
         )
     {

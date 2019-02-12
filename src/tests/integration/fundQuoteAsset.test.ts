@@ -64,7 +64,6 @@ beforeAll(async () => {
     exchangeConfigs,
     fees: [],
     fundName: 'Test fund',
-    nativeToken: s.wethTokenInterface,
     quoteToken: s.dgxTokenInterface,
   });
   await createAccounting(envManager, s.version.options.address);

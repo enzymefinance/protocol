@@ -62,5 +62,8 @@ contract MockRegistry is DSAuth {
     }
     function getRegisteredAssets() public view returns (address[]) { return assets; }
     function getReserveMin(address _asset) public view returns (uint) { return 0; }
+    function isFeeRegistered(address _fee) public view returns (bool) {
+        return alwaysRegistered;
+    }
 }
 
