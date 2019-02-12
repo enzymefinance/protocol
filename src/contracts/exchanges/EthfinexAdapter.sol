@@ -67,7 +67,13 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        getTrading().addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
+        getTrading().addOpenMakeOrder(
+            targetExchange, 
+            makerAsset,
+            takerAsset,
+            uint256(orderInfo.orderHash), 
+            order.expirationTimeSeconds
+        );
         getTrading().addZeroExOrderData(orderInfo.orderHash, order);
     }
 

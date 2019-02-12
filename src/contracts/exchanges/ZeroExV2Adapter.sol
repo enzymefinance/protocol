@@ -66,7 +66,13 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
+        Trading(address(this)).addOpenMakeOrder(
+            targetExchange, 
+            makerAsset,
+            takerAsset,
+            uint256(orderInfo.orderHash), 
+            order.expirationTimeSeconds
+        );
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
