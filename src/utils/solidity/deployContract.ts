@@ -20,7 +20,8 @@ interface PrepareDeployReturn {
 }
 
 interface SendDeployArgs {
-  signedTransaction: string;
+  signedTransaction?: string;
+  unsignedTransaction?: UnsignedRawTransaction;
   txIdentifier?: string;
 }
 
@@ -146,15 +147,22 @@ const prepare: PrepareDeployFunction = async (
 
 const send: SendDeployFunction = async (
   environment,
-  { txIdentifier = 'Unknown deployment', signedTransaction },
+  {
+    txIdentifier = 'Unknown deployment',
+    signedTransaction,
+    unsignedTransaction,
+  },
 ) => {
   const log = getLog(environment);
 
   try {
     let txHash;
 
-    const receipt = await environment.eth
-      .sendSignedTransaction(signedTransaction)
+    const receiptPromise = !!signedTransaction
+      ? environment.eth.sendSignedTransaction(signedTransaction)
+      : environment.eth.sendTransaction(unsignedTransaction);
+
+    const receipt = await receiptPromise
       .on('error', error => {
         throw error;
       })
