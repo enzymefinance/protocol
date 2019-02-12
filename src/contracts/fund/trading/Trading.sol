@@ -137,11 +137,13 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             )
         );
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        if (methodSelector == bytes4(hex'e51be6e8')) { // take
+        if (
+            methodSelector == bytes4(hex'79705be7') ||  // make
+            methodSelector == bytes4(hex'e51be6e8')     // take
+        ) {
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[2]), 'Maker asset not registered'
             );
-        } else if (methodSelector == bytes4(hex'79705be7')) { // make
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[3]), 'Taker asset not registered'
             );
