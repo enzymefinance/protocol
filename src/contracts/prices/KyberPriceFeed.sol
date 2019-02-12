@@ -104,11 +104,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         uint[] memory prices = new uint[](_assets.length);
         uint[] memory timestamps = new uint[](_assets.length);
         for (uint i; i < _assets.length; i++) {
-            uint price;
-            uint timestamp;
-            (price, timestamp) = getPrice(_assets[i]);
-            prices[i] = price;
-            timestamps[i] = timestamp;
+            (prices[i], timestamps[i]) = getPrice(_assets[i]);
         }
         return (prices, timestamps);
     }

@@ -17,8 +17,8 @@ import "Factory.sol";
 contract FundFactory is AmguConsumer, Factory {
 
     event NewFund(
-        address manager,
-        address hub,
+        address indexed manager,
+        address indexed hub,
         address[12] routes
     );
 

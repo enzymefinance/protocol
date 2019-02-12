@@ -15,10 +15,7 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
 
     // _tolerance: 10 equals to 10% of tolerance
     constructor(uint _tolerancePercent) {
-        require(
-            _tolerancePercent >= 0 && _tolerancePercent <= 100,
-            "Tolerance range is 0% - 100%"
-        );
+        require(_tolerancePercent <= 100, "Tolerance range is 0% - 100%");
         tolerance = mul(_tolerancePercent, MULTIPLIER);
     }
 

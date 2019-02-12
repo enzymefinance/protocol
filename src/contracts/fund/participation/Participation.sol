@@ -94,7 +94,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         onlyInitialized
     {
         PolicyManager(routes.policyManager).preValidate(
-            bytes4(sha3("requestInvestment(address)")),
+            bytes4(keccak256("requestInvestment(address)")),
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
@@ -102,10 +102,6 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         require(
             investAllowed[investmentAsset],
             "Investment not allowed in this asset"
-        );
-        require(
-            msg.value >= Registry(routes.registry).incentive(),
-            "Incorrect incentive amount"
         );
         safeTransferFrom(
             investmentAsset, msg.sender, address(this), investmentAmount
@@ -121,7 +117,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
             timestamp: block.timestamp
         });
         PolicyManager(routes.policyManager).postValidate(
-            bytes4(sha3("requestInvestment(address)")),
+            bytes4(keccak256("requestInvestment(address)")),
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
