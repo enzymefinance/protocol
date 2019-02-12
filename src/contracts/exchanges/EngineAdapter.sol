@@ -13,8 +13,6 @@ import "TokenUser.sol";
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
 
-    function () public payable {}
-
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
     /// @param orderValues [0] MLN quantity
