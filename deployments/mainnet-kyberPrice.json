@@ -39,7 +39,7 @@
   "exchangeConfigs": {
     "MatchingMarket": {
       "adapter": "0x49722b7cFB306163d43E2581bAf31E71135ff01B",
-      "exchange": "0x14FBCA95be7e99C15Cc2996c6C9d841e54B79425",
+      "exchange": "0x39755357759cE0d7f32dC8dC45414CCa409AE24e",
       "takesCustody": false
     },
     "KyberNetwork": {
@@ -65,7 +65,7 @@
         "kyberNetwork": "0x9ae49C0d7F8F9EF4B864e004FE86Ac8294E20950",
         "kyberNetworkProxy": "0x818E6FECD516Ecc3849DAf6845e3EC868087B755"
       },
-      "matchingMarket": "0x14FBCA95be7e99C15Cc2996c6C9d841e54B79425",
+      "matchingMarket": "0x39755357759cE0d7f32dC8dC45414CCa409AE24e",
       "zeroEx": "0x4f833a24e1f95d70f028921e27040ca56e09ab0b",
       "ethfinex": {
         "exchange": "0xdcdb42c9a256690bd153a7b409751adfc8dd5851",
