@@ -86,6 +86,14 @@ contract Registry is DSAuth {
     address public ethfinexWrapperRegistry;
     uint public incentive = 10 finney;
 
+    modifier only_version() {
+        require(
+            versionInformation[msg.sender].exists,
+            "Only a Version can do this"
+        );
+        _;
+    }
+
     // METHODS
 
     constructor(address _postDeployOwner) {
@@ -128,6 +136,7 @@ contract Registry is DSAuth {
 
     function reserveFundName(address _owner, string _name)
         external
+        only_version
     {
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
         fundNameHashToOwner[keccak256(_name)] = _owner;
@@ -135,13 +144,9 @@ contract Registry is DSAuth {
 
     function registerFund(address _fund, address _owner, string _name)
         external
+        only_version
     {
-        require(
-            versionInformation[msg.sender].exists,
-            "Only a Version can register a fund"
-        );
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
-
         fundsToVersions[_fund] = msg.sender;
     }
 
