@@ -2,14 +2,15 @@ import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { createQuantity } from '@melonproject/token-math';
 import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
+// tslint:disable-next-line:max-line-length
+// import { ensureIsNotShutDown } from '~/contracts/fund/hub/guards/ensureIsNotShutDown';
 import { getHub } from '~/contracts/fund/hub/calls/getHub';
 import { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 
 const guard = async (environment, params, contractAddress) => {
-  const hub = await getHub(environment, contractAddress);
+  // const hub = await getHub(environment, contractAddress);
   // TODO: check if any other pre flights necessary
-  await ensureIsNotShutDown(environment, hub);
+  // await ensureIsNotShutDown(environment, hub);
 };
 
 const postProcess = async (environment, receipt, params, contractAddress) => {
