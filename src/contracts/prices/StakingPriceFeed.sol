@@ -17,7 +17,7 @@ contract StakingPriceFeed is SimplePriceFeed {
     /// @param ofQuoteAsset Address of quote asset
     /// @param ofRegistrar Address of canonical registrar
     /// @param ofSuperFeed Address of superfeed
-    function StakingPriceFeed(
+    constructor(
         address ofRegistrar,
         address ofQuoteAsset,
         address ofSuperFeed

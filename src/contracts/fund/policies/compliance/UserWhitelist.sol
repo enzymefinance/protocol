@@ -10,7 +10,7 @@ contract UserWhitelist is Policy, DSAuth {
 
     mapping (address => bool) whitelisted;
 
-    function UserWhitelist(address[] _preApproved) public {
+    constructor(address[] _preApproved) public {
         batchAddToWhitelist(_preApproved);
     }
 

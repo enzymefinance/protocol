@@ -46,7 +46,7 @@ contract OperatorStaking {
     ERC20 public stakingToken;
 
     //  (i.e. is pricefeed staking itself?)
-    function OperatorStaking(
+    constructor(
         ERC20 _stakingToken,
         uint _minimumStake,
         uint _numOperators,

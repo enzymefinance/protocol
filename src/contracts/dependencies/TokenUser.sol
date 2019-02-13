@@ -9,7 +9,7 @@ contract TokenUser is DSMath {
         address _token,
         address _to,
         uint _value
-    ) {
+    ) internal {
         uint receiverPreBalance = ERC20(_token).balanceOf(_to);
         ERC20(_token).transfer(_to, _value);
         uint receiverPostBalance = ERC20(_token).balanceOf(_to);
@@ -24,7 +24,7 @@ contract TokenUser is DSMath {
         address _from,
         address _to,
         uint _value
-    ) {
+    ) internal {
         uint receiverPreBalance = ERC20(_token).balanceOf(_to);
         ERC20(_token).transferFrom(_from, _to, _value);
         uint receiverPostBalance = ERC20(_token).balanceOf(_to);
