@@ -371,7 +371,10 @@ const transactionFactory: TransactionFactory = <Args, Result>(
           const receipt = await environment.eth.getTransactionReceipt(
             transactionHash,
           );
-          if (receipt) await processReceipt(receipt);
+          if (receipt) {
+            log.debug('Got TX hash from polling');
+            await processReceipt(receipt);
+          }
         }, TRANSACTION_POLL_INTERVAL);
       });
 
