@@ -213,25 +213,23 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         return _asset;
     }
 
+    /// @notice Returns validity and price from Kyber
     function getKyberPrice(address _baseAsset, address _quoteAsset)
         public
         view
-        returns (bool isValid, uint kyberPrice)
+        returns (bool, uint)
     {
-        address maskedBaseAsset = getKyberMaskAsset(_baseAsset);
-        address maskedQuoteAsset = getKyberMaskAsset(_quoteAsset);
-
         uint bidRate;
         uint bidRateOfReversePair;
         (bidRate,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20Clone(maskedBaseAsset),
-            ERC20Clone(maskedQuoteAsset),
-            REGISTRY.getReserveMin(maskedBaseAsset)
+            ERC20Clone(getKyberMaskAsset(_baseAsset)),
+            ERC20Clone(getKyberMaskAsset(_quoteAsset)),
+            REGISTRY.getReserveMin(_baseAsset)
         );
         (bidRateOfReversePair,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20Clone(maskedQuoteAsset),
-            ERC20Clone(maskedBaseAsset),
-            REGISTRY.getReserveMin(maskedQuoteAsset)
+            ERC20Clone(getKyberMaskAsset(_quoteAsset)),
+            ERC20Clone(getKyberMaskAsset(_baseAsset)),
+            REGISTRY.getReserveMin(_quoteAsset)
         );
 
         if (bidRate == 0 || bidRateOfReversePair == 0) {
@@ -245,7 +243,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             10 ** uint(KYBER_PRECISION)
         ) / bidRate;
         uint averagePriceFromKyber = add(bidRate, askRate) / 2;
-        kyberPrice = mul(
+        uint kyberPrice = mul(
             averagePriceFromKyber,
             10 ** uint(ERC20Clone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
         ) / 10 ** uint(KYBER_PRECISION);
