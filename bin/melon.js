@@ -6,6 +6,7 @@ const readline = require('readline');
 const fs = require('fs');
 const program = require('commander');
 const pkg = require('../package.json');
+const https = require('https');
 const {
   createPrice,
   createQuantity,
@@ -374,6 +375,73 @@ program
       process.exit(1);
     }
   });
+
+program
+  .command('get-reserve-quantity <tokenSymbol>')
+  .description('Get a reasonable reserve quantity level for a token')
+  .option(
+    '-k, --keyfile <pathToApiKey>',
+    'File containing the API key',
+  )
+  .action(async (tokenSymbol, options) => {
+    try {
+      if(!fs.existsSync(options.keyfile)) {
+        throw new Error(`File does not exist at ${options.keyfile}`);
+      }
+      const apiKey = fs.readFileSync(options.keyfile, 'utf8').trim();
+
+      const tokenInfoMainnet = JSON.parse(
+        fs.readFileSync('./deployments/mainnet-kyberPrice.json')
+      ).thirdPartyContracts.tokens;
+      const allDecimalInfo = tokenInfoMainnet.map(e => {
+        return {symbol: e.symbol, decimals: e.decimals}
+      });
+
+      tokenDecimalInfo = allDecimalInfo.find(e => e.symbol === tokenSymbol);
+      if (tokenDecimalInfo === undefined) {
+        throw new Error(`No token with symbol ${tokenSymbol}`);
+      }
+
+      const decimals = tokenDecimalInfo.decimals;
+
+      var options = {
+        'method': 'GET',
+        'hostname': 'rest.coinapi.io',
+        'path': `/v1/exchangerate/ETH/${tokenSymbol}`,
+        'headers': {'X-CoinAPI-Key': apiKey}
+      };
+      const req = https.request(options, (res) => {
+        let json = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => json += chunk); 
+        res.on('end', () => {
+          if (res.statusCode === 200) {
+            const parsedResult = JSON.parse(json);
+            const price = parsedResult.rate;
+            const minimumReserve = `${price * 10 ** decimals}`;
+            if (minimumReserve.indexOf('e+') !== -1) {
+              const components = minimumReserve.split('e+');
+              let expanded = components[0].replace('.', '');
+              expanded = expanded.padEnd(
+                Number(components[1]) + 1, '0'
+              );
+              console.log(expanded);
+            } else {
+              console.log(`${Math.round(minimumReserve)}`);
+            }
+            process.exit(0);
+          } else {
+            throw new Error(`Request status: ${res.statusCode}`);
+          }
+        });
+      });
+      req.end();
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
+  })
+
 
 program.on('command:*', function() {
   program.help();
