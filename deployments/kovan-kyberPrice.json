@@ -56,12 +56,6 @@
     },
     "tokens": [
       {
-        "address": "0x31F7e02B09b4d6AB5D57a8F48EC06b288Feb7EcB",
-        "name": "Aragon Network Token",
-        "symbol": "ANT",
-        "decimals": 18
-      },
-      {
         "address": "0xB14c0f4a8150c028806bE46Afb5214daea870CB7",
         "name": "Basic Attention Token",
         "symbol": "BAT",
@@ -72,18 +66,6 @@
         "name": "Digix Dao Token",
         "symbol": "DGD",
         "decimals": 9
-      },
-      {
-        "address": "0x16886a2B35BF40C59087500dEC9Bbc24765382C2",
-        "name": "Digix Gold Token",
-        "symbol": "DGX",
-        "decimals": 9
-      },
-      {
-        "address": "0x5F65E97C0533Da34c7Bd72595B5bE179c731d382",
-        "name": "Gnosis Token",
-        "symbol": "GNO",
-        "decimals": 18
       },
       {
         "address": "0xa80C98433E2a82DF3636ED934083E3285163Fad8",
@@ -134,21 +116,9 @@
         "decimals": 18
       },
       {
-        "address": "0x4a2b588BE548FF50C05Fd5Fc5041384d80D2a8ed",
-        "name": "Jibrel Network",
-        "symbol": "JNT",
-        "decimals": 18
-      },
-      {
         "address": "0xb2edad34d3B6318252a35Cb80af4DF75B398692c",
         "name": "Omise-Go",
         "symbol": "OMG",
-        "decimals": 18
-      },
-      {
-        "address": "0x5A261fa748EA3053b32790963b2De588b100aB24",
-        "name": "Numeraire",
-        "symbol": "NMR",
         "decimals": 18
       }
     ]
