@@ -51,6 +51,7 @@ import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
 import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
 import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
+import { deployEngineAdapter } from '~/contracts/exchanges/transactions/deployEngineAdapter';
 
 const pkg = require('~/../package.json');
 
@@ -97,7 +98,8 @@ export const deployAllContractsConfig = JSON.parse(`{
     "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
     "matchingMarketAccessor": "DEPLOY",
-    "zeroExAdapter": "DEPLOY"
+    "zeroExAdapter": "DEPLOY",
+    "engineAdapter": "DEPLOY"
   },
   "policies": {
     "priceTolerance": "DEPLOY",
@@ -207,6 +209,9 @@ export const deploySystem = async (
     ),
     maybeDeploy(['adapters', 'zeroExAdapter'], environment =>
       deploy0xAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'engineAdapter'], environment =>
+      deployEngineAdapter(environment),
     ),
     maybeDeploy(['policies', 'priceTolerance'], environment =>
       deployPriceTolerance(environment, 10),
@@ -371,6 +376,11 @@ export const deploySystem = async (
       adapter: melonContracts.adapters.ethfinexAdapter,
       exchange: thirdPartyContracts.exchanges.ethfinex.exchange,
       takesCustody: true,
+    },
+    [Exchanges.MelonEngine]: {
+      adapter: melonContracts.adapters.engineAdapter,
+      exchange: melonContracts.engine,
+      takesCustody: false,
     },
   };
 
