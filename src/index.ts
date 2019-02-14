@@ -156,3 +156,6 @@ export {
   redeemQuantity,
 } from '~/contracts/fund/participation/transactions/redeemQuantity';
 export { getToken } from '~/contracts/dependencies/token/calls/getToken';
+export {
+  getAllowedExchanges,
+} from '~/contracts/fund/trading/calls/getAllowedExchanges';

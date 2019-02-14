@@ -47,6 +47,7 @@ export interface UnsignedRawTransaction {
 
 export interface MelonTransaction<Args> {
   amguInEth: QuantityInterface;
+  incentiveInEth: QuantityInterface;
   params: Args;
   rawTransaction: UnsignedRawTransaction;
   // Already signed transaction in HEX as described here:
@@ -147,6 +148,23 @@ export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
   true;
 
 /**
+ * If the TX is signed, it comes as the raw signed string
+ * (result.rawTransaction) as in:
+ * https://web3js.readthedocs.io/en/1.0/web3-eth-accounts.html#id5
+ *
+ * Otherwise, we assume it is a tx-object like:
+ * https://web3js.readthedocs.io/en/1.0/web3-eth-accounts.html#id4
+ * ```
+ *  {
+ *    to: '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
+ *    value: '1000000000',
+ *    gas: 2000000
+ *  }
+ * ```
+ */
+const isSignedTx = signedOrNotTx => typeof signedOrNotTx === 'string';
+
+/**
  * The transaction factory returns a function "execute" (You have to rename it
  * to the actual name of the transaction, for example: "transfer"). As a
  * minimum, one needs to provide the transaction name and the contract path:
@@ -241,6 +259,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       const melonTransaction = {
         amguInEth,
         contract,
+        incentiveInEth,
         name,
         params,
         rawTransaction: {
@@ -295,17 +314,19 @@ const transactionFactory: TransactionFactory = <Args, Result>(
   const send: SendFunction<Args> = async (
     environment,
     contractAddress,
-    signedTransactionData,
+    signedOrNotTx,
     // prepared,
     params,
   ) => {
     const log = getLog(environment);
 
-    const receipt = await environment.eth
-      .sendSignedTransaction(signedTransactionData)
-      .then(null, error => {
-        throw new Error(`Transaction failed for ${name}: ${error.message}`);
-      });
+    const receiptPromise = isSignedTx(signedOrNotTx)
+      ? environment.eth.sendSignedTransaction(signedOrNotTx)
+      : environment.eth.sendTransaction(signedOrNotTx);
+
+    const receipt = await receiptPromise.then(null, error => {
+      throw new Error(`Transaction failed for ${name}: ${error.message}`);
+    });
 
     const events = receipt.logs.reduce((carry, txLog) => {
       const eventABI = eventSignatureABIMap[txLog.topics[0]];
