@@ -459,7 +459,7 @@ export const deploySystem = async (
         assetAddress: `${asset.address}`,
         assetSymbol: asset.symbol,
         name: '',
-        reserveMin: `${(asset as any).reserveMin}`,
+        reserveMin: `${(asset as any).reserveMin || 0}`,
         sigs: [],
         standards: [],
         url: '',
