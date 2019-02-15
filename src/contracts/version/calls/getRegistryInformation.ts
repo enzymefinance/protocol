@@ -29,6 +29,7 @@ interface RegistryInformation {
   engine?: Address;
   priceSource?: Address;
   mlnToken?: TokenInterface;
+  nativeAsset?: TokenInterface;
   ethfinexWrapperRegistry?: Address;
   registeredAssets: {
     // Its easier to look up through the address string because
@@ -57,6 +58,10 @@ const postProcess = async (environment, result, prepared) => {
     const mlnToken = isEmptyAddress(mlnAddress)
       ? undefined
       : await getToken(environment, mlnAddress);
+    const nativeAddress = await registryContract.methods.nativeAsset().call();
+    const nativeAsset = isEmptyAddress(nativeAddress)
+      ? undefined
+      : await getToken(environment, nativeAddress);
 
     const engine = isEmptyAddress(result) ? undefined : new Address(result);
 
@@ -72,6 +77,7 @@ const postProcess = async (environment, result, prepared) => {
         ? undefined
         : new Address(ethfinexWrapperRegistry),
       mlnToken,
+      nativeAsset,
       priceSource: isEmptyAddress(priceSource)
         ? undefined
         : new Address(priceSource),
@@ -112,7 +118,7 @@ const postProcess = async (environment, result, prepared) => {
         .call();
 
       registryInformation.registeredExchanges[adapter.toLowerCase()] = {
-        adapter: new Address(exchangeInfo.adapter),
+        adapter: new Address(adapter.toLowerCase()),
         address: new Address(exchangeInfo.exchangeAddress),
         sigs: exchangeInfo.sigs,
         takesCustody: exchangeInfo.takesCustody,

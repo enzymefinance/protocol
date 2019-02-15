@@ -97,13 +97,18 @@ const postProcess: PostProcessFunction<
   TakeOrderOnKyberArgs,
   TakeOrderOnKyberResult
 > = async (environment, receipt) => {
-  const kyberTrade = R.path(['events', 'KyberTrade', 'returnValues'], receipt);
+  const kyberTrade =
+    R.path(['events', 'KyberTrade', 'returnValues'], receipt) ||
+    R.path(['events', 'TradeExecute', 'returnValues'], receipt);
+
   ensure(!!kyberTrade, 'No KyberTrade event log found in receipt');
 
   const weth = getTokenBySymbol(environment, 'WETH');
 
+  const srcToken = kyberTrade.srcToken || kyberTrade.src;
+
   const sellToken =
-    kyberTrade.srcToken === kyberEthAddress
+    srcToken === kyberEthAddress
       ? weth
       : await getToken(environment, kyberTrade.srcToken);
 
