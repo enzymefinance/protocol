@@ -305,8 +305,11 @@ export const deploySystem = async (
         );
 
         if (
-          previousInfo.nativeAsset.address.toLowerCase() !==
-          wethToken.address.toLowerCase()
+          R.pathOr(
+            '',
+            ['nativeAsset', 'address'],
+            previousInfo,
+          ).toLowerCase() !== wethToken.address.toLowerCase()
         ) {
           getLog(environment).info('Setting native token');
           await setNativeAsset(environment, melonContracts.registry, {
@@ -314,7 +317,7 @@ export const deploySystem = async (
           });
         }
         if (
-          previousInfo.mlnToken.address.toLowerCase() !==
+          R.pathOr('', ['mlnToken', 'address'], previousInfo).toLowerCase() !==
           mlnToken.address.toLowerCase()
         ) {
           getLog(environment).info('Setting MLN token');
@@ -323,7 +326,7 @@ export const deploySystem = async (
           });
         }
         if (
-          previousInfo.engine.toLowerCase() !==
+          R.pathOr('', ['engine'], previousInfo).toLowerCase() !==
           melonContracts.engine.toLowerCase()
         ) {
           getLog(environment).info('Setting engine on registry');
@@ -456,7 +459,7 @@ export const deploySystem = async (
         assetAddress: `${asset.address}`,
         assetSymbol: asset.symbol,
         name: '',
-        reserveMin: '',
+        reserveMin: `${(asset as any).reserveMin}`,
         sigs: [],
         standards: [],
         url: '',
