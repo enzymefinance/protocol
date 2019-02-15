@@ -189,7 +189,7 @@ program
     const {
       deploySystem,
       deployAllContractsConfig,
-      detfaultControlConfig,
+      defaultControlConfig,
     } = require('../lib/utils/deploy/deploySystem');
 
     try {
