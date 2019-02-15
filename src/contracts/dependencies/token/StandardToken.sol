@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "ERC20.i.sol";
 import "SafeMath.sol";
@@ -104,6 +104,7 @@ contract StandardToken is ERC20 {
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);
         allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        emit Approval(_from, msg.sender, allowed[_from][msg.sender]);
         emit Transfer(_from, _to, _value);
         return true;
     }
@@ -193,10 +194,8 @@ contract StandardToken is ERC20 {
      */
     function _burnFrom(address _account, uint256 _amount) internal {
         require(_amount <= allowed[_account][msg.sender]);
-
-        // Should https://github.com/OpenZeppelin/zeppelin-solidity/issues/707 be accepted,
-        // this function needs to emit an event with the updated approval.
         allowed[_account][msg.sender] = allowed[_account][msg.sender].sub(_amount);
+        emit Approval(_account, msg.sender, allowed[_account][msg.sender]);
         _burn(_account, _amount);
     }
 }

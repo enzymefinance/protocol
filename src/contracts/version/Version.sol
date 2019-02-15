@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
 import "Version.i.sol";
@@ -27,7 +27,6 @@ contract Version is FundFactory, DSAuth, VersionInterface {
             _tradingFactory,
             _vaultFactory,
             _policyManagerFactory,
-            _registry,
             address(this)
         )
     {

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "auth.sol";
 import "Policy.sol";
@@ -10,7 +10,7 @@ contract UserWhitelist is Policy, DSAuth {
 
     mapping (address => bool) whitelisted;
 
-    function UserWhitelist(address[] _preApproved) public {
+    constructor(address[] _preApproved) public {
         batchAddToWhitelist(_preApproved);
     }
 
@@ -21,7 +21,7 @@ contract UserWhitelist is Policy, DSAuth {
 
     function removeFromWhitelist(address _who) public auth {
         whitelisted[_who] = false;
-        emit ListAddition(_who);
+        emit ListRemoval(_who);
     }
 
     function batchAddToWhitelist(address[] _members) public auth {

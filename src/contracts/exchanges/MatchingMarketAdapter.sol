@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Hub.sol";
 import "Trading.sol";
@@ -44,7 +44,6 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
-        Hub hub = getHub();
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
         uint makerQuantity = orderValues[0];
@@ -54,7 +53,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
 
-        Vault(hub.vault()).withdraw(makerAsset, makerQuantity);
+        Vault(Hub(getHub()).vault()).withdraw(makerAsset, makerQuantity);
         require(
             makerAsset.approve(targetExchange, makerQuantity),
             "Could not approve maker asset"
@@ -73,7 +72,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
-        getTrading().addOpenMakeOrder(targetExchange, makerAsset, orderId, orderValues[4]);
+        getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, orderId, orderValues[4]);
         emit OrderCreated(orderId);
     }
 

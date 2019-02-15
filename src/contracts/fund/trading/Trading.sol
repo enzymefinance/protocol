@@ -1,18 +1,18 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
 import "Trading.i.sol";
 import "Spoke.sol";
 import "Vault.sol";
 import "PolicyManager.sol";
-import "ERC20.i.sol";
 import "Factory.sol";
 import "math.sol";
 import "ExchangeAdapter.sol";
 import "LibOrder.sol";
 import "Registry.sol";
+import "TokenUser.sol";
 
-contract Trading is DSMath, Spoke, TradingInterface {
+contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
 
     struct Exchange {
         address exchange;
@@ -38,12 +38,14 @@ contract Trading is DSMath, Spoke, TradingInterface {
         uint id; // Order Id from exchange
         uint expiresAt; // Timestamp when the order expires
         uint orderIndex; // Index of the order in the orders array
+        address buyAsset; // Address of the buy asset in the order
     }
 
     Exchange[] public exchanges;
     Order[] public orders;
     mapping (address => bool) public adapterIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
+    mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
 
@@ -135,11 +137,13 @@ contract Trading is DSMath, Spoke, TradingInterface {
             )
         );
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        if (methodSelector == bytes4(hex'e51be6e8')) { // take
+        if (
+            methodSelector == bytes4(hex'79705be7') ||  // make
+            methodSelector == bytes4(hex'e51be6e8')     // take
+        ) {
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[2]), 'Maker asset not registered'
             );
-        } else if (methodSelector == bytes4(hex'79705be7')) { // make
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[3]), 'Taker asset not registered'
             );
@@ -176,6 +180,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
     function addOpenMakeOrder(
         address ofExchange,
         address sellAsset,
+        address buyAsset,
         uint orderId,
         uint expirationTime
     ) public delegateInternal {
@@ -191,16 +196,30 @@ contract Trading is DSMath, Spoke, TradingInterface {
             "Expiry time greater than max order lifespan or has already passed"
         );
         isInOpenMakeOrder[sellAsset] = true;
+        openMakeOrdersAgainstAsset[buyAsset] = add(openMakeOrdersAgainstAsset[buyAsset], 1);
         exchangesToOpenMakeOrders[ofExchange][sellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = actualExpirationTime;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].orderIndex = sub(orders.length, 1);
+        exchangesToOpenMakeOrders[ofExchange][sellAsset].buyAsset = buyAsset;
+
+    }
+
+    function _removeOpenMakeOrder(
+        address exchange,
+        address sellAsset
+    ) internal {
+        if (isInOpenMakeOrder[sellAsset]) {
+            address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
+            delete exchangesToOpenMakeOrders[exchange][sellAsset];
+            openMakeOrdersAgainstAsset[buyAsset] = sub(openMakeOrdersAgainstAsset[buyAsset], 1);
+        }
     }
 
     function removeOpenMakeOrder(
         address exchange,
         address sellAsset
     ) public delegateInternal {
-        delete exchangesToOpenMakeOrders[exchange][sellAsset];
+        _removeOpenMakeOrder(exchange, sellAsset);
     }
 
     /// @dev Bit of Redundancy for now
@@ -256,7 +275,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
                     ofAsset
                 );
             if (remainingSellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
-                delete exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset];
+                _removeOpenMakeOrder(exchanges[i].exchange, ofAsset);
             }
             totalSellQuantity = add(totalSellQuantity, remainingSellQuantity);
             if (!exchanges[i].takesCustody) {
@@ -280,7 +299,7 @@ contract Trading is DSMath, Spoke, TradingInterface {
             msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
             "Sender is not this contract or manager"
         );
-        ERC20(_token).transfer(Vault(routes.vault), ERC20(_token).balanceOf(this));
+        safeTransfer(_token, routes.vault, ERC20(_token).balanceOf(this));
     }
 
     function getExchangeInfo() public view returns (address[], address[], bool[]) {

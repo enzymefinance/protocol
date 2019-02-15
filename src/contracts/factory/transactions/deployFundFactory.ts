@@ -13,7 +13,6 @@ interface FundComponentAddresses {
   tradingFactoryAddress: Address;
   vaultFactoryAddress: Address;
   policyManagerFactoryAddress: Address;
-  registryAddress: Address;
   versionAddress: Address;
 }
 
@@ -26,7 +25,6 @@ export const deployFundFactory = async (
     feeManagerFactoryAddress,
     participationFactoryAddress,
     policyManagerFactoryAddress,
-    registryAddress,
     sharesFactoryAddress,
     tradingFactoryAddress,
     vaultFactoryAddress,
@@ -41,7 +39,6 @@ export const deployFundFactory = async (
     tradingFactoryAddress,
     vaultFactoryAddress,
     policyManagerFactoryAddress,
-    registryAddress,
     versionAddress,
   ];
 

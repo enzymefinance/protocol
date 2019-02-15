@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "PriceSource.i.sol";
 import "Accounting.sol";

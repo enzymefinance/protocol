@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Trading.sol";
 import "Hub.sol";
@@ -34,7 +34,7 @@ contract MockAdapter is ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint(identifier), 0);
+        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, takerAsset, uint(identifier), 0);
     }
 
     /// @notice Mock take order

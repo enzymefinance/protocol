@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 
 contract Factory {
@@ -9,7 +9,7 @@ contract Factory {
         address indexed instance
     );
 
-    function isInstance(address _child) public returns (bool) {
+    function isInstance(address _child) public view returns (bool) {
         return childExists[_child];
     }
 

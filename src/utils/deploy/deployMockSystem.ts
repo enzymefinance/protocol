@@ -108,6 +108,7 @@ export const deployMockSystem = async (
     fees.map(f => f.feeAddress.toString()),
     fees.map(f => f.feePeriod),
     fees.map(f => f.feeRate),
+    registry.options.address,
   ]);
 
   const policyManager = await deployAndGetContract(env, policyManagerContract, [

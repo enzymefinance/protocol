@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "auth.sol";
 import "math.sol";
@@ -121,7 +121,7 @@ contract Engine is DSMath, DSAuth {
         require(liquidEther >= ethToSend, "Not enough liquid ether to send");
         liquidEther = sub(liquidEther, ethToSend);
         totalMlnBurned = add(totalMlnBurned, mlnAmount);
-        msg.sender.send(ethToSend);
+        msg.sender.transfer(ethToSend);
         mlnToken.burn(mlnAmount);
         emit Burn(mlnAmount);
     }

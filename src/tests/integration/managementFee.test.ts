@@ -27,6 +27,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { Contracts } from '~/Contracts';
 import { increaseTime } from '~/utils/evm/increaseTime';
+import { registerFees } from '~/contracts/version/transactions/registerFees';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -65,13 +66,16 @@ beforeAll(async () => {
     },
   ];
 
+  await registerFees(s.environment, s.registry.options.address, {
+    addresses: fees.map(f => f.feeAddress),
+  });
+
   const envManager = withDifferentAccount(s.environment, s.manager);
   await beginSetup(envManager, s.version.options.address, {
     defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
     exchangeConfigs,
     fees,
     fundName: 'Test fund',
-    nativeToken: s.wethTokenInterface,
     quoteToken: s.wethTokenInterface,
   });
   await createAccounting(envManager, s.version.options.address);

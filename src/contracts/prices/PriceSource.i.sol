@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 /// @notice Must return a value for an asset
 interface PriceSourceInterface {

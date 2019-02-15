@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 /// @notice Mediation between a Fund and exchanges
 interface TradingInterface {
@@ -27,6 +27,7 @@ interface TradingInterface {
     function addOpenMakeOrder(
         address ofExchange,
         address ofSellAsset,
+        address ofBuyAsset,
         uint orderId,
         uint expiryTime
     ) public;

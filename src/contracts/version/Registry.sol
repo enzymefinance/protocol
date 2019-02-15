@@ -1,8 +1,8 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "auth.sol";
 import "Hub.sol";
-import "ERC20.i.sol";
+import "TokenUser.sol";
 
 contract Registry is DSAuth {
 
@@ -70,6 +70,8 @@ contract Registry is DSAuth {
     mapping (address => Version) public versionInformation;
     address[] public registeredVersions;
 
+    mapping (address => bool) public isFeeRegistered;
+
     mapping (address => address) public fundsToVersions;
     mapping (bytes32 => bool) public versionNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
@@ -83,6 +85,14 @@ contract Registry is DSAuth {
     address public engine;
     address public ethfinexWrapperRegistry;
     uint public incentive = 10 finney;
+
+    modifier only_version() {
+        require(
+            versionInformation[msg.sender].exists,
+            "Only a Version can do this"
+        );
+        _;
+    }
 
     // METHODS
 
@@ -124,17 +134,20 @@ contract Registry is DSAuth {
         );
     }
 
+    function reserveFundName(address _owner, string _name)
+        external
+        only_version
+    {
+        require(canUseFundName(_owner, _name), "Fund name cannot be used");
+        fundNameHashToOwner[keccak256(_name)] = _owner;
+    }
+
     function registerFund(address _fund, address _owner, string _name)
         external
+        only_version
     {
-        require(
-            versionInformation[msg.sender].exists,
-            "Only a Version can register a fund"
-        );
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
-
         fundsToVersions[_fund] = msg.sender;
-        fundNameHashToOwner[keccak256(_name)] = _owner;
     }
 
     /// @notice Registers an Asset information entry
@@ -335,6 +348,18 @@ contract Registry is DSAuth {
         emit ExchangeAdapterRemoval(_adapter);
     }
 
+    function registerFees(address[] _fees) external auth {
+        for (uint i; i < _fees.length; i++) {
+            isFeeRegistered[_fees[i]] = true;
+        }
+    }
+
+    function deregisterFees(address[] _fees) external auth {
+        for (uint i; i < _fees.length; i++) {
+            delete isFeeRegistered[_fees[i]];
+        }
+    }
+
     // PUBLIC VIEW METHODS
 
     // get asset specific information
@@ -358,6 +383,7 @@ contract Registry is DSAuth {
     }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
         external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
@@ -402,6 +428,7 @@ contract Registry is DSAuth {
         address _adapter, bytes4 _sig
     )
         external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[_adapter].sigs;

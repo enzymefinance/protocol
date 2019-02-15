@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
 import "ERC20.i.sol";
@@ -31,8 +31,16 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     ) public onlyManager notShutDown {
         Hub hub = getHub();
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
+        address makerAsset = getAssetAddress(makerAssetData);
+        address takerAsset = getAssetAddress(takerAssetData);
+        require(
+            makerAsset == orderAddresses[2],
+            "Maker asset data does not match order address in array"
+        );
+        require(
+            takerAsset == orderAddresses[3],
+            "Taker asset data does not match order address in array"
+        );
 
         // Order parameter checks
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
@@ -58,7 +66,13 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        Trading(address(this)).addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
+        Trading(address(this)).addOpenMakeOrder(
+            targetExchange, 
+            makerAsset,
+            takerAsset,
+            uint256(orderInfo.orderHash), 
+            order.expirationTimeSeconds
+        );
         Trading(address(this)).addZeroExOrderData(orderInfo.orderHash, order);
     }
 
@@ -106,10 +120,17 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
         uint fillTakerQuantity = orderValues[6];
-
+        address makerAsset = getAssetAddress(makerAssetData);
+        address takerAsset = getAssetAddress(takerAssetData);
+        require(
+            makerAsset == orderAddresses[2],
+            "Maker asset data does not match order address in array"
+        );
+        require(
+            takerAsset == orderAddresses[3],
+            "Taker asset data does not match order address in array"
+        );
         approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
         LibOrder.OrderInfo memory orderInfo = Exchange(targetExchange).getOrderInfo(order);
         uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);

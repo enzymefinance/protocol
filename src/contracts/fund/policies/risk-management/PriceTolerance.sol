@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Hub.sol";
 import "Policy.sol";
@@ -15,11 +15,16 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
 
     // _tolerance: 10 equals to 10% of tolerance
     constructor(uint _tolerancePercent) {
-        require(
-            _tolerancePercent >= 0 && _tolerancePercent <= 100,
-            "Tolerance range is 0% - 100%"
-        );
+        require(_tolerancePercent <= 100, "Tolerance range is 0% - 100%");
         tolerance = mul(_tolerancePercent, MULTIPLIER);
+    }
+
+    /// @notice Taken from OpenZeppelin (https://git.io/fhQqo)
+   function signedSafeSub(int256 a, int256 b) internal pure returns (int256) {
+        int256 c = a - b;
+        require((b >= 0 && c <= a) || (b < 0 && c > a));
+
+        return c;
     }
 
     function takeOasisDex(
@@ -105,7 +110,7 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         (ratio,) = PriceSourceInterface(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
         uint _value = PriceSourceInterface(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
 
-        int res = int(ratio) - int(_value);
+        int res = signedSafeSub(int(ratio), int(_value));
         if (res < 0) {
             return true;
         } else {

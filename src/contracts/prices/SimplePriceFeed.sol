@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "PriceSource.i.sol";
 import "UpdatableFeed.i.sol";
@@ -35,7 +35,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing {
     /// @param ofQuoteAsset Address of quote asset
     /// @param ofRegistrar Address of canonical registrar
     /// @param ofSuperFeed Address of superfeed
-    function SimplePriceFeed(
+    constructor(
         address ofRegistrar,
         address ofQuoteAsset,
         address ofSuperFeed

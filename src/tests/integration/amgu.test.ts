@@ -61,7 +61,6 @@ test('Set amgu and check its usage', async () => {
     exchangeConfigs,
     fees,
     fundName,
-    nativeToken: quoteToken,
     priceSource: melonContracts.priceSource,
     quoteToken,
   };

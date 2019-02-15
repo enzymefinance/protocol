@@ -37,6 +37,8 @@ import { setPriceSource } from '~/contracts/version/transactions/setPriceSource'
 import { setEngine } from '~/contracts/version/transactions/setEngine';
 import { registerVersion } from '~/contracts/version/transactions/registerVersion';
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
+import { isFeeRegistered } from '~/contracts/version/calls/isFeeRegistered';
+import { registerFees } from '~/contracts/version/transactions/registerFees';
 import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
 import { getRegistry } from '~/contracts/engine/calls/getRegistry';
 import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
@@ -340,6 +342,29 @@ export const deploySystem = async (
         }
       },
     ),
+    maybeDoSomething(true, async environment => {
+      const { melonContracts } = environment.deployment;
+      const fees: Address[] = [
+        melonContracts.fees.managementFee,
+        melonContracts.fees.performanceFee,
+      ];
+      const unregistered: Address[] = [];
+      for (const fee of fees) {
+        if (
+          !(await isFeeRegistered(environment, melonContracts.registry, {
+            fee,
+          }))
+        ) {
+          unregistered.push(fee);
+        }
+      }
+      if (unregistered.length > 0) {
+        getLog(environment).info('Registering fees');
+        await registerFees(environment, melonContracts.registry, {
+          addresses: unregistered.map(e => e.toString()),
+        });
+      }
+    }),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {

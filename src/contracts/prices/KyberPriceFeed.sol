@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "PriceSource.i.sol";
 import "ERC20.i.sol";
@@ -104,11 +104,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         uint[] memory prices = new uint[](_assets.length);
         uint[] memory timestamps = new uint[](_assets.length);
         for (uint i; i < _assets.length; i++) {
-            uint price;
-            uint timestamp;
-            (price, timestamp) = getPrice(_assets[i]);
-            prices[i] = price;
-            timestamps[i] = timestamp;
+            (prices[i], timestamps[i]) = getPrice(_assets[i]);
         }
         return (prices, timestamps);
     }
@@ -242,14 +238,19 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             sub(askRate, bidRate),
             10 ** uint(KYBER_PRECISION)
         ) / bidRate;
-        uint averagePriceFromKyber = add(bidRate, askRate) / 2;
+        /**
+          avgPriceFromKyber = (bidRate + astRate) / 2
+          kyberPrice = (avgPriceFromKyber * 10^quoteDecimals) / 10^kyberPrecision
+          or, rearranged:
+          kyberPrice = ((bidRate + askRate) * 10^quoteDecimals) / 2 * 10^kyberPrecision
+        */
         uint kyberPrice = mul(
-            averagePriceFromKyber,
+            add(bidRate, askRate),
             10 ** uint(ERC20Clone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
-        ) / 10 ** uint(KYBER_PRECISION);
+        ) / mul(2, 10 ** uint(KYBER_PRECISION));
 
         return (
-            spreadFromKyber <= MAX_SPREAD && averagePriceFromKyber != 0,
+            spreadFromKyber <= MAX_SPREAD && bidRate != 0 && askRate != 0,
             kyberPrice
         );
     }

@@ -126,7 +126,6 @@ describe('generalWalkthrough', () => {
         exchangeConfigs,
         fees,
         fundName,
-        nativeToken: ethToken,
         quoteToken: ethToken,
       },
       { gas: '8000000' },
@@ -143,6 +142,7 @@ describe('generalWalkthrough', () => {
 
     const routes = await getRoutes(shared.env, hubAddress);
 
+    // TODO: pass in policies
     await register(shared.env, routes.policyManagerAddress, {
       method: FunctionSignatures.makeOrder,
       policy: policies.priceTolerance,

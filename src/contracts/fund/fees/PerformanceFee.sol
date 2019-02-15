@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Fee.i.sol";
 import "FeeManager.sol";
@@ -9,12 +9,11 @@ import "math.sol";
 
 contract PerformanceFee is DSMath, Fee {
 
-    event HighWaterMarkUpdate(uint hwm);
+    event HighWaterMarkUpdate(address indexed feeManager, uint indexed hwm);
 
     uint public constant DIVISOR = 10 ** 18;
     uint public constant REDEEM_WINDOW = 1 weeks;
 
-    mapping(address => uint) public initialSharePrice;
     mapping(address => uint) public highWaterMark;
     mapping(address => uint) public lastPayoutTime;
     mapping(address => uint) public initializeTime;
@@ -24,7 +23,6 @@ contract PerformanceFee is DSMath, Fee {
     /// @notice Sets initial state of the fee for a user
     function initializeForUser(uint feeRate, uint feePeriod, address denominationAsset) external {
         require(lastPayoutTime[msg.sender] == 0, "Already initialized");
-        initialSharePrice[msg.sender] = 10 ** uint(ERC20WithFields(denominationAsset).decimals());
         performanceFeeRate[msg.sender] = feeRate;
         performanceFeePeriod[msg.sender] = feePeriod;
         highWaterMark[msg.sender] = 10 ** uint(ERC20WithFields(denominationAsset).decimals());
@@ -91,6 +89,6 @@ contract PerformanceFee is DSMath, Fee {
         );
         lastPayoutTime[msg.sender] = block.timestamp;
         highWaterMark[msg.sender] = currentGavPerShare;
-        emit HighWaterMarkUpdate(currentGavPerShare);
+        emit HighWaterMarkUpdate(msg.sender, currentGavPerShare);
     }
 }

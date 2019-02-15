@@ -53,7 +53,6 @@ const setupInvestedTestFund = async (environment: Environment) => {
     exchangeConfigs,
     fees,
     fundName,
-    nativeToken: weth,
     quoteToken: weth,
   });
   await createAccounting(environment, melonContracts.version);
