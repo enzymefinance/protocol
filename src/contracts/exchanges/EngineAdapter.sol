@@ -29,9 +29,19 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
     ) public onlyManager notShutDown {
         Hub hub = getHub();
 
-        address mlnAddress = orderAddresses[0];
-        address wethAddress = Registry(hub.registry()).nativeAsset();
-        uint mlnQuantity = orderValues[0];
+        address wethAddress = orderAddresses[2];
+        address mlnAddress = orderAddresses[3];
+        uint minEthToReceive = orderValues[0];
+        uint mlnQuantity = orderValues[1];
+
+        require(	
+            wethAddress == Registry(hub.registry()).nativeAsset(),	
+            "maker asset doesnt match nativeAsset on registry"	
+        );
+        require(	
+            orderValues[1] == orderValues[6],	
+            "fillTakerQuantity must equal takerAssetQuantity"	
+        );
 
         Vault vault = Vault(hub.vault());
         vault.withdraw(mlnAddress, mlnQuantity);
@@ -41,18 +51,24 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         );
 
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
+    
+        require(
+            ethToReceive >= minEthToReceive,
+            "Expected ETH to receive is less than takerQuantity (minEthToReceive)"
+        );
+        
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(wethAddress).deposit.value(ethToReceive)();
         safeTransfer(wethAddress, address(vault), ethToReceive);
-
+  
         getAccounting().addAssetToOwnedAssets(wethAddress);
         getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),
             Trading.UpdateType.take,
-            [mlnAddress, wethAddress],
-            [mlnQuantity, ethToReceive, ethToReceive]
+            [wethAddress, mlnAddress],
+            [ethToReceive, mlnQuantity, mlnQuantity]
         );
     }
 }

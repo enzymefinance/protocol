@@ -72,8 +72,8 @@ const prepareArgs: PrepareArgsFunction<TakeEngineOrderArgs> = async (
     exchangeIndex,
     FunctionSignatures.takeOrder,
     [
-      makerAsset,
-      takerAsset,
+      emptyAddress,
+      emptyAddress,
       makerAsset,
       takerAsset,
       emptyAddress,
