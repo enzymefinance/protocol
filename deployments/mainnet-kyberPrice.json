@@ -3,7 +3,7 @@
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
     "timestamp": "2019-02-14T21:46:41.063Z",
     "track": "kyberPrice",
-    "version": "0.9.34",
+    "version": "0.9.36",
     "chain": 1,
     "description": "Test mainnet deployment (#3)"
   },
