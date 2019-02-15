@@ -25,7 +25,6 @@ describe('getInfo', () => {
     expect(info.symbol).toBe('FIXED');
     expect(info.name).toBe('Premined Token');
     expect(info.decimals).toBe(18);
-    expect(info.totalSupply).toBe('1000000000000000000000000');
   });
 
   it('Info gets overridden', async () => {

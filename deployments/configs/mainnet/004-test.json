@@ -1,10 +1,8 @@
 {
   "meta": {
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
-    "timestamp": "2019-02-15T14:03:51.824Z",
     "track": "kyberPrice",
-    "version": "0.9.36",
-    "chain": 1,
+    "version": "0.9.37",
     "description": "Test mainnet deployment (#4)"
   },
   "melonContracts": {
@@ -119,27 +117,5 @@
         "reserveMin": 930101522997154300000
       }
     ]
-  },
-  "exchangeConfigs": {
-    "MatchingMarket": {
-      "adapter": "0xF8CDf1Eeee8586c3d499E192e485F721a0b69714",
-      "exchange": "0x39755357759cE0d7f32dC8dC45414CCa409AE24e",
-      "takesCustody": true
-    },
-    "KyberNetwork": {
-      "adapter": "0x0F9e12C22CD541943F38E9Dcd90363CB1226646B",
-      "exchange": "0x818E6FECD516Ecc3849DAf6845e3EC868087B755",
-      "takesCustody": false
-    },
-    "ZeroEx": {
-      "adapter": "0x048F11aeC5b42e5241e60757EA7912b2A5F41F7f",
-      "exchange": "0x4f833a24e1f95d70f028921e27040ca56e09ab0b",
-      "takesCustody": false
-    },
-    "Ethfinex": {
-      "adapter": "0xbfe94C1fEEB27f233EA4f9eF8FB66839436c4100",
-      "exchange": "0xdcdb42c9a256690bd153a7b409751adfc8dd5851",
-      "takesCustody": true
-    }
   }
 }
