@@ -1,5 +1,3 @@
-import * as R from 'ramda';
-import web3EthAbi from 'web3-eth-abi';
 import {
   add,
   Address,
@@ -11,7 +9,7 @@ import {
   toFixed,
 } from '@melonproject/token-math';
 
-import { Contracts, eventSignatureABIMap } from '~/Contracts';
+import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import {
@@ -24,10 +22,14 @@ import { signTransaction } from '../environment/signTransaction';
 import { EnsureError } from '../guards/EnsureError';
 import { getBalance } from '../evm/getBalance';
 import { getLogCurried } from '../environment/getLogCurried';
+import { parseReceiptLogs } from './parseReceiptLogs';
 
 const getLog = getLogCurried(
   'melon:protocol:utils:solidity:transactionFactory',
 );
+
+const TRANSACTION_POLL_INTERVAL = 15 * 1000;
+const TRANSACTION_TIMEOUT = 10 * 60 * 1000;
 
 export type TransactionArg = number | number[] | string | string[];
 // TODO: Remove this any!
@@ -311,75 +313,78 @@ const transactionFactory: TransactionFactory = <Args, Result>(
     }
   };
 
-  const send: SendFunction<Args> = async (
+  /**
+   * - Wait for receipt
+   * - Poll for receipt
+   * - Reject after 10 minutes
+   */
+  const send: SendFunction<Args> = (
     environment,
     contractAddress,
     signedOrNotTx,
     // prepared,
     params,
-  ) => {
-    const log = getLog(environment);
+  ) =>
+    new Promise((resolve, reject) => {
+      let transactionHash;
+      let pollInterval;
 
-    const receiptPromise = isSignedTx(signedOrNotTx)
-      ? environment.eth.sendSignedTransaction(signedOrNotTx)
-      : environment.eth.sendTransaction(signedOrNotTx);
+      const log = getLog(environment);
 
-    const receipt = await receiptPromise.then(null, error => {
-      throw new Error(`Transaction failed for ${name}: ${error.message}`);
-    });
+      const receiptPromiEvent = isSignedTx(signedOrNotTx)
+        ? environment.eth.sendSignedTransaction(signedOrNotTx)
+        : environment.eth.sendTransaction(signedOrNotTx);
 
-    const events = receipt.logs.reduce((carry, txLog) => {
-      const eventABI = eventSignatureABIMap[txLog.topics[0]];
-
-      // Ignore event if not found in eventSignaturesABI map;
-      if (!eventABI) {
-        log.debug('No Event-ABI found for', txLog);
-        return carry;
-      }
-
-      try {
-        const decoded = web3EthAbi.decodeLog(
-          eventABI.inputs,
-          txLog.data !== '0x' && txLog.data,
-          eventABI.anonymous ? txLog.topics : txLog.topics.slice(1),
+      const transactionTimeout = setTimeout(() => {
+        if (pollInterval) clearInterval(pollInterval);
+        log.error('Transaction timed out', name);
+        reject(
+          // tslint:disable-next-line: max-line-length
+          `Transaction ${name} with transaction hash: ${transactionHash} not mined after ${TRANSACTION_TIMEOUT /
+            1000 /
+            60} minutes. It might get mined eventually.`,
         );
-        const keys = R.map(R.prop('name'), eventABI.inputs);
-        const picked = R.pick(keys, decoded);
+      }, TRANSACTION_TIMEOUT);
 
-        const current = R.cond([
-          [
-            Array.isArray,
-            existingEventLog => [...existingEventLog, { returnValues: picked }],
-          ],
-          [R.isNil, R.always({ returnValues: picked })],
-          [
-            R.T,
-            existingEventLog => [existingEventLog, { returnValues: picked }],
-          ],
-        ])(carry[eventABI.name]);
+      const processReceipt = async receipt => {
+        const receiptWithEvents = parseReceiptLogs(receipt, log);
 
-        return {
-          ...carry,
-          [eventABI.name]: current,
-        };
-      } catch (e) {
-        log.warn('Error with parsing logs', eventABI, txLog, e);
-        return carry;
-      }
-    }, {});
+        log.debug(`Receipt for ${name}`, receipt);
 
-    receipt.events = events;
-    log.debug(`Receipt for ${name}`, receipt);
+        const postprocessed = await postProcess(
+          environment,
+          receiptWithEvents,
+          params,
+          contractAddress,
+        );
 
-    const postprocessed = await postProcess(
-      environment,
-      receipt,
-      params,
-      contractAddress,
-    );
+        clearTimeout(transactionTimeout);
+        if (pollInterval) clearInterval(pollInterval);
+        resolve(postprocessed);
+      };
 
-    return postprocessed;
-  };
+      receiptPromiEvent.on('receipt', processReceipt);
+
+      receiptPromiEvent.on('transactionHash', txHash => {
+        transactionHash = txHash;
+        pollInterval = setInterval(async () => {
+          const receipt = await environment.eth.getTransactionReceipt(
+            transactionHash,
+          );
+          if (receipt) {
+            log.debug('Got TX hash from polling');
+            await processReceipt(receipt);
+          }
+        }, TRANSACTION_POLL_INTERVAL);
+      });
+
+      receiptPromiEvent.on('error', error => {
+        log.error('Transaction error', name, error);
+        // throw error;
+        // new Error(`Transaction error ${name}: ${error.message}`);
+        reject(`Transaction error ${name}: ${error.message}`);
+      });
+    });
 
   const execute: ExecuteFunction<Args, Result> = async (
     environment,

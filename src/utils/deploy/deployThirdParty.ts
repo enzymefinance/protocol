@@ -88,10 +88,12 @@ const deployThirdParty = async (
   const matchingMarket = await deployMatchingMarket(environment, {
     tokens: deployedTokens,
   });
+
   const kyber = await deployKyberEnvironment(environment, [
     deployedTokens.find(t => t.symbol === 'MLN'),
     deployedTokens.find(t => t.symbol === 'EUR'),
   ]);
+
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
   const ethfinex = await deployEthfinex(environment, {
     zeroExExchangeAddress: zeroEx,
@@ -105,7 +107,10 @@ const deployThirdParty = async (
       matchingMarket,
       zeroEx,
     },
-    tokens: deployedTokens,
+    tokens: deployedTokens.map(token => ({
+      ...token,
+      reserveMin: 1000000000000000000,
+    })),
   };
 };
 
