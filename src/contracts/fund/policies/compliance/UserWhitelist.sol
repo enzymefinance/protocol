@@ -41,5 +41,6 @@ contract UserWhitelist is Policy, DSAuth {
     }
 
     function position() external view returns (Applied) { return Applied.pre; }
+    function identifier() external view returns (string) { return 'UserWhitelist'; }
 }
 
