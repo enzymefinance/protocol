@@ -35,12 +35,11 @@ import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
 import { setEngine } from '~/contracts/version/transactions/setEngine';
+import { setMGM } from '~/contracts/version/transactions/setMGM';
 import { registerVersion } from '~/contracts/version/transactions/registerVersion';
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 import { isFeeRegistered } from '~/contracts/version/calls/isFeeRegistered';
 import { registerFees } from '~/contracts/version/transactions/registerFees';
-import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
-import { getRegistry } from '~/contracts/engine/calls/getRegistry';
 import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
@@ -89,7 +88,7 @@ export interface MelonContracts {
 }
 
 export interface ContractControl {
-  engineOwner: Address;
+  MGM: Address;
   registryOwner: Address;
   versionOwner: Address;
 }
@@ -129,7 +128,7 @@ export const deployAllContractsConfig = JSON.parse(`{
 }`);
 
 export const defaultControlConfig = JSON.parse(`{
-  "engineOwner": "",
+  "MGM": "",
   "registryOwner": "",
   "versionOwner": ""
 }`);
@@ -254,17 +253,17 @@ export const deploySystem = async (
     maybeDeploy(['factories', 'vaultFactory'], environment =>
       deployVaultFactory(environment),
     ),
-    maybeDeploy(['engine'], environment =>
-      deployEngine(environment, {
-        delay: monthInSeconds,
-        postDeployOwner: control.engineOwner || environment.wallet.address,
-      }),
-    ),
     maybeDeploy(['registry'], environment =>
       deployRegistry(
         environment,
         control.registryOwner || environment.wallet.address,
       ),
+    ),
+    maybeDeploy(['engine'], environment =>
+      deployEngine(environment, {
+        delay: monthInSeconds,
+        registry: environment.deployment.melonContracts.registry,
+      }),
     ),
     maybeDeploy(['priceSource'], environment =>
       environment.track === Tracks.KYBER_PRICE
@@ -299,11 +298,6 @@ export const deploySystem = async (
           environment,
           melonContracts.registry,
         );
-        const registryForCurrentEngine = await getRegistry(
-          environment,
-          melonContracts.engine,
-        );
-
         if (
           R.pathOr(
             '',
@@ -334,15 +328,10 @@ export const deploySystem = async (
             address: melonContracts.engine,
           });
         }
-        if (
-          registryForCurrentEngine.toLowerCase() !==
-          melonContracts.registry.toLowerCase()
-        ) {
-          getLog(environment).info('Setting registry on engine');
-          await setRegistry(environment, melonContracts.engine, {
-            address: melonContracts.registry,
-          });
-        }
+        getLog(environment).info('Setting MGM on registry');
+        await setMGM(environment, melonContracts.registry, {
+          address: control.MGM || environment.wallet.address,
+        });
       },
     ),
     maybeDoSomething(true, async environment => {
