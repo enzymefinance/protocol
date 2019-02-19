@@ -27,8 +27,8 @@ import { getContract } from '~/utils/solidity/getContract';
 
 import { Contracts } from '~/Contracts';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
-import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
-import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
+// import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
+// import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 
 expect.extend({ toBeTrueWith });
 
@@ -45,7 +45,7 @@ describe('playground', () => {
     const log = getLog(master);
     const { melonContracts } = master.deployment;
 
-    const { engine } = melonContracts;
+    // const { engine } = melonContracts;
 
     // Engine events
     // const engineContract = getContract(master, Contracts.Engine, engine);
