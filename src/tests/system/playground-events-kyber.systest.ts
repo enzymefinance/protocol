@@ -27,6 +27,8 @@ import { getContract } from '~/utils/solidity/getContract';
 
 import { Contracts } from '~/Contracts';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
+import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
+import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 
 expect.extend({ toBeTrueWith });
 
@@ -46,7 +48,7 @@ describe('playground', () => {
     const { engine } = melonContracts;
 
     // Engine events
-    const engineContract = getContract(master, Contracts.Engine, engine);
+    // const engineContract = getContract(master, Contracts.Engine, engine);
 
     // const engineEvents = await engineContract.getPastEvents('allEvents', {
     //   fromBlock: 0,
@@ -71,25 +73,28 @@ describe('playground', () => {
     // log.debug('AmguPaid Events:', amguPaidEvents);
 
     // Version events
-    const versionContract = getContract(
-      master,
-      Contracts.Version,
-      melonContracts.version,
-    );
-    let versionEvents = await versionContract.getPastEvents('allEvents', {
-      fromBlock: 0,
-      toBlock: 'latest',
-    });
-    versionEvents = await Promise.all(
-      versionEvents.map(async x => {
-        return {
-          event: x.event,
-          returnValues: x.returnValues,
-          timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
-        };
-      }),
-    );
-    log.debug('Version Events: ', versionEvents);
+
+    // const versionContract = getContract(
+    //   master,
+    //   Contracts.Version,
+    //   melonContracts.version,
+    // );
+    // let versionEvents = await versionContract.getPastEvents('allEvents', {
+    //   fromBlock: 0,
+    //   toBlock: 'latest',
+    // });
+    // versionEvents = await Promise.all(
+    //   versionEvents.map(async x => {
+    //     return {
+    //       event: x.event,
+    //       returnValues: x.returnValues,
+    //       timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
+    //     };
+    //   }),
+    // );
+    // log.debug('Version Events: ', versionEvents);
+
+    // melonContracts.adapters
 
     // Registry events
     const registryContract = getContract(
@@ -101,16 +106,23 @@ describe('playground', () => {
       fromBlock: 0,
       toBlock: 'latest',
     });
-    registryEvents = await Promise.all(
-      registryEvents.map(async x => {
-        return {
-          event: x.event,
-          returnValues: x.returnValues,
-          timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
-        };
-      }),
-    );
+    // registryEvents = await Promise.all(
+    //   registryEvents.map(async x => {
+    //     return {
+    //       event: x.event,
+    //       returnValues: x.returnValues,
+    //       timestamp: (await master.eth.getBlock(x.blockNumber)).timestamp,
+    //     };
+    //   }),
+    // );
     log.debug('Registry Events: ', registryEvents);
+
+    // const versionInformation = getVersionInformation(master, melonContracts.version);
+    // log.debug('Version Information: ', versionInformation);
+
+    // const registryInformation = getRegistryInformation(master, melonContracts.registry);
+
+    // log.debug('Registry Information: ', registryInformation);
 
     // go through funds
     const fundList = await getFundDetails(
