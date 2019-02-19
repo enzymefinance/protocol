@@ -107,7 +107,9 @@ describe('Happy Path', () => {
     expect(subtract(postFundWeth.quantity, preFundWeth.quantity)).toEqual(
       subtract(preliquidEther.quantity, postliquidEther.quantity),
     );
-    expect(subtract(preFundMln, postFundMln)).toEqual(takerQuantity);
+    expect(subtract(preFundMln, postFundMln).quantity).toEqual(
+      takerQuantity.quantity,
+    );
   });
 
   test('Maker quantity as minimum returned WETH is respected', async () => {
