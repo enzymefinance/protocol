@@ -12,5 +12,9 @@ contract BurnableToken is PreminedToken {
     function burn(uint _amount) public {
         _burn(msg.sender, _amount);
     }
+    
+    function burnFrom(address from, uint256 value) public {
+        _burnFrom(from, value);
+    }
 }
 

@@ -53,7 +53,7 @@ describe('transactionFactory', () => {
 
     await expect(
       transfer.send(shared.env, signedTransactionData, params),
-    ).rejects.toThrow('VM Exception while processing transaction: revert');
+    ).rejects.toMatch('revert');
 
     await expect(
       transfer(shared.env, params, {
@@ -61,6 +61,6 @@ describe('transactionFactory', () => {
         skipGasEstimation: true,
         skipGuards: true,
       }),
-    ).rejects.toThrow('VM Exception while processing transaction: revert');
+    ).rejects.toMatch('revert');
   });
 });

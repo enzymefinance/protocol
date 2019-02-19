@@ -25,6 +25,7 @@ import {
 } from '~/contracts/exchanges/transactions/deployEthfinex';
 import { ensure } from '../guards/ensure';
 import { Contracts } from '~/Contracts';
+import { deployBurnableToken } from '~/contracts/dependencies/token/transactions/deployBurnableToken';
 
 export interface ThirdPartyContracts {
   exchanges: {
@@ -59,6 +60,11 @@ const deployThirdParty = async (
       let deployed;
       if (current.symbol === 'WETH') {
         deployed = await getToken(environment, await deployWeth(environment));
+      } else if (current.symbol === 'MLN') {
+        deployed = await getToken(
+          environment,
+          await deployBurnableToken(environment, 'MLN', 18, 'Melon Token'),
+        );
       } else {
         deployed = await getToken(
           environment,
@@ -88,10 +94,12 @@ const deployThirdParty = async (
   const matchingMarket = await deployMatchingMarket(environment, {
     tokens: deployedTokens,
   });
+
   const kyber = await deployKyberEnvironment(environment, [
     deployedTokens.find(t => t.symbol === 'MLN'),
     deployedTokens.find(t => t.symbol === 'EUR'),
   ]);
+
   const zeroEx = await deploy0xExchange(environment, { zrxToken });
   const ethfinex = await deployEthfinex(environment, {
     zeroExExchangeAddress: zeroEx,
@@ -105,7 +113,10 @@ const deployThirdParty = async (
       matchingMarket,
       zeroEx,
     },
-    tokens: deployedTokens,
+    tokens: deployedTokens.map(token => ({
+      ...token,
+      reserveMin: 1000000000000000000,
+    })),
   };
 };
 
