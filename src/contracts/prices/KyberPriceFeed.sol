@@ -64,10 +64,16 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         PriceUpdate(assets, newPrices);
     }
 
-    /// @dev Set updater
     function setUpdater(address _updater) external {
         require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
         UPDATER = _updater;
+    }
+
+    /// @notice _maxSpread becomes a percentage when divided by 10^18
+    /// @notice (e.g. 10^17 becomes 10%)
+    function setMaxSpread(uint _maxSpread) external {
+        require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
+        MAX_SPREAD = _maxSpread;
     }
 
     // PUBLIC VIEW METHODS
