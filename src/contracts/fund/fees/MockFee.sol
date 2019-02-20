@@ -7,6 +7,11 @@ contract MockFee is Fee {
     uint public fee;
     uint public FEE_RATE;
     uint public FEE_PERIOD;
+    uint public feeNumber;
+
+    constructor(uint _feeNumber) {
+        feeNumber = _feeNumber;
+    }
 
     function setFeeAmount(uint amount) public {
         fee = amount;
@@ -24,6 +29,10 @@ contract MockFee is Fee {
 
     function updateState() external {
         fee = 0;
+    }
+
+    function identifier() external view returns (uint) {
+        return feeNumber;
     }
 }
 
