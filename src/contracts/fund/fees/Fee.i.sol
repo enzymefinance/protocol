@@ -6,5 +6,8 @@ interface Fee {
     function feeAmount() public view returns (uint);
     function initializeForUser(uint feeRate, uint feePeriod, address denominationAsset) external;
     function updateState() external;
+
+    /// @notice Used to enforce a convention
+    function identifier() external view returns (uint);
 }
 

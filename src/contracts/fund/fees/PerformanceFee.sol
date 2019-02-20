@@ -91,4 +91,8 @@ contract PerformanceFee is DSMath, Fee {
         highWaterMark[msg.sender] = currentGavPerShare;
         emit HighWaterMarkUpdate(msg.sender, currentGavPerShare);
     }
+
+    function identifier() external view returns (uint) {
+        return 1;
+    }
 }

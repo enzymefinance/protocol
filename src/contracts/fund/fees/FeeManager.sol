@@ -31,6 +31,18 @@ contract FeeManager is DSMath, Spoke {
             );
             register(_fees[i], _rates[i], _periods[i], _denominationAsset);
         }
+        if (fees.length > 0) {
+            require(
+                fees[0].identifier() == 0,
+                "Management fee must be at 0 index"
+            );
+        }
+        if (fees.length > 1) {
+            require(
+                fees[1].identifier() == 1,
+                "Performance fee must be at 1 index"
+            );
+        }
     }
 
     function register(address feeAddress, uint feeRate, uint feePeriod, address denominationAsset) internal {

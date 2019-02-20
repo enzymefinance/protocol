@@ -37,5 +37,9 @@ contract ManagementFee is DSMath, Fee {
     function updateState() external {
         lastPayoutTime[msg.sender] = block.timestamp;
     }
+
+    function identifier() external view returns (uint) {
+        return 0;
+    }
 }
 
