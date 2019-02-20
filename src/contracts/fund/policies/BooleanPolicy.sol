@@ -14,8 +14,10 @@ contract BooleanPolicy is Policy {
 
 contract TruePolicy is BooleanPolicy {
     constructor() { allowed = true; }
+    function identifier() external view returns (string) { "TruePolicy"; }
 }
 
 contract FalsePolicy is BooleanPolicy {
     constructor() { allowed = false; }
+    function identifier() external view returns (string) { "FalsePolicy"; }
 }

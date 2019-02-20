@@ -133,4 +133,5 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.pre; }
+    function identifier() external view returns (string) { return 'PriceTolerance'; }
 }

@@ -140,7 +140,7 @@ export const deployMockSystem = async (
   // TODO: replace with raw function when MockEngine is available
   const engine = await deployAndGetContract(env, engineContract, [
     30 * 24 * 60 * 60, // month
-    env.wallet.address.toString(),
+    registry.options.address,
   ]);
   await registry.methods
     .setEngine(engine.options.address.toString())

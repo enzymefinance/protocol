@@ -38,8 +38,8 @@ describe('makeOasisDexOrder', () => {
       { makerQuantity, takerQuantity },
     );
 
-    expect(orderToCancel.buy).toEqual(takerQuantity);
-    expect(orderToCancel.sell).toEqual(makerQuantity);
+    expect(orderToCancel.buy.quantity).toEqual(takerQuantity.quantity);
+    expect(orderToCancel.sell.quantity).toEqual(makerQuantity.quantity);
     expect(orderToCancel.maker).toEqual(shared.routes.tradingAddress);
 
     await expect(

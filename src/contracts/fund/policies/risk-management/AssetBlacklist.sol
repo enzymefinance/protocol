@@ -24,4 +24,5 @@ contract AssetBlacklist is TradingSignatures, AddressList, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.pre; }
+    function identifier() external view returns (string) { return 'AssetBlacklist'; }
 }

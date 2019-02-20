@@ -5,16 +5,16 @@ import { Address } from '@melonproject/token-math';
 
 interface DeployEngineArgs {
   delay: number;
-  postDeployOwner: Address;
+  registry: Address;
 }
 
 export const deployEngine = async (
   environment: Environment,
-  { delay, postDeployOwner }: DeployEngineArgs,
+  { delay, registry }: DeployEngineArgs,
 ) => {
   const address = await deployContract(environment, Contracts.Engine, [
     delay,
-    postDeployOwner.toString(),
+    registry.toString(),
   ]);
 
   return address;

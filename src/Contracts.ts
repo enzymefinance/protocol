@@ -46,6 +46,7 @@ export enum Contracts {
   ParticipationFactory = 'ParticipationFactory',
   PerformanceFee = 'PerformanceFee',
   PermissiveAuthority = 'PermissiveAuthority',
+  Policy = 'Policy',
   PolicyManager = 'PolicyManager',
   PolicyManagerFactory = 'PolicyManagerFactory',
   PreminedToken = 'PreminedToken',
@@ -170,6 +171,8 @@ export const requireMap = {
     require('../out/PerformanceFee.abi.json'),
   [Contracts.PermissiveAuthority]:
     require(`../out/${Contracts.PermissiveAuthority}.abi.json`),
+  [Contracts.Policy]:
+    require('../out/Policy.abi.json'),
   [Contracts.PolicyManager]:
     require('../out/PolicyManager.abi.json'),
   [Contracts.PolicyManagerFactory]:

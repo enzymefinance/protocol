@@ -60,6 +60,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         uint actualReceiveAmount = dispatchSwap(
             targetExchange, takerAsset, takerAssetAmount, makerAsset, minRate
         );
+        require(
+            actualReceiveAmount >= makerAssetAmount,
+            "Received less than expected from Kyber swap"
+        );
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
         getAccounting().updateOwnedAssets(); 

@@ -159,3 +159,15 @@ export { getToken } from '~/contracts/dependencies/token/calls/getToken';
 export {
   getAllowedExchanges,
 } from '~/contracts/fund/trading/calls/getAllowedExchanges';
+export {
+  enableInvestment,
+} from '~/contracts/fund/participation/transactions/enableInvestment';
+export {
+  disableInvestment,
+} from '~/contracts/fund/participation/transactions/disableInvestment';
+export {
+  investAllowed,
+} from '~/contracts/fund/participation/calls/investAllowed';
+export {
+  getPolicyInformation,
+} from '~/contracts/fund/policies/calls/getPolicyInformation';

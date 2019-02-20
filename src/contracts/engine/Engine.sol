@@ -1,13 +1,12 @@
 pragma solidity ^0.4.25;
 
-import "auth.sol";
 import "math.sol";
 import "BurnableToken.sol";
 import "PriceSource.i.sol";
 import "Registry.sol";
 
 /// @notice Liquidity contract and token sink
-contract Engine is DSMath, DSAuth {
+contract Engine is DSMath {
 
     event RegistryChange(address registry);
     event SetAmguPrice(uint amguPrice);
@@ -15,35 +14,60 @@ contract Engine is DSMath, DSAuth {
     event Thaw(uint amount);
     event Burn(uint amount);
 
+    uint public constant MLN_DECIMALS = 18;
+
+    Registry public registry;
+    uint public amguPrice;
     uint public frozenEther;
     uint public liquidEther;
     uint public lastThaw;
-    uint public THAWING_DELAY;
-    BurnableToken public mlnToken;
-    PriceSourceInterface public priceSource;
-    Registry public registry;
-    uint public MLN_DECIMALS = 18;
-    uint public amguPrice;
+    uint public thawingDelay;
     uint public totalEtherConsumed;
     uint public totalAmguConsumed;
     uint public totalMlnBurned;
 
-    constructor(uint _delay, address _postDeployOwner) {
+    constructor(uint _delay, address _registry) {
         lastThaw = block.timestamp;
-        THAWING_DELAY = _delay;
-        setOwner(_postDeployOwner);
+        thawingDelay = _delay;
+        _setRegistry(_registry);
     }
 
-    /// @dev only callable by deployer
-    function setRegistry(address _registry) external auth {
+    modifier onlyMGM() {
+        require(
+            msg.sender == registry.MGM(),
+            "Only MGM can call this"
+        );
+        _;
+    }
+
+    /// @dev Registry owner is MTC
+    modifier onlyMTC() {
+        require(
+            msg.sender == registry.owner(),
+            "Only MTC can call this"
+        );
+        _;
+    }
+
+    function _setRegistry(address _registry) internal {
         registry = Registry(_registry);
-        priceSource = PriceSourceInterface(registry.priceSource());
-        mlnToken = BurnableToken(registry.mlnToken());
         emit RegistryChange(registry);
     }
 
+    /// @dev only callable by MTC
+    function setRegistry(address _registry)
+        external
+        onlyMTC
+    {
+        _setRegistry(_registry);
+    }
+
     /// @dev set price of AMGU in MLN (base units)
-    function setAmguPrice(uint _price) external auth {
+    /// @dev only callable by MGM
+    function setAmguPrice(uint _price)
+        external
+        onlyMGM
+    {
         amguPrice = _price;
         emit SetAmguPrice(_price);
     }
@@ -70,7 +94,7 @@ contract Engine is DSMath, DSAuth {
         );
         uint mlnPerAmgu = getAmguPrice();
         uint ethPerMln;
-        (ethPerMln,) = priceSource.getPrice(address(mlnToken));
+        (ethPerMln,) = priceSource().getPrice(address(mlnToken()));
         uint amguConsumed;
         if (mlnPerAmgu > 0 && ethPerMln > 0) {
             amguConsumed = (mul(msg.value, 10 ** uint(MLN_DECIMALS))) / (mul(ethPerMln, mlnPerAmgu));
@@ -87,7 +111,7 @@ contract Engine is DSMath, DSAuth {
     /// @dev Delay only restarts when this function is called
     function thaw() external {
         require(
-            block.timestamp >= add(lastThaw, THAWING_DELAY),
+            block.timestamp >= add(lastThaw, thawingDelay),
             "Thawing delay has not passed"
         );
         require(frozenEther > 0, "No frozen ether to thaw");
@@ -100,7 +124,7 @@ contract Engine is DSMath, DSAuth {
     /// @return ETH per MLN including premium
     function enginePrice() public view returns (uint) {
         uint ethPerMln;
-        (ethPerMln, ) = priceSource.getPrice(address(mlnToken));
+        (ethPerMln, ) = priceSource().getPrice(address(mlnToken()));
         uint premium = (mul(ethPerMln, premiumPercent()) / 100);
         return add(ethPerMln, premium);
     }
@@ -113,7 +137,7 @@ contract Engine is DSMath, DSAuth {
     function sellAndBurnMln(uint mlnAmount) external {
         require(registry.isFund(msg.sender), "Only funds can use the engine");
         require(
-            mlnToken.transferFrom(msg.sender, address(this), mlnAmount),
+            mlnToken().transferFrom(msg.sender, address(this), mlnAmount),
             "MLN transferFrom failed"
         );
         uint ethToSend = ethPayoutForMlnAmount(mlnAmount);
@@ -122,8 +146,26 @@ contract Engine is DSMath, DSAuth {
         liquidEther = sub(liquidEther, ethToSend);
         totalMlnBurned = add(totalMlnBurned, mlnAmount);
         msg.sender.transfer(ethToSend);
-        mlnToken.burn(mlnAmount);
+        mlnToken().burn(mlnAmount);
         emit Burn(mlnAmount);
+    }
+
+    /// @dev Get MLN from the registry
+    function mlnToken()
+        public
+        view
+        returns (BurnableToken)
+    {
+        return BurnableToken(registry.mlnToken());
+    }
+
+    /// @dev Get PriceSource from the registry
+    function priceSource()
+        public
+        view
+        returns (PriceSourceInterface)
+    {
+        return PriceSourceInterface(registry.priceSource());
     }
 }
 
