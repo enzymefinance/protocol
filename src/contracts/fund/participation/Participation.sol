@@ -55,8 +55,8 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
     function disableInvestment(address[] _assets) external auth {
         for (uint i = 0; i < _assets.length; i++) {
             investAllowed[_assets[i]] = false;
-            emit DisableInvestment(_assets);
         }
+        emit DisableInvestment(_assets);
     }
 
     function hasRequest(address _who) public view returns (bool) {
