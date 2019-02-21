@@ -8,7 +8,7 @@ import "TradingSignatures.sol";
 import "math.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath, Policy {
-    uint tolerance;
+    uint public tolerance;
 
     uint constant MULTIPLIER = 10 ** 16; // to give effect of a percentage
     uint constant DIVISOR = 10 ** 18;

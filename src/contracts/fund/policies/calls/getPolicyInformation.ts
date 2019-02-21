@@ -6,28 +6,33 @@ import { maxPositions as getMaxPositions } from '~/contracts/fund/policies/calls
 import { tolerance as getTolerance } from '~/contracts/fund/policies/calls/tolerance';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
+import web3Utils from 'web3-utils';
 
 // manually defining cases for each policy that has params
 const getParametersForPolicy = async (env, policyName, policyAddress) => {
-  const params: any = {};
   switch (policyName) {
-    case 'MaxConcentration':
-      params.maxConcentration = getMaxConcentration(env, policyAddress);
-      break;
-    case 'MaxPositions':
-      params.maxPositions = getMaxPositions(env, policyAddress);
-      break;
-    case 'PriceTolerance':
-      params.tolerance = getTolerance(env, policyAddress);
-      break;
+    case 'MaxConcentration': {
+      const maxConcentration = await getMaxConcentration(env, policyAddress);
+      return { maxConcentration };
+    }
+
+    case 'MaxPositions': {
+      const maxPositions = await getMaxPositions(env, policyAddress);
+      return { maxPositions };
+    }
+
+    case 'PriceTolerance': {
+      const tolerance = await getTolerance(env, policyAddress);
+      return { tolerance };
+    }
+
     default:
-      break;
+      return {};
   }
-  return params;
 };
 
 const getFunctionIdentifier = (env, functionNameAndArguments) => {
-  return env.web3.utils.keccak256(functionNameAndArguments).slice(0, 10);
+  return web3Utils.keccak256(functionNameAndArguments).slice(0, 10);
 };
 
 export const getPolicyInformation = async (
@@ -42,29 +47,32 @@ export const getPolicyInformation = async (
     getFunctionIdentifier(env, FunctionSignatures.withdrawTokens),
     getFunctionIdentifier(env, FunctionSignatures.executeRequestFor),
   ];
-  const registeredPolicies = [];
-  for (const sig of sigsToCheck) {
-    const retrievedPolicies = await getPoliciesBySig(env, policyManager, {
-      sig,
-    });
-    for (const policyAddress of retrievedPolicies.pre.concat(
-      retrievedPolicies.post,
-    )) {
-      if (registeredPolicies.indexOf(policyAddress) === -1) {
-        const policyName = getIdentifier(env, policyAddress);
 
-        const policyObject = {
-          address: policyAddress,
-          name: policyName,
-          parameters: await getParametersForPolicy(
-            env,
-            policyName,
-            policyAddress,
-          ),
-        };
-        registeredPolicies.push(policyObject);
-      }
-    }
-  }
-  return registeredPolicies;
+  const retrievedPolicies = await Promise.all(
+    sigsToCheck.map(sig => {
+      return getPoliciesBySig(env, policyManager, { sig });
+    }),
+  );
+
+  const policyAddresses = retrievedPolicies.map(policy => {
+    return [...policy.pre, ...policy.post].map(address => address.toString());
+  });
+
+  const uniquePolicyAddresses = policyAddresses.reduce((carry, current) => {
+    const add = current.filter(address => carry.indexOf(address) === -1);
+    return [...carry, ...add];
+  }, []);
+
+  const policyObjects = uniquePolicyAddresses.map(async address => {
+    const name = await getIdentifier(env, address);
+    const parameters = await getParametersForPolicy(env, name, address);
+
+    return {
+      address,
+      name,
+      parameters,
+    };
+  });
+
+  return Promise.all(policyObjects);
 };
