@@ -30,12 +30,14 @@ import {
 } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
-import { Address } from '@melonproject/token-math';
+import { Address, createQuantity } from '@melonproject/token-math';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
 import { setEngine } from '~/contracts/version/transactions/setEngine';
 import { setMGM } from '~/contracts/version/transactions/setMGM';
+import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { registerVersion } from '~/contracts/version/transactions/registerVersion';
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 import { isFeeRegistered } from '~/contracts/version/calls/isFeeRegistered';
@@ -44,6 +46,7 @@ import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInf
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
+import { setMaxSpread } from '~/contracts/prices/transactions/setMaxSpread';
 import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { getConvertedPrices } from '~/tests/utils/updateTestingPriceFeed';
 import { getContract } from '~/utils/solidity/getContract';
@@ -389,6 +392,43 @@ export const deploySystem = async (
         registry: environment.deployment.melonContracts.registry,
       }),
     ),
+    maybeDoSomething(true, async environment => {
+      if (environment.track === Tracks.KYBER_PRICE) {
+        await setMaxSpread(
+          environment,
+          environment.deployment.melonContracts.priceSource,
+          {
+            // divided by 10^18 (ends up being 10%)
+            maxSpread: '100000000000000000',
+          },
+        );
+      }
+      await setMGM(
+        environment,
+        environment.deployment.melonContracts.registry,
+        {
+          // used for setting initial amguPrice
+          address: environment.wallet.address,
+        },
+      );
+      const amguToken = await getAmguToken(
+        environment,
+        environment.deployment.melonContracts.version,
+      );
+      await setAmguPrice(
+        environment,
+        environment.deployment.melonContracts.engine,
+        createQuantity(amguToken, 0),
+      );
+      await setMGM(
+        environment,
+        environment.deployment.melonContracts.registry,
+        {
+          // used for setting initial amguPrice
+          address: control.MGM || environment.wallet.address,
+        },
+      );
+    }),
   )(new Promise(resolve => resolve(environment)));
 
   const { melonContracts } = environmentWithDeployment.deployment;
