@@ -26,17 +26,21 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
   return params;
 };
 
+const getFunctionIdentifier = (env, functionNameAndArguments) => {
+  return env.web3.utils.keccak256(functionNameAndArguments).slice(0, 10);
+};
+
 export const getPolicyInformation = async (
   env: Environment,
   policyManager: Address,
 ) => {
   // HACK: uses a heuristic to check most common signatures
   const sigsToCheck = [
-    FunctionSignatures.makeOrder,
-    FunctionSignatures.takeOrder,
-    FunctionSignatures.cancelOrder,
-    FunctionSignatures.withdrawTokens,
-    FunctionSignatures.executeRequestFor,
+    getFunctionIdentifier(env, FunctionSignatures.makeOrder),
+    getFunctionIdentifier(env, FunctionSignatures.takeOrder),
+    getFunctionIdentifier(env, FunctionSignatures.cancelOrder),
+    getFunctionIdentifier(env, FunctionSignatures.withdrawTokens),
+    getFunctionIdentifier(env, FunctionSignatures.executeRequestFor),
   ];
   const registeredPolicies = [];
   for (const sig of sigsToCheck) {
