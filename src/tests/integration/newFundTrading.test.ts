@@ -61,7 +61,7 @@ beforeAll(async () => {
   };
   const envManager = withDifferentAccount(s.environment, s.manager);
   await beginSetup(envManager, s.version.options.address, {
-    defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
+    defaultTokens: [s.wethTokenInterface],
     exchangeConfigs,
     fees: [],
     fundName: 'Test fund',
@@ -164,6 +164,10 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     const exchangePreEthToken = new BigInteger(
       await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
     );
+    const preIsMlnInAssetList = await s.fund.accounting.methods
+      .isInAssetList(s.mln.options.address)
+      .call();
+
     await s.fund.trading.methods
       .callOnExchange(
         i,
@@ -200,6 +204,12 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
       await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),
     );
     const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    const postIsMlnInAssetList = await s.fund.accounting.methods
+      .isInAssetList(s.mln.options.address)
+      .call();
+    const openOrdersAgainstMln = await s.fund.trading.methods
+      .openMakeOrdersAgainstAsset(s.mln.options.address)
+      .call();
 
     expect(exchangePostMln).toEqual(exchangePreMln);
     expect(exchangePostEthToken).toEqual(
@@ -207,6 +217,25 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
     );
     expect(post.fund.weth).toEqual(pre.fund.weth);
     expect(post.deployer.mln).toEqual(pre.deployer.mln);
+    expect(postIsMlnInAssetList).toBeTruthy();
+    expect(preIsMlnInAssetList).toBeFalsy();
+    expect(Number(openOrdersAgainstMln)).toEqual(1);
+  });
+
+  test(`Exchange ${i +
+    1}: anticipated taker asset is not removed from owned assets`, async () => {
+    await s.fund.accounting.methods
+      .performCalculations()
+      .send({ from: s.manager, gas: s.gas });
+    await s.fund.accounting.methods
+      .updateOwnedAssets()
+      .send({ from: s.manager, gas: s.gas });
+
+    const isMlnInAssetList = await s.fund.accounting.methods
+      .isInAssetList(s.mln.options.address)
+      .call();
+
+    expect(isMlnInAssetList).toBeTruthy();
   });
 
   test(`Exchange ${i +
