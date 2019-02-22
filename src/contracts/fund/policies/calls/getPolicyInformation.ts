@@ -7,25 +7,22 @@ import { getMembers } from '~/contracts/fund/policies/calls/getMembers';
 import { tolerance as getTolerance } from '~/contracts/fund/policies/calls/tolerance';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
-import web3Utils from 'web3-utils';
 import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
+import web3Utils from 'web3-utils';
 
 // manually defining cases for each policy that has params
 const getParametersForPolicy = async (env, policyName, policyAddress) => {
   switch (policyName) {
     case 'MaxConcentration': {
-      const maxConcentration = await getMaxConcentration(env, policyAddress);
-      return { maxConcentration };
+      return getMaxConcentration(env, policyAddress);
     }
 
     case 'MaxPositions': {
-      const maxPositions = await getMaxPositions(env, policyAddress);
-      return { maxPositions };
+      return getMaxPositions(env, policyAddress);
     }
 
     case 'PriceTolerance': {
-      const tolerance = await getTolerance(env, policyAddress);
-      return { tolerance };
+      return getTolerance(env, policyAddress);
     }
 
     case 'AssetWhitelist': {
@@ -34,7 +31,7 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
         .map(address => getTokenByAddress(env, address))
         .map(token => token.symbol);
 
-      return { members: symbols.join(', ') };
+      return symbols.join(', ');
     }
 
     case 'AssetBlacklist': {
@@ -43,11 +40,11 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
         .map(address => getTokenByAddress(env, address))
         .map(token => token.symbol);
 
-      return { members: symbols.join(', ') };
+      return symbols.join(', ');
     }
 
     default:
-      return {};
+      return null;
   }
 };
 

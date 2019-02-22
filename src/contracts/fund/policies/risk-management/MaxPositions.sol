@@ -27,5 +27,5 @@ contract MaxPositions is TradingSignatures, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.post; }
-    function identifier() external view returns (string) { return 'MaxPositions'; }
+    function identifier() external view returns (string) { return 'Max positions'; }
 }
