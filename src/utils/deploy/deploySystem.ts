@@ -46,7 +46,6 @@ import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInf
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
-import { setMaxSpread } from '~/contracts/prices/transactions/setMaxSpread';
 import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { getConvertedPrices } from '~/tests/utils/updateTestingPriceFeed';
 import { getContract } from '~/utils/solidity/getContract';

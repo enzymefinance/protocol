@@ -9,6 +9,7 @@ import { cancelOasisDexOrder } from './cancelOasisDexOrder';
 import { getActiveOasisDexOrders } from '~/contracts/exchanges/calls/getActiveOasisDexOrders';
 import takeOrderFromAccountOasisDex from '~/contracts/exchanges/transactions/takeOrderFromAccountOasisDex';
 import { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
+import { increaseTime } from '~/utils/evm/increaseTime';
 
 describe('makeOasisDexOrder', () => {
   const shared: {
@@ -55,6 +56,8 @@ describe('makeOasisDexOrder', () => {
       makerAsset: orderToCancel.sell.token.address,
       takerAsset: orderToCancel.buy.token.address,
     });
+
+    await increaseTime(shared.env, 60 * 30);
 
     // Now it should work again
     const orderToStay = await makeOasisDexOrder(
