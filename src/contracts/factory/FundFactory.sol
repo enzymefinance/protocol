@@ -106,7 +106,7 @@ contract FundFactory is AmguConsumer, Factory {
     {
         Registry(registry).reserveFundName(
             msg.sender,
-            managersToSettings[msg.sender].name
+            _name
         );
         require(
             Registry(registry).assetIsRegistered(_denominationAsset),
