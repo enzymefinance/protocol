@@ -47,9 +47,11 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
+    mapping (address => uint) public makerAssetCooldown; 
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
 
     uint public constant ORDER_LIFESPAN = 1 days;
+    uint public constant MAKE_ORDER_COOLDOWN = 30 minutes;
 
     modifier delegateInternal() {
         require(msg.sender == address(this), "Sender is not this contract");
@@ -196,6 +198,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             "Expiry time greater than max order lifespan or has already passed"
         );
         isInOpenMakeOrder[sellAsset] = true;
+        makerAssetCooldown[sellAsset] = add(actualExpirationTime, MAKE_ORDER_COOLDOWN);
         openMakeOrdersAgainstAsset[buyAsset] = add(openMakeOrdersAgainstAsset[buyAsset], 1);
         exchangesToOpenMakeOrders[ofExchange][sellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = actualExpirationTime;
@@ -209,6 +212,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         address sellAsset
     ) internal {
         if (isInOpenMakeOrder[sellAsset]) {
+
+            makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN); 
             address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
             delete exchangesToOpenMakeOrders[exchange][sellAsset];
             openMakeOrdersAgainstAsset[buyAsset] = sub(openMakeOrdersAgainstAsset[buyAsset], 1);

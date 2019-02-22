@@ -63,6 +63,13 @@ contract ExchangeAdapter {
         );
     }
 
+    function ensureCanMakeOrder(address _asset) internal view {
+        require(
+            block.timestamp >= getTrading().makerAssetCooldown(_asset),
+            "Cooldown for the maker asset not reached"
+        );
+    }
+
     /// @param orderAddresses [0] Order maker
     /// @param orderAddresses [1] Order taker
     /// @param orderAddresses [2] Order maker asset

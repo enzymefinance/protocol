@@ -32,6 +32,7 @@ import { createTrading } from '~/contracts/factory/transactions/createTrading';
 import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
+import { increaseTime } from '~/utils/evm/increaseTime';
 
 const precisionUnits = power(new BigInteger(10), new BigInteger(18));
 
@@ -382,6 +383,7 @@ Array.from(Array(s.numberofExchanges).keys()).forEach(i => {
   });
 
   test(`Exchange ${i + 1}: manager makes an order and cancels it`, async () => {
+    await increaseTime(s.environment, 60 * 30);
     const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
     const exchangePreEthToken = new BigInteger(
       await s.weth.methods.balanceOf(s.exchanges[i].options.address).call(),

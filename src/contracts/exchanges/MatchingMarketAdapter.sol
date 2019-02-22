@@ -44,6 +44,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
+        ensureCanMakeOrder(orderAddresses[2]);
         ERC20 makerAsset = ERC20(orderAddresses[2]);
         ERC20 takerAsset = ERC20(orderAddresses[3]);
         uint makerQuantity = orderValues[0];
