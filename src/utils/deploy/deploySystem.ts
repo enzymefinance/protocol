@@ -46,7 +46,6 @@ import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInf
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
 import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
-import { setMaxSpread } from '~/contracts/prices/transactions/setMaxSpread';
 import { deployTestingPriceFeed } from '~/contracts/prices/transactions/deployTestingPriceFeed';
 import { getConvertedPrices } from '~/tests/utils/updateTestingPriceFeed';
 import { getContract } from '~/utils/solidity/getContract';
@@ -281,6 +280,7 @@ export const deploySystem = async (
             kyberNetworkProxy:
               environment.deployment.thirdPartyContracts.exchanges.kyber
                 .kyberNetworkProxy,
+            maxSpread: 0.1,
             quoteToken: wethToken,
             registry: environment.deployment.melonContracts.registry,
           })
@@ -393,16 +393,6 @@ export const deploySystem = async (
       }),
     ),
     maybeDoSomething(true, async environment => {
-      if (environment.track === Tracks.KYBER_PRICE) {
-        await setMaxSpread(
-          environment,
-          environment.deployment.melonContracts.priceSource,
-          {
-            // divided by 10^18 (ends up being 10%)
-            maxSpread: '100000000000000000',
-          },
-        );
-      }
       await setMGM(
         environment,
         environment.deployment.melonContracts.registry,

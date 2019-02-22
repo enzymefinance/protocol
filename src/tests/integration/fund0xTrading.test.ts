@@ -519,6 +519,7 @@ test('Fund can cancel the order using just the orderId', async () => {
 });
 
 test('Expired order is removed from open maker order', async () => {
+  await increaseTime(s.environment, 60 * 30);
   const makerAddress = s.fund.trading.options.address.toLowerCase();
   const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
   const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
