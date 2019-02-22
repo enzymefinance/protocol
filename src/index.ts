@@ -76,10 +76,11 @@ export {
   makeOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 export { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-export { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 export {
   getHistoricalInvestors,
 } from '~/contracts/fund/participation/calls/getHistoricalInvestors';
+export { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
+export { getEnginePrice } from '~/contracts/engine/calls/getEnginePrice';
 export {
   getTotalAmguConsumed,
 } from '~/contracts/engine/calls/getTotalAmguConsumed';
@@ -119,6 +120,9 @@ export {
 export {
   takeOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
+export {
+  takeEngineOrder,
+} from '~/contracts/fund/trading/transactions/takeEngineOrder';
 export { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
 export {
   getExpectedRate,
