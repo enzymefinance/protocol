@@ -1,9 +1,9 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-02-22T21:03:47.209Z",
+    "timestamp": "2019-02-22T20:40:22.161Z",
     "track": "kyberPrice",
-    "version": "0.9.41",
+    "version": "0.9.40",
     "chain": 42
   },
   "melonContracts": {
@@ -33,7 +33,7 @@
       "tradingFactory": "0x4562f74e9F7F09F3a0D51c2C210b474Db16B905a",
       "vaultFactory": "0x317bA36f7546c2a7A35EEB818895069b50E64d37"
     },
-    "engine": "0x4c9D5A5a2d4097f0B609739450a049980A224490",
+    "engine": "0x5C47881845340f8fA6ec82e988E8e5b49DA8bC42",
     "registry": "0x21Bd0F120959cE6656D978509E39A4f61966cF19",
     "version": "0x3CF45300E47Fc3bc7B8aCE61BFa89D273Ce203c0",
     "ranking": "0x6F7644C2f6ADe590A3a4197D5aC9cE46f5478fCD"
@@ -134,7 +134,7 @@
     },
     "MelonEngine": {
       "adapter": "0x62d0f4EAf85fE5e24F1E594dA38541D5CD69DCd3",
-      "exchange": "0x4c9D5A5a2d4097f0B609739450a049980A224490",
+      "exchange": "0x5C47881845340f8fA6ec82e988E8e5b49DA8bC42",
       "takesCustody": false
     }
   }
