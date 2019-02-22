@@ -24,7 +24,9 @@ const prepareArgs: PrepareArgsFunction<DisableInvestmentArgs> = async (
 
 const postProcess = async (environment, receipt, params, contractAddress) => {
   return {
-    assetsDisabled: receipt.events.DisableInvestment.returnValues._assets,
+    assetsDisabled: !!receipt.events.DisableInvestment
+      ? receipt.events.DisableInvestment.returnValues._assets
+      : [],
   };
 };
 

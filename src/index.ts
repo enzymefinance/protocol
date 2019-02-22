@@ -28,6 +28,7 @@ export { getQuoteToken } from '~/contracts/prices/calls/getQuoteToken';
 export { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+export { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
 export {
   hasExpiredRequest,
