@@ -1,43 +1,39 @@
 {
   "meta": {
-    "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-02-22T15:23:04.446Z",
     "track": "kyberPrice",
-    "version": "0.9.39",
-    "chain": 42,
     "description": "Post ChainSecurity audit"
   },
   "melonContracts": {
-    "priceSource": "0x67E1D9c7F6e8afEe2A8715a6ecBee6e42d696F53",
+    "priceSource": "DEPLOY",
     "adapters": {
-      "ethfinexAdapter": "0xE99Df05AdF4cC1c8F0A6F65374fbD7C9905C701E",
-      "kyberAdapter": "0x2f85Db8133fC093bCEe1b1bcB332d1814926Ab7A",
-      "matchingMarketAdapter": "0x14AdED89981E6c359A3C508F10f7F638674368F7",
-      "matchingMarketAccessor": "0xB7d0728209666E55d7e001CC580d326A3c051981",
-      "zeroExAdapter": "0x60c95326ac08108F67b2a8b13cb309F6496253e8",
-      "engineAdapter": "0x11C57Af8c50c5C370d792Ff85470eF01CaC77492"
+      "ethfinexAdapter": "DEPLOY",
+      "kyberAdapter": "DEPLOY",
+      "matchingMarketAdapter": "DEPLOY",
+      "matchingMarketAccessor": "DEPLOY",
+      "zeroExAdapter": "DEPLOY",
+      "engineAdapter": "DEPLOY"
     },
     "policies": {
-      "priceTolerance": "0x37e7ad9C009B252DC3e69cb888681a2a5F35356E",
-      "userWhitelist": "0x583a1AA180F65e3aBE5E57D64D4f5b0745756361"
+      "priceTolerance": "DEPLOY",
+      "userWhitelist": "DEPLOY"
     },
     "fees": {
-      "managementFee": "0x3E94dca7EfC972CAC5973f59133F2C356C742921",
-      "performanceFee": "0x1c3570b3D31Ba00cab140C23951F062a0802A017"
+      "managementFee": "DEPLOY",
+      "performanceFee": "DEPLOY"
     },
     "factories": {
-      "accountingFactory": "0xF3Ba1D25bD0E00b1E49Bf6FCB1Baf6deD347315B",
-      "feeManagerFactory": "0xc83154FF67473AC767230A1c3C64094Fbf102950",
-      "participationFactory": "0x29A05Ea4733fbbd68133A218a2209e98A477f267",
-      "policyManagerFactory": "0xB851d4cc83B16eceBf20E97E0151BF6BD2294114",
-      "sharesFactory": "0xb9e267A24c9370DFaA2aaB9ec1c16dAF80BEEFCe",
-      "tradingFactory": "0x2e255AC36DEe29E2faD741677868bcF80e57B19B",
-      "vaultFactory": "0x3054062f4507f786E79Fa9948691B9Ca634aB0a8"
+      "accountingFactory": "DEPLOY",
+      "feeManagerFactory": "DEPLOY",
+      "participationFactory": "DEPLOY",
+      "policyManagerFactory": "DEPLOY",
+      "sharesFactory": "DEPLOY",
+      "tradingFactory": "DEPLOY",
+      "vaultFactory": "DEPLOY"
     },
-    "engine": "0xF3639de6e836Ca9cE7d6aDdd86A13329C5c00ae3",
-    "registry": "0x822437028341bc6AE782eD684A635a8Aaf954Bf8",
-    "version": "0x9f039fdcf2ea36079a97FDB85228AC6cBa348888",
-    "ranking": "0x3Cd9C65db092F8b919f3FA5460E758de3FfC99c6"
+    "engine": "DEPLOY",
+    "registry": "DEPLOY",
+    "version": "DEPLOY",
+    "ranking": "DEPLOY"
   },
   "thirdPartyContracts": {
     "exchanges": {
@@ -114,29 +110,24 @@
   },
   "exchangeConfigs": {
     "MatchingMarket": {
-      "adapter": "0x14AdED89981E6c359A3C508F10f7F638674368F7",
+      "adapter": "0x655bd32E410c144c34F2033CbC1dD02D11Aa723d",
       "exchange": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
       "takesCustody": true
     },
     "KyberNetwork": {
-      "adapter": "0x2f85Db8133fC093bCEe1b1bcB332d1814926Ab7A",
+      "adapter": "0x014364D19bB3250515002dD7C17B42934e01f44A",
       "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
       "takesCustody": false
     },
     "ZeroEx": {
-      "adapter": "0x60c95326ac08108F67b2a8b13cb309F6496253e8",
+      "adapter": "0x054e5B740D28385Dd0c96d6Dfd522923a9D04e1E",
       "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
       "takesCustody": false
     },
     "Ethfinex": {
-      "adapter": "0xE99Df05AdF4cC1c8F0A6F65374fbD7C9905C701E",
+      "adapter": "0x5a173c1040844A90b926b6FA737F6812D4554F74",
       "exchange": "0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
       "takesCustody": true
-    },
-    "MelonEngine": {
-      "adapter": "0x11C57Af8c50c5C370d792Ff85470eF01CaC77492",
-      "exchange": "0xF3639de6e836Ca9cE7d6aDdd86A13329C5c00ae3",
-      "takesCustody": false
     }
   }
 }
