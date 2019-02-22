@@ -4,6 +4,7 @@ import web3EthAbi from 'web3-eth-abi';
 export enum Contracts {
   Accounting = 'Accounting',
   AccountingFactory = 'AccountingFactory',
+  AddressList = 'AddressList',
   AmguConsumer = 'AmguConsumer',
   AssetBlacklist = 'AssetBlacklist',
   AssetWhitelist = 'AssetWhitelist',
@@ -83,6 +84,8 @@ export const requireMap = {
     require('../out/Accounting.abi.json'),
   [Contracts.AccountingFactory]:
     require(`../out/${Contracts.AccountingFactory}.abi.json`),
+  [Contracts.AddressList]:
+    require('../out/AddressList.abi.json'),
   [Contracts.AmguConsumer]:
     require('../out/AmguConsumer.abi.json'),
   [Contracts.AssetBlacklist]:

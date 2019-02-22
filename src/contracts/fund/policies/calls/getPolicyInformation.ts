@@ -3,6 +3,7 @@ import { getPoliciesBySig } from '~/contracts/fund/policies/calls/getPoliciesByS
 import { identifier as getIdentifier } from '~/contracts/fund/policies/calls/identifier';
 import { maxConcentration as getMaxConcentration } from '~/contracts/fund/policies/calls/maxConcentration';
 import { maxPositions as getMaxPositions } from '~/contracts/fund/policies/calls/maxPositions';
+import { getMembers } from '~/contracts/fund/policies/calls/getMembers';
 import { tolerance as getTolerance } from '~/contracts/fund/policies/calls/tolerance';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
@@ -24,6 +25,16 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
     case 'PriceTolerance': {
       const tolerance = await getTolerance(env, policyAddress);
       return { tolerance };
+    }
+
+    case 'AssetWhitelist': {
+      const members = await getMembers(env, policyAddress);
+      return { members };
+    }
+
+    case 'AssetBlacklist': {
+      const members = await getMembers(env, policyAddress);
+      return { members };
     }
 
     default:
