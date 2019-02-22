@@ -172,3 +172,6 @@ export {
 export {
   getPolicyInformation,
 } from '~/contracts/fund/policies/calls/getPolicyInformation';
+export {
+  getShareCostInAsset,
+} from '~/contracts/fund/accounting/calls/getShareCostInAsset';

@@ -8,6 +8,7 @@ import { tolerance as getTolerance } from '~/contracts/fund/policies/calls/toler
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
 import web3Utils from 'web3-utils';
+import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 
 // manually defining cases for each policy that has params
 const getParametersForPolicy = async (env, policyName, policyAddress) => {
@@ -29,12 +30,20 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
 
     case 'AssetWhitelist': {
       const members = await getMembers(env, policyAddress);
-      return { members };
+      const symbols = members
+        .map(address => getTokenByAddress(env, address))
+        .map(token => token.symbol);
+
+      return { members: symbols.join(', ') };
     }
 
     case 'AssetBlacklist': {
       const members = await getMembers(env, policyAddress);
-      return { members };
+      const symbols = members
+        .map(address => getTokenByAddress(env, address))
+        .map(token => token.symbol);
+
+      return { members: symbols.join(', ') };
     }
 
     default:
