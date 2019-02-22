@@ -1,33 +1,77 @@
-import { Address } from '@melonproject/token-math';
+import { Address, createQuantity, toFixed } from '@melonproject/token-math';
 import { getPoliciesBySig } from '~/contracts/fund/policies/calls/getPoliciesBySig';
 import { identifier as getIdentifier } from '~/contracts/fund/policies/calls/identifier';
 import { maxConcentration as getMaxConcentration } from '~/contracts/fund/policies/calls/maxConcentration';
 import { maxPositions as getMaxPositions } from '~/contracts/fund/policies/calls/maxPositions';
+import { getMembers } from '~/contracts/fund/policies/calls/getMembers';
 import { tolerance as getTolerance } from '~/contracts/fund/policies/calls/tolerance';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { Environment } from '~/utils/environment/Environment';
+import { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 import web3Utils from 'web3-utils';
 
 // manually defining cases for each policy that has params
 const getParametersForPolicy = async (env, policyName, policyAddress) => {
   switch (policyName) {
-    case 'MaxConcentration': {
-      const maxConcentration = await getMaxConcentration(env, policyAddress);
-      return { maxConcentration };
+    case 'Max concentration': {
+      const value = await getMaxConcentration(env, policyAddress);
+      const quantity = createQuantity(
+        {
+          decimals: 18,
+          symbol: 'NONE',
+        },
+        value,
+      );
+
+      return `${parseFloat(toFixed(quantity)) * 100}%`;
     }
 
-    case 'MaxPositions': {
-      const maxPositions = await getMaxPositions(env, policyAddress);
-      return { maxPositions };
+    case 'Max positions': {
+      const value = await getMaxPositions(env, policyAddress);
+      const quantity = createQuantity(
+        {
+          decimals: 18,
+          symbol: 'NONE',
+        },
+        value,
+      );
+
+      return `${parseFloat(toFixed(quantity)) * 100}%`;
     }
 
-    case 'PriceTolerance': {
-      const tolerance = await getTolerance(env, policyAddress);
-      return { tolerance };
+    case 'Price tolerance': {
+      const value = await getTolerance(env, policyAddress);
+      const quantity = createQuantity(
+        {
+          decimals: 18,
+          symbol: 'NONE',
+        },
+        value,
+      );
+
+      return `${parseFloat(toFixed(quantity)) * 100}%`;
+    }
+
+    case 'Asset whitelist': {
+      const members = await getMembers(env, policyAddress);
+      const symbols = members
+        .map(address => getTokenByAddress(env, address))
+        .map(token => token.symbol);
+
+      return symbols.join(', ');
+    }
+
+    case 'Asset blacklist': {
+      const members = await getMembers(env, policyAddress);
+      const symbols = members
+        .map(address => getTokenByAddress(env, address))
+        .map(token => token.symbol);
+
+      return symbols.join(', ');
     }
 
     default:
-      return {};
+      return null;
   }
 };
 

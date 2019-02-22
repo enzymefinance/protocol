@@ -29,6 +29,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
+        ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
         address makerAsset = getAssetAddress(makerAssetData);
