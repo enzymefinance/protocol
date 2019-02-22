@@ -1,4 +1,4 @@
-import { Address } from '@melonproject/token-math';
+import { Address, createQuantity, toFixed } from '@melonproject/token-math';
 import { getPoliciesBySig } from '~/contracts/fund/policies/calls/getPoliciesBySig';
 import { identifier as getIdentifier } from '~/contracts/fund/policies/calls/identifier';
 import { maxConcentration as getMaxConcentration } from '~/contracts/fund/policies/calls/maxConcentration';
@@ -13,19 +13,46 @@ import web3Utils from 'web3-utils';
 // manually defining cases for each policy that has params
 const getParametersForPolicy = async (env, policyName, policyAddress) => {
   switch (policyName) {
-    case 'MaxConcentration': {
-      return getMaxConcentration(env, policyAddress);
+    case 'Max concentration': {
+      const value = await getMaxConcentration(env, policyAddress);
+      const quantity = createQuantity(
+        {
+          decimals: 18,
+          symbol: 'NONE',
+        },
+        value,
+      );
+
+      return `${parseFloat(toFixed(quantity)) * 100}%`;
     }
 
-    case 'MaxPositions': {
-      return getMaxPositions(env, policyAddress);
+    case 'Max positions': {
+      const value = await getMaxPositions(env, policyAddress);
+      const quantity = createQuantity(
+        {
+          decimals: 18,
+          symbol: 'NONE',
+        },
+        value,
+      );
+
+      return `${parseFloat(toFixed(quantity)) * 100}%`;
     }
 
-    case 'PriceTolerance': {
-      return getTolerance(env, policyAddress);
+    case 'Price tolerance': {
+      const value = await getTolerance(env, policyAddress);
+      const quantity = createQuantity(
+        {
+          decimals: 18,
+          symbol: 'NONE',
+        },
+        value,
+      );
+
+      return `${parseFloat(toFixed(quantity)) * 100}%`;
     }
 
-    case 'AssetWhitelist': {
+    case 'Asset whitelist': {
       const members = await getMembers(env, policyAddress);
       const symbols = members
         .map(address => getTokenByAddress(env, address))
@@ -34,7 +61,7 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
       return symbols.join(', ');
     }
 
-    case 'AssetBlacklist': {
+    case 'Asset blacklist': {
       const members = await getMembers(env, policyAddress);
       const symbols = members
         .map(address => getTokenByAddress(env, address))
