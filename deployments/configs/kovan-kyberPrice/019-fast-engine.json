@@ -3,7 +3,7 @@
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
     "timestamp": "2019-02-22T20:40:22.161Z",
     "track": "kyberPrice",
-    "version": "0.9.40",
+    "version": "0.9.41",
     "chain": 42
   },
   "melonContracts": {
