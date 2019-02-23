@@ -93,7 +93,7 @@ const requestInvestment: EnhancedExecute<
   guard,
   prepareArgs,
   postProcess,
-  { amguPayable: true, incentive: true, gas: '7500000' },
+  { amguPayable: true, incentive: true },
 );
 
 export { requestInvestment };

@@ -72,18 +72,9 @@ const postProcess: PostProcessFunction<
   };
 };
 
-const options = { gas: '8000000' };
-
 const cancelOasisDexOrder = transactionFactory<
   CancelOasisDexOrderArgs,
   CancelOasisDexOrderResult
->(
-  'callOnExchange',
-  Contracts.Trading,
-  guard,
-  prepareArgs,
-  postProcess,
-  options,
-);
+>('callOnExchange', Contracts.Trading, guard, prepareArgs, postProcess);
 
 export { cancelOasisDexOrder };

@@ -136,15 +136,12 @@ const postProcess: PostProcessFunction<
   };
 };
 
-const options = { gas: '8000000' };
-
 const makeOasisDexOrder = transactionFactory(
   'callOnExchange',
   Contracts.Trading,
   guard,
   prepareArgs,
   postProcess,
-  options,
 );
 
 export { makeOasisDexOrder };
