@@ -15,9 +15,11 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
 
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
-    /// @param orderValues [0] MLN quantity
-    /// @param orderAddresses [0] MLN token
-    /// @param orderAddresses [1] WETH token
+    /// @param orderValues [0] Min Eth to receive from the engine
+    /// @param orderValues [1] MLN quantity
+    /// @param orderValues [6] Same as orderValues[1]
+    /// @param orderAddresses [2] WETH token
+    /// @param orderAddresses [3] MLN token
     function takeOrder (
         address targetExchange,
         address[6] orderAddresses,
