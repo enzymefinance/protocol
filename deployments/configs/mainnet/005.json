@@ -1,10 +1,8 @@
 {
   "meta": {
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
-    "timestamp": "2019-02-23T17:29:36.032Z",
     "track": "kyberPrice",
-    "version": "0.9.42",
-    "chain": 1,
+    "version": "1.0.0",
     "description": "Mainnet deployment v1.0"
   },
   "melonContracts": {
@@ -120,32 +118,5 @@
         "reserveMin": 930101522997154300000
       }
     ]
-  },
-  "exchangeConfigs": {
-    "MatchingMarket": {
-      "adapter": "0x542F91538205FCe34c7e1538b7Ce2218655D8623",
-      "exchange": "0x39755357759cE0d7f32dC8dC45414CCa409AE24e",
-      "takesCustody": true
-    },
-    "KyberNetwork": {
-      "adapter": "0x8CB3E810027d97BE5E890257338b9Cc755dE9c67",
-      "exchange": "0x818E6FECD516Ecc3849DAf6845e3EC868087B755",
-      "takesCustody": false
-    },
-    "ZeroEx": {
-      "adapter": "0x9312D09433fFF34f7b57b02996486d54D420eA74",
-      "exchange": "0x4f833a24e1f95d70f028921e27040ca56e09ab0b",
-      "takesCustody": false
-    },
-    "Ethfinex": {
-      "adapter": "0x48525A3DD8E3cd655B21340c5474402Aa6247b85",
-      "exchange": "0xdcdb42c9a256690bd153a7b409751adfc8dd5851",
-      "takesCustody": true
-    },
-    "MelonEngine": {
-      "adapter": "0xF31D358eFD7B80A6733BCb850bd49BFCBEC1428A",
-      "exchange": "0x7CaEc96607c5c7190d63B5A650E7CE34472352f5",
-      "takesCustody": false
-    }
   }
 }
