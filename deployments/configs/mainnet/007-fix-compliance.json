@@ -1,10 +1,8 @@
 {
   "meta": {
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
-    "timestamp": "2019-02-23T23:31:19.899Z",
     "track": "kyberPrice",
     "version": "0.9.43",
-    "chain": 1,
     "description": "Mainnet deployment v1.0"
   },
   "melonContracts": {
@@ -37,7 +35,7 @@
     "engine": "0xCbb801141a1704DBE5B4a6224033CFae80c4b336",
     "slowEngine": "0x7CaEc96607c5c7190d63B5A650E7CE34472352f5",
     "registry": "0x1Bfd21f7db126a5966d2C09492676807a68859Ba",
-    "version": "0xf1D376dB5ed16d183a962eaa719A58773fBa5dFF",
+    "version": "DEPLOY",
     "ranking": "0xE237Cb73dF19FC8dD0370e4524420a1f62BFd089"
   },
   "thirdPartyContracts": {
@@ -145,7 +143,7 @@
     },
     "MelonEngine": {
       "adapter": "0xF31D358eFD7B80A6733BCb850bd49BFCBEC1428A",
-      "exchange": "0xCbb801141a1704DBE5B4a6224033CFae80c4b336",
+      "exchange": "0x7CaEc96607c5c7190d63B5A650E7CE34472352f5",
       "takesCustody": false
     }
   }
