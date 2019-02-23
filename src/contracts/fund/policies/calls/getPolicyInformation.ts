@@ -89,7 +89,7 @@ export const getPolicyInformation = async (
     getFunctionIdentifier(env, FunctionSignatures.takeOrder),
     getFunctionIdentifier(env, FunctionSignatures.cancelOrder),
     getFunctionIdentifier(env, FunctionSignatures.withdrawTokens),
-    getFunctionIdentifier(env, FunctionSignatures.executeRequestFor),
+    getFunctionIdentifier(env, FunctionSignatures.requestInvestment),
   ];
 
   const retrievedPolicies = await Promise.all(

@@ -149,7 +149,7 @@ describe('generalWalkthrough', () => {
     });
 
     await register(shared.env, routes.policyManagerAddress, {
-      method: FunctionSignatures.executeRequestFor,
+      method: FunctionSignatures.requestInvestment,
       policy: policies.userWhitelist,
     });
 
