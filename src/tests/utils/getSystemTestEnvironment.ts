@@ -1,7 +1,10 @@
 import * as path from 'path';
 import * as R from 'ramda';
 
-import { constructEnvironment } from '~/utils/environment/constructEnvironment';
+import {
+  constructEnvironment,
+  defaultOptions,
+} from '~/utils/environment/constructEnvironment';
 import { testLogger } from '../utils/testLogger';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { withDeployment } from '~/utils/environment/withDeployment';
@@ -15,6 +18,10 @@ const getSystemTestEnvironment = async (
     endpoint: process.env.JSON_RPC_ENDPOINT || 'http://localhost:8545',
     logger: testLogger,
     track,
+    options: {
+      ...defaultOptions,
+      gasPrice: process.env.GAS_PRICE,
+    },
   });
 
   const environmentWithDeployment = await withDeployment(baseEnvironment);
