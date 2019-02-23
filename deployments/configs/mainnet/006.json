@@ -1,10 +1,8 @@
 {
   "meta": {
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
-    "timestamp": "2019-02-23T17:29:36.032Z",
     "track": "kyberPrice",
     "version": "0.9.42",
-    "chain": 1,
     "description": "Mainnet deployment v1.0"
   },
   "melonContracts": {
