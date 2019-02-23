@@ -14,4 +14,8 @@ export enum FunctionSignatures {
     participationABI,
     'executeRequestFor',
   ),
+  requestInvestment = getFunctionSignature(
+    participationABI,
+    'requestInvestment',
+  ),
 }

@@ -8,7 +8,7 @@ contract UserWhitelist is Policy, DSAuth {
     event ListAddition(address indexed who);
     event ListRemoval(address indexed who);
 
-    mapping (address => bool) whitelisted;
+    mapping (address => bool) public whitelisted;
 
     constructor(address[] _preApproved) public {
         batchAddToWhitelist(_preApproved);

@@ -94,7 +94,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         onlyInitialized
     {
         PolicyManager(routes.policyManager).preValidate(
-            bytes4(keccak256("requestInvestment(address)")),
+            bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
@@ -117,7 +117,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
             timestamp: block.timestamp
         });
         PolicyManager(routes.policyManager).postValidate(
-            bytes4(keccak256("requestInvestment(address)")),
+            bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
