@@ -28,15 +28,7 @@ const getParametersForPolicy = async (env, policyName, policyAddress) => {
 
     case 'Max positions': {
       const value = await getMaxPositions(env, policyAddress);
-      const quantity = createQuantity(
-        {
-          decimals: 18,
-          symbol: 'NONE',
-        },
-        value,
-      );
-
-      return `${parseFloat(toFixed(quantity)) * 100}%`;
+      return `${value}`;
     }
 
     case 'Price tolerance': {
