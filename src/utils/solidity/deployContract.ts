@@ -125,6 +125,7 @@ const prepare: PrepareDeployFunction = async (
     const unsignedTransaction = {
       data: encodedAbi,
       ...options,
+      gas: gasEstimation,
     };
 
     return {
