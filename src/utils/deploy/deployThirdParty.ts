@@ -45,6 +45,7 @@ const deployThirdParty = async (
     createToken('EUR'),
     createToken('DGX', undefined, 9),
     createToken('ZRX'),
+    createToken('DAI'),
   ],
 ): Promise<ThirdPartyContracts> => {
   ensure(!!tokens.find(t => t.symbol === 'WETH'), 'WETH Token is required');

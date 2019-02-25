@@ -173,7 +173,15 @@ program
   .action(async options => {
     console.log(`Deploying thirdParty & melon contracts.`);
     const providedTokens = options.tokens ? options.tokens.split(',') : [];
-    const tokens = ['WETH', 'MLN', 'ZRX', 'EUR', 'DGX', ...providedTokens];
+    const tokens = [
+      'WETH',
+      'MLN',
+      'ZRX',
+      'EUR',
+      'DGX',
+      'DAI',
+      ...providedTokens,
+    ];
     const tokenInterfaces = tokens.map(token => {
       const [symbol, decimals] = token.split(':');
       return createToken(symbol, undefined, decimals && parseInt(decimals, 10));
@@ -367,7 +375,7 @@ program
       };
 
       setInterval(updatePeriodically, options.interval);
-      
+
       // Run it once immediately.
       updatePeriodically();
     } catch (e) {
@@ -379,22 +387,19 @@ program
 program
   .command('get-reserve-quantity <tokenSymbol>')
   .description('Get a reasonable reserve quantity level for a token')
-  .option(
-    '-k, --keyfile <pathToApiKey>',
-    'File containing the API key',
-  )
+  .option('-k, --keyfile <pathToApiKey>', 'File containing the API key')
   .action(async (tokenSymbol, options) => {
     try {
-      if(!fs.existsSync(options.keyfile)) {
+      if (!fs.existsSync(options.keyfile)) {
         throw new Error(`File does not exist at ${options.keyfile}`);
       }
       const apiKey = fs.readFileSync(options.keyfile, 'utf8').trim();
 
       const tokenInfoMainnet = JSON.parse(
-        fs.readFileSync('./deployments/mainnet-kyberPrice.json')
+        fs.readFileSync('./deployments/mainnet-kyberPrice.json'),
       ).thirdPartyContracts.tokens;
       const allDecimalInfo = tokenInfoMainnet.map(e => {
-        return {symbol: e.symbol, decimals: e.decimals}
+        return { symbol: e.symbol, decimals: e.decimals };
       });
 
       tokenDecimalInfo = allDecimalInfo.find(e => e.symbol === tokenSymbol);
@@ -405,15 +410,15 @@ program
       const decimals = tokenDecimalInfo.decimals;
 
       var options = {
-        'method': 'GET',
-        'hostname': 'rest.coinapi.io',
-        'path': `/v1/exchangerate/ETH/${tokenSymbol}`,
-        'headers': {'X-CoinAPI-Key': apiKey}
+        method: 'GET',
+        hostname: 'rest.coinapi.io',
+        path: `/v1/exchangerate/ETH/${tokenSymbol}`,
+        headers: { 'X-CoinAPI-Key': apiKey },
       };
-      const req = https.request(options, (res) => {
+      const req = https.request(options, res => {
         let json = '';
         res.setEncoding('utf8');
-        res.on('data', (chunk) => json += chunk); 
+        res.on('data', chunk => (json += chunk));
         res.on('end', () => {
           if (res.statusCode === 200) {
             const parsedResult = JSON.parse(json);
@@ -422,9 +427,7 @@ program
             if (minimumReserve.indexOf('e+') !== -1) {
               const components = minimumReserve.split('e+');
               let expanded = components[0].replace('.', '');
-              expanded = expanded.padEnd(
-                Number(components[1]) + 1, '0'
-              );
+              expanded = expanded.padEnd(Number(components[1]) + 1, '0');
               console.log(expanded);
             } else {
               console.log(`${Math.round(minimumReserve)}`);
@@ -440,8 +443,7 @@ program
       console.error(e);
       process.exit(1);
     }
-  })
-
+  });
 
 program.on('command:*', function() {
   program.help();
