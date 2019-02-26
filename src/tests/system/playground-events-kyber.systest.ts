@@ -27,20 +27,21 @@ import { getContract } from '~/utils/solidity/getContract';
 
 import { Contracts } from '~/Contracts';
 import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
+// import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
+// import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
 
 expect.extend({ toBeTrueWith });
 
 const getLog = getLogCurried('melon:protocol:systemTest:monitoring');
 
-// const capitalize = s => {
-//   if (typeof s !== 'string') return '';
-//   return s.charAt(0).toUpperCase() + s.slice(1);
-// };
+const capitalize = s => {
+  if (typeof s !== 'string') return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
 describe('playground', () => {
   test('Happy path', async () => {
     const master = await getSystemTestEnvironment(Tracks.KYBER_PRICE);
-
     const log = getLog(master);
     const { melonContracts } = master.deployment;
 
@@ -130,18 +131,18 @@ describe('playground', () => {
       melonContracts.version,
     );
 
-    // const contracts = [
-    // 'accounting',
-    // 'feeManager',
-    // 'participation',
-    // 'policyManager',
-    // 'priceSource',
-    // 'registry',
-    // 'shares',
-    // 'trading',
-    // 'vault',
-    // 'version',
-    // ];
+    const contracts = [
+      // 'accounting',
+      // 'feeManager',
+      // 'participation',
+      // 'policyManager',
+      // 'priceSource',
+      // 'registry',
+      // 'shares',
+      // 'trading',
+      // 'vault',
+      // 'version',
+    ];
 
     // const c = getContract(master, Contracts.FundFactory, melonContracts);
     // const e = await c.getPastEvents('allEvents', { fromBlock: 0, toBlock: 'latest' });
@@ -158,28 +159,28 @@ describe('playground', () => {
       fundList[i].isShutDown = await isShutDown(master, fundList[i].address);
       fundList[i].routes = await getRoutes(master, fundList[i].address);
 
-      // for (let j in contracts) {
-      //   const c = getContract(
-      //     master,
-      //     Contracts[capitalize(contracts[j])],
-      //     fundList[i].routes[contracts[j] + 'Address'],
-      //   );
-      //   const e = await c.getPastEvents('allEvents', {
-      //     fromBlock: 0,
-      //     toBlock: 'latest',
-      //   });
+      for (let j in contracts) {
+        const c = getContract(
+          master,
+          Contracts[capitalize(contracts[j])],
+          fundList[i].routes[contracts[j] + 'Address'],
+        );
+        const e = await c.getPastEvents('allEvents', {
+          fromBlock: 0,
+          toBlock: 'latest',
+        });
 
-      //   fundList[i][contracts[j] + 'Events'] = await Promise.all(
-      //     e.map(async x => {
-      //       return {
-      //         event: x.event,
-      //         returnValues: x.returnValues,
-      //         time: new Date(),
-      //         // (await master.eth.getBlock(x.blockNumber)).timestamp * 1000,
-      //       };
-      //     }),
-      //   );
-      // }
+        fundList[i][contracts[j] + 'Events'] = await Promise.all(
+          e.map(async x => {
+            return {
+              event: x.event,
+              returnValues: x.returnValues,
+              time: new Date(),
+              // (await master.eth.getBlock(x.blockNumber)).timestamp * 1000,
+            };
+          }),
+        );
+      }
     }
 
     // await sleep(5000);
