@@ -22,7 +22,6 @@ import { deployContract as deploy } from '~/utils/solidity/deployContract';
 import { takeOrderOnKyber } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getPolicyInformation } from '~/contracts/fund/policies/calls/getPolicyInformation';
-import { invest } from '~/contracts/fund/participation/transactions/invest';
 import { approve } from '~/contracts/dependencies/token/transactions/approve';
 import { requestInvestment } from '~/contracts/fund/participation/transactions/requestInvestment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
