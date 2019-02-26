@@ -349,7 +349,7 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       const processReceipt = async receipt => {
         const receiptWithEvents = parseReceiptLogs(receipt, log);
 
-        log.debug(`Receipt for ${name}`, receipt);
+        log.debug(`Receipt for ${name}`, receiptWithEvents);
 
         const postprocessed = await postProcess(
           environment,
