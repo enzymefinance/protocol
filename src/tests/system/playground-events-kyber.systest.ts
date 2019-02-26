@@ -32,10 +32,10 @@ expect.extend({ toBeTrueWith });
 
 const getLog = getLogCurried('melon:protocol:systemTest:monitoring');
 
-const capitalize = s => {
-  if (typeof s !== 'string') return '';
-  return s.charAt(0).toUpperCase() + s.slice(1);
-};
+// const capitalize = s => {
+//   if (typeof s !== 'string') return '';
+//   return s.charAt(0).toUpperCase() + s.slice(1);
+// };
 
 describe('playground', () => {
   test('Happy path', async () => {
@@ -130,18 +130,18 @@ describe('playground', () => {
       melonContracts.version,
     );
 
-    const contracts = [
-      // 'accounting',
-      // 'feeManager',
-      // 'participation',
-      // 'policyManager',
-      // 'priceSource',
-      // 'registry',
-      // 'shares',
-      // 'trading',
-      // 'vault',
-      // 'version',
-    ];
+    // const contracts = [
+    // 'accounting',
+    // 'feeManager',
+    // 'participation',
+    // 'policyManager',
+    // 'priceSource',
+    // 'registry',
+    // 'shares',
+    // 'trading',
+    // 'vault',
+    // 'version',
+    // ];
 
     // const c = getContract(master, Contracts.FundFactory, melonContracts);
     // const e = await c.getPastEvents('allEvents', { fromBlock: 0, toBlock: 'latest' });
