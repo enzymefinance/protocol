@@ -14,6 +14,9 @@ import { getLogCurried } from '../environment/getLogCurried';
 
 const getLog = getLogCurried('melon:protocol:utils:solidity:deploy');
 
+const TRANSACTION_POLL_INTERVAL = 15 * 1000;
+const TRANSACTION_TIMEOUT = 60 * 60 * 1000;
+
 interface PrepareDeployReturn {
   unsignedTransaction: UnsignedRawTransaction;
   txIdentifier?: string;
@@ -146,48 +149,70 @@ const prepare: PrepareDeployFunction = async (
   }
 };
 
-const send: SendDeployFunction = async (
+const send: SendDeployFunction = (
   environment,
   {
     txIdentifier = 'Unknown deployment',
     signedTransaction,
     unsignedTransaction,
   },
-) => {
-  const log = getLog(environment);
+) =>
+  new Promise((resolve, reject) => {
+    let transactionHash;
+    let pollInterval;
 
-  try {
-    let txHash;
+    const log = getLog(environment);
 
-    const receiptPromise = !!signedTransaction
+    const transactionTimeout = setTimeout(() => {
+      if (pollInterval) clearInterval(pollInterval);
+      log.error('Deploy transaction timed out', txIdentifier);
+      reject(
+        // tslint:disable-next-line: max-line-length
+        `Deploy transaction ${txIdentifier} with transaction hash: ${transactionHash} not mined after ${TRANSACTION_TIMEOUT /
+          1000 /
+          60} minutes. It might get mined eventually.`,
+      );
+    }, TRANSACTION_TIMEOUT);
+
+    const receiptPromiEvent = !!signedTransaction
       ? environment.eth.sendSignedTransaction(signedTransaction)
       : environment.eth.sendTransaction(unsignedTransaction);
 
-    const receipt = await receiptPromise
-      .on('error', error => {
-        throw error;
-      })
-      .on('transactionHash', t => {
-        txHash = t;
-        log.debug('TxHash', txIdentifier, txHash);
-      })
-      .once('confirmation', c => log.debug('Confirmation', txIdentifier, c));
+    const onReceipt = receipt => {
+      log.info(
+        'Got receipt for:',
+        txIdentifier,
+        'at contract address:',
+        receipt.contractAddress,
+        'transaction hash:',
+        transactionHash,
+      );
 
-    log.info(
-      'Got receipt for:',
-      txIdentifier,
-      'at contract address:',
-      receipt.contractAddress,
-      'transaction hash:',
-      txHash,
-    );
+      clearTimeout(transactionTimeout);
+      if (pollInterval) clearInterval(pollInterval);
+      resolve(new Address(receipt.contractAddress));
+    };
 
-    return new Address(receipt.contractAddress);
-  } catch (e) {
-    // tslint:disable-next-line:max-line-length
-    throw new Error(`Error deploying contract: ${txIdentifier}\n${e.message}`);
-  }
-};
+    receiptPromiEvent.on('transactionHash', txHash => {
+      log.debug('Got transactionHash for', txIdentifier, txHash);
+      transactionHash = txHash;
+      pollInterval = setInterval(() => {
+        environment.eth.getTransactionReceipt(transactionHash).then(receipt => {
+          if (receipt) {
+            log.debug('Got receipt from polling');
+            onReceipt(receipt);
+          }
+        });
+      }, TRANSACTION_POLL_INTERVAL);
+    });
+
+    receiptPromiEvent.on('receipt', onReceipt);
+
+    receiptPromiEvent.on('error', error => {
+      log.error('Deploy transaction error', txIdentifier, error);
+      reject(`Deploy transaction error ${txIdentifier}: ${error.message}`);
+    });
+  });
 
 const deployContract: EnhancedDeploy = async (
   environment: Environment,
