@@ -20,6 +20,12 @@ export const deployAndGetSystem = async (environment: Environment) => {
   const addresses = envWithDeployment.deployment;
 
   const contracts = {
+    dai: getContract(
+      environment,
+      Contracts.StandardToken,
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'DAI')
+        .address,
+    ),
     dgx: getContract(
       environment,
       Contracts.StandardToken,
