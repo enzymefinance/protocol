@@ -112,9 +112,6 @@
     "yup": "^0.26.6",
     "zen-observable-ts": "^0.8.10"
   },
-  "resolutions": {
-    "yargs": "^12.0.2"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",

@@ -113,6 +113,7 @@ export { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 export { withNewAccount } from '~/utils/environment/withNewAccount';
 export { sendEth } from '~/utils/evm/sendEth';
 export { deposit } from '~/contracts/dependencies/token/transactions/deposit';
+export { withdraw } from '~/contracts/dependencies/token/transactions/withdraw';
 export { randomString } from '~/utils/helpers/randomString';
 export {
   makeOrderFromAccountOasisDex,
