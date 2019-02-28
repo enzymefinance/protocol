@@ -300,6 +300,7 @@ export const deploySystem = async (
       },
     ),
     maybeDoSomething(
+      // TODO: some of these can be conditional
       true, // ensure these steps are done at each deployment
       async environment => {
         const { melonContracts } = environment.deployment;
@@ -362,6 +363,7 @@ export const deploySystem = async (
       },
     ),
     maybeDoSomething(true, async environment => {
+      // TODO: make this conditional
       const { melonContracts } = environment.deployment;
       const fees: Address[] = [
         melonContracts.fees.managementFee,
@@ -393,6 +395,7 @@ export const deploySystem = async (
       }),
     ),
     maybeDoSomething(true, async environment => {
+      // TODO: make this conditional
       await setMGM(
         environment,
         environment.deployment.melonContracts.registry,
