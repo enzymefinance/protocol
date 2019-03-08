@@ -1,8 +1,9 @@
-app/
 node_modules/
-npm-debug.log
+*.log
 *.orig
 *.swp
+
+.env
 
 # manual backup files
 *.bak
@@ -10,14 +11,10 @@ npm-debug.log
 # doxity
 scripts/
 
-# ignore built contracts
+# ignore built code
 out/
-
-# ignore transpiled code
-utils/build
-
-# ignore development addressBook
-addressBook.json
+build/
+lib/
 
 # ignore generated coverage data
 coverage.json
@@ -28,3 +25,18 @@ coverage/
 
 # ignore concatenated files (only updated at verification time)
 utils/etherscan/concatenated
+
+# ignore node version manager files
+.nvmrc
+.node-version
+
+# ignore devchain snapshot
+legacy/utils/devchain-snapshot/
+
+deployments/development-*.json
+
+# Keystore
+.keystore*.json
+
+# API key
+tests/system/.coinapi.json
