@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Weth.sol";
 import "Trading.sol";
@@ -59,6 +59,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
 
         uint actualReceiveAmount = dispatchSwap(
             targetExchange, takerAsset, takerAssetAmount, makerAsset, minRate
+        );
+        require(
+            actualReceiveAmount >= makerAssetAmount,
+            "Received less than expected from Kyber swap"
         );
 
         getAccounting().addAssetToOwnedAssets(makerAsset);

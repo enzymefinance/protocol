@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "math.sol";
 import "PriceSource.i.sol";
@@ -37,4 +37,5 @@ contract MaxConcentration is TradingSignatures, DSMath, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.post; }
+    function identifier() external view returns (string) { return 'Max concentration'; }
 }

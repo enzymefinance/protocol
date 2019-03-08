@@ -10,8 +10,8 @@ export enum FunctionSignatures {
   takeOrder = getFunctionSignature(adapterABI, 'takeOrder'),
   cancelOrder = getFunctionSignature(adapterABI, 'cancelOrder'),
   withdrawTokens = getFunctionSignature(ethfinexAdapterABI, 'withdrawTokens'),
-  executeRequestFor = getFunctionSignature(
+  requestInvestment = getFunctionSignature(
     participationABI,
-    'executeRequestFor',
+    'requestInvestment',
   ),
 }

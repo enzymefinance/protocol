@@ -7,5 +7,5 @@ export const createTrading = transactionFactory(
   undefined,
   undefined,
   undefined,
-  { amguPayable: true, gas: '7500000' },
+  { amguPayable: true },
 );

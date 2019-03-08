@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
 import "Fee.i.sol";
@@ -20,7 +20,12 @@ contract MockFeeManager is DSMath, AmguConsumer, Spoke {
     uint performanceFees;
 
     constructor(
-        address _hub, address _denominationAsset, address[] _fees, uint[] _periods, uint _rates
+        address _hub,
+        address _denominationAsset,
+        address[] _fees,
+        uint[] _periods,
+        uint _rates,
+        address registry
     ) Spoke(_hub) public {}
 
     function setTotalFeeAmount(uint _amt) public { totalFees = _amt; }

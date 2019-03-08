@@ -1,6 +1,7 @@
 import {
   deploySystem,
   deployAllContractsConfig,
+  defaultControlConfig,
 } from '../../utils/deploy/deploySystem';
 import { deployThirdParty } from '../../utils/deploy/deployThirdParty';
 import { Contracts } from '~/Contracts';
@@ -13,11 +14,18 @@ export const deployAndGetSystem = async (environment: Environment) => {
     environment,
     thirdParty,
     deployAllContractsConfig,
+    defaultControlConfig,
   );
 
   const addresses = envWithDeployment.deployment;
 
   const contracts = {
+    dai: getContract(
+      environment,
+      Contracts.StandardToken,
+      addresses.thirdPartyContracts.tokens.find(t => t.symbol === 'DAI')
+        .address,
+    ),
     dgx: getContract(
       environment,
       Contracts.StandardToken,

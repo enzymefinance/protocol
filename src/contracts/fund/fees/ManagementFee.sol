@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Fee.i.sol";
 import "FeeManager.sol";
@@ -36,6 +36,10 @@ contract ManagementFee is DSMath, Fee {
 
     function updateState() external {
         lastPayoutTime[msg.sender] = block.timestamp;
+    }
+
+    function identifier() external view returns (uint) {
+        return 0;
     }
 }
 

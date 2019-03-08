@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
 import "ERC20.i.sol";
@@ -34,12 +34,16 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
+        ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
 
         LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
         address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
-
+        address takerAsset = getAssetAddress(takerAssetData);
+        require(
+            takerAsset == orderAddresses[3],
+            "Taker asset data does not match order address in array"
+        );
         // Order parameter checks
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
@@ -64,7 +68,13 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             [address(makerAsset), address(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
-        getTrading().addOpenMakeOrder(targetExchange, makerAsset, uint256(orderInfo.orderHash), order.expirationTimeSeconds);
+        getTrading().addOpenMakeOrder(
+            targetExchange, 
+            makerAsset,
+            takerAsset,
+            uint256(orderInfo.orderHash), 
+            order.expirationTimeSeconds
+        );
         getTrading().addZeroExOrderData(orderInfo.orderHash, order);
     }
 
@@ -112,13 +122,13 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             if (orderAddresses[i] == address(0)) continue;
             address wrappedToken = getWrapperToken(orderAddresses[i]);
             uint balance = WrapperLock(wrappedToken).balanceOf(address(this));
+            require(balance > 0, "Insufficient balance");
             WrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
             if (orderAddresses[i] == nativeAsset) {
                 WETH(nativeAsset).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
             getTrading().returnAssetToVault(orderAddresses[i]);
-            getAccounting().addAssetToOwnedAssets(orderAddresses[i]);
         }
     }
 
@@ -161,6 +171,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         Vault vault = Vault(hub.vault());
         vault.withdraw(makerAsset, makerQuantity);
         address wrappedToken = getWrapperToken(makerAsset);
+        require(
+            wrappedToken == getAssetAddress(wrappedMakerAssetData),
+            "Wrapped maker asset data does not match order address in array"
+        );
         // Deposit to rounded up value of time difference of expiration time and current time (in hours)
         uint depositTime = (
             sub(orderExpirationTime, block.timestamp) / 1 hours

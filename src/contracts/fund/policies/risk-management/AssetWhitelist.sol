@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Policy.sol";
 import "AddressList.sol";
@@ -30,4 +30,5 @@ contract AssetWhitelist is TradingSignatures, AddressList, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.pre; }
+    function identifier() external view returns (string) { return 'Asset whitelist'; }
 }

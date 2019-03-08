@@ -31,7 +31,6 @@ interface BeginSetupArgs {
   fees: FeeConfig[];
   exchangeConfigs: ExchangeConfigs;
   quoteToken: TokenInterface;
-  nativeToken: TokenInterface;
   defaultTokens: TokenInterface[];
 }
 
@@ -45,7 +44,7 @@ const guard: GuardFunction<BeginSetupArgs> = async (
 
 const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   _,
-  { fundName, fees, exchangeConfigs, quoteToken, nativeToken, defaultTokens },
+  { fundName, fees, exchangeConfigs, quoteToken, defaultTokens },
 ) => {
   const exchangeAddresses = Object.values(exchangeConfigs).map(e =>
     e.exchange.toString(),
@@ -56,7 +55,6 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   const takesCustody = Object.values(exchangeConfigs).map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
-  const nativeTokenAddress = nativeToken.address;
   const feeAddresses = fees.map(f => f.feeAddress);
   // TODO: Hacky fix. Could be some problem with BN.js
   const feeRates = fees.map(f => `${f.feeRate}`);
@@ -70,7 +68,6 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
     exchangeAddresses,
     adapterAddresses,
     quoteTokenAddress,
-    nativeTokenAddress,
     defaultTokenAddresses,
     takesCustody,
   ];

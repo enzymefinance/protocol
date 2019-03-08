@@ -28,6 +28,7 @@ export { getQuoteToken } from '~/contracts/prices/calls/getQuoteToken';
 export { getRoutes } from '~/contracts/fund/hub/calls/getRoutes';
 export { isShutDown } from '~/contracts/fund/hub/calls/isShutDown';
 export { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+export { getTokenByAddress } from '~/utils/environment/getTokenByAddress';
 export { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
 export {
   hasExpiredRequest,
@@ -75,10 +76,11 @@ export {
   makeOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/makeOasisDexOrder';
 export { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-export { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
 export {
   getHistoricalInvestors,
 } from '~/contracts/fund/participation/calls/getHistoricalInvestors';
+export { getAmguPrice } from '~/contracts/engine/calls/getAmguPrice';
+export { getEnginePrice } from '~/contracts/engine/calls/getEnginePrice';
 export {
   getTotalAmguConsumed,
 } from '~/contracts/engine/calls/getTotalAmguConsumed';
@@ -111,6 +113,7 @@ export { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 export { withNewAccount } from '~/utils/environment/withNewAccount';
 export { sendEth } from '~/utils/evm/sendEth';
 export { deposit } from '~/contracts/dependencies/token/transactions/deposit';
+export { withdraw } from '~/contracts/dependencies/token/transactions/withdraw';
 export { randomString } from '~/utils/helpers/randomString';
 export {
   makeOrderFromAccountOasisDex,
@@ -118,6 +121,9 @@ export {
 export {
   takeOasisDexOrder,
 } from '~/contracts/fund/trading/transactions/takeOasisDexOrder';
+export {
+  takeEngineOrder,
+} from '~/contracts/fund/trading/transactions/takeEngineOrder';
 export { getOasisDexOrder } from '~/contracts/exchanges/calls/getOasisDexOrder';
 export {
   getExpectedRate,
@@ -159,3 +165,18 @@ export { getToken } from '~/contracts/dependencies/token/calls/getToken';
 export {
   getAllowedExchanges,
 } from '~/contracts/fund/trading/calls/getAllowedExchanges';
+export {
+  enableInvestment,
+} from '~/contracts/fund/participation/transactions/enableInvestment';
+export {
+  disableInvestment,
+} from '~/contracts/fund/participation/transactions/disableInvestment';
+export {
+  investAllowed,
+} from '~/contracts/fund/participation/calls/investAllowed';
+export {
+  getPolicyInformation,
+} from '~/contracts/fund/policies/calls/getPolicyInformation';
+export {
+  getShareCostInAsset,
+} from '~/contracts/fund/accounting/calls/getShareCostInAsset';

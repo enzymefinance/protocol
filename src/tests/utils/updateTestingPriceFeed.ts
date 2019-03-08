@@ -49,6 +49,7 @@ export async function getConvertedPrices(env, fromSymbol) {
     ...(typeof getToken(tokens, 'MLN') !== 'undefined' ? ['MLN'] : []),
     ...(typeof getToken(tokens, 'EUR') !== 'undefined' ? ['EUR'] : []),
     ...(typeof getToken(tokens, 'WETH') !== 'undefined' ? ['ETH'] : []),
+    ...(typeof getToken(tokens, 'DAI') !== 'undefined' ? ['DAI'] : []),
   ];
   const options = {
     json: true,
@@ -75,6 +76,9 @@ export async function getConvertedPrices(env, fromSymbol) {
     ...(typeof getToken(tokens, 'DGX') !== 'undefined'
       ? { [getToken(tokens, 'DGX').address]: convertPrice(queryResult.DGX) }
       : {}),
+    ...(typeof getToken(tokens, 'DAI') !== 'undefined'
+      ? { [getToken(tokens, 'DAI').address]: convertPrice(queryResult.DAI) }
+      : {}),
   };
   return result;
 }
@@ -88,7 +92,7 @@ export async function getConvertedPrices(env, fromSymbol) {
  */
 // TODO: Change to BigInteger
 async function getConvertedPricesDefault(deployed, fromSymbol) {
-  const toSymbols = ['MLN', 'EUR', 'ETH', 'DGX'];
+  const toSymbols = ['MLN', 'EUR', 'ETH', 'DGX', 'DAI'];
   const options = {
     json: true,
     uri: `${apiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
@@ -106,6 +110,7 @@ async function getConvertedPricesDefault(deployed, fromSymbol) {
     [deployed.weth.options.address]: convertPrice(queryResult.ETH),
     [deployed.mln.options.address]: convertPrice(queryResult.MLN),
     [deployed.dgx.options.address]: convertPrice(queryResult.DGX),
+    [deployed.dai.options.address]: convertPrice(queryResult.DAI),
   };
 }
 

@@ -4,6 +4,7 @@ import { deployThirdParty } from '~/utils/deploy/deployThirdParty';
 import {
   deploySystem,
   deployAllContractsConfig,
+  defaultControlConfig,
 } from '~/utils/deploy/deploySystem';
 
 const deployAndInitTestEnv = async (): Promise<Environment> => {
@@ -13,6 +14,7 @@ const deployAndInitTestEnv = async (): Promise<Environment> => {
     environment,
     testThirdParty,
     deployAllContractsConfig,
+    defaultControlConfig,
   );
   return withDeployment;
 };

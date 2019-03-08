@@ -48,8 +48,12 @@ describe('account-trading', () => {
       },
     );
 
-    expect(activeOrders1[0].buy).toEqual(createQuantity(mlnToken, 2));
-    expect(activeOrders1[0].sell).toEqual(createQuantity(wethToken, 0.1));
+    expect(activeOrders1[0].buy.quantity).toEqual(
+      createQuantity(mlnToken, 2).quantity,
+    );
+    expect(activeOrders1[0].sell.quantity).toEqual(
+      createQuantity(wethToken, 0.1).quantity,
+    );
 
     await takeOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
       buy: order1.buy,
@@ -92,8 +96,12 @@ describe('account-trading', () => {
       },
     );
 
-    expect(activeOrders3[0].buy).toEqual(createQuantity(mlnToken, 2));
-    expect(activeOrders3[0].sell).toEqual(createQuantity(wethToken, 0.1));
+    expect(activeOrders3[0].buy.quantity).toEqual(
+      createQuantity(mlnToken, 2).quantity,
+    );
+    expect(activeOrders3[0].sell.quantity).toEqual(
+      createQuantity(wethToken, 0.1).quantity,
+    );
 
     await cancelOrderFromAccountOasisDex(shared.env, matchingMarketAddress, {
       id: order2.id,

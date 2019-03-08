@@ -108,9 +108,7 @@ const postProcess: PostProcessFunction<
   const srcToken = kyberTrade.srcToken || kyberTrade.src;
 
   const sellToken =
-    srcToken === kyberEthAddress
-      ? weth
-      : await getToken(environment, kyberTrade.srcToken);
+    srcToken === kyberEthAddress ? weth : await getToken(environment, srcToken);
 
   const buyToken =
     kyberTrade.destToken === kyberEthAddress

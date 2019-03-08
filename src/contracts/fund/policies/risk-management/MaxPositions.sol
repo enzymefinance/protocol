@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "PriceSource.i.sol";
 import "Accounting.sol";
@@ -27,4 +27,5 @@ contract MaxPositions is TradingSignatures, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.post; }
+    function identifier() external view returns (string) { return 'Max positions'; }
 }

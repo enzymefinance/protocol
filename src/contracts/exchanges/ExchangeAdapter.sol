@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "Accounting.sol";
 import "Hub.sol";
@@ -60,6 +60,13 @@ contract ExchangeAdapter {
         require(
             !getTrading().isInOpenMakeOrder(_asset),
             "This asset is already in an open make order"
+        );
+    }
+
+    function ensureCanMakeOrder(address _asset) internal view {
+        require(
+            block.timestamp >= getTrading().makerAssetCooldown(_asset),
+            "Cooldown for the maker asset not reached"
         );
     }
 

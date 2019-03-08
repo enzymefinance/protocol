@@ -4,6 +4,7 @@ import web3EthAbi from 'web3-eth-abi';
 export enum Contracts {
   Accounting = 'Accounting',
   AccountingFactory = 'AccountingFactory',
+  AddressList = 'AddressList',
   AmguConsumer = 'AmguConsumer',
   AssetBlacklist = 'AssetBlacklist',
   AssetWhitelist = 'AssetWhitelist',
@@ -11,6 +12,7 @@ export enum Contracts {
   CanonicalPriceFeed = 'CanonicalPriceFeed',
   ConversionRates = 'ConversionRates',
   Engine = 'Engine',
+  EngineAdapter = 'EngineAdapter',
   EthfinexAdapter = 'EthfinexAdapter',
   ERC20Proxy = 'ERC20Proxy',
   ExchangeAdapter = 'ExchangeAdapter',
@@ -45,6 +47,7 @@ export enum Contracts {
   ParticipationFactory = 'ParticipationFactory',
   PerformanceFee = 'PerformanceFee',
   PermissiveAuthority = 'PermissiveAuthority',
+  Policy = 'Policy',
   PolicyManager = 'PolicyManager',
   PolicyManagerFactory = 'PolicyManagerFactory',
   PreminedToken = 'PreminedToken',
@@ -81,6 +84,8 @@ export const requireMap = {
     require('../out/Accounting.abi.json'),
   [Contracts.AccountingFactory]:
     require(`../out/${Contracts.AccountingFactory}.abi.json`),
+  [Contracts.AddressList]:
+    require('../out/AddressList.abi.json'),
   [Contracts.AmguConsumer]:
     require('../out/AmguConsumer.abi.json'),
   [Contracts.AssetBlacklist]:
@@ -95,6 +100,8 @@ export const requireMap = {
     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
   [Contracts.Engine]:
     require('../out/Engine.abi.json'),
+  [Contracts.EngineAdapter]:
+    require('../out/EngineAdapter.abi.json'),
   [Contracts.EthfinexAdapter]:
     require(`../out/${Contracts.EthfinexAdapter}.abi.json`),
   [Contracts.ExchangeAdapter]:
@@ -167,6 +174,8 @@ export const requireMap = {
     require('../out/PerformanceFee.abi.json'),
   [Contracts.PermissiveAuthority]:
     require(`../out/${Contracts.PermissiveAuthority}.abi.json`),
+  [Contracts.Policy]:
+    require('../out/Policy.abi.json'),
   [Contracts.PolicyManager]:
     require('../out/PolicyManager.abi.json'),
   [Contracts.PolicyManagerFactory]:
@@ -268,4 +277,5 @@ export enum Exchanges {
   KyberNetwork = 'KyberNetwork',
   ZeroEx = 'ZeroEx',
   Ethfinex = 'Ethfinex',
+  MelonEngine = 'MelonEngine',
 }

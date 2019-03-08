@@ -117,18 +117,9 @@ const postProcess = async (environment, receipt) => {
   };
 };
 
-const options = { gas: '8000000' };
-
 const takeOasisDexOrder = transactionFactory<
   TakeOasisDexOrderArgs,
   TakeOasisDexOrderResult
->(
-  'callOnExchange',
-  Contracts.Trading,
-  guard,
-  prepareArgs,
-  postProcess,
-  options,
-);
+>('callOnExchange', Contracts.Trading, guard, prepareArgs, postProcess);
 
 export { takeOasisDexOrder };

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 contract Policy {
     enum Applied { pre, post }
@@ -12,4 +12,5 @@ contract Policy {
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier) external view returns (bool);
 
     function position() external view returns (Applied);
+    function identifier() external view returns (string);
 }

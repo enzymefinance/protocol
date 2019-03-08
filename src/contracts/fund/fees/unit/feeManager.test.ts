@@ -20,12 +20,12 @@ describe('feeManager', () => {
     shared.feeA = getContract(
       shared.env,
       Contracts.MockFee,
-      await deployContract(shared.env, Contracts.MockFee, []),
+      await deployContract(shared.env, Contracts.MockFee, ['0']),
     );
     shared.feeB = getContract(
       shared.env,
       Contracts.MockFee,
-      await deployContract(shared.env, Contracts.MockFee, []),
+      await deployContract(shared.env, Contracts.MockFee, ['1']),
     );
     shared.feeArray = [
       {
@@ -39,6 +39,7 @@ describe('feeManager', () => {
         feeRate: mockFeeRate,
       },
     ];
+
     const deployment = await deployMockSystem(shared.env, {
       feeManagerContract: Contracts.FeeManager,
       fees: shared.feeArray,

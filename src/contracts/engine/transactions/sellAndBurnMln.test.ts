@@ -69,7 +69,7 @@ describe('sellAndBurnMln', () => {
     shared.delay = 30 * 24 * 60 * 60;
     shared.engineAddress = await deployEngine(shared.env, {
       delay: shared.delay,
-      postDeployOwner: shared.env.wallet.address,
+      registry: shared.registry.options.address,
     });
     shared.priceSource = await getContract(
       shared.env,

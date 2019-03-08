@@ -59,6 +59,7 @@ beforeAll(async () => {
   )).toString();
   s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
   s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
+  s.dgxTokenInterface = await getToken(s.environment, s.dgx.options.address);
   const exchangeConfigs = {
     [Exchanges.Ethfinex]: {
       adapter: s.ethfinexAdapter.options.address,
@@ -72,7 +73,6 @@ beforeAll(async () => {
     exchangeConfigs,
     fees: [],
     fundName: 'Test fund',
-    nativeToken: s.wethTokenInterface,
     quoteToken: s.wethTokenInterface,
   });
   await createAccounting(envManager, s.version.options.address);
@@ -275,9 +275,13 @@ test('Make order with native asset', async () => {
   const preCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
+  const preIsDgxInAssetList = await s.fund.accounting.methods
+    .isInAssetList(s.dgx.options.address)
+    .call();
+
   const makerAddress = s.fund.trading.options.address.toLowerCase();
   const makerQuantity = createQuantity(s.ethTokenWrapper, 0.05);
-  const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
+  const takerQuantity = createQuantity(s.dgxTokenInterface, 0.5);
   s.unsignedOrder = await createOrder(
     s.environment,
     s.zeroExExchange.options.address,
@@ -297,7 +301,7 @@ test('Make order with native asset', async () => {
         makerAddress,
         NULL_ADDRESS,
         s.weth.options.address,
-        s.mln.options.address,
+        s.dgx.options.address,
         s.signedOrder.feeRecipientAddress,
         NULL_ADDRESS,
       ],
@@ -321,10 +325,34 @@ test('Make order with native asset', async () => {
   const postCalculations = await s.fund.accounting.methods
     .performCalculations()
     .call();
+  const postIsDgxInAssetList = await s.fund.accounting.methods
+    .isInAssetList(s.dgx.options.address)
+    .call();
+  const openOrdersAgainstDgx = await s.fund.trading.methods
+    .openMakeOrdersAgainstAsset(s.dgx.options.address)
+    .call();
 
   expect(postCalculations.gav).toBe(preCalculations.gav);
   expect(postCalculations.sharePrice).toBe(preCalculations.sharePrice);
   expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(postIsDgxInAssetList).toBeTruthy();
+  expect(preIsDgxInAssetList).toBeFalsy();
+  expect(Number(openOrdersAgainstDgx)).toEqual(1);
+});
+
+test('Anticipated taker asset is not removed from owned assets', async () => {
+  await s.fund.accounting.methods
+    .performCalculations()
+    .send({ from: s.manager, gas: s.gas });
+  await s.fund.accounting.methods
+    .updateOwnedAssets()
+    .send({ from: s.manager, gas: s.gas });
+
+  const isDgxInAssetList = await s.fund.accounting.methods
+    .isInAssetList(s.dgx.options.address)
+    .call();
+
+  expect(isDgxInAssetList).toBeTruthy();
 });
 
 test('Cancel the order and withdraw tokens', async () => {
@@ -389,10 +417,23 @@ test('Cancel the order and withdraw tokens', async () => {
       '0x0',
     )
     .send({ from: s.manager, gas: s.gas });
+  // To Clean up asset list
+  await s.fund.accounting.methods
+    .performCalculations()
+    .send({ from: s.manager, gas: s.gas });
+  await s.fund.accounting.methods
+    .updateOwnedAssets()
+    .send({ from: s.manager, gas: s.gas });
 
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postCalculations = await s.fund.accounting.methods
     .performCalculations()
+    .call();
+  const isDgxInAssetList = await s.fund.accounting.methods
+    .isInAssetList(s.dgx.options.address)
+    .call();
+  const openOrdersAgainstDgx = await s.fund.trading.methods
+    .openMakeOrdersAgainstAsset(s.dgx.options.address)
     .call();
 
   expect(post.fund.weth).toEqual(preWithdraw.fund.weth);
@@ -405,4 +446,6 @@ test('Cancel the order and withdraw tokens', async () => {
   expect(preWithdrawCalculations.sharePrice).toEqual(
     preCalculations.sharePrice,
   );
+  expect(isDgxInAssetList).toBeFalsy();
+  expect(Number(openOrdersAgainstDgx)).toEqual(0);
 });

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "auth.sol";
 import "Hub.sol";
@@ -26,14 +26,15 @@ contract Registry is DSAuth {
     );
 
     event AssetRemoval (address indexed asset);
+    event EfxWrapperRegistryChange(address indexed registry);
+    event EngineChange(address indexed engine);
     event ExchangeAdapterRemoval (address indexed exchange);
-    event VersionRegistration(address indexed version);
     event IncentiveChange(uint incentiveAmount);
-    event PriceSourceChange(address indexed priceSource);
+    event MGMChange(address indexed MGM);
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
-    event EngineChange(address indexed engine);
-    event EfxWrapperRegistryChange(address indexed registry);
+    event PriceSourceChange(address indexed priceSource);
+    event VersionRegistration(address indexed version);
 
     // TYPES
     struct Asset {
@@ -59,6 +60,10 @@ contract Registry is DSAuth {
         bytes32 name;
     }
 
+    // CONSTANTS
+    uint public constant MAX_REGISTERED_ENTITIES = 20;
+    uint public constant MAX_FUND_NAME_BYTES = 66;
+
     // FIELDS
     mapping (address => Asset) public assetInformation;
     address[] public registeredAssets;
@@ -70,19 +75,28 @@ contract Registry is DSAuth {
     mapping (address => Version) public versionInformation;
     address[] public registeredVersions;
 
+    mapping (address => bool) public isFeeRegistered;
+
     mapping (address => address) public fundsToVersions;
     mapping (bytes32 => bool) public versionNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
 
-    uint public constant MAX_REGISTERED_ENTITIES = 20;
-    uint public constant MAX_FUND_NAME_BYTES = 66;
 
+    uint public incentive = 10 finney;
     address public priceSource;
     address public mlnToken;
     address public nativeAsset;
     address public engine;
     address public ethfinexWrapperRegistry;
-    uint public incentive = 10 finney;
+    address public MGM;
+
+    modifier onlyVersion() {
+        require(
+            versionInformation[msg.sender].exists,
+            "Only a Version can do this"
+        );
+        _;
+    }
 
     // METHODS
 
@@ -124,17 +138,20 @@ contract Registry is DSAuth {
         );
     }
 
+    function reserveFundName(address _owner, string _name)
+        external
+        onlyVersion
+    {
+        require(canUseFundName(_owner, _name), "Fund name cannot be used");
+        fundNameHashToOwner[keccak256(_name)] = _owner;
+    }
+
     function registerFund(address _fund, address _owner, string _name)
         external
+        onlyVersion
     {
-        require(
-            versionInformation[msg.sender].exists,
-            "Only a Version can register a fund"
-        );
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
-
         fundsToVersions[_fund] = msg.sender;
-        fundNameHashToOwner[keccak256(_name)] = _owner;
     }
 
     /// @notice Registers an Asset information entry
@@ -237,6 +254,11 @@ contract Registry is DSAuth {
         emit EngineChange(_engine);
     }
 
+    function setMGM(address _MGM) external auth {
+        MGM = _MGM;
+        emit MGMChange(_MGM);
+    }
+
     function setEthfinexWrapperRegistry(address _registry) external auth {
         ethfinexWrapperRegistry = _registry;
         emit EfxWrapperRegistryChange(_registry);
@@ -335,6 +357,18 @@ contract Registry is DSAuth {
         emit ExchangeAdapterRemoval(_adapter);
     }
 
+    function registerFees(address[] _fees) external auth {
+        for (uint i; i < _fees.length; i++) {
+            isFeeRegistered[_fees[i]] = true;
+        }
+    }
+
+    function deregisterFees(address[] _fees) external auth {
+        for (uint i; i < _fees.length; i++) {
+            delete isFeeRegistered[_fees[i]];
+        }
+    }
+
     // PUBLIC VIEW METHODS
 
     // get asset specific information
@@ -358,6 +392,7 @@ contract Registry is DSAuth {
     }
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
         external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
@@ -402,6 +437,7 @@ contract Registry is DSAuth {
         address _adapter, bytes4 _sig
     )
         external
+        view
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[_adapter].sigs;

@@ -8,6 +8,7 @@ import { deployEngine } from '~/contracts/engine/transactions/deployEngine';
 import { deploy as deployPriceTolerance } from '~/contracts/fund/policies/risk-management/transactions/deploy';
 import { deployRegistry } from '~/contracts/version/transactions/deployRegistry';
 import { registerAsset } from '~/contracts/version/transactions/registerAsset';
+import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { registerExchangeAdapter } from '~/contracts/version/transactions/registerExchangeAdapter';
 import { updateExchangeAdapter } from '~/contracts/version/transactions/updateExchangeAdapter';
 import { deployVersion } from '~/contracts/version/transactions/deployVersion';
@@ -29,15 +30,18 @@ import {
 } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
-import { Address } from '@melonproject/token-math';
+import { Address, createQuantity } from '@melonproject/token-math';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
 import { setNativeAsset } from '~/contracts/version/transactions/setNativeAsset';
 import { setPriceSource } from '~/contracts/version/transactions/setPriceSource';
 import { setEngine } from '~/contracts/version/transactions/setEngine';
+import { setMGM } from '~/contracts/version/transactions/setMGM';
+import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
+import { getAmguToken } from '~/contracts/engine/calls/getAmguToken';
 import { registerVersion } from '~/contracts/version/transactions/registerVersion';
 import { getVersionInformation } from '~/contracts/version/calls/getVersionInformation';
-import { setRegistry } from '~/contracts/engine/transactions/setRegistry';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { isFeeRegistered } from '~/contracts/version/calls/isFeeRegistered';
+import { registerFees } from '~/contracts/version/transactions/registerFees';
 import { getRegistryInformation } from '~/contracts/version/calls/getRegistryInformation';
 import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
 import { getLogCurried } from '../environment/getLogCurried';
@@ -49,6 +53,7 @@ import { setDecimals } from '~/contracts/prices/transactions/setDecimals';
 import { deployManagementFee } from '~/contracts/fund/fees/transactions/deployManagementFee';
 import { deployPerformanceFee } from '~/contracts/fund/fees/transactions/deployPerformanceFee';
 import { setEthfinexWrapperRegistry } from '~/contracts/version/transactions/setEthfinexWrapperRegistry';
+import { deployEngineAdapter } from '~/contracts/exchanges/transactions/deployEngineAdapter';
 
 const pkg = require('~/../package.json');
 
@@ -86,6 +91,12 @@ export interface MelonContracts {
   factories: Factories;
 }
 
+export interface ContractControl {
+  MGM: Address;
+  registryOwner: Address;
+  versionOwner: Address;
+}
+
 export type MelonContractsDraft = Partial<MelonContracts>;
 
 export const deployAllContractsConfig = JSON.parse(`{
@@ -95,7 +106,8 @@ export const deployAllContractsConfig = JSON.parse(`{
     "kyberAdapter": "DEPLOY",
     "matchingMarketAdapter": "DEPLOY",
     "matchingMarketAccessor": "DEPLOY",
-    "zeroExAdapter": "DEPLOY"
+    "zeroExAdapter": "DEPLOY",
+    "engineAdapter": "DEPLOY"
   },
   "policies": {
     "priceTolerance": "DEPLOY",
@@ -118,6 +130,12 @@ export const deployAllContractsConfig = JSON.parse(`{
   "registry": "DEPLOY",
   "version": "DEPLOY",
   "ranking": "DEPLOY"
+}`);
+
+export const defaultControlConfig = JSON.parse(`{
+  "MGM": "",
+  "registryOwner": "",
+  "versionOwner": ""
 }`);
 
 const getLog = getLogCurried('melon:protocol:utils:deploySystem');
@@ -170,6 +188,7 @@ export const deploySystem = async (
   environmentWithoutDeployment: Environment,
   thirdPartyContracts: ThirdPartyContracts,
   adoptedContracts: MelonContractsDraft,
+  control: ContractControl,
   description?: string,
 ): Promise<WithDeployment> => {
   // Set thirdPartyContracts already to have them available in subsequent calls
@@ -206,6 +225,9 @@ export const deploySystem = async (
     maybeDeploy(['adapters', 'zeroExAdapter'], environment =>
       deploy0xAdapter(environment),
     ),
+    maybeDeploy(['adapters', 'engineAdapter'], environment =>
+      deployEngineAdapter(environment),
+    ),
     maybeDeploy(['policies', 'priceTolerance'], environment =>
       deployPriceTolerance(environment, 10),
     ),
@@ -239,14 +261,17 @@ export const deploySystem = async (
     maybeDeploy(['factories', 'vaultFactory'], environment =>
       deployVaultFactory(environment),
     ),
+    maybeDeploy(['registry'], environment =>
+      deployRegistry(
+        environment,
+        control.registryOwner || environment.wallet.address,
+      ),
+    ),
     maybeDeploy(['engine'], environment =>
       deployEngine(environment, {
         delay: monthInSeconds,
-        postDeployOwner: environment.wallet.address,
+        registry: environment.deployment.melonContracts.registry,
       }),
-    ),
-    maybeDeploy(['registry'], environment =>
-      deployRegistry(environment, environment.wallet.address),
     ),
     maybeDeploy(['priceSource'], environment =>
       environment.track === Tracks.KYBER_PRICE
@@ -255,6 +280,7 @@ export const deploySystem = async (
             kyberNetworkProxy:
               environment.deployment.thirdPartyContracts.exchanges.kyber
                 .kyberNetworkProxy,
+            maxSpread: 0.1,
             quoteToken: wethToken,
             registry: environment.deployment.melonContracts.registry,
           })
@@ -274,36 +300,128 @@ export const deploySystem = async (
       },
     ),
     maybeDoSomething(
+      // TODO: some of these can be conditional
       true, // ensure these steps are done at each deployment
       async environment => {
         const { melonContracts } = environment.deployment;
-        getLog(environment).info('Setting registry & engine');
-
-        await setNativeAsset(environment, melonContracts.registry, {
-          address: wethToken.address,
+        const previousInfo = await getRegistryInformation(
+          environment,
+          melonContracts.registry,
+        );
+        if (
+          R.pathOr(
+            '',
+            ['nativeAsset', 'address'],
+            previousInfo,
+          ).toLowerCase() !== wethToken.address.toLowerCase()
+        ) {
+          getLog(environment).info('Setting native token');
+          await setNativeAsset(environment, melonContracts.registry, {
+            address: wethToken.address,
+          });
+        }
+        if (
+          R.pathOr('', ['mlnToken', 'address'], previousInfo).toLowerCase() !==
+          mlnToken.address.toLowerCase()
+        ) {
+          getLog(environment).info('Setting MLN token');
+          await setMlnToken(environment, melonContracts.registry, {
+            address: mlnToken.address,
+          });
+        }
+        if (
+          R.pathOr('', ['engine'], previousInfo).toLowerCase() !==
+          melonContracts.engine.toLowerCase()
+        ) {
+          getLog(environment).info('Setting engine on registry');
+          await setEngine(environment, melonContracts.registry, {
+            address: melonContracts.engine,
+          });
+        }
+        getLog(environment).info('Setting MGM on registry');
+        await setMGM(environment, melonContracts.registry, {
+          address: control.MGM || environment.wallet.address,
         });
-        await setMlnToken(environment, melonContracts.registry, {
-          address: mlnToken.address,
-        });
-        await setEngine(environment, melonContracts.registry, {
-          address: melonContracts.engine,
-        });
-        await setRegistry(environment, melonContracts.engine, {
-          address: melonContracts.registry,
-        });
-        await setEthfinexWrapperRegistry(environment, melonContracts.registry, {
-          address: thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX,
-        });
+        if (
+          R.pathOr(
+            '',
+            ['ethfinexWrapperRegistry'],
+            previousInfo,
+          ).toLowerCase() !==
+          thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX.toLowerCase()
+        ) {
+          getLog(environment).info('Setting ethfinex wrapper registry');
+          await setEthfinexWrapperRegistry(
+            environment,
+            melonContracts.registry,
+            {
+              address:
+                thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX,
+            },
+          );
+        }
       },
     ),
+    maybeDoSomething(true, async environment => {
+      // TODO: make this conditional
+      const { melonContracts } = environment.deployment;
+      const fees: Address[] = [
+        melonContracts.fees.managementFee,
+        melonContracts.fees.performanceFee,
+      ];
+      const unregistered: Address[] = [];
+      for (const fee of fees) {
+        if (
+          !(await isFeeRegistered(environment, melonContracts.registry, {
+            fee,
+          }))
+        ) {
+          unregistered.push(fee);
+        }
+      }
+      if (unregistered.length > 0) {
+        getLog(environment).info('Registering fees');
+        await registerFees(environment, melonContracts.registry, {
+          addresses: unregistered.map(e => e.toString()),
+        });
+      }
+    }),
     maybeDeploy(['ranking'], environment => deployFundRanking(environment)),
     maybeDeploy(['version'], environment =>
       deployVersion(environment, {
         factories: environment.deployment.melonContracts.factories,
-        postDeployOwner: environment.wallet.address,
+        postDeployOwner: control.versionOwner || environment.wallet.address,
         registry: environment.deployment.melonContracts.registry,
       }),
     ),
+    maybeDoSomething(true, async environment => {
+      // TODO: make this conditional
+      await setMGM(
+        environment,
+        environment.deployment.melonContracts.registry,
+        {
+          // used for setting initial amguPrice
+          address: environment.wallet.address,
+        },
+      );
+      const amguToken = await getAmguToken(
+        environment,
+        environment.deployment.melonContracts.version,
+      );
+      await setAmguPrice(
+        environment,
+        environment.deployment.melonContracts.engine,
+        createQuantity(amguToken, 0),
+      );
+      await setMGM(
+        environment,
+        environment.deployment.melonContracts.registry,
+        {
+          // used for setting initial amguPrice
+          address: control.MGM || environment.wallet.address,
+        },
+      );
+    }),
   )(new Promise(resolve => resolve(environment)));
 
   const { melonContracts } = environmentWithDeployment.deployment;
@@ -347,6 +465,11 @@ export const deploySystem = async (
       exchange: thirdPartyContracts.exchanges.ethfinex.exchange,
       takesCustody: true,
     },
+    [Exchanges.MelonEngine]: {
+      adapter: melonContracts.adapters.engineAdapter,
+      exchange: melonContracts.engine,
+      takesCustody: false,
+    },
   };
 
   for (const [exchangeName, exchangeConfig] of R.toPairs(exchangeConfigs)) {
@@ -387,7 +510,7 @@ export const deploySystem = async (
         assetAddress: `${asset.address}`,
         assetSymbol: asset.symbol,
         name: '',
-        reserveMin: '',
+        reserveMin: `${(asset as any).reserveMin || 0}`,
         sigs: [],
         standards: [],
         url: '',

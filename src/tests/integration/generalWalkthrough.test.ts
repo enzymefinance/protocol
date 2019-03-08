@@ -118,19 +118,13 @@ describe('generalWalkthrough', () => {
 
     await update(shared.env, priceSource, [ethPrice, mlnPrice]);
 
-    await beginSetup(
-      shared.env,
-      version,
-      {
-        defaultTokens,
-        exchangeConfigs,
-        fees,
-        fundName,
-        nativeToken: ethToken,
-        quoteToken: ethToken,
-      },
-      { gas: '8000000' },
-    );
+    await beginSetup(shared.env, version, {
+      defaultTokens,
+      exchangeConfigs,
+      fees,
+      fundName,
+      quoteToken: ethToken,
+    });
 
     await createAccounting(shared.env, version);
     await createFeeManager(shared.env, version);
@@ -143,6 +137,7 @@ describe('generalWalkthrough', () => {
 
     const routes = await getRoutes(shared.env, hubAddress);
 
+    // TODO: pass in policies
     await register(shared.env, routes.policyManagerAddress, {
       method: FunctionSignatures.makeOrder,
       policy: policies.priceTolerance,
@@ -154,7 +149,7 @@ describe('generalWalkthrough', () => {
     });
 
     await register(shared.env, routes.policyManagerAddress, {
-      method: FunctionSignatures.executeRequestFor,
+      method: FunctionSignatures.requestInvestment,
       policy: policies.userWhitelist,
     });
 

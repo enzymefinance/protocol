@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.25;
 
 import "PreminedToken.sol";
 
@@ -11,6 +11,10 @@ contract BurnableToken is PreminedToken {
 
     function burn(uint _amount) public {
         _burn(msg.sender, _amount);
+    }
+    
+    function burnFrom(address from, uint256 value) public {
+        _burnFrom(from, value);
     }
 }
 
