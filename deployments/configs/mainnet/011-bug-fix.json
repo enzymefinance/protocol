@@ -1,7 +1,6 @@
 {
   "meta": {
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
-    "timestamp": "2019-03-10T18:36:19.302Z",
     "track": "kyberPrice",
     "version": "1.0.2",
     "chain": 1,
@@ -147,7 +146,7 @@
       "takesCustody": false
     },
     "ZeroEx": {
-      "adapter": "0x7A81B7eD275190A12B5f2D2766C73D249fa6719B",
+      "adapter": "0x9312D09433fFF34f7b57b02996486d54D420eA74",
       "exchange": "0x4f833a24e1f95d70f028921e27040ca56e09ab0b",
       "takesCustody": false
     },
