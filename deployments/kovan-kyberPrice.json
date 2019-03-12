@@ -1,42 +1,42 @@
 {
   "meta": {
     "deployer": "0x12bD963E3645246b3F8870864c18FE05a206F269",
-    "timestamp": "2019-03-12T13:45:33.245Z",
+    "timestamp": "2019-03-12T16:33:33.402Z",
     "track": "kyberPrice",
     "version": "1.0.1-ash-0.1",
     "chain": 42,
-    "description": "Ash Deployment 1"
+    "description": "Ash Deployment 3"
   },
   "melonContracts": {
-    "priceSource": "0xBA94625DAE40B597c307E676f8891eEE28061A4D",
+    "priceSource": "0xCBeEE6cD5eD88cf00E7832D650d1197e03Da7594",
     "adapters": {
-      "ethfinexAdapter": "0xa1cbB5604425E62e5c53129A4e73D839c7dC0125",
-      "kyberAdapter": "0x00b56D3d323A660196a33397b78284826F69369E",
-      "matchingMarketAdapter": "0xB54fAef24249980e573AD6E374D6c8b2D434545E",
-      "matchingMarketAccessor": "0x0FA03c8704AA6C4Bd3ac869d58B3F04d36C03779",
-      "zeroExAdapter": "0xfA2A8F175511f6788733870474C261084154DBf4"
+      "ethfinexAdapter": "0xceD19670a11aEE359CcfBB32328610b268784AF2",
+      "kyberAdapter": "0x6CE25B58A89974d6f04b4A348c4760Dc967d3191",
+      "matchingMarketAdapter": "0xbb556c66e3EE2074042068AcF72CAf322A81c7c5",
+      "matchingMarketAccessor": "0x9ee522F16875c2f32F96e29F1EF9B63A112C4516",
+      "zeroExAdapter": "0x810c023B70dbd2651A060C171ee193EFc968bf52"
     },
     "policies": {
-      "priceTolerance": "0x90bD98c9bE6F4351d0d3A9a810A52A95aC8626dD",
-      "userWhitelist": "0xB75aF4adc19D18409422ee3fBC7Dd5312231D228"
+      "priceTolerance": "0xC85963C1f0a1aD00274B928f53a0C92f387C8181",
+      "userWhitelist": "0x68355E06d16E5677BCaA60455346B71112b67BB0"
     },
     "fees": {
-      "managementFee": "0xaD4C9d8Ed178e6538A98F253B478b52770916fE8",
-      "performanceFee": "0xa97B7755072A8C072447583D2e319d25F062d75B"
+      "managementFee": "0x29D9a96E477e922F8F191bD106B8380B6b2758EC",
+      "performanceFee": "0x91BC38C5bB8705dbe70f7659B781f5A434d8468e"
     },
     "factories": {
-      "accountingFactory": "0xe5ff3959a350D2ac3734d9a1a3eC1FC1E51B7eB7",
-      "feeManagerFactory": "0x46C5642fa078594B678a19f30CaC8F37d1938697",
-      "participationFactory": "0xB879157dD61506902B9b580950373B81c06d02Dd",
-      "policyManagerFactory": "0xF7A537De2Ed4B4d3C43366efa73662bE51e4f3b8",
-      "sharesFactory": "0x8c3355B6Ec9c273f5909c7Ed2edAE905F1118De8",
-      "tradingFactory": "0x3BFF3Fa8b557466cf2f4E9BFeC5769883Ce82f64",
-      "vaultFactory": "0xA4099712e5e21dccbbA6fF5eAEB6D719ed33e8ea"
+      "accountingFactory": "0x814a61fB815b5af86f70fb7FBebC3601f33A8deB",
+      "feeManagerFactory": "0x2c4b2f04C3956AB27872808D1A6Fce32f9Ef621E",
+      "participationFactory": "0xbb0aa609f4689E887E6EB37BA612F42F8D8472b5",
+      "policyManagerFactory": "0xa79AeE694bfC74D30042E650499c0103c8bE110a",
+      "sharesFactory": "0x1c97f984B338c2dc0144e568335a2DC6c3262237",
+      "tradingFactory": "0x84B6b7c865A684e6b87AB75326D8f9Fb7133dF4F",
+      "vaultFactory": "0x172318F84aD0D1213EF05Fe8260668D09f53BB42"
     },
-    "engine": "0x9634d0BCC8b7b91a0B4D4aD6ebeEBb4CBdB378E0",
-    "registry": "0x7de7ED2d5b06328ED50c87b8a4f54fA3322DB5E9",
-    "version": "0xA8f9aF6b36243A02f45e0aC632fe6De0007Cf4f2",
-    "ranking": "0x9966599FdC4F335835109Cef00ee9Aa3f94796f7"
+    "engine": "0x4DdeeFE0400966333e66ffB3dA9C66859feca090",
+    "registry": "0xbEf6f28B5aB160AD1dA87677105e440b4dc05b4e",
+    "version": "0x4942F2e7c0800CAC33F5Cf2fec85a4C7F8e96138",
+    "ranking": "0x36666345d539C95E011fc66dBC2395444AF438CF"
   },
   "thirdPartyContracts": {
     "exchanges": {
@@ -113,22 +113,22 @@
   },
   "exchangeConfigs": {
     "MatchingMarket": {
-      "adapter": "0xB54fAef24249980e573AD6E374D6c8b2D434545E",
+      "adapter": "0xbb556c66e3EE2074042068AcF72CAf322A81c7c5",
       "exchange": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
       "takesCustody": true
     },
     "KyberNetwork": {
-      "adapter": "0x00b56D3d323A660196a33397b78284826F69369E",
+      "adapter": "0x6CE25B58A89974d6f04b4A348c4760Dc967d3191",
       "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
       "takesCustody": false
     },
     "ZeroEx": {
-      "adapter": "0xfA2A8F175511f6788733870474C261084154DBf4",
+      "adapter": "0x810c023B70dbd2651A060C171ee193EFc968bf52",
       "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
       "takesCustody": false
     },
     "Ethfinex": {
-      "adapter": "0xa1cbB5604425E62e5c53129A4e73D839c7dC0125",
+      "adapter": "0xceD19670a11aEE359CcfBB32328610b268784AF2",
       "exchange": "0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
       "takesCustody": true
     }
