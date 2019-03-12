@@ -465,11 +465,6 @@ export const deploySystem = async (
       exchange: thirdPartyContracts.exchanges.ethfinex.exchange,
       takesCustody: true,
     },
-    [Exchanges.MelonEngine]: {
-      adapter: melonContracts.adapters.engineAdapter,
-      exchange: melonContracts.engine,
-      takesCustody: false,
-    },
   };
 
   for (const [exchangeName, exchangeConfig] of R.toPairs(exchangeConfigs)) {
