@@ -46,13 +46,10 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   _,
   { fundName, fees, exchangeConfigs, quoteToken, defaultTokens },
 ) => {
-  const exchangeAddresses = Object.values(exchangeConfigs).map(e =>
-    e.exchange.toString(),
-  );
-  const adapterAddresses = Object.values(exchangeConfigs).map(e =>
-    e.adapter.toString(),
-  );
-  const takesCustody = Object.values(exchangeConfigs).map(e => e.takesCustody);
+  const values = Object.values(exchangeConfigs);
+  const exchangeAddresses = values.map(e => e.exchange.toString());
+  const adapterAddresses = values.map(e => e.adapter.toString());
+  const takesCustody = values.map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
   const feeAddresses = fees.map(f => f.feeAddress);
