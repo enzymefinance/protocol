@@ -104,10 +104,10 @@
     "ramda": "^0.25.0",
     "request-promise": "^4.2.2",
     "solc": "^0.4.25",
-    "web3": "^1.0.0-beta.37",
+    "web3": "1.0.0-beta.37",
     "web3-eth": "1.0.0-beta.37",
     "web3-eth-abi": "1.0.0-beta.37",
-    "web3-eth-accounts": "^1.0.0-beta.37",
+    "web3-eth-accounts": "1.0.0-beta.37",
     "web3-utils": "1.0.0-beta.37",
     "yup": "^0.26.6",
     "zen-observable-ts": "^0.8.10"
