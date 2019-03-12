@@ -26,8 +26,10 @@ const guard = async (environment, params, contractAddress) => {
   const request = await getRequest(environment, contractAddress, {
     of: environment.wallet.address,
   });
+
   ensure(
-    greaterThan(request.requestedShares, createQuantity(fundToken, '0')),
+    !!request &&
+      greaterThan(request.requestedShares, createQuantity(fundToken, '0')),
     'Amount of requested shares is null',
   );
 
