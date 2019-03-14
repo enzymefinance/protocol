@@ -62,12 +62,10 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         address _hub,
         address[] _exchanges,
         address[] _adapters,
-        bool[] _takesCustody,
         address _registry
     ) Spoke(_hub) {
         routes.registry = _registry;
         require(_exchanges.length == _adapters.length, "Array lengths unequal");
-        require(_exchanges.length == _takesCustody.length, "Array lengths unequal");
         for (uint i = 0; i < _exchanges.length; i++) {
             _addExchange(_exchanges[i], _adapters[i]);
         }
@@ -345,7 +343,6 @@ contract TradingFactory is Factory {
         address indexed instance,
         address[] exchanges,
         address[] adapters,
-        bool[] takesCustody,
         address registry
     );
 
@@ -353,17 +350,15 @@ contract TradingFactory is Factory {
         address _hub,
         address[] _exchanges,
         address[] _adapters,
-        bool[] _takesCustody,
         address _registry
     ) public returns (address) {
-        address trading = new Trading(_hub, _exchanges, _adapters, _takesCustody, _registry);
+        address trading = new Trading(_hub, _exchanges, _adapters, _registry);
         childExists[trading] = true;
         emit NewInstance(
             _hub,
             trading,
             _exchanges,
             _adapters,
-            _takesCustody,
             _registry
         );
         return trading;

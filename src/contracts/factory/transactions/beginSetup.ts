@@ -16,7 +16,6 @@ export interface ExchangeConfigs {
   [exchange: string]: {
     exchange: Address;
     adapter: Address;
-    takesCustody: boolean;
   };
 }
 
@@ -49,7 +48,6 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   const values = Object.values(exchangeConfigs);
   const exchangeAddresses = values.map(e => e.exchange.toString());
   const adapterAddresses = values.map(e => e.adapter.toString());
-  const takesCustody = values.map(e => e.takesCustody);
   const defaultTokenAddresses = defaultTokens.map(t => t.address);
   const quoteTokenAddress = quoteToken.address;
   const feeAddresses = fees.map(f => f.feeAddress);
@@ -66,7 +64,6 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
     adapterAddresses,
     quoteTokenAddress,
     defaultTokenAddresses,
-    takesCustody,
   ];
 
   return args;
