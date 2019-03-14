@@ -18,6 +18,7 @@ contract MockRegistry is DSAuth {
     mapping (address => bool) public registered;
     mapping (address => bool) public fundExists;
     mapping (address => address) public exchangeForAdapter;
+    mapping (address => bool) public takesCustodyForAdapter;
 
 
     function register(address _addr) public {
@@ -42,6 +43,7 @@ contract MockRegistry is DSAuth {
         address _adapter
     ) public {
         exchangeForAdapter[_adapter] = _exchange;
+        takesCustodyForAdapter[_adapter] = true;
     }
 
     function adapterMethodIsAllowed(

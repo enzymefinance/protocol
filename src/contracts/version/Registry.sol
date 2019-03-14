@@ -412,7 +412,7 @@ contract Registry is DSAuth {
         return registeredExchangeAdapters;
     }
     function getExchangeInformation(address _adapter)
-        public
+        external
         view
         returns (address, bool)
     {
@@ -426,6 +426,12 @@ contract Registry is DSAuth {
         Exchange exchange = exchangeInformation[_adapter];
         return exchange.exchangeAddress;
     }
+
+    function takesCustodyForAdapter(address _adapter) external view returns (bool) {
+        Exchange exchange = exchangeInformation[_adapter];
+        return exchange.takesCustody;
+    }
+
     function getAdapterFunctionSignatures(address _adapter)
         public
         view
