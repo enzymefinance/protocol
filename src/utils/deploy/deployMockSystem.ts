@@ -129,7 +129,6 @@ export const deployMockSystem = async (
     hub.options.address.toString(),
     [matchingMarketAddress.toString()],
     [matchingMarketAdapter.options.address.toString()],
-    [true],
     registry.options.address.toString(),
   ]);
 

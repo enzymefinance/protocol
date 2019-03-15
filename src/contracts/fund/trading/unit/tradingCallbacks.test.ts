@@ -31,7 +31,6 @@ describe('tradingCallbacks', () => {
         shared.user, // faked so user can call initialize
         [mockExchange],
         [mockAdapter.options.address],
-        [false],
         shared.registry.options.address,
       ]),
     );
