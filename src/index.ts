@@ -180,3 +180,7 @@ export {
 export {
   getShareCostInAsset,
 } from '~/contracts/fund/accounting/calls/getShareCostInAsset';
+export { getManagementFee } from '~/contracts/fund/fees/calls/getManagementFee';
+export {
+  getPerformanceFee,
+} from '~/contracts/fund/fees/calls/getPerformanceFee';
