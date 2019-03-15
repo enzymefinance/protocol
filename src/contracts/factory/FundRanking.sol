@@ -50,4 +50,26 @@ contract FundRanking {
         }
         return (hubs, gavs);
     }
+
+    function getFundVersions(address _factory)
+        external
+        view
+        returns(address[], bytes32[])
+    {
+        FundFactory factory = FundFactory(_factory);
+        uint numberOfFunds = factory.getLastFundId() + 1;
+        address[] memory hubs = new address[](numberOfFunds);
+        bytes32[] memory versions = new bytes32[](numberOfFunds);
+
+        for (uint i = 0; i < numberOfFunds; i++) {
+            address hubAddress = factory.funds(i);
+            Hub hub = Hub(hubAddress);
+
+            (, bytes32 version) = Registry(hub.registry()).versionInformation(hub.version());
+
+            hubs[i] = hubAddress;
+            versions[i] = version;
+        }
+        return (hubs, versions);
+    }
 }

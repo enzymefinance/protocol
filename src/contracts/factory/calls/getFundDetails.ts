@@ -23,9 +23,10 @@ export const getFundDetails = async (
     contractAddress,
   );
 
-  const [fundDetails, fundGavs] = await Promise.all([
+  const [fundDetails, fundGavs, fundVersions] = await Promise.all([
     contract.methods.getFundDetails(versionAddress.toString()).call(),
-    contract.methods.getFundDetails(versionAddress.toString()).call(),
+    contract.methods.getFundGavs(versionAddress.toString()).call(),
+    contract.methods.getFundVersions(versionAddress.toString()).call(),
   ]);
 
   const {
@@ -37,6 +38,7 @@ export const getFundDetails = async (
   } = fundDetails;
 
   const { 1: gavs } = fundGavs;
+  const { 1: versions } = fundVersions;
 
   const result = addresses
     .map((address, index) => {
@@ -60,6 +62,7 @@ export const getFundDetails = async (
           createQuantity(denominationToken, sharePrices[index]),
         ),
         gav: createQuantity(denominationToken, gavs[index]),
+        version: web3Utils.toUtf8(versions[index]),
       };
     })
     .sort((a, b) => {
