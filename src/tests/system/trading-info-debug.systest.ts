@@ -10,7 +10,7 @@ import { Tracks } from '~/utils/environment/Environment';
 import { getLogCurried } from '~/utils/environment/getLogCurried';
 import { allLogsWritten } from '../utils/testLogger';
 import { setupFund } from '~/contracts/fund/hub/transactions/setupFund';
-import { getTradingInfo } from '~/contracts/factory/calls/getTradingInfo';
+import { getExchangesInfo } from '~/contracts/factory/calls/getExchangesInfo';
 import { getExchangeInfo } from '~/contracts/fund/trading/calls/getExchangeInfo';
 
 expect.extend({ toBeTrueWith });
@@ -65,7 +65,7 @@ describe('playground', () => {
 
     log.debug('Routes ', routes);
 
-    const tradingInfo = await getTradingInfo(
+    const tradingInfo = await getExchangesInfo(
       manager,
       melonContracts.version,
       manager.wallet.address,

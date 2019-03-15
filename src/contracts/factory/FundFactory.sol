@@ -299,7 +299,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
     function version() public view returns (address) { return address(version); }
     function registry() public view returns (address) { return address(registry); }
-    function getTradeInfo(address user) public view returns (address[]) { 
+    function getExchangesInfo(address user) public view returns (address[]) { 
         return (managersToSettings[user].exchanges); 
     }
 }

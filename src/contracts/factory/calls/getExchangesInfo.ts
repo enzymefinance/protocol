@@ -3,7 +3,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
 
-export const getTradingInfo = async (
+export const getExchangesInfo = async (
   environment: Environment,
   contractAddress: Address,
   managerAddress: Address,
@@ -15,7 +15,7 @@ export const getTradingInfo = async (
   );
 
   const tradingInfo = await contract.methods
-    .getTradeInfo(managerAddress.toString())
+    .getExchangesInfo(managerAddress.toString())
     .call();
   return tradingInfo;
 };
