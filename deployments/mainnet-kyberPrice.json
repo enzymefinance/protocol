@@ -118,6 +118,20 @@
         "symbol": "KNC",
         "decimals": 18,
         "reserveMin": 930101522997154300000
+      },
+      {
+        "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "decimals": 6,
+        "reserveMin": 136107584
+      },
+      {
+        "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+        "name": "Wrapped BTC",
+        "symbol": "WBTC",
+        "decimals": 8,
+        "reserveMin": 3542743
       }
     ]
   },
