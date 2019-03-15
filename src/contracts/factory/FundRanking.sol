@@ -29,4 +29,25 @@ contract FundRanking {
         }
         return (hubs, sharePrices, creationTimes, names, denominationAssets);
     }
+
+    function getFundGavs(address _factory)
+        external
+        view
+        returns(address[], uint[])
+    {
+        FundFactory factory = FundFactory(_factory);
+        uint numberOfFunds = factory.getLastFundId() + 1;
+        address[] memory hubs = new address[](numberOfFunds);
+        uint[] memory gavs = new uint[](numberOfFunds);
+
+        for (uint i = 0; i < numberOfFunds; i++) {
+            address hubAddress = factory.funds(i);
+            Hub hub = Hub(hubAddress);
+            uint gav = Accounting(hub.accounting()).calcGav();
+
+            hubs[i] = hubAddress;
+            gavs[i] = gav;
+        }
+        return (hubs, gavs);
+    }
 }

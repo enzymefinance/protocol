@@ -23,9 +23,10 @@ export const getFundDetails = async (
     contractAddress,
   );
 
-  const fundDetails = await contract.methods
-    .getFundDetails(versionAddress.toString())
-    .call();
+  const [fundDetails, fundGavs] = await Promise.all([
+    contract.methods.getFundDetails(versionAddress.toString()).call(),
+    contract.methods.getFundDetails(versionAddress.toString()).call(),
+  ]);
 
   const {
     0: addresses,
@@ -34,6 +35,8 @@ export const getFundDetails = async (
     3: names,
     4: denominationAsset,
   } = fundDetails;
+
+  const { 1: gavs } = fundGavs;
 
   const result = addresses
     .map((address, index) => {
@@ -50,11 +53,13 @@ export const getFundDetails = async (
       return {
         address,
         creationTime: new Date(creationTimes[index] * 1000),
+        denominationToken,
         name: web3Utils.toUtf8(names[index]),
         sharePrice: createPrice(
           createQuantity(fundToken, 1),
           createQuantity(denominationToken, sharePrices[index]),
         ),
+        gav: createQuantity(denominationToken, gavs[index]),
       };
     })
     .sort((a, b) => {
