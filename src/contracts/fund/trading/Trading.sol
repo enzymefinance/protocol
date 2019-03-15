@@ -86,8 +86,9 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             "Adapter is not registered"
         );
 
-        address registeredExchange = registry.exchangeForAdapter(_adapter);
-        bool takesCustody = registry.takesCustodyForAdapter(_adapter);
+        address registeredExchange;
+        bool takesCustody;
+        (registeredExchange, takesCustody) = registry.getExchangeInformation(_adapter);
 
         require(
             registeredExchange == _exchange,

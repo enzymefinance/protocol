@@ -67,5 +67,15 @@ contract MockRegistry is DSAuth {
     function isFeeRegistered(address _fee) public view returns (bool) {
         return alwaysRegistered;
     }
+    function getExchangeInformation(address _adapter)
+        public
+        view
+        returns (address, bool)
+    {
+        return (
+            exchangeForAdapter[_adapter],
+            takesCustodyForAdapter[_adapter]
+        );
+    }
 }
 
