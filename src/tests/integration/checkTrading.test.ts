@@ -63,6 +63,6 @@ beforeAll(async () => {
 });
 
 test('Transfer ethToken to the investor', async () => {
-  console.log(await s.version.methods.getTradeInfo(s.manager).call());
+  console.log(await s.version.methods.getExchangesInfo(s.manager).call());
   console.log(await s.fund.trading.methods.getExchangeInfo().call());
 });
