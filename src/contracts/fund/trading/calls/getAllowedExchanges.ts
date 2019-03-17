@@ -16,9 +16,9 @@ const getAllowedExchanges = async (
   );
 
   const exchanges = await tradingContract.methods.getExchangeInfo().call();
-
+  const adapters = exchanges[1].map(exchange => exchange.toLowerCase());
   const allowedExchanges = Object.entries(exchangeAddress).filter(exchange => {
-    return exchanges[1].indexOf(exchange[1].adapter) != -1;
+    return adapters.indexOf(exchange[1].adapter.toLowerCase()) !== -1;
   });
 
   return allowedExchanges.map(item => item[0]);
