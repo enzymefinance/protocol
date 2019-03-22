@@ -124,7 +124,7 @@
     },
     "ZeroEx": {
       "adapter": "0xA28e3301222B9cb9C54910F0620Fbf92bbE38be3",
-      "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "exchange": "0x35dD2932454449b14Cee11A94d3674a936d5d7b2",
       "takesCustody": false
     },
     "Ethfinex": {

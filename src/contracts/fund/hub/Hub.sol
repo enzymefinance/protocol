@@ -119,6 +119,7 @@ contract Hub is DSGuard {
     function trading() external view returns (address) { return routes.trading; }
     function shares() external view returns (address) { return routes.shares; }
     function registry() external view returns (address) { return routes.registry; }
+    function version() external view returns (address) { return routes.version; }
     function policyManager() external view returns (address) { return routes.policyManager; }
 }
 
