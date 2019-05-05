@@ -57,7 +57,9 @@
     "test": "JSON_RPC_ENDPOINT=ws://localhost:8545 yarn jest --runInBand --forceExit",
     "test:integration:legacy": "CHAIN_ENV=development ava legacy/tests/integration/fundTrading.js",
     "test:system": "yarn pretest && yarn jest --config ./src/tests/system/jest.config.js --runInBand --forceExit",
-    "test:system:devchain": "PRIVATE_KEY=0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 yarn test:system testing"
+    "test:system:devchain": "PRIVATE_KEY=0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 yarn test:system testing",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "devDependencies": {
     "@0x/types": "^1.3.0",
@@ -81,7 +83,6 @@
     "rimraf": "^2.6.2",
     "rollup": "^0.67.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
-    "snyk": "^1.110.2",
     "solidity-cli": "^1.0.3",
     "solium": "^1.1.0",
     "ts-jest": "^23.10.5",
@@ -111,7 +112,8 @@
     "web3-eth-accounts": "^1.0.0-beta.37",
     "web3-utils": "1.0.0-beta.37",
     "yup": "^0.26.6",
-    "zen-observable-ts": "^0.8.10"
+    "zen-observable-ts": "^0.8.10",
+    "snyk": "^1.161.1"
   },
   "husky": {
     "hooks": {
@@ -130,5 +132,6 @@
       "@babel/register",
       "@babel/polyfill"
     ]
-  }
+  },
+  "snyk": true
 }
