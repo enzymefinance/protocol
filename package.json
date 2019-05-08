@@ -98,7 +98,7 @@
     "@0x/order-utils": "^3.0.4",
     "@melonproject/ganache-cli": "^6.1.9",
     "@melonproject/token-math": "0.1.5",
-    "ava": "0.25.0",
+    "ava": "1.0.1",
     "axios": "^0.18.0",
     "commander": "^2.19.0",
     "ethereum-types": "^1.1.4",
