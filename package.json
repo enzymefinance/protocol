@@ -1,6 +1,10 @@
 {
   "name": "@melonproject/protocol",
-  "version": "1.0.1-ash-0.1",
+// <<<<<<< HEAD
+//   "version": "1.0.1-ash-0.1",
+// =======
+  "version": "1.0.6",
+// >>>>>>> upstream/master
   "description": "Technology Regulated and Operated Investment Funds",
   "main": "lib/index.umd.js",
   "module": "lib/index.js",

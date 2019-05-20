@@ -347,24 +347,28 @@ const transactionFactory: TransactionFactory = <Args, Result>(
       }, TRANSACTION_TIMEOUT);
 
       const processReceipt = async receipt => {
-        const receiptWithEvents = parseReceiptLogs(receipt, log);
+        try {
+          const receiptWithEvents = parseReceiptLogs(receipt, log);
 
-        log.debug(`Receipt for ${name}`, receiptWithEvents);
+          log.debug(`Receipt for ${name}`, receiptWithEvents);
+          const postprocessed = await postProcess(
+            environment,
+            receiptWithEvents,
+            params,
+            contractAddress,
+          );
 
-        const postprocessed = await postProcess(
-          environment,
-          receiptWithEvents,
-          params,
-          contractAddress,
-        );
-
-        clearTimeout(transactionTimeout);
-        if (pollInterval) clearInterval(pollInterval);
-        resolve(postprocessed);
+          clearTimeout(transactionTimeout);
+          if (pollInterval) clearInterval(pollInterval);
+          resolve(postprocessed);
+        } catch (error) {
+          reject('Transaction error in postprocess ***');
+        }
       };
 
-      receiptPromiEvent.on('receipt', processReceipt);
-
+      receiptPromiEvent.on('receipt', receipt => {
+        processReceipt(receipt);
+      });
       receiptPromiEvent.on('transactionHash', txHash => {
         transactionHash = txHash;
         pollInterval = setInterval(async () => {

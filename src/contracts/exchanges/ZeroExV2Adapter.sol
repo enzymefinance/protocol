@@ -198,10 +198,16 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(targetExchange, makerAsset);
         (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
         uint takerAssetFilledAmount = Exchange(targetExchange).filled(bytes32(orderId));
+        uint makerAssetFilledAmount = mul(takerAssetFilledAmount, makerQuantity) / takerQuantity;
         if (Exchange(targetExchange).cancelled(bytes32(orderId)) || sub(takerQuantity, takerAssetFilledAmount) == 0) {
             return (makerAsset, takerAsset, 0, 0);
         }
-        return (makerAsset, takerAsset, makerQuantity, sub(takerQuantity, takerAssetFilledAmount));
+        return (
+            makerAsset,
+            takerAsset,
+            sub(makerQuantity, makerAssetFilledAmount),
+            sub(takerQuantity, takerAssetFilledAmount)
+        );
     }
 
     // INTERNAL METHODS

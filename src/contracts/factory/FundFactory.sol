@@ -44,7 +44,6 @@ contract FundFactory is AmguConsumer, Factory {
         address[] adapters;
         address denominationAsset;
         address[] defaultAssets;
-        bool[] takesCustody;
         address[] fees;
         uint[] feeRates;
         uint[] feePeriods;
@@ -98,8 +97,7 @@ contract FundFactory is AmguConsumer, Factory {
         address[] _exchanges,
         address[] _adapters,
         address _denominationAsset,
-        address[] _defaultAssets,
-        bool[] _takesCustody
+        address[] _defaultAssets
     )
         public
         componentNotSet(managersToHubs[msg.sender])
@@ -120,7 +118,6 @@ contract FundFactory is AmguConsumer, Factory {
             _adapters,
             _denominationAsset,
             _defaultAssets,
-            _takesCustody,
             _fees,
             _feeRates,
             _feePeriods
@@ -213,7 +210,6 @@ contract FundFactory is AmguConsumer, Factory {
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].exchanges,
             managersToSettings[msg.sender].adapters,
-            managersToSettings[msg.sender].takesCustody,
             managersToRoutes[msg.sender].registry
         );
     }
@@ -303,5 +299,8 @@ contract FundFactory is AmguConsumer, Factory {
     }
     function version() public view returns (address) { return address(version); }
     function registry() public view returns (address) { return address(registry); }
+    function getExchangesInfo(address user) public view returns (address[]) { 
+        return (managersToSettings[user].exchanges); 
+    }
 }
 

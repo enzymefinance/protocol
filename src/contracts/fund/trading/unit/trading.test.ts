@@ -21,8 +21,6 @@ describe('trading', () => {
     randomAddress().toString(),
   ];
 
-  const takesCustodyMasks = [true, false];
-
   beforeAll(async () => {
     shared.env = await initTestEnvironment();
     shared = Object.assign(shared, await deployMockSystem(shared.env));
@@ -40,7 +38,6 @@ describe('trading', () => {
         shared.hub.options.address,
         mockExchanges,
         mockExchangeAdapters,
-        takesCustodyMasks,
         shared.registry.options.address,
       ]),
     );
@@ -70,7 +67,6 @@ describe('trading', () => {
       const exchangeObject = await shared.trading.methods.exchanges(i).call();
       expect(exchangeObject.exchange).toBe(mockExchanges[i]);
       expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
-      expect(exchangeObject.takesCustody).toBe(takesCustodyMasks[i]);
       const exchangeAdded = await shared.trading.methods
         .adapterIsAdded(exchangeObject.adapter)
         .call();
@@ -85,7 +81,6 @@ describe('trading', () => {
         shared.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],
-        takesCustodyMasks,
         shared.registry.options.address,
       ]),
     ).rejects.toThrow(errorMessage);

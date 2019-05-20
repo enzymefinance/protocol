@@ -1,11 +1,10 @@
 {
   "meta": {
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
-    "timestamp": "2019-03-15T21:21:49.759Z",
     "track": "kyberPrice",
-    "version": "1.0.5",
+    "version": "1.0.2",
     "chain": 1,
-    "description": "Fix takes custody bug"
+    "description": "Fix bug in ZeroExV2Adapter"
   },
   "melonContracts": {
     "priceSource": "0x4559DDD9E0a567bD8AB071ac106C1bC2d0C0b6Ef",
@@ -14,7 +13,7 @@
       "kyberAdapter": "0x8CB3E810027d97BE5E890257338b9Cc755dE9c67",
       "matchingMarketAdapter": "0x542F91538205FCe34c7e1538b7Ce2218655D8623",
       "matchingMarketAccessor": "0x005a15d35f0153Bf27dD40Bb53ADE42e01FA877E",
-      "zeroExAdapter": "0x3ecfe6f8414ed517366a5e6f7f7fc74ef21caac9",
+      "zeroExAdapter": "0x7A81B7eD275190A12B5f2D2766C73D249fa6719B",
       "engineAdapter": "0xF31D358eFD7B80A6733BCb850bd49BFCBEC1428A"
     },
     "policies": {
@@ -31,13 +30,13 @@
       "participationFactory": "0xA48227baEa91825c23b2A38B0A90CE2e2ae59987",
       "policyManagerFactory": "0xe06835e09Dd3eB24433252a77Ef573E022FcfB0b",
       "sharesFactory": "0xC563Fb444441fd73431384006e7A81955c0d4F89",
-      "tradingFactory": "0x6E57E54Ba53495066F400c026ecA1ef7FCa9Cb44",
+      "tradingFactory": "0xe2c3fe25336eE3bD71dcA3380b7423a3bDef3d8C",
       "vaultFactory": "0x42822b1f64249154Fc82f7F6246AE7C69254F30A"
     },
     "engine": "0x7CaEc96607c5c7190d63B5A650E7CE34472352f5",
     "registry": "0x1Bfd21f7db126a5966d2C09492676807a68859Ba",
-    "version": "0x01Bde0b02740D6311e4a87CA112DeEEddb057EFB",
-    "ranking": "0x4CEc8B644d306CAD99340D13A9fD4A91Fa6d5417"
+    "version": "0xCB6c6Bdf0AA4cF0188518783b871931EFB64248f",
+    "ranking": "0xE237Cb73dF19FC8dD0370e4524420a1f62BFd089"
   },
   "thirdPartyContracts": {
     "exchanges": {
@@ -147,7 +146,7 @@
       "takesCustody": false
     },
     "ZeroEx": {
-      "adapter": "0x3ecfe6f8414ed517366a5e6f7f7fc74ef21caac9",
+      "adapter": "0x9312D09433fFF34f7b57b02996486d54D420eA74",
       "exchange": "0x4f833a24e1f95d70f028921e27040ca56e09ab0b",
       "takesCustody": false
     },
