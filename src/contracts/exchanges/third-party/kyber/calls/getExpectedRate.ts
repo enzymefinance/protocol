@@ -32,8 +32,14 @@ const prepareArgs = (
 
 const postProcess = async (_, result, prepared) => {
   const { 1: price } = result;
+
+  // The price is always returned with 18 decimals, hence we need to
+  // adjust it to the number of decimals of the respective maker asset.
+  const length = prepared.params.makerAsset.decimals + price.length - 18;
+  const truncated = price.substr(0, length);
+
   const base = createQuantity(prepared.params.takerAsset, 1);
-  const quote = createQuantity(prepared.params.makerAsset, price);
+  const quote = createQuantity(prepared.params.makerAsset, truncated);
   return createPrice(base, quote);
 };
 
