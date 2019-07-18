@@ -3,7 +3,7 @@
     "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
     "timestamp": "2019-07-18T15:52:12.132Z",
     "track": "kyberPrice",
-    "version": "1.0.7",
+    "version": "1.0.9",
     "chain": 1,
     "description": "Upgrade 0x addresses"
   },
