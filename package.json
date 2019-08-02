@@ -85,6 +85,7 @@
     "snyk": "^1.110.2",
     "solidity-cli": "^1.0.3",
     "solium": "^1.1.0",
+    "sync-request": "^6.1.0",
     "ts-jest": "^23.10.5",
     "tsc-watch": "^1.0.31",
     "tscpaths": "^0.0.6",

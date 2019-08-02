@@ -7,8 +7,24 @@ var solc = require("solc");
 var mkdirp = require("mkdirp");
 var R = require("ramda");
 var rimraf = require("rimraf");
+var sync_request_1 = require("sync-request");
 var soliditySourceDirectory = path.join(__dirname, '..', 'src', 'contracts');
 var solidityCompileTarget = path.join(__dirname, '..', 'out');
+// TODO: A more standard way to integrate vyper contracts
+/* tslint:disable:max-line-length */
+var externalContractFiles = [
+    {
+        'contractName': 'UniswapExchange',
+        'abiDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_exchange.json',
+        'binDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/exchange.txt'
+    },
+    {
+        'contractName': 'UniswapFactory',
+        'abiDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_factory.json',
+        'binDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/factory.txt'
+    },
+];
+/* tslint:enable:max-line-length */
 var debug = require('debug')["default"]('melon:protocol:bin');
 var findImports = function (missingPath, b, c) {
     var query = path.join(soliditySourceDirectory, '**', missingPath);
@@ -41,6 +57,16 @@ var writeFiles = function (compileOutput, contract) {
     fs.writeFileSync(targetBasePath + ".abi.json", JSON.stringify(JSON.parse(compileOutput.interface), null, 2));
     fs.writeFileSync(targetBasePath + ".abi", compileOutput.interface);
     fs.writeFileSync(targetBasePath + ".gasEstimates.json", JSON.stringify(compileOutput.gasEstimates, null, 2));
+};
+var downloadAndWriteFile = function (fileUrl, fileName, isAbi) {
+    if (isAbi === void 0) { isAbi = false; }
+    var targetPath = path.join(solidityCompileTarget, fileName);
+    var res = sync_request_1["default"]('GET', fileUrl);
+    fs.writeFileSync(targetPath, res.body);
+    if (isAbi) {
+        var abiJsonPath = path.join(solidityCompileTarget, fileName + ".json");
+        fs.writeFileSync(abiJsonPath, JSON.stringify(JSON.parse(res.body.toString()), null, 2));
+    }
 };
 exports.compileGlob = function (query) {
     if (query === void 0) { query = path.join(soliditySourceDirectory, '**', '*.sol'); }
@@ -79,6 +105,11 @@ exports.compileGlob = function (query) {
         fs.writeFileSync(path.join(solidityCompileTarget, 'compilerMessages.txt'), output.errors.join('\n\n'));
     }
     R.forEachObjIndexed(writeFiles, output.contracts);
+    console.log('\n\n Downloading external Uniswap contract codes');
+    externalContractFiles.forEach(function (file) {
+        downloadAndWriteFile(file.abiDownloadUrl, file.contractName + ".abi", true);
+        downloadAndWriteFile(file.binDownloadUrl, file.contractName + ".bin");
+    });
     if (errors.length > 0) {
         debug('Finished with errors');
         process.stderr.write(errors.join('\n\n'));

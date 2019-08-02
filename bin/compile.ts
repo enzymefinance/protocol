@@ -5,9 +5,30 @@ import * as solc from 'solc';
 import * as mkdirp from 'mkdirp';
 import * as R from 'ramda';
 import * as rimraf from 'rimraf';
+import syncRequest from 'sync-request';
 
 const soliditySourceDirectory = path.join(__dirname, '..', 'src', 'contracts');
 const solidityCompileTarget = path.join(__dirname, '..', 'out');
+
+// TODO: A more standard way to integrate vyper contracts
+/* tslint:disable:max-line-length */
+const externalContractFiles = [
+  {
+    contractName: 'UniswapExchange',
+    abiDownloadUrl:
+      'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_exchange.json',
+    binDownloadUrl:
+      'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/exchange.txt',
+  },
+  {
+    contractName: 'UniswapFactory',
+    abiDownloadUrl:
+      'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_factory.json',
+    binDownloadUrl:
+      'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/factory.txt',
+  },
+];
+/* tslint:enable:max-line-length */
 
 const debug = require('debug').default('melon:protocol:bin');
 
@@ -63,6 +84,20 @@ const writeFiles = (compileOutput, contract) => {
   );
 };
 
+const downloadAndWriteFile = (fileUrl, fileName, isAbi = false) => {
+  const targetPath = path.join(solidityCompileTarget, fileName);
+  const res = syncRequest('GET', fileUrl);
+  fs.writeFileSync(targetPath, res.body);
+
+  if (isAbi) {
+    const abiJsonPath = path.join(solidityCompileTarget, `${fileName}.json`);
+    fs.writeFileSync(
+      abiJsonPath,
+      JSON.stringify(JSON.parse(res.body.toString()), null, 2),
+    );
+  }
+};
+
 export const compileGlob = (
   query = path.join(soliditySourceDirectory, '**', '*.sol'),
 ) => {
@@ -113,6 +148,12 @@ export const compileGlob = (
   }
 
   R.forEachObjIndexed(writeFiles, output.contracts);
+
+  console.log('\n\n Downloading external Uniswap contract codes');
+  externalContractFiles.forEach(file => {
+    downloadAndWriteFile(file.abiDownloadUrl, `${file.contractName}.abi`, true);
+    downloadAndWriteFile(file.binDownloadUrl, `${file.contractName}.bin`);
+  });
 
   if (errors.length > 0) {
     debug('Finished with errors');
