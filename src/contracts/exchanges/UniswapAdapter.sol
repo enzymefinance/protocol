@@ -10,6 +10,7 @@ import "UniswapExchangeInterface.sol";
 import "ExchangeAdapter.sol";
 import "ERC20.i.sol";
 
+
 contract UniswapAdapter is DSMath, ExchangeAdapter {
 
     // NON-CONSTANT METHODS
@@ -88,13 +89,29 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         if (srcToken == nativeAsset) {
-            actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, destAmount);
-        }
-        else if (destToken == nativeAsset) {
-            actualReceiveAmount = swapTokenToNativeAsset(targetExchange, srcToken, srcAmount, nativeAsset, destAmount);
-        }
-        else {
-            actualReceiveAmount = swapTokenToToken(targetExchange, srcToken, srcAmount, destToken, destAmount);
+            actualReceiveAmount = swapNativeAssetToToken(
+                targetExchange,
+                nativeAsset,
+                srcAmount,
+                destToken,
+                destAmount
+            );
+        } else if (destToken == nativeAsset) {
+            actualReceiveAmount = swapTokenToNativeAsset(
+                targetExchange,
+                srcToken,
+                srcAmount,
+                nativeAsset,
+                destAmount
+            );
+        } else {
+            actualReceiveAmount = swapTokenToToken(
+                targetExchange,
+                srcToken,
+                srcAmount,
+                destToken,
+                destAmount
+            );
         }
     }
 
