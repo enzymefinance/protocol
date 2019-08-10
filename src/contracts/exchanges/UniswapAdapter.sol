@@ -174,9 +174,9 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
         ERC20(srcToken).approve(tokenExchange, srcAmount);
-        // TODO check 0 value of min_eth_bought
+        // TODO: Better way of passing min_eth_bought parameter instead of passing a hardcoded '1'
         receivedAmount = UniswapExchangeInterface(tokenExchange).tokenToTokenSwapInput(
-            srcAmount, destAmount, 0, add(block.timestamp, 1), destToken
+            srcAmount, destAmount, 1, add(block.timestamp, 1), destToken
         );
     }
 }
