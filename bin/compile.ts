@@ -87,7 +87,7 @@ const writeFiles = (compileOutput, contract) => {
 const downloadAndWriteFile = (fileUrl, fileName, isAbi = false) => {
   const targetPath = path.join(solidityCompileTarget, fileName);
   const res = syncRequest('GET', fileUrl);
-  fs.writeFileSync(targetPath, res.body);
+  fs.writeFileSync(targetPath, res.body.toString().replace(/\n$/, ''));
 
   if (isAbi) {
     const abiJsonPath = path.join(solidityCompileTarget, `${fileName}.json`);

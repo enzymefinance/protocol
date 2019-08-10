@@ -29,6 +29,7 @@ import {
   Tracks,
 } from '../environment/Environment';
 import { deployKyberAdapter } from '~/contracts/exchanges/transactions/deployKyberAdapter';
+import { deployUniswapAdapter } from '~/contracts/exchanges/transactions/deployUniswapAdapter';
 import { ThirdPartyContracts } from './deployThirdParty';
 import { Address, createQuantity } from '@melonproject/token-math';
 import { setMlnToken } from '~/contracts/version/transactions/setMlnToken';
@@ -79,6 +80,7 @@ export interface MelonContracts {
     matchingMarketAdapter: Address;
     matchingMarketAccessor: Address;
     ethfinexAdapter: Address;
+    uniswapAdapter: Address;
   };
   policies: {
     priceTolerance: Address;
@@ -107,7 +109,8 @@ export const deployAllContractsConfig = JSON.parse(`{
     "matchingMarketAdapter": "DEPLOY",
     "matchingMarketAccessor": "DEPLOY",
     "zeroExAdapter": "DEPLOY",
-    "engineAdapter": "DEPLOY"
+    "engineAdapter": "DEPLOY",
+    "uniswapAdapter": "DEPLOY"
   },
   "policies": {
     "priceTolerance": "DEPLOY",
@@ -227,6 +230,9 @@ export const deploySystem = async (
     ),
     maybeDeploy(['adapters', 'engineAdapter'], environment =>
       deployEngineAdapter(environment),
+    ),
+    maybeDeploy(['adapters', 'uniswapAdapter'], environment =>
+      deployUniswapAdapter(environment),
     ),
     maybeDeploy(['policies', 'priceTolerance'], environment =>
       deployPriceTolerance(environment, 10),
@@ -468,6 +474,11 @@ export const deploySystem = async (
     [Exchanges.MelonEngine]: {
       adapter: melonContracts.adapters.engineAdapter,
       exchange: melonContracts.engine,
+      takesCustody: false,
+    },
+    [Exchanges.UniswapFactory]: {
+      adapter: melonContracts.adapters.uniswapAdapter,
+      exchange: thirdPartyContracts.exchanges.uniswap,
       takesCustody: false,
     },
   };

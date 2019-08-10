@@ -65,6 +65,9 @@ export enum Contracts {
   TradingFactory = 'TradingFactory',
   TruePolicy = 'TruePolicy',
   UserWhitelist = 'UserWhitelist',
+  UniswapAdapter = 'UniswapAdapter',
+  UniswapFactory = 'UniswapFactory',
+  UniswapExchangeTemplate = 'UniswapExchange',
   Vault = 'Vault',
   VaultFactory = 'VaultFactory',
   Version = 'Version',
@@ -208,6 +211,12 @@ export const requireMap = {
     require(`../out/${Contracts.TradingFactory}.abi.json`),
   [Contracts.TruePolicy]:
     require('../out/TruePolicy.abi.json'),
+  [Contracts.UniswapAdapter]:
+    require(`../out/${Contracts.UniswapAdapter}.abi.json`),
+  [Contracts.UniswapFactory]:
+    require(`../out/${Contracts.UniswapFactory}.abi.json`),
+  [Contracts.UniswapExchangeTemplate]:
+    require(`../out/${Contracts.UniswapExchangeTemplate}.abi.json`),
   [Contracts.UserWhitelist]:
     require(`../out/${Contracts.UserWhitelist}.abi.json`),
   [Contracts.Vault]:
@@ -278,4 +287,5 @@ export enum Exchanges {
   ZeroEx = 'ZeroEx',
   Ethfinex = 'Ethfinex',
   MelonEngine = 'MelonEngine',
+  UniswapFactory = 'UniswapFactory',
 }

@@ -14,14 +14,14 @@ var solidityCompileTarget = path.join(__dirname, '..', 'out');
 /* tslint:disable:max-line-length */
 var externalContractFiles = [
     {
-        'contractName': 'UniswapExchange',
-        'abiDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_exchange.json',
-        'binDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/exchange.txt'
+        contractName: 'UniswapExchange',
+        abiDownloadUrl: 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_exchange.json',
+        binDownloadUrl: 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/exchange.txt'
     },
     {
-        'contractName': 'UniswapFactory',
-        'abiDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_factory.json',
-        'binDownloadUrl': 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/factory.txt'
+        contractName: 'UniswapFactory',
+        abiDownloadUrl: 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/abi/uniswap_factory.json',
+        binDownloadUrl: 'https://raw.githubusercontent.com/Uniswap/contracts-vyper/master/bytecode/factory.txt'
     },
 ];
 /* tslint:enable:max-line-length */
@@ -62,7 +62,7 @@ var downloadAndWriteFile = function (fileUrl, fileName, isAbi) {
     if (isAbi === void 0) { isAbi = false; }
     var targetPath = path.join(solidityCompileTarget, fileName);
     var res = sync_request_1["default"]('GET', fileUrl);
-    fs.writeFileSync(targetPath, res.body);
+    fs.writeFileSync(targetPath, res.body.toString().replace(/\n$/, ''));
     if (isAbi) {
         var abiJsonPath = path.join(solidityCompileTarget, fileName + ".json");
         fs.writeFileSync(abiJsonPath, JSON.stringify(JSON.parse(res.body.toString()), null, 2));

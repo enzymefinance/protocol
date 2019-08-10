@@ -14,6 +14,11 @@
       "adapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97",
       "exchange": "0xCA3139e0D64f28202d0b2e40018059B939bE51d1",
       "takesCustody": false
+    },
+    "Uniswap": {
+      "adapter": "DEPLOY",
+      "exchange": "DEPLOY",
+      "takesCustody": false
     }
   },
   "melonContracts": {
@@ -23,7 +28,8 @@
       "matchingMarketAdapter": "0x38ed49300335A839B4ea65f47cd8BE1229f2E447",
       "matchingMarketAccessor": "0x38ed49300335A839B4ea65f47cd8BE1229f2E447",
       "zeroExAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97",
-      "ethfinexAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97"
+      "ethfinexAdapter": "0x4679FDb64488CABcd3C7b7c14c4577b34E798A97",
+      "uniswapAdapter": "DEPLOY"
     },
     "policies": {
       "priceTolerance": "0x4c98B3438f78F744Fa87F3a3b635504A21a73932",
@@ -59,7 +65,8 @@
 
         ],
         "erc20proxy": ""
-        }
+      },
+      "uniswap": "DEPLOY"
     },
     "tokens": [
       {

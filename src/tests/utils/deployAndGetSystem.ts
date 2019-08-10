@@ -94,6 +94,16 @@ export const deployAndGetSystem = async (environment: Environment) => {
       Contracts.Registry,
       addresses.melonContracts.registry,
     ),
+    uniswapAdapter: getContract(
+      environment,
+      Contracts.UniswapAdapter,
+      addresses.exchangeConfigs['UniswapFactory'].adapter,
+    ),
+    uniswapFactory: getContract(
+      environment,
+      Contracts.UniswapFactory,
+      addresses.exchangeConfigs['UniswapFactory'].exchange,
+    ),
     userWhitelist: getContract(
       environment,
       Contracts.UserWhitelist,

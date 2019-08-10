@@ -23,6 +23,7 @@ import {
   deployEthfinex,
   EthfinexEnvironment,
 } from '~/contracts/exchanges/transactions/deployEthfinex';
+import { deployUniswapFactory } from '~/contracts/exchanges/transactions/deployUniswapFactory';
 import { ensure } from '../guards/ensure';
 import { Contracts } from '~/Contracts';
 import { deployBurnableToken } from '~/contracts/dependencies/token/transactions/deployBurnableToken';
@@ -33,6 +34,7 @@ export interface ThirdPartyContracts {
     matchingMarket: Address;
     zeroEx: Address;
     ethfinex: EthfinexEnvironment;
+    uniswap: Address;
   };
   tokens: TokenInterface[];
 }
@@ -106,12 +108,16 @@ const deployThirdParty = async (
     zeroExExchangeAddress: zeroEx,
     tokens: deployedTokens,
   });
+  const uniswap = await deployUniswapFactory(environment, {
+    tokens: deployedTokens,
+  });
 
   return {
     exchanges: {
       ethfinex,
       kyber,
       matchingMarket,
+      uniswap,
       zeroEx,
     },
     tokens: deployedTokens.map(token => ({
