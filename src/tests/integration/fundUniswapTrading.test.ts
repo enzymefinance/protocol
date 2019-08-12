@@ -173,7 +173,10 @@ test('swap ethToken for mln with specific order price (minRate)', async () => {
       '0x0',
     )
     .send({ from: s.manager, gas: s.gas });
-
+  const expectedMln = divide(
+    multiply(srcAmount, bestRate),
+    power(new BigInteger(10), new BigInteger(18)),
+  );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
   expect(post.fund.mln).toEqual(add(pre.fund.mln, destAmount));
@@ -204,20 +207,17 @@ test('swap mlnToken for ethToken with specific dest amount', async () => {
       '0x0',
     )
     .send({ from: s.manager, gas: s.gas });
-
+  const expectedWeth = divide(
+    multiply(srcAmount, bestRate),
+    power(new BigInteger(10), new BigInteger(18)),
+  );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.fund.mln).toEqual(subtract(pre.fund.mln, srcAmount));
   expect(post.fund.weth).toEqual(add(pre.fund.weth, destAmount));
 });
 
-test('swap mlnToken directly to eurToken', async () => {
+test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
   const srcAmount = power(new BigInteger(10), new BigInteger(16));
-  const intermediateEth = await s.mlnExchange.methods
-    .getTokenToEthInputPrice(`${srcAmount}`)
-    .call();
-  const destAmount = new BigInteger(
-    await s.eurExchange.methods.getEthToTokenInputPrice(intermediateEth).call(),
-  );
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preFundEur = new BigInteger(
     await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
@@ -241,6 +241,10 @@ test('swap mlnToken directly to eurToken', async () => {
       '0x0',
     )
     .send({ from: s.manager, gas: s.gas });
+  const expectedEur = divide(
+    multiply(srcAmount, bestRate),
+    power(new BigInteger(10), new BigInteger(18)),
+  );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postFundEur = new BigInteger(
     await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
@@ -252,14 +256,19 @@ test('swap mlnToken directly to eurToken', async () => {
 });
 
 test('takeOrder fails if minPrice is not satisfied', async () => {
-  const srcAmount = power(new BigInteger(10), new BigInteger(16));
-  const destAmount = multiply(
-    new BigInteger(
-      await s.mlnExchange.methods
-        .getEthToTokenInputPrice(`${srcAmount}`)
-        .call(),
-    ),
-    2,
+  const srcAmount = power(new BigInteger(10), new BigInteger(17));
+  const [bestRate] = Object.values(
+    await s.kyberNetwork.methods
+      .getExpectedRate(
+        s.mln.options.address,
+        s.eur.options.address,
+        `${srcAmount}`,
+      )
+      .call(),
+  ).map(e => new BigInteger(e));
+  const destAmount = divide(
+    multiply(multiply(srcAmount, bestRate), new BigInteger(2)),
+    precisionUnits,
   );
   await expect(
     s.fund.trading.methods
