@@ -5,7 +5,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { randomAddress } from '~/utils/helpers/randomAddress';
-import { add, isEqual, BigInteger } from '@melonproject/token-math';
+import { add, isEqual, BigInteger, power } from '@melonproject/token-math';
 
 describe('trading', () => {
   let shared: any = {};
@@ -87,7 +87,7 @@ describe('trading', () => {
   });
 
   it('returnBatchToVault sends back token balances to the vault', async () => {
-    const tokenQuantity = new BigInteger(10 ** 20);
+    const tokenQuantity = power(new BigInteger(10), new BigInteger(20));
 
     await shared.mln.methods
       .transfer(shared.trading.options.address, `${tokenQuantity}`)

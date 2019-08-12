@@ -151,7 +151,7 @@ test('swap ethToken for mln with specific order price (minRate)', async () => {
     .send({ from: s.manager, gas: s.gas });
   const expectedMln = divide(
     multiply(srcAmount, bestRate),
-    new BigInteger(10 ** 18),
+    power(new BigInteger(10), new BigInteger(18)),
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
@@ -188,7 +188,7 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
     .send({ from: s.manager, gas: s.gas });
   const expectedWeth = divide(
     multiply(srcAmount, bestRate),
-    new BigInteger(10 ** 18),
+    power(new BigInteger(10), new BigInteger(18)),
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.fund.mln).toEqual(subtract(pre.fund.mln, srcAmount));
@@ -196,7 +196,7 @@ test('swap mlnToken for ethToken with specific order price (minRate)', async () 
 });
 
 test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
-  const srcAmount = new BigInteger(10 ** 16);
+  const srcAmount = power(new BigInteger(10), new BigInteger(16));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preFundEur = new BigInteger(
     await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
@@ -232,7 +232,7 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
     .send({ from: s.manager, gas: s.gas });
   const expectedEur = divide(
     multiply(srcAmount, bestRate),
-    new BigInteger(10 ** 18),
+    power(new BigInteger(10), new BigInteger(18)),
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const postFundEur = new BigInteger(
@@ -245,7 +245,7 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
 });
 
 test('takeOrder fails if minPrice is not satisfied', async () => {
-  const srcAmount = new BigInteger(10 ** 17);
+  const srcAmount = power(new BigInteger(10), new BigInteger(17));
   const [bestRate] = Object.values(
     await s.kyberNetwork.methods
       .getExpectedRate(
@@ -279,5 +279,5 @@ test('takeOrder fails if minPrice is not satisfied', async () => {
         '0x0',
       )
       .send({ from: s.manager, gas: s.gas }),
-  ).resolves.toThrow();
+  ).rejects.toThrow();
 });

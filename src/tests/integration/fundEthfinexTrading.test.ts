@@ -7,6 +7,7 @@ import {
   subtract,
   toBI,
   createQuantity,
+  power,
 } from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -134,7 +135,7 @@ beforeAll(async () => {
     .send({ from: s.deployer, gas: s.gas });
 });
 
-const initialTokenAmount = new BigInteger(10 ** 19);
+const initialTokenAmount = power(new BigInteger(10), new BigInteger(19));
 test('investor gets initial ethToken for testing)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
@@ -149,8 +150,8 @@ test('investor gets initial ethToken for testing)', async () => {
 
 // tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
-  const offeredValue = new BigInteger(10 ** 18);
-  const wantedShares = new BigInteger(10 ** 18);
+  const offeredValue = power(new BigInteger(10), new BigInteger(18));
+  const wantedShares = power(new BigInteger(10), new BigInteger(18));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
     .approve(s.fund.participation.options.address, `${offeredValue}`)
