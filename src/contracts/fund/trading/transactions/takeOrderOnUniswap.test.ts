@@ -10,8 +10,10 @@ import {
   BigInteger,
   subtract,
   QuantityInterface,
+  valueIn,
 } from '@melonproject/token-math';
 import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
+import { getUniswapRate } from '~/contracts/exchanges/third-party/uniswap/calls/getUniswapRate';
 
 describe('takeOrderOnUniswap', () => {
   const shared: any = {};
@@ -95,7 +97,17 @@ describe('takeOrderOnUniswap', () => {
     );
 
     const takerQuantity = createQuantity(shared.weth, 0.1);
-    const makerQuantity = createQuantity(shared.mln, 0.1);
+    const mlnPrice = await getUniswapRate(
+      shared.env,
+      shared.env.deployment.exchangeConfigs[Exchanges.UniswapFactory].adapter,
+      {
+        makerAsset: shared.mln,
+        takerAsset: shared.weth,
+        takerQuantity,
+        targetExchange: shared.uniswapAddress,
+      },
+    );
+    const makerQuantity = valueIn(mlnPrice, takerQuantity); // Min WETH
 
     const result = await takeOrderOnUniswap(
       shared.env,
@@ -114,6 +126,7 @@ describe('takeOrderOnUniswap', () => {
     expect(subtract(postFundMln.quantity, preFundMln.quantity)).toEqual(
       result.makerQuantity.quantity,
     );
+    expect(makerQuantity.quantity).toEqual(result.makerQuantity.quantity);
   });
 
   it('Swap MLN for WETH', async () => {
@@ -126,7 +139,17 @@ describe('takeOrderOnUniswap', () => {
     );
 
     const takerQuantity = createQuantity(shared.mln, 0.1);
-    const makerQuantity = createQuantity(shared.weth, 0.001);
+    const invertedMlnPrice = await getUniswapRate(
+      shared.env,
+      shared.env.deployment.exchangeConfigs[Exchanges.UniswapFactory].adapter,
+      {
+        makerAsset: shared.weth,
+        takerAsset: shared.mln,
+        takerQuantity,
+        targetExchange: shared.uniswapAddress,
+      },
+    );
+    const makerQuantity = valueIn(invertedMlnPrice, takerQuantity); // Min WETH
 
     const result = await takeOrderOnUniswap(
       shared.env,
@@ -145,6 +168,7 @@ describe('takeOrderOnUniswap', () => {
     expect(subtract(postFundWeth.quantity, preFundWeth.quantity)).toEqual(
       result.makerQuantity.quantity,
     );
+    expect(makerQuantity.quantity).toEqual(result.makerQuantity.quantity);
   });
 
   it('Swap MLN for EUR', async () => {
@@ -157,7 +181,17 @@ describe('takeOrderOnUniswap', () => {
     );
 
     const takerQuantity = createQuantity(shared.mln, 0.1);
-    const makerQuantity = createQuantity(shared.eur, 0.001);
+    const eurPriceInMln = await getUniswapRate(
+      shared.env,
+      shared.env.deployment.exchangeConfigs[Exchanges.UniswapFactory].adapter,
+      {
+        makerAsset: shared.eur,
+        takerAsset: shared.mln,
+        takerQuantity,
+        targetExchange: shared.uniswapAddress,
+      },
+    );
+    const makerQuantity = valueIn(eurPriceInMln, takerQuantity);
 
     const result = await takeOrderOnUniswap(
       shared.env,
@@ -176,5 +210,6 @@ describe('takeOrderOnUniswap', () => {
     expect(subtract(postFundEur.quantity, preFundEur.quantity)).toEqual(
       result.makerQuantity.quantity,
     );
+    expect(makerQuantity.quantity).toEqual(result.makerQuantity.quantity);
   });
 });

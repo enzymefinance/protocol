@@ -67,6 +67,45 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         );
     }
 
+    // PUBLIC VIEW FUNCTIONS
+
+    /// @notice Calculates expected amount of destToken to be received using Uniswap Input Price functions
+    function getInputPrice(
+        address targetExchange,
+        address nativeAsset,
+        address srcToken,
+        uint srcAmount,
+        address destToken
+    )
+        public view
+        returns (uint expectedDestAmount)
+    {
+        require(
+            srcToken != destToken,
+            "Src token cannot be the same as dest token"
+        );
+
+        address tokenExchange;
+        if (srcToken == nativeAsset) {
+
+            tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
+            expectedDestAmount = UniswapExchangeInterface(tokenExchange).getEthToTokenInputPrice(srcAmount);
+
+        } else if (destToken == nativeAsset) {
+
+            tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
+            expectedDestAmount = UniswapExchangeInterface(tokenExchange).getTokenToEthInputPrice(srcAmount);
+
+        } else {
+
+            address intermediateTokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
+            uint intermediateEthBought = UniswapExchangeInterface(intermediateTokenExchange).getTokenToEthInputPrice(srcAmount);
+            tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
+            expectedDestAmount = UniswapExchangeInterface(tokenExchange).getEthToTokenInputPrice(intermediateEthBought);
+
+        }
+    }
+
     // INTERNAL FUNCTIONS
 
     /// @notice Call different functions based on type of assets supplied
