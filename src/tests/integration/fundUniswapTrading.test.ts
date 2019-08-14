@@ -151,7 +151,7 @@ test('fund receives ETH from investment', async () => {
 test('swap ethToken for mln with specific order price (minRate)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const srcAmount = power(new BigInteger(10), new BigInteger(17));
-  const destAmount = new BigInteger(
+  const minDestAmount = new BigInteger(
     await s.mlnExchange.methods.getEthToTokenInputPrice(`${srcAmount}`).call(),
   );
   await s.fund.trading.methods
@@ -166,7 +166,7 @@ test('swap ethToken for mln with specific order price (minRate)', async () => {
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
+      [`${minDestAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -179,13 +179,13 @@ test('swap ethToken for mln with specific order price (minRate)', async () => {
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.fund.weth).toEqual(subtract(pre.fund.weth, srcAmount));
-  expect(post.fund.mln).toEqual(add(pre.fund.mln, destAmount));
+  expect(post.fund.mln).toEqual(add(pre.fund.mln, minDestAmount));
 });
 
 test('swap mlnToken for ethToken with specific dest amount', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const srcAmount = power(new BigInteger(10), new BigInteger(16));
-  const destAmount = new BigInteger(
+  const minDestAmount = new BigInteger(
     await s.mlnExchange.methods.getTokenToEthInputPrice(`${srcAmount}`).call(),
   );
   await s.fund.trading.methods
@@ -200,7 +200,7 @@ test('swap mlnToken for ethToken with specific dest amount', async () => {
         NULL_ADDRESS,
         NULL_ADDRESS,
       ],
-      [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
+      [`${minDestAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
       randomHexOfSize(20),
       '0x0',
       '0x0',
@@ -213,11 +213,17 @@ test('swap mlnToken for ethToken with specific dest amount', async () => {
   );
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
   expect(post.fund.mln).toEqual(subtract(pre.fund.mln, srcAmount));
-  expect(post.fund.weth).toEqual(add(pre.fund.weth, destAmount));
+  expect(post.fund.weth).toEqual(add(pre.fund.weth, minDestAmount));
 });
 
 test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
   const srcAmount = power(new BigInteger(10), new BigInteger(16));
+  const intermediateEth = await s.mlnExchange.methods
+    .getTokenToEthInputPrice(`${srcAmount}`)
+    .call();
+  const minDestAmount = new BigInteger(
+    await s.eurExchange.methods.getEthToTokenInputPrice(intermediateEth).call(),
+  );
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const preFundEur = new BigInteger(
     await s.eur.methods.balanceOf(s.fund.vault.options.address).call(),
@@ -252,23 +258,18 @@ test('swap mlnToken directly to eurToken without minimum destAmount', async () =
 
   expect(post.fund.weth).toEqual(pre.fund.weth);
   expect(post.fund.mln).toEqual(subtract(pre.fund.mln, srcAmount));
-  expect(postFundEur).toEqual(add(preFundEur, destAmount));
+  expect(postFundEur).toEqual(add(preFundEur, minDestAmount));
 });
 
 test('takeOrder fails if minPrice is not satisfied', async () => {
-  const srcAmount = power(new BigInteger(10), new BigInteger(17));
-  const [bestRate] = Object.values(
-    await s.kyberNetwork.methods
-      .getExpectedRate(
-        s.mln.options.address,
-        s.eur.options.address,
-        `${srcAmount}`,
-      )
-      .call(),
-  ).map(e => new BigInteger(e));
-  const destAmount = divide(
-    multiply(multiply(srcAmount, bestRate), new BigInteger(2)),
-    precisionUnits,
+  const srcAmount = power(new BigInteger(10), new BigInteger(16));
+  const minDestAmount = multiply(
+    new BigInteger(
+      await s.mlnExchange.methods
+        .getEthToTokenInputPrice(`${srcAmount}`)
+        .call(),
+    ),
+    2,
   );
   await expect(
     s.fund.trading.methods
@@ -283,7 +284,7 @@ test('takeOrder fails if minPrice is not satisfied', async () => {
           NULL_ADDRESS,
           NULL_ADDRESS,
         ],
-        [`${destAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
+        [`${minDestAmount}`, `${srcAmount}`, 0, 0, 0, 0, `${srcAmount}`, 0],
         randomHexOfSize(20),
         '0x0',
         '0x0',
