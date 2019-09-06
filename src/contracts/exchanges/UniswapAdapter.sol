@@ -69,8 +69,9 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
     // PUBLIC VIEW FUNCTIONS
 
-    /// @notice Calculates expected amount of destToken to be received using Uniswap Input Price functions
-    function getInputPrice(
+    /// @dev This is different from Uniswap's Input Price functions because Uniswap functions return the quantity instead of the rate
+    /// @notice Calculates the Uniswap rates between tokens for the srcAmount
+    function getInputRate(
         address targetExchange,
         address nativeAsset,
         address srcToken,
@@ -78,7 +79,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         address destToken
     )
         public view
-        returns (uint expectedDestAmount)
+        returns (uint inputRate)
     {
         require(
             srcToken != destToken,
@@ -86,6 +87,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         );
 
         address tokenExchange;
+        uint expectedDestAmount;
         if (srcToken == nativeAsset) {
 
             tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
@@ -104,6 +106,8 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
             expectedDestAmount = UniswapExchangeInterface(tokenExchange).getEthToTokenInputPrice(intermediateEthBought);
 
         }
+
+        inputRate = mul(expectedDestAmount, 10 ** uint(ERC20WithFields(srcToken).decimals())) / srcAmount;
     }
 
     // INTERNAL FUNCTIONS
