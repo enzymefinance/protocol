@@ -9,6 +9,9 @@ export {
   executeRequest,
 } from '~/contracts/fund/participation/transactions/executeRequest';
 export {
+  executeRequestFor,
+} from '~/contracts/fund/participation/transactions/executeRequestFor';
+export {
   cancelRequest,
 } from '~/contracts/fund/participation/transactions/cancelRequest';
 export { getFundDetails } from '~/contracts/factory/calls/getFundDetails';
