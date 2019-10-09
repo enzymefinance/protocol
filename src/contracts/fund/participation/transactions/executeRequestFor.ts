@@ -24,7 +24,7 @@ const guard = async (environment, params, contractAddress) => {
   const routes = await getRoutes(environment, hub);
   const fundToken = await getToken(environment, routes.sharesAddress);
   const request = await getRequest(environment, contractAddress, {
-    of: environment.wallet.address,
+    of: params.who,
   });
 
   ensure(
