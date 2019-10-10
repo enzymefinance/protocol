@@ -113,6 +113,7 @@ export {
   getWrapperLock,
 } from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
 export { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
+export { withKeystoreSigner } from '~/utils/environment/withKeystoreSigner';
 export { withNewAccount } from '~/utils/environment/withNewAccount';
 export { sendEth } from '~/utils/evm/sendEth';
 export { deposit } from '~/contracts/dependencies/token/transactions/deposit';
