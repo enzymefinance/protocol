@@ -144,12 +144,11 @@ contract FundFactory is AmguConsumer, Factory {
         amguPayable(false)
         payable
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].accounting = accountingFactory.createInstance(
-            managersToHubs[manager],
-            managersToSettings[manager].denominationAsset,
+        managersToRoutes[creatorsToManagers[msg.sender]].accounting = accountingFactory.createInstance(
+            managersToHubs[creatorsToManagers[msg.sender]],
+            managersToSettings[creatorsToManagers[msg.sender]].denominationAsset,
             Registry(registry).nativeAsset(),
-            managersToSettings[manager].defaultAssets
+            managersToSettings[creatorsToManagers[msg.sender]].defaultAssets
         );
     }
 
@@ -160,13 +159,12 @@ contract FundFactory is AmguConsumer, Factory {
         amguPayable(false)
         payable
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].feeManager = feeManagerFactory.createInstance(
-            managersToHubs[manager],
-            managersToSettings[manager].denominationAsset,
-            managersToSettings[manager].fees,
-            managersToSettings[manager].feeRates,
-            managersToSettings[manager].feePeriods,
+        managersToRoutes[creatorsToManagers[msg.sender]].feeManager = feeManagerFactory.createInstance(
+            managersToHubs[creatorsToManagers[msg.sender]],
+            managersToSettings[creatorsToManagers[msg.sender]].denominationAsset,
+            managersToSettings[creatorsToManagers[msg.sender]].fees,
+            managersToSettings[creatorsToManagers[msg.sender]].feeRates,
+            managersToSettings[creatorsToManagers[msg.sender]].feePeriods,
             registry
         );
     }
@@ -178,11 +176,10 @@ contract FundFactory is AmguConsumer, Factory {
         amguPayable(false)
         payable
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].participation = participationFactory.createInstance(
-            managersToHubs[manager],
-            managersToSettings[manager].defaultAssets,
-            managersToRoutes[manager].registry
+        managersToRoutes[creatorsToManagers[msg.sender]].participation = participationFactory.createInstance(
+            managersToHubs[creatorsToManagers[msg.sender]],
+            managersToSettings[creatorsToManagers[msg.sender]].defaultAssets,
+            managersToRoutes[creatorsToManagers[msg.sender]].registry
         );
     }
 
@@ -219,12 +216,11 @@ contract FundFactory is AmguConsumer, Factory {
         amguPayable(false)
         payable
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].trading = tradingFactory.createInstance(
-            managersToHubs[manager],
-            managersToSettings[manager].exchanges,
-            managersToSettings[manager].adapters,
-            managersToRoutes[manager].registry
+        managersToRoutes[creatorsToManagers[msg.sender]].trading = tradingFactory.createInstance(
+            managersToHubs[creatorsToManagers[msg.sender]],
+            managersToSettings[creatorsToManagers[msg.sender]].exchanges,
+            managersToSettings[creatorsToManagers[msg.sender]].adapters,
+            managersToRoutes[creatorsToManagers[msg.sender]].registry
         );
     }
 
