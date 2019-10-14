@@ -26,6 +26,7 @@ export interface FeeConfig {
 }
 
 interface BeginSetupArgs {
+  manager: Address;
   fundName: string;
   fees: FeeConfig[];
   exchangeConfigs: ExchangeConfigs;
@@ -43,7 +44,7 @@ const guard: GuardFunction<BeginSetupArgs> = async (
 
 const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   _,
-  { fundName, fees, exchangeConfigs, quoteToken, defaultTokens },
+  { manager, fundName, fees, exchangeConfigs, quoteToken, defaultTokens },
 ) => {
   const values = Object.values(exchangeConfigs);
   const exchangeAddresses = values.map(e => e.exchange.toString());
@@ -56,6 +57,7 @@ const prepareArgs: PrepareArgsFunction<BeginSetupArgs> = async (
   const feePeriods = fees.map(f => `${f.feePeriod}`);
 
   const args = [
+    manager,
     stringToBytes32(fundName),
     feeAddresses,
     feeRates,

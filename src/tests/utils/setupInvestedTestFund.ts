@@ -53,6 +53,7 @@ const setupInvestedTestFund = async (environment: Environment) => {
     exchangeConfigs,
     fees,
     fundName,
+    manager: environment.wallet.address,
     quoteToken: weth,
   });
   await createAccounting(environment, melonContracts.version);
