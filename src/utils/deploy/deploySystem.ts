@@ -338,10 +338,15 @@ export const deploySystem = async (
             address: melonContracts.engine,
           });
         }
-        getLog(environment).info('Setting MGM on registry');
-        await setMGM(environment, melonContracts.registry, {
-          address: control.MGM || environment.wallet.address,
-        });
+        if (
+          // only do this not on mainnet (since we don't have direct control of this on mainnet)
+          (await environment.eth.net.getId()) != 1
+        ) {
+          getLog(environment).info('Setting MGM on registry');
+          await setMGM(environment, melonContracts.registry, {
+            address: control.MGM || environment.wallet.address,
+          });
+        }
         if (
           R.pathOr(
             '',
@@ -394,34 +399,38 @@ export const deploySystem = async (
         registry: environment.deployment.melonContracts.registry,
       }),
     ),
-    maybeDoSomething(true, async environment => {
-      // TODO: make this conditional
-      await setMGM(
-        environment,
-        environment.deployment.melonContracts.registry,
-        {
-          // used for setting initial amguPrice
-          address: environment.wallet.address,
-        },
-      );
-      const amguToken = await getAmguToken(
-        environment,
-        environment.deployment.melonContracts.version,
-      );
-      await setAmguPrice(
-        environment,
-        environment.deployment.melonContracts.engine,
-        createQuantity(amguToken, 0),
-      );
-      await setMGM(
-        environment,
-        environment.deployment.melonContracts.registry,
-        {
-          // used for setting initial amguPrice
-          address: control.MGM || environment.wallet.address,
-        },
-      );
-    }),
+    maybeDoSomething(
+      (await environment.eth.net.getId()) != 1,
+      async environment => {
+        console.log(environment);
+        // we only do this when MGM is directly under our control (e.g. not on mainnet)
+        await setMGM(
+          environment,
+          environment.deployment.melonContracts.registry,
+          {
+            // used for setting initial amguPrice
+            address: environment.wallet.address,
+          },
+        );
+        const amguToken = await getAmguToken(
+          environment,
+          environment.deployment.melonContracts.version,
+        );
+        await setAmguPrice(
+          environment,
+          environment.deployment.melonContracts.engine,
+          createQuantity(amguToken, 0),
+        );
+        await setMGM(
+          environment,
+          environment.deployment.melonContracts.registry,
+          {
+            // used for setting initial amguPrice
+            address: control.MGM || environment.wallet.address,
+          },
+        );
+      },
+    ),
   )(new Promise(resolve => resolve(environment)));
 
   const { melonContracts } = environmentWithDeployment.deployment;
