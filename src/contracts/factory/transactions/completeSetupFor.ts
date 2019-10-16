@@ -13,7 +13,7 @@ const prepareArgs: PrepareArgsFunction<CompleteSetupForArgs> = async (
   _,
   { manager },
 ) => {
-  return manager;
+  return [manager];
 };
 
 export const completeSetupFor = transactionFactory(

@@ -13,7 +13,7 @@ const prepareArgs: PrepareArgsFunction<CreateVaultForArgs> = async (
   _,
   { manager },
 ) => {
-  return manager;
+  return [manager];
 };
 
 export const createVaultFor = transactionFactory(

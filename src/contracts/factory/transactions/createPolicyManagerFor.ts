@@ -13,7 +13,7 @@ const prepareArgs: PrepareArgsFunction<CreatePolicyManagerForArgs> = async (
   _,
   { manager },
 ) => {
-  return manager;
+  return [manager];
 };
 
 export const createPolicyManagerFor = transactionFactory(

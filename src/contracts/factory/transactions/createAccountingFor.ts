@@ -13,7 +13,7 @@ const prepareArgs: PrepareArgsFunction<CreateAccountingForArgs> = async (
   _,
   { manager },
 ) => {
-  return manager;
+  return [manager];
 };
 
 export const createAccountingFor = transactionFactory(
