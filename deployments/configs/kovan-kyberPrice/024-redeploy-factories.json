@@ -1,10 +1,7 @@
 {
   "meta": {
     "deployer": "0x00360d2b7D240Ec0643B6D819ba81A09e40E5bCd",
-    "timestamp": "2019-10-16T05:24:53.900Z",
-    "track": "kyberPrice",
-    "version": "1.0.10-alpha",
-    "chain": 42
+    "track": "kyberPrice"
   },
   "melonContracts": {
     "priceSource": "0x385a59e848f6456ADf19C367c8cf03FD39c23FAB",
@@ -25,17 +22,17 @@
       "performanceFee": "0xBB7E55A9199191501dbfbc68862F5e93bC370827"
     },
     "factories": {
-      "accountingFactory": "0x85D7577839303551c3f3B083754f43e0531feA8a",
-      "feeManagerFactory": "0xFd0F29EfbF33D2826c35D1977125d4ed7980E809",
-      "participationFactory": "0x3bA196e5882ee5847a21b6015bA322A8e2Ff3a75",
-      "policyManagerFactory": "0xE3194a85bC6F3c010384A7cbA80Abc54F07C30C5",
-      "sharesFactory": "0x91d84c092180274b20f5d909D385BF2758985eC1",
-      "tradingFactory": "0x52D71C98acaF263951636701394d097BA09DAfFe",
-      "vaultFactory": "0xf2879E95a4F0A88d244Aef11137e767F4E80b4bF"
+      "accountingFactory": "DEPLOY",
+      "feeManagerFactory": "DEPLOY",
+      "participationFactory": "DEPLOY",
+      "policyManagerFactory": "DEPLOY",
+      "sharesFactory": "DEPLOY",
+      "tradingFactory": "DEPLOY",
+      "vaultFactory": "DEPLOY"
     },
     "engine": "0xeEDE875Bdc389629eA4E30f0A5fF309a4E5aFF4C",
     "registry": "0x5A54505376d9D2038E913700959aECF8ec48a840",
-    "version": "0x298fa439B8F71D67DD5336579aAba23aF9B360a6",
+    "version": "DEPLOY",
     "ranking": "0x6CF805fe417e9E3bF0f9518bA9D50F4B7310BeC7"
   },
   "thirdPartyContracts": {
@@ -124,7 +121,7 @@
     },
     "ZeroEx": {
       "adapter": "0xA28e3301222B9cb9C54910F0620Fbf92bbE38be3",
-      "exchange": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+      "exchange": "0x35dD2932454449b14Cee11A94d3674a936d5d7b2",
       "takesCustody": false
     },
     "Ethfinex": {
@@ -139,3 +136,4 @@
     }
   }
 }
+
