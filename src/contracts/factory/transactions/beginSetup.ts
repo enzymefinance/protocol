@@ -10,8 +10,6 @@ import { managersToHubs } from '~/contracts/factory/calls/managersToHubs';
 import { Contracts } from '~/Contracts';
 import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 
-// import ensure from '~/utils/guards/ensure';
-
 export interface ExchangeConfigs {
   [exchange: string]: {
     exchange: Address;
