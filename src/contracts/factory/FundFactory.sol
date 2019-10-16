@@ -34,7 +34,7 @@ contract FundFactory is AmguConsumer, Factory {
 
     address[] public funds;
     mapping (address => address) public managersToHubs;
-    mapping (address => address) public creatorsToManagers;
+    mapping (address => address) public managersToDelegatedCreators;
     mapping (address => Hub.Routes) public managersToRoutes;
     mapping (address => Settings) public managersToSettings;
 
@@ -48,22 +48,6 @@ contract FundFactory is AmguConsumer, Factory {
         address[] fees;
         uint[] feeRates;
         uint[] feePeriods;
-    }
-
-    modifier componentNotSet(address _component) {
-        require(
-            !componentExists(_component),
-            "This step has already been run"
-        );
-        _;
-    }
-
-    modifier componentSet(address _component) {
-        require(
-            componentExists(_component),
-            "Component preprequisites not met"
-        );
-        _;
     }
 
     constructor(
@@ -90,6 +74,26 @@ contract FundFactory is AmguConsumer, Factory {
         return _component != address(0);
     }
 
+    function ensureComponentNotSet(address _component) internal {
+        require(
+            !componentExists(_component),
+            "This step has already been run"
+        );
+    }
+
+    function ensureComponentSet(address _component) internal {
+        require(
+            componentExists(_component),
+            "Component preprequisites not met"
+        );
+    }
+
+    // allow _creator to set up a fund for msg.sender
+    // after this, the delegated creator OR the manager can initiate setup
+    function permitDelegatedCreation(address _creator) external {
+        managersToDelegatedCreators[msg.sender] = _creator;
+    }
+
     function beginSetup(
         address _manager,
         string _name,
@@ -102,13 +106,13 @@ contract FundFactory is AmguConsumer, Factory {
         address[] _defaultAssets
     )
         public
-        componentNotSet(managersToHubs[_manager])
     {
+        ensureComponentNotSet(managersToHubs[_manager]);
         require(
-            creatorsToManagers[msg.sender] == address(0),
-            "This address has already created a Fund"
+            managersToDelegatedCreators[_manager] == msg.sender ||
+            msg.sender == _manager,
+            "Not permitted to set up a Fund for this manager"
         );
-        creatorsToManagers[msg.sender] = _manager;
 
         Registry(registry).reserveFundName(
             _manager,
@@ -137,110 +141,115 @@ contract FundFactory is AmguConsumer, Factory {
         managersToRoutes[_manager].mlnToken = mlnToken();
     }
 
-    function createAccounting()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].accounting)
-        amguPayable(false)
-        payable
+    function _createAccountingFor(address _manager)
+        internal
     {
-        managersToRoutes[creatorsToManagers[msg.sender]].accounting = accountingFactory.createInstance(
-            managersToHubs[creatorsToManagers[msg.sender]],
-            managersToSettings[creatorsToManagers[msg.sender]].denominationAsset,
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].accounting);
+        managersToRoutes[_manager].accounting = accountingFactory.createInstance(
+            managersToHubs[_manager],
+            managersToSettings[_manager].denominationAsset,
             Registry(registry).nativeAsset(),
-            managersToSettings[creatorsToManagers[msg.sender]].defaultAssets
+            managersToSettings[_manager].defaultAssets
         );
     }
 
-    function createFeeManager()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].feeManager)
-        amguPayable(false)
-        payable
+    function createAccountingFor(address _manager) external amguPayable(false) payable { _createAccountingFor(_manager); }
+    function createAccounting() external amguPayable(false) payable { _createAccountingFor(msg.sender); }
+
+    function _createFeeManagerFor(address _manager)
+        internal
     {
-        managersToRoutes[creatorsToManagers[msg.sender]].feeManager = feeManagerFactory.createInstance(
-            managersToHubs[creatorsToManagers[msg.sender]],
-            managersToSettings[creatorsToManagers[msg.sender]].denominationAsset,
-            managersToSettings[creatorsToManagers[msg.sender]].fees,
-            managersToSettings[creatorsToManagers[msg.sender]].feeRates,
-            managersToSettings[creatorsToManagers[msg.sender]].feePeriods,
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].feeManager);
+        managersToRoutes[_manager].feeManager = feeManagerFactory.createInstance(
+            managersToHubs[_manager],
+            managersToSettings[_manager].denominationAsset,
+            managersToSettings[_manager].fees,
+            managersToSettings[_manager].feeRates,
+            managersToSettings[_manager].feePeriods,
             registry
         );
     }
 
-    function createParticipation()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].participation)
-        amguPayable(false)
-        payable
+    function createFeeManagerFor(address _manager) external amguPayable(false) payable { _createFeeManagerFor(_manager); }
+    function createFeeManager() external amguPayable(false) payable { _createFeeManagerFor(msg.sender); }
+
+    function _createParticipationFor(address _manager)
+        internal
     {
-        managersToRoutes[creatorsToManagers[msg.sender]].participation = participationFactory.createInstance(
-            managersToHubs[creatorsToManagers[msg.sender]],
-            managersToSettings[creatorsToManagers[msg.sender]].defaultAssets,
-            managersToRoutes[creatorsToManagers[msg.sender]].registry
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].participation);
+        managersToRoutes[_manager].participation = participationFactory.createInstance(
+            managersToHubs[_manager],
+            managersToSettings[_manager].defaultAssets,
+            managersToRoutes[_manager].registry
         );
     }
 
-    function createPolicyManager()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].policyManager)
-        amguPayable(false)
-        payable
+    function createParticipationFor(address _manager) external amguPayable(false) payable { _createParticipationFor(_manager); }
+    function createParticipation() external amguPayable(false) payable { _createParticipationFor(msg.sender); }
+
+    function _createPolicyManagerFor(address _manager)
+        internal
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].policyManager = policyManagerFactory.createInstance(
-            managersToHubs[manager]
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].policyManager);
+        managersToRoutes[_manager].policyManager = policyManagerFactory.createInstance(
+            managersToHubs[_manager]
         );
     }
 
-    function createShares()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].shares)
-        amguPayable(false)
-        payable
+    function createPolicyManagerFor(address _manager) external amguPayable(false) payable { _createPolicyManagerFor(_manager); }
+    function createPolicyManager() external amguPayable(false) payable { _createPolicyManagerFor(msg.sender); }
+
+    function _createSharesFor(address _manager)
+        internal
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].shares = sharesFactory.createInstance(
-            managersToHubs[manager]
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].shares);
+        managersToRoutes[_manager].shares = sharesFactory.createInstance(
+            managersToHubs[_manager]
         );
     }
 
-    function createTrading()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].trading)
-        amguPayable(false)
-        payable
+    function createSharesFor(address _manager) external amguPayable(false) payable { _createSharesFor(_manager); } 
+    function createShares() external amguPayable(false) payable { _createSharesFor(msg.sender); } 
+
+    function _createTradingFor(address _manager)
+        internal
     {
-        managersToRoutes[creatorsToManagers[msg.sender]].trading = tradingFactory.createInstance(
-            managersToHubs[creatorsToManagers[msg.sender]],
-            managersToSettings[creatorsToManagers[msg.sender]].exchanges,
-            managersToSettings[creatorsToManagers[msg.sender]].adapters,
-            managersToRoutes[creatorsToManagers[msg.sender]].registry
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].trading);
+        managersToRoutes[_manager].trading = tradingFactory.createInstance(
+            managersToHubs[_manager],
+            managersToSettings[_manager].exchanges,
+            managersToSettings[_manager].adapters,
+            managersToRoutes[_manager].registry
         );
     }
 
-    function createVault()
-        external
-        componentSet(managersToHubs[creatorsToManagers[msg.sender]])
-        componentNotSet(managersToRoutes[creatorsToManagers[msg.sender]].vault)
-        amguPayable(false)
-        payable
+    function createTradingFor(address _manager) external amguPayable(false) payable { _createTradingFor(_manager); } 
+    function createTrading() external amguPayable(false) payable { _createTradingFor(msg.sender); } 
+
+    function _createVaultFor(address _manager)
+        internal
     {
-        address manager = creatorsToManagers[msg.sender];
-        managersToRoutes[manager].vault = vaultFactory.createInstance(
-            managersToHubs[manager]
+        ensureComponentSet(managersToHubs[_manager]);
+        ensureComponentNotSet(managersToRoutes[_manager].vault);
+        managersToRoutes[_manager].vault = vaultFactory.createInstance(
+            managersToHubs[_manager]
         );
     }
 
-    function completeSetup() external amguPayable(false) payable {
-        address manager = creatorsToManagers[msg.sender];
-        Hub.Routes routes = managersToRoutes[manager];
-        Hub hub = Hub(managersToHubs[manager]);
+    function createVaultFor(address _manager) external amguPayable(false) payable { _createVaultFor(_manager); } 
+    function createVault() external amguPayable(false) payable { _createVaultFor(msg.sender); } 
+
+    function _completeSetupFor(address _manager)
+        internal
+    {
+        Hub.Routes routes = managersToRoutes[_manager];
+        Hub hub = Hub(managersToHubs[_manager]);
         require(!childExists[address(hub)], "Setup already complete");
         require(
             componentExists(hub) &&
@@ -273,12 +282,12 @@ contract FundFactory is AmguConsumer, Factory {
         funds.push(hub);
         Registry(registry).registerFund(
             address(hub),
-            manager,
-            managersToSettings[manager].name
+            _manager,
+            managersToSettings[_manager].name
         );
 
         emit NewFund(
-            manager,
+            _manager,
             hub,
             [
                 routes.accounting,
@@ -296,6 +305,10 @@ contract FundFactory is AmguConsumer, Factory {
             ]
         );
     }
+
+    function completeSetupFor(address _manager) external amguPayable(false) payable { _completeSetupFor(_manager); } 
+    function completeSetup() external amguPayable(false) payable { _completeSetupFor(msg.sender); } 
+
 
     function getFundById(uint withId) external view returns (address) { return funds[withId]; }
     function getLastFundId() external view returns (uint) { return funds.length - 1; }

@@ -402,7 +402,6 @@ export const deploySystem = async (
     maybeDoSomething(
       (await environment.eth.net.getId()) != 1,
       async environment => {
-        console.log(environment);
         // we only do this when MGM is directly under our control (e.g. not on mainnet)
         await setMGM(
           environment,
