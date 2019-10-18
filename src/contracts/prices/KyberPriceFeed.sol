@@ -252,10 +252,15 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         ) / mul(2, 10 ** uint(KYBER_PRECISION));
 
         // Find the "quoted spread", to inform caller whether it is below maximum
-        uint spreadFromKyber = mul(
-            sub(askRate, bidRate),
-            10 ** uint(KYBER_PRECISION)
-        ) / kyberPrice;
+        uint spreadFromKyber;
+        if (bidRate > askRate) {
+            spreadFromKyber = 0; // crossed market condition
+        } else {
+            spreadFromKyber = mul(
+                sub(askRate, bidRate),
+                10 ** uint(KYBER_PRECISION)
+            ) / kyberPrice;
+        }
 
         return (
             spreadFromKyber <= MAX_SPREAD && bidRate != 0 && askRate != 0,
