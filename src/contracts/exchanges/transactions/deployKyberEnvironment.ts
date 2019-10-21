@@ -1,9 +1,36 @@
 import { default as BigNumber } from 'bignumber.js';
-import { TokenInterface } from '@melonproject/token-math';
+import {
+  TokenInterface,
+  createQuantity,
+  createPrice,
+} from '@melonproject/token-math';
 
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
+import { setValidRateDurationInBlocks } from '~/contracts/exchanges/third-party/kyber/transactions/setValidRateDurationInBlocks';
+import { setTokenControlInfo } from '~/contracts/exchanges/third-party/kyber/transactions/setTokenControlInfo';
+import { enableTokenTrade } from '~/contracts/exchanges/third-party/kyber/transactions/enableTokenTrade';
+import { setReserveAddress } from '~/contracts/exchanges/third-party/kyber/transactions/setReserveAddress';
+import { addToken } from '~/contracts/exchanges/third-party/kyber/transactions/addToken';
+import { addReserve } from '~/contracts/exchanges/third-party/kyber/transactions/addReserve';
+import { approveWithdrawAddress } from '~/contracts/exchanges/third-party/kyber/transactions/approveWithdrawAddress';
+import { enableTrade } from '~/contracts/exchanges/third-party/kyber/transactions/enableTrade';
+import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
+import { setBaseRate } from '~/contracts/exchanges/third-party/kyber/transactions/setBaseRate';
+import { addOperator } from '~/contracts/exchanges/third-party/kyber/transactions/addOperator';
+import { setQtyStepFunction } from '~/contracts/exchanges/third-party/kyber/transactions/setQtyStepFunction';
+import { setImbalanceStepFunction } from '~/contracts/exchanges/third-party/kyber/transactions/setImbalanceStepFunction';
+import { setCategoryCap } from '~/contracts/exchanges/third-party/kyber/transactions/setCategoryCap';
+import { setSgdToEthRate } from '~/contracts/exchanges/third-party/kyber/transactions/setSgdToEthRate';
+import { setContracts } from '~/contracts/exchanges/third-party/kyber/transactions/setContracts';
+import { setKyberNetworkContract } from '~/contracts/exchanges/third-party/kyber/transactions/setKyberNetworkContract';
+import { setWhiteList } from '~/contracts/exchanges/third-party/kyber/transactions/setWhiteList';
+import { setExpectedRate } from '~/contracts/exchanges/third-party/kyber/transactions/setExpectedRate';
+import { setFeeBurner } from '~/contracts/exchanges/third-party/kyber/transactions/setFeeBurner';
+import { setKyberProxy } from '~/contracts/exchanges/third-party/kyber/transactions/setKyberProxy';
+import { setEnable } from '~/contracts/exchanges/third-party/kyber/transactions/setEnable';
+import { listPairForReserve } from '~/contracts/exchanges/third-party/kyber/transactions/listPairForReserve';
 import { Contracts } from '~/Contracts';
 
 /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
@@ -44,12 +71,11 @@ export const deployKyberEnvironment = async (
   //   gasPrice: 10,
   // };
 
-  const [mlnToken, eurToken] = tokens;
+  const [mlnToken, eurToken, weth] = tokens;
 
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BigNumber(10 ** 29).toFixed();
   const validRateDurationInBlocks = 500;
-  const precisionUnits = new BigNumber(10).pow(18).toFixed();
   const maxTotalImbalance = new BigNumber(maxPerBlockImbalance)
     .mul(12)
     .toFixed();
@@ -80,23 +106,23 @@ export const deployKyberEnvironment = async (
     await deployContract(environment, Contracts.KyberNetwork, [deployer]),
   );
 
-  await conversionRates.methods
-    .setValidRateDurationInBlocks(validRateDurationInBlocks)
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .addToken(mlnToken.address)
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .setTokenControlInfo(
-      mlnToken.address,
-      minimalRecordResolution,
-      maxPerBlockImbalance,
-      maxTotalImbalance,
-    )
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .enableTokenTrade(mlnToken.address)
-    .send({ from: deployer, gas: 8000000 });
+  await setValidRateDurationInBlocks(
+    environment,
+    conversionRates.options.address,
+    { duration: validRateDurationInBlocks },
+  );
+  await addToken(environment, conversionRates.options.address, {
+    token: mlnToken.address,
+  });
+  await setTokenControlInfo(environment, conversionRates.options.address, {
+    token: mlnToken.address,
+    minimalRecordResolution: minimalRecordResolution,
+    maxPerBlockImbalance: maxPerBlockImbalance,
+    maxTotalImbalance: maxTotalImbalance,
+  });
+  await enableTokenTrade(environment, conversionRates.options.address, {
+    token: mlnToken.address,
+  });
   const kyberReserveContract = getContract(
     environment,
     Contracts.KyberReserve,
@@ -106,44 +132,45 @@ export const deployKyberEnvironment = async (
       deployer,
     ]),
   );
-  await conversionRates.methods
-    .setReserveAddress(kyberReserveContract.options.address)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .addReserve(kyberReserveContract.options.address, true)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberReserveContract.methods
-    .approveWithdrawAddress(mlnToken.address, deployer, true)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberReserveContract.methods
-    .enableTrade()
-    .send({ from: deployer, gas: 8000000 });
+  await setReserveAddress(environment, conversionRates.options.address, {
+    reserve: kyberReserveContract.options.address,
+  });
 
-  const mlnTokenContract = getContract(
+  await addReserve(environment, kyberNetworkContract.options.address, {
+    reserve: kyberReserveContract.options.address,
+    add: true,
+  });
+
+  await approveWithdrawAddress(
     environment,
-    Contracts.PreminedToken,
-    mlnToken.address,
+    kyberReserveContract.options.address,
+    {
+      token: mlnToken.address,
+      addr: deployer,
+      approve: true,
+    },
   );
 
+  await enableTrade(environment, kyberReserveContract.options.address);
+
   // Set pricing for Token
-  await mlnTokenContract.methods
-    .transfer(
-      kyberReserveContract.options.address,
-      new BigNumber(10 ** 23).toFixed(),
-    )
-    .send({ from: deployer, gas: 8000000 });
-  const mlnPrice = new BigNumber(10 ** 18); // Arbritrary for now
-  const ethersPerToken = mlnPrice.toFixed();
-  const tokensPerEther = new BigNumber(precisionUnits)
-    .mul(precisionUnits)
-    .div(ethersPerToken)
-    .toFixed(0);
-  baseBuyRate1.push(tokensPerEther);
-  baseSellRate1.push(ethersPerToken);
+  await transfer(environment, {
+    howMuch: createQuantity(mlnToken, 100000),
+    to: kyberReserveContract.options.address,
+  });
+
   const currentBlock = await environment.eth.getBlockNumber();
-  await conversionRates.methods
-    .addOperator(deployer)
-    .send({ from: deployer, gas: 8000000 });
+
+  await addOperator(environment, conversionRates.options.address, {
+    newOperator: deployer,
+  });
+
+  const mlnPrices = [
+    {
+      buy: createPrice(createQuantity(weth, 1), createQuantity(mlnToken, 1)),
+      sell: createPrice(createQuantity(mlnToken, 1), createQuantity(weth, 1)),
+    },
+  ];
 
   debug('setBaseRate', [
     [mlnToken.address],
@@ -154,23 +181,25 @@ export const deployKyberEnvironment = async (
     currentBlock,
     indices,
   ]);
-  await conversionRates.methods
-    .setBaseRate(
-      [mlnToken.address],
-      baseBuyRate1,
-      baseSellRate1,
-      buys,
-      sells,
-      currentBlock,
-      indices,
-    )
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .setQtyStepFunction(mlnToken.address, [0], [0], [0], [0])
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .setImbalanceStepFunction(mlnToken.address, [0], [0], [0], [0])
-    .send({ from: deployer, gas: 8000000 });
+
+  await setBaseRate(environment, conversionRates.options.address, {
+    prices: mlnPrices,
+  });
+
+  await setQtyStepFunction(environment, conversionRates.options.address, {
+    token: mlnToken.address,
+    xBuy: [0],
+    yBuy: [0],
+    xSell: [0],
+    ySell: [0],
+  });
+  await setImbalanceStepFunction(environment, conversionRates.options.address, {
+    token: mlnToken.address,
+    xBuy: [0],
+    yBuy: [0],
+    xSell: [0],
+    ySell: [0],
+  });
 
   const kyberWhiteListContract = getContract(
     environment,
@@ -180,15 +209,19 @@ export const deployKyberEnvironment = async (
       kgtTokenAddress.toString(),
     ]),
   );
-  await kyberWhiteListContract.methods
-    .addOperator(deployer)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberWhiteListContract.methods
-    .setCategoryCap(0, new BigNumber(10 ** 28).toFixed())
-    .send({ from: deployer, gas: 8000000 });
-  await kyberWhiteListContract.methods
-    .setSgdToEthRate(30000)
-    .send({ from: deployer, gas: 8000000 });
+
+  await addOperator(environment, kyberWhiteListContract.options.address, {
+    newOperator: deployer,
+  });
+
+  await setCategoryCap(environment, kyberWhiteListContract.options.address, {
+    category: 0,
+    sgdCap: new BigNumber(10 ** 28).toFixed(),
+  });
+
+  await setSgdToEthRate(environment, kyberWhiteListContract.options.address, {
+    _sgdToWeiRate: 30000,
+  });
 
   const feeBurnerAddress = await deployContract(environment, 'FeeBurner', [
     deployer,
@@ -201,112 +234,123 @@ export const deployKyberEnvironment = async (
     [kyberNetworkContract.options.address, deployer],
   );
 
+  // TODO: re-disable (but maybe not; sends a lot of ether)
   await environment.eth.sendTransaction({
     from: deployer,
     to: kyberReserveContract.options.address,
     value: new BigNumber(10 ** 22),
   });
-  await kyberReserveContract.methods
-    .setContracts(
-      kyberNetworkContract.options.address,
-      conversionRates.options.address,
-      '0x0000000000000000000000000000000000000000',
-    )
-    .send({ from: deployer, gas: 8000000 });
+
+  await setContracts(environment, kyberReserveContract.options.address, {
+    _kyberNetwork: kyberNetworkContract.options.address,
+    _conversionRates: conversionRates.options.address,
+    _sanityRates: '0x0000000000000000000000000000000000000000',
+  });
 
   const kyberNetworkProxyContract = getContract(
     environment,
     Contracts.KyberNetworkProxy,
     await deployContract(environment, Contracts.KyberNetworkProxy, [deployer]),
   );
-  await kyberNetworkProxyContract.methods
-    .setKyberNetworkContract(kyberNetworkContract.options.address)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .setWhiteList(kyberWhiteListContract.options.address)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .setExpectedRate(expectedRateAddress.toString())
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .setFeeBurner(feeBurnerAddress.toString())
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .setKyberProxy(kyberNetworkProxyContract.options.address)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .setEnable(true)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .listPairForReserve(
-      kyberReserveContract.options.address,
-      mlnToken.address.toString(),
-      true,
-      true,
-      true,
-    )
-    .send({ from: deployer, gas: 8000000 });
-  // // Add Eur Token
-  const eurTokenContract = getContract(
+
+  await setKyberNetworkContract(
     environment,
-    Contracts.PreminedToken,
-    eurToken.address,
+    kyberNetworkProxyContract.options.address,
+    { _kyberNetworkContract: kyberNetworkContract.options.address },
   );
-  await conversionRates.methods
-    .addToken(eurToken.address)
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .setTokenControlInfo(
-      eurToken.address,
-      minimalRecordResolution,
-      maxPerBlockImbalance,
-      maxTotalImbalance,
-    )
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .enableTokenTrade(eurToken.address)
-    .send({ from: deployer, gas: 8000000 });
-  await kyberReserveContract.methods
-    .approveWithdrawAddress(eurToken.address, deployer, true)
-    .send({ from: deployer, gas: 8000000 });
-  await eurTokenContract.methods
-    .transfer(
-      kyberReserveContract.options.address,
-      new BigNumber(10 ** 23).toFixed(),
-    )
-    .send({ from: deployer, gas: 8000000 });
-  const eurPrice = new BigNumber(10 ** 18); // Arbritrary for now
-  const ethersPerEurToken = eurPrice.toFixed();
-  const eurTokensPerEther = new BigNumber(precisionUnits)
-    .mul(precisionUnits)
-    .div(ethersPerEurToken)
-    .toFixed(0);
-  await conversionRates.methods
-    .setBaseRate(
-      [eurToken.address],
-      [eurTokensPerEther],
-      [ethersPerEurToken],
-      buys,
-      sells,
-      currentBlock,
-      indices,
-    )
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .setQtyStepFunction(eurToken.address, [0], [0], [0], [0])
-    .send({ from: deployer, gas: 8000000 });
-  await conversionRates.methods
-    .setImbalanceStepFunction(eurToken.address, [0], [0], [0], [0])
-    .send({ from: deployer, gas: 8000000 });
-  await kyberNetworkContract.methods
-    .listPairForReserve(
-      kyberReserveContract.options.address,
-      eurToken.address,
-      true,
-      true,
-      true,
-    )
-    .send({ from: deployer, gas: 8000000 });
+
+  await setWhiteList(environment, kyberNetworkContract.options.address, {
+    whitelist: kyberWhiteListContract.options.address,
+  });
+
+  await setExpectedRate(environment, kyberNetworkContract.options.address, {
+    expectedRate: expectedRateAddress.toString(),
+  });
+
+  await setFeeBurner(environment, kyberNetworkContract.options.address, {
+    feeBurner: feeBurnerAddress.toString(),
+  });
+
+  await setKyberProxy(environment, kyberNetworkContract.options.address, {
+    networkProxy: kyberNetworkProxyContract.options.address,
+  });
+
+  await setEnable(environment, kyberNetworkContract.options.address, {
+    _enable: true,
+  });
+
+  await listPairForReserve(environment, kyberNetworkContract.options.address, {
+    reserve: kyberReserveContract.options.address,
+    token: mlnToken.address.toString(),
+    ethToToken: true,
+    tokenToEth: true,
+    add: true,
+  });
+
+  // Add Eur Token
+  await addToken(environment, conversionRates.options.address, {
+    token: eurToken.address,
+  });
+
+  await setTokenControlInfo(environment, conversionRates.options.address, {
+    token: eurToken.address,
+    minimalRecordResolution: minimalRecordResolution,
+    maxPerBlockImbalance: maxPerBlockImbalance,
+    maxTotalImbalance: maxTotalImbalance,
+  });
+
+  await enableTokenTrade(environment, conversionRates.options.address, {
+    token: eurToken.address,
+  });
+
+  await approveWithdrawAddress(
+    environment,
+    kyberReserveContract.options.address,
+    {
+      token: eurToken.address,
+      addr: deployer,
+      approve: true,
+    },
+  );
+
+  await transfer(environment, {
+    howMuch: createQuantity(eurToken, new BigNumber(10 ** 23).toFixed()),
+    to: kyberReserveContract.options.address,
+  });
+
+  const eurPrices = [
+    {
+      buy: createPrice(createQuantity(weth, 1), createQuantity(eurToken, 1)),
+      sell: createPrice(createQuantity(eurToken, 1), createQuantity(weth, 1)),
+    },
+  ];
+
+  await setBaseRate(environment, conversionRates.options.address, {
+    prices: eurPrices,
+  });
+
+  await setQtyStepFunction(environment, conversionRates.options.address, {
+    token: eurToken.address,
+    xBuy: [0],
+    yBuy: [0],
+    xSell: [0],
+    ySell: [0],
+  });
+  await setImbalanceStepFunction(environment, conversionRates.options.address, {
+    token: eurToken.address,
+    xBuy: [0],
+    yBuy: [0],
+    xSell: [0],
+    ySell: [0],
+  });
+
+  await listPairForReserve(environment, kyberNetworkContract.options.address, {
+    reserve: kyberReserveContract.options.address,
+    token: eurToken.address.toString(),
+    ethToToken: true,
+    tokenToEth: true,
+    add: true,
+  });
 
   // TODO
   // await governanceAction(

@@ -144,7 +144,14 @@ export const defaultPrepareArgs: PrepareArgsFunction<any> = async (
   environment,
   params,
   contractAddress,
-) => Object.values(params || {}).map(v => v.toString());
+) =>
+  Object.values(params || {}).map(v => {
+    if (!Array.isArray(v)) {
+      return v.toString();
+    } else {
+      return v.map(x => x.toString());
+    }
+  });
 
 export const defaultPostProcess: PostProcessFunction<any, any> = async () =>
   true;

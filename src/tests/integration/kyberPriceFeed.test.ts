@@ -35,6 +35,7 @@ describe('kyber-price-feed', () => {
     shared.kyberDeploy = await deployKyberEnvironment(shared.env, [
       shared.tokens.mln,
       shared.tokens.eur,
+      shared.tokens.weth,
     ]);
     shared.mockRegistryAddress = await deployContract(
       shared.env,
