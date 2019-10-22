@@ -25,7 +25,7 @@ import {
   EthfinexEnvironment,
 } from '~/contracts/exchanges/transactions/deployEthfinex';
 import { ensure } from '../guards/ensure';
-// import { Contracts } from '~/Contracts';
+import { getChainName } from '~/utils/environment/chainName';
 import { deployBurnableToken } from '~/contracts/dependencies/token/transactions/deployBurnableToken';
 
 export interface ThirdPartyContracts {
@@ -79,8 +79,14 @@ const deployThirdParty = async (
   );
 
   // Deposit WETH
-  // const depositAmount = power(new BigInteger(10), new BigInteger(1)); // TODO: change back to 24 dec
-  const depositAmount = power(new BigInteger(10), new BigInteger(24));
+
+  const chainName = await getChainName(environment);
+  let depositAmount;
+  if (chainName == 'development') {
+    depositAmount = power(new BigInteger(10), new BigInteger(24));
+  } else {
+    depositAmount = power(new BigInteger(10), new BigInteger(1)); // NB: adjust as needed
+  }
   await deposit(
     environment,
     deployedTokens.find(t => t.symbol === 'WETH').address,

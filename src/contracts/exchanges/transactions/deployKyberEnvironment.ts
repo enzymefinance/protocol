@@ -8,6 +8,7 @@ import {
 import { Environment, LogLevels } from '~/utils/environment/Environment';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
+import { sendEth } from '~/utils/evm/sendEth';
 import { setValidRateDurationInBlocks } from '~/contracts/exchanges/third-party/kyber/transactions/setValidRateDurationInBlocks';
 import { setTokenControlInfo } from '~/contracts/exchanges/third-party/kyber/transactions/setTokenControlInfo';
 import { enableTokenTrade } from '~/contracts/exchanges/third-party/kyber/transactions/enableTokenTrade';
@@ -31,6 +32,7 @@ import { setFeeBurner } from '~/contracts/exchanges/third-party/kyber/transactio
 import { setKyberProxy } from '~/contracts/exchanges/third-party/kyber/transactions/setKyberProxy';
 import { setEnable } from '~/contracts/exchanges/third-party/kyber/transactions/setEnable';
 import { listPairForReserve } from '~/contracts/exchanges/third-party/kyber/transactions/listPairForReserve';
+import { getChainName } from '~/utils/environment/chainName';
 import { Contracts } from '~/Contracts';
 
 /* eslint no-bitwise: ["error", { "allow": ["&"] }] */
@@ -234,11 +236,18 @@ export const deployKyberEnvironment = async (
     [kyberNetworkContract.options.address, deployer],
   );
 
-  // TODO: re-disable (but maybe not; sends a lot of ether)
-  await environment.eth.sendTransaction({
-    from: deployer,
+  const chainName = await getChainName(environment);
+
+  let ethSendAmount;
+  if (chainName == 'development') {
+    ethSendAmount = 10000;
+  } else {
+    ethSendAmount = 1; // NB: adjust as necessary
+  }
+
+  await sendEth(environment, {
+    howMuch: createQuantity('ETH', ethSendAmount),
     to: kyberReserveContract.options.address,
-    value: new BigNumber(10 ** 22),
   });
 
   await setContracts(environment, kyberReserveContract.options.address, {
