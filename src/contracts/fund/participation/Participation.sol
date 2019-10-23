@@ -132,25 +132,37 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         );
     }
 
-    /// @notice Can only cancel when no price, request expired or fund shut down
-    /// @dev Only request owner can cancel their request
-    function cancelRequest() external payable amguPayable(false) {
-        require(hasRequest(msg.sender), "No request to cancel");
+    function _cancelRequestFor(address requestOwner) internal {
+        require(hasRequest(requestOwner), "No request to cancel");
         PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
-        Request request = requests[msg.sender];
+        Request memory request = requests[requestOwner];
         require(
             !priceSource.hasValidPrice(request.investmentAsset) ||
-            hasExpiredRequest(msg.sender) ||
+            hasExpiredRequest(requestOwner) ||
             hub.isShutDown(),
             "No cancellation condition was met"
         );
         ERC20 investmentAsset = ERC20(request.investmentAsset);
         uint investmentAmount = request.investmentAmount;
-        delete requests[msg.sender];
+        delete requests[requestOwner];
         msg.sender.transfer(Registry(routes.registry).incentive());
-        safeTransfer(investmentAsset, msg.sender, investmentAmount);
+        safeTransfer(investmentAsset, requestOwner, investmentAmount);
 
-        emit CancelRequest(msg.sender);
+        emit CancelRequest(requestOwner);
+    }
+
+    /// @notice Can only cancel when no price, request expired or fund shut down
+    /// @dev Only request owner can cancel their request
+    function cancelRequest() external payable amguPayable(false) {
+        _cancelRequestFor(msg.sender);
+    }
+
+    function cancelRequestFor(address requestOwner)
+        external
+        payable
+        amguPayable(false)
+    {
+        _cancelRequestFor(requestOwner);
     }
 
     function executeRequestFor(address requestOwner)
