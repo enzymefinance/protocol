@@ -85,10 +85,12 @@ const prepare: PrepareDeployFunction = async (
     { encoding: 'utf-8' },
   );
 
-  const bin = fs.readFileSync(
-    path.join(solidityCompileTarget, parsed.dir, `${parsed.name}.bin`),
-    { encoding: 'utf-8' },
-  );
+  const bin = fs
+    .readFileSync(
+      path.join(solidityCompileTarget, parsed.dir, `${parsed.name}.bin`),
+      { encoding: 'utf-8' },
+    )
+    .trim();
 
   ensure(bin.length !== 0, `Binary file for ${pathToSolidityFile} is empty`);
 
