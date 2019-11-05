@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+. "./common.sh"
 
 # TODO: put all this in a "common.sh" or something so we don't have boilerplate
 TRACK="KYBER_PRICE" # TODO: move to config
@@ -10,8 +10,8 @@ DEPLOY_OUT="./deployment.json" # TODO: rename
 # TODO: make trap command to write partial deployment somewhere?
 
 export ETH_FROM="0xbe1ac5962e318d0335b8d8aabff55dc4bad01826"
-export ETH_PASSWORD=./passfile
-export ETH_KEYSTORE=./allkeys
+export ETH_PASSWORD="./passfile"
+export ETH_KEYSTORE="./allkeys"
 export ETH_GAS=8000000
 
 CONVERSION_RATE_ADMIN="$ETH_FROM"
@@ -25,15 +25,15 @@ kgtToken=$(dapp create TestToken 'KGT' 'KGT' 18)
 EUR=$(dapp create TestToken 'EUR' 'EUR' 18) # TODO: should be from config
 MLN=$kgtToken # TODO: should be from config
 
-conversionRates=$(dapp create ConversionRates $CONVERSION_RATE_ADMIN)
-kyberNetwork=$(dapp create KyberNetwork $KYBER_NETWORK_ADMIN)
+conversionRates=$(nab ConversionRates $CONVERSION_RATE_ADMIN)
+kyberNetwork=$(nab KyberNetwork $KYBER_NETWORK_ADMIN)
 # if this mysteriously doesn't work, maybe kyberReserve deployment need to be after enabling token trades
 # TODO: delete this info if it does work
-kyberReserve=$(dapp create KyberReserve $kyberNetwork $conversionRates $ETH_FROM)
-kyberWhiteList=$(dapp create KyberWhiteList $ETH_FROM $kgtToken)
-feeBurner=$(dapp create 'FeeBurner' $ETH_FROM $MLN $kyberNetwork)
-expectedRate=$(dapp create ExpectedRate $kyberNetwork $ETH_FROM)
-kyberNetworkProxy=$(dapp create KyberNetworkProxy $ETH_FROM)
+kyberReserve=$(nab KyberReserve $kyberNetwork $conversionRates $ETH_FROM)
+kyberWhiteList=$(nab KyberWhiteList $ETH_FROM $kgtToken)
+feeBurner=$(nab FeeBurner $ETH_FROM $MLN $kyberNetwork)
+expectedRate=$(nab ExpectedRate $kyberNetwork $ETH_FROM)
+kyberNetworkProxy=$(nab KyberNetworkProxy $ETH_FROM)
 
 set -x
 
@@ -104,4 +104,4 @@ jq -n \
   --arg cr "$conversionRates" \
   --arg kn "$kyberNetwork" \
   --arg kp "$kyberNetworkProxy" \
-  '{ConversionRates: $cr, KyberNetwork: $kn, KyberNetworkProxy: $kp}' > $DEPLOY_OUT
+  '{ConversionRates: $cr, KyberNetwork: $kn, KyberNetworkProxy: $kp}' > "kyber_addrs.json"

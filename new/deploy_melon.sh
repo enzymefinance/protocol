@@ -1,31 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+. "./common.sh"
 
 TRACK="KYBER_PRICE" # TODO: move to config
 # TODO: upgrade the notation format for input file (e.g. not so much needless nesting)
 D_IN="./deploy_in.json" # TODO: rename
 D_OUT="./deploy_out.json" # TODO: rename
-
-trap 'printf "Errored on line $LINENO\n"' ERR
-
-rm -f "$D_OUT" # TODO: make this more sensible
-
-jot() {
-  printf "%s\t%s\n" $1 $2 >> $D_OUT
-}
-
-# get address from input, or create it
-# TODO: add "explicit" mode, where artifact key and name are passed separately
-nab() {
-  set -e
-  addr=$(jq -r ".$1 // empty" "$D_IN")
-  if [[ -z $addr ]]; then
-    addr=$(dapp create "${@}")
-  fi
-  jot $1 $addr
-  echo $addr
-}
 
 set -x
 
@@ -91,11 +71,6 @@ seth send $Registry 'setEthfinexWrapperRegistry(address)' $ETH_FROM # TODO: make
 # TODO: check if fees registered
 seth send $Registry 'registerFees(address[])' "[${ManagementFee#0x},${PerformanceFee#0x}]"
 
-# TODO: move above? does it matter if we set this up before the sends just prior?
-version=$(nab Version $AccountingFactory $FeeManagerFactory \
-  $ParticipationFactory $SharesFactory $TradingFactory $VaultFactory \
-  $PolicyManagerFactory $Registry $DEFAULT_VERSION_OWNER)
-
 makeSig=$(seth sig 'makeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)')
 takeSig=$(seth sig 'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)')
 cancelSig=$(seth sig 'cancelOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)')
@@ -136,11 +111,16 @@ for sym in $syms; do
   fi
 done
 
+version=$(nab Version $AccountingFactory $FeeManagerFactory \
+  $ParticipationFactory $SharesFactory $TradingFactory $VaultFactory \
+  $PolicyManagerFactory $Registry $DEFAULT_VERSION_OWNER)
+
 # TODO: set price on whichever feed we are using
 if [[ "$TRACK" == "KYBER_PRICE" ]]; then
   seth send $priceSource 'update()'
 elif [[ "$TRACK" == "TESTING" ]]; then
   # TODO: get actual prices here and set them on testing feed
+  seth send $priceSource 'update(address[],uint[])' 
   echo nothing
 fi
 
