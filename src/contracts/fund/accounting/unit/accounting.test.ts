@@ -1,7 +1,7 @@
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { BigInteger } from '@melonproject/token-math';
+import { BigNumber } from 'bignumber.js';
 
 describe('accounting', () => {
   let shared: any = {};
@@ -23,7 +23,7 @@ describe('accounting', () => {
 
     shared.mockQuoteAsset = shared.weth.options.address;
     shared.mockNativeAsset = shared.weth.options.address;
-    shared.exaUnit = new BigInteger('1000000000000000000');
+    shared.exaUnit = new BigNumber('1e+18');
   });
 
   it('Accounting is properly initialized', async () => {
@@ -84,7 +84,7 @@ describe('accounting', () => {
   });
 
   it('Balance in vault reflects in accounting', async () => {
-    const tokenQuantity = `${'10000000000000000000'}`;
+    const tokenQuantity = new BigNumber('1e+18').toString();
     await shared.weth.methods
       .transfer(shared.vault.options.address, tokenQuantity)
       .send({ from: shared.user, gas: 8000000 });
