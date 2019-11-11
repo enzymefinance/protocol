@@ -7,7 +7,7 @@ import { Contracts } from '~/Contracts';
 import { BigNumber } from 'bignumber.js';
 
 describe('feeManager', () => {
-  let shared: any = {};
+  let shared = {};
 
   const mockFeeRate = 5000;
   const mockFeePeriod = 1000;
