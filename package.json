@@ -70,6 +70,7 @@
     "@types/jest": "^23.3.9",
     "@types/node": "^10.12.10",
     "ava": "^1.0.1",
+    "babel-jest": "^24.9.0",
     "bignumber.js": "^4.1.0",
     "debug": "^4.0.1",
     "ganache-cli": "^6.4.1",
