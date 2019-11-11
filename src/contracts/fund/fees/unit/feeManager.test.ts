@@ -3,7 +3,8 @@ import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { add, multiply, BigInteger } from '@melonproject/token-math';
+
+import { BigNumber } from 'bignumber.js';
 
 describe('feeManager', () => {
   let shared: any = {};
@@ -64,7 +65,7 @@ describe('feeManager', () => {
   });
 
   it('Total fee amount aggregates individual accumulated fee', async () => {
-    const feeAmount = new BigInteger(10 ** 18);
+    const feeAmount = new BigNumber('1e+18');
     await shared.feeA.methods
       .setFeeAmount(`${feeAmount}`)
       .send({ from: shared.user, gas: 8000000 });
@@ -73,14 +74,14 @@ describe('feeManager', () => {
       .send({ from: shared.user, gas: 8000000 });
     await expect(
       shared.feeManager.methods.totalFeeAmount().call(),
-    ).resolves.toEqual(multiply(feeAmount, new BigInteger(2)));
+    ).resolves.toEqual(feeAmount.times(2).toString());
   });
 
   it('Reward all fee allocates shares to the manager', async () => {
-    const preManagerShares = new BigInteger(
+    const preManagerShares = new BigNumber(
       await shared.shares.methods.balanceOf(shared.user).call(),
     );
-    const feeAmount = new BigInteger(10 ** 18);
+    const feeAmount = new BigNumber('1e+18');
 
     await shared.feeA.methods
       .setFeeAmount(`${feeAmount}`)
@@ -91,7 +92,7 @@ describe('feeManager', () => {
     await shared.feeManager.methods
       .rewardAllFees() // can only call becasue of loose mockhub permissions
       .send({ from: shared.user, gas: 8000000 });
-    const postManagerShares = new BigInteger(
+    const postManagerShares = new BigNumber(
       await shared.shares.methods.balanceOf(shared.user).call(),
     );
     const postAccumulatedFee = await shared.feeManager.methods
@@ -99,7 +100,7 @@ describe('feeManager', () => {
       .call();
 
     expect(postManagerShares).toEqual(
-      add(preManagerShares, multiply(feeAmount, new BigInteger(2))),
+      preManagerShares.plus(feeAmount.times(2)),
     );
     expect(postAccumulatedFee).toBe('0');
   });
