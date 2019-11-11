@@ -13,6 +13,10 @@ import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
 
+import { Contracts } from '~/Contracts';
+import { getContract } from '~/utils/solidity/getContract';
+import { BigNumber } from 'bignumber.js';
+
 expect.extend({ toBeTrueWith });
 
 describe('Happy Path', () => {
@@ -33,6 +37,23 @@ describe('Happy Path', () => {
     shared.routes = await setupInvestedTestFund(shared.env);
     shared.weth = getTokenBySymbol(shared.env, 'WETH');
     shared.mln = getTokenBySymbol(shared.env, 'MLN');
+
+    shared.user = shared.env.wallet.address;
+
+    const wethToken = shared.env.deployment.thirdPartyContracts.tokens.find(
+      x => x.symbol === 'WETH',
+    );
+    shared.wethInterface = getContract(
+      shared.env,
+      Contracts.Weth,
+      wethToken.address,
+    );
+
+    shared.participation = getContract(
+      shared.env,
+      Contracts.Participation,
+      shared.routes.participationAddress.toString(),
+    );
 
     const userWhitelist = await deployUserWhitelist(shared.env, [
       shared.accounts[0],
@@ -71,19 +92,19 @@ describe('Happy Path', () => {
   });
 
   test('Request investment passes if user is whitelisted', async () => {
-    const investmentAmount = createQuantity(shared.weth, 1);
-    const fundToken = await getToken(shared.env, shared.routes.sharesAddress);
+    const investmentAmount = new BigNumber('1e+18').toString();
+    const requestedShares = new BigNumber('1e+18').toString();
+    const investmentAsset = shared.routes.sharesAddress.toString();
+    const participationAddress = shared.routes.participationAddress.toString();
 
-    await approve(shared.env, {
-      howMuch: investmentAmount,
-      spender: shared.routes.participationAddress,
-    });
+    await shared.wethInterface.methods
+      .approve(participationAddress, investmentAmount)
+      .send({ from: shared.user, gas: 8000000 });
 
     await expect(
-      requestInvestment(shared.env, shared.routes.participationAddress, {
-        investmentAmount,
-        requestedShares: createQuantity(fundToken, 1),
-      }),
+      shared.participation.methods
+        .requestInvestment(requestedShares, investmentAmount, investmentAsset)
+        .send({ from: shared.user, gas: 8000000 }),
     ).resolves.not.toThrow();
   });
 });
