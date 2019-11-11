@@ -4,7 +4,7 @@ import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { BigNumber } from 'bignumber.js';
 
 describe('accounting', () => {
-  let shared: any = {};
+  let shared = {};
 
   beforeAll(async () => {
     shared.env = await initTestEnvironment();
