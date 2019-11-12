@@ -1,5 +1,4 @@
-import { BigNumber } from 'bignumber.js';
-import web3EthAbi from 'web3-eth-abi';
+import { toWei } from 'web3-utils';
 
 import { Contracts } from '~/Contracts';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
@@ -36,7 +35,9 @@ describe('Happy Path', () => {
       Contracts.UserWhitelist,
       [[s.user],]
     );
-    const functionSig = web3EthAbi.encodeFunctionSignature(FunctionSignatures.requestInvestment);
+    const functionSig = s.env.eth.abi.encodeFunctionSignature(
+      FunctionSignatures.requestInvestment
+    );
     await policyManager.methods
       .register(
         functionSig,
@@ -58,9 +59,9 @@ describe('Happy Path', () => {
     );
 
     // Define shared params
-    s.investmentAmount = new BigNumber('1e+18').toString();
-    s.requestedShares = new BigNumber('1e+18').toString();
-    s.amguAmount = new BigNumber('1e+18').toString();
+    s.investmentAmount = toWei('1', 'ether');
+    s.requestedShares = toWei('1', 'ether');
+    s.amguAmount = toWei('1', 'ether');
     s.investmentAsset = s.weth.address;
     s.participationAddress = s.routes.participationAddress.toString();
   });

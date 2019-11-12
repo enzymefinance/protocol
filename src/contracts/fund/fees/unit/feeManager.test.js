@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js';
+import { BN, toWei } from 'web3-utils';
 
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -14,10 +14,12 @@ describe('feeManager', () => {
 
   beforeAll(async () => {
     s.env = await initTestEnvironment();
-    s.user = s.env.wallet.address;
-  });
 
-  beforeEach(async () => {
+    // Define user accounts
+    s.user = s.env.wallet.address;
+    s.standardGas = 8000000;
+
+    // Setup necessary contracts
     s.feeA = getContract(
       s.env,
       Contracts.MockFee,
@@ -67,34 +69,34 @@ describe('feeManager', () => {
   });
 
   it('Total fee amount aggregates individual accumulated fee', async () => {
-    const feeAmount = new BigNumber('1e+18');
+    const feeAmount = new BN(toWei('1', 'ether'));
     await s.feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     await s.feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     await expect(
       s.feeManager.methods.totalFeeAmount().call(),
-    ).resolves.toEqual(feeAmount.times(2).toString());
+    ).resolves.toEqual(feeAmount.mul(new BN(2)).toString());
   });
 
   it('Reward all fee allocates shares to the manager', async () => {
-    const preManagerShares = new BigNumber(
+    const preManagerShares = new BN(
       await s.shares.methods.balanceOf(s.user).call(),
     );
-    const feeAmount = new BigNumber('1e+18');
+    const feeAmount = new BN(toWei('1', 'ether'));
 
     await s.feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     await s.feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     await s.feeManager.methods
       .rewardAllFees() // can only call becasue of loose mockhub permissions
-      .send({ from: s.user, gas: 8000000 });
-    const postManagerShares = new BigNumber(
+      .send({ from: s.user, gas: s.standardGas });
+    const postManagerShares = new BN(
       await s.shares.methods.balanceOf(s.user).call(),
     );
     const postAccumulatedFee = await s.feeManager.methods
@@ -102,7 +104,7 @@ describe('feeManager', () => {
       .call();
 
     expect(postManagerShares).toEqual(
-      preManagerShares.plus(feeAmount.times(2)),
+      preManagerShares.add(feeAmount.mul(new BN(2)))
     );
     expect(postAccumulatedFee).toBe('0');
   });

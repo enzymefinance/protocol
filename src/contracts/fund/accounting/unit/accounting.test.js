@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js';
+import { toWei } from 'web3-utils';
 
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -9,6 +9,12 @@ describe('accounting', () => {
 
   beforeAll(async () => {
     s.env = await initTestEnvironment();
+
+    // Define user accounts
+    s.user = s.env.wallet.address;
+    s.standardGas = 8000000;
+
+    // Setup necessary contracts
     s = {
       ...s,
       ...(await deployMockSystem(s.env, {
@@ -16,15 +22,14 @@ describe('accounting', () => {
       })),
     };
 
-    s.user = s.env.wallet.address;
+    // Define shared variables
     s.mockDefaultAssets = [
       s.weth.options.address,
       s.mln.options.address,
     ];
-
     s.mockQuoteAsset = s.weth.options.address;
     s.mockNativeAsset = s.weth.options.address;
-    s.exaUnit = new BigNumber('1e+18');
+    s.exaUnit = toWei('1', 'ether');
   });
 
   it('Accounting is properly initialized', async () => {
@@ -72,7 +77,7 @@ describe('accounting', () => {
 
     await s.accounting.methods
       .updateOwnedAssets()
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
 
     for (const i of Array.from(Array(s.mockDefaultAssets.length).keys())) {
       if (s.mockDefaultAssets[i] === s.mockQuoteAsset) continue;
@@ -85,10 +90,10 @@ describe('accounting', () => {
   });
 
   it('Balance in vault reflects in accounting', async () => {
-    const tokenQuantity = new BigNumber('1e+18').toString();
+    const tokenQuantity = toWei('1', 'ether');
     await s.weth.methods
       .transfer(s.vault.options.address, tokenQuantity)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     const fundHoldings = await s.accounting.methods
       .getFundHoldings()
       .call();
@@ -96,7 +101,7 @@ describe('accounting', () => {
 
     await s.priceSource.methods
       .update([s.weth.options.address], [`${s.exaUnit}`])
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     const initialCalculations = await s.accounting.methods
       .performCalculations()
       .call();
@@ -118,7 +123,7 @@ describe('accounting', () => {
     ).resolves.toBe(false);
     await s.accounting.methods
       .addAssetToOwnedAssets(s.mln.options.address)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     await expect(
       s.accounting.methods
         .isInAssetList(s.mln.options.address)
@@ -127,7 +132,7 @@ describe('accounting', () => {
 
     await s.accounting.methods
       .removeFromOwnedAssets(s.mln.options.address)
-      .send({ from: s.user, gas: 8000000 });
+      .send({ from: s.user, gas: s.standardGas });
     await expect(
       s.accounting.methods
         .isInAssetList(s.mln.options.address)
