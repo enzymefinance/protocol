@@ -1,56 +1,57 @@
+import { BigNumber } from 'bignumber.js';
+
 import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { BigNumber } from 'bignumber.js';
 
 describe('accounting', () => {
-  let shared = {};
+  let s = {};
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared = {
-      ...shared,
-      ...(await deployMockSystem(shared.env, {
+    s.env = await initTestEnvironment();
+    s = {
+      ...s,
+      ...(await deployMockSystem(s.env, {
         accountingContract: Contracts.Accounting,
       })),
     };
 
-    shared.user = shared.env.wallet.address;
-    shared.mockDefaultAssets = [
-      shared.weth.options.address,
-      shared.mln.options.address,
+    s.user = s.env.wallet.address;
+    s.mockDefaultAssets = [
+      s.weth.options.address,
+      s.mln.options.address,
     ];
 
-    shared.mockQuoteAsset = shared.weth.options.address;
-    shared.mockNativeAsset = shared.weth.options.address;
-    shared.exaUnit = new BigNumber('1e+18');
+    s.mockQuoteAsset = s.weth.options.address;
+    s.mockNativeAsset = s.weth.options.address;
+    s.exaUnit = new BigNumber('1e+18');
   });
 
   it('Accounting is properly initialized', async () => {
-    for (const i of Array.from(Array(shared.mockDefaultAssets.length).keys())) {
-      const defaultAsset = await shared.accounting.methods
+    for (const i of Array.from(Array(s.mockDefaultAssets.length).keys())) {
+      const defaultAsset = await s.accounting.methods
         .ownedAssets(i)
         .call();
-      expect(defaultAsset).toBe(shared.mockDefaultAssets[i]);
+      expect(defaultAsset).toBe(s.mockDefaultAssets[i]);
       await expect(
-        shared.accounting.methods
-          .isInAssetList(shared.mockDefaultAssets[i])
+        s.accounting.methods
+          .isInAssetList(s.mockDefaultAssets[i])
           .call(),
       ).resolves.toBe(true);
     }
 
     await expect(
-      shared.accounting.methods.DENOMINATION_ASSET().call(),
-    ).resolves.toBe(shared.mockQuoteAsset);
-    await expect(shared.accounting.methods.NATIVE_ASSET().call()).resolves.toBe(
-      shared.mockNativeAsset,
+      s.accounting.methods.DENOMINATION_ASSET().call(),
+    ).resolves.toBe(s.mockQuoteAsset);
+    await expect(s.accounting.methods.NATIVE_ASSET().call()).resolves.toBe(
+      s.mockNativeAsset,
     );
     await expect(
-      shared.accounting.methods.calcSharePrice().call(),
-    ).resolves.toBe(`${shared.exaUnit}`);
-    await expect(shared.accounting.methods.calcGav().call()).resolves.toBe('0');
+      s.accounting.methods.calcSharePrice().call(),
+    ).resolves.toBe(`${s.exaUnit}`);
+    await expect(s.accounting.methods.calcGav().call()).resolves.toBe('0');
 
-    const initialCalculations = await shared.accounting.methods
+    const initialCalculations = await s.accounting.methods
       .performCalculations()
       .call();
 
@@ -58,26 +59,26 @@ describe('accounting', () => {
     expect(initialCalculations.feesInDenominationAsset).toBe('0');
     expect(initialCalculations.feesInShares).toBe('0');
     expect(initialCalculations.nav).toBe('0');
-    expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);
+    expect(initialCalculations.sharePrice).toBe(`${s.exaUnit}`);
   });
 
   it('updateOwnedAssets removes zero balance assets', async () => {
-    const fundHoldings = await shared.accounting.methods
+    const fundHoldings = await s.accounting.methods
       .getFundHoldings()
       .call();
     expect(fundHoldings[0]).toEqual(
-      Array.from(Array(shared.mockDefaultAssets.length), () => '0'),
+      Array.from(Array(s.mockDefaultAssets.length), () => '0'),
     );
 
-    await shared.accounting.methods
+    await s.accounting.methods
       .updateOwnedAssets()
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: s.user, gas: 8000000 });
 
-    for (const i of Array.from(Array(shared.mockDefaultAssets.length).keys())) {
-      if (shared.mockDefaultAssets[i] === shared.mockQuoteAsset) continue;
+    for (const i of Array.from(Array(s.mockDefaultAssets.length).keys())) {
+      if (s.mockDefaultAssets[i] === s.mockQuoteAsset) continue;
       await expect(
-        shared.accounting.methods
-          .isInAssetList(shared.mockDefaultAssets[i])
+        s.accounting.methods
+          .isInAssetList(s.mockDefaultAssets[i])
           .call(),
       ).resolves.toBe(false);
     }
@@ -85,18 +86,18 @@ describe('accounting', () => {
 
   it('Balance in vault reflects in accounting', async () => {
     const tokenQuantity = new BigNumber('1e+18').toString();
-    await shared.weth.methods
-      .transfer(shared.vault.options.address, tokenQuantity)
-      .send({ from: shared.user, gas: 8000000 });
-    const fundHoldings = await shared.accounting.methods
+    await s.weth.methods
+      .transfer(s.vault.options.address, tokenQuantity)
+      .send({ from: s.user, gas: 8000000 });
+    const fundHoldings = await s.accounting.methods
       .getFundHoldings()
       .call();
     expect(fundHoldings[0][0]).toEqual(tokenQuantity);
 
-    await shared.priceSource.methods
-      .update([shared.weth.options.address], [`${shared.exaUnit}`])
-      .send({ from: shared.user, gas: 8000000 });
-    const initialCalculations = await shared.accounting.methods
+    await s.priceSource.methods
+      .update([s.weth.options.address], [`${s.exaUnit}`])
+      .send({ from: s.user, gas: 8000000 });
+    const initialCalculations = await s.accounting.methods
       .performCalculations()
       .call();
 
@@ -105,31 +106,31 @@ describe('accounting', () => {
     expect(initialCalculations.feesInShares).toBe('0');
     expect(initialCalculations.nav).toBe(tokenQuantity);
     // Since there is no investment yet
-    expect(initialCalculations.sharePrice).toBe(`${shared.exaUnit}`);
+    expect(initialCalculations.sharePrice).toBe(`${s.exaUnit}`);
   });
 
   // Deployer is an authorized module because it has been directly deployed
   it('Add and remove assets by an authorized module', async () => {
     await expect(
-      shared.accounting.methods
-        .isInAssetList(shared.mln.options.address)
+      s.accounting.methods
+        .isInAssetList(s.mln.options.address)
         .call(),
     ).resolves.toBe(false);
-    await shared.accounting.methods
-      .addAssetToOwnedAssets(shared.mln.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+    await s.accounting.methods
+      .addAssetToOwnedAssets(s.mln.options.address)
+      .send({ from: s.user, gas: 8000000 });
     await expect(
-      shared.accounting.methods
-        .isInAssetList(shared.mln.options.address)
+      s.accounting.methods
+        .isInAssetList(s.mln.options.address)
         .call(),
     ).resolves.toBe(true);
 
-    await shared.accounting.methods
-      .removeFromOwnedAssets(shared.mln.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+    await s.accounting.methods
+      .removeFromOwnedAssets(s.mln.options.address)
+      .send({ from: s.user, gas: 8000000 });
     await expect(
-      shared.accounting.methods
-        .isInAssetList(shared.mln.options.address)
+      s.accounting.methods
+        .isInAssetList(s.mln.options.address)
         .call(),
     ).resolves.toBe(false);
   });

@@ -1,101 +1,103 @@
+import { BigNumber } from 'bignumber.js';
+
+import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
-import { Contracts } from '~/Contracts';
-
-import { BigNumber } from 'bignumber.js';
 
 describe('feeManager', () => {
-  let shared = {};
+  let s = {};
 
   const mockFeeRate = 5000;
   const mockFeePeriod = 1000;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared.user = shared.env.wallet.address;
+    s.env = await initTestEnvironment();
+    s.user = s.env.wallet.address;
   });
 
   beforeEach(async () => {
-    shared.feeA = getContract(
-      shared.env,
+    s.feeA = getContract(
+      s.env,
       Contracts.MockFee,
-      await deployContract(shared.env, Contracts.MockFee, ['0']),
+      await deployContract(s.env, Contracts.MockFee, ['0']),
     );
-    shared.feeB = getContract(
-      shared.env,
+    s.feeB = getContract(
+      s.env,
       Contracts.MockFee,
-      await deployContract(shared.env, Contracts.MockFee, ['1']),
+      await deployContract(s.env, Contracts.MockFee, ['1']),
     );
-    shared.feeArray = [
+    s.feeArray = [
       {
-        feeAddress: shared.feeA.options.address,
+        feeAddress: s.feeA.options.address,
         feePeriod: mockFeePeriod,
         feeRate: mockFeeRate,
       },
       {
-        feeAddress: shared.feeB.options.address,
+        feeAddress: s.feeB.options.address,
         feePeriod: mockFeePeriod,
         feeRate: mockFeeRate,
       },
     ];
 
-    const deployment = await deployMockSystem(shared.env, {
-      feeManagerContract: Contracts.FeeManager,
-      fees: shared.feeArray,
-    });
-    shared = Object.assign(shared, deployment);
+    s = {
+      ...s,
+      ...(await deployMockSystem(s.env, {
+        feeManagerContract: Contracts.FeeManager,
+        fees: s.feeArray,
+      }))
+    };
 
-    await shared.registry.methods // just to pass pay amgu
-      .setIsFund(shared.feeManager.options.address)
-      .send({ from: shared.user });
+    await s.registry.methods // just to pass pay amgu
+      .setIsFund(s.feeManager.options.address)
+      .send({ from: s.user });
   });
 
   it('Fee Manager is properly initialized', async () => {
-    for (const fee of shared.feeArray) {
+    for (const fee of s.feeArray) {
       await expect(
-        shared.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
+        s.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
       ).toBeTruthy();
     }
-    for (const i of Array.from(Array(shared.feeArray.length).keys())) {
-      const feeAddress = await shared.feeManager.methods.fees(i).call();
-      expect(feeAddress).toBe(shared.feeArray[i].feeAddress);
+    for (const i of Array.from(Array(s.feeArray.length).keys())) {
+      const feeAddress = await s.feeManager.methods.fees(i).call();
+      expect(feeAddress).toBe(s.feeArray[i].feeAddress);
     }
   });
 
   it('Total fee amount aggregates individual accumulated fee', async () => {
     const feeAmount = new BigNumber('1e+18');
-    await shared.feeA.methods
+    await s.feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: shared.user, gas: 8000000 });
-    await shared.feeB.methods
+      .send({ from: s.user, gas: 8000000 });
+    await s.feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: s.user, gas: 8000000 });
     await expect(
-      shared.feeManager.methods.totalFeeAmount().call(),
+      s.feeManager.methods.totalFeeAmount().call(),
     ).resolves.toEqual(feeAmount.times(2).toString());
   });
 
   it('Reward all fee allocates shares to the manager', async () => {
     const preManagerShares = new BigNumber(
-      await shared.shares.methods.balanceOf(shared.user).call(),
+      await s.shares.methods.balanceOf(s.user).call(),
     );
     const feeAmount = new BigNumber('1e+18');
 
-    await shared.feeA.methods
+    await s.feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: shared.user, gas: 8000000 });
-    await shared.feeB.methods
+      .send({ from: s.user, gas: 8000000 });
+    await s.feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: shared.user, gas: 8000000 });
-    await shared.feeManager.methods
+      .send({ from: s.user, gas: 8000000 });
+    await s.feeManager.methods
       .rewardAllFees() // can only call becasue of loose mockhub permissions
-      .send({ from: shared.user, gas: 8000000 });
+      .send({ from: s.user, gas: 8000000 });
     const postManagerShares = new BigNumber(
-      await shared.shares.methods.balanceOf(shared.user).call(),
+      await s.shares.methods.balanceOf(s.user).call(),
     );
-    const postAccumulatedFee = await shared.feeManager.methods
+    const postAccumulatedFee = await s.feeManager.methods
       .totalFeeAmount()
       .call();
 

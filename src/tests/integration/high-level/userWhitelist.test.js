@@ -12,7 +12,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 
 describe('Happy Path', () => {
-  const s = {};
+  let s = {};
 
   beforeAll(async () => {
     s.env = await deployAndInitTestEnv();
