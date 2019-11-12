@@ -20,33 +20,25 @@ import { BigNumber } from 'bignumber.js';
 expect.extend({ toBeTrueWith });
 
 describe('Happy Path', () => {
-  const shared: {
-    env?: Environment;
-    [p: string]: any;
-  } = {};
+  const shared = {};
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
-    expect(shared.env.track).toBe(Tracks.TESTING);
+    // expect(shared.env.track).toBe(Tracks.TESTING);
+
     shared.accounts = await shared.env.eth.getAccounts();
-    shared.anotherAccount = withDifferentAccount(
-      shared.env,
-      shared.accounts[1],
-    );
-    shared.engine = shared.env.deployment.melonContracts.engine;
+    shared.user = shared.env.wallet.address;
+    shared.userAlt = shared.accounts[1];
+
+    // shared.engine = shared.env.deployment.melonContracts.engine;
     shared.routes = await setupInvestedTestFund(shared.env);
     shared.weth = getTokenBySymbol(shared.env, 'WETH');
-    shared.mln = getTokenBySymbol(shared.env, 'MLN');
+    // shared.mln = getTokenBySymbol(shared.env, 'MLN');
 
-    shared.user = shared.env.wallet.address;
-
-    const wethToken = shared.env.deployment.thirdPartyContracts.tokens.find(
-      x => x.symbol === 'WETH',
-    );
     shared.wethInterface = getContract(
       shared.env,
       Contracts.Weth,
-      wethToken.address,
+      shared.weth.address,
     );
 
     shared.participation = getContract(
@@ -66,35 +58,32 @@ describe('Happy Path', () => {
   });
 
   test('Request investment fails if user is not whitelisted', async () => {
-    const investmentAmount = createQuantity(shared.weth, 1);
-    const fundToken = await getToken(shared.env, shared.routes.sharesAddress);
+    const investmentAmount = new BigNumber('1e+18').toString();
+    const requestedShares = new BigNumber('1e+18').toString();
+    const amguAmount = new BigNumber('1e+18').toString();
+    const investmentAsset = shared.weth.address;
+    const participationAddress = shared.routes.participationAddress.toString();
 
-    await transfer(shared.env, {
-      howMuch: investmentAmount,
-      to: shared.accounts[1],
-    });
+    await shared.wethInterface.methods
+      .transfer(shared.userAlt, investmentAmount)
+      .send({ from: shared.user, gas: 8000000 });
 
-    await approve(shared.anotherAccount, {
-      howMuch: investmentAmount,
-      spender: shared.routes.participationAddress,
-    });
+    await shared.wethInterface.methods
+      .approve(participationAddress, investmentAmount)
+      .send({ from: shared.userAlt, gas: 8000000 });
 
     await expect(
-      requestInvestment(
-        shared.anotherAccount,
-        shared.routes.participationAddress,
-        {
-          investmentAmount,
-          requestedShares: createQuantity(fundToken, 1),
-        },
-      ),
+      shared.participation.methods
+        .requestInvestment(requestedShares, investmentAmount, investmentAsset)
+        .send({ from: shared.userAlt, value: amguAmount, gas: 8000000 }),
     ).rejects.toThrow();
   });
 
   test('Request investment passes if user is whitelisted', async () => {
     const investmentAmount = new BigNumber('1e+18').toString();
     const requestedShares = new BigNumber('1e+18').toString();
-    const investmentAsset = shared.routes.sharesAddress.toString();
+    const amguAmount = new BigNumber('1e+18').toString();
+    const investmentAsset = shared.weth.address;
     const participationAddress = shared.routes.participationAddress.toString();
 
     await shared.wethInterface.methods
@@ -104,7 +93,7 @@ describe('Happy Path', () => {
     await expect(
       shared.participation.methods
         .requestInvestment(requestedShares, investmentAmount, investmentAsset)
-        .send({ from: shared.user, gas: 8000000 }),
+        .send({ from: shared.user, value: amguAmount, gas: 8000000 }),
     ).resolves.not.toThrow();
   });
 });
