@@ -77,8 +77,12 @@ describe('Happy Path', () => {
 
     await expect(
       s.participation.methods
-        .requestInvestment(s.requestedShares, s.investmentAmount, s.investmentAsset)
-        .send({ from: s.userAlt, value: s.amguAmount, gas: s.standardGas }),
+        .requestInvestment(
+          s.requestedShares,
+          s.investmentAmount,
+          s.investmentAsset
+         )
+        .send({ from: s.userAlt, value: s.amguAmount, gas: s.standardGas })
     ).rejects.toThrow();
   });
 
@@ -89,8 +93,12 @@ describe('Happy Path', () => {
 
     await expect(
       s.participation.methods
-        .requestInvestment(s.requestedShares, s.investmentAmount, s.investmentAsset)
-        .send({ from: s.user, value: s.amguAmount, gas: s.standardGas }),
+        .requestInvestment(
+          s.requestedShares,
+          s.investmentAmount,
+          s.investmentAsset
+        )
+        .send({ from: s.user, value: s.amguAmount, gas: s.standardGas })
     ).resolves.not.toThrow();
   });
 });

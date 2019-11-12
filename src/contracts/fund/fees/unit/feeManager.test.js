@@ -62,7 +62,7 @@ describe('feeManager', () => {
         s.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
       ).toBeTruthy();
     }
-    for (const i of Array.from(Array(s.feeArray.length).keys())) {
+    for (const i in s.feeArray.length) {
       const feeAddress = await s.feeManager.methods.fees(i).call();
       expect(feeAddress).toBe(s.feeArray[i].feeAddress);
     }

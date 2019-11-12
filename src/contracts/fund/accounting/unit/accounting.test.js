@@ -33,7 +33,7 @@ describe('accounting', () => {
   });
 
   it('Accounting is properly initialized', async () => {
-    for (const i of Array.from(Array(s.mockDefaultAssets.length).keys())) {
+    for (const i in s.mockDefaultAssets) {
       const defaultAsset = await s.accounting.methods
         .ownedAssets(i)
         .call();
@@ -68,18 +68,17 @@ describe('accounting', () => {
   });
 
   it('updateOwnedAssets removes zero balance assets', async () => {
-    const fundHoldings = await s.accounting.methods
-      .getFundHoldings()
-      .call();
+    const fundHoldings = await s.accounting.methods.getFundHoldings().call();
+    console.log(fundHoldings)
     expect(fundHoldings[0]).toEqual(
-      Array.from(Array(s.mockDefaultAssets.length), () => '0'),
+      new Array(s.mockDefaultAssets.length).fill('0')
     );
 
     await s.accounting.methods
       .updateOwnedAssets()
       .send({ from: s.user, gas: s.standardGas });
 
-    for (const i of Array.from(Array(s.mockDefaultAssets.length).keys())) {
+    for (const i in s.mockDefaultAssets) {
       if (s.mockDefaultAssets[i] === s.mockQuoteAsset) continue;
       await expect(
         s.accounting.methods
@@ -94,9 +93,7 @@ describe('accounting', () => {
     await s.weth.methods
       .transfer(s.vault.options.address, tokenQuantity)
       .send({ from: s.user, gas: s.standardGas });
-    const fundHoldings = await s.accounting.methods
-      .getFundHoldings()
-      .call();
+    const fundHoldings = await s.accounting.methods.getFundHoldings().call();
     expect(fundHoldings[0][0]).toEqual(tokenQuantity);
 
     await s.priceSource.methods

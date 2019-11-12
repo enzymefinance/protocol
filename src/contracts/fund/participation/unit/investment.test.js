@@ -59,7 +59,11 @@ describe('investment', () => {
       .send({ from: s.user });
     await s.participation.methods
       .requestInvestment(amount, amount, s.weth.options.address)
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
 
     await s.hub.methods.setShutDownState(true).send({ from: s.user });
 
@@ -75,7 +79,11 @@ describe('investment', () => {
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
   });
 
   it('Request must exist to execute', async () => {
@@ -93,7 +101,11 @@ describe('investment', () => {
 
     await s.participation.methods
       .requestInvestment(0, 0, s.weth.options.address)
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
 
     await expect(
       s.participation.methods
@@ -104,7 +116,11 @@ describe('investment', () => {
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
   });
 
   it('Need fresh price to execute request', async () => {
@@ -118,7 +134,11 @@ describe('investment', () => {
       .send({ from: s.user });
     await s.participation.methods
       .requestInvestment(amount, amount, s.weth.options.address)
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
     const requestExists = await s.participation.methods
       .hasRequest(s.user)
       .call();
@@ -136,7 +156,11 @@ describe('investment', () => {
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
   });
 
   it('Asset must be permitted', async () => {
@@ -152,7 +176,11 @@ describe('investment', () => {
     await expect(
       s.participation.methods
         .requestInvestment(amount, amount, asset)
-        .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') }),
+        .send({
+          from: s.user,
+          gas: s.standardGas,
+          value: toWei('0.01', 'ether')
+        }),
     ).rejects.toThrow(errorMessage);
   });
 
@@ -170,18 +198,30 @@ describe('investment', () => {
       .send({ from: s.user });
     await s.participation.methods
       .requestInvestment('1000', '1', s.weth.options.address)
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
 
     await expect(
       s.participation.methods
         .executeRequestFor(s.user)
-        .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') }),
+        .send({
+          from: s.user,
+          gas: s.standardGas,
+          value: toWei('0.01', 'ether')
+        }),
     ).rejects.toThrow(errorMessage);
 
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
   });
 
   it('Basic investment works', async () => {
@@ -199,10 +239,18 @@ describe('investment', () => {
         investAmount,
         s.weth.options.address,
       )
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
     await s.participation.methods
       .executeRequestFor(s.user)
-      .send({ from: s.user, gas: s.standardGas, value: toWei('0.01', 'ether') });
+      .send({
+        from: s.user,
+        gas: s.standardGas,
+        value: toWei('0.01', 'ether')
+      });
     const postVaultWeth = await s.weth.methods
       .balanceOf(s.vault.options.address)
       .call();
