@@ -7,19 +7,20 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('maxPositions', () => {
-  let shared: any = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared = Object.assign(shared, await deployMockSystem(shared.env));
-    shared.user = shared.env.wallet.address;
-    shared.opts = { from: shared.user, gas: 8000000 };
+    environment = await initTestEnvironment();
+    mockSystem = await deployMockSystem(environment);
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
   });
 
   it('Create and get max', async () => {
     const positions = ['0', '125', '9999999999'];
     for (const n of positions) {
-      const maxPositions = await deploy(shared.env, Contracts.MaxPositions, [
+      const maxPositions = await deploy(environment, Contracts.MaxPositions, [
         n,
       ]);
       expect(await maxPositions.methods.maxPositions().call()).toEqual(n);
@@ -28,20 +29,20 @@ describe('maxPositions', () => {
 
   it('Policy manager and mock accounting with maxPositions', async () => {
     const maxPositions = '3';
-    const policy = await deploy(shared.env, Contracts.MaxPositions, [
+    const policy = await deploy(environment, Contracts.MaxPositions, [
       maxPositions,
     ]);
     const nonQuoteAsset = `${randomAddress()}`;
-    const quoteAsset = shared.weth.options.address;
-    await shared.policyManager.methods
+    const quoteAsset = mockSystem.weth.options.address;
+    await mockSystem.policyManager.methods
       .register(makeOrderSignatureBytes, policy.options.address)
-      .send({ from: shared.user, gas: 8000000 });
-    await shared.accounting.methods
-      .setOwnedAssets([shared.weth.options.address])
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaultTxOpts);
+    await mockSystem.accounting.methods
+      .setOwnedAssets([mockSystem.weth.options.address])
+      .send(defaultTxOpts);
 
     await expect(
-      shared.policyManager.methods
+      mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
           [emptyAddress, emptyAddress, emptyAddress, quoteAsset, emptyAddress],
@@ -51,7 +52,7 @@ describe('maxPositions', () => {
         .call(),
     ).resolves.not.toThrow();
     await expect(
-      shared.policyManager.methods
+      mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
           [
@@ -67,16 +68,16 @@ describe('maxPositions', () => {
         .call(),
     ).resolves.not.toThrow();
 
-    await shared.accounting.methods
+    await mockSystem.accounting.methods
       .setOwnedAssets([
         nonQuoteAsset,
         `${randomAddress()}`,
         `${randomAddress()}`,
       ])
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaultTxOpts);
 
     await expect(
-      shared.policyManager.methods
+      mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
           [emptyAddress, emptyAddress, emptyAddress, quoteAsset, emptyAddress],
@@ -86,7 +87,7 @@ describe('maxPositions', () => {
         .call(),
     ).resolves.not.toThrow();
     await expect(
-      shared.policyManager.methods
+      mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
           [
@@ -102,17 +103,17 @@ describe('maxPositions', () => {
         .call(),
     ).resolves.not.toThrow();
 
-    await shared.accounting.methods
+    await mockSystem.accounting.methods
       .setOwnedAssets([
         nonQuoteAsset,
         `${randomAddress()}`,
         `${randomAddress()}`,
         `${randomAddress()}`,
       ])
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaultTxOpts);
 
     await expect(
-      shared.policyManager.methods
+      mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
           [

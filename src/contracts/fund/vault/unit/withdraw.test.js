@@ -7,65 +7,74 @@ import { createVaultInstance } from '../transactions/createVaultInstance';
 import { Contracts } from '~/Contracts';
 
 describe('withdraw', () => {
-  const shared: any = {};
+  let environment, user, defaultTxOpts;
+  let token;
+  let factoryAddress;
+  let authAddress;
+  let vault;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    const tokenAddress = await deployToken(shared.env);
-    shared.token = getContract(
-      shared.env,
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user };
+    user = environment.wallet.address;
+    factoryAddress = await deployVaultFactory(environment);
+
+    const tokenAddress = await deployToken(environment);
+    token = getContract(
+      environment,
       Contracts.PreminedToken,
       tokenAddress,
     );
-    shared.factoryAddress = await deployVaultFactory(shared.env);
-    shared.authAddress = await deployContract(
-      shared.env,
+
+    authAddress = await deployContract(
+      environment,
       Contracts.PermissiveAuthority,
     );
   });
 
   beforeEach(async () => {
     const vaultAddress = await createVaultInstance(
-      shared.env,
-      shared.factoryAddress,
+      environment,
+      factoryAddress,
       {
-        hubAddress: shared.authAddress,
+        hubAddress: authAddress,
       },
     );
-    shared.vault = getContract(shared.env, Contracts.Vault, vaultAddress);
+    vault = getContract(environment, Contracts.Vault, vaultAddress);
   });
 
   it('withdraw token that is not present', async () => {
     await expect(
-      shared.vault.methods
-        .withdraw(shared.token.options.address, 100)
-        .send({ from: shared.env.wallet.address }),
+      vault.methods
+        .withdraw(token.options.address, 100)
+        .send(defaultTxOpts),
     ).rejects.toThrow();
   });
 
   it('withdraw available token', async () => {
     const amount = 100000;
     const amountInWalletPre = Number(
-      await shared.token.methods.balanceOf(shared.env.wallet.address).call(),
+      await token.methods.balanceOf(user).call(),
     );
-    await shared.token.methods
-      .transfer(shared.vault.options.address, amount)
-      .send({ from: shared.env.wallet.address });
+    await token.methods
+      .transfer(vault.options.address, amount)
+      .send(defaultTxOpts);
 
     let amountInVault = Number(
-      await shared.token.methods.balanceOf(shared.vault.options.address).call(),
+      await token.methods.balanceOf(vault.options.address).call(),
     );
     await expect(amountInVault).toBe(amount);
 
-    await shared.vault.methods
-      .withdraw(shared.token.options.address, amount)
-      .send({ from: shared.env.wallet.address });
+    await vault.methods
+      .withdraw(token.options.address, amount)
+      .send(defaultTxOpts);
 
     amountInVault = Number(
-      await shared.token.methods.balanceOf(shared.vault.options.address).call(),
+      await token.methods.balanceOf(vault.options.address).call(),
     );
     const amountInWalletPost = Number(
-      await shared.token.methods.balanceOf(shared.env.wallet.address).call(),
+      await token.methods.balanceOf(user).call(),
     );
 
     await expect(amountInVault).toBe(0);

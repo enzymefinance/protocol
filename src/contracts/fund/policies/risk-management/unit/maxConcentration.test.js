@@ -6,14 +6,16 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('maxConcentration', () => {
-  let shared: any = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared = Object.assign(shared, await deployMockSystem(shared.env));
-    shared.user = shared.env.wallet.address;
-    shared.quote = shared.weth.options.address;
-    shared.nonQuote = shared.mln.options.address;
+    environment = await initTestEnvironment();
+    mockSystem = await  deployMockSystem(environment);
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
+    mockSystem.quote = mockSystem.weth.options.address;
+    mockSystem.nonQuote = mockSystem.mln.options.address;
   });
 
   it.each([
@@ -58,24 +60,24 @@ describe('maxConcentration', () => {
       },
     ],
   ])('%s', async (name, trial) => {
-    const policy = await deploy(shared.env, Contracts.MaxConcentration, [
+    const policy = await deploy(environment, Contracts.MaxConcentration, [
       trial.max,
     ]);
-    const trialAsset = shared[trial.asset];
+    const trialAsset = mockSystem[trial.asset];
 
     expect(await policy.methods.maxConcentration().call()).toBe(trial.max);
 
-    await shared.policyManager.methods
+    await mockSystem.policyManager.methods
       .register(makeOrderSignatureBytes, policy.options.address)
-      .send({ from: shared.user });
-    await shared.accounting.methods
+      .send(defaultTxOpts);
+    await mockSystem.accounting.methods
       .setAssetGAV(trialAsset, trial.asset_gav)
-      .send({ from: shared.user });
-    await shared.accounting.methods
+      .send(defaultTxOpts);
+    await mockSystem.accounting.methods
       .setGav(trial.total_gav)
-      .send({ from: shared.user });
+      .send(defaultTxOpts);
 
-    const evaluate = shared.policyManager.methods.postValidate(
+    const evaluate = mockSystem.policyManager.methods.postValidate(
       makeOrderSignatureBytes,
       [emptyAddress, emptyAddress, emptyAddress, trialAsset, emptyAddress],
       [0, 0, 0],

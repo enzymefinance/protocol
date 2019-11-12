@@ -7,13 +7,14 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 
 describe('assetWhitelist', () => {
-  const shared: any = {};
+  let environment, user, defaultTxOpts;
+  let assetArray;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared.user = shared.env.wallet.address;
-    shared.opts = { from: shared.user, gas: 8000000 };
-    shared.assetArray = [
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
+    assetArray = [
       `${randomAddress()}`,
       `${randomAddress()}`,
       `${randomAddress()}`,
@@ -23,53 +24,53 @@ describe('assetWhitelist', () => {
   });
 
   it('Create whitelist', async () => {
-    const whitelist = await deploy(shared.env, Contracts.AssetWhitelist, [
-      shared.assetArray,
+    const whitelist = await deploy(environment, Contracts.AssetWhitelist, [
+      assetArray,
     ]);
 
     expect(await whitelist.methods.getMembers().call()).toEqual(
-      shared.assetArray,
+      assetArray,
     );
   });
 
   it('Remove asset from whitelist', async () => {
-    const whitelist = await deploy(shared.env, Contracts.AssetWhitelist, [
-      shared.assetArray,
+    const whitelist = await deploy(environment, Contracts.AssetWhitelist, [
+      assetArray,
     ]);
     const mockAsset = `${randomAddress()}`;
 
     expect(await whitelist.methods.getMembers().call()).toEqual(
-      shared.assetArray,
+      assetArray,
     );
     await expect(
       whitelist.methods
         .removeFromWhitelist(mockAsset)
-        .send({ from: shared.user }),
+        .send(defaultTxOpts),
     ).rejects.toThrow('Asset not in whitelist');
     expect(await whitelist.methods.getMembers().call()).toEqual(
-      shared.assetArray,
+      assetArray,
     );
     await expect(
       whitelist.methods
-        .removeFromWhitelist(shared.assetArray[0])
-        .send({ from: shared.user }),
+        .removeFromWhitelist(assetArray[0])
+        .send(defaultTxOpts),
     ).resolves.not.toThrow();
-    expect(await whitelist.methods.isMember(shared.assetArray[0]).call()).toBe(
+    expect(await whitelist.methods.isMember(assetArray[0]).call()).toBe(
       false,
     );
   });
 
   it('Policy manager with whitelist', async () => {
-    const contracts = await deployMockSystem(shared.env, {
+    const contracts = await deployMockSystem(environment, {
       policyManagerContract: Contracts.PolicyManager,
     });
-    const whitelist = await deploy(shared.env, Contracts.AssetWhitelist, [
-      shared.assetArray,
+    const whitelist = await deploy(environment, Contracts.AssetWhitelist, [
+      assetArray,
     ]);
-    const asset = shared.assetArray[1];
+    const asset = assetArray[1];
     await contracts.policyManager.methods
       .register(makeOrderSignatureBytes, whitelist.options.address)
-      .send({ from: shared.user });
+      .send(defaultTxOpts);
 
     const validateArgs = [
       makeOrderSignatureBytes,
@@ -83,7 +84,7 @@ describe('assetWhitelist', () => {
 
     await whitelist.methods
       .removeFromWhitelist(asset)
-      .send({ from: shared.user });
+      .send(defaultTxOpts);
 
     expect(await whitelist.methods.isMember(asset).call()).toBe(false);
     await expect(
