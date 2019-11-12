@@ -7,47 +7,51 @@ import { Contracts } from '~/Contracts';
 import { BigInteger } from '@melonproject/token-math';
 
 describe('shares', () => {
-  let shared: any = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
+  let shares;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared = Object.assign(shared, await deployMockSystem(shared.env));
-    shared.user = shared.env.wallet.address;
-    shared.shares = getContract(
-      shared.env,
+    environment = await initTestEnvironment();
+    mockSystem = await deployMockSystem(environment);
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
+
+    shares = getContract(
+      environment,
       Contracts.Shares,
-      await deployContract(shared.env, Contracts.Shares, [
-        shared.hub.options.address,
+      await deployContract(environment, Contracts.Shares, [
+        mockSystem.hub.options.address,
       ]),
     );
   });
 
   it('Shares contract is properly initialized', async () => {
-    const hubName = await shared.hub.methods.name().call();
-    await expect(shared.shares.methods.name().call()).resolves.toEqual(hubName);
-    await expect(shared.shares.methods.symbol().call()).resolves.toBe('MLNF');
-    await expect(shared.shares.methods.decimals().call()).resolves.toBe('18');
+    const hubName = await mockSystem.hub.methods.name().call();
+    await expect(shares.methods.name().call()).resolves.toEqual(hubName);
+    await expect(shares.methods.symbol().call()).resolves.toBe('MLNF');
+    await expect(shares.methods.decimals().call()).resolves.toBe('18');
   });
 
   it('Create and destroy shares (auth)', async () => {
     const mockAccount = randomAddress().toString();
     const amount = new BigInteger(1000000000);
     await expect(
-      shared.shares.methods.balanceOf(mockAccount).call(),
+      shares.methods.balanceOf(mockAccount).call(),
     ).resolves.toEqual('0');
 
-    await shared.shares.methods
+    await shares.methods
       .createFor(mockAccount, `${amount}`)
-      .send({ from: shared.user });
+      .send(defaultTxOpts);
     await expect(
-      shared.shares.methods.balanceOf(mockAccount).call(),
+      shares.methods.balanceOf(mockAccount).call(),
     ).resolves.toEqual(amount);
 
-    await shared.shares.methods
+    await shares.methods
       .destroyFor(mockAccount, `${amount}`)
-      .send({ from: shared.user });
+      .send(defaultTxOpts);
     await expect(
-      shared.shares.methods.balanceOf(mockAccount).call(),
+      shares.methods.balanceOf(mockAccount).call(),
     ).resolves.toEqual('0');
   });
 });

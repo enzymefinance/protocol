@@ -8,48 +8,55 @@ import { randomAddress } from '~/utils/helpers/randomAddress';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 
 describe('tradingCallbacks', () => {
-  let shared: any = {};
+  let environment, user, defaultTxOpts;
+  let mockAdapter;
+  let mockSystem;
+  let trading;
 
   const mockExchange = randomAddress().toString();
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared = await Object.assign(shared, await deployMockSystem(shared.env));
-    shared.user = shared.env.wallet.address;
-    const mockAdapter = await getContract(
-      shared.env,
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
+    mockSystem = await deployMockSystem(environment);
+    user = environment.wallet.address;
+    mockAdapter = await getContract(
+      environment,
       Contracts.MockAdapter,
-      await deployContract(shared.env, Contracts.MockAdapter),
+      await deployContract(environment, Contracts.MockAdapter),
     );
-    await shared.registry.methods
+    await mockSystem.registry.methods
       .registerExchangeAdapter(mockExchange, mockAdapter.options.address)
-      .send({ from: shared.user });
-    shared.trading = await getContract(
-      shared.env,
+      .send({ from: user });
+
+    trading = await getContract(
+      environment,
       Contracts.Trading,
-      await deployContract(shared.env, Contracts.Trading, [
-        shared.user, // faked so user can call initialize
+      await deployContract(environment, Contracts.Trading, [
+        user, // faked so user can call initialize
         [mockExchange],
         [mockAdapter.options.address],
-        shared.registry.options.address,
+        mockSystem.registry.options.address,
       ]),
     );
-    await shared.trading.methods
+
+    await trading.methods
       .initialize([
-        shared.accounting.options.address,
+        mockSystem.accounting.options.address,
         emptyAddress,
         emptyAddress,
-        shared.policyManager.options.address,
+        mockSystem.policyManager.options.address,
         emptyAddress,
         emptyAddress,
         emptyAddress,
         emptyAddress,
-        shared.registry.options.address,
+        mockSystem.registry.options.address,
         emptyAddress,
         emptyAddress,
         emptyAddress,
       ])
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaultTxOpts);
   });
 
   it('Make order associated callbacks add data to Trading spoke', async () => {
@@ -57,15 +64,15 @@ describe('tradingCallbacks', () => {
     const makerQuantity = 100;
     const takerQuantity = 200;
 
-    await shared.trading.methods
+    await trading.methods
       .callOnExchange(
         0,
         FunctionSignatures.makeOrder,
         [
           emptyAddress,
           emptyAddress,
-          shared.mln.options.address,
-          shared.weth.options.address,
+          mockSystem.mln.options.address,
+          mockSystem.weth.options.address,
           emptyAddress,
           emptyAddress,
         ],
@@ -77,23 +84,23 @@ describe('tradingCallbacks', () => {
         '0x0',
         '0x0',
       )
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaultTxOpts);
 
     expect(
-      await shared.trading.methods
-        .isInOpenMakeOrder(shared.mln.options.address)
+      await trading.methods
+        .isInOpenMakeOrder(mockSystem.mln.options.address)
         .call(),
     ).toBeTruthy();
 
-    const openOrderInfo = await shared.trading.methods
-      .getOpenOrderInfo(mockExchange, shared.mln.options.address)
+    const openOrderInfo = await trading.methods
+      .getOpenOrderInfo(mockExchange, mockSystem.mln.options.address)
       .call();
     expect(Number(openOrderInfo[0])).toBe(mockOrderId);
     expect(Number(openOrderInfo[2])).toBe(0);
 
-    const orderDetails = await shared.trading.methods.getOrderDetails(0).call();
-    expect(orderDetails[0]).toBe(shared.mln.options.address);
-    expect(orderDetails[1]).toBe(shared.weth.options.address);
+    const orderDetails = await trading.methods.getOrderDetails(0).call();
+    expect(orderDetails[0]).toBe(mockSystem.mln.options.address);
+    expect(orderDetails[1]).toBe(mockSystem.weth.options.address);
     expect(Number(orderDetails[2])).toBe(makerQuantity);
     expect(Number(orderDetails[3])).toBe(takerQuantity);
   });

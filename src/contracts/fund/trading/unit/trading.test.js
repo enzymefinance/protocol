@@ -8,7 +8,9 @@ import { randomAddress } from '~/utils/helpers/randomAddress';
 import { add, isEqual, BigInteger } from '@melonproject/token-math';
 
 describe('trading', () => {
-  let shared: any = {};
+  let environment, user, defaulTxOpts;
+  let mockSystem;
+  let trading;
 
   // Mock data
   const mockExchanges = [
@@ -22,26 +24,28 @@ describe('trading', () => {
   ];
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared = Object.assign(shared, await deployMockSystem(shared.env));
-    shared.user = shared.env.wallet.address;
-    for (let i = 0; i < mockExchanges.length; i = i + 1) {
-      await shared.registry.methods
+    environment = await initTestEnvironment();
+    mockSystem = await deployMockSystem(environment);
+    user = environment.wallet.address;
+    defaulTxOpts = { from: user, gas: 8000000 }
+    for (const i in mockExchanges) {
+      await mockSystem.registry.methods
         .registerExchangeAdapter(mockExchanges[i], mockExchangeAdapters[i])
-        .send({ from: shared.user });
+        .send({ from: user });
     }
 
-    shared.trading = getContract(
-      shared.env,
+    trading = getContract(
+      environment,
       Contracts.Trading,
-      await deployContract(shared.env, Contracts.Trading, [
-        shared.hub.options.address,
+      await deployContract(environment, Contracts.Trading, [
+        mockSystem.hub.options.address,
         mockExchanges,
         mockExchangeAdapters,
-        shared.registry.options.address,
+        mockSystem.registry.options.address,
       ]),
     );
-    await shared.hub.methods
+
+    await mockSystem.hub.methods
       .setSpokes([
         emptyAddress,
         emptyAddress,
@@ -49,25 +53,25 @@ describe('trading', () => {
         emptyAddress,
         emptyAddress,
         emptyAddress,
-        shared.vault.options.address,
+        mockSystem.vault.options.address,
         emptyAddress,
         emptyAddress,
         emptyAddress,
         emptyAddress,
         emptyAddress,
       ])
-      .send({ from: shared.user, gas: 8000000 });
-    await shared.hub.methods
-      .initializeSpoke(shared.trading.options.address)
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaulTxOpts);
+    await mockSystem.hub.methods
+      .initializeSpoke(trading.options.address)
+      .send({ from: user, gas: 8000000 });
   });
 
   it('Exchanges are properly initialized', async () => {
-    for (const i of Array.from(Array(mockExchanges.length).keys())) {
-      const exchangeObject = await shared.trading.methods.exchanges(i).call();
+    for (const i in mockExchanges) {
+      const exchangeObject = await trading.methods.exchanges(i).call();
       expect(exchangeObject.exchange).toBe(mockExchanges[i]);
       expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
-      const exchangeAdded = await shared.trading.methods
+      const exchangeAdded = await trading.methods
         .adapterIsAdded(exchangeObject.adapter)
         .call();
       expect(exchangeAdded).toBe(true);
@@ -77,11 +81,11 @@ describe('trading', () => {
   it('Exchanges cannot be initialized without its adapter', async () => {
     const errorMessage = 'Array lengths unequal';
     await expect(
-      deployContract(shared.env, Contracts.Trading, [
-        shared.hub.options.address,
+      deployContract(environment, Contracts.Trading, [
+        mockSystem.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],
-        shared.registry.options.address,
+        mockSystem.registry.options.address,
       ]),
     ).rejects.toThrow(errorMessage);
   });
@@ -89,40 +93,40 @@ describe('trading', () => {
   it('returnBatchToVault sends back token balances to the vault', async () => {
     const tokenQuantity = new BigInteger(10 ** 20);
 
-    await shared.mln.methods
-      .transfer(shared.trading.options.address, `${tokenQuantity}`)
-      .send({ from: shared.user, gas: 8000000 });
-    await shared.weth.methods
-      .transfer(shared.trading.options.address, `${tokenQuantity}`)
-      .send({ from: shared.user, gas: 8000000 });
+    await mockSystem.mln.methods
+      .transfer(trading.options.address, `${tokenQuantity}`)
+      .send(defaulTxOpts);
+    await mockSystem.weth.methods
+      .transfer(trading.options.address, `${tokenQuantity}`)
+      .send(defaulTxOpts);
 
     const preMlnVault = new BigInteger(
-      await shared.mln.methods.balanceOf(shared.vault.options.address).call(),
+      await mockSystem.mln.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
     const preWethVault = new BigInteger(
-      await shared.weth.methods.balanceOf(shared.vault.options.address).call(),
+      await mockSystem.weth.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
 
-    await shared.trading.methods
+    await trading.methods
       .returnBatchToVault([
-        shared.mln.options.address,
-        shared.weth.options.address,
+        mockSystem.mln.options.address,
+        mockSystem.weth.options.address,
       ])
-      .send({ from: shared.user, gas: 8000000 });
+      .send(defaulTxOpts);
 
     const postMlnTrading = new BigInteger(
-      await shared.mln.methods.balanceOf(shared.trading.options.address).call(),
+      await mockSystem.mln.methods.balanceOf(trading.options.address).call(),
     );
     const postWethTrading = new BigInteger(
-      await shared.weth.methods
-        .balanceOf(shared.trading.options.address)
+      await mockSystem.weth.methods
+        .balanceOf(trading.options.address)
         .call(),
     );
     const postMlnVault = new BigInteger(
-      await shared.mln.methods.balanceOf(shared.vault.options.address).call(),
+      await mockSystem.mln.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
     const postWethVault = new BigInteger(
-      await shared.weth.methods.balanceOf(shared.vault.options.address).call(),
+      await mockSystem.weth.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
 
     expect(isEqual(postMlnTrading, new BigInteger(0))).toBe(true);

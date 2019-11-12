@@ -6,35 +6,38 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import * as Web3Utils from 'web3-utils';
 
 describe('mocks', () => {
-  const shared: any = {};
+  let environment, user, defaultTxOpts;
+  let falsePolicy, truePolicy, testPolicy;
+  let dummyArgs;
 
   const createManagerAndRegister = async (contract, policy) => {
-    const contracts = await deployMockSystem(shared.env, {
+    const contracts = await deployMockSystem(environment, {
       policyManagerContract: Contracts.PolicyManager,
     });
     await contracts.policyManager.methods
-      .register(shared.testPolicy, policy)
-      .send({ from: shared.user, gas: 8000000 });
+      .register(testPolicy, policy)
+      .send(defaultTxOpts);
     return contracts.policyManager;
   };
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared.user = shared.env.wallet.address;
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    shared.falsePolicy = await deployAndGetContract(
-      shared.env,
+    falsePolicy = await deployAndGetContract(
+      environment,
       Contracts.FalsePolicy,
     );
-    shared.truePolicy = await deployAndGetContract(
-      shared.env,
+    truePolicy = await deployAndGetContract(
+      environment,
       Contracts.TruePolicy,
     );
-    shared.testPolicy = Web3Utils.sha3(
+    testPolicy = Web3Utils.sha3(
       'testPolicy(address[4],uint256[2])',
     ).substring(0, 10);
-    shared.dummyArgs = [
-      shared.testPolicy,
+    dummyArgs = [
+      testPolicy,
       [emptyAddress, emptyAddress, emptyAddress, emptyAddress, emptyAddress],
       [0, 0, 0],
       '0x0',
@@ -42,11 +45,11 @@ describe('mocks', () => {
   });
 
   it('Boolean policies', async () => {
-    const res1 = await shared.falsePolicy.methods
-      .rule(...shared.dummyArgs)
+    const res1 = await falsePolicy.methods
+      .rule(...dummyArgs)
       .call();
-    const res2 = await shared.truePolicy.methods
-      .rule(...shared.dummyArgs)
+    const res2 = await truePolicy.methods
+      .rule(...dummyArgs)
       .call();
     expect(res1).toBe(false);
     expect(res2).toBe(true);
@@ -55,18 +58,18 @@ describe('mocks', () => {
   it('Boolean policies on policy manager', async () => {
     const manager1 = await createManagerAndRegister(
       Contracts.PolicyManager,
-      shared.falsePolicy.options.address,
+      falsePolicy.options.address,
     );
     await expect(
-      manager1.methods.preValidate(...shared.dummyArgs).call(),
+      manager1.methods.preValidate(...dummyArgs).call(),
     ).rejects.toThrow('Rule evaluated to false');
 
     const manager2 = await createManagerAndRegister(
       Contracts.PolicyManager,
-      shared.truePolicy.options.address,
+      truePolicy.options.address,
     );
     await expect(
-      manager2.methods.preValidate(...shared.dummyArgs).call(),
+      manager2.methods.preValidate(...dummyArgs).call(),
     ).resolves.not.toThrow();
   });
 });
