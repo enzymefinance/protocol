@@ -4,7 +4,7 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { randomAddress } from '~/utils/helpers/randomAddress';
 import { Contracts } from '~/Contracts';
-import { BigInteger } from '@melonproject/token-math';
+import { toWei } from 'web3-utils';
 
 describe('shares', () => {
   let environment, user, defaultTxOpts;
@@ -35,7 +35,7 @@ describe('shares', () => {
 
   it('Create and destroy shares (auth)', async () => {
     const mockAccount = randomAddress().toString();
-    const amount = new BigInteger(1000000000);
+    const amount = toWei('1', 'Ether');
     await expect(
       shares.methods.balanceOf(mockAccount).call(),
     ).resolves.toEqual('0');

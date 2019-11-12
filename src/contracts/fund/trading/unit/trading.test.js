@@ -5,7 +5,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { randomAddress } from '~/utils/helpers/randomAddress';
-import { add, isEqual, BigInteger } from '@melonproject/token-math';
+import { BN, toWei } from 'web3-utils';
 
 describe('trading', () => {
   let environment, user, defaulTxOpts;
@@ -91,7 +91,7 @@ describe('trading', () => {
   });
 
   it('returnBatchToVault sends back token balances to the vault', async () => {
-    const tokenQuantity = new BigInteger(10 ** 20);
+    const tokenQuantity = new BN(toWei('1', 'Ether'));
 
     await mockSystem.mln.methods
       .transfer(trading.options.address, `${tokenQuantity}`)
@@ -100,10 +100,10 @@ describe('trading', () => {
       .transfer(trading.options.address, `${tokenQuantity}`)
       .send(defaulTxOpts);
 
-    const preMlnVault = new BigInteger(
+    const preMlnVault = new BN(
       await mockSystem.mln.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
-    const preWethVault = new BigInteger(
+    const preWethVault = new BN(
       await mockSystem.weth.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
 
@@ -114,24 +114,24 @@ describe('trading', () => {
       ])
       .send(defaulTxOpts);
 
-    const postMlnTrading = new BigInteger(
+    const postMlnTrading = new BN(
       await mockSystem.mln.methods.balanceOf(trading.options.address).call(),
     );
-    const postWethTrading = new BigInteger(
+    const postWethTrading = new BN(
       await mockSystem.weth.methods
         .balanceOf(trading.options.address)
         .call(),
     );
-    const postMlnVault = new BigInteger(
+    const postMlnVault = new BN(
       await mockSystem.mln.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
-    const postWethVault = new BigInteger(
+    const postWethVault = new BN(
       await mockSystem.weth.methods.balanceOf(mockSystem.vault.options.address).call(),
     );
 
-    expect(isEqual(postMlnTrading, new BigInteger(0))).toBe(true);
-    expect(isEqual(postWethTrading, new BigInteger(0))).toBe(true);
-    expect(isEqual(postMlnVault, add(preMlnVault, tokenQuantity))).toBe(true);
-    expect(isEqual(postWethVault, add(preWethVault, tokenQuantity))).toBe(true);
+    expect(postMlnTrading.isZero()).toBe(true);
+    expect(postWethTrading.isZero()).toBe(true);
+    expect(postMlnVault.eq(preMlnVault.add(tokenQuantity))).toBe(true);
+    expect(postWethVault.eq(preWethVault.add(tokenQuantity))).toBe(true);
   });
 });
