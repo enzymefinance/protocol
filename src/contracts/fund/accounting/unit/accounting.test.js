@@ -13,6 +13,7 @@ describe('accounting', () => {
     // Define user accounts
     s.user = s.env.wallet.address;
     s.standardGas = 8000000;
+    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
 
     // Setup necessary contracts
     s = {
@@ -69,14 +70,14 @@ describe('accounting', () => {
 
   it('updateOwnedAssets removes zero balance assets', async () => {
     const fundHoldings = await s.accounting.methods.getFundHoldings().call();
-    console.log(fundHoldings)
+
     expect(fundHoldings[0]).toEqual(
       new Array(s.mockDefaultAssets.length).fill('0')
     );
 
     await s.accounting.methods
       .updateOwnedAssets()
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
 
     for (const i in s.mockDefaultAssets) {
       if (s.mockDefaultAssets[i] === s.mockQuoteAsset) continue;
@@ -92,13 +93,13 @@ describe('accounting', () => {
     const tokenQuantity = toWei('1', 'ether');
     await s.weth.methods
       .transfer(s.vault.options.address, tokenQuantity)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     const fundHoldings = await s.accounting.methods.getFundHoldings().call();
     expect(fundHoldings[0][0]).toEqual(tokenQuantity);
 
     await s.priceSource.methods
       .update([s.weth.options.address], [`${s.exaUnit}`])
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     const initialCalculations = await s.accounting.methods
       .performCalculations()
       .call();
@@ -120,7 +121,7 @@ describe('accounting', () => {
     ).resolves.toBe(false);
     await s.accounting.methods
       .addAssetToOwnedAssets(s.mln.options.address)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await expect(
       s.accounting.methods
         .isInAssetList(s.mln.options.address)
@@ -129,7 +130,7 @@ describe('accounting', () => {
 
     await s.accounting.methods
       .removeFromOwnedAssets(s.mln.options.address)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await expect(
       s.accounting.methods
         .isInAssetList(s.mln.options.address)

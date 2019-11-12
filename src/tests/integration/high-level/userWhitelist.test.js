@@ -18,10 +18,13 @@ describe('Happy Path', () => {
     expect(s.env.track).toBe(Tracks.TESTING);
 
     // Define user accounts
-    s.accounts = await s.env.eth.getAccounts();
     s.user = s.env.wallet.address;
-    s.userAlt = s.accounts[1];
     s.standardGas = 8000000;
+    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
+    s.defaultAmgu = toWei('0.01', 'ether');
+
+    s.accounts = await s.env.eth.getAccounts();
+    s.userAlt = s.accounts[1];
 
     // Setup necessary contracts
     s.routes = await setupInvestedTestFund(s.env);
@@ -43,7 +46,7 @@ describe('Happy Path', () => {
         functionSig,
         userWhitelist.toString()
       )
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
 
     // Define shared contracts
     s.weth = getTokenBySymbol(s.env, 'WETH');
@@ -61,7 +64,6 @@ describe('Happy Path', () => {
     // Define shared params
     s.investmentAmount = toWei('1', 'ether');
     s.requestedShares = toWei('1', 'ether');
-    s.amguAmount = toWei('1', 'ether');
     s.investmentAsset = s.weth.address;
     s.participationAddress = s.routes.participationAddress.toString();
   });
@@ -69,11 +71,11 @@ describe('Happy Path', () => {
   test('Request investment fails if user is not whitelisted', async () => {
     await s.wethInterface.methods
       .transfer(s.userAlt, s.investmentAmount)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
 
     await s.wethInterface.methods
       .approve(s.participationAddress, s.investmentAmount)
-      .send({ from: s.userAlt, gas: s.standardGas });
+      .send({ ...s.defaultTxOpts, from: s.userAlt });
 
     await expect(
       s.participation.methods
@@ -82,14 +84,14 @@ describe('Happy Path', () => {
           s.investmentAmount,
           s.investmentAsset
          )
-        .send({ from: s.userAlt, value: s.amguAmount, gas: s.standardGas })
+        .send({ ...s.defaultTxOpts, from: s.userAlt, value: s.defaultAmgu })
     ).rejects.toThrow();
   });
 
   test('Request investment passes if user is whitelisted', async () => {
     await s.wethInterface.methods
       .approve(s.participationAddress, s.investmentAmount)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
 
     await expect(
       s.participation.methods
@@ -98,7 +100,7 @@ describe('Happy Path', () => {
           s.investmentAmount,
           s.investmentAsset
         )
-        .send({ from: s.user, value: s.amguAmount, gas: s.standardGas })
+        .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
     ).resolves.not.toThrow();
   });
 });

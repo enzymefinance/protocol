@@ -18,6 +18,7 @@ describe('feeManager', () => {
     // Define user accounts
     s.user = s.env.wallet.address;
     s.standardGas = 8000000;
+    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
 
     // Setup necessary contracts
     s.feeA = getContract(
@@ -53,7 +54,7 @@ describe('feeManager', () => {
 
     await s.registry.methods // just to pass pay amgu
       .setIsFund(s.feeManager.options.address)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
   });
 
   it('Fee Manager is properly initialized', async () => {
@@ -72,10 +73,10 @@ describe('feeManager', () => {
     const feeAmount = new BN(toWei('1', 'ether'));
     await s.feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await s.feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await expect(
       s.feeManager.methods.totalFeeAmount().call(),
     ).resolves.toEqual(feeAmount.mul(new BN(2)).toString());
@@ -89,13 +90,13 @@ describe('feeManager', () => {
 
     await s.feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await s.feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await s.feeManager.methods
       .rewardAllFees() // can only call becasue of loose mockhub permissions
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     const postManagerShares = new BN(
       await s.shares.methods.balanceOf(s.user).call(),
     );

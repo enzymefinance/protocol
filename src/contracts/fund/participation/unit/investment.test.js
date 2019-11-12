@@ -18,6 +18,8 @@ describe('investment', () => {
     // Define user accounts
     s.user = s.env.wallet.address;
     s.standardGas = 8000000;
+    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
+    s.defaultAmgu = toWei('0.01', 'ether');
 
     // Setup necessary contracts
     s = {
@@ -33,57 +35,43 @@ describe('investment', () => {
         [s.weth.options.address, s.mln.options.address],
         [price, price],
       )
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
 
     await s.registry.methods
       .setIsFund(s.participation.options.address)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
   });
 
   it('Invest fails in shut down fund', async () => {
     const errorMessage = 'Hub is shut down';
     const amount = toWei('1', 'ether');
-    await s.hub.methods.setShutDownState(true).send({ from: s.user });
+    await s.hub.methods.setShutDownState(true).send(s.defaultTxOpts);
 
     await expect(
       s.participation.methods
         .requestInvestment(amount, amount, s.weth.options.address)
-        .send({ from: s.user, gas: s.standardGas }),
+        .send(s.defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await s.hub.methods
-      .setShutDownState(false)
-      .send({ from: s.user });
+    await s.hub.methods.setShutDownState(false).send(s.defaultTxOpts);
     await s.weth.methods
       .approve(s.participation.options.address, amount)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
     await s.participation.methods
       .requestInvestment(amount, amount, s.weth.options.address)
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
 
-    await s.hub.methods.setShutDownState(true).send({ from: s.user });
+    await s.hub.methods.setShutDownState(true).send(s.defaultTxOpts);
 
     await expect(
-      s.participation.methods
-        .executeRequestFor(s.user)
-        .send({ from: s.user, gas: s.standardGas }),
+      s.participation.methods.executeRequestFor(s.user).send(s.defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await s.hub.methods
-      .setShutDownState(false)
-      .send({ from: s.user });
+    await s.hub.methods.setShutDownState(false).send(s.defaultTxOpts);
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
   });
 
   it('Request must exist to execute', async () => {
@@ -94,51 +82,37 @@ describe('investment', () => {
 
     expect(requestExists).toBe(false);
     await expect(
-      s.participation.methods
-        .executeRequestFor(s.user)
-        .send({ from: s.user, gas: s.standardGas }),
+      s.participation.methods.executeRequestFor(s.user).send(s.defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
     await s.participation.methods
       .requestInvestment(0, 0, s.weth.options.address)
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
 
     await expect(
-      s.participation.methods
-        .executeRequestFor(s.user)
-        .send({ from: s.user, gas: s.standardGas }),
+      s.participation.methods.executeRequestFor(s.user).send(s.defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
   });
 
   it('Need fresh price to execute request', async () => {
     const errorMessage = 'Price not valid';
     const amount = toWei('1', 'ether');
+
     await s.priceSource.methods
       .setNeverValid(true)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
+
     await s.weth.methods
       .approve(s.participation.options.address, amount)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
     await s.participation.methods
       .requestInvestment(amount, amount, s.weth.options.address)
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
     const requestExists = await s.participation.methods
       .hasRequest(s.user)
       .call();
@@ -147,20 +121,16 @@ describe('investment', () => {
     await expect(
       s.participation.methods
         .executeRequestFor(s.user)
-        .send({ from: s.user, gas: s.standardGas }),
+        .send(s.defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
     await s.priceSource.methods
       .setNeverValid(false)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
   });
 
   it('Asset must be permitted', async () => {
@@ -176,11 +146,7 @@ describe('investment', () => {
     await expect(
       s.participation.methods
         .requestInvestment(amount, amount, asset)
-        .send({
-          from: s.user,
-          gas: s.standardGas,
-          value: toWei('0.01', 'ether')
-        }),
+        .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
     ).rejects.toThrow(errorMessage);
   });
 
@@ -192,36 +158,24 @@ describe('investment', () => {
         [s.weth.options.address, s.mln.options.address],
         [price, price],
       )
-      .send({ from: s.user, gas: s.standardGas });
+      .send(s.defaultTxOpts);
     await s.weth.methods
       .approve(s.participation.options.address, '1000')
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
     await s.participation.methods
       .requestInvestment('1000', '1', s.weth.options.address)
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
 
     await expect(
       s.participation.methods
         .executeRequestFor(s.user)
-        .send({
-          from: s.user,
-          gas: s.standardGas,
-          value: toWei('0.01', 'ether')
-        }),
+        .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
     ).rejects.toThrow(errorMessage);
 
     await increaseTime(s.env, weekInSeconds);
     await s.participation.methods
       .cancelRequest()
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
   });
 
   it('Basic investment works', async () => {
@@ -232,25 +186,17 @@ describe('investment', () => {
       .call();
     await s.weth.methods
       .approve(s.participation.options.address, investAmount)
-      .send({ from: s.user });
+      .send(s.defaultTxOpts);
     await s.participation.methods
       .requestInvestment(
         sharesAmount,
         investAmount,
         s.weth.options.address,
       )
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
     await s.participation.methods
       .executeRequestFor(s.user)
-      .send({
-        from: s.user,
-        gas: s.standardGas,
-        value: toWei('0.01', 'ether')
-      });
+      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
     const postVaultWeth = await s.weth.methods
       .balanceOf(s.vault.options.address)
       .call();
