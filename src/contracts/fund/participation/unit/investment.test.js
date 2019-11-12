@@ -9,201 +9,203 @@ import { randomAddress } from '~/utils/helpers/randomAddress';
 const weekInSeconds = 60 * 60 * 24 * 7;
 
 describe('investment', () => {
-  let s = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
+  let defaultAmgu;
 
   beforeAll(async () => {
-    // Setup environment
-    s.env = await initTestEnvironment();
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    // Define user accounts
-    s.user = s.env.wallet.address;
-    s.standardGas = 8000000;
-    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
-    s.defaultAmgu = toWei('0.01', 'ether');
+    mockSystem = await deployMockSystem(
+      environment,
+      { accountingContract: Contracts.Accounting }
+    );
 
-    // Setup necessary contracts
-    s = {
-      ...s,
-      ...(await deployMockSystem(s.env, {
-        accountingContract: Contracts.Accounting,
-      })),
-    };
+    defaultAmgu = toWei('0.01', 'ether');
 
     const price = toWei('1', 'ether');
-    await s.priceSource.methods
+    await mockSystem.priceSource.methods
       .update(
-        [s.weth.options.address, s.mln.options.address],
+        [mockSystem.weth.options.address, mockSystem.mln.options.address],
         [price, price],
       )
-      .send(s.defaultTxOpts);
+      .send(defaultTxOpts);
 
-    await s.registry.methods
-      .setIsFund(s.participation.options.address)
-      .send(s.defaultTxOpts);
+    await mockSystem.registry.methods
+      .setIsFund(mockSystem.participation.options.address)
+      .send(defaultTxOpts);
   });
 
   it('Invest fails in shut down fund', async () => {
     const errorMessage = 'Hub is shut down';
     const amount = toWei('1', 'ether');
-    await s.hub.methods.setShutDownState(true).send(s.defaultTxOpts);
+    await mockSystem.hub.methods.setShutDownState(true).send(defaultTxOpts);
 
     await expect(
-      s.participation.methods
-        .requestInvestment(amount, amount, s.weth.options.address)
-        .send(s.defaultTxOpts)
+      mockSystem.participation.methods
+        .requestInvestment(amount, amount, mockSystem.weth.options.address)
+        .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await s.hub.methods.setShutDownState(false).send(s.defaultTxOpts);
-    await s.weth.methods
-      .approve(s.participation.options.address, amount)
-      .send(s.defaultTxOpts);
-    await s.participation.methods
-      .requestInvestment(amount, amount, s.weth.options.address)
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
+    await mockSystem.hub.methods.setShutDownState(false).send(defaultTxOpts);
+    await mockSystem.weth.methods
+      .approve(mockSystem.participation.options.address, amount)
+      .send(defaultTxOpts);
+    await mockSystem.participation.methods
+      .requestInvestment(amount, amount, mockSystem.weth.options.address)
+      .send({ ...defaultTxOpts, value: defaultAmgu });
 
-    await s.hub.methods.setShutDownState(true).send(s.defaultTxOpts);
+    await mockSystem.hub.methods.setShutDownState(true).send(defaultTxOpts);
 
     await expect(
-      s.participation.methods.executeRequestFor(s.user).send(s.defaultTxOpts)
+      mockSystem.participation.methods
+        .executeRequestFor(user)
+        .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await s.hub.methods.setShutDownState(false).send(s.defaultTxOpts);
-    await increaseTime(s.env, weekInSeconds);
-    await s.participation.methods
+    await mockSystem.hub.methods.setShutDownState(false).send(defaultTxOpts);
+    await increaseTime(environment, weekInSeconds);
+    await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
+      .send({ ...defaultTxOpts, value: defaultAmgu });
   });
 
   it('Request must exist to execute', async () => {
     const errorMessage = 'No valid request for this address';
-    const requestExists = await s.participation.methods
-      .hasRequest(s.user)
+    const requestExists = await mockSystem.participation.methods
+      .hasRequest(user)
       .call();
 
     expect(requestExists).toBe(false);
     await expect(
-      s.participation.methods.executeRequestFor(s.user).send(s.defaultTxOpts)
+      mockSystem.participation.methods
+        .executeRequestFor(user)
+        .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await s.participation.methods
-      .requestInvestment(0, 0, s.weth.options.address)
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
+    await mockSystem.participation.methods
+      .requestInvestment(0, 0, mockSystem.weth.options.address)
+      .send({ ...defaultTxOpts, value: defaultAmgu });
 
     await expect(
-      s.participation.methods.executeRequestFor(s.user).send(s.defaultTxOpts)
+      mockSystem.participation.methods
+        .executeRequestFor(user)
+        .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await increaseTime(s.env, weekInSeconds);
-    await s.participation.methods
+    await increaseTime(environment, weekInSeconds);
+    await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
+      .send({ ...defaultTxOpts, value: defaultAmgu });
   });
 
   it('Need fresh price to execute request', async () => {
     const errorMessage = 'Price not valid';
     const amount = toWei('1', 'ether');
 
-    await s.priceSource.methods
+    await mockSystem.priceSource.methods
       .setNeverValid(true)
-      .send(s.defaultTxOpts);
+      .send(defaultTxOpts);
 
-    await s.weth.methods
-      .approve(s.participation.options.address, amount)
-      .send(s.defaultTxOpts);
-    await s.participation.methods
-      .requestInvestment(amount, amount, s.weth.options.address)
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
-    const requestExists = await s.participation.methods
-      .hasRequest(s.user)
+    await mockSystem.weth.methods
+      .approve(mockSystem.participation.options.address, amount)
+      .send(defaultTxOpts);
+    await mockSystem.participation.methods
+      .requestInvestment(amount, amount, mockSystem.weth.options.address)
+      .send({ ...defaultTxOpts, value: defaultAmgu });
+    const requestExists = await mockSystem.participation.methods
+      .hasRequest(user)
       .call();
 
     expect(requestExists).toBe(true);
     await expect(
-      s.participation.methods
-        .executeRequestFor(s.user)
-        .send(s.defaultTxOpts)
+      mockSystem.participation.methods
+        .executeRequestFor(user)
+        .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await s.priceSource.methods
+    await mockSystem.priceSource.methods
       .setNeverValid(false)
-      .send(s.defaultTxOpts);
-    await increaseTime(s.env, weekInSeconds);
-    await s.participation.methods
+      .send(defaultTxOpts);
+    await increaseTime(environment, weekInSeconds);
+    await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
+      .send({ ...defaultTxOpts, value: defaultAmgu })
   });
 
   it('Asset must be permitted', async () => {
     const errorMessage = 'Investment not allowed in this asset';
     const asset = `${randomAddress()}`;
     const amount = '100';
-    const allowed = await s.participation.methods
+    const allowed = await mockSystem.participation.methods
       .investAllowed(asset)
       .call();
 
     expect(allowed).toBe(false);
 
     await expect(
-      s.participation.methods
+      mockSystem.participation.methods
         .requestInvestment(amount, amount, asset)
-        .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
+        .send({ ...defaultTxOpts, value: defaultAmgu })
     ).rejects.toThrow(errorMessage);
   });
 
   it('Invested amount must be above price minimum', async () => {
     const errorMessage = 'Invested amount too low';
     const price = toWei('1', 'ether');
-    await s.priceSource.methods
+    await mockSystem.priceSource.methods
       .update(
-        [s.weth.options.address, s.mln.options.address],
+        [mockSystem.weth.options.address, mockSystem.mln.options.address],
         [price, price],
       )
-      .send(s.defaultTxOpts);
-    await s.weth.methods
-      .approve(s.participation.options.address, '1000')
-      .send(s.defaultTxOpts);
-    await s.participation.methods
-      .requestInvestment('1000', '1', s.weth.options.address)
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
+      .send(defaultTxOpts);
+    await mockSystem.weth.methods
+      .approve(mockSystem.participation.options.address, '1000')
+      .send(defaultTxOpts);
+    await mockSystem.participation.methods
+      .requestInvestment('1000', '1', mockSystem.weth.options.address)
+      .send({ ...defaultTxOpts, value: defaultAmgu });
 
     await expect(
-      s.participation.methods
-        .executeRequestFor(s.user)
-        .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
+      mockSystem.participation.methods
+        .executeRequestFor(user)
+        .send({ ...defaultTxOpts, value: defaultAmgu })
     ).rejects.toThrow(errorMessage);
 
-    await increaseTime(s.env, weekInSeconds);
-    await s.participation.methods
+    await increaseTime(environment, weekInSeconds);
+    await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
+      .send({ ...defaultTxOpts, value: defaultAmgu });
   });
 
   it('Basic investment works', async () => {
     const investAmount = '1000';
     const sharesAmount = '1000';
-    const preVaultWeth = await s.weth.methods
-      .balanceOf(s.vault.options.address)
+    const preVaultWeth = await mockSystem.weth.methods
+      .balanceOf(mockSystem.vault.options.address)
       .call();
-    await s.weth.methods
-      .approve(s.participation.options.address, investAmount)
-      .send(s.defaultTxOpts);
-    await s.participation.methods
+    await mockSystem.weth.methods
+      .approve(mockSystem.participation.options.address, investAmount)
+      .send(defaultTxOpts);
+    await mockSystem.participation.methods
       .requestInvestment(
         sharesAmount,
         investAmount,
-        s.weth.options.address,
+        mockSystem.weth.options.address,
       )
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
-    await s.participation.methods
-      .executeRequestFor(s.user)
-      .send({ ...s.defaultTxOpts, value: s.defaultAmgu });
-    const postVaultWeth = await s.weth.methods
-      .balanceOf(s.vault.options.address)
+      .send({ ...defaultTxOpts, value: defaultAmgu });
+    await mockSystem.participation.methods
+      .executeRequestFor(user)
+      .send({ ...defaultTxOpts, value: defaultAmgu });
+    const postVaultWeth = await mockSystem.weth.methods
+      .balanceOf(mockSystem.vault.options.address)
       .call();
-    const postShares = await s.shares.methods
-      .balanceOf(s.user)
+    const postShares = await mockSystem.shares.methods
+      .balanceOf(user)
       .call();
-    const postSupply = await s.shares.methods.totalSupply().call();
+    const postSupply = await mockSystem.shares.methods.totalSupply().call();
 
     expect(postShares).toEqual(sharesAmount);
     expect(postSupply).toEqual(sharesAmount);

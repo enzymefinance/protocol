@@ -11,34 +11,57 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 
 describe('Happy Path', () => {
-  let s = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
+  let userAlt;
+  let defaultAmgu;
+  let routes;
+  let weth;
+  let wethInterface, participation;
+  let investmentAmount, investmentAsset, participationAddress, requestedShares;
 
   beforeAll(async () => {
-    s.env = await deployAndInitTestEnv();
-    expect(s.env.track).toBe(Tracks.TESTING);
+    environment = await deployAndInitTestEnv();
+    expect(environment.track).toBe(Tracks.TESTING);
 
-    // Define user accounts
-    s.user = s.env.wallet.address;
-    s.standardGas = 8000000;
-    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
-    s.defaultAmgu = toWei('0.01', 'ether');
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    s.accounts = await s.env.eth.getAccounts();
-    s.userAlt = s.accounts[1];
+    const accounts = await environment.eth.getAccounts();
+    userAlt = accounts[1];
+    defaultAmgu = toWei('0.01', 'ether');
 
-    // Setup necessary contracts
-    s.routes = await setupInvestedTestFund(s.env);
+    routes = await setupInvestedTestFund(environment);
+
+    weth = getTokenBySymbol(environment, 'WETH');
+
+    wethInterface = getContract(
+      environment,
+      Contracts.Weth,
+      weth.address,
+    );
+    participation = getContract(
+      environment,
+      Contracts.Participation,
+      routes.participationAddress.toString(),
+    );
+
+    investmentAmount = toWei('1', 'ether');
+    requestedShares = toWei('1', 'ether');
+    investmentAsset = weth.address;
+    participationAddress = routes.participationAddress.toString();
+
     const policyManager = getContract(
-      s.env,
+      environment,
       Contracts.PolicyManager,
-      s.routes.policyManagerAddress.toString()
+      routes.policyManagerAddress.toString()
     );
     const userWhitelist = await deployContract(
-      s.env,
+      environment,
       Contracts.UserWhitelist,
-      [[s.user],]
+      [[user]]
     );
-    const functionSig = s.env.eth.abi.encodeFunctionSignature(
+    const functionSig = environment.eth.abi.encodeFunctionSignature(
       FunctionSignatures.requestInvestment
     );
     await policyManager.methods
@@ -46,61 +69,42 @@ describe('Happy Path', () => {
         functionSig,
         userWhitelist.toString()
       )
-      .send(s.defaultTxOpts);
-
-    // Define shared contracts
-    s.weth = getTokenBySymbol(s.env, 'WETH');
-    s.wethInterface = getContract(
-      s.env,
-      Contracts.Weth,
-      s.weth.address,
-    );
-    s.participation = getContract(
-      s.env,
-      Contracts.Participation,
-      s.routes.participationAddress.toString(),
-    );
-
-    // Define shared params
-    s.investmentAmount = toWei('1', 'ether');
-    s.requestedShares = toWei('1', 'ether');
-    s.investmentAsset = s.weth.address;
-    s.participationAddress = s.routes.participationAddress.toString();
+      .send(defaultTxOpts);
   });
 
   test('Request investment fails if user is not whitelisted', async () => {
-    await s.wethInterface.methods
-      .transfer(s.userAlt, s.investmentAmount)
-      .send(s.defaultTxOpts);
+    await wethInterface.methods
+      .transfer(userAlt, investmentAmount)
+      .send(defaultTxOpts);
 
-    await s.wethInterface.methods
-      .approve(s.participationAddress, s.investmentAmount)
-      .send({ ...s.defaultTxOpts, from: s.userAlt });
+    await wethInterface.methods
+      .approve(participationAddress, investmentAmount)
+      .send({ ...defaultTxOpts, from: userAlt });
 
     await expect(
-      s.participation.methods
+      participation.methods
         .requestInvestment(
-          s.requestedShares,
-          s.investmentAmount,
-          s.investmentAsset
+          requestedShares,
+          investmentAmount,
+          investmentAsset
          )
-        .send({ ...s.defaultTxOpts, from: s.userAlt, value: s.defaultAmgu })
+        .send({ ...defaultTxOpts, from: userAlt, value: defaultAmgu })
     ).rejects.toThrow();
   });
 
   test('Request investment passes if user is whitelisted', async () => {
-    await s.wethInterface.methods
-      .approve(s.participationAddress, s.investmentAmount)
-      .send(s.defaultTxOpts);
+    await wethInterface.methods
+      .approve(participationAddress, investmentAmount)
+      .send(defaultTxOpts);
 
     await expect(
-      s.participation.methods
+      participation.methods
         .requestInvestment(
-          s.requestedShares,
-          s.investmentAmount,
-          s.investmentAsset
+          requestedShares,
+          investmentAmount,
+          investmentAsset
         )
-        .send({ ...s.defaultTxOpts, value: s.defaultAmgu })
+        .send({ ...defaultTxOpts, value: defaultAmgu })
     ).resolves.not.toThrow();
   });
 });

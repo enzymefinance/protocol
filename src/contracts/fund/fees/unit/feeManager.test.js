@@ -7,100 +7,94 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 
 describe('feeManager', () => {
-  let s = {};
-
-  const mockFeeRate = 5000;
-  const mockFeePeriod = 1000;
+  let environment, user, defaultTxOpts;
+  let mockSystem;
+  let feeA, feeB, feeArray;
 
   beforeAll(async () => {
-    s.env = await initTestEnvironment();
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    // Define user accounts
-    s.user = s.env.wallet.address;
-    s.standardGas = 8000000;
-    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
-
-    // Setup necessary contracts
-    s.feeA = getContract(
-      s.env,
+    feeA = getContract(
+      environment,
       Contracts.MockFee,
-      await deployContract(s.env, Contracts.MockFee, ['0']),
+      await deployContract(environment, Contracts.MockFee, ['0']),
     );
-    s.feeB = getContract(
-      s.env,
+    feeB = getContract(
+      environment,
       Contracts.MockFee,
-      await deployContract(s.env, Contracts.MockFee, ['1']),
+      await deployContract(environment, Contracts.MockFee, ['1']),
     );
-    s.feeArray = [
+    const mockFeeRate = 5000;
+    const mockFeePeriod = 1000;
+    feeArray = [
       {
-        feeAddress: s.feeA.options.address,
+        feeAddress: feeA.options.address,
         feePeriod: mockFeePeriod,
         feeRate: mockFeeRate,
       },
       {
-        feeAddress: s.feeB.options.address,
+        feeAddress: feeB.options.address,
         feePeriod: mockFeePeriod,
         feeRate: mockFeeRate,
       },
     ];
 
-    s = {
-      ...s,
-      ...(await deployMockSystem(s.env, {
-        feeManagerContract: Contracts.FeeManager,
-        fees: s.feeArray,
-      }))
-    };
+    mockSystem = await deployMockSystem(environment, {
+      feeManagerContract: Contracts.FeeManager,
+      fees: feeArray,
+    });
 
-    await s.registry.methods // just to pass pay amgu
-      .setIsFund(s.feeManager.options.address)
-      .send(s.defaultTxOpts);
+    await mockSystem.registry.methods // just to pass pay amgu
+      .setIsFund(mockSystem.feeManager.options.address)
+      .send(defaultTxOpts);
   });
 
   it('Fee Manager is properly initialized', async () => {
-    for (const fee of s.feeArray) {
+    for (const fee of feeArray) {
       await expect(
-        s.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
+        mockSystem.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
       ).toBeTruthy();
     }
-    for (const i in s.feeArray.length) {
-      const feeAddress = await s.feeManager.methods.fees(i).call();
-      expect(feeAddress).toBe(s.feeArray[i].feeAddress);
+    for (const i in feeArray.length) {
+      const feeAddress = await mockSystem.feeManager.methods.fees(i).call();
+      expect(feeAddress).toBe(feeArray[i].feeAddress);
     }
   });
 
   it('Total fee amount aggregates individual accumulated fee', async () => {
     const feeAmount = new BN(toWei('1', 'ether'));
-    await s.feeA.methods
+    await feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send(s.defaultTxOpts);
-    await s.feeB.methods
+      .send(defaultTxOpts);
+    await feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send(s.defaultTxOpts);
+      .send(defaultTxOpts);
     await expect(
-      s.feeManager.methods.totalFeeAmount().call(),
+      mockSystem.feeManager.methods.totalFeeAmount().call(),
     ).resolves.toEqual(feeAmount.mul(new BN(2)).toString());
   });
 
   it('Reward all fee allocates shares to the manager', async () => {
     const preManagerShares = new BN(
-      await s.shares.methods.balanceOf(s.user).call(),
+      await mockSystem.shares.methods.balanceOf(user).call(),
     );
     const feeAmount = new BN(toWei('1', 'ether'));
 
-    await s.feeA.methods
+    await feeA.methods
       .setFeeAmount(`${feeAmount}`)
-      .send(s.defaultTxOpts);
-    await s.feeB.methods
+      .send(defaultTxOpts);
+    await feeB.methods
       .setFeeAmount(`${feeAmount}`)
-      .send(s.defaultTxOpts);
-    await s.feeManager.methods
+      .send(defaultTxOpts);
+    await mockSystem.feeManager.methods
       .rewardAllFees() // can only call becasue of loose mockhub permissions
-      .send(s.defaultTxOpts);
+      .send(defaultTxOpts);
     const postManagerShares = new BN(
-      await s.shares.methods.balanceOf(s.user).call(),
+      await mockSystem.shares.methods.balanceOf(user).call(),
     );
-    const postAccumulatedFee = await s.feeManager.methods
+    const postAccumulatedFee = await mockSystem.feeManager.methods
       .totalFeeAmount()
       .call();
 

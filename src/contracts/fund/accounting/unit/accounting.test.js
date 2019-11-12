@@ -5,59 +5,58 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 
 describe('accounting', () => {
-  let s = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
+  let shares;
+  let mockDefaultAssets, mockNativeAsset, mockQuoteAsset;
+  let exaUnit;
 
   beforeAll(async () => {
-    s.env = await initTestEnvironment();
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    // Define user accounts
-    s.user = s.env.wallet.address;
-    s.standardGas = 8000000;
-    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
+    mockSystem = await deployMockSystem(
+      environment,
+      { accountingContract: Contracts.Accounting }
+    );
 
-    // Setup necessary contracts
-    s = {
-      ...s,
-      ...(await deployMockSystem(s.env, {
-        accountingContract: Contracts.Accounting,
-      })),
-    };
-
-    // Define shared variables
-    s.mockDefaultAssets = [
-      s.weth.options.address,
-      s.mln.options.address,
+    mockDefaultAssets = [
+      mockSystem.weth.options.address,
+      mockSystem.mln.options.address,
     ];
-    s.mockQuoteAsset = s.weth.options.address;
-    s.mockNativeAsset = s.weth.options.address;
-    s.exaUnit = toWei('1', 'ether');
+    mockQuoteAsset = mockSystem.weth.options.address;
+    mockNativeAsset = mockSystem.weth.options.address;
+    exaUnit = toWei('1', 'ether');
   });
 
   it('Accounting is properly initialized', async () => {
-    for (const i in s.mockDefaultAssets) {
-      const defaultAsset = await s.accounting.methods
+    for (const i in mockDefaultAssets) {
+      const defaultAsset = await mockSystem.accounting.methods
         .ownedAssets(i)
         .call();
-      expect(defaultAsset).toBe(s.mockDefaultAssets[i]);
+      expect(defaultAsset).toBe(mockDefaultAssets[i]);
       await expect(
-        s.accounting.methods
-          .isInAssetList(s.mockDefaultAssets[i])
+        mockSystem.accounting.methods
+          .isInAssetList(mockDefaultAssets[i])
           .call(),
       ).resolves.toBe(true);
     }
 
     await expect(
-      s.accounting.methods.DENOMINATION_ASSET().call(),
-    ).resolves.toBe(s.mockQuoteAsset);
-    await expect(s.accounting.methods.NATIVE_ASSET().call()).resolves.toBe(
-      s.mockNativeAsset,
-    );
+      mockSystem.accounting.methods.DENOMINATION_ASSET().call()
+    ).resolves.toBe(mockQuoteAsset);
     await expect(
-      s.accounting.methods.calcSharePrice().call(),
-    ).resolves.toBe(`${s.exaUnit}`);
-    await expect(s.accounting.methods.calcGav().call()).resolves.toBe('0');
+      mockSystem.accounting.methods.NATIVE_ASSET().call()
+    ).resolves.toBe(mockNativeAsset);
+    await expect(
+      mockSystem.accounting.methods.calcSharePrice().call()
+    ).resolves.toBe(`${exaUnit}`);
+    await expect(
+      mockSystem.accounting.methods.calcGav().call()
+    ).resolves.toBe('0');
 
-    const initialCalculations = await s.accounting.methods
+    const initialCalculations = await mockSystem.accounting.methods
       .performCalculations()
       .call();
 
@@ -65,25 +64,27 @@ describe('accounting', () => {
     expect(initialCalculations.feesInDenominationAsset).toBe('0');
     expect(initialCalculations.feesInShares).toBe('0');
     expect(initialCalculations.nav).toBe('0');
-    expect(initialCalculations.sharePrice).toBe(`${s.exaUnit}`);
+    expect(initialCalculations.sharePrice).toBe(`${exaUnit}`);
   });
 
   it('updateOwnedAssets removes zero balance assets', async () => {
-    const fundHoldings = await s.accounting.methods.getFundHoldings().call();
+    const fundHoldings = await mockSystem.accounting.methods
+      .getFundHoldings()
+      .call();
 
     expect(fundHoldings[0]).toEqual(
-      new Array(s.mockDefaultAssets.length).fill('0')
+      new Array(mockDefaultAssets.length).fill('0')
     );
 
-    await s.accounting.methods
+    await mockSystem.accounting.methods
       .updateOwnedAssets()
-      .send(s.defaultTxOpts);
+      .send(defaultTxOpts);
 
-    for (const i in s.mockDefaultAssets) {
-      if (s.mockDefaultAssets[i] === s.mockQuoteAsset) continue;
+    for (const i in mockDefaultAssets) {
+      if (mockDefaultAssets[i] === mockQuoteAsset) continue;
       await expect(
-        s.accounting.methods
-          .isInAssetList(s.mockDefaultAssets[i])
+        mockSystem.accounting.methods
+          .isInAssetList(mockDefaultAssets[i])
           .call(),
       ).resolves.toBe(false);
     }
@@ -91,16 +92,18 @@ describe('accounting', () => {
 
   it('Balance in vault reflects in accounting', async () => {
     const tokenQuantity = toWei('1', 'ether');
-    await s.weth.methods
-      .transfer(s.vault.options.address, tokenQuantity)
-      .send(s.defaultTxOpts);
-    const fundHoldings = await s.accounting.methods.getFundHoldings().call();
+    await mockSystem.weth.methods
+      .transfer(mockSystem.vault.options.address, tokenQuantity)
+      .send(defaultTxOpts);
+    const fundHoldings = await mockSystem.accounting.methods
+      .getFundHoldings()
+      .call();
     expect(fundHoldings[0][0]).toEqual(tokenQuantity);
 
-    await s.priceSource.methods
-      .update([s.weth.options.address], [`${s.exaUnit}`])
-      .send(s.defaultTxOpts);
-    const initialCalculations = await s.accounting.methods
+    await mockSystem.priceSource.methods
+      .update([mockSystem.weth.options.address], [`${exaUnit}`])
+      .send(defaultTxOpts);
+    const initialCalculations = await mockSystem.accounting.methods
       .performCalculations()
       .call();
 
@@ -109,31 +112,31 @@ describe('accounting', () => {
     expect(initialCalculations.feesInShares).toBe('0');
     expect(initialCalculations.nav).toBe(tokenQuantity);
     // Since there is no investment yet
-    expect(initialCalculations.sharePrice).toBe(`${s.exaUnit}`);
+    expect(initialCalculations.sharePrice).toBe(`${exaUnit}`);
   });
 
   // Deployer is an authorized module because it has been directly deployed
   it('Add and remove assets by an authorized module', async () => {
     await expect(
-      s.accounting.methods
-        .isInAssetList(s.mln.options.address)
+      mockSystem.accounting.methods
+        .isInAssetList(mockSystem.mln.options.address)
         .call(),
     ).resolves.toBe(false);
-    await s.accounting.methods
-      .addAssetToOwnedAssets(s.mln.options.address)
-      .send(s.defaultTxOpts);
+    await mockSystem.accounting.methods
+      .addAssetToOwnedAssets(mockSystem.mln.options.address)
+      .send(defaultTxOpts);
     await expect(
-      s.accounting.methods
-        .isInAssetList(s.mln.options.address)
+      mockSystem.accounting.methods
+        .isInAssetList(mockSystem.mln.options.address)
         .call(),
     ).resolves.toBe(true);
 
-    await s.accounting.methods
-      .removeFromOwnedAssets(s.mln.options.address)
-      .send(s.defaultTxOpts);
+    await mockSystem.accounting.methods
+      .removeFromOwnedAssets(mockSystem.mln.options.address)
+      .send(defaultTxOpts);
     await expect(
-      s.accounting.methods
-        .isInAssetList(s.mln.options.address)
+      mockSystem.accounting.methods
+        .isInAssetList(mockSystem.mln.options.address)
         .call(),
     ).resolves.toBe(false);
   });

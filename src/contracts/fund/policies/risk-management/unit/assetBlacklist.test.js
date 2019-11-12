@@ -8,27 +8,22 @@ import { randomAddress } from '~/utils/helpers/randomAddress';
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 
 describe('assetBlacklist', () => {
-  let s = {};
+  let environment, user, defaultTxOpts;
+  let mockSystem;
+  let assetArray;
 
   beforeAll(async () => {
-    // Setup environment
-    s.env = await initTestEnvironment();
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    // Define user accounts
-    s.user = s.env.wallet.address;
-    s.standardGas = 8000000;
-    s.defaultTxOpts = { from: s.user, gas: s.standardGas };
-
-    // Setup contracts
-    s = {
-      ...s,
-      ...(await deployMockSystem(s.env, {
-      policyManagerContract: Contracts.PolicyManager,
-      }))
-    };
+    mockSystem = await deployMockSystem(
+      environment,
+      { policyManagerContract: Contracts.PolicyManager }
+    );
 
     // Define shared vars
-    s.assetArray = [
+    assetArray = [
       `${randomAddress()}`,
       `${randomAddress()}`,
       `${randomAddress()}`,
@@ -39,38 +34,38 @@ describe('assetBlacklist', () => {
 
   it('Create blacklist', async () => {
     const blacklist = await deploy(
-      s.env,
+      environment,
       Contracts.AssetBlacklist,
-      [s.assetArray]
+      [assetArray]
     );
 
     expect(
       await blacklist.methods.getMembers().call()
-    ).toEqual(s.assetArray);
+    ).toEqual(assetArray);
   });
 
   it('Add asset to blacklist', async () => {
     const blacklist = await deploy(
-      s.env,
+      environment,
       Contracts.AssetBlacklist,
-      [s.assetArray]
+      [assetArray]
     );
     const mockAsset = `${randomAddress()}`;
 
     expect(
       await blacklist.methods.getMembers().call()
-    ).toEqual(s.assetArray);
+    ).toEqual(assetArray);
 
     await expect(
-      blacklist.methods.addToBlacklist(s.assetArray[0]).send(s.defaultTxOpts)
+      blacklist.methods.addToBlacklist(assetArray[0]).send(defaultTxOpts)
     ).rejects.toThrow('Asset already in blacklist');
 
     expect(
       await blacklist.methods.getMembers().call()
-    ).toEqual(s.assetArray);
+    ).toEqual(assetArray);
 
     await expect(
-      blacklist.methods.addToBlacklist(mockAsset).send(s.defaultTxOpts)
+      blacklist.methods.addToBlacklist(mockAsset).send(defaultTxOpts)
     ).resolves.not.toThrow();
 
     expect(await blacklist.methods.isMember(mockAsset).call()).toBe(true);
@@ -78,15 +73,15 @@ describe('assetBlacklist', () => {
 
   it('Policy manager with blacklist', async () => {
     const blacklist = await deploy(
-      s.env,
+      environment,
       Contracts.AssetBlacklist,
-      [s.assetArray]
+      [assetArray]
     );
     const mockAsset = `${randomAddress()}`;
 
-    await s.policyManager.methods
+    await mockSystem.policyManager.methods
       .register(makeOrderSignatureBytes, blacklist.options.address)
-      .send(s.defaultTxOpts);
+      .send(defaultTxOpts);
 
     const validateArgs = [
       makeOrderSignatureBytes,
@@ -95,15 +90,15 @@ describe('assetBlacklist', () => {
       '0x0',
     ];
     await expect(
-      s.policyManager.methods.preValidate(...validateArgs).call()
+      mockSystem.policyManager.methods.preValidate(...validateArgs).call()
     ).resolves.not.toThrow();
 
-    await blacklist.methods.addToBlacklist(mockAsset).send(s.defaultTxOpts);
+    await blacklist.methods.addToBlacklist(mockAsset).send(defaultTxOpts);
 
     expect(await blacklist.methods.isMember(mockAsset).call()).toBe(true);
 
     await expect(
-      s.policyManager.methods.preValidate(...validateArgs).call(),
+      mockSystem.policyManager.methods.preValidate(...validateArgs).call(),
     ).rejects.toThrow('Rule evaluated to false');
   });
 });
