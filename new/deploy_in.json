@@ -1,0 +1,124 @@
+{
+  "PriceSource": "",
+  "EthfinexAdapter": "",
+  "KyberAdapter": "",
+  "MatchingMarketAdapter": "",
+  "MatchingMarketAccessor": "",
+  "ZeroExV2Adapter": "",
+  "EngineAdapter": "",
+  "PriceTolerance": "",
+  "UserWhitelist": "",
+  "ManagementFee": "",
+  "PerformanceFee": "",
+  "AccountingFactory": "",
+  "FeeManagerFactory": "",
+  "ParticipationFactory": "",
+  "PolicyManagerFactory": "",
+  "SharesFactory": "",
+  "TradingFactory": "",
+  "VaultFactory": "",
+  "Engine": "",
+  "Registry": "",
+  "Version": "",
+  "Ranking": "",
+  "conf": {
+    "deployer": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+    "provider": "http://localhost:8545",
+    "track": "KYBER_PRICE",
+    "priceTolerance": 10,
+    "userWhitelist": ["0xbe1ac5962e318d0335b8d8aabff55dc4bad01826"],
+    "registryOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+    "engineDelay": 2592000,
+    "maxSpread": "100000000000000000",
+    "versionOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826"
+  },
+  "exchanges": {
+    "kyber": {
+      "conversionRates": "0x9d0d58cffdd76ba6aa50fec8c9c6a10ca0c55620",
+      "kyberNetwork": "0xc7d354581d59136ebc7d55ff48c8bf9d29dc1d89",
+      "kyberNetworkProxy": "0xd829b3bc77528164d4bec5c51b1f18ce31077646"
+    },
+    "matchingMarket": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
+    "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2",
+    "ethfinex": {
+      "exchange": "0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
+      "wrapperRegistryEFX": "0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9",
+      "wrapperPairs": [],
+      "erc20proxy": ""
+    }
+  },
+  "tokens": {
+    "BAT": {
+      "address": "0xD46B74C3e8993BAbA80AD12b9Ea6E8460C4a9748",
+      "name": "Basic Attention Token",
+      "decimals": 18
+    },
+    "DGX": {
+      "address": "0xE4eD5267Ff49a99f3bE74E919cE25dD4f15b8010",
+      "name": "Digix Gold Token",
+      "decimals": 9
+    },
+    "REP": {
+      "address": "0xF2EEf9B9986bb25b122222890ECc59C873724cD9",
+      "name": "Rep Token",
+      "decimals": 18
+    },
+    "ZRX": {
+      "address": "0xe758B63d1F3d47bF437Bb677C5115ae382e85833",
+      "name": "ZeroX Protocol Token",
+      "decimals": 18
+    },
+    "WETH": {
+      "address": "0x599c414Cc71c62eA1e4560C0E87a00e0C13A857B",
+      "name": "Eth Token",
+      "decimals": 18
+    },
+    "MLN": {
+      "address": "0x3e6868Af3C64963E5c80909394846bCb78C2ec2D",
+      "name": "Melon Token",
+      "decimals": 18
+    },
+    "MKR": {
+      "address": "0x01C1038020898838CF227e0Dd92896E35f1D829c",
+      "name": "MakerDao",
+      "decimals": 18
+    },
+    "DAI": {
+      "address": "0x2C9Def94Ad7BD088d8B96FCb3DbF02c7b58c03f6",
+      "name": "Dai",
+      "decimals": 18
+    },
+    "KNC": {
+      "address": "0xc8BF340E37cF66911F2F685FE4B251Fbb8ecBCc5",
+      "name": "Kyber Network",
+      "decimals": 18
+    }
+  },
+  "exchangeConfigs": {
+    "MatchingMarket": {
+      "adapter": "0xA27CB53BdBbb12d21E8e28aa84e2486c52A89663",
+      "exchange": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
+      "takesCustody": true
+    },
+    "KyberNetwork": {
+      "adapter": "0xA1A4aD89C376Cab1731d06b4680B13d3B9340278",
+      "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
+      "takesCustody": false
+    },
+    "ZeroEx": {
+      "adapter": "0xA28e3301222B9cb9C54910F0620Fbf92bbE38be3",
+      "exchange": "0x35dD2932454449b14Cee11A94d3674a936d5d7b2",
+      "takesCustody": false
+    },
+    "Ethfinex": {
+      "adapter": "0xB79133a2c7905F035ae237326EFACfE0BB00DC90",
+      "exchange": "0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
+      "takesCustody": true
+    },
+    "MelonEngine": {
+      "adapter": "0x24289D3dee1c6eA31bEe75d8A7Dd6a36E29F26c6",
+      "exchange": "0xeEDE875Bdc389629eA4E30f0A5fF309a4E5aFF4C",
+      "takesCustody": false
+    }
+  }
+}
