@@ -1,4 +1,4 @@
-import { BigInteger } from '@melonproject/token-math';
+import { BN } from 'web3-utils';
 
 // TODO: JSDoc comments here
 // instances is object containing contract instances of mln and weth
@@ -18,92 +18,60 @@ export async function getAllBalances(instances, accounts, fund, env) {
 
   return {
     custodian: {
-      dgx: new BigInteger(
-        await instances.dgx.methods.balanceOf(custodian).call(),
-      ),
-      ether: new BigInteger(await env.eth.getBalance(custodian)),
-      mln: new BigInteger(
-        await instances.mln.methods.balanceOf(custodian).call(),
-      ),
-      weth: new BigInteger(
-        await instances.weth.methods.balanceOf(custodian).call(),
-      ),
+      dgx: new BN(await instances.dgx.methods.balanceOf(custodian).call()),
+      ether: new BN(await env.eth.getBalance(custodian)),
+      mln: new BN(await instances.mln.methods.balanceOf(custodian).call()),
+      weth: new BN(await instances.weth.methods.balanceOf(custodian).call()),
     },
     deployer: {
-      dgx: new BigInteger(
-        await instances.dgx.methods.balanceOf(deployer).call(),
-      ),
-      ether: new BigInteger(await env.eth.getBalance(deployer)),
-      mln: new BigInteger(
-        await instances.mln.methods.balanceOf(deployer).call(),
-      ),
-      weth: new BigInteger(
-        await instances.weth.methods.balanceOf(deployer).call(),
-      ),
+      dgx: new BN(await instances.dgx.methods.balanceOf(deployer).call()),
+      ether: new BN(await env.eth.getBalance(deployer)),
+      mln: new BN(await instances.mln.methods.balanceOf(deployer).call()),
+      weth: new BN(await instances.weth.methods.balanceOf(deployer).call()),
     },
     exchangeOwner: {
-      dgx: new BigInteger(
-        await instances.dgx.methods.balanceOf(exchangeOwner).call(),
-      ),
-      ether: new BigInteger(await env.eth.getBalance(exchangeOwner)),
-      mln: new BigInteger(
-        await instances.mln.methods.balanceOf(exchangeOwner).call(),
-      ),
-      weth: new BigInteger(
+      dgx: new BN(await instances.dgx.methods.balanceOf(exchangeOwner).call()),
+      ether: new BN(await env.eth.getBalance(exchangeOwner)),
+      mln: new BN(await instances.mln.methods.balanceOf(exchangeOwner).call()),
+      weth: new BN(
         await instances.weth.methods.balanceOf(exchangeOwner).call(),
       ),
     },
     fund: {
-      dgx: new BigInteger(
+      dgx: new BN(
         await fund.accounting.methods
           .assetHoldings(instances.dgx.options.address)
           .call(),
       ),
-      ether: new BigInteger(
-        await env.eth.getBalance(fund.vault.options.address),
-      ),
-      mln: new BigInteger(
+      ether: new BN(await env.eth.getBalance(fund.vault.options.address)),
+      mln: new BN(
         await fund.accounting.methods
           .assetHoldings(instances.mln.options.address)
           .call(),
       ),
-      weth: new BigInteger(
+      weth: new BN(
         await fund.accounting.methods
           .assetHoldings(instances.weth.options.address)
           .call(),
       ),
     },
     investor: {
-      dgx: new BigInteger(
-        await instances.dgx.methods.balanceOf(investor).call(),
-      ),
-      ether: new BigInteger(await env.eth.getBalance(investor)),
-      mln: new BigInteger(
-        await instances.mln.methods.balanceOf(investor).call(),
-      ),
-      weth: new BigInteger(
-        await instances.weth.methods.balanceOf(investor).call(),
-      ),
+      dgx: new BN(await instances.dgx.methods.balanceOf(investor).call()),
+      ether: new BN(await env.eth.getBalance(investor)),
+      mln: new BN(await instances.mln.methods.balanceOf(investor).call()),
+      weth: new BN(await instances.weth.methods.balanceOf(investor).call()),
     },
     manager: {
-      dgx: new BigInteger(
-        await instances.dgx.methods.balanceOf(manager).call(),
-      ),
-      ether: new BigInteger(await env.eth.getBalance(manager)),
-      mln: new BigInteger(
-        await instances.mln.methods.balanceOf(manager).call(),
-      ),
-      weth: new BigInteger(
-        await instances.weth.methods.balanceOf(manager).call(),
-      ),
+      dgx: new BN(await instances.dgx.methods.balanceOf(manager).call()),
+      ether: new BN(await env.eth.getBalance(manager)),
+      mln: new BN(await instances.mln.methods.balanceOf(manager).call()),
+      weth: new BN(await instances.weth.methods.balanceOf(manager).call()),
     },
     worker: {
-      dgx: new BigInteger(await instances.dgx.methods.balanceOf(worker).call()),
-      ether: new BigInteger(await env.eth.getBalance(worker)),
-      mln: new BigInteger(await instances.mln.methods.balanceOf(worker).call()),
-      weth: new BigInteger(
-        await instances.weth.methods.balanceOf(worker).call(),
-      ),
+      dgx: new BN(await instances.dgx.methods.balanceOf(worker).call()),
+      ether: new BN(await env.eth.getBalance(worker)),
+      mln: new BN(await instances.mln.methods.balanceOf(worker).call()),
+      weth: new BN(await instances.weth.methods.balanceOf(worker).call()),
     },
   };
 }
