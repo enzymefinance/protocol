@@ -12,12 +12,11 @@ import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
-  let mockSystem;
   let userAlt;
   let defaultAmgu;
   let routes;
-  let weth;
-  let wethInterface, participation;
+  let wethTokenInfo;
+  let weth, participation;
   let investmentAmount, investmentAsset, participationAddress, requestedShares;
 
   beforeAll(async () => {
@@ -33,12 +32,12 @@ describe('Happy Path', () => {
 
     routes = await setupInvestedTestFund(environment);
 
-    weth = getTokenBySymbol(environment, 'WETH');
+    wethTokenInfo = getTokenBySymbol(environment, 'WETH');
 
-    wethInterface = getContract(
+    weth = getContract(
       environment,
       Contracts.Weth,
-      weth.address,
+      wethTokenInfo.address,
     );
     participation = getContract(
       environment,
@@ -48,7 +47,7 @@ describe('Happy Path', () => {
 
     investmentAmount = toWei('1', 'ether');
     requestedShares = toWei('1', 'ether');
-    investmentAsset = weth.address;
+    investmentAsset = wethTokenInfo.address;
     participationAddress = routes.participationAddress.toString();
 
     const policyManager = getContract(
@@ -73,11 +72,11 @@ describe('Happy Path', () => {
   });
 
   test('Request investment fails if user is not whitelisted', async () => {
-    await wethInterface.methods
+    await weth.methods
       .transfer(userAlt, investmentAmount)
       .send(defaultTxOpts);
 
-    await wethInterface.methods
+    await weth.methods
       .approve(participationAddress, investmentAmount)
       .send({ ...defaultTxOpts, from: userAlt });
 
@@ -93,7 +92,7 @@ describe('Happy Path', () => {
   });
 
   test('Request investment passes if user is whitelisted', async () => {
-    await wethInterface.methods
+    await weth.methods
       .approve(participationAddress, investmentAmount)
       .send(defaultTxOpts);
 
