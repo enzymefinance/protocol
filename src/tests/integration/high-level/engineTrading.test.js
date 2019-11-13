@@ -1,28 +1,15 @@
 import { BN, padLeft, toWei } from 'web3-utils';
 
 import { Contracts, Exchanges } from '~/Contracts';
+import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
-
 import { Environment, Tracks } from '~/utils/environment/Environment';
-import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { toBeTrueWith } from '~/tests/utils/toBeTrueWith';
-import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
-
 import { increaseTime } from '~/utils/evm/increaseTime';
-import { takeEngineOrder } from '~/contracts/fund/trading/transactions/takeEngineOrder';
-import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
-import { getLiquidEther } from '~/contracts/engine/calls/getLiquidEther';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { register } from '~/contracts/fund/policies/transactions/register';
-import { getPrice } from '~/contracts/prices/calls/getPrice';
-
 import { getContract } from '~/utils/solidity/getContract';
-
-expect.extend({ toBeTrueWith });
+import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
