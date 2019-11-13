@@ -4,11 +4,11 @@ const nab = require('./deploy-contract').nab;
 const deploy = require('./deploy-contract').deploy;
 const deployIn = require('./get-deploy-input');
 
-const deploy_in = './token_addrs.json'; // TODO: rename
+const deploy_in = './deploy_in.json'; // TODO: rename
 const deploy_out = './tokens_out.json'; // TODO: rename
 
 const main = async () => {
-  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8'));
+  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8')).tokens.addr;
   const weth = await nab('WETH', [], input);
   const mln = await nab('BurnableToken', ['MLN', 18, 'Melon Token'], input, 'MLN');
   const bat = await nab('PreminedToken', ['BAT', 18, ''], input, 'BAT');
@@ -37,4 +37,8 @@ const main = async () => {
   console.log(addrs);
 }
 
-main().then(process.exit).catch(console.error);
+if (require.main === module) {
+  main().then(process.exit).catch(console.error);
+}
+
+module.exports = main;

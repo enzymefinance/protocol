@@ -10,7 +10,8 @@ const deploy_out = './kyber_out.json'; // TODO: rename
 
 const main = async () => {
   const input = JSON.parse(fs.readFileSync(deploy_in));
-  const tokens = JSON.parse(fs.readFileSync('./tokens_out.json')); // TODO: dynamic
+  const kyberAddrs = input.kyber.addr;
+  const tokens = input.tokens.addr;
   const conf = input.conf;
   const conversionRateAdmin = conf.deployer;
   const kyberNetworkAdmin = conf.deployer;
@@ -28,14 +29,14 @@ const main = async () => {
   const mln = fetch('StandardToken', tokens.MLN);
   const eur = fetch('StandardToken', tokens.EUR);
 
-  const kgtToken = await nab('TestToken', ['KGT', 'KGT', 18], input, 'KgtToken');
-  const conversionRates = await nab('ConversionRates', [conversionRateAdmin], input);
-  const kyberNetwork = await nab('KyberNetwork', [kyberNetworkAdmin], input);
-  const kyberReserve = await nab('KyberReserve', [kyberNetwork.options.address, conversionRates.options.address, conf.deployer], input);
-  const kyberWhiteList = await nab('KyberWhiteList', [conf.deployer, kgtToken.options.address], input);
-  const feeBurner = await nab('FeeBurner', [conf.deployer, mln.options.address, kyberNetwork.options.address], input);
-  const expectedRate = await nab('ExpectedRate', [kyberNetwork.options.address, conf.deployer], input);
-  const kyberNetworkProxy = await nab('KyberNetworkProxy', [conf.deployer], input);
+  const kgtToken = await nab('TestToken', ['KGT', 'KGT', 18], kyberAddrs, 'KgtToken');
+  const conversionRates = await nab('ConversionRates', [conversionRateAdmin], kyberAddrs);
+  const kyberNetwork = await nab('KyberNetwork', [kyberNetworkAdmin], kyberAddrs);
+  const kyberReserve = await nab('KyberReserve', [kyberNetwork.options.address, conversionRates.options.address, conf.deployer], kyberAddrs);
+  const kyberWhiteList = await nab('KyberWhiteList', [conf.deployer, kgtToken.options.address], kyberAddrs);
+  const feeBurner = await nab('FeeBurner', [conf.deployer, mln.options.address, kyberNetwork.options.address], kyberAddrs);
+  const expectedRate = await nab('ExpectedRate', [kyberNetwork.options.address, conf.deployer], kyberAddrs);
+  const kyberNetworkProxy = await nab('KyberNetworkProxy', [conf.deployer], kyberAddrs);
 
   await send(kyberNetwork, 'setWhiteList', [kyberWhiteList.options.address]);
   await send(kyberNetworkProxy, 'setKyberNetworkContract', [kyberNetwork.options.address]);
@@ -91,4 +92,8 @@ const main = async () => {
   console.log(addrs);
 }
 
-main().then(process.exit).catch(console.error);
+if (require.main === module) {
+  main().then(process.exit).catch(console.error);
+}
+
+module.exports = main;

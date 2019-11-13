@@ -8,13 +8,17 @@ const deploy_out = './melon_out.json'; // TODO: rename
 const kyber_out = './kyber_out.json'; // TODO: rename
 
 const main = async () => {
-  const input = JSON.parse(fs.readFileSync(deploy_in));
+  // TODO: clean up conf stuff
+  const deployIn = JSON.parse(fs.readFileSync(deploy_in));
   const conf = deployIn.conf;
-  const tokenconf = deployIn.tokens;
+  const melonConf = deployIn.melon.conf;
+  const input = deployIn.melon.addr;
+  const tokenConf = deployIn.tokens.conf;
+  const tokenAddrs = deployIn.tokens.addr;
+  const kyberAddrs = deployIn.kyber.addr;
   const exchanges = deployIn.exchangeConfigs;
-  const tokenaddrs = JSON.parse(fs.readFileSync('./tokens_out.json')); // TODO: dynamic
-  const kyber = JSON.parse(fs.readFileSync(kyber_out));
 
+  // TODO: move into conf.melon?
   const defaultMGM = conf.deployer;
   const defaultEthfinexWrapperRegistry = conf.deployer;
 
@@ -24,8 +28,8 @@ const main = async () => {
   const matchingMarketAccessor = await nab('MatchingMarketAccessor', [], input);
   const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], input);
   const engineAdapter = await nab('EngineAdapter', [], input);
-  const priceTolerance = await nab('PriceTolerance', [conf.priceTolerance], input);
-  const userWhitelist = await nab('UserWhitelist', [conf.userWhitelist], input);
+  const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], input);
+  const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], input);
   const managementFee = await nab('ManagementFee', [], input);
   const performanceFee = await nab('PerformanceFee', [], input);
   const accountingFactory = await nab('AccountingFactory', [], input);
@@ -35,23 +39,23 @@ const main = async () => {
   const sharesFactory = await nab('SharesFactory', [], input);
   const tradingFactory = await nab('TradingFactory', [], input);
   const vaultFactory = await nab('VaultFactory', [], input);
-  const registry = await nab('Registry', [conf.registryOwner], input);
-  const engine = await nab('Engine', [conf.engineDelay, registry.options.address], input);
+  const registry = await nab('Registry', [melonConf.registryOwner], input);
+  const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], input);
   const fundRanking = await nab('FundRanking', [], input);
 
   let priceSource;
   if (conf.track === 'KYBER_PRICE') {
     priceSource = await nab('KyberPriceFeed', [
-      registry.options.address, kyber.KyberNetworkProxy,
-      conf.maxSpread, tokenaddrs.WETH
+      registry.options.address, kyberAddrs.KyberNetworkProxy,
+      melonConf.maxSpread, tokenAddrs.WETH
     ], input);
   } else if (conf.track === 'TESTING') {
-    priceSource = await nab('TestingPriceFeed', [tokenaddrs.WETH], input);
+    priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH], input);
   }
 
   await send(registry, 'setPriceSource', [priceSource.options.address]);
-  await send(registry, 'setNativeAsset', [tokenaddrs.WETH]);
-  await send(registry, 'setMlnToken', [tokenaddrs.MLN]);
+  await send(registry, 'setNativeAsset', [tokenAddrs.WETH]);
+  await send(registry, 'setMlnToken', [tokenAddrs.MLN]);
   await send(registry, 'setEngine', [engine.options.address]);
   await send(registry, 'setMGM', [defaultMGM]);
   await send(registry, 'setEthfinexWrapperRegistry', [defaultEthfinexWrapperRegistry]);
@@ -73,16 +77,16 @@ const main = async () => {
     }
   }
 
-  for (const [sym, token] of Object.entries(tokenconf)) {
-    const tokenAddress = tokenaddrs[sym];
+  for (const [sym, info] of Object.entries(tokenConf)) {
+    const tokenAddress = tokenAddrs[sym];
     const isRegistered = await call(registry, 'assetIsRegistered', [tokenAddress]);
     if (!isRegistered) {
       // TODO: fix token.sym and reserveMin
       const reserveMin = 0;
-      await send(registry, 'registerAsset', [tokenAddress, token.name, sym, '', reserveMin, [], []]);
+      await send(registry, 'registerAsset', [tokenAddress, info.name, sym, '', reserveMin, [], []]);
     }
     if (conf.track === 'TESTING') {
-      await send(priceSource, 'setDecimals', [tokenAddress, token.decimals]);
+      await send(priceSource, 'setDecimals', [tokenAddress, info.decimals]);
     }
   }
 
@@ -95,7 +99,7 @@ const main = async () => {
     vaultFactory.options.address,
     policyManagerFactory.options.address,
     registry.options.address,
-    conf.versionOwner
+    melonConf.versionOwner
   ], input);
 
   if (conf.track === 'KYBER_PRICE')
@@ -105,7 +109,7 @@ const main = async () => {
     await send(priceSource, 'update', []);
   }
 
-  const addrs = {
+  return {
     "EthfinexAdapter": ethfinexAdapter.options.address,
     "KyberAdapter": kyberAdapter.options.address,
     "MatchingMarketAdapter": matchingMarketAdapter.options.address,
@@ -126,9 +130,16 @@ const main = async () => {
     "Engine": engine.options.address,
     "FundRanking": fundRanking.options.address,
   };
-  fs.writeFileSync(deploy_out, JSON.stringify(addrs, null, '  '));
-  console.log(`Written to ${deploy_out}`);
-  console.log(addrs);
 }
 
-main().then(process.exit).catch(console.error);
+if (require.main === module) {
+  //TODO: NEXT: copy file in first place
+  main().then(a => {
+    fs.writeFileSync(deploy_out, JSON.stringify(addrs, null, '  '));
+    console.log(`Written to ${deploy_out}`);
+    console.log(addrs);
+    process.exit
+  }).catch(console.error);
+}
+
+module.exports = main;
