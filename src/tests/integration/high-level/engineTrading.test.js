@@ -32,7 +32,7 @@ describe('Happy Path', () => {
       Contracts.Engine,
       melonContracts.engine.toString(),
     );
-    await engine.methods.setAmguPrice(toWei('100', 'gwei')).send(defaultTxOpts);
+    await engine.methods.setAmguPrice(toWei('1000', 'gwei')).send(defaultTxOpts);
 
     routes = await setupInvestedTestFund(environment);
 
