@@ -1,10 +1,9 @@
-import {
-  createQuantity,
-  QuantityInterface,
-  subtract,
-  valueIn,
-  divide,
-} from '@melonproject/token-math';
+import { BN, padLeft, toWei } from 'web3-utils';
+
+import { Contracts, Exchanges } from '~/Contracts';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
+
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
@@ -12,7 +11,7 @@ import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { toBeTrueWith } from '~/tests/utils/toBeTrueWith';
 import { setAmguPrice } from '~/contracts/engine/transactions/setAmguPrice';
-import { thaw } from '~/contracts/engine/transactions/thaw';
+
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { takeEngineOrder } from '~/contracts/fund/trading/transactions/takeEngineOrder';
 import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
@@ -21,119 +20,164 @@ import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSigna
 import { register } from '~/contracts/fund/policies/transactions/register';
 import { getPrice } from '~/contracts/prices/calls/getPrice';
 
+import { getContract } from '~/utils/solidity/getContract';
+
 expect.extend({ toBeTrueWith });
 
 describe('Happy Path', () => {
-  const shared: {
-    env?: Environment;
-    [p: string]: any;
-  } = {};
+  let environment, user, defaultTxOpts;
+  let engine, mln, priceSource, trading, weth;
+  let routes;
+  let mlnTokenInfo, wethTokenInfo;
+  let exchangeIndex, mlnPrice, takerQuantity;
 
   beforeAll(async () => {
-    shared.env = await deployAndInitTestEnv();
-    expect(shared.env.track).toBe(Tracks.TESTING);
+    environment = await deployAndInitTestEnv();
+    expect(environment.track).toBe(Tracks.TESTING);
 
-    const amguPrice = createQuantity('MLN', '1000000000000');
-    await setAmguPrice(
-      shared.env,
-      shared.env.deployment.melonContracts.engine,
-      amguPrice,
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
+
+    const { exchangeConfigs, melonContracts } = environment.deployment;
+
+    engine = getContract(
+      environment,
+      Contracts.Engine,
+      melonContracts.engine.toString(),
     );
-    shared.accounts = await shared.env.eth.getAccounts();
-    shared.engine = shared.env.deployment.melonContracts.engine;
-    shared.routes = await setupInvestedTestFund(shared.env);
-    shared.weth = getTokenBySymbol(shared.env, 'WETH');
-    shared.mln = getTokenBySymbol(shared.env, 'MLN');
+    await engine.methods.setAmguPrice(toWei('100', 'gwei')).send(defaultTxOpts);
 
-    await register(shared.env, shared.routes.policyManagerAddress, {
-      method: FunctionSignatures.takeOrder,
-      policy: shared.env.deployment.melonContracts.policies.priceTolerance,
-    });
+    routes = await setupInvestedTestFund(environment);
+
+    priceSource = getContract(
+      environment,
+      Contracts.TestingPriceFeed,
+      melonContracts.priceSource.toString(),
+    );
+
+    trading = getContract(
+      environment,
+      Contracts.Trading,
+      routes.tradingAddress.toString(),
+    );
+
+    mlnTokenInfo = getTokenBySymbol(environment, 'MLN');
+    wethTokenInfo = getTokenBySymbol(environment, 'WETH');
+
+    mln = getContract(
+      environment,
+      Contracts.PreminedToken,
+      mlnTokenInfo.address,
+    );
+    weth = getContract(environment, Contracts.Weth, wethTokenInfo.address);
+
+    const policyManager = getContract(
+      environment,
+      Contracts.PolicyManager,
+      routes.policyManagerAddress.toString(),
+    );
+    await policyManager.methods
+      .register(
+        takeOrderSignatureBytes,
+        melonContracts.policies.priceTolerance.toString(),
+      )
+      .send(defaultTxOpts);
+
+    const exchangeInfo = await trading.methods.getExchangeInfo().call();
+    exchangeIndex = exchangeInfo[1].findIndex(
+      e =>
+        e.toLowerCase() ===
+        exchangeConfigs[Exchanges.MelonEngine].adapter.toLowerCase(),
+    );
+    mlnPrice = (await priceSource.methods
+      .getPrice(mlnTokenInfo.address)
+      .call())[0];
+    takerQuantity = toWei('0.001', 'ether'); // Mln sell qty
   });
 
-  test('Trade on Melon Engine', async () => {
-    await increaseTime(shared.env, 86400 * 32);
-    await thaw(shared.env, shared.engine);
-    const takerQuantity = createQuantity(shared.mln, 0.001); // Mln sell qty
-    const mlnPrice = await getPrice(
-      shared.env,
-      `${shared.env.deployment.melonContracts.priceSource}`,
-      shared.mln,
-    );
-    const makerQuantity = valueIn(mlnPrice, takerQuantity); // Min WETH
-    const preliquidEther = await getLiquidEther(shared.env, shared.engine);
+  it('Trade on Melon Engine', async () => {
+    await increaseTime(environment, 86400 * 32);
 
-    await transfer(shared.env, {
-      howMuch: takerQuantity,
-      to: shared.routes.vaultAddress,
-    });
+    await engine.methods.thaw().send(defaultTxOpts);
 
-    const preFundWeth: QuantityInterface = await balanceOf(
-      shared.env,
-      shared.weth.address,
-      {
-        address: shared.routes.vaultAddress,
-      },
-    );
-    const preFundMln: QuantityInterface = await balanceOf(
-      shared.env,
-      shared.mln.address,
-      {
-        address: shared.routes.vaultAddress,
-      },
-    );
+    const makerQuantity = new BN(takerQuantity)
+      .mul(new BN(mlnPrice))
+      .div(new BN(toWei('1', 'ether')))
+      .toString();
 
-    await takeEngineOrder(shared.env, shared.routes.tradingAddress, {
-      makerQuantity,
-      takerQuantity,
-    });
+    await mln.methods
+      .transfer(routes.vaultAddress.toString(), takerQuantity)
+      .send(defaultTxOpts);
 
-    const postliquidEther = await getLiquidEther(shared.env, shared.engine);
-    const postFundWeth: QuantityInterface = await balanceOf(
-      shared.env,
-      shared.weth.address,
-      {
-        address: shared.routes.vaultAddress,
-      },
-    );
-    const postFundMln: QuantityInterface = await balanceOf(
-      shared.env,
-      shared.mln.address,
-      {
-        address: shared.routes.vaultAddress,
-      },
-    );
+    const preliquidEther = await engine.methods.liquidEther().call();
+    const preFundWeth = await weth.methods
+      .balanceOf(routes.vaultAddress.toString())
+      .call();
+    const preFundMln = await mln.methods
+      .balanceOf(routes.vaultAddress.toString())
+      .call();
 
-    expect(subtract(postFundWeth.quantity, preFundWeth.quantity)).toEqual(
-      subtract(preliquidEther.quantity, postliquidEther.quantity),
-    );
-    expect(subtract(preFundMln, postFundMln).quantity).toEqual(
-      takerQuantity.quantity,
+    await trading.methods
+      .callOnExchange(
+        exchangeIndex,
+        FunctionSignatures.takeOrder,
+        [
+          emptyAddress,
+          emptyAddress,
+          wethTokenInfo.address,
+          mlnTokenInfo.address,
+          emptyAddress,
+          emptyAddress,
+        ],
+        [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+        padLeft('0x0', 64),
+        padLeft('0x0', 64),
+        padLeft('0x0', 64),
+        padLeft('0x0', 64),
+      )
+      .send(defaultTxOpts);
+
+    const postliquidEther = await engine.methods.liquidEther().call();
+    const postFundWeth = await weth.methods
+      .balanceOf(routes.vaultAddress.toString())
+      .call();
+    const postFundMln = await mln.methods
+      .balanceOf(routes.vaultAddress.toString())
+      .call();
+
+    expect(preFundMln - postFundMln).toEqual(Number(takerQuantity));
+    expect(postFundWeth - preFundWeth).toEqual(
+      preliquidEther - postliquidEther,
     );
   });
 
   test('Maker quantity as minimum returned WETH is respected', async () => {
-    const takerQuantity = createQuantity(shared.mln, 0.001); // Mln sell qty
-    const mlnPrice = await getPrice(
-      shared.env,
-      `${shared.env.deployment.melonContracts.priceSource}`,
-      shared.mln,
-    );
-    const makerQuantity = createQuantity(
-      shared.weth,
-      divide(mlnPrice.quote.quantity, 2),
-    ); // Min WETH
+    const makerQuantity = new BN(mlnPrice).div(new BN(2)).toString();
 
-    await transfer(shared.env, {
-      howMuch: takerQuantity,
-      to: shared.routes.vaultAddress,
-    });
+    await mln.methods
+      .transfer(routes.vaultAddress.toString(), takerQuantity)
+      .send(defaultTxOpts);
 
     await expect(
-      takeEngineOrder(shared.env, shared.routes.tradingAddress, {
-        makerQuantity,
-        takerQuantity,
-      }),
+      trading.methods
+        .callOnExchange(
+          exchangeIndex,
+          FunctionSignatures.takeOrder,
+          [
+            emptyAddress,
+            emptyAddress,
+            wethTokenInfo.address,
+            mlnTokenInfo.address,
+            emptyAddress,
+            emptyAddress,
+          ],
+          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+          padLeft('0x0', 64),
+          padLeft('0x0', 64),
+          padLeft('0x0', 64),
+          padLeft('0x0', 64),
+        )
+        .send(defaultTxOpts),
     ).rejects.toThrow();
   });
 });
