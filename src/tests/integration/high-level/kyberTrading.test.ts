@@ -1,144 +1,206 @@
-import {
-  createQuantity,
-  QuantityInterface,
-  greaterThan,
-  subtract,
-  valueIn,
-  createPrice,
-  isEqual,
-  add,
-} from '@melonproject/token-math';
-import { Environment, Tracks } from '~/utils/environment/Environment';
-import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { getExpectedRate } from '~/contracts/exchanges/third-party/kyber/calls/getExpectedRate';
-import { Exchanges } from '~/Contracts';
-import { takeOrderOnKyber } from '~/contracts/fund/trading/transactions/takeOrderOnKyber';
-import { balanceOf } from '~/contracts/dependencies/token/calls/balanceOf';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { register } from '~/contracts/fund/policies/transactions/register';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { getPrice } from '~/contracts/prices/calls/getPrice';
-import { setBaseRate } from '~/contracts/exchanges/third-party/kyber/transactions/setBaseRate';
-import { toBeTrueWith } from '~/tests/utils/toBeTrueWith';
-import { getFundHoldings } from '~/contracts/fund/accounting/calls/getFundHoldings';
+import { BN, padLeft, toWei } from 'web3-utils';
 
-expect.extend({ toBeTrueWith });
+import { Contracts, Exchanges } from '~/Contracts';
+import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
+import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
+import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
+import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { Environment, Tracks } from '~/utils/environment/Environment';
+import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+import { getContract } from '~/utils/solidity/getContract';
+import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 
 describe('Happy Path', () => {
-  const shared: {
-    env?: Environment;
-    [p: string]: any;
-  } = {};
+  let environment, user, defaultTxOpts;
+  let mln, weth;
+  let routes;
+  let accounting, kyberNetworkProxy, trading;
+  let exchangeIndex;
 
   beforeAll(async () => {
-    shared.env = await deployAndInitTestEnv();
-    expect(shared.env.track).toBe(Tracks.TESTING);
+    environment = await deployAndInitTestEnv();
+    expect(environment.track).toBe(Tracks.TESTING);
 
-    shared.accounts = await shared.env.eth.getAccounts();
-    shared.kyber =
-      shared.env.deployment.exchangeConfigs[Exchanges.KyberNetwork].exchange;
-    shared.routes = await setupInvestedTestFund(shared.env);
-    shared.weth = getTokenBySymbol(shared.env, 'WETH');
-    shared.mln = getTokenBySymbol(shared.env, 'MLN');
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    await register(shared.env, shared.routes.policyManagerAddress, {
-      method: FunctionSignatures.takeOrder,
-      policy: shared.env.deployment.melonContracts.policies.priceTolerance,
-    });
+    const {
+      exchangeConfigs,
+      melonContracts,
+      thirdPartyContracts,
+    } = environment.deployment;
+
+    const wethTokenInfo = getTokenBySymbol(environment, 'WETH');
+    const mlnTokenInfo = getTokenBySymbol(environment, 'MLN');
+
+    mln = getContract(
+      environment,
+      Contracts.PreminedToken,
+      mlnTokenInfo.address,
+    );
+    weth = getContract(environment, Contracts.Weth, wethTokenInfo.address);
+
+    routes = await setupInvestedTestFund(environment);
+
+    accounting = getContract(
+      environment,
+      Contracts.Accounting,
+      routes.accountingAddress.toString(),
+    );
+
+    kyberNetworkProxy = getContract(
+      environment,
+      Contracts.KyberNetworkProxy,
+      exchangeConfigs[Exchanges.KyberNetwork].exchange.toString(),
+    );
+
+    trading = getContract(
+      environment,
+      Contracts.Trading,
+      routes.tradingAddress.toString(),
+    );
+
+    const exchangeInfo = await trading.methods.getExchangeInfo().call();
+    exchangeIndex = exchangeInfo[1].findIndex(
+      e =>
+        e.toLowerCase() ===
+        exchangeConfigs[Exchanges.KyberNetwork].adapter.toLowerCase(),
+    );
+
+    const policyManager = getContract(
+      environment,
+      Contracts.PolicyManager,
+      routes.policyManagerAddress.toString(),
+    );
+    await policyManager.methods
+      .register(
+        takeOrderSignatureBytes,
+        melonContracts.policies.priceTolerance.toString(),
+      )
+      .send(defaultTxOpts);
 
     // Setting rates on kyber reserve
-    const mlnPrice = await getPrice(
-      shared.env,
-      shared.env.deployment.melonContracts.priceSource.toString(),
-      shared.mln,
+    const priceSource = getContract(
+      environment,
+      Contracts.PriceSourceInterface,
+      melonContracts.priceSource.toString(),
     );
-    const ethPriceInMln = createPrice(mlnPrice.quote, mlnPrice.base);
-
-    const prices = [
-      {
-        buy: ethPriceInMln,
-        sell: mlnPrice,
-      },
-    ];
-    await setBaseRate(
-      shared.env,
-      shared.env.deployment.thirdPartyContracts.exchanges.kyber.conversionRates,
-      {
-        prices,
-      },
+    const { 0: mlnPrice } = await priceSource.methods
+      .getPrice(mlnTokenInfo.address)
+      .call();
+    const ethPriceInMln = new BN(toWei('1', 'ether'))
+      .div(new BN(mlnPrice))
+      .mul(new BN(toWei('1', 'ether')))
+      .toString();
+    const blockNumber = (await environment.eth.getBlock('latest')).number;
+    const conversionRates = getContract(
+      environment,
+      Contracts.ConversionRates,
+      thirdPartyContracts.exchanges.kyber.conversionRates.toString(),
     );
+    await conversionRates.methods
+      .setBaseRate(
+        [mlnTokenInfo.address],
+        [ethPriceInMln],
+        [mlnPrice],
+        ['0x0'],
+        ['0x0'],
+        blockNumber,
+        [0],
+      )
+      .send(defaultTxOpts);
   });
 
   test('Trade on kyber', async () => {
-    await getFundHoldings(shared.env, shared.routes.accountingAddress);
+    const takerAsset = weth.options.address;
+    const takerQuantity = toWei('0.1', 'ether');
 
-    const takerQuantity = createQuantity(shared.weth, 0.1);
-    const expectedRate = await getExpectedRate(shared.env, shared.kyber, {
-      fillTakerQuantity: takerQuantity,
-      makerAsset: shared.mln,
-      takerAsset: shared.weth,
-    });
+    const { 1: expectedRate } = await kyberNetworkProxy.methods
+      .getExpectedRate(kyberEthAddress, mln.options.address, takerQuantity)
+      .call(defaultTxOpts);
+
     // Minimum quantity of dest asset expected to get in return in the trade
-    const minMakerQuantity = valueIn(expectedRate, takerQuantity);
+    const makerAsset = mln.options.address;
+    const makerQuantity = new BN(takerQuantity)
+      .mul(new BN(expectedRate))
+      .div(new BN(toWei('1', 'ether')))
+      .toString();
 
-    const preMlnBalance: QuantityInterface = await balanceOf(
-      shared.env,
-      shared.mln.address,
-      {
-        address: shared.routes.vaultAddress,
-      },
+    const preMlnBalance = await mln.methods
+      .balanceOf(routes.vaultAddress.toString())
+      .call();
+
+    await trading.methods
+      .callOnExchange(
+        exchangeIndex,
+        FunctionSignatures.takeOrder,
+        [
+          emptyAddress,
+          emptyAddress,
+          makerAsset,
+          takerAsset,
+          emptyAddress,
+          emptyAddress,
+        ],
+        [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+        padLeft('0x0', 64),
+        padLeft('0x0', 64),
+        padLeft('0x0', 64),
+        padLeft('0x0', 64),
+      )
+      .send(defaultTxOpts);
+
+    const postMlnBalance = await mln.methods
+      .balanceOf(routes.vaultAddress.toString())
+      .call();
+
+    const mlnBalanceDiff = new BN(postMlnBalance).sub(new BN(preMlnBalance));
+    expect(mlnBalanceDiff.gt(new BN(makerQuantity))).toBe(true);
+
+    const holdingsRes = await accounting.methods.getFundHoldings().call();
+    const holdings = holdingsRes[1].map((address, i) => {
+      return { address, value: holdingsRes[0][i] };
+    });
+
+    const wethHolding = holdings.find(
+      holding => holding.address === weth.options.address,
     );
-
-    const result = await takeOrderOnKyber(
-      shared.env,
-      shared.routes.tradingAddress,
-      {
-        makerQuantity: minMakerQuantity,
-        takerQuantity,
-      },
-    );
-
-    expect(result.takerQuantity).toBeTrueWith(isEqual, takerQuantity);
-    expect(result.makerQuantity).toBeTrueWith(greaterThan, minMakerQuantity);
-
-    const holdings = await getFundHoldings(
-      shared.env,
-      shared.routes.accountingAddress,
-    );
-
-    const wethHolding = holdings.find(holding =>
-      isEqual(holding.token, shared.weth),
-    );
-
-    expect(add(wethHolding, takerQuantity)).toBeTrueWith(
-      isEqual,
-      createQuantity(shared.weth, 1),
-    );
-
-    const postMlnBalance: QuantityInterface = await balanceOf(
-      shared.env,
-      shared.mln.address,
-      {
-        address: shared.routes.vaultAddress,
-      },
-    );
-
     expect(
-      greaterThan(subtract(postMlnBalance, preMlnBalance), minMakerQuantity),
-    ).toBeTruthy();
+      new BN(wethHolding.value)
+        .add(new BN(takerQuantity))
+        .eq(new BN(toWei('1', 'ether'))),
+    ).toBe(true);
   });
 
   test('Price tolerance prevents ill priced trade', async () => {
-    const takerQuantity = createQuantity(shared.weth, 0.1);
+    const takerAsset = weth.options.address;
+    const takerQuantity = toWei('0.1', 'ether');
+
     // Minimum quantity of dest asset expected to get in return in the trade
-    const minMakerQuantity = createQuantity(shared.mln, 0);
+    const makerAsset = mln.options.address;
+    const makerQuantity = '0';
 
     await expect(
-      takeOrderOnKyber(shared.env, shared.routes.tradingAddress, {
-        makerQuantity: minMakerQuantity,
-        takerQuantity,
-      }),
+      trading.methods
+        .callOnExchange(
+          exchangeIndex,
+          FunctionSignatures.takeOrder,
+          [
+            emptyAddress,
+            emptyAddress,
+            makerAsset,
+            takerAsset,
+            emptyAddress,
+            emptyAddress,
+          ],
+          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+          padLeft('0x0', 64),
+          padLeft('0x0', 64),
+          padLeft('0x0', 64),
+          padLeft('0x0', 64),
+        )
+        .send(defaultTxOpts),
     ).rejects.toThrow();
   });
 });
