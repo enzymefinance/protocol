@@ -1,163 +1,148 @@
-import { toFixed, createPrice, createQuantity } from '@melonproject/token-math';
+import { BN, toWei } from 'web3-utils';
 
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import {
-  deployKyberEnvironment,
-  KyberEnvironment,
-} from '~/contracts/exchanges/transactions/deployKyberEnvironment';
-import { getContract } from '~/utils/solidity/getContract';
+import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { deployKyberPriceFeed } from '~/contracts/prices/transactions/deployKyberPriceFeed';
+import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
+import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
-import { hasValidPrice } from '~/contracts/prices/calls/hasValidPrice';
-import { getPrice } from '~/contracts/prices/calls/getPrice';
-import { updateKyber } from '~/contracts/prices/transactions/updateKyber';
 import { Environment } from '~/utils/environment/Environment';
-import { Contracts } from '~/Contracts';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { setBaseRate } from '~/contracts/exchanges/third-party/kyber/transactions/setBaseRate';
+import { getContract } from '~/utils/solidity/getContract';
 
 describe('kyber-price-feed', () => {
-  const shared: {
-    env?: Environment;
-    kyberDeploy?: KyberEnvironment;
-    [p: string]: any;
-  } = {};
+  let environment, user, defaultTxOpts;
+  let eurTokenInfo, mlnTokenInfo, wethTokenInfo;
+  let conversionRates, kyberDeployAddresses, kyberPriceFeed, mockRegistry;
 
   beforeAll(async () => {
-    shared.env = await initTestEnvironment();
-    shared.tokens = {
-      eur: await getToken(shared.env, await deployToken(shared.env, 'EUR')),
-      mln: await getToken(shared.env, await deployToken(shared.env, 'MLN')),
-      weth: await getToken(shared.env, await deployToken(shared.env, 'WETH')),
-    };
-    shared.kyberDeploy = await deployKyberEnvironment(shared.env, [
-      shared.tokens.mln,
-      shared.tokens.eur,
-    ]);
-    shared.mockRegistryAddress = await deployContract(
-      shared.env,
-      Contracts.MockRegistry,
-    );
-    shared.mockRegistry = await getContract(
-      shared.env,
-      Contracts.MockRegistry,
-      `${shared.mockRegistryAddress}`,
-    );
-    await shared.mockRegistry.methods
-      .setNativeAsset(shared.tokens.weth.address.toString())
-      .send({ from: `${shared.env.wallet.address}` });
+    environment = await initTestEnvironment();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
 
-    for (const token of Object.values(shared.tokens)) {
-      await shared.mockRegistry.methods
-        .register(`${token['address']}`)
-        .send({ from: `${shared.env.wallet.address}` });
+    eurTokenInfo = await getToken(
+      environment,
+      await deployToken(environment, 'EUR'),
+    );
+    mlnTokenInfo = await getToken(
+      environment,
+      await deployToken(environment, 'MLN'),
+    );
+    wethTokenInfo = await getToken(
+      environment,
+      await deployToken(environment, 'WETH'),
+    );
+
+    kyberDeployAddresses = await deployKyberEnvironment(environment, [
+      mlnTokenInfo,
+      eurTokenInfo,
+    ]);
+
+    conversionRates = getContract(
+      environment,
+      Contracts.ConversionRates,
+      kyberDeployAddresses.conversionRates,
+    );
+
+    const mockRegistryAddress = await deployContract(
+      environment,
+      Contracts.MockRegistry,
+    );
+    mockRegistry = await getContract(
+      environment,
+      Contracts.MockRegistry,
+      mockRegistryAddress.toString(),
+    );
+    await mockRegistry.methods
+      .setNativeAsset(wethTokenInfo.address.toString())
+      .send(defaultTxOpts);
+
+    for (const token of [eurTokenInfo, mlnTokenInfo, wethTokenInfo]) {
+      await mockRegistry.methods
+        .register(token.address.toString())
+        .send(defaultTxOpts);
     }
   });
 
   it('Deploy kyber pricefeed', async () => {
-    shared.kyberPriceFeed = await deployKyberPriceFeed(shared.env, {
-      kyberNetworkProxy: shared.kyberDeploy.kyberNetworkProxy,
-      quoteToken: shared.tokens.weth,
-      registry: shared.mockRegistryAddress,
-    });
-    expect(isAddress(shared.kyberPriceFeed));
+    const kyberPriceFeedAddress = await deployContract(
+      environment,
+      Contracts.KyberPriceFeed,
+      [
+        mockRegistry.options.address,
+        kyberDeployAddresses.kyberNetworkProxy,
+        toWei('0.5', 'ether'),
+        wethTokenInfo.address.toString(),
+      ],
+    );
+    kyberPriceFeed = getContract(
+      environment,
+      Contracts.KyberPriceFeed,
+      kyberPriceFeedAddress,
+    );
+
+    expect(isAddress(kyberPriceFeedAddress)).toBe(true);
   });
 
   it('Get price', async () => {
-    await updateKyber(shared.env, shared.kyberPriceFeed);
-    const hasValidMlnPrice = await hasValidPrice(
-      shared.env,
-      shared.kyberPriceFeed,
-      shared.tokens.mln,
-    );
+    await kyberPriceFeed.methods.update().send(defaultTxOpts);
+
+    const hasValidMlnPrice = await kyberPriceFeed.methods
+      .hasValidPrice(mlnTokenInfo.address)
+      .call();
+
     expect(hasValidMlnPrice).toBe(true);
 
-    const mlnPrice = await getPrice(
-      shared.env,
-      shared.kyberPriceFeed,
-      shared.tokens.mln,
-    );
+    const { 0: mlnPrice } = await kyberPriceFeed.methods
+      .getPrice(mlnTokenInfo.address)
+      .call();
 
-    expect(toFixed(mlnPrice)).toBe('1.000000');
+    expect(mlnPrice).toEqual(toWei('1', 'ether'));
   });
 
   it('Update mln price in reserve', async () => {
-    const prices = [
-      {
-        buy: createPrice(
-          createQuantity(shared.tokens.weth, 0.05),
-          createQuantity(shared.tokens.mln, 1),
-        ),
-        sell: createPrice(
-          createQuantity(shared.tokens.mln, 20),
-          createQuantity(shared.tokens.weth, 1),
-        ),
-      },
-      {
-        buy: createPrice(
-          createQuantity(shared.tokens.weth, 0.008),
-          createQuantity(shared.tokens.eur, 1),
-        ),
-        sell: createPrice(
-          createQuantity(shared.tokens.eur, 125),
-          createQuantity(shared.tokens.weth, 1),
-        ),
-      },
-    ];
-    await setBaseRate(shared.env, shared.kyberDeploy.conversionRates, {
-      prices,
-    });
+    const mlnPrice = new BN(toWei('1', 'ether'))
+      .mul(new BN(toWei('1', 'ether')))
+      .div(new BN(toWei('0.05', 'ether')))
+      .toString();
+    const ethPriceInMln = new BN(toWei('1', 'ether'))
+      .mul(new BN(toWei('1', 'ether')))
+      .div(new BN(mlnPrice))
+      .toString();
 
-    await updateKyber(shared.env, shared.kyberPriceFeed);
+    const eurPrice = new BN(toWei('1', 'ether'))
+      .mul(new BN(toWei('1', 'ether')))
+      .div(new BN(toWei('0.008', 'ether')))
+      .toString();
+    const ethPriceInEur = new BN(toWei('1', 'ether'))
+      .mul(new BN(toWei('1', 'ether')))
+      .div(new BN(eurPrice))
+      .toString();
 
-    const mlnPrice = await getPrice(
-      shared.env,
-      shared.kyberPriceFeed,
-      shared.tokens.mln,
-    );
+    const blockNumber = (await environment.eth.getBlock('latest')).number;
+    await conversionRates.methods
+      .setBaseRate(
+        [mlnTokenInfo.address, eurTokenInfo.address],
+        [ethPriceInMln, ethPriceInEur],
+        [mlnPrice, eurPrice],
+        ['0x0'],
+        ['0x0'],
+        blockNumber,
+        [0],
+      )
+      .send(defaultTxOpts);
 
-    const eurPrice = await getPrice(
-      shared.env,
-      shared.kyberPriceFeed,
-      shared.tokens.eur,
-    );
+    await kyberPriceFeed.methods.update().send(defaultTxOpts);
 
-    expect(toFixed(mlnPrice)).toBe('0.050000');
-    expect(toFixed(eurPrice)).toBe('0.008000');
-  });
+    const { 0: updatedMlnPrice } = await kyberPriceFeed.methods
+      .getPrice(mlnTokenInfo.address)
+      .call();
 
-  it('Update mln price without explicity passing buy-sell prices', async () => {
-    const prices = [
-      createPrice(
-        createQuantity(shared.tokens.mln, 20),
-        createQuantity(shared.tokens.weth, 1),
-      ),
-      createPrice(
-        createQuantity(shared.tokens.eur, 125),
-        createQuantity(shared.tokens.weth, 1),
-      ),
-    ];
-    await setBaseRate(shared.env, shared.kyberDeploy.conversionRates, {
-      prices,
-    });
+    const { 0: updatedEurPrice } = await kyberPriceFeed.methods
+      .getPrice(eurTokenInfo.address)
+      .call();
 
-    await updateKyber(shared.env, shared.kyberPriceFeed);
-
-    const mlnPrice = await getPrice(
-      shared.env,
-      shared.kyberPriceFeed,
-      shared.tokens.mln,
-    );
-
-    const eurPrice = await getPrice(
-      shared.env,
-      shared.kyberPriceFeed,
-      shared.tokens.eur,
-    );
-
-    expect(toFixed(mlnPrice)).toBe('0.050000');
-    expect(toFixed(eurPrice)).toBe('0.008000');
+    expect(mlnPrice).toEqual(toWei('20', 'ether'));
+    expect(eurPrice).toEqual(toWei('125', 'ether'));
   });
 });
