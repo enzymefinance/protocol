@@ -90,8 +90,8 @@ describe('Happy Path', () => {
       .getPrice(mlnTokenInfo.address)
       .call();
     const ethPriceInMln = new BN(toWei('1', 'ether'))
-      .div(new BN(mlnPrice))
       .mul(new BN(toWei('1', 'ether')))
+      .div(new BN(mlnPrice))
       .toString();
     const blockNumber = (await environment.eth.getBlock('latest')).number;
     const conversionRates = getContract(
