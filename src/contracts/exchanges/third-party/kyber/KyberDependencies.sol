@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "StandardToken.sol";
+import "../../../dependencies/token/StandardToken.sol";
 
 contract ERC20Clone is ERC20 {
     function totalSupply() public view returns (uint supply);

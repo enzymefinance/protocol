@@ -1,11 +1,11 @@
 pragma solidity ^0.4.25;
 
-import "math.sol";
-import "ERC20.i.sol";
-import "PriceSource.i.sol";
-import "Version.i.sol";
-import "Engine.sol";
-import "Registry.sol";
+import "../dependencies/math.sol";
+import "../dependencies/token/ERC20.i.sol";
+import "../prices/PriceSource.i.sol";
+import "../version/Version.i.sol";
+import "./Engine.sol";
+import "../version/Registry.sol";
 
 /// @notice inherit this to pay AMGU on a function call
 contract AmguConsumer is DSMath {

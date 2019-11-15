@@ -1,8 +1,8 @@
 pragma solidity ^0.4.25;
 
-import "Policy.sol";
-import "AddressList.sol";
-import "TradingSignatures.sol";
+import "../Policy.sol";
+import "../AddressList.sol";
+import "../TradingSignatures.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
 contract AssetWhitelist is TradingSignatures, AddressList, Policy {

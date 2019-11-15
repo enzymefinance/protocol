@@ -1,6 +1,6 @@
 pragma solidity ^0.4.25;
 
-import "PreminedToken.sol";
+import "./PreminedToken.sol";
 
 /// @dev Just a wrapper for premined tokens which can actually be burnt
 contract BurnableToken is PreminedToken {

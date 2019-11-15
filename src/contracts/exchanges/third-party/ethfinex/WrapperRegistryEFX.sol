@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "Ownable.sol";
+import "../0x/Ownable.sol";
 
 contract WrapperRegistryEFX is Ownable{
     

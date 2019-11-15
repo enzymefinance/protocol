@@ -1,8 +1,8 @@
 pragma solidity ^0.4.25;
 
-import "Accounting.sol";
-import "Hub.sol";
-import "Trading.sol";
+import "../fund/accounting/Accounting.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/trading/Trading.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>

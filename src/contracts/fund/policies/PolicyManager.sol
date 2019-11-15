@@ -1,8 +1,9 @@
 pragma solidity ^0.4.25;
 
-import "Factory.sol";
-import "Spoke.sol";
-import "Policy.sol";
+import "../../factory/Factory.sol";
+import "../hub/Spoke.sol";
+import "./Policy.sol";
+import "./PolicyManager.i.sol";
 
 contract PolicyManager is Spoke {
 
@@ -82,7 +83,7 @@ contract PolicyManager is Spoke {
     }
 }
 
-contract PolicyManagerFactory is Factory {
+contract PolicyManagerFactory is PolicyManagerFactoryInterface, Factory {
     function createInstance(address _hub) public returns (address) {
         address policyManager = new PolicyManager(_hub);
         childExists[policyManager] = true;

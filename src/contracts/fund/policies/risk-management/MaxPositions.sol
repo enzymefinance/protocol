@@ -1,10 +1,10 @@
 pragma solidity ^0.4.25;
 
-import "PriceSource.i.sol";
-import "Accounting.sol";
-import "Policy.sol";
-import "Trading.sol";
-import "TradingSignatures.sol";
+import "../../../prices/PriceSource.i.sol";
+import "../../accounting/Accounting.sol";
+import "../Policy.sol";
+import "../../trading/Trading.sol";
+import "../TradingSignatures.sol";
 
 contract MaxPositions is TradingSignatures, Policy {
     uint public maxPositions;

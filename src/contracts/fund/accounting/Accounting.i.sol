@@ -28,3 +28,7 @@ interface AccountingInterface {
     function calcSharePrice() external returns (uint);
     function calcGavPerShareNetManagementFee() public returns (uint);
 }
+
+interface AccountingFactoryInterface {
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) external returns (address);
+}

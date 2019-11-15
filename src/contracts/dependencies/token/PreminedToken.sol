@@ -1,6 +1,6 @@
 pragma solidity ^0.4.25;
 
-import "StandardToken.sol";
+import "./StandardToken.sol";
 
 contract PreminedToken is StandardToken {
     string public symbol;

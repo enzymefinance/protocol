@@ -1,14 +1,14 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "ERC20.i.sol";
-import "Trading.sol";
-import "Hub.sol";
-import "Vault.sol";
-import "Accounting.sol";
-import "math.sol";
-import "Exchange.sol";
-import "ExchangeAdapter.sol";
+import "../dependencies/token/ERC20.i.sol";
+import "../fund/trading/Trading.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/vault/Vault.sol";
+import "../fund/accounting/Accounting.sol";
+import "../dependencies/math.sol";
+import "./third-party/0x/Exchange.sol";
+import "./ExchangeAdapter.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>

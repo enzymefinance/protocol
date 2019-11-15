@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "KyberDependencies.sol";
+import "./KyberDependencies.sol";
 
 contract SanityRates is SanityRatesInterface, Withdrawable, Utils {
     mapping(address=>uint) public tokenRate;

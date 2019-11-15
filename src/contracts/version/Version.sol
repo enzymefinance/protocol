@@ -1,9 +1,9 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "Version.i.sol";
-import "FundFactory.sol";
-import "Hub.sol";
+import "../factory/FundFactory.sol";
+import "../fund/hub/Hub.sol";
+import "./Version.i.sol";
 
 /// @notice Controlled by governance
 contract Version is FundFactory, DSAuth, VersionInterface {
@@ -42,4 +42,3 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         Hub(_hub).shutDownFund();
     }
 }
-

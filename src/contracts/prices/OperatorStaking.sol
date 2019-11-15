@@ -1,8 +1,8 @@
 pragma solidity ^0.4.25;
 
-import "group.sol";
-import "Owned.sol";
-import "ERC20.i.sol";
+import "../dependencies/group.sol";
+import "../dependencies/Owned.sol";
+import "../dependencies/token/ERC20.i.sol";
 
 /// @title Operator Staking Contract
 /// @author Melonport AG <team@melonport.com>

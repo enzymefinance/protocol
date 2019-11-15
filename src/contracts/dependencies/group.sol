@@ -12,8 +12,8 @@
 
 pragma solidity ^0.4.25;
 
-import "exec.sol";
-import "note.sol";
+import "./exec.sol";
+import "./note.sol";
 
 contract DSGroup is DSExec, DSNote {
     address[]  public  members;

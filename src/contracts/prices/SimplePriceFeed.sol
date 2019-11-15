@@ -1,10 +1,10 @@
 pragma solidity ^0.4.25;
 
-import "PriceSource.i.sol";
-import "UpdatableFeed.i.sol";
-import "CanonicalPriceFeed.sol";
-import "thing.sol";
-import "Registry.sol";
+import "./PriceSource.i.sol";
+import "./UpdatableFeed.i.sol";
+import "./CanonicalPriceFeed.sol";
+import "../dependencies/thing.sol";
+import "../version/Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>

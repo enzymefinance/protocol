@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
-import "KyberDependencies.sol";
-import "KyberNetwork.sol";
+import "./KyberDependencies.sol";
+import "./KyberNetwork.sol";
 
 contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils {
 

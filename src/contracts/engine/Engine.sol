@@ -1,9 +1,9 @@
 pragma solidity ^0.4.25;
 
-import "math.sol";
-import "BurnableToken.sol";
-import "PriceSource.i.sol";
-import "Registry.sol";
+import "../dependencies/math.sol";
+import "../dependencies/token/BurnableToken.sol";
+import "../prices/PriceSource.i.sol";
+import "../version/Registry.sol";
 
 /// @notice Liquidity contract and token sink
 contract Engine is DSMath {

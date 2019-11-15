@@ -1,12 +1,12 @@
 pragma solidity ^0.4.25;
 
-import "Hub.sol";
-import "Trading.sol";
-import "Vault.sol";
-import "Accounting.sol";
-import "math.sol";
-import "MatchingMarket.sol";
-import "ExchangeAdapter.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/trading/Trading.sol";
+import "../fund/vault/Vault.sol";
+import "../fund/accounting/Accounting.sol";
+import "../dependencies/math.sol";
+import "./third-party/oasisdex/MatchingMarket.sol";
+import "./ExchangeAdapter.sol";
 
 /// @title MatchingMarketAdapter Contract
 /// @author Melonport AG <team@melonport.com>

@@ -1,16 +1,17 @@
 pragma solidity ^0.4.25;
 
-import "Spoke.sol";
-import "Shares.sol";
-import "Accounting.sol";
-import "Vault.sol";
-import "ERC20.i.sol";
-import "Factory.sol";
-import "math.sol";
-import "PriceSource.i.sol";
-import "AmguConsumer.sol";
-import "Participation.i.sol";
-import "TokenUser.sol";
+import "./Participation.i.sol";
+import "../vault/Vault.sol";
+import "../shares/Shares.sol";
+import "../policies/PolicyManager.sol";
+import "../hub/Spoke.sol";
+import "../accounting/Accounting.sol";
+import "../../prices/PriceSource.i.sol";
+import "../../factory/Factory.sol";
+import "../../engine/AmguConsumer.sol";
+import "../../dependencies/token/ERC20.i.sol";
+import "../../dependencies/math.sol";
+import "../../dependencies/TokenUser.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke {
@@ -328,7 +329,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
     }
 }
 
-contract ParticipationFactory is Factory {
+contract ParticipationFactory is ParticipationFactoryInterface, Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

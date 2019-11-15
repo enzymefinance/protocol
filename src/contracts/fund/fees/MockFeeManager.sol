@@ -1,12 +1,12 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "Fee.i.sol";
-import "Spoke.sol";
-import "Shares.sol";
-import "Factory.sol";
-import "math.sol";
-import "AmguConsumer.sol";
+import "./Fee.i.sol";
+import "../hub/Spoke.sol";
+import "../shares/Shares.sol";
+import "../../factory/Factory.sol";
+import "../../dependencies/math.sol";
+import "../../engine/AmguConsumer.sol";
 
 contract MockFeeManager is DSMath, AmguConsumer, Spoke {
 

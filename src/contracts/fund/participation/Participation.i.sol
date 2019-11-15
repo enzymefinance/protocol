@@ -44,3 +44,6 @@ interface ParticipationInterface {
     function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public;
 }
 
+interface ParticipationFactoryInterface {
+    function createInstance(address _hub, address[] _defaultAssets, address _registry) external returns (address);
+}

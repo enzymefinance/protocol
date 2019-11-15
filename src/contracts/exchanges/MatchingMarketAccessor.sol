@@ -1,7 +1,7 @@
 pragma solidity ^0.4.25;
 
-import "ERC20.i.sol";
-import "MatchingMarket.sol";
+import "../dependencies/token/ERC20.i.sol";
+import "./third-party/oasisdex/MatchingMarket.sol";
 
 contract MatchingMarketAccessor {
     function getUnsortedOfferIds(

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.25;
 
-import "thing.sol";
-import "ERC20.i.sol";
+import "../dependencies/thing.sol";
+import "../dependencies/token/ERC20.i.sol";
 
 
 /// @title Asset Registar Contract

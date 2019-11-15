@@ -1,16 +1,16 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "Trading.i.sol";
-import "Spoke.sol";
-import "Vault.sol";
-import "PolicyManager.sol";
-import "Factory.sol";
-import "math.sol";
-import "ExchangeAdapter.sol";
-import "LibOrder.sol";
-import "Registry.sol";
-import "TokenUser.sol";
+import "./Trading.i.sol";
+import "../hub/Spoke.sol";
+import "../vault/Vault.sol";
+import "../policies/PolicyManager.sol";
+import "../../factory/Factory.sol";
+import "../../dependencies/math.sol";
+import "../../exchanges/ExchangeAdapter.sol";
+import "../../exchanges/third-party/0x/LibOrder.sol";
+import "../../version/Registry.sol";
+import "../../dependencies/TokenUser.sol";
 
 contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
 
@@ -338,7 +338,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     }
 }
 
-contract TradingFactory is Factory {
+contract TradingFactory is TradingFactoryInterface, Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

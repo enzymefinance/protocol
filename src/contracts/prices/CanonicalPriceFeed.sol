@@ -1,10 +1,10 @@
 pragma solidity ^0.4.25;
 
-import "CanonicalRegistrar.sol";
-import "SimplePriceFeed.sol";
-import "StakingPriceFeed.sol";
-import "OperatorStaking.sol";
-import "ERC20.i.sol";
+import "./CanonicalRegistrar.sol";
+import "./SimplePriceFeed.sol";
+import "./StakingPriceFeed.sol";
+import "./OperatorStaking.sol";
+import "../dependencies/token/ERC20.i.sol";
 
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external data to smart contracts

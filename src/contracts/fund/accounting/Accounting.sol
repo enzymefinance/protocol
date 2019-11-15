@@ -1,15 +1,15 @@
 pragma solidity ^0.4.25;
 
-import "StandardToken.sol";
-import "Factory.sol";
-import "PriceSource.i.sol";
-import "FeeManager.sol";
-import "Spoke.sol";
-import "Shares.sol";
-import "Trading.sol";
-import "Vault.sol";
-import "Accounting.i.sol";
-import "AmguConsumer.sol";
+import "../../dependencies/token/StandardToken.sol";
+import "../../factory/Factory.sol";
+import "../../prices/PriceSource.i.sol";
+import "../fees/FeeManager.sol";
+import "../hub/Spoke.sol";
+import "../shares/Shares.sol";
+import "../trading/Trading.sol";
+import "../vault/Vault.sol";
+import "./Accounting.i.sol";
+import "../../engine/AmguConsumer.sol";
 
 contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
@@ -236,7 +236,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 }
 
-contract AccountingFactory is Factory {
+contract AccountingFactory is AccountingFactoryInterface, Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "WrapperDependencies.sol";
-import "SafeMath.sol";
-import "Ownable.sol";
+import "./WrapperDependencies.sol";
+import "../../../dependencies/SafeMath.sol";
+import "../0x/Ownable.sol";
 
 /*
 

@@ -1,10 +1,10 @@
 pragma solidity ^0.4.25;
 
-import "PriceSource.i.sol";
-import "ERC20.i.sol";
-import "thing.sol";
-import "KyberNetworkProxy.sol";
-import "Registry.sol";
+import "./PriceSource.i.sol";
+import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/thing.sol";
+import "../exchanges/third-party/kyber/KyberNetworkProxy.sol";
+import "../version/Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>

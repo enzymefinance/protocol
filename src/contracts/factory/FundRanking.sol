@@ -1,8 +1,8 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "FundFactory.sol";
-import "Accounting.sol";
+import "./FundFactory.sol";
+import "../fund/accounting/Accounting.sol";
 
 contract FundRanking {
     function getFundDetails(address _factory)

@@ -1,19 +1,19 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "ERC20.i.sol";
-import "Trading.sol";
-import "Hub.sol";
-import "Vault.sol";
-import "Accounting.sol";
-import "Registry.sol";
-import "Weth.sol";
-import "math.sol";
-import "Exchange.sol";
-import "WrapperLock.sol";
-import "WrapperLockEth.sol";
-import "ExchangeAdapter.sol";
-import "WrapperRegistryEFX.sol";
+import "../dependencies/token/ERC20.i.sol";
+import "../fund/trading/Trading.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/vault/Vault.sol";
+import "../fund/accounting/Accounting.sol";
+import "../version/Registry.sol";
+import "../dependencies/Weth.sol";
+import "../dependencies/math.sol";
+import "./third-party/0x/Exchange.sol";
+import "./third-party/ethfinex/WrapperLock.sol";
+import "./third-party/ethfinex/WrapperLockEth.sol";
+import "./ExchangeAdapter.sol";
+import "./third-party/ethfinex/WrapperRegistryEFX.sol";
 
 /// @title EthfinexAdapter Contract
 /// @author Melonport AG <team@melonport.com>

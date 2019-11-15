@@ -38,3 +38,11 @@ interface TradingInterface {
     ) public;
 }
 
+interface TradingFactoryInterface {
+     function createInstance(
+        address _hub,
+        address[] _exchanges,
+        address[] _adapters,
+        address _registry
+    ) public returns (address);
+}

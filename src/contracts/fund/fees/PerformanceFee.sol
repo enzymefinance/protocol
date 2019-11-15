@@ -1,11 +1,11 @@
 pragma solidity ^0.4.25;
 
-import "Fee.i.sol";
-import "FeeManager.sol";
-import "Accounting.sol";
-import "Hub.sol";
-import "Shares.sol";
-import "math.sol";
+import "./Fee.i.sol";
+import "./FeeManager.sol";
+import "../accounting/Accounting.sol";
+import "../hub/Hub.sol";
+import "../shares/Shares.sol";
+import "../../dependencies/math.sol";
 
 contract PerformanceFee is DSMath, Fee {
 

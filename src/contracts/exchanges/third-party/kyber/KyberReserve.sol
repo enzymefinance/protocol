@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "KyberDependencies.sol";
+import "./KyberDependencies.sol";
 
 /// @title Kyber Reserve contract
 contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {

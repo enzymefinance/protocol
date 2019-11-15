@@ -1,9 +1,9 @@
 pragma solidity ^0.4.25;
 
-import "Shares.i.sol";
-import "Spoke.sol";
-import "StandardToken.sol";
-import "Factory.sol";
+import "./Shares.i.sol";
+import "../hub/Spoke.sol";
+import "../../dependencies/token/StandardToken.sol";
+import "../../factory/Factory.sol";
 
 contract Shares is Spoke, StandardToken, SharesInterface {
     string public symbol;

@@ -1,11 +1,11 @@
 pragma solidity ^0.4.25;
 
-import "Hub.sol";
-import "Policy.sol";
-import "MatchingMarketAdapter.sol";
-import "PriceSource.i.sol";
-import "TradingSignatures.sol";
-import "math.sol";
+import "../../hub/Hub.sol";
+import "../Policy.sol";
+import "../../../exchanges/MatchingMarketAdapter.sol";
+import "../../../prices/PriceSource.i.sol";
+import "../TradingSignatures.sol";
+import "../../../dependencies/math.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath, Policy {
     uint public tolerance;

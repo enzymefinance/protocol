@@ -1,7 +1,7 @@
 pragma solidity ^0.4.25;
 
-import "Hub.sol";
-import "auth.sol";
+import "./Hub.sol";
+import "../../dependencies/auth.sol";
 
 /// @notice Has one Hub
 contract Spoke is DSAuth {

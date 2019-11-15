@@ -1,17 +1,17 @@
 pragma solidity ^0.4.25;
 pragma experimental ABIEncoderV2;
 
-import "Accounting.sol";
-import "FeeManager.sol";
-import "Hub.sol";
-import "PolicyManager.sol";
-import "Participation.sol";
-import "Shares.sol";
-import "Trading.sol";
-import "Vault.sol";
-import "Version.i.sol";
-import "AmguConsumer.sol";
-import "Factory.sol";
+import "../fund/accounting/Accounting.i.sol";
+import "../fund/fees/FeeManager.i.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/policies/PolicyManager.i.sol";
+import "../fund/participation/Participation.i.sol";
+import "../fund/shares/Shares.i.sol";
+import "../fund/trading/Trading.i.sol";
+import "../fund/vault/Vault.i.sol";
+import "../version/Version.i.sol";
+import "../engine/AmguConsumer.sol";
+import "./Factory.sol";
 
 /// @notice Creates fund routes and links them together
 contract FundFactory is AmguConsumer, Factory {
@@ -24,13 +24,13 @@ contract FundFactory is AmguConsumer, Factory {
 
     VersionInterface public version;
     address public registry;
-    AccountingFactory public accountingFactory;
-    FeeManagerFactory public feeManagerFactory;
-    ParticipationFactory public participationFactory;
-    PolicyManagerFactory public policyManagerFactory;
-    SharesFactory public sharesFactory;
-    TradingFactory public tradingFactory;
-    VaultFactory public vaultFactory;
+    AccountingFactoryInterface public accountingFactory;
+    FeeManagerFactoryInterface public feeManagerFactory;
+    ParticipationFactoryInterface public participationFactory;
+    PolicyManagerFactoryInterface public policyManagerFactory;
+    SharesFactoryInterface public sharesFactory;
+    TradingFactoryInterface public tradingFactory;
+    VaultFactoryInterface public vaultFactory;
 
     address[] public funds;
     mapping (address => address) public managersToHubs;
@@ -75,13 +75,13 @@ contract FundFactory is AmguConsumer, Factory {
         address _policyManagerFactory,
         address _version
     ) {
-        accountingFactory = AccountingFactory(_accountingFactory);
-        feeManagerFactory = FeeManagerFactory(_feeManagerFactory);
-        participationFactory = ParticipationFactory(_participationFactory);
-        sharesFactory = SharesFactory(_sharesFactory);
-        tradingFactory = TradingFactory(_tradingFactory);
-        vaultFactory = VaultFactory(_vaultFactory);
-        policyManagerFactory = PolicyManagerFactory(_policyManagerFactory);
+        accountingFactory = AccountingFactoryInterface(_accountingFactory);
+        feeManagerFactory = FeeManagerFactoryInterface(_feeManagerFactory);
+        participationFactory = ParticipationFactoryInterface(_participationFactory);
+        sharesFactory = SharesFactoryInterface(_sharesFactory);
+        tradingFactory = TradingFactoryInterface(_tradingFactory);
+        vaultFactory = VaultFactoryInterface(_vaultFactory);
+        policyManagerFactory = PolicyManagerFactoryInterface(_policyManagerFactory);
         version = VersionInterface(_version);
     }
 

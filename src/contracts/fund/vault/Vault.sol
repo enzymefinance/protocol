@@ -1,9 +1,9 @@
 pragma solidity ^0.4.25;
 
-import "Vault.i.sol";
-import "Spoke.sol";
-import "Factory.sol";
-import "TokenUser.sol";
+import "./Vault.i.sol";
+import "../hub/Spoke.sol";
+import "../../factory/Factory.sol";
+import "../../dependencies/TokenUser.sol";
 
 /// @notice Dumb custody component
 contract Vault is VaultInterface, TokenUser, Spoke {
@@ -15,7 +15,7 @@ contract Vault is VaultInterface, TokenUser, Spoke {
     }
 }
 
-contract VaultFactory is Factory {
+contract VaultFactory is VaultFactoryInterface, Factory {
     function createInstance(address _hub) external returns (address) {
         address vault = new Vault(_hub);
         childExists[vault] = true;

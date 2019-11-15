@@ -1,7 +1,7 @@
 pragma solidity ^0.4.25;
 
-import "auth.sol";
-import "Policy.sol";
+import "../../../dependencies/auth.sol";
+import "../Policy.sol";
 
 contract UserWhitelist is Policy, DSAuth {
 

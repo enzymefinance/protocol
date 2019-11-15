@@ -6,3 +6,6 @@ interface SharesInterface {
     function destroyFor(address who, uint amount);
 }
 
+interface SharesFactoryInterface {
+    function createInstance(address _hub) external returns (address);
+}
