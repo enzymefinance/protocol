@@ -1,169 +1,202 @@
-import {
-  BigInteger,
-  add,
-  subtract,
-  power,
-  toBI,
-} from '@melonproject/token-math';
-import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
-import { getAllBalances } from '../utils/getAllBalances';
+import { BN, toWei } from 'web3-utils';
+
+import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
-import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
-import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
-import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
-import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
-import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
-import { createShares } from '~/contracts/factory/transactions/createShares';
-import { createTrading } from '~/contracts/factory/transactions/createTrading';
-import { createVault } from '~/contracts/factory/transactions/createVault';
-import { getFundComponents } from '~/utils/getFundComponents';
-import { Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { deployAndGetSystem } from '../utils/deployAndGetSystem';
+import { getFundComponents } from '~/utils/getFundComponents';
+import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { registerAsset } from '~/contracts/version/transactions/registerAsset';
 import { getContract } from '~/utils/solidity/getContract';
+import { deployAndGetSystem } from '../utils/deployAndGetSystem';
+import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 
-let s: any = {};
+describe('fund-malicious-token', () => {
+  let environment, accounts;
+  let defaultTxOpts, investorTxOpts, managerTxOpts;
+  let deployer, manager, investor;
+  let addresses, contracts;
 
-beforeAll(async () => {
-  s.environment = await initTestEnvironment();
-  s.accounts = await s.environment.eth.getAccounts();
-  const { addresses, contracts } = await deployAndGetSystem(s.environment);
-  s = Object.assign(s, contracts);
-  s.addresses = addresses;
-  s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
-  s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
-  [s.deployer, s.manager, s.investor] = s.accounts;
-  s.gas = 8000000;
-  s.opts = { from: s.deployer, gas: s.gas };
-  const exchangeConfigs = {};
+  beforeAll(async () => {
+    environment = await initTestEnvironment();
+    accounts = await environment.eth.getAccounts();
+    [deployer, manager, investor] = accounts;
+    defaultTxOpts = { from: deployer, gas: 8000000 };
+    managerTxOpts = { ...defaultTxOpts, from: manager };
+    investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const maliciousTokenAddress = await deployContract(
-    s.environment,
-    Contracts.MaliciousToken,
-    ['MLC', 18, 'Malicious'],
-  );
+    const system = await deployAndGetSystem(environment);
+    addresses = system.addresses;
+    contracts = system.contracts;
 
-  await registerAsset(s.environment, s.registry.options.address, {
-    assetAddress: maliciousTokenAddress.toLowerCase(),
-    assetSymbol: 'MLC',
-    name: '',
-    reserveMin: '',
-    sigs: [],
-    standards: [],
-    url: '',
+    const { mln, registry, version: fundFactory, weth } = contracts;
+
+    const maliciousTokenAddress = await deployContract(
+      environment,
+      Contracts.MaliciousToken,
+      ['MLC', 18, 'Malicious'],
+    );
+
+    await registry.methods
+      .registerAsset(
+        maliciousTokenAddress.toLowerCase(),
+        'Malicious',
+        'MLC',
+        '',
+        0,
+        [],
+        [],
+      )
+      .send(defaultTxOpts);
+
+    contracts.maliciousToken = await getContract(
+      environment,
+      Contracts.MaliciousToken,
+      maliciousTokenAddress,
+    );
+
+    await fundFactory.methods
+      .beginSetup(
+        stringToBytes32('Test fund'),
+        [],
+        [],
+        [],
+        [],
+        [],
+        weth.options.address.toString(),
+        [
+          mln.options.address.toString(),
+          weth.options.address.toString(),
+          maliciousTokenAddress.toString(),
+        ],
+      )
+      .send(managerTxOpts);
+
+    await fundFactory.methods.createAccounting().send(managerTxOpts);
+    await fundFactory.methods.createFeeManager().send(managerTxOpts);
+    await fundFactory.methods.createParticipation().send(managerTxOpts);
+    await fundFactory.methods.createPolicyManager().send(managerTxOpts);
+    await fundFactory.methods.createShares().send(managerTxOpts);
+    await fundFactory.methods.createTrading().send(managerTxOpts);
+    await fundFactory.methods.createVault().send(managerTxOpts);
+    const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+    const hubAddress = res.events.NewFund.returnValues.hub;
+
+    const envManager = withDifferentAccount(environment, manager);
+    contracts.fund = await getFundComponents(envManager, hubAddress);
+
+    await updateTestingPriceFeed(contracts, environment);
   });
 
-  s.maliciousToken = await getContract(
-    s.environment,
-    Contracts.MaliciousToken,
-    maliciousTokenAddress,
-  );
+  test('investor gets initial ethToken for testing)', async () => {
+    const { fund, weth } = contracts;
+    const initialTokenAmount = toWei('10', 'ether');
 
-  s.maliciousTokenInterface = await getToken(
-    s.environment,
-    maliciousTokenAddress.toLowerCase(),
-  );
+    const preWethInvestor = await weth.methods.balanceOf(investor).call();
+    await weth.methods
+      .transfer(investor, initialTokenAmount)
+      .send(defaultTxOpts);
+    const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-  const envManager = withDifferentAccount(s.environment, s.manager);
-  await beginSetup(envManager, s.version.options.address, {
-    defaultTokens: [
-      s.wethTokenInterface,
-      s.mlnTokenInterface,
-      s.maliciousTokenInterface,
-    ],
-    exchangeConfigs,
-    fees: [],
-    fundName: 'Test fund',
-    quoteToken: s.wethTokenInterface,
+    expect(
+      new BN(postWethInvestor).eq(
+        new BN(preWethInvestor).add(new BN(initialTokenAmount)),
+      ),
+    ).toBe(true);
   });
-  await createAccounting(envManager, s.version.options.address);
-  await createFeeManager(envManager, s.version.options.address);
-  await createParticipation(envManager, s.version.options.address);
-  await createPolicyManager(envManager, s.version.options.address);
-  await createShares(envManager, s.version.options.address);
-  await createTrading(envManager, s.version.options.address);
-  await createVault(envManager, s.version.options.address);
-  const hubAddress = await completeSetup(envManager, s.version.options.address);
-  s.fund = await getFundComponents(envManager, hubAddress);
-  await updateTestingPriceFeed(s, s.environment);
-  await updateTestingPriceFeed(s, s.environment);
-});
 
-const initialTokenAmount = power(new BigInteger(10), new BigInteger(19));
-test('investor gets initial ethToken for testing)', async () => {
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  await s.weth.methods
-    .transfer(s.investor, `${initialTokenAmount}`)
-    .send(s.opts);
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  test('fund receives ETH from investment', async () => {
+    const { fund, weth } = contracts;
+    const offeredValue = toWei('1', 'ether');
+    const wantedShares = toWei('1', 'ether');
+    const amguAmount = toWei('.01', 'ether');
 
-  expect(post.investor.weth).toEqual(
-    add(pre.investor.weth, initialTokenAmount),
-  );
-});
+    const preWethFund = await weth.methods
+      .balanceOf(fund.vault.options.address)
+      .call();
+    const preWethInvestor = await weth.methods.balanceOf(investor).call();
 
-test('fund receives ETH from investment', async () => {
-  const offeredValue = power(new BigInteger(10), new BigInteger(18));
-  const wantedShares = power(new BigInteger(10), new BigInteger(18));
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  await s.weth.methods
-    .approve(s.fund.participation.options.address, `${offeredValue}`)
-    .send({ from: s.investor, gas: s.gas });
-  await s.fund.participation.methods
-    .requestInvestment(
-      `${offeredValue}`,
-      `${wantedShares}`,
-      s.weth.options.address,
-    )
-    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
-  await s.fund.participation.methods
-    .executeRequestFor(s.investor)
-    .send({ from: s.investor, gas: s.gas });
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    await weth.methods
+      .approve(fund.participation.options.address, offeredValue)
+      .send(investorTxOpts);
+    await fund.participation.methods
+      .requestInvestment(offeredValue, wantedShares, weth.options.address)
+      .send({ ...investorTxOpts, value: amguAmount });
+    await fund.participation.methods
+      .executeRequestFor(investor)
+      .send(investorTxOpts);
 
-  expect(post.investor.weth).toEqual(subtract(pre.investor.weth, offeredValue));
-  expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
-});
+    const postWethFund = await weth.methods
+      .balanceOf(fund.vault.options.address)
+      .call();
+    const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-test(`General redeem fails in presence of malicious token`, async () => {
-  await s.maliciousToken.methods
-    .transfer(s.fund.vault.options.address, 1000000)
-    .send({ from: s.deployer, gas: s.gas });
-  await s.maliciousToken.methods
-    .startReverting()
-    .send({ from: s.deployer, gas: s.gas });
-  expect(
-    s.fund.participation.methods
-      .redeem()
-      .send({ from: s.investor, gas: s.gas }),
-  ).rejects.toThrow();
-});
+    expect(
+      new BN(postWethInvestor).eq(
+        new BN(preWethInvestor).sub(new BN(offeredValue)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postWethFund).eq(new BN(preWethFund).add(new BN(offeredValue))),
+    ).toBe(true);
+  });
 
-test(`Redeem with constraints works as expected`, async () => {
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const investorShares = await s.fund.shares.methods
-    .balanceOf(s.investor)
-    .call();
-  const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  await s.fund.participation.methods
-    .redeemWithConstraints(investorShares, [s.weth.options.address])
-    .send({ from: s.investor, gas: s.gas });
-  const postFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
+  test(`General redeem fails in presence of malicious token`, async () => {
+    const { maliciousToken } = contracts;
+    const { vault, participation } = contracts.fund;
 
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  expect(postTotalSupply).toEqual(
-    subtract(toBI(preTotalSupply), toBI(investorShares)),
-  );
-  expect(post.investor.weth).toEqual(add(pre.investor.weth, pre.fund.weth));
-  expect(post.fund.weth).toEqual(new BigInteger(0));
-  expect(post.fund.mln).toEqual(pre.fund.mln);
-  expect(post.investor.mln).toEqual(pre.investor.mln);
-  expect(postFundGav).toEqual(new BigInteger(0));
+    await maliciousToken.methods
+      .transfer(vault.options.address, 1000000)
+      .send(defaultTxOpts);
+    await maliciousToken.methods.startReverting().send(defaultTxOpts);
+
+    expect(
+      participation.methods.redeem().send(investorTxOpts),
+    ).rejects.toThrow();
+  });
+
+  test(`Redeem with constraints works as expected`, async () => {
+    const { mln, weth } = contracts;
+    const { accounting, participation, shares, vault } = contracts.fund;
+
+    const preMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preMlnInvestor = await mln.methods.balanceOf(investor).call();
+    const preWethFund = await weth.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preWethInvestor = await weth.methods.balanceOf(investor).call();
+    const investorShares = await shares.methods.balanceOf(investor).call();
+    const preTotalSupply = await shares.methods.totalSupply().call();
+
+    await participation.methods
+      .redeemWithConstraints(investorShares, [weth.options.address])
+      .send(investorTxOpts);
+
+    const postMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postMlnInvestor = await mln.methods.balanceOf(investor).call();
+    const postWethFund = await weth.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postWethInvestor = await weth.methods.balanceOf(investor).call();
+    const postTotalSupply = await shares.methods.totalSupply().call();
+    const postFundGav = await accounting.methods.calcGav().call();
+
+    expect(
+      new BN(postTotalSupply).eq(
+        new BN(preTotalSupply).sub(new BN(investorShares)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postWethInvestor).eq(
+        new BN(preWethInvestor).add(new BN(preWethFund)),
+      ),
+    ).toBe(true);
+    expect(new BN(postWethFund).eq(new BN(0))).toBe(true);
+    expect(postMlnFund).toEqual(preMlnFund);
+    expect(postMlnInvestor).toEqual(preMlnInvestor);
+    expect(new BN(postFundGav).eq(new BN(0))).toBe(true);
+  });
 });
