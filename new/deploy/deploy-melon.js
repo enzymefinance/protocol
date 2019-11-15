@@ -3,20 +3,19 @@ const web3 = require('./get-web3');
 const {call, deploy, send, nab} = require('./deploy-contract');
 const deployIn = require('./get-deploy-input');
 
-const deploy_in = './deploy_in.json'; // TODO: rename
+// TODO: remove hardcoding
+const deploy_in = './deploy_out.json'; // TODO: rename
 const deploy_out = './melon_out.json'; // TODO: rename
-const kyber_out = './kyber_out.json'; // TODO: rename
 
-const main = async () => {
+// TODO: rename deployIn
+const main = async (deployIn) => {
   // TODO: clean up conf stuff
-  const deployIn = JSON.parse(fs.readFileSync(deploy_in));
   const conf = deployIn.conf;
   const melonConf = deployIn.melon.conf;
   const input = deployIn.melon.addr;
   const tokenConf = deployIn.tokens.conf;
   const tokenAddrs = deployIn.tokens.addr;
   const kyberAddrs = deployIn.kyber.addr;
-  const exchanges = deployIn.exchangeConfigs;
 
   // TODO: move into conf.melon?
   const defaultMGM = conf.deployer;
@@ -68,12 +67,40 @@ const main = async () => {
     'withdrawTokens(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
   ].map(s => web3.utils.keccak256(s).slice(0,10));
 
-  for (const exchange of Object.values(exchanges)) {
-    const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [exchange.adapter]);
+  const exchanges = {
+    engine: {
+      exchange: engine.options.address,
+      adapter: engineAdapter.options.address,
+      takesCustody: deployIn.melon.conf.exchangeTakesCustody.engine
+    },
+    ethfinex: {
+      exchange: deployIn.ethfinex.addr.Exchange,
+      adapter: ethfinexAdapter.options.address,
+      takesCustody: deployIn.melon.conf.exchangeTakesCustody.ethfinex
+    },
+    kyber: {
+      exchange: deployIn.kyber.addr.KyberNetworkProxy,
+      adapter: kyberAdapter.options.address,
+      takesCustody: deployIn.melon.conf.exchangeTakesCustody.kyber
+    },
+    oasis: {
+      exchange: deployIn.oasis.addr.MatchingMarket,
+      adapter: matchingMarketAdapter.options.address,
+      takesCustody: deployIn.melon.conf.exchangeTakesCustody.oasis
+    },
+    zeroex: {
+      exchange: deployIn.zeroex.addr.Exchange,
+      adapter: zeroExV2Adapter.options.address,
+      takesCustody: deployIn.melon.conf.exchangeTakesCustody.zeroex
+    }
+  };
+
+  for (const info of Object.values(exchanges)) {
+    const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);
     if (isRegistered) {
-      await send(registry, 'updateExchangeAdapter', [exchange.exchange, exchange.adapter, exchange.takesCustody, sigs]);
+      await send(registry, 'updateExchangeAdapter', [info.exchange, info.adapter, info.takesCustody, sigs]);
     } else {
-      await send(registry, 'registerExchangeAdapter', [exchange.exchange, exchange.adapter, exchange.takesCustody, sigs]);
+      await send(registry, 'registerExchangeAdapter', [info.exchange, info.adapter, info.takesCustody, sigs]);
     }
   }
 
@@ -133,13 +160,15 @@ const main = async () => {
 }
 
 if (require.main === module) {
-  //TODO: NEXT: copy file in first place
-  main().then(a => {
-    fs.writeFileSync(deploy_out, JSON.stringify(addrs, null, '  '));
+  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8'));
+  main(input).then(addrs => {
+    const output = Object.assign({}, input);
+    output.melon.addr = addrs;
+    fs.writeFileSync(deploy_out, JSON.stringify(output, null, '  '));
     console.log(`Written to ${deploy_out}`);
     console.log(addrs);
-    process.exit
-  }).catch(console.error);
+    process.exit(0);
+  }).catch(e => { console.error(e); process.exit(1) });
 }
 
 module.exports = main;

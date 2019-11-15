@@ -29,7 +29,7 @@
       "Engine": "",
       "Registry": "",
       "Version": "",
-      "Ranking": ""
+      "FundRanking": ""
     },
     "conf": {
       "priceTolerance": 10,
@@ -37,7 +37,14 @@
       "registryOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
       "engineDelay": 2592000,
       "maxSpread": "100000000000000000",
-      "versionOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826"
+      "versionOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+      "exchangeTakesCustody": {
+        "oasis": true,
+        "kyber": false,
+        "zeroex": false,
+        "ethfinex": true,
+        "engine": false
+      }
     }
   },
   "kyber": {
@@ -53,49 +60,27 @@
     },
     "conf": {}
   },
-  "exchanges": {
+  "oasis": {
     "addr": {
-      "//TODO: remove and rename some of these": "or maybe remove this object altogether",
-      "conversionRates": "0x9d0d58cffdd76ba6aa50fec8c9c6a10ca0c55620",
-      "kyberNetwork": "0xc7d354581d59136ebc7d55ff48c8bf9d29dc1d89",
-      "kyberNetworkProxy": "0xd829b3bc77528164d4bec5c51b1f18ce31077646",
-      "matchingMarket": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
-      "ethfinexexchange": "0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
-      "wrapperRegistryEFX": "0x0c722EA3b6f05d109712dFBfa4421e6b7c5254b9",
-      "erc20proxy": "",
-      "zeroEx": "0x35dd2932454449b14cee11a94d3674a936d5d7b2"
+      "MatchingMarket": ""
     },
     "conf": {
-      "wrapperPairs": []
+      "closeTime": "9999999999999",
+      "quoteToken": "WETH"
     }
   },
-  "exchangeConfigs": {
-    "//TODO: potentially remove this as well": "(redundant)",
-    "MatchingMarket": {
-      "adapter": "0xA27CB53BdBbb12d21E8e28aa84e2486c52A89663",
-      "exchange": "0xbED692938E714Da2a1d5407E5D99658F7D4c8079",
-      "takesCustody": true
+  "ethfinex": {
+    "addr": {
+      "WrapperRegistryEFX": ""
     },
-    "KyberNetwork": {
-      "adapter": "0xA1A4aD89C376Cab1731d06b4680B13d3B9340278",
-      "exchange": "0x7e6b8b9510D71BF8EF0f893902EbB9C865eEF4Df",
-      "takesCustody": false
+    "conf": {}
+  },
+  "zeroex": {
+    "addr": {
+      "Exchange": "",
+      "ERC20Proxy": ""
     },
-    "ZeroEx": {
-      "adapter": "0xA28e3301222B9cb9C54910F0620Fbf92bbE38be3",
-      "exchange": "0x35dD2932454449b14Cee11A94d3674a936d5d7b2",
-      "takesCustody": false
-    },
-    "Ethfinex": {
-      "adapter": "0xB79133a2c7905F035ae237326EFACfE0BB00DC90",
-      "exchange": "0x77ac83FaA57974CDb6f7a130DF50de3fe0792673",
-      "takesCustody": true
-    },
-    "MelonEngine": {
-      "adapter": "0x24289D3dee1c6eA31bEe75d8A7Dd6a36E29F26c6",
-      "exchange": "0xeEDE875Bdc389629eA4E30f0A5fF309a4E5aFF4C",
-      "takesCustody": false
-    }
+    "conf": {}
   },
   "tokens": {
     "addr": {
@@ -111,13 +96,37 @@
       "ZRX": ""
     },
     "conf": {
+      "WETH": {
+        "name": "Eth Token",
+        "decimals": 18
+      },
+      "MLN": {
+        "name": "Melon Token",
+        "decimals": 18
+      },
       "BAT": {
         "name": "Basic Attention Token",
+        "decimals": 18
+      },
+      "DAI": {
+        "name": "Dai",
         "decimals": 18
       },
       "DGX": {
         "name": "Digix Gold Token",
         "decimals": 9
+      },
+      "EUR": {
+        "name": "Euro Token",
+        "decimals": 18
+      },
+      "KNC": {
+        "name": "Kyber Network",
+        "decimals": 18
+      },
+      "MKR": {
+        "name": "MakerDao",
+        "decimals": 18
       },
       "REP": {
         "name": "Rep Token",
@@ -125,26 +134,6 @@
       },
       "ZRX": {
         "name": "ZeroX Protocol Token",
-        "decimals": 18
-      },
-      "MLN": {
-        "name": "Melon Token",
-        "decimals": 18
-      },
-      "MKR": {
-        "name": "MakerDao",
-        "decimals": 18
-      },
-      "DAI": {
-        "name": "Dai",
-        "decimals": 18
-      },
-      "KNC": {
-        "name": "Kyber Network",
-        "decimals": 18
-      },
-      "WETH": {
-        "name": "Eth Token",
         "decimals": 18
       }
     }

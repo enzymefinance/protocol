@@ -87,9 +87,10 @@ const fetch = (name, address) => {
 
 // get address from deploy input if we have one
 // otherwise deploy it with args
+// TODO: better document
 const nab = async (name, args, input, explicitKey=null) => {
   let contract;
-  const key = (explicitKey === null) ? name : explicitKey;
+  const key = explicitKey || name;
   if (input[key] === '' || input[key] === undefined) {
     contract = await deploy(name, args);
   } else {

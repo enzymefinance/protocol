@@ -5,11 +5,10 @@ const {deploy, fetch, nab, send, call} = require('./deploy-contract');
 
 BigNumber.config({EXPONENTIAL_AT: 1e+9}); // TODO: do in config sourcing?
 
-const deploy_in = './deploy_in.json'; // TODO: rename
-const deploy_out = './kyber_out.json'; // TODO: rename
+const deploy_in = './deploy_out.json'; // TODO: rename
+const deploy_out = './deploy_out.json'; // TODO: rename
 
-const main = async () => {
-  const input = JSON.parse(fs.readFileSync(deploy_in));
+const main = async input => {
   const kyberAddrs = input.kyber.addr;
   const tokens = input.tokens.addr;
   const conf = input.conf;
@@ -77,7 +76,7 @@ const main = async () => {
   await send(conversionRates, 'setImbalanceStepFunction', [eur.options.address, [0], [0], [0], [0]]);
   await send(kyberNetwork, 'listPairForReserve', [kyberReserve.options.address, eur.options.address, true, true, true]);
 
-  const addrs = {
+  return {
     "KGT": kgtToken.options.address,
     "ConversionRates": conversionRates.options.address,
     "KyberReserve": kyberReserve.options.address,
@@ -87,13 +86,18 @@ const main = async () => {
     "ExpectedRate": expectedRate.options.address,
     "FeeBurner": feeBurner.options.address,
   };
-  fs.writeFileSync(deploy_out, JSON.stringify(addrs, null, '  '));
-  console.log(`Written to ${deploy_out}`);
-  console.log(addrs);
 }
 
 if (require.main === module) {
-  main().then(process.exit).catch(console.error);
+  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8'));
+  main(input).then(addrs => {
+    const output = Object.assign({}, input);
+    output.kyber.addr = addrs;
+    fs.writeFileSync(deploy_out, JSON.stringify(output, null, '  '));
+    console.log(`Written to ${deploy_out}`);
+    console.log(addrs);
+    process.exit(0);
+  }).catch(e => { console.error(e); process.exit(1) });
 }
 
 module.exports = main;
