@@ -1,32 +1,25 @@
-const fs = require('fs');
+const {fetch, nab, send} = require('./deploy-contract');
 const web3 = require('./get-web3');
-const BigNumber = require('bignumber.js');
-const {deploy, fetch, nab, send, call} = require('./deploy-contract');
-
-BigNumber.config({EXPONENTIAL_AT: 1e+9}); // TODO: do in config sourcing?
-
-const deploy_in = './deploy_out.json'; // TODO: rename
-const deploy_out = './deploy_out.json'; // TODO: rename
+const BN = web3.utils.BN;
 
 const main = async input => {
   const kyberAddrs = input.kyber.addr;
-  const tokens = input.tokens.addr;
   const conf = input.conf;
   const conversionRateAdmin = conf.deployer;
   const kyberNetworkAdmin = conf.deployer;
   const rateDuration = 500;
   const minimalRecordResolution = 2;
-  const maxPerBlockImbalance = new BigNumber('10e+29');
-  const tokensToTransfer = new BigNumber('10e+23');
-  const ethToSend = new BigNumber('10e+22');
-  const maxTotalImbalance = maxPerBlockImbalance.times(12);
-  const categoryCap = new BigNumber('10e+28')
-  const tokensPerEther = new BigNumber('10e+18');
-  const ethersPerToken = new BigNumber('10e+18');
+  const maxPerBlockImbalance = new BN(10).pow(new BN(29));
+  const tokensToTransfer = new BN(10).pow(new BN(23));
+  const ethToSend = new BN(10).pow(new BN(22));
+  const maxTotalImbalance = maxPerBlockImbalance.mul(new BN(12));
+  const categoryCap = new BN(10).pow(new BN(28));
+  const tokensPerEther = new BN(10).pow(new BN(18));
+  const ethersPerToken = new BN(10).pow(new BN(18));
   const blockNumber = (await web3.eth.getBlock()).number;
 
-  const mln = fetch('StandardToken', tokens.MLN);
-  const eur = fetch('StandardToken', tokens.EUR);
+  const mln = fetch('StandardToken', input.tokens.addr.MLN);
+  const eur = fetch('StandardToken', input.tokens.addr.EUR);
 
   const kgtToken = await nab('TestToken', ['KGT', 'KGT', 18], kyberAddrs, 'KgtToken');
   const conversionRates = await nab('ConversionRates', [conversionRateAdmin], kyberAddrs);
@@ -86,18 +79,6 @@ const main = async input => {
     "ExpectedRate": expectedRate.options.address,
     "FeeBurner": feeBurner.options.address,
   };
-}
-
-if (require.main === module) {
-  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8'));
-  main(input).then(addrs => {
-    const output = Object.assign({}, input);
-    output.kyber.addr = addrs;
-    fs.writeFileSync(deploy_out, JSON.stringify(output, null, '  '));
-    console.log(`Written to ${deploy_out}`);
-    console.log(addrs);
-    process.exit(0);
-  }).catch(e => { console.error(e); process.exit(1) });
 }
 
 module.exports = main;

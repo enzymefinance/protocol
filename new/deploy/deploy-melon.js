@@ -1,63 +1,49 @@
-const fs = require('fs');
+const {call, send, nab} = require('./deploy-contract');
 const web3 = require('./get-web3');
-const {call, deploy, send, nab} = require('./deploy-contract');
-const deployIn = require('./get-deploy-input');
 
-// TODO: remove hardcoding
-const deploy_in = './deploy_out.json'; // TODO: rename
-const deploy_out = './melon_out.json'; // TODO: rename
+const main = async input => {
+  const conf = input.conf;
+  const melonConf = input.melon.conf;
+  const melonAddrs = input.melon.addr;
+  const tokenAddrs = input.tokens.addr;
 
-// TODO: rename deployIn
-const main = async (deployIn) => {
-  // TODO: clean up conf stuff
-  const conf = deployIn.conf;
-  const melonConf = deployIn.melon.conf;
-  const input = deployIn.melon.addr;
-  const tokenConf = deployIn.tokens.conf;
-  const tokenAddrs = deployIn.tokens.addr;
-  const kyberAddrs = deployIn.kyber.addr;
-
-  // TODO: move into conf.melon?
-  const defaultMGM = conf.deployer;
-  const defaultEthfinexWrapperRegistry = conf.deployer;
-
-  const ethfinexAdapter = await nab('EthfinexAdapter', [], input);
-  const kyberAdapter = await nab('KyberAdapter', [], input);
-  const matchingMarketAdapter = await nab('MatchingMarketAdapter', [], input);
-  const matchingMarketAccessor = await nab('MatchingMarketAccessor', [], input);
-  const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], input);
-  const engineAdapter = await nab('EngineAdapter', [], input);
-  const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], input);
-  const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], input);
-  const managementFee = await nab('ManagementFee', [], input);
-  const performanceFee = await nab('PerformanceFee', [], input);
-  const accountingFactory = await nab('AccountingFactory', [], input);
-  const feeManagerFactory = await nab('FeeManagerFactory', [], input);
-  const participationFactory = await nab('ParticipationFactory', [], input);
-  const policyManagerFactory = await nab('PolicyManagerFactory', [], input);
-  const sharesFactory = await nab('SharesFactory', [], input);
-  const tradingFactory = await nab('TradingFactory', [], input);
-  const vaultFactory = await nab('VaultFactory', [], input);
-  const registry = await nab('Registry', [melonConf.registryOwner], input);
-  const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], input);
-  const fundRanking = await nab('FundRanking', [], input);
+  const ethfinexAdapter = await nab('EthfinexAdapter', [], melonAddrs);
+  const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
+  const matchingMarketAdapter = await nab('MatchingMarketAdapter', [], melonAddrs);
+  const matchingMarketAccessor = await nab('MatchingMarketAccessor', [], melonAddrs);
+  const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
+  const engineAdapter = await nab('EngineAdapter', [], melonAddrs);
+  const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
+  const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], melonAddrs);
+  const managementFee = await nab('ManagementFee', [], melonAddrs);
+  const performanceFee = await nab('PerformanceFee', [], melonAddrs);
+  const accountingFactory = await nab('AccountingFactory', [], melonAddrs);
+  const feeManagerFactory = await nab('FeeManagerFactory', [], melonAddrs);
+  const participationFactory = await nab('ParticipationFactory', [], melonAddrs);
+  const policyManagerFactory = await nab('PolicyManagerFactory', [], melonAddrs);
+  const sharesFactory = await nab('SharesFactory', [], melonAddrs);
+  const tradingFactory = await nab('TradingFactory', [], melonAddrs);
+  const vaultFactory = await nab('VaultFactory', [], melonAddrs);
+  const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
+  const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
+  const fundRanking = await nab('FundRanking', [], melonAddrs);
 
   let priceSource;
   if (conf.track === 'KYBER_PRICE') {
     priceSource = await nab('KyberPriceFeed', [
-      registry.options.address, kyberAddrs.KyberNetworkProxy,
+      registry.options.address, input.kyber.addr.KyberNetworkProxy,
       melonConf.maxSpread, tokenAddrs.WETH
-    ], input);
+    ], melonAddrs);
   } else if (conf.track === 'TESTING') {
-    priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH], input);
+    priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH], melonAddrs);
   }
 
   await send(registry, 'setPriceSource', [priceSource.options.address]);
   await send(registry, 'setNativeAsset', [tokenAddrs.WETH]);
   await send(registry, 'setMlnToken', [tokenAddrs.MLN]);
   await send(registry, 'setEngine', [engine.options.address]);
-  await send(registry, 'setMGM', [defaultMGM]);
-  await send(registry, 'setEthfinexWrapperRegistry', [defaultEthfinexWrapperRegistry]);
+  await send(registry, 'setMGM', [melonConf.initialMGM]);
+  await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
   const sigs = [
@@ -71,27 +57,27 @@ const main = async (deployIn) => {
     engine: {
       exchange: engine.options.address,
       adapter: engineAdapter.options.address,
-      takesCustody: deployIn.melon.conf.exchangeTakesCustody.engine
+      takesCustody: melonConf.exchangeTakesCustody.engine
     },
     ethfinex: {
-      exchange: deployIn.ethfinex.addr.Exchange,
+      exchange: input.ethfinex.addr.Exchange,
       adapter: ethfinexAdapter.options.address,
-      takesCustody: deployIn.melon.conf.exchangeTakesCustody.ethfinex
+      takesCustody: melonConf.exchangeTakesCustody.ethfinex
     },
     kyber: {
-      exchange: deployIn.kyber.addr.KyberNetworkProxy,
+      exchange: input.kyber.addr.KyberNetworkProxy,
       adapter: kyberAdapter.options.address,
-      takesCustody: deployIn.melon.conf.exchangeTakesCustody.kyber
+      takesCustody: melonConf.exchangeTakesCustody.kyber
     },
     oasis: {
-      exchange: deployIn.oasis.addr.MatchingMarket,
+      exchange: input.oasis.addr.MatchingMarket,
       adapter: matchingMarketAdapter.options.address,
-      takesCustody: deployIn.melon.conf.exchangeTakesCustody.oasis
+      takesCustody: melonConf.exchangeTakesCustody.oasis
     },
     zeroex: {
-      exchange: deployIn.zeroex.addr.Exchange,
+      exchange: input.zeroex.addr.Exchange,
       adapter: zeroExV2Adapter.options.address,
-      takesCustody: deployIn.melon.conf.exchangeTakesCustody.zeroex
+      takesCustody: melonConf.exchangeTakesCustody.zeroex
     }
   };
 
@@ -104,7 +90,7 @@ const main = async (deployIn) => {
     }
   }
 
-  for (const [sym, info] of Object.entries(tokenConf)) {
+  for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
     const isRegistered = await call(registry, 'assetIsRegistered', [tokenAddress]);
     if (!isRegistered) {
@@ -127,7 +113,7 @@ const main = async (deployIn) => {
     policyManagerFactory.options.address,
     registry.options.address,
     melonConf.versionOwner
-  ], input);
+  ], melonAddrs);
 
   if (conf.track === 'KYBER_PRICE')
     await send(priceSource, 'update');
@@ -157,18 +143,6 @@ const main = async (deployIn) => {
     "Engine": engine.options.address,
     "FundRanking": fundRanking.options.address,
   };
-}
-
-if (require.main === module) {
-  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8'));
-  main(input).then(addrs => {
-    const output = Object.assign({}, input);
-    output.melon.addr = addrs;
-    fs.writeFileSync(deploy_out, JSON.stringify(output, null, '  '));
-    console.log(`Written to ${deploy_out}`);
-    console.log(addrs);
-    process.exit(0);
-  }).catch(e => { console.error(e); process.exit(1) });
 }
 
 module.exports = main;

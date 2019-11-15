@@ -1,11 +1,4 @@
-const fs = require('fs');
-const web3 = require('./get-web3');
-const nab = require('./deploy-contract').nab;
-const deploy = require('./deploy-contract').deploy;
-const deployIn = require('./get-deploy-input');
-
-const deploy_in = './deploy_in.json'; // TODO: rename
-const deploy_out = './deploy_out.json'; // TODO: rename
+const {nab} = require('./deploy-contract');
 
 const main = async input => {
   const tokenAddrs = input.tokens.addr;
@@ -32,18 +25,6 @@ const main = async input => {
     "REP": rep.options.address,
     "ZRX": zrx.options.address,
   };
-}
-
-if (require.main === module) {
-  const input = JSON.parse(fs.readFileSync(deploy_in, 'utf8'));
-  main(input).then(addrs => {
-    const output = Object.assign({}, input);
-    output.tokens.addr = addrs;
-    fs.writeFileSync(deploy_out, JSON.stringify(output, null, '  '));
-    console.log(`Written to ${deploy_out}`);
-    console.log(addrs);
-    process.exit(0);
-  }).catch(e => { console.error(e); process.exit(1) });
 }
 
 module.exports = main;

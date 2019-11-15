@@ -38,6 +38,7 @@
       "engineDelay": 2592000,
       "maxSpread": "100000000000000000",
       "versionOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+      "initialMGM": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
       "exchangeTakesCustody": {
         "oasis": true,
         "kyber": false,
