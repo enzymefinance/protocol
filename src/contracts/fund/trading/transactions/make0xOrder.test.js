@@ -9,7 +9,7 @@ import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder'
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 describe('make0xOrder', () => {
-  const shared: any = {};
+  const shared = {};
 
   beforeAll(async () => {
     const env = await deployAndInitTestEnv();

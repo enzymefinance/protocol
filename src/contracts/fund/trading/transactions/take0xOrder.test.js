@@ -11,7 +11,7 @@ import {
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 
 describe('take0xOrder', () => {
-  const shared: any = {};
+  const shared = {};
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();

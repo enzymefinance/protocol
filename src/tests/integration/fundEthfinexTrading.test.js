@@ -41,7 +41,7 @@ import { increaseTime } from '~/utils/evm';
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-let s: any = {};
+let s = {};
 
 beforeAll(async () => {
   s.environment = await initTestEnvironment();
