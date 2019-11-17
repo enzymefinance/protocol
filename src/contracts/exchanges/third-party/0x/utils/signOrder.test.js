@@ -1,6 +1,4 @@
 import { Environment } from '~/utils/environment/Environment';
-import { createQuantity } from '@melonproject/token-math';
-
 import {
   initTestEnvironment,
   keyPairs,
@@ -9,16 +7,13 @@ import { withPrivateKeySigner } from '~/utils/environment/withPrivateKeySigner';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { createOrder } from './createOrder';
+import { createUnsignedOrder } from './createOrder';
 import { signOrder } from './signOrder';
 import { isValidSignature } from '../calls/isValidSignature';
+import { toWei } from 'web3-utils';
 
 describe('signOrder', () => {
-  const shared: {
-    env?: Environment;
-    withPK?: Environment;
-    [p: string]: any;
-  } = {};
+  let shared = {};
 
   beforeAll(async () => {
     shared.env = await initTestEnvironment();
@@ -46,12 +41,14 @@ describe('signOrder', () => {
   });
 
   it('is same signature with both signing strategies', async () => {
-    const makerQuantity = createQuantity(shared.mln, 1);
-    const takerQuantity = createQuantity(shared.weth, 0.05);
+    const makerAssetAmount = toWei('1', 'Ether');
+    const takerAssetAmount = toWei('0.05', 'Ether');
 
-    const unsignedOrder = await createOrder(shared.env, shared.zeroEx, {
-      makerQuantity,
-      takerQuantity,
+    const unsignedOrder = await createUnsignedOrder(shared.env, shared.zeroEx, {
+      makerTokenAddress: shared.mln.address,
+      makerAssetAmount,
+      takerTokenAddress: shared.weth.address,
+      takerAssetAmount,
     });
 
     const signedDefault = await signOrder(shared.env, unsignedOrder);
