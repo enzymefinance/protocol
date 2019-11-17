@@ -10,6 +10,7 @@ import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
+import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -89,10 +90,8 @@ describe('Happy Path', () => {
     const { 0: mlnPrice } = await priceSource.methods
       .getPrice(mlnTokenInfo.address)
       .call();
-    const ethPriceInMln = new BN(toWei('1', 'ether'))
-      .mul(new BN(toWei('1', 'ether')))
-      .div(new BN(mlnPrice))
-      .toString();
+    const ethPriceInMln = BNExpInverse(new BN(mlnPrice)).toString()
+
     const blockNumber = (await environment.eth.getBlock('latest')).number;
     const conversionRates = getContract(
       environment,
@@ -122,10 +121,10 @@ describe('Happy Path', () => {
 
     // Minimum quantity of dest asset expected to get in return in the trade
     const makerAsset = mln.options.address;
-    const makerQuantity = new BN(takerQuantity)
-      .mul(new BN(expectedRate))
-      .div(new BN(toWei('1', 'ether')))
-      .toString();
+    const makerQuantity = BNExpMul(
+      new BN(takerQuantity),
+      new BN(expectedRate),
+    ).toString();
 
     const preMlnBalance = await mln.methods
       .balanceOf(routes.vaultAddress.toString())

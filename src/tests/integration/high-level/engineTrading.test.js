@@ -10,6 +10,7 @@ import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
+import { BNExpMul } from '../../utils/new/BNmath';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -87,10 +88,10 @@ describe('Happy Path', () => {
 
     await engine.methods.thaw().send(defaultTxOpts);
 
-    const makerQuantity = new BN(takerQuantity)
-      .mul(new BN(mlnPrice))
-      .div(new BN(toWei('1', 'ether')))
-      .toString();
+    const makerQuantity = BNExpMul(
+      new BN(takerQuantity),
+      new BN(mlnPrice),
+    ).toString();
 
     await mln.methods
       .transfer(routes.vaultAddress.toString(), takerQuantity)
@@ -132,10 +133,14 @@ describe('Happy Path', () => {
       .balanceOf(routes.vaultAddress.toString())
       .call();
 
-    expect(preFundMln - postFundMln).toEqual(Number(takerQuantity));
-    expect(postFundWeth - preFundWeth).toEqual(
-      preliquidEther - postliquidEther,
-    );
+    expect(
+      new BN(preFundMln).sub(new BN(postFundMln)).eq(new BN(takerQuantity))
+    ).toBe(true);
+    expect(
+      new BN(postFundWeth).sub(new BN(preFundWeth)).eq(
+        new BN(preliquidEther).sub(new BN(postliquidEther))
+      )
+    ).toBe(true);
   });
 
   test('Maker quantity as minimum returned WETH is respected', async () => {

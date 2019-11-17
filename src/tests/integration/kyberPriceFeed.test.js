@@ -9,6 +9,7 @@ import { isAddress } from '~/utils/checks/isAddress';
 import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
+import { BNExpDiv, BNExpInverse } from '../utils/new/BNmath';
 
 describe('kyber-price-feed', () => {
   let environment, user, defaultTxOpts;
@@ -101,23 +102,17 @@ describe('kyber-price-feed', () => {
   });
 
   it('Update mln price in reserve', async () => {
-    const mlnPrice = new BN(toWei('1', 'ether'))
-      .mul(new BN(toWei('1', 'ether')))
-      .div(new BN(toWei('0.05', 'ether')))
-      .toString();
-    const ethPriceInMln = new BN(toWei('1', 'ether'))
-      .mul(new BN(toWei('1', 'ether')))
-      .div(new BN(mlnPrice))
-      .toString();
+    const mlnPrice = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      new BN(toWei('0.05', 'ether')),
+    ).toString();
+    const ethPriceInMln = BNExpInverse(new BN(mlnPrice)).toString()
 
-    const eurPrice = new BN(toWei('1', 'ether'))
-      .mul(new BN(toWei('1', 'ether')))
-      .div(new BN(toWei('0.008', 'ether')))
-      .toString();
-    const ethPriceInEur = new BN(toWei('1', 'ether'))
-      .mul(new BN(toWei('1', 'ether')))
-      .div(new BN(eurPrice))
-      .toString();
+    const eurPrice = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      new BN(toWei('0.008', 'ether')),
+    ).toString();
+    const ethPriceInEur = BNExpInverse(new BN(eurPrice)).toString()
 
     const blockNumber = (await environment.eth.getBlock('latest')).number;
     await conversionRates.methods
@@ -142,7 +137,7 @@ describe('kyber-price-feed', () => {
       .getPrice(eurTokenInfo.address)
       .call();
 
-    expect(mlnPrice).toEqual(toWei('20', 'ether'));
-    expect(eurPrice).toEqual(toWei('125', 'ether'));
+    expect(updatedMlnPrice).toEqual(mlnPrice);
+    expect(updatedEurPrice).toEqual(eurPrice);
   });
 });

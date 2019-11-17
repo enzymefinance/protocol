@@ -14,6 +14,7 @@ import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
+import { BNExpMul } from '../utils/new/BNmath';
 
 describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;
@@ -155,10 +156,10 @@ describe('fund-kyber-trading', () => {
       .getExpectedRate(kyberEthAddress, makerAsset, takerQuantity)
       .call(defaultTxOpts);
 
-    const makerQuantity = new BN(takerQuantity)
-      .mul(new BN(expectedRate))
-      .div(new BN(toWei('1', 'ether')))
-      .toString();
+    const makerQuantity = BNExpMul(
+      new BN(takerQuantity),
+      new BN(expectedRate),
+    ).toString();
 
     const preMlnFund = await mln.methods
       .balanceOf(fund.vault.options.address)
@@ -214,10 +215,10 @@ describe('fund-kyber-trading', () => {
       .getExpectedRate(takerAsset, kyberEthAddress, takerQuantity)
       .call(defaultTxOpts);
 
-    const makerQuantity = new BN(takerQuantity)
-      .mul(new BN(expectedRate))
-      .div(new BN(toWei('1', 'ether')))
-      .toString();
+    const makerQuantity = BNExpMul(
+      new BN(takerQuantity),
+      new BN(expectedRate),
+    ).toString();
 
     const preMlnFund = await mln.methods
       .balanceOf(fund.vault.options.address)
@@ -273,10 +274,10 @@ describe('fund-kyber-trading', () => {
       .getExpectedRate(takerAsset, makerAsset, takerQuantity)
       .call(defaultTxOpts);
 
-    const makerQuantity = new BN(takerQuantity)
-      .mul(new BN(expectedRate))
-      .div(new BN(toWei('1', 'ether')))
-      .toString();
+    const makerQuantity = BNExpMul(
+      new BN(takerQuantity),
+      new BN(expectedRate),
+    ).toString();
 
     const preEurFund = await eur.methods
       .balanceOf(fund.vault.options.address)
@@ -339,11 +340,10 @@ describe('fund-kyber-trading', () => {
       .getExpectedRate(takerAsset, makerAsset, takerQuantity)
       .call(defaultTxOpts);
 
-    const makerQuantity = new BN(takerQuantity)
-      .mul(new BN(expectedRate))
-      .mul(new BN(2))
-      .div(new BN(toWei('1', 'ether')))
-      .toString();
+    const makerQuantity = BNExpMul(
+      new BN(takerQuantity),
+      new BN(expectedRate).mul(new BN(2)),
+    ).toString();
 
     expect(
       trading.methods
