@@ -30,9 +30,9 @@ const createUnsignedOrder = async (
   environment,
   exchange,
   {
-    makerTokenInfo,
+    makerTokenAddress,
     makerAssetAmount,
-    takerTokenInfo,
+    takerTokenAddress,
     takerAssetAmount,
     duration = 24 * 60 * 60,
     makerAddress: givenMakerAddress,
@@ -40,20 +40,16 @@ const createUnsignedOrder = async (
     takerFee,
   },
 ) => {
-  const makerAssetData = assetDataUtils.encodeERC20AssetData(
-    makerTokenInfo.address,
-  );
+  const makerAssetData = assetDataUtils.encodeERC20AssetData(makerTokenAddress);
 
-  const takerAssetData = assetDataUtils.encodeERC20AssetData(
-    takerTokenInfo.address,
-  );
+  const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
 
   const latestBlock = await getLatestBlock(environment);
   const makerAddress = givenMakerAddress || environment.wallet.address;
 
   const formattedTakerFee = takerFee
     ? takerFee.toString()
-    : constants.ZERO_AMOUNT;
+    : constants.ZERO_AMOUNT.toFixed();
 
   // tslint:disable:object-literal-sort-keys
   const order = {
@@ -74,7 +70,7 @@ const createUnsignedOrder = async (
     takerAssetAmount,
     makerAssetData,
     takerAssetData,
-    makerFee: constants.ZERO_AMOUNT,
+    makerFee: constants.ZERO_AMOUNT.toFixed(),
     takerFee: formattedTakerFee,
   };
 

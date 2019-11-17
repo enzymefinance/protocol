@@ -13,7 +13,7 @@ import {
   cancelOrderSignature,
 } from '~/utils/constants/orderSignatures';
 import {
-  createOrder,
+  createUnsignedOrder,
   approveOrder,
   isValidSignatureOffChain,
 } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
@@ -39,11 +39,12 @@ import { Exchanges } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+import { toWei, BN } from 'web3-utils';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-let s: any = {};
+let s = {}
 
 beforeAll(async () => {
   s.environment = await initTestEnvironment();
@@ -91,7 +92,7 @@ beforeAll(async () => {
   await updateTestingPriceFeed(s, s.environment);
 });
 
-const initialTokenAmount = new BigInteger(10 ** 19);
+const initialTokenAmount = new BN(toWei('10', 'Ether'));
 test('investor gets initial ethToken for testing)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
@@ -99,15 +100,13 @@ test('investor gets initial ethToken for testing)', async () => {
     .send(s.opts);
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
 
-  expect(post.investor.weth).toEqual(
-    add(pre.investor.weth, initialTokenAmount),
-  );
+  expect(post.investor.weth.eq(pre.investor.weth.add(initialTokenAmount))).toBe(true);
 });
 
 // tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
-  const offeredValue = new BigInteger(10 ** 18);
-  const wantedShares = new BigInteger(10 ** 18);
+  const offeredValue = new BN(toWei('1', 'Ether'));
+  const wantedShares = new BN(toWei('1', 'Ether'));
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
     .approve(s.fund.participation.options.address, `${offeredValue}`)
@@ -127,22 +126,26 @@ test('fund receives ETH from investment, and gets ZRX from direct transfer', asy
     .send({ from: s.deployer, gas: s.gas });
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
 
-  expect(post.investor.weth).toEqual(subtract(pre.investor.weth, offeredValue));
-  expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
+  // expect(post.investor.weth).toEqual(subtract(pre.investor.weth, offeredValue));
+  // expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
+  expect(post.investor.weth.eq(pre.investor.weth.sub(offeredValue))).toBe(true);
+  expect(post.fund.weth.eq(pre.fund.weth.add(offeredValue))).toBe(true);
 });
 
 test('third party makes and validates an off-chain order', async () => {
   const makerAddress = s.deployer.toLowerCase();
-  const makerQuantity = createQuantity(s.mlnTokenInterface, 1);
-  const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
+  const makerAssetAmount = toWei('1', 'Ether');
+  const takerAssetAmount = toWei('0.05', 'Ether');
 
-  const unsignedOrder = await createOrder(
+  const unsignedOrder = await createUnsignedOrder(
     s.environment,
     s.zeroExExchange.options.address,
     {
       makerAddress,
-      makerQuantity,
-      takerQuantity,
+      makerTokenAddress: s.mlnTokenInterface.address,
+      makerAssetAmount,
+      takerTokenAddress: s.wethTokenInterface.address,
+      takerAssetAmount,
     },
   );
 
@@ -161,7 +164,7 @@ test('third party makes and validates an off-chain order', async () => {
   expect(signatureValid).toBeTruthy();
 });
 
-// tslint:disable-next-line:max-line-length
+// // tslint:disable-next-line:max-line-length
 test('manager takes order (half the total quantity) through 0x adapter', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   const fillQuantity = s.signedOrder.takerAssetAmount;
@@ -178,13 +181,13 @@ test('manager takes order (half the total quantity) through 0x adapter', async (
         NULL_ADDRESS,
       ],
       [
-        s.signedOrder.makerAssetAmount.toFixed(),
-        s.signedOrder.takerAssetAmount.toFixed(),
-        s.signedOrder.makerFee.toFixed(),
-        s.signedOrder.takerFee.toFixed(),
-        s.signedOrder.expirationTimeSeconds.toFixed(),
-        s.signedOrder.salt.toFixed(),
-        `${fillQuantity}`,
+        s.signedOrder.makerAssetAmount,
+        s.signedOrder.takerAssetAmount,
+        s.signedOrder.makerFee,
+        s.signedOrder.takerFee,
+        s.signedOrder.expirationTimeSeconds,
+        s.signedOrder.salt,
+        fillQuantity,
         0,
       ],
       randomHexOfSize(20),
@@ -199,35 +202,30 @@ test('manager takes order (half the total quantity) through 0x adapter', async (
     .call();
 
   expect(heldInExchange).toBe('0');
-  expect(post.deployer.mln).toEqual(
-    subtract(pre.deployer.mln, toBI(s.signedOrder.makerAssetAmount)),
-  );
-  expect(post.fund.weth).toEqual(
-    subtract(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
-  expect(post.fund.mln).toEqual(
-    add(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
-  );
-  expect(post.deployer.weth).toEqual(
-    add(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
+  expect(post.deployer.mln.eq(pre.deployer.mln.sub(new BN(s.signedOrder.makerAssetAmount)))).toBe(true);
+  expect(post.fund.weth.eq(pre.fund.weth.sub(new BN(s.signedOrder.takerAssetAmount)))).toBe(true);
+  expect(post.fund.mln.eq(pre.fund.mln.add(new BN(s.signedOrder.makerAssetAmount)))).toBe(true);
+  expect(post.deployer.weth.eq(pre.deployer.weth.add(new BN(s.signedOrder.takerAssetAmount)))).toBe(true);
 });
 
 test('third party makes and validates an off-chain order', async () => {
   const makerAddress = s.deployer.toLowerCase();
-  const makerQuantity = createQuantity(s.mlnTokenInterface, 1);
-  const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
-  const takerFee = new BigInteger(10 ** 14);
+  const takerFee = new BN(10 ** 14);
 
-  const unsignedOrder = await createOrder(
+  const makerAssetAmount = toWei('1', 'Ether');
+  const takerAssetAmount = toWei('0.05', 'Ether');
+
+  const unsignedOrder = await createUnsignedOrder(
     s.environment,
     s.zeroExExchange.options.address,
     {
       feeRecipientAddress: s.investor,
       makerAddress,
-      makerQuantity,
+      makerTokenAddress: s.mlnTokenInterface.address,
+      makerAssetAmount,
       takerFee,
-      takerQuantity,
+      takerTokenAddress: s.wethTokenInterface.address,
+      takerAssetAmount,
     },
   );
 
@@ -248,7 +246,7 @@ test('third party makes and validates an off-chain order', async () => {
 
 test('fund with enough ZRX takes the above order', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preFundZrx = new BigInteger(
+  const preFundZrx = new BN(
     await s.zrx.methods.balanceOf(s.fund.vault.options.address).call(),
   );
   const fillQuantity = s.signedOrder.takerAssetAmount;
@@ -265,13 +263,13 @@ test('fund with enough ZRX takes the above order', async () => {
         NULL_ADDRESS,
       ],
       [
-        s.signedOrder.makerAssetAmount.toFixed(),
-        s.signedOrder.takerAssetAmount.toFixed(),
-        s.signedOrder.makerFee.toFixed(),
-        s.signedOrder.takerFee.toFixed(),
-        s.signedOrder.expirationTimeSeconds.toFixed(),
-        s.signedOrder.salt.toFixed(),
-        `${fillQuantity}`,
+        s.signedOrder.makerAssetAmount,
+        s.signedOrder.takerAssetAmount,
+        s.signedOrder.makerFee,
+        s.signedOrder.takerFee,
+        s.signedOrder.expirationTimeSeconds,
+        s.signedOrder.salt,
+        fillQuantity,
         0,
       ],
       randomHexOfSize(20),
@@ -281,7 +279,7 @@ test('fund with enough ZRX takes the above order', async () => {
     )
     .send({ from: s.manager, gas: s.gas });
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postFundZrx = new BigInteger(
+  const postFundZrx = new BN(
     await s.zrx.methods.balanceOf(s.fund.vault.options.address).call(),
   );
   const heldInExchange = await s.fund.trading.methods
@@ -289,34 +287,27 @@ test('fund with enough ZRX takes the above order', async () => {
     .call();
 
   expect(heldInExchange).toBe('0');
-  expect(postFundZrx).toEqual(
-    subtract(preFundZrx, toBI(s.signedOrder.takerFee)),
-  );
-  expect(post.deployer.mln).toEqual(
-    subtract(pre.deployer.mln, toBI(s.signedOrder.makerAssetAmount)),
-  );
-  expect(post.fund.weth).toEqual(
-    subtract(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
-  expect(post.fund.mln).toEqual(
-    add(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
-  );
-  expect(post.deployer.weth).toEqual(
-    add(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
+  expect(postFundZrx.eq(preFundZrx.sub(new BN(s.signedOrder.takerFee)))).toBe(true);
+  expect(post.deployer.mln.eq(pre.deployer.mln.sub(new BN(s.signedOrder.makerAssetAmount)))).toBe(true);
+  expect(post.fund.weth.eq(pre.fund.weth.sub(new BN(s.signedOrder.takerAssetAmount)))).toBe(true);
+  expect(post.fund.mln.eq(pre.fund.mln.add(new BN(s.signedOrder.makerAssetAmount)))).toBe(true);
+  expect(post.deployer.weth.eq(pre.deployer.weth.add(new BN(s.signedOrder.takerAssetAmount)))).toBe(true);
 });
 
 test('Make order through the fund', async () => {
   const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const makerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
-  const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
-  const unsignedOrder = await createOrder(
+  const makerAssetAmount = toWei('0.5', 'Ether');
+  const takerAssetAmount = toWei('0.05', 'Ether');
+
+  const unsignedOrder = await createUnsignedOrder(
     s.environment,
     s.zeroExExchange.options.address,
     {
       makerAddress,
-      makerQuantity,
-      takerQuantity,
+      makerTokenAddress: s.mln.options.address,
+      makerAssetAmount,
+      takerTokenAddress: s.weth.options.address,
+      takerAssetAmount,
     },
   );
   s.signedOrder = await signOrder(s.environment, unsignedOrder, s.manager);
@@ -333,12 +324,12 @@ test('Make order through the fund', async () => {
         NULL_ADDRESS,
       ],
       [
-        s.signedOrder.makerAssetAmount.toFixed(),
-        s.signedOrder.takerAssetAmount.toFixed(),
-        s.signedOrder.makerFee.toFixed(),
-        s.signedOrder.takerFee.toFixed(),
-        s.signedOrder.expirationTimeSeconds.toFixed(),
-        s.signedOrder.salt.toFixed(),
+        s.signedOrder.makerAssetAmount,
+        s.signedOrder.takerAssetAmount,
+        s.signedOrder.makerFee,
+        s.signedOrder.takerFee,
+        s.signedOrder.expirationTimeSeconds,
+        s.signedOrder.salt,
         0,
         0,
       ],
@@ -348,7 +339,7 @@ test('Make order through the fund', async () => {
       s.signedOrder.signature,
     )
     .send({ from: s.manager, gas: s.gas });
-  const makerAssetAllowance = new BigInteger(
+  const makerAssetAllowance = new BN(
     await s.mln.methods
       .allowance(
         s.fund.trading.options.address,
@@ -356,46 +347,44 @@ test('Make order through the fund', async () => {
       )
       .call(),
   );
-  expect(makerAssetAllowance).toEqual(
-    new BigInteger(s.signedOrder.makerAssetAmount),
-  );
+  expect(makerAssetAllowance.eq(new BN(s.signedOrder.makerAssetAmount))).toBe(true);
 });
 
-// test.serial(
-//   'Fund cannot make multiple orders for same asset unless fulfilled',
-//   async t => {
-//     await t.throws(
-//       fund.trading.methods
-//         .callOnExchange(
-//           0,
-//           makeOrderSignature,
-//           [
-//             fund.trading.options.address.toLowerCase(),
-//             NULL_ADDRESS,
-//             mlnToken.options.address,
-//             ethToken.options.address,
-//             order.feeRecipientAddress,
-//             NULL_ADDRESS,
-//           ],
-//           [
-//             order.makerAssetAmount.toFixed(),
-//             order.takerAssetAmount.toFixed(),
-//             order.makerFee.toFixed(),
-//             order.takerFee.toFixed(),
-//             order.expirationTimeSeconds.toFixed(),
-//             559,
-//             0,
-//             0,
-//           ],
-//           web3.utils.padLeft('0x0', 64),
-//           order.makerAssetData,
-//           order.takerAssetData,
-//           orderSignature,
-//         )
-//         .send({ from: manager, gas: config.gas }),
-//     );
-//   },
-// );
+// // test.serial(
+// //   'Fund cannot make multiple orders for same asset unless fulfilled',
+// //   async t => {
+// //     await t.throws(
+// //       fund.trading.methods
+// //         .callOnExchange(
+// //           0,
+// //           makeOrderSignature,
+// //           [
+// //             fund.trading.options.address.toLowerCase(),
+// //             NULL_ADDRESS,
+// //             mlnToken.options.address,
+// //             ethToken.options.address,
+// //             order.feeRecipientAddress,
+// //             NULL_ADDRESS,
+// //           ],
+// //           [
+// //             order.makerAssetAmount.toFixed(),
+// //             order.takerAssetAmount.toFixed(),
+// //             order.makerFee.toFixed(),
+// //             order.takerFee.toFixed(),
+// //             order.expirationTimeSeconds.toFixed(),
+// //             559,
+// //             0,
+// //             0,
+// //           ],
+// //           web3.utils.padLeft('0x0', 64),
+// //           order.makerAssetData,
+// //           order.takerAssetData,
+// //           orderSignature,
+// //         )
+// //         .send({ from: manager, gas: config.gas }),
+// //     );
+// //   },
+// // );
 
 test('Third party takes the order made by the fund', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
@@ -410,33 +399,29 @@ test('Third party takes the order made by the fund', async () => {
   const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
 
   expect(result).toBeTruthy();
-  expect(post.fund.weth).toEqual(
-    add(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
-  expect(post.fund.mln).toEqual(
-    subtract(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
-  );
-  expect(post.deployer.weth).toEqual(
-    subtract(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
-  expect(post.deployer.mln).toEqual(
-    add(pre.deployer.mln, toBI(s.signedOrder.makerAssetAmount)),
-  );
+  expect(post.fund.weth.eq(pre.fund.weth.add(new BN(s.signedOrder.takerAssetAmount)))).toBe(true);
+  expect(post.fund.mln.eq(pre.fund.mln.sub(new BN(s.signedOrder.makerAssetAmount)))).toBe(true);
+  expect(post.deployer.weth.eq(pre.deployer.weth.sub(new BN(s.signedOrder.takerAssetAmount)))).toBe(true);
+  expect(post.deployer.mln.eq(pre.deployer.mln.add(new BN(s.signedOrder.makerAssetAmount)))).toBe(true);
 });
 
 // tslint:disable-next-line:max-line-length
 test("Fund can make another make order for same asset (After it's inactive)", async () => {
   const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
-  const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
-  s.unsignedOrder = await createOrder(
+  // const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
+  // const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
+  const makerAssetAmount = toWei('0.05', 'Ether');
+  const takerAssetAmount = toWei('0.5', 'Ether');
+  s.unsignedOrder = await createUnsignedOrder(
     s.environment,
     s.zeroExExchange.options.address,
     {
       feeRecipientAddress: s.investor,
       makerAddress,
-      makerQuantity,
-      takerQuantity,
+      makerTokenAddress: s.wethTokenInterface.address,
+      makerAssetAmount,
+      takerTokenAddress: s.mlnTokenInterface.address,
+      takerAssetAmount,
     },
   );
   s.signedOrder = await signOrder(s.environment, s.unsignedOrder, s.manager);
@@ -453,12 +438,12 @@ test("Fund can make another make order for same asset (After it's inactive)", as
         NULL_ADDRESS,
       ],
       [
-        s.signedOrder.makerAssetAmount.toFixed(),
-        s.signedOrder.takerAssetAmount.toFixed(),
-        s.signedOrder.makerFee.toFixed(),
-        s.signedOrder.takerFee.toFixed(),
-        s.signedOrder.expirationTimeSeconds.toFixed(),
-        s.signedOrder.salt.toFixed(),
+        s.signedOrder.makerAssetAmount,
+        s.signedOrder.takerAssetAmount,
+        s.signedOrder.makerFee,
+        s.signedOrder.takerFee,
+        s.signedOrder.expirationTimeSeconds,
+        s.signedOrder.salt,
         0,
         0,
       ],
@@ -468,7 +453,7 @@ test("Fund can make another make order for same asset (After it's inactive)", as
       s.signedOrder.signature,
     )
     .send({ from: s.manager, gas: s.gas });
-  const makerAssetAllowance = new BigInteger(
+  const makerAssetAllowance = new BN(
     await s.weth.methods
       .allowance(
         s.fund.trading.options.address,
@@ -476,9 +461,7 @@ test("Fund can make another make order for same asset (After it's inactive)", as
       )
       .call(),
   );
-  expect(makerAssetAllowance).toEqual(
-    new BigInteger(s.signedOrder.makerAssetAmount),
-  );
+  expect(makerAssetAllowance.eq(new BN(s.signedOrder.makerAssetAmount))).toBe(true);
 });
 
 test('Fund can cancel the order using just the orderId', async () => {
@@ -506,7 +489,7 @@ test('Fund can cancel the order using just the orderId', async () => {
     .cancelled(orderHashHex)
     .call();
 
-  const makerAssetAllowance = new BigInteger(
+  const makerAssetAllowance = new BN(
     await s.mln.methods
       .allowance(
         s.fund.trading.options.address,
@@ -514,25 +497,28 @@ test('Fund can cancel the order using just the orderId', async () => {
       )
       .call(),
   );
-  expect(makerAssetAllowance).toEqual(new BigInteger(0));
+  expect(makerAssetAllowance.eq(new BN(0))).toBe(true);
   expect(isOrderCancelled).toBeTruthy();
 });
 
 test('Expired order is removed from open maker order', async () => {
   await increaseTime(s.environment, 60 * 30);
   const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const makerQuantity = createQuantity(s.wethTokenInterface, 0.05);
-  const takerQuantity = createQuantity(s.mlnTokenInterface, 0.5);
+  const makerAssetAmount = toWei('0.05', 'Ether');
+  const takerAssetAmount = toWei('0.5', 'Ether');
   const duration = 50;
-  s.unsignedOrder = await createOrder(
+
+  s.unsignedOrder = await createUnsignedOrder(
     s.environment,
     s.zeroExExchange.options.address,
     {
       duration,
       feeRecipientAddress: s.investor,
       makerAddress,
-      makerQuantity,
-      takerQuantity,
+      makerTokenAddress: s.wethTokenInterface.address,
+      makerAssetAmount,
+      takerTokenAddress: s.mlnTokenInterface.address,
+      takerAssetAmount,
     },
   );
   s.signedOrder = await signOrder(s.environment, s.unsignedOrder, s.manager);
@@ -549,12 +535,12 @@ test('Expired order is removed from open maker order', async () => {
         NULL_ADDRESS,
       ],
       [
-        s.signedOrder.makerAssetAmount.toFixed(),
-        s.signedOrder.takerAssetAmount.toFixed(),
-        s.signedOrder.makerFee.toFixed(),
-        s.signedOrder.takerFee.toFixed(),
-        s.signedOrder.expirationTimeSeconds.toFixed(),
-        s.signedOrder.salt.toFixed(),
+        s.signedOrder.makerAssetAmount,
+        s.signedOrder.takerAssetAmount,
+        s.signedOrder.makerFee,
+        s.signedOrder.takerFee,
+        s.signedOrder.expirationTimeSeconds,
+        s.signedOrder.salt,
         0,
         0,
       ],
@@ -564,7 +550,7 @@ test('Expired order is removed from open maker order', async () => {
       s.signedOrder.signature,
     )
     .send({ from: s.manager, gas: s.gas });
-  const makerAssetAllowance = new BigInteger(
+  const makerAssetAllowance = new BN(
     await s.weth.methods
       .allowance(
         s.fund.trading.options.address,
@@ -572,9 +558,7 @@ test('Expired order is removed from open maker order', async () => {
       )
       .call(),
   );
-  expect(makerAssetAllowance).toEqual(
-    new BigInteger(s.signedOrder.makerAssetAmount),
-  );
+  expect(makerAssetAllowance.eq(new BN(s.signedOrder.makerAssetAmount))).toBe(true);
 
   const orderHashHex = orderHashUtils.getOrderHashHex(s.unsignedOrder);
   await increaseTime(s.environment, duration);
