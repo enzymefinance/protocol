@@ -62,9 +62,9 @@ describe('account-0x-trading', () => {
       environment,
       zrxExchangeAddress,
       {
-        makerTokenInfo: mlnTokenInfo,
+        makerTokenAddress: mlnTokenInfo.address,
         makerAssetAmount,
-        takerTokenInfo: wethTokenInfo,
+        takerTokenAddress: wethTokenInfo.address,
         takerAssetAmount,
       }
     );
@@ -76,7 +76,7 @@ describe('account-0x-trading', () => {
       zrxExchangeAddress.toLowerCase(),
     );
     expect(signedOrder.makerAddress).toBe(accounts[0].toLowerCase());
-    expect(signedOrder.makerAssetAmount.toString()).toBe(makerAssetAmount);
+    expect(signedOrder.makerAssetAmount).toBe(makerAssetAmount);
 
     const exchange = getContract(
       environment,

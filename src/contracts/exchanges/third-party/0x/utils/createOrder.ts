@@ -21,6 +21,8 @@ import { BN } from 'web3-utils';
 import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { AssetProxyId } from '@0x/types';
+import { BigNumber } from 'bignumber.js';
+import { add, toBI } from '@melonproject/token-math';
 
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the
@@ -77,6 +79,60 @@ const createUnsignedOrder = async (
   return order;
 };
 
+const createOrder = async (
+  environment,
+  exchange,
+  {
+    makerQuantity,
+    takerQuantity,
+    duration = 24 * 60 * 60,
+    makerAddress: givenMakerAddress,
+    feeRecipientAddress,
+    takerFee,
+  },
+) => {
+  const makerAssetData = assetDataUtils.encodeERC20AssetData(
+    makerQuantity.token.address,
+  );
+
+  const takerAssetData = assetDataUtils.encodeERC20AssetData(
+    takerQuantity.token.address,
+  );
+
+  const latestBlock = await getLatestBlock(environment);
+  const makerAddress = givenMakerAddress || environment.wallet.address;
+  const formattedTakerFee = takerFee
+    ? new BigNumber(`${takerFee}`)
+    : constants.ZERO_AMOUNT;
+
+  // tslint:disable:object-literal-sort-keys
+  const order = {
+    exchangeAddress: `${exchange.toLowerCase()}`,
+    makerAddress: `${makerAddress.toLowerCase()}`,
+    takerAddress: constants.NULL_ADDRESS,
+    senderAddress: constants.NULL_ADDRESS,
+    feeRecipientAddress: (
+      feeRecipientAddress || constants.NULL_ADDRESS
+    ).toLowerCase(),
+    expirationTimeSeconds: new BigNumber(
+      add(toBI(latestBlock.timestamp), toBI(duration)).toString(),
+    ),
+    salt: new BigNumber(
+      generatePseudoRandomSalt()
+        .toString()
+        .slice(0, 10),
+    ),
+    makerAssetAmount: new BigNumber(`${makerQuantity.quantity}`),
+    takerAssetAmount: new BigNumber(`${takerQuantity.quantity}`),
+    makerAssetData,
+    takerAssetData,
+    makerFee: constants.ZERO_AMOUNT,
+    takerFee: formattedTakerFee,
+  };
+
+  return order;
+};
+
 const approveOrder = async (environment, exchangeAddress, order) => {
   const zrxExchange = getContract(
     environment,
@@ -118,4 +174,9 @@ const isValidSignatureOffChain = async (
   );
 };
 
-export { createUnsignedOrder, approveOrder, isValidSignatureOffChain };
+export {
+  createUnsignedOrder,
+  createOrder,
+  approveOrder,
+  isValidSignatureOffChain,
+};

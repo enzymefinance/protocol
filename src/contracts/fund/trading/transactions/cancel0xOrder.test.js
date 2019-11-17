@@ -10,7 +10,7 @@ import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder'
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 
 describe('cancel0xOrder', () => {
-  const shared: any = {};
+  const shared = {};
 
   beforeAll(async () => {
     shared.env = await deployAndInitTestEnv();
