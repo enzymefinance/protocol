@@ -14,40 +14,74 @@ import {
   signatureUtils,
   orderHashUtils,
 } from '@0x/order-utils';
-import { BigNumber } from 'bignumber.js';
-import { Order } from '@0x/types';
+// import { BigNumber } from 'bignumber.js';
 import { constants } from '@0x/order-utils/lib/src/constants';
-import {
-  add,
-  Address,
-  BigInteger,
-  createQuantity,
-  QuantityInterface,
-  toBI,
-} from '@melonproject/token-math';
-
 import { getLatestBlock } from '~/utils/evm';
-import { getAssetProxy } from '../calls/getAssetProxy';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { approve } from '~/contracts/dependencies/token/transactions/approve';
-import { Environment } from '~/utils/environment/Environment';
-
-export interface CreateOrderArgs {
-  makerQuantity: QuantityInterface;
-  takerQuantity: QuantityInterface;
-  duration?: number;
-  makerAddress?: Address;
-  feeRecipientAddress?: Address;
-  takerFee?: BigInteger;
-}
+import { BN } from 'web3-utils';
+import { Contracts } from '~/Contracts';
+import { getContract } from '~/utils/solidity/getContract';
+import { AssetProxyId } from '@0x/types';
+import { BigNumber } from 'bignumber.js';
+import { add, toBI } from '@melonproject/token-math';
 
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the
  * Ethfinex Wrapper contract
  */
+const createUnsignedOrder = async (
+  environment,
+  exchange,
+  {
+    makerTokenAddress,
+    makerAssetAmount,
+    takerTokenAddress,
+    takerAssetAmount,
+    duration = 24 * 60 * 60,
+    makerAddress: givenMakerAddress,
+    feeRecipientAddress,
+    takerFee,
+  },
+) => {
+  const makerAssetData = assetDataUtils.encodeERC20AssetData(makerTokenAddress);
+
+  const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
+
+  const latestBlock = await getLatestBlock(environment);
+  const makerAddress = givenMakerAddress || environment.wallet.address;
+
+  const formattedTakerFee = takerFee
+    ? takerFee.toString()
+    : constants.ZERO_AMOUNT.toFixed();
+
+  // tslint:disable:object-literal-sort-keys
+  const order = {
+    exchangeAddress: `${exchange.toLowerCase()}`,
+    makerAddress: `${makerAddress.toLowerCase()}`,
+    takerAddress: constants.NULL_ADDRESS,
+    senderAddress: constants.NULL_ADDRESS,
+    feeRecipientAddress: (
+      feeRecipientAddress || constants.NULL_ADDRESS
+    ).toLowerCase(),
+    expirationTimeSeconds: new BN(latestBlock.timestamp)
+      .add(new BN(duration))
+      .toString(),
+    salt: generatePseudoRandomSalt()
+      .toString()
+      .slice(0, 10),
+    makerAssetAmount,
+    takerAssetAmount,
+    makerAssetData,
+    takerAssetData,
+    makerFee: constants.ZERO_AMOUNT.toFixed(),
+    takerFee: formattedTakerFee,
+  };
+
+  return order;
+};
+
 const createOrder = async (
-  environment: Environment,
-  exchange: Address,
+  environment,
+  exchange,
   {
     makerQuantity,
     takerQuantity,
@@ -55,8 +89,8 @@ const createOrder = async (
     makerAddress: givenMakerAddress,
     feeRecipientAddress,
     takerFee,
-  }: CreateOrderArgs,
-): Promise<Order> => {
+  },
+) => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(
     makerQuantity.token.address,
   );
@@ -72,7 +106,7 @@ const createOrder = async (
     : constants.ZERO_AMOUNT;
 
   // tslint:disable:object-literal-sort-keys
-  const order: Order = {
+  const order = {
     exchangeAddress: `${exchange.toLowerCase()}`,
     makerAddress: `${makerAddress.toLowerCase()}`,
     takerAddress: constants.NULL_ADDRESS,
@@ -99,32 +133,37 @@ const createOrder = async (
   return order;
 };
 
-const approveOrder = async (
-  environment: Environment,
-  exchange: Address,
-  order: Order,
-) => {
-  const erc20Proxy = await getAssetProxy(environment, exchange);
+const approveOrder = async (environment, exchangeAddress, order) => {
+  const zrxExchange = getContract(
+    environment,
+    Contracts.ZeroExExchange,
+    exchangeAddress,
+  );
+  const erc20ProxyAddress = await zrxExchange.methods
+    .getAssetProxy(AssetProxyId.ERC20)
+    .call();
 
   const makerTokenAddress = assetDataUtils.decodeERC20AssetData(
     order.makerAssetData,
   ).tokenAddress;
 
-  const makerToken = await getToken(environment, makerTokenAddress);
-  const makerQuantity = createQuantity(
-    makerToken,
-    order.makerAssetAmount.toString(),
+  const makerToken = getContract(
+    environment,
+    Contracts.StandardToken,
+    makerTokenAddress,
   );
 
-  await approve(environment, { howMuch: makerQuantity, spender: erc20Proxy });
+  await makerToken.methods
+    .approve(erc20ProxyAddress, order.makerAssetAmount)
+    .send({ from: environment.wallet.address, gas: 8000000 });
 };
 
 const isValidSignatureOffChain = async (
-  environment: Environment,
-  order: Order,
-  signature: string,
-  makerAddress?: Address,
-): Promise<boolean> => {
+  environment,
+  order,
+  signature,
+  makerAddress?,
+) => {
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
 
   return signatureUtils.isValidSignatureAsync(
@@ -135,4 +174,9 @@ const isValidSignatureOffChain = async (
   );
 };
 
-export { createOrder, approveOrder, isValidSignatureOffChain };
+export {
+  createUnsignedOrder,
+  createOrder,
+  approveOrder,
+  isValidSignatureOffChain,
+};
