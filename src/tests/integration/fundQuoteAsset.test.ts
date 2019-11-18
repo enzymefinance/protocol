@@ -1,380 +1,460 @@
+import { BN, toWei } from 'web3-utils';
+
+import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import {
-  BigInteger,
-  add,
-  subtract,
-  multiply,
-  divide,
-  power,
-  toBI,
-} from '@melonproject/token-math';
-import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
-import { getAllBalances } from '../utils/getAllBalances';
-import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
-import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
-import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
-import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
-import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
-import { createShares } from '~/contracts/factory/transactions/createShares';
-import { createTrading } from '~/contracts/factory/transactions/createTrading';
-import { createVault } from '~/contracts/factory/transactions/createVault';
-import { getFundComponents } from '~/utils/getFundComponents';
+import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
-import { Exchanges } from '~/Contracts';
-import { makeOrderSignature } from '~/utils/constants/orderSignatures';
+import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { addTokenPairWhitelist } from '~/contracts/exchanges/transactions/addTokenPairWhitelist';
-import { performCalculations } from '~/contracts/fund/accounting/calls/performCalculations';
+import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { BNExpMul } from '../utils/new/BNmath';
+import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 
-const precisionUnits = power(new BigInteger(10), new BigInteger(18));
+describe('fund-quote-asset', () => {
+  let environment, accounts;
+  let deployer, manager, investor;
+  let defaultTxOpts, investorTxOpts, managerTxOpts;
+  let addresses, contracts;
+  let fundDenominationAsset;
+  let trade1;
 
-let s: any = {};
+  beforeAll(async () => {
+    environment = await initTestEnvironment();
+    accounts = await environment.eth.getAccounts();
+    [deployer, manager, investor] = accounts;
+    defaultTxOpts = { from: deployer, gas: 8000000 };
+    managerTxOpts = { ...defaultTxOpts, from: manager };
+    investorTxOpts = { ...defaultTxOpts, from: investor };
 
-beforeAll(async () => {
-  s.environment = await initTestEnvironment();
-  s.accounts = await s.environment.eth.getAccounts();
-  const { addresses, contracts } = await deployAndGetSystem(s.environment);
-  s.addresses = addresses;
-  s = Object.assign(s, contracts);
+    const system = await deployAndGetSystem(environment);
+    addresses = system.addresses;
+    contracts = system.contracts;
 
-  [s.deployer, s.manager, s.investor] = s.accounts;
-  s.gas = 8000000;
+    const {
+      dgx,
+      matchingMarketAdapter,
+      matchingMarket,
+      version: fundFactory,
+      weth,
+      mln,
+    } = contracts;
 
-  s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
-  s.dgxTokenInterface = await getToken(s.environment, s.dgx.options.address);
-  s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
-  const exchangeConfigs = {
-    [Exchanges.MatchingMarket]: {
-      adapter: s.matchingMarketAdapter.options.address,
-      exchange: s.matchingMarket.options.address,
-      takesCustody: true,
-    },
-  };
-  const envManager = withDifferentAccount(s.environment, s.manager);
-  await updateTestingPriceFeed(s, s.environment);
-  await beginSetup(envManager, s.version.options.address, {
-    defaultTokens: [
-      s.wethTokenInterface,
-      s.mlnTokenInterface,
-      s.dgxTokenInterface,
-    ],
-    exchangeConfigs,
-    fees: [],
-    fundName: 'Test fund',
-    quoteToken: s.dgxTokenInterface,
+    await fundFactory.methods
+      .beginSetup(
+        stringToBytes32('Test fund'),
+        [],
+        [],
+        [],
+        [matchingMarket.options.address.toString()],
+        [matchingMarketAdapter.options.address.toString()],
+        dgx.options.address.toString(),
+        [
+          mln.options.address.toString(),
+          weth.options.address.toString(),
+          dgx.options.address.toString(),
+        ],
+      )
+      .send(managerTxOpts);
+    await fundFactory.methods.createAccounting().send(managerTxOpts);
+    await fundFactory.methods.createFeeManager().send(managerTxOpts);
+    await fundFactory.methods.createParticipation().send(managerTxOpts);
+    await fundFactory.methods.createPolicyManager().send(managerTxOpts);
+    await fundFactory.methods.createShares().send(managerTxOpts);
+    await fundFactory.methods.createTrading().send(managerTxOpts);
+    await fundFactory.methods.createVault().send(managerTxOpts);
+    const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+    const hubAddress = res.events.NewFund.returnValues.hub;
+
+    const envManager = withDifferentAccount(environment, manager);
+    contracts.fund = await getFundComponents(envManager, hubAddress);
+
+    await matchingMarket.methods
+      .addTokenPairWhitelist(
+        dgx.options.address.toString(),
+        mln.options.address.toString(),
+      )
+      .send(defaultTxOpts);
+
+    await updateTestingPriceFeed(contracts, environment);
   });
-  await createAccounting(envManager, s.version.options.address);
-  await createFeeManager(envManager, s.version.options.address);
-  await createParticipation(envManager, s.version.options.address);
-  await createPolicyManager(envManager, s.version.options.address);
-  await createShares(envManager, s.version.options.address);
-  await createTrading(envManager, s.version.options.address);
-  await createVault(envManager, s.version.options.address);
-  const hubAddress = await completeSetup(envManager, s.version.options.address);
-  s.fund = await getFundComponents(envManager, hubAddress);
 
-  await addTokenPairWhitelist(s.environment, s.matchingMarket.options.address, {
-    baseToken: s.mlnTokenInterface,
-    quoteToken: s.dgxTokenInterface,
+  test('fund denomination asset is dgx', async () => {
+    const { dgx } = contracts;
+    const { accounting } = contracts.fund;
+
+    fundDenominationAsset = await accounting.methods
+      .DENOMINATION_ASSET()
+      .call();
+    expect(fundDenominationAsset).toEqual(dgx.options.address);
   });
-  await updateTestingPriceFeed(s, s.environment);
-});
 
-test('Transfer ethToken and mlnToken to the investor', async () => {
-  const initialTokenAmount = power(new BigInteger(10), new BigInteger(21));
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  await s.weth.methods
-    .transfer(s.investor, `${initialTokenAmount}`)
-    .send({ from: s.deployer });
-  await s.mln.methods
-    .transfer(s.investor, `${initialTokenAmount}`)
-    .send({ from: s.deployer });
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  expect(post.investor.weth).toEqual(
-    add(pre.investor.weth, initialTokenAmount),
-  );
-  expect(post.investor.mln).toEqual(add(pre.investor.mln, initialTokenAmount));
-});
+  test('Transfer ethToken and mlnToken to the investor', async () => {
+    const { mln, weth } = contracts;
+    const initialTokenAmount = toWei('1000', 'ether');
 
-test(`fund gets non fund denomination asset from investment`, async () => {
-  const wantedShares = power(new BigInteger(10), new BigInteger(20));
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
+    const preMlnInvestor = await mln.methods.balanceOf(investor).call();
+    const preWethInvestor = await weth.methods.balanceOf(investor).call();
+    await mln.methods
+      .transfer(investor, initialTokenAmount)
+      .send(defaultTxOpts);
+    await weth.methods
+      .transfer(investor, initialTokenAmount)
+      .send(defaultTxOpts);
+    const postMlnInvestor = await mln.methods.balanceOf(investor).call();
+    const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-  await s.weth.methods
-    .approve(s.fund.participation.options.address, wantedShares)
-    .send({ from: s.investor, gas: s.gas });
-  await s.fund.participation.methods
-    .requestInvestment(
-      `${wantedShares}`,
-      `${wantedShares}`,
-      s.weth.options.address,
-    )
-    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
+    expect(
+      new BN(postMlnInvestor).eq(
+        new BN(preMlnInvestor).add(new BN(initialTokenAmount)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postWethInvestor).eq(
+        new BN(preWethInvestor).add(new BN(initialTokenAmount)),
+      ),
+    ).toBe(true);
+  });
 
-  const fundDenominationAsset = await s.fund.accounting.methods
-    .DENOMINATION_ASSET()
-    .call();
-  const [dgxPriceInWeth] = Object.values(
-    await s.priceSource.methods
-      .getReferencePriceInfo(fundDenominationAsset, s.weth.options.address)
-      .call(),
-  ).map(e => new BigInteger(e));
-  const expectedCostOfShares = divide(
-    multiply(wantedShares, dgxPriceInWeth),
-    precisionUnits,
-  );
-  const actualCostOfShares = new BigInteger(
-    await s.fund.accounting.methods
-      .getShareCostInAsset(`${wantedShares}`, s.weth.options.address)
-      .call(),
-  );
+  test(`fund gets non fund denomination asset from investment`, async () => {
+    const { dgx, priceSource, weth } = contracts;
+    const { accounting, participation, shares, vault } = contracts.fund;
+    const offeredValue = toWei('100', 'ether');
+    const wantedShares = toWei('100', 'ether');
+    const amguAmount = toWei('.01', 'ether');
 
-  await updateTestingPriceFeed(s, s.environment);
-  await updateTestingPriceFeed(s, s.environment);
+    const dgxPriceInWeth = (await priceSource.methods
+      .getReferencePriceInfo(fundDenominationAsset, weth.options.address)
+      .call())[0];
 
-  await s.fund.participation.methods
-    .executeRequestFor(s.investor)
-    .send({ from: s.investor, gas: s.gas });
+    const expectedCostOfShares = BNExpMul(
+      new BN(wantedShares),
+      new BN(dgxPriceInWeth),
+    );
 
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  const postFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
-  const [wethPriceInDgx] = Object.values(
-    await s.priceSource.methods
-      .getReferencePriceInfo(s.weth.options.address, fundDenominationAsset)
-      .call(),
-  ).map(e => new BigInteger(e));
+    const actualCostOfShares = new BN(
+      await accounting.methods
+        .getShareCostInAsset(wantedShares, weth.options.address)
+        .call(),
+    );
+    expect(expectedCostOfShares.eq(actualCostOfShares)).toBe(true);
 
-  expect(fundDenominationAsset).toEqual(s.dgx.options.address);
-  expect(postTotalSupply).toEqual(add(toBI(preTotalSupply), wantedShares));
-  expect(expectedCostOfShares).toEqual(actualCostOfShares);
-  expect(post.investor.weth).toEqual(
-    subtract(pre.investor.weth, expectedCostOfShares),
-  );
-  expect(post.fund.weth).toEqual(add(pre.fund.weth, expectedCostOfShares));
-  expect(postFundGav).toEqual(
-    add(
-      pre.fund.weth,
-      divide(multiply(expectedCostOfShares, wethPriceInDgx), precisionUnits),
-    ),
-  );
-});
+    await updateTestingPriceFeed(contracts, environment);
 
-test(`investor redeems his shares`, async () => {
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const investorShares = await s.fund.shares.methods
-    .balanceOf(s.investor)
-    .call();
-  const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
+    const preWethFund = await weth.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preWethInvestor = await weth.methods.balanceOf(investor).call();
+    const preTotalSupply = await shares.methods.totalSupply().call();
 
-  await s.fund.participation.methods
-    .redeem()
-    .send({ from: s.investor, gas: s.gas });
+    await weth.methods
+      .approve(participation.options.address, wantedShares)
+      .send(investorTxOpts);
 
-  const postFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
+    await participation.methods
+      .requestInvestment(offeredValue, wantedShares, weth.options.address)
+      .send({ ...investorTxOpts, value: amguAmount });
 
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  expect(postTotalSupply).toEqual(
-    subtract(toBI(preTotalSupply), toBI(investorShares)),
-  );
-  expect(post.investor.weth).toEqual(add(pre.investor.weth, pre.fund.weth));
-  expect(post.fund.weth).toEqual(new BigInteger(0));
-  expect(postFundGav).toEqual(new BigInteger(0));
-});
+    await participation.methods
+      .executeRequestFor(investor)
+      .send(investorTxOpts);
 
-test(`fund gets non pricefeed quote asset from investment`, async () => {
-  const wantedShares = power(new BigInteger(10), new BigInteger(18));
-  const offeredValue = power(new BigInteger(10), new BigInteger(21));
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
-  const preTotalSupply = await s.fund.shares.methods.totalSupply().call();
+    const postWethFund = await weth.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postWethInvestor = await weth.methods.balanceOf(investor).call();
+    const postTotalSupply = await shares.methods.totalSupply().call();
+    const postFundGav = await accounting.methods.calcGav().call();
 
-  await s.mln.methods
-    .approve(s.fund.participation.options.address, `${offeredValue}`)
-    .send({ from: s.investor, gas: s.gas });
-  await s.fund.participation.methods
-    .requestInvestment(
-      `${wantedShares}`,
-      `${offeredValue}`,
-      s.mln.options.address,
-    )
-    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
+    const wethPriceInDgx = (await priceSource.methods
+      .getReferencePriceInfo(weth.options.address, fundDenominationAsset)
+      .call())[0];
 
-  const fundDenominationAsset = await s.fund.accounting.methods
-    .DENOMINATION_ASSET()
-    .call();
-  const [dgxPriceInMln] = Object.values(
-    await s.priceSource.methods
-      .getReferencePriceInfo(fundDenominationAsset, s.mln.options.address)
-      .call(),
-  ).map(e => new BigInteger(e));
-  const expectedCostOfShares = divide(
-    multiply(wantedShares, dgxPriceInMln),
-    precisionUnits,
-  );
-  const actualCostOfShares = new BigInteger(
-    await s.fund.accounting.methods
-      .getShareCostInAsset(`${wantedShares}`, s.mln.options.address)
-      .call(),
-  );
+    expect(
+      new BN(postTotalSupply).eq(
+        new BN(preTotalSupply).add(new BN(wantedShares)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postWethInvestor).eq(
+        new BN(preWethInvestor).sub(expectedCostOfShares),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postWethFund).eq(new BN(preWethFund).add(expectedCostOfShares)),
+    ).toBe(true);
+    expect(
+      new BN(postFundGav).eq(
+        new BN(preWethFund).add(
+          BNExpMul(expectedCostOfShares, new BN(wethPriceInDgx)),
+        ),
+      ),
+    ).toBe(true);
+  });
 
-  await updateTestingPriceFeed(s, s.environment);
-  await updateTestingPriceFeed(s, s.environment);
+  test(`investor redeems his shares`, async () => {
+    const { weth } = contracts;
+    const { accounting, participation, shares, vault } = contracts.fund;
 
-  await s.fund.participation.methods
-    .executeRequestFor(s.investor)
-    .send({ from: s.investor, gas: s.gas });
+    const investorShares = await shares.methods.balanceOf(investor).call();
 
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postTotalSupply = await s.fund.shares.methods.totalSupply().call();
-  const postFundGav = new BigInteger(
-    await s.fund.accounting.methods.calcGav().call(),
-  );
-  const [mlnPriceInDgx] = Object.values(
-    await s.priceSource.methods
-      .getReferencePriceInfo(s.mln.options.address, fundDenominationAsset)
-      .call(),
-  ).map(e => new BigInteger(e));
+    const preWethFund = await weth.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preWethInvestor = await weth.methods.balanceOf(investor).call();
+    const preTotalSupply = await shares.methods.totalSupply().call();
 
-  expect(fundDenominationAsset).toEqual(s.dgx.options.address);
-  expect(postTotalSupply).toEqual(add(toBI(preTotalSupply), wantedShares));
-  expect(expectedCostOfShares).toEqual(actualCostOfShares);
-  // TODO: Fix this
-  // expect(post.investor.mln).toEqual(
-  //   subtract(pre.investor.mln, expectedCostOfShares),
-  // );
-  expect(post.fund.mln).toEqual(add(pre.fund.mln, expectedCostOfShares));
-  expect(postFundGav).toEqual(
-    add(
-      preFundGav,
-      divide(multiply(expectedCostOfShares, mlnPriceInDgx), precisionUnits),
-    ),
-  );
-});
+    await participation.methods.redeem().send(investorTxOpts);
 
-test(`Fund make order with a non-18 decimal asset`, async () => {
-  s.trade1 = {};
-  s.trade1.sellQuantity = power(new BigInteger(10), new BigInteger(8));
-  await s.dgx.methods
-    .transfer(s.fund.vault.options.address, `${s.trade1.sellQuantity}`)
-    .send({ from: s.deployer });
-  const [dgxPriceInMln] = Object.values(
-    await s.priceSource.methods
-      .getReferencePriceInfo(s.dgx.options.address, s.mln.options.address)
-      .call(),
-  ).map(e => new BigInteger(e));
-  s.trade1.buyQuantity = divide(
-    multiply(toBI(s.trade1.sellQuantity), dgxPriceInMln),
-    power(new BigInteger(10), new BigInteger(9)),
-  );
+    const postWethFund = await weth.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postWethInvestor = await weth.methods.balanceOf(investor).call();
+    const postTotalSupply = await shares.methods.totalSupply().call();
+    const postFundGav = await accounting.methods.calcGav().call();
 
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preFundCalculations = await performCalculations(
-    s.environment,
-    s.fund.accounting.options.address,
-  );
-  const exchangePreDgx = new BigInteger(
-    await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  const exchangePreMln = new BigInteger(
-    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  await s.fund.trading.methods
-    .callOnExchange(
-      0,
-      makeOrderSignature,
-      [
+    expect(
+      new BN(postTotalSupply).eq(
+        new BN(preTotalSupply).sub(new BN(investorShares)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postWethInvestor).eq(
+        new BN(preWethInvestor).add(new BN(preWethFund)),
+      ),
+    ).toBe(true);
+    expect(new BN(postWethFund).eq(new BN(0))).toBe(true);
+    expect(new BN(postFundGav).eq(new BN(0))).toBe(true);
+  });
+
+  test(`fund gets non pricefeed quote asset from investment`, async () => {
+    const { dgx, mln, priceSource } = contracts;
+    const { accounting, participation, shares, vault } = contracts.fund;
+    const offeredValue = toWei('1000', 'ether');
+    const wantedShares = toWei('1', 'ether');
+    const amguAmount = toWei('.01', 'ether');
+
+    const dgxPriceInMln = (await priceSource.methods
+      .getReferencePriceInfo(fundDenominationAsset, mln.options.address)
+      .call())[0];
+    const expectedCostOfShares = BNExpMul(
+      new BN(wantedShares),
+      new BN(dgxPriceInMln),
+    );
+    const actualCostOfShares = new BN(
+      await accounting.methods
+        .getShareCostInAsset(wantedShares, mln.options.address)
+        .call(),
+    );
+    expect(expectedCostOfShares.eq(actualCostOfShares)).toBe(true);
+
+    await updateTestingPriceFeed(contracts, environment);
+
+    const preMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preMlnInvestor = await mln.methods.balanceOf(investor).call();
+    const preFundGav = await accounting.methods.calcGav().call();
+    const preTotalSupply = await shares.methods.totalSupply().call();
+
+    await mln.methods
+      .approve(participation.options.address, offeredValue)
+      .send(investorTxOpts);
+    await participation.methods
+      .requestInvestment(wantedShares, offeredValue, mln.options.address)
+      .send({ ...investorTxOpts, value: amguAmount });
+    await participation.methods
+      .executeRequestFor(investor)
+      .send(investorTxOpts);
+
+    const postMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postMlnInvestor = await mln.methods.balanceOf(investor).call();
+    const postFundGav = await accounting.methods.calcGav().call();
+    const postTotalSupply = await shares.methods.totalSupply().call();
+    const mlnPriceInDgx = (await priceSource.methods
+      .getReferencePriceInfo(mln.options.address, fundDenominationAsset)
+      .call())[0];
+
+    expect(
+      new BN(postTotalSupply).eq(
+        new BN(preTotalSupply).add(new BN(wantedShares)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postMlnInvestor).eq(
+        new BN(preMlnInvestor).sub(expectedCostOfShares),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postMlnFund).eq(new BN(preMlnFund).add(expectedCostOfShares)),
+    ).toBe(true);
+    expect(
+      new BN(postFundGav).eq(
+        new BN(preFundGav).add(
+          BNExpMul(expectedCostOfShares, new BN(mlnPriceInDgx)),
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  test(`Fund make order with a non-18 decimal asset`, async () => {
+    const { dgx, matchingMarket, mln, priceSource } = contracts;
+    const { accounting, trading, vault } = contracts.fund;
+    const wantedShares = toWei('1', 'ether');
+    trade1 = {
+      sellQuantity: toWei('0.1', 'gwei'),
+    };
+
+    await dgx.methods
+      .transfer(vault.options.address, trade1.sellQuantity)
+      .send(defaultTxOpts);
+
+    const dgxPriceInMln = (await priceSource.methods
+      .getReferencePriceInfo(fundDenominationAsset, mln.options.address)
+      .call())[0];
+    trade1.buyQuantity = BNExpMul(
+      new BN(trade1.sellQuantity),
+      new BN(dgxPriceInMln),
+      9,
+    ).toString();
+
+    const preDgxExchange = await dgx.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const preDgxFund = await dgx.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
+    const preMlnExchange = await mln.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const preMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preFundCalcs = await accounting.methods.performCalculations().call();
+
+    await trading.methods
+      .callOnExchange(
+        0,
+        makeOrderSignature,
+        [
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+          dgx.options.address,
+          mln.options.address,
+          randomHexOfSize(20),
+          randomHexOfSize(20),
+        ],
+        [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
         randomHexOfSize(20),
-        randomHexOfSize(20),
-        s.dgx.options.address,
-        s.mln.options.address,
-        randomHexOfSize(20),
-        randomHexOfSize(20),
-      ],
-      [`${s.trade1.sellQuantity}`, `${s.trade1.buyQuantity}`, 0, 0, 0, 0, 0, 0],
-      randomHexOfSize(20),
-      '0x0',
-      '0x0',
-      '0x0',
-    )
-    .send({ from: s.manager, gas: s.gas });
+        '0x0',
+        '0x0',
+        '0x0',
+      )
+      .send(managerTxOpts);
 
-  const exchangePostDgx = new BigInteger(
-    await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  const exchangePostMln = new BigInteger(
-    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postFundCalculations = await performCalculations(
-    s.environment,
-    s.fund.accounting.options.address,
-  );
+    const postDgxExchange = await dgx.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const postDgxFund = await dgx.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
+    const postMlnExchange = await mln.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const postMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postFundCalcs = await accounting.methods.performCalculations().call();
 
-  expect(exchangePostMln).toEqual(exchangePreMln);
-  expect(exchangePostDgx).toEqual(
-    add(exchangePreDgx, toBI(s.trade1.sellQuantity)),
-  );
-  expect(post.fund.dgx).toEqual(pre.fund.dgx);
-  expect(post.fund.mln).toEqual(pre.fund.mln);
-  expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
-  expect(postFundCalculations.sharePrice).toEqual(
-    preFundCalculations.sharePrice,
-  );
-  expect(post.deployer.mln).toEqual(pre.deployer.mln);
-});
+    expect(preMlnExchange).toEqual(postMlnExchange);
+    expect(
+      new BN(postDgxExchange).eq(
+        new BN(preDgxExchange).add(new BN(trade1.sellQuantity)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postDgxFund).eq(
+        new BN(preDgxFund).sub(new BN(trade1.sellQuantity)),
+      ),
+    ).toBe(true);
+    expect(new BN(postMlnFund).eq(new BN(preMlnFund))).toBe(true);
+    expect(new BN(postFundCalcs.gav).eq(new BN(preFundCalcs.gav))).toBe(true);
+    expect(
+      new BN(postFundCalcs.sharePrice).eq(new BN(preFundCalcs.sharePrice)),
+    ).toBe(true);
+    expect(new BN(postMlnDeployer).eq(new BN(preMlnDeployer))).toBe(true);
+  });
 
-test(`Third party takes entire order`, async () => {
-  const orderId = await s.matchingMarket.methods.last_offer_id().call();
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const exchangePreMln = new BigInteger(
-    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  const exchangePreDgx = new BigInteger(
-    await s.dgx.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
+  test(`Third party takes entire order`, async () => {
+    const { dgx, matchingMarket, mln, weth } = contracts;
+    const { trading, vault } = contracts.fund;
+    const orderId = await matchingMarket.methods.last_offer_id().call();
 
-  await s.mln.methods
-    .approve(s.matchingMarket.options.address, `${s.trade1.buyQuantity}`)
-    .send({ from: s.deployer, gasPrice: 8000000 });
-  await s.matchingMarket.methods
-    .buy(orderId, `${s.trade1.sellQuantity}`)
-    .send({ from: s.deployer, gas: s.gas });
-  await s.fund.trading.methods
-    .returnBatchToVault([s.mln.options.address, s.weth.options.address])
-    .send({ from: s.manager, gas: s.gas });
+    const preDgxDeployer = await dgx.methods.balanceOf(deployer).call();
+    const preDgxExchange = await dgx.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const preDgxFund = await dgx.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
+    const preMlnExchange = await mln.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const preMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
 
-  const exchangePostMln = new BigInteger(
-    await s.mln.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  const exchangePostDgx = new BigInteger(
-    await s.weth.methods.balanceOf(s.matchingMarket.options.address).call(),
-  );
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+    await mln.methods
+      .approve(matchingMarket.options.address, trade1.buyQuantity)
+      .send(defaultTxOpts);
+    await matchingMarket.methods
+      .buy(orderId, trade1.sellQuantity)
+      .send(defaultTxOpts);
+    await trading.methods
+      .returnBatchToVault([mln.options.address, weth.options.address])
+      .send(managerTxOpts);
 
-  expect(exchangePostMln).toEqual(exchangePreMln);
-  expect(exchangePostDgx).toEqual(
-    subtract(exchangePreDgx, toBI(s.trade1.sellQuantity)),
-  );
-  expect(post.fund.dgx).toEqual(
-    subtract(pre.fund.dgx, toBI(s.trade1.sellQuantity)),
-  );
-  expect(post.fund.mln).toEqual(add(pre.fund.mln, toBI(s.trade1.buyQuantity)));
-  expect(post.deployer.dgx).toEqual(
-    add(pre.deployer.dgx, toBI(s.trade1.sellQuantity)),
-  );
-  expect(post.deployer.mln).toEqual(
-    subtract(pre.deployer.mln, toBI(s.trade1.buyQuantity)),
-  );
+    const postDgxDeployer = await dgx.methods.balanceOf(deployer).call();
+    const postDgxExchange = await dgx.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const postDgxFund = await dgx.methods
+      .balanceOf(vault.options.address)
+      .call();
+    const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
+    const postMlnExchange = await mln.methods
+      .balanceOf(matchingMarket.options.address)
+      .call();
+    const postMlnFund = await mln.methods
+      .balanceOf(vault.options.address)
+      .call();
+
+    expect(preMlnExchange).toEqual(postMlnExchange);
+    expect(
+      new BN(postDgxExchange).eq(
+        new BN(preDgxExchange).sub(new BN(trade1.sellQuantity)),
+      ),
+    ).toBe(true);
+    expect(new BN(postDgxFund).eq(new BN(preDgxFund))).toBe(true);
+    expect(
+      new BN(postMlnFund).eq(
+        new BN(preMlnFund).add(new BN(trade1.buyQuantity)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postDgxDeployer).eq(
+        new BN(preDgxDeployer).add(new BN(trade1.sellQuantity)),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postMlnDeployer).eq(
+        new BN(preMlnDeployer).sub(new BN(trade1.buyQuantity)),
+      ),
+    ).toBe(true);
+  });
 });
