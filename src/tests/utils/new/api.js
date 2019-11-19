@@ -1,9 +1,7 @@
-import { BN } from 'web3-utils';
-import { BNExpInverse } from './BNmath';
-
 import rp from 'request-promise';
 
-// const rp = require('request-promise');
+import { BN } from 'web3-utils';
+import { BNExpInverse } from './BNmath';
 
 const priceApiPath = 'https://min-api.cryptocompare.com/data/price';
 
