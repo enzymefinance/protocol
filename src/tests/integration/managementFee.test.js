@@ -95,9 +95,12 @@ describe('management-fee', () => {
     };
     addresses.fund = routes;
 
-    const prices = await getUpdatedTestPrices(contracts, 'ETH');
+    const prices = await getUpdatedTestPrices();
     await priceSource.methods
-      .update(Object.keys(prices), Object.values(prices))
+      .update(
+        Object.keys(prices).map(key => contracts[key].options.address),
+        Object.values(prices)
+      )
       .send(defaultTxOpts);
   });
 

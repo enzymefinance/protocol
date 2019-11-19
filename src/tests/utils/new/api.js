@@ -27,10 +27,10 @@ async function requestWithRetries(options, maxRetries) {
 
 /**
  * Get prices converted to the format our contracts expect
- * @param {Object} deployed - Contracts as returned by our deploy script
  * @param {string} fromSymbol - Quote asset symbol, used to price other assets
  */
-export async function getUpdatedTestPrices(deployed, fromSymbol) {
+export async function getUpdatedTestPrices(fromSymbol = 'ETH') {
+
   const toSymbols = ['MLN', 'EUR', 'ETH', 'DGX', 'DAI'];
   const options = {
     json: true,
@@ -45,10 +45,10 @@ export async function getUpdatedTestPrices(deployed, fromSymbol) {
   }
 
   return {
-    [deployed.eur.options.address]: BNExpInverse(new BN(queryResult.EUR)).toString(),
-    [deployed.weth.options.address]: BNExpInverse(new BN(queryResult.ETH)).toString(),
-    [deployed.mln.options.address]: BNExpInverse(new BN(queryResult.MLN)).toString(),
-    [deployed.dgx.options.address]: BNExpInverse(new BN(queryResult.DGX)).toString(),
-    [deployed.dai.options.address]: BNExpInverse(new BN(queryResult.DAI)).toString()
+    eur: BNExpInverse(new BN(queryResult.EUR)).toString(),
+    weth: BNExpInverse(new BN(queryResult.ETH)).toString(),
+    mln: BNExpInverse(new BN(queryResult.MLN)).toString(),
+    dgx: BNExpInverse(new BN(queryResult.DGX)).toString(),
+    dai: BNExpInverse(new BN(queryResult.DAI)).toString()
   };
 }
