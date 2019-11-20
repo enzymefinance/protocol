@@ -6,15 +6,6 @@ import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
-import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
-import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
-import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
-import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
-import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
-import { createShares } from '~/contracts/factory/transactions/createShares';
-import { createTrading } from '~/contracts/factory/transactions/createTrading';
-import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges, Contracts } from '~/Contracts';
@@ -29,7 +20,7 @@ import {
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { createUnsignedOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { increaseTime } from '~/utils/evm';
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -37,7 +28,6 @@ const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 let environment, accounts;
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
-let mlnTokenInfo, wethTokenInfo, dgxTokenInfo;
 let mlnTokenWrapperInfo, ethTokenWrapperInfo;
 let unsignedOrder, signedOrder;
 let contracts;
@@ -71,10 +61,6 @@ beforeAll(async () => {
     ethfinex.options.address,
   )).toString();
 
-  mlnTokenInfo = await getToken(environment, mln.options.address);
-  wethTokenInfo = await getToken(environment, weth.options.address);
-  dgxTokenInfo = await getToken(environment, dgx.options.address);
-
   const exchangeConfigs = {
     [Exchanges.ethfinex]: {
       adapter: ethfinexAdapter.options.address,
@@ -83,13 +69,20 @@ beforeAll(async () => {
     },
   };
   const envManager = withDifferentAccount(environment, manager);
-  await beginSetup(envManager, version.options.address, {
-    defaultTokens: [wethTokenInfo, mlnTokenInfo],
-    exchangeConfigs,
-    fees: [],
-    fundName: 'Test fund',
-    quoteToken: wethTokenInfo,
-  });
+
+  const fundName = padLeft(stringToHex('Test fund'), 64);
+  await fundFactory.methods
+    .beginSetup(
+      fundName,
+      [],
+      [],
+      [],
+      [ethfinex.options.address],
+      [ethfinexAdapter.options.address],
+      weth.options.address,
+      [weth.options.address, mln.options.address],
+    )
+    .send(managerTxOpts);
 
   await fundFactory.methods.createAccounting().send(managerTxOpts);
   await fundFactory.methods.createFeeManager().send(managerTxOpts);
@@ -212,7 +205,7 @@ test('Make order through the fund', async () => {
     makerAddress,
     makerTokenAddress: mlnTokenWrapperInfo.address,
     makerAssetAmount,
-    takerTokenAddress: wethTokenInfo.address,
+    takerTokenAddress: weth.options.address,
     takerAssetAmount,
   });
 
@@ -321,7 +314,7 @@ test('Make order with native asset', async () => {
       makerAddress,
       makerTokenAddress: ethTokenWrapperInfo.address,
       makerAssetAmount,
-      takerTokenAddress: dgxTokenInfo.address,
+      takerTokenAddress: dgx.options.address,
       takerAssetAmount,
     },
   );

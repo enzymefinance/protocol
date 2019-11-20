@@ -10,27 +10,17 @@ import {
 } from '~/utils/constants/orderSignatures';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
-import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { Exchanges } from '~/Contracts';
-import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
-import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
-import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
-import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
-import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
-import { createShares } from '~/contracts/factory/transactions/createShares';
-import { createTrading } from '~/contracts/factory/transactions/createTrading';
-import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 import { BNExpMul } from '../utils/new/BNmath';
 
 let environment, accounts;
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
-let mlnTokenInfo, wethTokenInfo;
 let contracts, exchanges;
 let numberOfExchanges = 1;
 let fund;
@@ -53,37 +43,36 @@ beforeAll(async () => {
     matchingMarket,
     matchingMarketAdapter,
     version,
+    version: fundFactory,
     priceSource,
     priceTolerance,
   } = contracts;
 
   exchanges = [matchingMarket];
-
-  mlnTokenInfo = await getToken(environment, mln.options.address);
-  wethTokenInfo = await getToken(environment, weth.options.address);
-  const exchangeConfigs = {
-    [Exchanges.MatchingMarket]: {
-      adapter: matchingMarketAdapter.options.address,
-      exchange: matchingMarket.options.address,
-      takesCustody: true,
-    },
-  };
   const envManager = withDifferentAccount(environment, manager);
-  await beginSetup(envManager, version.options.address, {
-    defaultTokens: [wethTokenInfo],
-    exchangeConfigs,
-    fees: [],
-    fundName: 'Test fund',
-    quoteToken: wethTokenInfo,
-  });
-  await createAccounting(envManager, version.options.address);
-  await createFeeManager(envManager, version.options.address);
-  await createParticipation(envManager, version.options.address);
-  await createPolicyManager(envManager, version.options.address);
-  await createShares(envManager, version.options.address);
-  await createTrading(envManager, version.options.address);
-  await createVault(envManager, version.options.address);
-  const hubAddress = await completeSetup(envManager, version.options.address);
+
+  const fundName = padLeft(stringToHex('Test fund'), 64);
+  await fundFactory.methods
+    .beginSetup(
+      fundName,
+      [],
+      [],
+      [],
+      [matchingMarket.options.address],
+      [matchingMarketAdapter.options.address],
+      weth.options.address,
+      [weth.options.address]
+    )
+    .send(managerTxOpts);
+  await fundFactory.methods.createAccounting().send(managerTxOpts);
+  await fundFactory.methods.createFeeManager().send(managerTxOpts);
+  await fundFactory.methods.createParticipation().send(managerTxOpts);
+  await fundFactory.methods.createPolicyManager().send(managerTxOpts);
+  await fundFactory.methods.createShares().send(managerTxOpts);
+  await fundFactory.methods.createTrading().send(managerTxOpts);
+  await fundFactory.methods.createVault().send(managerTxOpts);
+  const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+  const hubAddress = res.events.NewFund.returnValues.hub;
   fund = await getFundComponents(envManager, hubAddress);
 
   await updateTestingPriceFeed(contracts, environment);
