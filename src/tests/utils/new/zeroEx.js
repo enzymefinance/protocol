@@ -6,7 +6,7 @@ import {
   signatureUtils
 } from '@0x/order-utils';
 
-import { emptyAddress } from './constants';
+import { EMPTY_ADDRESS } from './constants';
 
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the
@@ -36,10 +36,10 @@ export const createUnsignedZeroExOrder = async (
   const order = {
     exchangeAddress: exchange.toLowerCase(),
     makerAddress: makerAddress.toLowerCase(),
-    takerAddress: emptyAddress,
-    senderAddress: emptyAddress,
+    takerAddress: EMPTY_ADDRESS,
+    senderAddress: EMPTY_ADDRESS,
     feeRecipientAddress: (
-      feeRecipientAddress || emptyAddress
+      feeRecipientAddress || EMPTY_ADDRESS
     ).toLowerCase(),
     expirationTimeSeconds: String(latestBlock.timestamp + duration),
     salt: generatePseudoRandomSalt()
