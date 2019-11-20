@@ -1,4 +1,6 @@
-const {nab} = require('./deploy-contract');
+const {nab, send} = require('./deploy-contract');
+const web3 = require('./get-web3');
+const BN = web3.utils.BN;
 
 const main = async input => {
   const tokenAddrs = input.tokens.addr;
@@ -12,6 +14,9 @@ const main = async input => {
   const mkr = await nab('PreminedToken', ['MKR', 18, ''], tokenAddrs, 'MKR');
   const rep = await nab('PreminedToken', ['REP', 18, ''], tokenAddrs, 'REP');
   const zrx = await nab('PreminedToken', ['ZRX', 18, ''], tokenAddrs, 'ZRX');
+
+  const depositAmount = (new BN('10')).pow(new BN('24'));
+  await send(weth, 'deposit', [], {value: depositAmount});
 
   return {
     "WETH": weth.options.address,
