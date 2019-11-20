@@ -1,18 +1,20 @@
-import { BN, padLeft, randomHex, stringToHex, toWei } from 'web3-utils';
+import { BN, randomHex, toWei } from 'web3-utils';
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 
 import { Contracts, Exchanges } from '~/Contracts';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import {
   makeOrderSignature,
   takeOrderSignature,
   cancelOrderSignature,
 } from '~/utils/constants/orderSignatures';
 import { getContract } from '~/utils/solidity/getContract';
+
 import { getUpdatedTestPrices } from '../utils/new/api';
+import { stringToBytes } from '../utils/new/formatting';
+import { EMPTY_ADDRESS } from '../utils/new/constants';
 import {
   createUnsignedZeroExOrder,
   isValidZeroExSignatureOffChain,
@@ -50,7 +52,7 @@ describe('fund-0x-trading', () => {
       zrx
     } = contracts;
 
-    const fundName = padLeft(stringToHex('Test fund'), 64);
+    const fundName = stringToBytes('Test fund', 32);
     await fundFactory.methods
       .beginSetup(
         fundName,
@@ -185,11 +187,11 @@ describe('fund-0x-trading', () => {
         takeOrderSignature,
         [
           deployer,
-          emptyAddress,
+          EMPTY_ADDRESS,
           mln.options.address,
           weth.options.address,
           signedOrder1.feeRecipientAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
         ],
         [
           signedOrder1.makerAssetAmount,
@@ -304,11 +306,11 @@ describe('fund-0x-trading', () => {
         takeOrderSignature,
         [
           deployer,
-          emptyAddress,
+          EMPTY_ADDRESS,
           mln.options.address,
           weth.options.address,
           signedOrder2.feeRecipientAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
         ],
         [
           signedOrder2.makerAssetAmount,
@@ -397,11 +399,11 @@ describe('fund-0x-trading', () => {
         makeOrderSignature,
         [
           makerAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
           mln.options.address,
           weth.options.address,
           signedOrder3.feeRecipientAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
         ],
         [
           signedOrder3.makerAssetAmount,
@@ -440,11 +442,11 @@ describe('fund-0x-trading', () => {
   //           makeOrderSignature,
   //           [
   //             fund.trading.options.address,
-  //             emptyAddress,
+  //             EMPTY_ADDRESS,
   //             mlnToken.options.address,
   //             ethToken.options.address,
   //             order.feeRecipientAddress,
-  //             emptyAddress,
+  //             EMPTY_ADDRESS,
   //           ],
   //           [
   //             order.makerAssetAmount.toFixed(),
@@ -551,11 +553,11 @@ describe('fund-0x-trading', () => {
         makeOrderSignature,
         [
           makerAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
           signedOrder4.feeRecipientAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
         ],
         [
           signedOrder4.makerAssetAmount,
@@ -595,12 +597,12 @@ describe('fund-0x-trading', () => {
          0,
          cancelOrderSignature,
          [
-           emptyAddress,
-           emptyAddress,
-           emptyAddress,
-           emptyAddress,
-           emptyAddress,
-           emptyAddress,
+           EMPTY_ADDRESS,
+           EMPTY_ADDRESS,
+           EMPTY_ADDRESS,
+           EMPTY_ADDRESS,
+           EMPTY_ADDRESS,
+           EMPTY_ADDRESS,
          ],
          [0, 0, 0, 0, 0, 0, 0, 0],
          orderHashHex,
@@ -671,11 +673,11 @@ describe('fund-0x-trading', () => {
         makeOrderSignature,
         [
           makerAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
           signedOrder5.feeRecipientAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
         ],
         [
           signedOrder5.makerAssetAmount,
@@ -710,12 +712,12 @@ describe('fund-0x-trading', () => {
         0,
         cancelOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
-          emptyAddress,
-          emptyAddress,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
         orderHashHex,
