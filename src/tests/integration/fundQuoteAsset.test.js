@@ -10,44 +10,44 @@ import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 import { BNExpMul } from '../utils/new/BNmath';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
+const deploySystem = require('../../../new/deploy/deploy-system');
+const {fetch} = require('../../../new/deploy/deploy-contract');
+const web3 = require('../../../new/deploy/get-web3');
 
 describe('fund-quote-asset', () => {
   let environment, accounts;
   let deployer, manager, investor;
   let defaultTxOpts, investorTxOpts, managerTxOpts;
-  let addresses, contracts;
+  let addresses;
   let fundDenominationAsset;
   let trade1;
+  let deployed;
+  let dgx, mln, weth, matchingMarket, version, priceSource;
+  let hub, accounting, participation, shares, trading, vault;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    accounts = await environment.eth.getAccounts();
+    accounts = await web3.eth.getAccounts();
     [deployer, manager, investor] = accounts;
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    const system = await deployAndGetSystem(environment);
-    addresses = system.addresses;
-    contracts = system.contracts;
+    deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF)));
+    dgx = fetch('StandardToken', deployed.tokens.addr.DGX);
+    mln = fetch('StandardToken', deployed.tokens.addr.MLN);
+    weth = fetch('WETH', deployed.tokens.addr.WETH);
+    matchingMarket = fetch('MatchingMarket', deployed.oasis.addr.MatchingMarket);
+    version = fetch('Version', deployed.melon.addr.Version);
+    priceSource = fetch('TestingPriceFeed', deployed.melon.addr.TestingPriceFeed);
 
-    const {
-      dgx,
-      matchingMarketAdapter,
-      matchingMarket,
-      version: fundFactory,
-      weth,
-      mln,
-    } = contracts;
-
-    await fundFactory.methods
+    await version.methods
       .beginSetup(
         stringToBytes32('Test fund'),
         [],
         [],
         [],
         [matchingMarket.options.address.toString()],
-        [matchingMarketAdapter.options.address.toString()],
+        [deployed.melon.addr.MatchingMarketAdapter],
         dgx.options.address.toString(),
         [
           mln.options.address.toString(),
@@ -56,18 +56,26 @@ describe('fund-quote-asset', () => {
         ],
       )
       .send(managerTxOpts);
-    await fundFactory.methods.createAccounting().send(managerTxOpts);
-    await fundFactory.methods.createFeeManager().send(managerTxOpts);
-    await fundFactory.methods.createParticipation().send(managerTxOpts);
-    await fundFactory.methods.createPolicyManager().send(managerTxOpts);
-    await fundFactory.methods.createShares().send(managerTxOpts);
-    await fundFactory.methods.createTrading().send(managerTxOpts);
-    await fundFactory.methods.createVault().send(managerTxOpts);
-    const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+    await version.methods.createAccounting().send(managerTxOpts);
+    await version.methods.createFeeManager().send(managerTxOpts);
+    await version.methods.createParticipation().send(managerTxOpts);
+    await version.methods.createPolicyManager().send(managerTxOpts);
+    await version.methods.createShares().send(managerTxOpts);
+    await version.methods.createTrading().send(managerTxOpts);
+    await version.methods.createVault().send(managerTxOpts);
+    const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-
-    const envManager = withDifferentAccount(environment, manager);
-    contracts.fund = await getFundComponents(envManager, hubAddress);
+    hub = fetch('Hub', hubAddress);
+    const accountingAddress = await hub.methods.accounting.call();
+    accounting = fetch('Accounting', accountingAddress);
+    const sharesAddress = await hub.methods.shares.call();
+    shares = fetch('Shares', sharesAddress);
+    const vaultAddress = await hub.methods.vault.call();
+    vault = fetch('Vault', vaultAddress);
+    const participationAddress = await hub.methods.participation.call();
+    participation = fetch('Participation', participationAddress);
+    const tradingAddress = await hub.methods.trading.call();
+    trading = fetch('Trading', tradingAddress);
 
     await matchingMarket.methods
       .addTokenPairWhitelist(
@@ -75,14 +83,9 @@ describe('fund-quote-asset', () => {
         mln.options.address.toString(),
       )
       .send(defaultTxOpts);
-
-    await updateTestingPriceFeed(contracts, environment);
   });
 
   test('fund denomination asset is dgx', async () => {
-    const { dgx } = contracts;
-    const { accounting } = contracts.fund;
-
     fundDenominationAsset = await accounting.methods
       .DENOMINATION_ASSET()
       .call();
@@ -90,7 +93,6 @@ describe('fund-quote-asset', () => {
   });
 
   test('Transfer ethToken and mlnToken to the investor', async () => {
-    const { mln, weth } = contracts;
     const initialTokenAmount = toWei('1000', 'ether');
 
     const preMlnInvestor = await mln.methods.balanceOf(investor).call();
@@ -105,20 +107,18 @@ describe('fund-quote-asset', () => {
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
     expect(
-      new BN(postMlnInvestor).eq(
-        new BN(preMlnInvestor).add(new BN(initialTokenAmount)),
+      new BN(postMlnInvestor.toString()).eq(
+        new BN(preMlnInvestor.toString()).add(new BN(initialTokenAmount.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).add(new BN(initialTokenAmount)),
+      new BN(postWethInvestor.toString()).eq(
+        new BN(preWethInvestor.toString()).add(new BN(initialTokenAmount.toString())),
       ),
     ).toBe(true);
   });
 
-  test(`fund gets non fund denomination asset from investment`, async () => {
-    const { dgx, priceSource, weth } = contracts;
-    const { accounting, participation, shares, vault } = contracts.fund;
+  test('fund gets non fund denomination asset from investment', async () => {
     const offeredValue = toWei('100', 'ether');
     const wantedShares = toWei('100', 'ether');
     const amguAmount = toWei('.01', 'ether');
@@ -128,18 +128,20 @@ describe('fund-quote-asset', () => {
       .call())[0];
 
     const expectedCostOfShares = BNExpMul(
-      new BN(wantedShares),
-      new BN(dgxPriceInWeth),
+      new BN(wantedShares.toString()),
+      new BN(dgxPriceInWeth.toString()),
     );
 
     const actualCostOfShares = new BN(
-      await accounting.methods
+      (await accounting.methods
         .getShareCostInAsset(wantedShares, weth.options.address)
-        .call(),
+        .call()).toString(),
     );
     expect(expectedCostOfShares.eq(actualCostOfShares)).toBe(true);
 
-    await updateTestingPriceFeed(contracts, environment);
+    // TODO: use less fake prices
+    const fakePrices = Object.values(deployed.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
+    await priceSource.methods.update(Object.values(deployed.tokens.addr), fakePrices);
 
     const preWethFund = await weth.methods
       .balanceOf(vault.options.address)
@@ -171,31 +173,28 @@ describe('fund-quote-asset', () => {
       .call())[0];
 
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).add(new BN(wantedShares)),
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString()).add(new BN(wantedShares.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).sub(expectedCostOfShares),
+      new BN(postWethInvestor.toString()).eq(
+        new BN(preWethInvestor.toString()).sub(expectedCostOfShares),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethFund).eq(new BN(preWethFund).add(expectedCostOfShares)),
+      new BN(postWethFund.toString()).eq(new BN(preWethFund.toString()).add(expectedCostOfShares)),
     ).toBe(true);
     expect(
-      new BN(postFundGav).eq(
-        new BN(preWethFund).add(
-          BNExpMul(expectedCostOfShares, new BN(wethPriceInDgx)),
+      new BN(postFundGav.toString()).eq(
+        new BN(preWethFund.toString()).add(
+          BNExpMul(expectedCostOfShares, new BN(wethPriceInDgx.toString())),
         ),
       ),
     ).toBe(true);
   });
 
-  test(`investor redeems his shares`, async () => {
-    const { weth } = contracts;
-    const { accounting, participation, shares, vault } = contracts.fund;
-
+  test('investor redeems his shares', async () => {
     const investorShares = await shares.methods.balanceOf(investor).call();
 
     const preWethFund = await weth.methods
@@ -214,22 +213,20 @@ describe('fund-quote-asset', () => {
     const postFundGav = await accounting.methods.calcGav().call();
 
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).sub(new BN(investorShares)),
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString()).sub(new BN(investorShares.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).add(new BN(preWethFund)),
+      new BN(postWethInvestor.toString()).eq(
+        new BN(preWethInvestor.toString()).add(new BN(preWethFund.toString())),
       ),
     ).toBe(true);
-    expect(new BN(postWethFund).eq(new BN(0))).toBe(true);
-    expect(new BN(postFundGav).eq(new BN(0))).toBe(true);
+    expect(new BN(postWethFund.toString()).eq(new BN(0))).toBe(true);
+    expect(new BN(postFundGav.toString()).eq(new BN(0))).toBe(true);
   });
 
-  test(`fund gets non pricefeed quote asset from investment`, async () => {
-    const { dgx, mln, priceSource } = contracts;
-    const { accounting, participation, shares, vault } = contracts.fund;
+  test('fund gets non pricefeed quote asset from investment', async () => {
     const offeredValue = toWei('1000', 'ether');
     const wantedShares = toWei('1', 'ether');
     const amguAmount = toWei('.01', 'ether');
@@ -238,17 +235,15 @@ describe('fund-quote-asset', () => {
       .getReferencePriceInfo(fundDenominationAsset, mln.options.address)
       .call())[0];
     const expectedCostOfShares = BNExpMul(
-      new BN(wantedShares),
-      new BN(dgxPriceInMln),
+      new BN(wantedShares.toString()),
+      new BN(dgxPriceInMln.toString()),
     );
     const actualCostOfShares = new BN(
-      await accounting.methods
+      (await accounting.methods
         .getShareCostInAsset(wantedShares, mln.options.address)
-        .call(),
+        .call()).toString()
     );
     expect(expectedCostOfShares.eq(actualCostOfShares)).toBe(true);
-
-    await updateTestingPriceFeed(contracts, environment);
 
     const preMlnFund = await mln.methods
       .balanceOf(vault.options.address)
@@ -278,30 +273,28 @@ describe('fund-quote-asset', () => {
       .call())[0];
 
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).add(new BN(wantedShares)),
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString()).add(new BN(wantedShares.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postMlnInvestor).eq(
-        new BN(preMlnInvestor).sub(expectedCostOfShares),
+      new BN(postMlnInvestor.toString()).eq(
+        new BN(preMlnInvestor.toString()).sub(expectedCostOfShares),
       ),
     ).toBe(true);
     expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).add(expectedCostOfShares)),
+      new BN(postMlnFund.toString()).eq(new BN(preMlnFund.toString()).add(expectedCostOfShares)),
     ).toBe(true);
     expect(
-      new BN(postFundGav).eq(
-        new BN(preFundGav).add(
-          BNExpMul(expectedCostOfShares, new BN(mlnPriceInDgx)),
+      new BN(postFundGav.toString()).eq(
+        new BN(preFundGav.toString()).add(
+          BNExpMul(expectedCostOfShares, new BN(mlnPriceInDgx.toString())),
         ),
       ),
     ).toBe(true);
   });
 
-  test(`Fund make order with a non-18 decimal asset`, async () => {
-    const { dgx, matchingMarket, mln, priceSource } = contracts;
-    const { accounting, trading, vault } = contracts.fund;
+  test('Fund make order with a non-18 decimal asset', async () => {
     const wantedShares = toWei('1', 'ether');
     trade1 = {
       sellQuantity: toWei('0.1', 'gwei'),
@@ -315,8 +308,8 @@ describe('fund-quote-asset', () => {
       .getReferencePriceInfo(fundDenominationAsset, mln.options.address)
       .call())[0];
     trade1.buyQuantity = BNExpMul(
-      new BN(trade1.sellQuantity),
-      new BN(dgxPriceInMln),
+      new BN(trade1.sellQuantity.toString()),
+      new BN(dgxPriceInMln.toString()),
       9,
     ).toString();
 
@@ -348,7 +341,7 @@ describe('fund-quote-asset', () => {
           randomHexOfSize(20),
         ],
         [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-        randomHexOfSize(20),
+        randomHexOfSize(32),
         '0x0',
         '0x0',
         '0x0',
@@ -372,26 +365,24 @@ describe('fund-quote-asset', () => {
 
     expect(preMlnExchange).toEqual(postMlnExchange);
     expect(
-      new BN(postDgxExchange).eq(
-        new BN(preDgxExchange).add(new BN(trade1.sellQuantity)),
+      new BN(postDgxExchange.toString()).eq(
+        new BN(preDgxExchange.toString()).add(new BN(trade1.sellQuantity.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postDgxFund).eq(
-        new BN(preDgxFund).sub(new BN(trade1.sellQuantity)),
+      new BN(postDgxFund.toString()).eq(
+        new BN(preDgxFund.toString()).sub(new BN(trade1.sellQuantity.toString())),
       ),
     ).toBe(true);
-    expect(new BN(postMlnFund).eq(new BN(preMlnFund))).toBe(true);
-    expect(new BN(postFundCalcs.gav).eq(new BN(preFundCalcs.gav))).toBe(true);
+    expect(new BN(postMlnFund.toString()).eq(new BN(preMlnFund.toString()))).toBe(true);
+    expect(new BN(postFundCalcs.gav.toString()).eq(new BN(preFundCalcs.gav.toString()))).toBe(true);
     expect(
-      new BN(postFundCalcs.sharePrice).eq(new BN(preFundCalcs.sharePrice)),
+      new BN(postFundCalcs.sharePrice.toString()).eq(new BN(preFundCalcs.sharePrice.toString())),
     ).toBe(true);
-    expect(new BN(postMlnDeployer).eq(new BN(preMlnDeployer))).toBe(true);
+    expect(new BN(postMlnDeployer.toString()).eq(new BN(preMlnDeployer.toString()))).toBe(true);
   });
 
-  test(`Third party takes entire order`, async () => {
-    const { dgx, matchingMarket, mln, weth } = contracts;
-    const { trading, vault } = contracts.fund;
+  test('Third party takes entire order', async () => {
     const orderId = await matchingMarket.methods.last_offer_id().call();
 
     const preDgxDeployer = await dgx.methods.balanceOf(deployer).call();
@@ -436,24 +427,24 @@ describe('fund-quote-asset', () => {
 
     expect(preMlnExchange).toEqual(postMlnExchange);
     expect(
-      new BN(postDgxExchange).eq(
-        new BN(preDgxExchange).sub(new BN(trade1.sellQuantity)),
+      new BN(postDgxExchange.toString()).eq(
+        new BN(preDgxExchange.toString()).sub(new BN(trade1.sellQuantity.toString())),
       ),
     ).toBe(true);
-    expect(new BN(postDgxFund).eq(new BN(preDgxFund))).toBe(true);
+    expect(new BN(postDgxFund.toString()).eq(new BN(preDgxFund.toString()))).toBe(true);
     expect(
-      new BN(postMlnFund).eq(
-        new BN(preMlnFund).add(new BN(trade1.buyQuantity)),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postDgxDeployer).eq(
-        new BN(preDgxDeployer).add(new BN(trade1.sellQuantity)),
+      new BN(postMlnFund.toString()).eq(
+        new BN(preMlnFund.toString()).add(new BN(trade1.buyQuantity.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postMlnDeployer).eq(
-        new BN(preMlnDeployer).sub(new BN(trade1.buyQuantity)),
+      new BN(postDgxDeployer.toString()).eq(
+        new BN(preDgxDeployer.toString()).add(new BN(trade1.sellQuantity.toString())),
+      ),
+    ).toBe(true);
+    expect(
+      new BN(postMlnDeployer.toString()).eq(
+        new BN(preMlnDeployer.toString()).sub(new BN(trade1.buyQuantity.toString())),
       ),
     ).toBe(true);
   });
