@@ -1,5 +1,6 @@
 const {call, send, nab} = require('./deploy-contract');
 const web3 = require('./get-web3');
+const BN = web3.utils.BN;
 
 const main = async input => {
   const conf = input.conf;
@@ -35,7 +36,7 @@ const main = async input => {
       melonConf.maxSpread, tokenAddrs.WETH
     ], melonAddrs);
   } else if (conf.track === 'TESTING') {
-    priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH], melonAddrs);
+    priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH, input.tokens.conf.WETH.decimals], melonAddrs);
   }
 
   await send(registry, 'setPriceSource', [priceSource.options.address]);
@@ -115,14 +116,31 @@ const main = async input => {
     melonConf.versionOwner
   ], melonAddrs);
 
+  // TODO: check version is registered first
+  // const versionInformation = await getVersionInformation(
+  //   environment,
+  //   melonContracts.registry,
+  //   { version: melonContracts.version },
+  // );
+
+  // if (!versionInformation) {
+    await send(registry, 'registerVersion',
+      [
+        version.options.address,
+        web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64)
+      ]
+    );
+  // }
+
   if (conf.track === 'KYBER_PRICE')
     await send(priceSource, 'update');
   else if (conf.track === 'TESTING') {
-    // TODO: get prices
-    await send(priceSource, 'update', []);
+    // TODO: get actual prices
+    const fakePrices = Object.values(tokenAddrs).map(() => (new BN('10')).pow(new BN('18')).toString());
+    await send(priceSource, 'update', [Object.values(tokenAddrs), fakePrices]);
   }
 
-  return {
+  const addrs = {
     "EthfinexAdapter": ethfinexAdapter.options.address,
     "KyberAdapter": kyberAdapter.options.address,
     "MatchingMarketAdapter": matchingMarketAdapter.options.address,
@@ -142,7 +160,16 @@ const main = async input => {
     "Registry": registry.options.address,
     "Engine": engine.options.address,
     "FundRanking": fundRanking.options.address,
+    "Version": version.options.address,
   };
+
+  if (conf.track === 'KYBER_PRICE') {
+    addrs.KyberPriceFeed = priceSource.options.address;
+  } else if (conf.track === 'TESTING') {
+    addrs.TestingPriceFeed = priceSource.options.address;
+  }
+
+  return addrs;
 }
 
 module.exports = main;

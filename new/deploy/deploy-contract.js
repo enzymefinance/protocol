@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const deployIn = require('./get-deploy-input');
 const web3 = require('./get-web3');
 
 const outdir = path.resolve(`${__dirname}/../out`);
@@ -8,7 +7,6 @@ const outdir = path.resolve(`${__dirname}/../out`);
 const defaultOptions = {
   gas: 10000000,
   gasPrice: 50000000000,
-  from: deployIn.conf.deployer, // TODO: make cleaner
   value: 0,
   data: null,
 };

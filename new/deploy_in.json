@@ -1,9 +1,9 @@
 {
   "conf": {
-    "deployer": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+    "deployer": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
     "provider": "http://localhost:8545",
     "track": "KYBER_PRICE",
-    "keystore": "./allKeys/UTC--2019-10-30T16-01-09.600299760Z--be1ac5962e318d0335b8d8aabff55dc4bad01826",
+    "keystore": "./allKeys/UTC--2019-11-19T13-41-41.019037087Z--c0c82081f2ad248391cd1483ae211d56c280887a",
     "passfile": "./passfile"
   },
   "melon": {
@@ -33,12 +33,13 @@
     },
     "conf": {
       "priceTolerance": 10,
-      "userWhitelist": ["0xbe1ac5962e318d0335b8d8aabff55dc4bad01826"],
-      "registryOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+      "userWhitelist": ["0xc0c82081f2ad248391cd1483ae211d56c280887a"],
+      "registryOwner": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
       "engineDelay": 2592000,
       "maxSpread": "100000000000000000",
-      "versionOwner": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
-      "initialMGM": "0xbe1ac5962e318d0335b8d8aabff55dc4bad01826",
+      "versionOwner": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
+      "initialMGM": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
+      "versionName": "Fakename",
       "exchangeTakesCustody": {
         "oasis": true,
         "kyber": false,

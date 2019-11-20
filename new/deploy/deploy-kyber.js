@@ -30,8 +30,8 @@ const main = async input => {
   const expectedRate = await nab('ExpectedRate', [kyberNetwork.options.address, conf.deployer], kyberAddrs);
   const kyberNetworkProxy = await nab('KyberNetworkProxy', [conf.deployer], kyberAddrs);
 
-  await send(kyberNetwork, 'setWhiteList', [kyberWhiteList.options.address]);
   await send(kyberNetworkProxy, 'setKyberNetworkContract', [kyberNetwork.options.address]);
+  await send(kyberNetwork, 'setWhiteList', [kyberWhiteList.options.address]);
   await send(kyberNetwork, 'setExpectedRate', [expectedRate.options.address]);
   await send(kyberNetwork, 'setFeeBurner', [feeBurner.options.address]);
   await send(kyberNetwork, 'setKyberProxy', [kyberNetworkProxy.options.address]);
