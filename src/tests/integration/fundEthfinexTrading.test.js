@@ -1,367 +1,395 @@
 import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils } from '@0x/order-utils';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import {
-  BigInteger,
-  add,
-  subtract,
-  toBI,
-  createQuantity,
-} from '@melonproject/token-math';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { beginSetup } from '~/contracts/factory/transactions/beginSetup';
-import { completeSetup } from '~/contracts/factory/transactions/completeSetup';
-import { createAccounting } from '~/contracts/factory/transactions/createAccounting';
-import { createFeeManager } from '~/contracts/factory/transactions/createFeeManager';
-import { createParticipation } from '~/contracts/factory/transactions/createParticipation';
-import { createPolicyManager } from '~/contracts/factory/transactions/createPolicyManager';
-import { createShares } from '~/contracts/factory/transactions/createShares';
-import { createTrading } from '~/contracts/factory/transactions/createTrading';
-import { createVault } from '~/contracts/factory/transactions/createVault';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { Exchanges, Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
-import { BigNumber } from 'bignumber.js';
 import {
   makeOrderSignature,
   cancelOrderSignature,
   withdrawTokensSignature,
 } from '~/utils/constants/orderSignatures';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
-import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import { createUnsignedOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { increaseTime } from '~/utils/evm';
+import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-let s = {};
+let environment, accounts;
+let deployer, manager, investor;
+let defaultTxOpts, investorTxOpts, managerTxOpts;
+let mlnTokenWrapperInfo, ethTokenWrapperInfo;
+let unsignedOrder, signedOrder;
+let contracts;
+let fund;
 
 beforeAll(async () => {
-  s.environment = await initTestEnvironment();
-  s.accounts = await s.environment.eth.getAccounts();
-  const { addresses, contracts } = await deployAndGetSystem(s.environment);
-  s.addresses = addresses;
-  s = Object.assign(s, contracts);
+  environment = await initTestEnvironment();
+  accounts = await environment.eth.getAccounts();
+  [deployer, manager, investor] = accounts;
 
-  [s.deployer, s.manager, s.investor] = s.accounts;
-  s.gas = 8000000;
-  s.opts = { from: s.deployer, gas: s.gas };
-  s.erc20ProxyAddress = (await getAssetProxy(
-    s.environment,
-    s.ethfinex.options.address,
+  defaultTxOpts = { from: deployer, gas: 8000000 };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
+  investorTxOpts = { ...defaultTxOpts, from: investor };
+
+  const system = await deployAndGetSystem(environment);
+  contracts = system.contracts;
+
+  const {
+    ethfinex,
+    ethfinexAdapter,
+    mln,
+    weth,
+    dgx,
+    version,
+    version: fundFactory,
+    registry,
+  } = contracts;
+
+  const erc20ProxyAddress = (await getAssetProxy(
+    environment,
+    ethfinex.options.address,
   )).toString();
-  s.mlnTokenInterface = await getToken(s.environment, s.mln.options.address);
-  s.wethTokenInterface = await getToken(s.environment, s.weth.options.address);
-  s.dgxTokenInterface = await getToken(s.environment, s.dgx.options.address);
+
   const exchangeConfigs = {
-    [Exchanges.Ethfinex]: {
-      adapter: s.ethfinexAdapter.options.address,
-      exchange: s.ethfinex.options.address,
+    [Exchanges.ethfinex]: {
+      adapter: ethfinexAdapter.options.address,
+      exchange: ethfinex.options.address,
       takesCustody: true,
     },
   };
-  const envManager = withDifferentAccount(s.environment, s.manager);
-  await beginSetup(envManager, s.version.options.address, {
-    defaultTokens: [s.wethTokenInterface, s.mlnTokenInterface],
-    exchangeConfigs,
-    fees: [],
-    fundName: 'Test fund',
-    quoteToken: s.wethTokenInterface,
-  });
-  await createAccounting(envManager, s.version.options.address);
-  await createFeeManager(envManager, s.version.options.address);
-  await createParticipation(envManager, s.version.options.address);
-  await createPolicyManager(envManager, s.version.options.address);
-  await createShares(envManager, s.version.options.address);
-  await createTrading(envManager, s.version.options.address);
-  await createVault(envManager, s.version.options.address);
-  const hubAddress = await completeSetup(envManager, s.version.options.address);
-  s.fund = await getFundComponents(envManager, hubAddress);
-  await updateTestingPriceFeed(s, s.environment);
+  const envManager = withDifferentAccount(environment, manager);
+
+  const fundName = padLeft(stringToHex('Test fund'), 64);
+  await fundFactory.methods
+    .beginSetup(
+      fundName,
+      [],
+      [],
+      [],
+      [ethfinex.options.address],
+      [ethfinexAdapter.options.address],
+      weth.options.address,
+      [weth.options.address, mln.options.address],
+    )
+    .send(managerTxOpts);
+
+  await fundFactory.methods.createAccounting().send(managerTxOpts);
+  await fundFactory.methods.createFeeManager().send(managerTxOpts);
+  await fundFactory.methods.createParticipation().send(managerTxOpts);
+  await fundFactory.methods.createPolicyManager().send(managerTxOpts);
+  await fundFactory.methods.createShares().send(managerTxOpts);
+  await fundFactory.methods.createTrading().send(managerTxOpts);
+  await fundFactory.methods.createVault().send(managerTxOpts);
+  const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+  const hubAddress = res.events.NewFund.returnValues.hub;
+
+  fund = await getFundComponents(envManager, hubAddress);
+  await updateTestingPriceFeed(contracts, environment);
 
   const wrapperRegistryAddress = await deployContract(
-    s.environment,
+    environment,
     Contracts.WrapperRegistryEFX,
     [],
   );
 
   const wrapperRegistry = await getContract(
-    s.environment,
+    environment,
     Contracts.WrapperRegistryEFX,
     wrapperRegistryAddress,
   );
 
-  s.ethTokenWrapper = await getToken(
-    s.environment,
-    await deployContract(s.environment, Contracts.WrapperLockEth, [
+  ethTokenWrapperInfo = await getToken(
+    environment,
+    await deployContract(environment, Contracts.WrapperLockEth, [
       'WETH',
       'WETH Token',
       18,
-      s.ethfinex.options.address,
-      s.erc20ProxyAddress,
+      ethfinex.options.address,
+      erc20ProxyAddress,
     ]),
   );
 
-  s.mlnTokenWrapper = await getToken(
-    s.environment,
-    await deployContract(s.environment, Contracts.WrapperLock, [
-      s.mln.options.address,
+  mlnTokenWrapperInfo = await getToken(
+    environment,
+    await deployContract(environment, Contracts.WrapperLock, [
+      mln.options.address,
       'MLN',
       'Melon',
       18,
       false,
-      s.ethfinex.options.address,
-      s.erc20ProxyAddress,
+      ethfinex.options.address,
+      erc20ProxyAddress,
     ]),
   );
 
   await wrapperRegistry.methods
     .addNewWrapperPair(
-      [s.weth.options.address, s.mln.options.address],
-      [s.ethTokenWrapper.address, s.mlnTokenWrapper.address],
+      [weth.options.address, mln.options.address],
+      [ethTokenWrapperInfo.address, mlnTokenWrapperInfo.address],
     )
-    .send({ from: s.deployer, gas: s.gas });
+    .send(defaultTxOpts);
 
-  await s.registry.methods
+  await registry.methods
     .setEthfinexWrapperRegistry(wrapperRegistry.options.address)
-    .send({ from: s.deployer, gas: s.gas });
+    .send(defaultTxOpts);
 });
 
-const initialTokenAmount = new BigInteger(10 ** 19);
+const initialTokenAmount = toWei('10', 'Ether');
 test('investor gets initial ethToken for testing)', async () => {
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  await s.weth.methods
-    .transfer(s.investor, `${initialTokenAmount}`)
-    .send(s.opts);
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const { weth } = contracts;
+  const pre = await getAllBalances(contracts, accounts, fund, environment);
 
-  expect(post.investor.weth).toEqual(
-    add(pre.investor.weth, initialTokenAmount),
-  );
+  await weth.methods
+    .transfer(investor, initialTokenAmount)
+    .send(defaultTxOpts);
+
+  const post = await getAllBalances(contracts, accounts, fund, environment);
+  const bnInitialTokenAmount = new BN(initialTokenAmount);
+
+  expect(post.investor.weth).toEqualBN(pre.investor.weth.add(bnInitialTokenAmount));
 });
 
 // tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
-  const offeredValue = new BigInteger(10 ** 18);
-  const wantedShares = new BigInteger(10 ** 18);
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  await s.weth.methods
-    .approve(s.fund.participation.options.address, `${offeredValue}`)
-    .send({ from: s.investor, gas: s.gas });
-  await s.fund.participation.methods
-    .requestInvestment(
-      `${offeredValue}`,
-      `${wantedShares}`,
-      s.weth.options.address,
-    )
-    .send({ from: s.investor, gas: s.gas, value: '10000000000000000' });
-  await s.fund.participation.methods
-    .executeRequestFor(s.investor)
-    .send({ from: s.investor, gas: s.gas });
-  await s.zrx.methods
-    .transfer(s.fund.vault.options.address, `${initialTokenAmount}`)
-    .send({ from: s.deployer, gas: s.gas });
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const { weth, zrx } = contracts;
+  const offeredValue = toWei('1', 'ether');
+  const wantedShares = toWei('1', 'ether');
+  const pre = await getAllBalances(contracts, accounts, fund, environment);
 
-  expect(post.investor.weth).toEqual(subtract(pre.investor.weth, offeredValue));
-  expect(post.fund.weth).toEqual(add(pre.fund.weth, offeredValue));
+  await weth.methods
+    .approve(fund.participation.options.address, offeredValue)
+    .send(investorTxOpts);
+  await fund.participation.methods
+    .requestInvestment(
+      offeredValue,
+      wantedShares,
+      weth.options.address,
+    )
+    .send({ ...investorTxOpts, value: toWei('.01', 'ether') });
+  await fund.participation.methods
+    .executeRequestFor(investor)
+    .send(investorTxOpts);
+  await zrx.methods
+    .transfer(fund.vault.options.address, initialTokenAmount)
+    .send(defaultTxOpts);
+
+  const post = await getAllBalances(contracts, accounts, fund, environment);
+  const bnOfferedValue = new BN(offeredValue);
+
+  expect(post.investor.weth).toEqualBN(pre.investor.weth.sub(bnOfferedValue));
+  expect(post.fund.weth).toEqualBN(pre.fund.weth.add(bnOfferedValue));
 });
 
 test('Make order through the fund', async () => {
-  await s.mln.methods
-    .transfer(s.fund.vault.options.address, new BigNumber(10 ** 18).toFixed())
-    .send({ from: s.deployer, gas: s.gas });
-  const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const makerQuantity = createQuantity(s.mlnTokenWrapper, 1);
-  const takerQuantity = createQuantity(s.wethTokenInterface, 0.1);
-  const order = await createOrder(s.environment, s.ethfinex.options.address, {
+  const { ethfinex, mln, weth } = contracts;
+  await mln.methods
+    .transfer(fund.vault.options.address, toWei('1', 'ether'))
+    .send(defaultTxOpts);
+
+  const makerAddress = fund.trading.options.address.toLowerCase();
+  const makerAssetAmount = toWei('1', 'ether');
+  const takerAssetAmount = toWei('.1', 'ether');
+
+  const order = await createUnsignedOrder(environment, ethfinex.options.address, {
     makerAddress,
-    makerQuantity,
-    takerQuantity,
+    makerTokenAddress: mlnTokenWrapperInfo.address,
+    makerAssetAmount,
+    takerTokenAddress: weth.options.address,
+    takerAssetAmount,
   });
 
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
-  s.signedOrder = await signOrder(s.environment, order, s.manager);
-  const preCalculations = await s.fund.accounting.methods
+  const preCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  await s.fund.trading.methods
+  signedOrder = await signOrder(environment, order, manager);
+
+  await fund.trading.methods
     .callOnExchange(
       0,
       makeOrderSignature,
       [
         makerAddress,
         NULL_ADDRESS,
-        s.mln.options.address,
-        s.weth.options.address,
+        mln.options.address,
+        weth.options.address,
         order.feeRecipientAddress,
         NULL_ADDRESS,
       ],
       [
-        order.makerAssetAmount.toFixed(),
-        order.takerAssetAmount.toFixed(),
-        order.makerFee.toFixed(),
-        order.takerFee.toFixed(),
-        order.expirationTimeSeconds.toFixed(),
-        order.salt.toFixed(),
+        order.makerAssetAmount,
+        order.takerAssetAmount,
+        order.makerFee,
+        order.takerFee,
+        order.expirationTimeSeconds,
+        order.salt,
         0,
         0,
       ],
       randomHexOfSize(20),
       order.makerAssetData,
       order.takerAssetData,
-      s.signedOrder.signature,
+      signedOrder.signature,
     )
-    .send({ from: s.manager, gas: s.gas });
-  const postCalculations = await s.fund.accounting.methods
+    .send(managerTxOpts);
+
+  const postCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const isValidSignatureBeforeMake = await s.ethfinex.methods
+  const isValidSignatureBeforeMake = await ethfinex.methods
     .isValidSignature(
       orderHashHex,
-      s.fund.trading.options.address,
-      s.signedOrder.signature,
+      fund.trading.options.address,
+      signedOrder.signature,
     )
     .call();
+
   expect(isValidSignatureBeforeMake).toBeTruthy();
   expect(postCalculations.gav).toBe(preCalculations.gav);
   expect(postCalculations.sharePrice).toBe(preCalculations.sharePrice);
 });
 
 test('Third party takes the order made by the fund', async () => {
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
+  const { ethfinex } = contracts;
+  const pre = await getAllBalances(contracts, accounts, fund, environment);
   const mlnWrapperContract = await getContract(
-    s.environment,
+    environment,
     Contracts.WrapperLock,
-    s.mlnTokenWrapper.address,
+    mlnTokenWrapperInfo.address,
   );
-  const preDeployerWrappedMLN = new BigInteger(
-    await mlnWrapperContract.methods.balanceOf(s.deployer).call(),
+  const preDeployerWrappedMLN = new BN(
+    await mlnWrapperContract.methods.balanceOf(deployer).call(),
   );
-  const result = await fillOrder(s.environment, s.ethfinex.options.address, {
-    signedOrder: s.signedOrder,
+  const result = await fillOrder(environment, ethfinex.options.address, {
+    signedOrder: signedOrder,
   });
 
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postDeployerWrappedMLN = new BigInteger(
-    await mlnWrapperContract.methods.balanceOf(s.deployer).call(),
+  const post = await getAllBalances(contracts, accounts, fund, environment);
+  const postDeployerWrappedMLN = new BN(
+    await mlnWrapperContract.methods.balanceOf(deployer).call(),
   );
+
+  const bnMakerAssetAmount = new BN(signedOrder.makerAssetAmount);
+  const bnTakerAssetAmount = new BN(signedOrder.takerAssetAmount);
 
   expect(result).toBeTruthy();
-  expect(post.fund.mln).toEqual(
-    subtract(pre.fund.mln, toBI(s.signedOrder.makerAssetAmount)),
+  expect(post.fund.mln).toEqualBN(pre.fund.mln.sub(bnMakerAssetAmount));
+  expect(post.fund.weth).toEqualBN(pre.fund.weth.add(bnTakerAssetAmount));
+  expect(postDeployerWrappedMLN).toEqualBN(
+    preDeployerWrappedMLN.add(bnMakerAssetAmount),
   );
-  expect(post.fund.weth).toEqual(
-    add(pre.fund.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
-  expect(postDeployerWrappedMLN).toEqual(
-    add(preDeployerWrappedMLN, toBI(s.signedOrder.makerAssetAmount)),
-  );
-  expect(post.deployer.weth).toEqual(
-    subtract(pre.deployer.weth, toBI(s.signedOrder.takerAssetAmount)),
-  );
+  expect(post.deployer.weth).toEqualBN(pre.deployer.weth.sub(bnTakerAssetAmount));
 });
 
-// tslint:disable-next-line:max-line-length
+// // tslint:disable-next-line:max-line-length
 test('Make order with native asset', async () => {
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preCalculations = await s.fund.accounting.methods
+  const { weth, dgx, zeroExExchange } = contracts;
+  const pre = await getAllBalances(contracts, accounts, fund, environment);
+  const preCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const preIsDgxInAssetList = await s.fund.accounting.methods
-    .isInAssetList(s.dgx.options.address)
+  const preIsDgxInAssetList = await fund.accounting.methods
+    .isInAssetList(dgx.options.address)
     .call();
 
-  const makerAddress = s.fund.trading.options.address.toLowerCase();
-  const makerQuantity = createQuantity(s.ethTokenWrapper, 0.05);
-  const takerQuantity = createQuantity(s.dgxTokenInterface, 0.5);
-  s.unsignedOrder = await createOrder(
-    s.environment,
-    s.zeroExExchange.options.address,
+  const makerAddress = fund.trading.options.address.toLowerCase();
+  const makerAssetAmount = toWei('.05', 'ether');
+  const takerAssetAmount = toWei('.5', 'ether');
+  unsignedOrder = await createUnsignedOrder(
+    environment,
+    zeroExExchange.options.address,
     {
-      feeRecipientAddress: s.investor,
+      feeRecipientAddress: investor,
       makerAddress,
-      makerQuantity,
-      takerQuantity,
+      makerTokenAddress: ethTokenWrapperInfo.address,
+      makerAssetAmount,
+      takerTokenAddress: dgx.options.address,
+      takerAssetAmount,
     },
   );
-  s.signedOrder = await signOrder(s.environment, s.unsignedOrder, s.manager);
-  await s.fund.trading.methods
+  signedOrder = await signOrder(environment, unsignedOrder, manager);
+  await fund.trading.methods
     .callOnExchange(
       0,
       makeOrderSignature,
       [
         makerAddress,
         NULL_ADDRESS,
-        s.weth.options.address,
-        s.dgx.options.address,
-        s.signedOrder.feeRecipientAddress,
+        weth.options.address,
+        dgx.options.address,
+        signedOrder.feeRecipientAddress,
         NULL_ADDRESS,
       ],
       [
-        s.signedOrder.makerAssetAmount.toFixed(),
-        s.signedOrder.takerAssetAmount.toFixed(),
-        s.signedOrder.makerFee.toFixed(),
-        s.signedOrder.takerFee.toFixed(),
-        s.signedOrder.expirationTimeSeconds.toFixed(),
-        s.signedOrder.salt.toFixed(),
+        signedOrder.makerAssetAmount,
+        signedOrder.takerAssetAmount,
+        signedOrder.makerFee,
+        signedOrder.takerFee,
+        signedOrder.expirationTimeSeconds,
+        signedOrder.salt,
         0,
         0,
       ],
       randomHexOfSize(20),
-      s.signedOrder.makerAssetData,
-      s.signedOrder.takerAssetData,
-      s.signedOrder.signature,
+      signedOrder.makerAssetData,
+      signedOrder.takerAssetData,
+      signedOrder.signature,
     )
-    .send({ from: s.manager, gas: s.gas });
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postCalculations = await s.fund.accounting.methods
+    .send(managerTxOpts);
+  const post = await getAllBalances(contracts, accounts, fund, environment);
+  const postCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const postIsDgxInAssetList = await s.fund.accounting.methods
-    .isInAssetList(s.dgx.options.address)
+  const postIsDgxInAssetList = await fund.accounting.methods
+    .isInAssetList(dgx.options.address)
     .call();
-  const openOrdersAgainstDgx = await s.fund.trading.methods
-    .openMakeOrdersAgainstAsset(s.dgx.options.address)
+  const openOrdersAgainstDgx = await fund.trading.methods
+    .openMakeOrdersAgainstAsset(dgx.options.address)
     .call();
 
   expect(postCalculations.gav).toBe(preCalculations.gav);
   expect(postCalculations.sharePrice).toBe(preCalculations.sharePrice);
-  expect(post.fund.weth).toEqual(pre.fund.weth);
+  expect(post.fund.weth).toEqualBN(pre.fund.weth);
   expect(postIsDgxInAssetList).toBeTruthy();
   expect(preIsDgxInAssetList).toBeFalsy();
-  expect(Number(openOrdersAgainstDgx)).toEqual(1);
+  expect(Number(openOrdersAgainstDgx)).toBe(1);
 });
 
 test('Anticipated taker asset is not removed from owned assets', async () => {
-  await s.fund.accounting.methods
+  const { dgx } = contracts;
+  await fund.accounting.methods
     .performCalculations()
-    .send({ from: s.manager, gas: s.gas });
-  await s.fund.accounting.methods
+    .send(managerTxOpts);
+  await fund.accounting.methods
     .updateOwnedAssets()
-    .send({ from: s.manager, gas: s.gas });
+    .send(managerTxOpts);
 
-  const isDgxInAssetList = await s.fund.accounting.methods
-    .isInAssetList(s.dgx.options.address)
+  const isDgxInAssetList = await fund.accounting.methods
+    .isInAssetList(dgx.options.address)
     .call();
 
   expect(isDgxInAssetList).toBeTruthy();
 });
 
 test('Cancel the order and withdraw tokens', async () => {
-  const orderHashHex = orderHashUtils.getOrderHashHex(s.signedOrder);
-  const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const preCalculations = await s.fund.accounting.methods
+  const { weth, dgx, zeroExExchange } = contracts;
+  const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
+  const pre = await getAllBalances(contracts, accounts, fund, environment);
+  const preCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  await s.fund.trading.methods
+  await fund.trading.methods
     .callOnExchange(
       0,
       cancelOrderSignature,
@@ -379,31 +407,31 @@ test('Cancel the order and withdraw tokens', async () => {
       '0x0',
       '0x0',
     )
-    .send({ from: s.manager, gas: s.gas });
-  const isOrderCancelled = await s.zeroExExchange.methods
+    .send(managerTxOpts);
+  const isOrderCancelled = await zeroExExchange.methods
     .cancelled(orderHashHex)
     .call();
 
   expect(isOrderCancelled).toBeTruthy();
 
   const preWithdraw = await getAllBalances(
-    s,
-    s.accounts,
-    s.fund,
-    s.environment,
+    contracts,
+    accounts,
+    fund,
+    environment,
   );
-  const preWithdrawCalculations = await s.fund.accounting.methods
+  const preWithdrawCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
 
   // Withdraw WETH
-  await increaseTime(s.environment, 25 * 60 * 60);
-  await s.fund.trading.methods
+  await increaseTime(environment, 25 * 60 * 60);
+  await fund.trading.methods
     .callOnExchange(
       0,
       withdrawTokensSignature,
       [
-        s.weth.options.address,
+        weth.options.address,
         NULL_ADDRESS,
         NULL_ADDRESS,
         NULL_ADDRESS,
@@ -416,36 +444,36 @@ test('Cancel the order and withdraw tokens', async () => {
       '0x0',
       '0x0',
     )
-    .send({ from: s.manager, gas: s.gas });
+    .send(managerTxOpts);
   // To Clean up asset list
-  await s.fund.accounting.methods
+  await fund.accounting.methods
     .performCalculations()
-    .send({ from: s.manager, gas: s.gas });
-  await s.fund.accounting.methods
+    .send(managerTxOpts);
+  await fund.accounting.methods
     .updateOwnedAssets()
-    .send({ from: s.manager, gas: s.gas });
+    .send(managerTxOpts);
 
-  const post = await getAllBalances(s, s.accounts, s.fund, s.environment);
-  const postCalculations = await s.fund.accounting.methods
+  const post = await getAllBalances(contracts, accounts, fund, environment);
+  const postCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const isDgxInAssetList = await s.fund.accounting.methods
-    .isInAssetList(s.dgx.options.address)
+  const isDgxInAssetList = await fund.accounting.methods
+    .isInAssetList(dgx.options.address)
     .call();
-  const openOrdersAgainstDgx = await s.fund.trading.methods
-    .openMakeOrdersAgainstAsset(s.dgx.options.address)
+  const openOrdersAgainstDgx = await fund.trading.methods
+    .openMakeOrdersAgainstAsset(dgx.options.address)
     .call();
 
-  expect(post.fund.weth).toEqual(preWithdraw.fund.weth);
-  expect(preWithdraw.fund.weth).toEqual(pre.fund.weth);
-  expect(postCalculations.gav).toEqual(preWithdrawCalculations.gav);
-  expect(preWithdrawCalculations.gav).toEqual(preCalculations.gav);
-  expect(postCalculations.sharePrice).toEqual(
+  expect(post.fund.weth).toEqualBN(preWithdraw.fund.weth);
+  expect(preWithdraw.fund.weth).toEqualBN(pre.fund.weth);
+  expect(postCalculations.gav).toBe(preWithdrawCalculations.gav);
+  expect(preWithdrawCalculations.gav).toBe(preCalculations.gav);
+  expect(postCalculations.sharePrice).toBe(
     preWithdrawCalculations.sharePrice,
   );
-  expect(preWithdrawCalculations.sharePrice).toEqual(
+  expect(preWithdrawCalculations.sharePrice).toBe(
     preCalculations.sharePrice,
   );
   expect(isDgxInAssetList).toBeFalsy();
-  expect(Number(openOrdersAgainstDgx)).toEqual(0);
+  expect(Number(openOrdersAgainstDgx)).toBe(0);
 });
