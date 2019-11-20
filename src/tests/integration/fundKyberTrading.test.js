@@ -1,7 +1,6 @@
 import { BN, toWei } from 'web3-utils';
 
 import { Contracts, Exchanges } from '~/Contracts';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
@@ -14,13 +13,16 @@ import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
+
 import { BNExpMul } from '../utils/new/BNmath';
+import { CONTRACT_NAMES } from '../utils/new/constants';
+import { getFunctionSignature } from '../utils/new/metadata';
 
 describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;
   let deployer, manager, investor;
   let addresses, contracts;
-  let exchangeIndex;
+  let exchangeIndex, takeOrderFunctionSig;
   let initialTokenAmount;
 
   beforeAll(async () => {
@@ -82,6 +84,10 @@ describe('fund-kyber-trading', () => {
       .call();
     exchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === KyberAddresses.adapter.toLowerCase(),
+    );
+    takeOrderFunctionSig = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder'
     );
 
     initialTokenAmount = toWei('10', 'ether');
@@ -168,10 +174,11 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
+
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderFunctionSig,
         [
           emptyAddress,
           emptyAddress,
@@ -230,7 +237,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderFunctionSig,
         [
           emptyAddress,
           emptyAddress,
@@ -292,7 +299,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderFunctionSig,
         [
           emptyAddress,
           emptyAddress,
@@ -349,7 +356,7 @@ describe('fund-kyber-trading', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          FunctionSignatures.takeOrder,
+          takeOrderFunctionSig,
           [
             emptyAddress,
             emptyAddress,
