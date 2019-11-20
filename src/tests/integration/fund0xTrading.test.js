@@ -3,12 +3,6 @@ import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 
 import { Contracts, Exchanges } from '~/Contracts';
-import {
-  createUnsignedOrder,
-  approveOrder,
-  isValidSignatureOffChain,
-} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
@@ -19,6 +13,12 @@ import {
 } from '~/utils/constants/orderSignatures';
 import { getContract } from '~/utils/solidity/getContract';
 import { getUpdatedTestPrices } from '../utils/new/api';
+import {
+  createUnsignedZeroExOrder,
+  isValidZeroExSignatureOffChain,
+  signZeroExOrder
+} from '../utils/new/zeroEx';
+
 
 describe('fund-0x-trading', () => {
   let environment;
@@ -138,7 +138,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
 
-    const unsignedOrder = await createUnsignedOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
       zeroExConfigs.exchange,
       {
@@ -150,22 +150,21 @@ describe('fund-0x-trading', () => {
       },
     );
 
-    await approveOrder(
-      environment,
-      zeroExConfigs.exchange,
-      unsignedOrder,
-    );
-    signedOrder1 = await signOrder(environment, unsignedOrder);
-    const signatureValid = await isValidSignatureOffChain(
+    await mln.methods
+      .approve(erc20ProxyAddress, makerAssetAmount)
+      .send(defaultTxOpts);
+
+    signedOrder1 = await signZeroExOrder(environment, unsignedOrder, deployer);
+    const signatureValid = await isValidZeroExSignatureOffChain(
       environment,
       unsignedOrder,
       signedOrder1.signature,
+      deployer
     );
 
     expect(signatureValid).toBeTruthy();
   });
 
-  // tslint:disable-next-line:max-line-length
   test('manager takes order through 0x adapter', async () => {
     const { mln, weth } = contracts;
     const { trading } = contracts.fund;
@@ -253,7 +252,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
 
-    const unsignedOrder = await createUnsignedOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
       zeroExConfigs.exchange,
       {
@@ -267,16 +266,16 @@ describe('fund-0x-trading', () => {
       },
     );
 
-    await approveOrder(
-      environment,
-      zeroExConfigs.exchange,
-      unsignedOrder,
-    );
-    signedOrder2 = await signOrder(environment, unsignedOrder);
-    const signatureValid = await isValidSignatureOffChain(
+    await mln.methods
+      .approve(erc20ProxyAddress, makerAssetAmount)
+      .send(defaultTxOpts);
+
+    signedOrder2 = await signZeroExOrder(environment, unsignedOrder, deployer);
+    const signatureValid = await isValidZeroExSignatureOffChain(
       environment,
       unsignedOrder,
       signedOrder2.signature,
+      deployer
     );
 
     expect(signatureValid).toBeTruthy();
@@ -380,7 +379,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAmount = toWei('0.5', 'ether');
     const takerAssetAmount = toWei('0.05', 'ether');
 
-    const unsignedOrder = await createUnsignedOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
       zeroExConfigs.exchange,
       {
@@ -391,7 +390,7 @@ describe('fund-0x-trading', () => {
         takerAssetAmount,
       },
     );
-    signedOrder3 = await signOrder(environment, unsignedOrder, manager);
+    signedOrder3 = await signZeroExOrder(environment, unsignedOrder, manager);
     await trading.methods
       .callOnExchange(
         0,
@@ -533,7 +532,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAmount = toWei('0.05', 'Ether');
     const takerAssetAmount = toWei('0.5', 'Ether');
 
-    const unsignedOrder = await createUnsignedOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
       zeroExConfigs.exchange,
       {
@@ -545,7 +544,7 @@ describe('fund-0x-trading', () => {
       },
     );
 
-    signedOrder4 = await signOrder(environment, unsignedOrder, manager);
+    signedOrder4 = await signZeroExOrder(environment, unsignedOrder, manager);
     await trading.methods
       .callOnExchange(
         0,
@@ -653,7 +652,7 @@ describe('fund-0x-trading', () => {
     const takerAssetAmount = toWei('0.5', 'Ether');
     const duration = 50;
 
-    const unsignedOrder = await createUnsignedOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
       zeroExConfigs.exchange,
       {
@@ -665,7 +664,7 @@ describe('fund-0x-trading', () => {
         takerAssetAmount,
       },
     );
-    const signedOrder5 = await signOrder(environment, unsignedOrder, manager);
+    const signedOrder5 = await signZeroExOrder(environment, unsignedOrder, manager);
     await trading.methods
       .callOnExchange(
         0,
