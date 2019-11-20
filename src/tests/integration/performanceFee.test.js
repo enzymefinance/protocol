@@ -153,12 +153,12 @@ test(`artificially inflate share price by inflating weth`, async () => {
     postTotalSupply,
   );
 
-  expect(postTotalSupply.toString()).toEqual(preTotalSupply.toString());
+  expect(postTotalSupply).toEqualBN(preTotalSupply);
   expect(Number(postFundCalculations.sharePrice)).toBeGreaterThan(
     Number(preFundCalculations.sharePrice),
   );
-  expect(postFundCalculations.sharePrice).toEqual(sharePriceUsingGav.toString());
-  expect(postFundCalculations.sharePrice).toEqual(sharePriceUsingNav.toString());
+  expect(postFundCalculations.sharePrice).toBe(`${sharePriceUsingGav}`);
+  expect(postFundCalculations.sharePrice).toBe(`${sharePriceUsingNav}`);
 });
 
 test(`performance fee is calculated correctly`, async () => {
@@ -195,7 +195,7 @@ test(`performance fee is calculated correctly`, async () => {
       currentTotalSupply.sub(expectedFeeSharesPreDilution),
     );
 
-  expect(fundCalculations.feesInShares).toEqual(expectedFeeShares.toString());
+  expect(fundCalculations.feesInShares).toBe(`${expectedFeeShares}`);
   expect(Number(fundCalculations.feesInDenominationAsset)).toBeCloseTo(
     Number(expectedPerformanceFee),
   );
@@ -229,8 +229,8 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
     redeemSharesProportionAccountingInflation,
     new BN(fundCalculations.feesInShares),
   );
-  expect(postManagerShares.sub(preManagerShares).toString())
-    .toEqual(expectedOwedPerformanceFee.toString());
+  expect(postManagerShares.sub(preManagerShares))
+    .toEqualBN(expectedOwedPerformanceFee);
 
   await fund.participation.methods
     .redeem()
@@ -271,14 +271,14 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
     .performCalculations()
     .call();
 
-  expect(postManagerShares.sub(preManagerShares).toString()).toEqual(
+  expect(postManagerShares.sub(preManagerShares).toString()).toBe(
     preFundCalculations.feesInShares
   );
-  expect(postFundCalculations.sharePrice).toEqual(
+  expect(postFundCalculations.sharePrice).toBe(
     preFundCalculations.sharePrice,
   );
-  expect(currentHWM).toEqual(preFundCalculations.gavPerShareNetManagementFee);
-  expect(postFundCalculations.gav).toEqual(preFundCalculations.gav);
+  expect(currentHWM).toBe(preFundCalculations.gavPerShareNetManagementFee);
+  expect(postFundCalculations.gav).toBe(preFundCalculations.gav);
   // expect(new BigInteger(fundCalculations.feesInDenominationAsset)).toEqual(
     // expectedPerformanceFee,
   // );
