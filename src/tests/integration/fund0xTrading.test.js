@@ -5,12 +5,9 @@ import { AssetProxyId } from '@0x/types';
 import { Contracts, Exchanges } from '~/Contracts';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import {
-  makeOrderSignature,
-  takeOrderSignature,
-  cancelOrderSignature,
-} from '~/utils/constants/orderSignatures';
 import { getContract } from '~/utils/solidity/getContract';
+import { getFunctionSignature } from '../utils/new/metadata';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 import { getUpdatedTestPrices } from '../utils/new/api';
 import { stringToBytes } from '../utils/new/formatting';
@@ -21,7 +18,6 @@ import {
   signZeroExOrder
 } from '../utils/new/zeroEx';
 
-
 describe('fund-0x-trading', () => {
   let environment;
   let deployer, manager, investor;
@@ -29,6 +25,7 @@ describe('fund-0x-trading', () => {
   let addresses, contracts;
   let erc20ProxyAddress, zeroExConfigs;
   let signedOrder1, signedOrder2, signedOrder3, signedOrder4;
+  let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
@@ -37,6 +34,19 @@ describe('fund-0x-trading', () => {
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+    takeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder',
+    );
+    cancelOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'cancelOrder',
+    )
 
     const system = await deployAndGetSystem(environment);
     addresses = system.addresses;

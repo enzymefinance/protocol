@@ -1,8 +1,9 @@
 import { BN, toWei } from 'web3-utils';
 
+import { getFunctionSignature } from '../utils/new/metadata';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
@@ -18,6 +19,7 @@ describe('fund-quote-asset', () => {
   let addresses, contracts;
   let fundDenominationAsset;
   let trade1;
+  let makeOrderSignature;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
@@ -26,6 +28,11 @@ describe('fund-quote-asset', () => {
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
 
     const system = await deployAndGetSystem(environment);
     addresses = system.addresses;

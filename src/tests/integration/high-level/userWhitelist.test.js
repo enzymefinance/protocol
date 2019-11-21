@@ -1,8 +1,9 @@
+import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
-
+import { getFunctionSignature } from '../../utils/new/metadata';
+import { CONTRACT_NAMES } from '../../utils/new/constants';
 import { Contracts } from '~/Contracts';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
@@ -18,6 +19,7 @@ describe('Happy Path', () => {
   let wethTokenInfo;
   let weth, participation;
   let investmentAmount, investmentAsset, participationAddress, requestedShares;
+  let requestInvestmentSignatureBytes;
 
   beforeAll(async () => {
     environment = await deployAndInitTestEnv();
@@ -25,6 +27,15 @@ describe('Happy Path', () => {
 
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
+
+    const requestInvestmentSignature = getFunctionSignature(
+      CONTRACT_NAMES.PARTICIPATION,
+      'requestInvestment',
+    );
+
+    requestInvestmentSignatureBytes = encodeFunctionSignature(
+      requestInvestmentSignature
+    );
 
     const accounts = await environment.eth.getAccounts();
     userAlt = accounts[1];
@@ -60,12 +71,9 @@ describe('Happy Path', () => {
       Contracts.UserWhitelist,
       [[user]]
     );
-    const functionSig = environment.eth.abi.encodeFunctionSignature(
-      FunctionSignatures.requestInvestment
-    );
     await policyManager.methods
       .register(
-        functionSig,
+        requestInvestmentSignatureBytes,
         userWhitelist.toString()
       )
       .send(defaultTxOpts);

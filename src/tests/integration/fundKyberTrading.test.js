@@ -4,7 +4,6 @@ import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
-import { takeOrderSignature } from '~/utils/constants/orderSignatures';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getFundComponents } from '~/utils/getFundComponents';
@@ -22,7 +21,7 @@ describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;
   let deployer, manager, investor;
   let addresses, contracts;
-  let exchangeIndex, takeOrderFunctionSig;
+  let exchangeIndex, takeOrderSignature;
   let initialTokenAmount;
 
   beforeAll(async () => {
@@ -85,7 +84,7 @@ describe('fund-kyber-trading', () => {
     exchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === KyberAddresses.adapter.toLowerCase(),
     );
-    takeOrderFunctionSig = getFunctionSignature(
+    takeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'takeOrder'
     );
@@ -178,7 +177,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        takeOrderFunctionSig,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -237,7 +236,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        takeOrderFunctionSig,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -299,7 +298,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        takeOrderFunctionSig,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -356,7 +355,7 @@ describe('fund-kyber-trading', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          takeOrderFunctionSig,
+          takeOrderSignature,
           [
             emptyAddress,
             emptyAddress,

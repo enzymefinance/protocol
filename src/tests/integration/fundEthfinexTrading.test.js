@@ -12,11 +12,8 @@ import { Exchanges, Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
-import {
-  makeOrderSignature,
-  cancelOrderSignature,
-  withdrawTokensSignature,
-} from '~/utils/constants/orderSignatures';
+import { getFunctionSignature } from '../utils/new/metadata';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { createUnsignedOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
 import { increaseTime } from '~/utils/evm';
@@ -30,6 +27,7 @@ let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let mlnTokenWrapperInfo, ethTokenWrapperInfo;
 let unsignedOrder, signedOrder;
+let makeOrderSignature, cancelOrderSignature, withdrawTokensSignature;
 let contracts;
 let fund;
 
@@ -41,6 +39,21 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
+
+  makeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'makeOrder',
+  );
+
+  cancelOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'cancelOrder',
+  );
+
+  withdrawTokensSignature = getFunctionSignature(
+    CONTRACT_NAMES.ETHFINEX_ADAPTER,
+    'withdrawTokens',
+  );
 
   const system = await deployAndGetSystem(environment);
   contracts = system.contracts;

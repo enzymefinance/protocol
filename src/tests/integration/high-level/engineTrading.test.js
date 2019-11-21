@@ -1,16 +1,16 @@
+import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
-
 import { Contracts, Exchanges } from '~/Contracts';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul } from '../../utils/new/BNmath';
+import { getFunctionSignature } from '../../utils/new/metadata';
+import { CONTRACT_NAMES } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -18,6 +18,7 @@ describe('Happy Path', () => {
   let routes;
   let mlnTokenInfo, wethTokenInfo;
   let exchangeIndex, mlnPrice, takerQuantity;
+  let takeOrderSignature, takeOrderSignatureBytes;
 
   beforeAll(async () => {
     environment = await deployAndInitTestEnv();
@@ -25,6 +26,14 @@ describe('Happy Path', () => {
 
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
+
+    takeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder',
+    );
+    takeOrderSignatureBytes = encodeFunctionSignature(
+      takeOrderSignature
+    );
 
     const { exchangeConfigs, melonContracts } = environment.deployment;
 
@@ -108,7 +117,7 @@ describe('Happy Path', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -154,7 +163,7 @@ describe('Happy Path', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          FunctionSignatures.takeOrder,
+          takeOrderSignature,
           [
             emptyAddress,
             emptyAddress,
