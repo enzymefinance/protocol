@@ -1,5 +1,5 @@
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils } from '@0x/order-utils';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -14,8 +14,10 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
-import { createUnsignedOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+import {
+  createUnsignedZeroExOrder,
+  signZeroExOrder,
+} from '../utils/new/zeroEx';
 import { increaseTime } from '~/utils/evm';
 import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 
@@ -214,19 +216,23 @@ test('Make order through the fund', async () => {
   const makerAssetAmount = toWei('1', 'ether');
   const takerAssetAmount = toWei('.1', 'ether');
 
-  const order = await createUnsignedOrder(environment, ethfinex.options.address, {
-    makerAddress,
-    makerTokenAddress: mlnTokenWrapperInfo.address,
-    makerAssetAmount,
-    takerTokenAddress: weth.options.address,
-    takerAssetAmount,
-  });
+  const order = await createUnsignedZeroExOrder(
+    environment,
+    ethfinex.options.address,
+    {
+      makerAddress,
+      makerTokenAddress: mlnTokenWrapperInfo.address,
+      makerAssetAmount,
+      takerTokenAddress: weth.options.address,
+      takerAssetAmount,
+    },
+  );
 
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
   const preCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  signedOrder = await signOrder(environment, order, manager);
+  signedOrder = await signZeroExOrder(environment, order, manager);
 
   await fund.trading.methods
     .callOnExchange(
@@ -284,6 +290,7 @@ test('Third party takes the order made by the fund', async () => {
   const preDeployerWrappedMLN = new BN(
     await mlnWrapperContract.methods.balanceOf(deployer).call(),
   );
+
   const result = await fillOrder(environment, ethfinex.options.address, {
     signedOrder: signedOrder,
   });
@@ -319,7 +326,7 @@ test('Make order with native asset', async () => {
   const makerAddress = fund.trading.options.address.toLowerCase();
   const makerAssetAmount = toWei('.05', 'ether');
   const takerAssetAmount = toWei('.5', 'ether');
-  unsignedOrder = await createUnsignedOrder(
+  unsignedOrder = await createUnsignedZeroExOrder(
     environment,
     zeroExExchange.options.address,
     {
@@ -331,7 +338,7 @@ test('Make order with native asset', async () => {
       takerAssetAmount,
     },
   );
-  signedOrder = await signOrder(environment, unsignedOrder, manager);
+  signedOrder = await signZeroExOrder(environment, unsignedOrder, manager);
   await fund.trading.methods
     .callOnExchange(
       0,
