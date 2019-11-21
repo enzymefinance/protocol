@@ -11,7 +11,7 @@ const defaultOptions = {
   data: null,
 };
 
-const call = async (contract, method, args, opts) => {
+const call = async (contract, method, args=[], opts) => {
   console.log(
     `Calling ${method} at ${contract.options.address}${
         (args.length) ? ` with args [${args}]` : ''

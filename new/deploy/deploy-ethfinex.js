@@ -1,4 +1,6 @@
-const {nab, send, fetch} = require('./deploy-contract');
+const {nab, call, send, fetch} = require('./deploy-contract');
+
+const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: import from util
 
 const main = async input => {
   const addrs = {};
@@ -35,9 +37,20 @@ const main = async input => {
     }
   }
 
-  await send(wrapperRegistryEFX, 'addNewWrapperPair', [
-    Array.from(wrapperMap.keys()), Array.from(wrapperMap.values())
-  ]);
+  // remove token/wrapper pairs where the token is already registered
+  // otherwise addNewWrapperPair will fail
+  for (const originalToken of Array.from(wrapperMap.keys())) {
+    const wrapperForToken = await call(wrapperRegistryEFX, 'token2WrapperLookup', [originalToken]);
+    if (wrapperForToken !== zeroAddress) {
+      wrapperMap.delete(originalToken);
+    }
+  }
+
+  if (wrapperMap.size > 0) {
+    await send(wrapperRegistryEFX, 'addNewWrapperPair', [
+      Array.from(wrapperMap.keys()), Array.from(wrapperMap.values())
+    ]);
+  }
 
   return addrs;
 }

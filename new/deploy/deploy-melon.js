@@ -116,21 +116,17 @@ const main = async input => {
     melonConf.versionOwner
   ], melonAddrs);
 
-  // TODO: check version is registered first
-  // const versionInformation = await getVersionInformation(
-  //   environment,
-  //   melonContracts.registry,
-  //   { version: melonContracts.version },
-  // );
+  const versionInformation = await call(registry, 'versionInformation', [version.options.address]);
+  console.log(versionInformation)
 
-  // if (!versionInformation) {
+  if (!versionInformation['0']) {
     await send(registry, 'registerVersion',
       [
         version.options.address,
         web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64)
       ]
     );
-  // }
+  }
 
   if (conf.track === 'KYBER_PRICE')
     await send(priceSource, 'update');

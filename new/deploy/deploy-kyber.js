@@ -1,7 +1,8 @@
-const {fetch, nab, send} = require('./deploy-contract');
+const {call, fetch, nab, send} = require('./deploy-contract');
 const web3 = require('./get-web3');
 const BN = web3.utils.BN;
 
+// TODO: check whether each "send" needs to be done before sending it
 const main = async input => {
   const kyberAddrs = input.kyber.addr;
   const conf = input.conf;
@@ -37,20 +38,32 @@ const main = async input => {
   await send(kyberNetwork, 'setKyberProxy', [kyberNetworkProxy.options.address]);
   await send(kyberNetwork, 'setEnable', [true]);
   await send(conversionRates, 'setValidRateDurationInBlocks', [rateDuration]);
-  await send(conversionRates, 'addToken', [mln.options.address]);
+  const mlnData = await call(conversionRates, 'getTokenBasicData', [mln.options.address]);
+  if (!mlnData['0']) {
+    await send(conversionRates, 'addToken', [mln.options.address]);
+  }
   await send(conversionRates, 'setTokenControlInfo', [mln.options.address, minimalRecordResolution, maxPerBlockImbalance.toString(), maxTotalImbalance.toString()]);
   await send(conversionRates, 'enableTokenTrade', [mln.options.address]);
   await send(conversionRates, 'setReserveAddress', [kyberReserve.options.address]);
-  await send(kyberNetwork, 'addReserve', [kyberReserve.options.address, true]);
+  const reserveAlreadyAdded = await call(kyberNetwork, 'isReserve', [kyberReserve.options.address]);
+  if (!reserveAlreadyAdded) {
+    await send(kyberNetwork, 'addReserve', [kyberReserve.options.address, true]);
+  }
   await send(kyberReserve, 'approveWithdrawAddress', [mln.options.address, conf.deployer, true]);
   await send(kyberReserve, 'enableTrade');
 
   await send(mln, 'transfer', [kyberReserve.options.address, tokensToTransfer.toString()]);
-  await send(conversionRates, 'addOperator', [conf.deployer]);
+  const conversionRateOperators = (await call(conversionRates, 'getOperators')).map(s => s.toLowerCase());
+  if (conversionRateOperators.indexOf(conf.deployer.toLowerCase()) === -1) {
+    await send(conversionRates, 'addOperator', [conf.deployer]);
+  }
   await send(conversionRates, 'setBaseRate', [[mln.options.address], [tokensPerEther.toString()], [ethersPerToken.toString()], ['0x0000000000000000000000000000'], ['0x0000000000000000000000000000'], blockNumber, [0]]);
   await send(conversionRates, 'setQtyStepFunction', [mln.options.address, [0], [0], [0], [0]]);
   await send(conversionRates, 'setImbalanceStepFunction', [mln.options.address, [0], [0], [0], [0]]);
-  await send(kyberWhiteList, 'addOperator', [conf.deployer]);
+  const whitelistOperators = (await call(kyberWhiteList, 'getOperators')).map(s => s.toLowerCase());
+  if (whitelistOperators.indexOf(conf.deployer.toLowerCase()) === -1) {
+    await send(kyberWhiteList, 'addOperator', [conf.deployer]);
+  }
   await send(kyberWhiteList, 'setCategoryCap', [0, categoryCap.toString()]);
   await send(kyberWhiteList, 'setSgdToEthRate', [30000]);
 
@@ -58,7 +71,10 @@ const main = async input => {
   await send(kyberReserve, 'setContracts', [kyberNetwork.options.address, conversionRates.options.address, '0x0000000000000000000000000000000000000000']);
   await send(kyberNetwork, 'listPairForReserve', [kyberReserve.options.address, mln.options.address, true, true, true]);
 
-  await send(conversionRates, 'addToken', [eur.options.address]);
+  const eurData = await call(conversionRates, 'getTokenBasicData', [eur.options.address]);
+  if (!eurData['0']) {
+    await send(conversionRates, 'addToken', [eur.options.address]);
+  }
   await send(conversionRates, 'setTokenControlInfo', [eur.options.address, minimalRecordResolution, maxPerBlockImbalance.toString(), maxTotalImbalance.toString()]);
   await send(conversionRates, 'enableTokenTrade', [eur.options.address]);
   await send(kyberReserve, 'approveWithdrawAddress', [eur.options.address, conf.deployer, true]);
