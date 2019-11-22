@@ -1,14 +1,14 @@
 import { BN, toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 describe('fund-malicious-token', () => {
   let environment, accounts;
@@ -32,7 +32,7 @@ describe('fund-malicious-token', () => {
 
     const maliciousTokenAddress = await deployContract(
       environment,
-      Contracts.MaliciousToken,
+      CONTRACT_NAMES.MALICIOUS_TOKEN,
       ['MLC', 18, 'Malicious'],
     );
 
@@ -50,13 +50,13 @@ describe('fund-malicious-token', () => {
 
     contracts.maliciousToken = await getContract(
       environment,
-      Contracts.MaliciousToken,
+      CONTRACT_NAMES.MALICIOUS_TOKEN,
       maliciousTokenAddress,
     );
 
     await fundFactory.methods
       .beginSetup(
-        stringToBytes32('Test fund'),
+        stringToBytes('Test fund', 32),
         [],
         [],
         [],
@@ -97,11 +97,8 @@ describe('fund-malicious-token', () => {
       .send(defaultTxOpts);
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).add(new BN(initialTokenAmount)),
-      ),
-    ).toBe(true);
+    expect(new BN(postWethInvestor))
+      .toEqualBN(new BN(preWethInvestor).add(new BN(initialTokenAmount)));
   });
 
   test('fund receives ETH from investment', async () => {
@@ -130,14 +127,10 @@ describe('fund-malicious-token', () => {
       .call();
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).sub(new BN(offeredValue)),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).add(new BN(offeredValue))),
-    ).toBe(true);
+    expect(new BN(postWethInvestor))
+      .toEqualBN(new BN(preWethInvestor).sub(new BN(offeredValue)));
+    expect( new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).add(new BN(offeredValue)));
   });
 
   test(`General redeem fails in presence of malicious token`, async () => {
@@ -184,19 +177,13 @@ describe('fund-malicious-token', () => {
     const postTotalSupply = await shares.methods.totalSupply().call();
     const postFundGav = await accounting.methods.calcGav().call();
 
-    expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).sub(new BN(investorShares)),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).add(new BN(preWethFund)),
-      ),
-    ).toBe(true);
-    expect(new BN(postWethFund).eq(new BN(0))).toBe(true);
-    expect(postMlnFund).toEqual(preMlnFund);
-    expect(postMlnInvestor).toEqual(preMlnInvestor);
-    expect(new BN(postFundGav).eq(new BN(0))).toBe(true);
+    expect(new BN(postTotalSupply))
+      .toEqualBN(new BN(preTotalSupply).sub(new BN(investorShares)));
+      expect(new BN(postWethInvestor))
+        .toEqualBN(new BN(preWethInvestor).add(new BN(preWethFund)));
+    expect(new BN(postWethFund)).toEqualBN(new BN(0));
+    expect(postMlnFund).toBe(preMlnFund);
+    expect(postMlnInvestor).toBe(preMlnInvestor);
+    expect(new BN(postFundGav)).toEqualBN(new BN(0));
   });
 });

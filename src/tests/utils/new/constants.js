@@ -8,241 +8,85 @@ export const TRACKS = {
   KYBER_PRICE: 'kyberPrice',
 }
 
-// TODO - add functions signatures?
+export const EXCHANGES = {
+  OASIS_DEX: 'MatchingMarket',
+  KYBER: 'KyberNetwork',
+  ZERO_EX: 'ZeroEx',
+  ETHFINEX: 'Ethfinex',
+  MELON_ENGINE: 'MelonEngine',
+}
 
-// TODO - capitalize keys
-// export const EXCHANGES = {
-//   MatchingMarket: 'MatchingMarket',
-//   KyberNetwork: 'KyberNetwork',
-//   ZeroEx: 'ZeroEx',
-//   Ethfinex: 'Ethfinex',
-//   MelonEngine: 'MelonEngine',
-// }
-
-// TODO - capitalize keys
-// export const CONTRACTS = {
-//   Accounting: 'Accounting',
-//   AccountingFactory: 'AccountingFactory',
-//   AddressList: 'AddressList',
-//   AmguConsumer: 'AmguConsumer',
-//   AssetBlacklist: 'AssetBlacklist',
-//   AssetWhitelist: 'AssetWhitelist',
-//   BurnableToken: 'BurnableToken',
-//   CanonicalPriceFeed: 'CanonicalPriceFeed',
-//   ConversionRates: 'ConversionRates',
-//   Engine: 'Engine',
-//   EngineAdapter: 'EngineAdapter',
-//   EthfinexAdapter: 'EthfinexAdapter',
-//   ERC20Proxy: 'ERC20Proxy',
-//   ExchangeAdapter: 'ExchangeAdapter',
-//   FalsePolicy: 'FalsePolicy',
-//   FeeManager: 'FeeManager',
-//   FeeManagerFactory: 'FeeManagerFactory',
-//   FundFactory: 'FundFactory',
-//   FundRanking: 'FundRanking',
-//   Hub: 'Hub',
-//   KyberAdapter: 'KyberAdapter',
-//   KyberNetwork: 'KyberNetwork',
-//   KyberNetworkProxy: 'KyberNetworkProxy',
-//   KyberPriceFeed: 'KyberPriceFeed',
-//   KyberReserve: 'KyberReserve',
-//   KyberWhiteList: 'KyberWhiteList',
-//   MaliciousToken: 'MaliciousToken',
-//   ManagementFee: 'ManagementFee',
-//   MatchingMarket: 'MatchingMarket',
-//   MatchingMarketAdapter: 'MatchingMarketAdapter',
-//   MatchingMarketAccessor: 'MatchingMarketAccessor',
-//   MaxConcentration: 'MaxConcentration',
-//   MaxPositions: 'MaxPositions',
-//   MockAccounting: 'MockAccounting',
-//   MockAdapter: 'MockAdapter',
-//   MockFee: 'MockFee',
-//   MockFeeManager: 'MockFeeManager',
-//   MockHub: 'MockHub',
-//   MockRegistry: 'MockRegistry',
-//   MockShares: 'MockShares',
-//   MockVersion: 'MockVersion',
-//   Participation: 'Participation',
-//   ParticipationFactory: 'ParticipationFactory',
-//   PerformanceFee: 'PerformanceFee',
-//   PermissiveAuthority: 'PermissiveAuthority',
-//   Policy: 'Policy',
-//   PolicyManager: 'PolicyManager',
-//   PolicyManagerFactory: 'PolicyManagerFactory',
-//   PreminedToken: 'PreminedToken',
-//   PriceSourceInterface: 'PriceSourceInterface',
-//   PriceTolerance: 'PriceTolerance',
-//   Registry: 'Registry',
-//   SelfDestructing: 'SelfDestructing',
-//   Shares: 'Shares',
-//   SharesFactory: 'SharesFactory',
-//   Spoke: 'Spoke',
-//   StakingPriceFeed: 'StakingPriceFeed',
-//   StandardToken: 'StandardToken',
-//   TestingPriceFeed: 'TestingPriceFeed',
-//   Trading: 'Trading',
-//   TradingFactory: 'TradingFactory',
-//   TruePolicy: 'TruePolicy',
-//   UserWhitelist: 'UserWhitelist',
-//   Vault: 'Vault',
-//   VaultFactory: 'VaultFactory',
-//   Version: 'Version',
-//   Weth: 'WETH',
-//   WrapperLock: 'WrapperLock',
-//   WrapperLockEth: 'WrapperLockEth',
-//   WrapperRegistryEFX: 'WrapperRegistryEFX',
-//   ZeroExAdapter: 'ZeroExV2Adapter',
-//   ZeroExExchange: 'Exchange',
-// }
-
-// TODO: capitalize keys
-// export const ABIS = {
-//   [Contracts.Accounting]:
-//     require('../out/Accounting.abi.json'),
-//   [Contracts.AccountingFactory]:
-//     require(`../out/${Contracts.AccountingFactory}.abi.json`),
-//   [Contracts.AddressList]:
-//     require('../out/AddressList.abi.json'),
-//   [Contracts.AmguConsumer]:
-//     require('../out/AmguConsumer.abi.json'),
-//   [Contracts.AssetBlacklist]:
-//     require('../out/AssetBlacklist.abi.json'),
-//   [Contracts.AssetWhitelist]:
-//     require('../out/AssetWhitelist.abi.json'),
-//   [Contracts.BurnableToken]:
-//     require(`../out/${Contracts.BurnableToken}.abi.json`),
-//   [Contracts.CanonicalPriceFeed]:
-//     require(`../out/${Contracts.CanonicalPriceFeed}.abi.json`),
-//   [Contracts.ERC20Proxy]:
-//     require(`../out/${Contracts.ERC20Proxy}.abi.json`),
-//   [Contracts.Engine]:
-//     require('../out/Engine.abi.json'),
-//   [Contracts.EngineAdapter]:
-//     require('../out/EngineAdapter.abi.json'),
-//   [Contracts.EthfinexAdapter]:
-//     require(`../out/${Contracts.EthfinexAdapter}.abi.json`),
-//   [Contracts.ExchangeAdapter]:
-//     require(`../out/${Contracts.ExchangeAdapter}.abi.json`),
-//   [Contracts.FalsePolicy]:
-//     require('../out/FalsePolicy.abi.json'),
-//   [Contracts.FeeManager]:
-//     require('../out/FeeManager.abi.json'),
-//   [Contracts.FeeManagerFactory]:
-//     require(`../out/${Contracts.FeeManagerFactory}.abi.json`),
-//   [Contracts.FundFactory]:
-//     require('../out/FundFactory.abi.json'),
-//   [Contracts.FundRanking]:
-//     require('../out/FundRanking.abi.json'),
-//   [Contracts.Hub]:
-//     require('../out/Hub.abi.json'),
-//   [Contracts.MockAdapter]:
-//     require('../out/MockAdapter.abi.json'),
-//   [Contracts.ManagementFee]:
-//     require('../out/ManagementFee.abi.json'),
-//   [Contracts.MatchingMarket]:
-//     require('../out/MatchingMarket.abi.json'),
-//   [Contracts.MatchingMarketAdapter]:
-//     require('../out/MatchingMarketAdapter.abi.json'),
-//   [Contracts.MatchingMarketAccessor]:
-//     require('../out/MatchingMarketAccessor.abi.json'),
-//   [Contracts.KyberNetwork]:
-//     require('../out/KyberNetwork.abi.json'),
-//   [Contracts.KyberPriceFeed]:
-//     require(`../out/${Contracts.KyberPriceFeed}.abi.json`),
-//   [Contracts.KyberReserve]:
-//     require('../out/KyberReserve.abi.json'),
-//   [Contracts.KyberNetworkProxy]:
-//     require('../out/KyberNetworkProxy.abi.json'),
-//   [Contracts.KyberAdapter]:
-//     require('../out/KyberAdapter.abi.json'),
-//   [Contracts.ConversionRates]:
-//     require('../out/ConversionRates.abi.json'),
-//   [Contracts.KyberWhiteList]:
-//     require('../out/KyberWhiteList.abi.json'),
-//   [Contracts.MaliciousToken]:
-//     require('../out/MaliciousToken.abi.json'),
-//   [Contracts.MaxPositions]:
-//     require('../out/MaxPositions.abi.json'),
-//   [Contracts.MaxConcentration]:
-//     require('../out/MaxConcentration.abi.json'),
-//   [Contracts.MockAccounting]:
-//     require('../out/MockAccounting.abi.json'),
-//   [Contracts.MockFeeManager]:
-//     require('../out/MockFeeManager.abi.json'),
-//   [Contracts.MockFee]:
-//     require('../out/MockFee.abi.json'),
-//   [Contracts.MockHub]:
-//     require('../out/MockHub.abi.json'),
-//   [Contracts.MockRegistry]:
-//     require('../out/MockRegistry.abi.json'),
-//   [Contracts.MockShares]:
-//     require('../out/MockShares.abi.json'),
-//   [Contracts.MockVersion]:
-//     require('../out/MockVersion.abi.json'),
-//   [Contracts.MatchingMarket]:
-//     require('../out/MatchingMarket.abi.json'),
-//   [Contracts.MatchingMarketAdapter]:
-//     require('../out/MatchingMarketAdapter.abi.json'),
-//   [Contracts.Participation]:
-//     require('../out/Participation.abi.json'),
-//   [Contracts.ParticipationFactory]:
-//     require(`../out/${Contracts.ParticipationFactory}.abi.json`),
-//   [Contracts.PerformanceFee]:
-//     require('../out/PerformanceFee.abi.json'),
-//   [Contracts.PermissiveAuthority]:
-//     require(`../out/${Contracts.PermissiveAuthority}.abi.json`),
-//   [Contracts.Policy]:
-//     require('../out/Policy.abi.json'),
-//   [Contracts.PolicyManager]:
-//     require('../out/PolicyManager.abi.json'),
-//   [Contracts.PolicyManagerFactory]:
-//     require(`../out/${Contracts.PolicyManagerFactory}.abi.json`),
-//   [Contracts.PreminedToken]:
-//     require('../out/PreminedToken.abi.json'),
-//   [Contracts.PriceTolerance]:
-//     require(`../out/${Contracts.PriceTolerance}.abi.json`),
-//   [Contracts.Registry]:
-//     require('../out/Registry.abi.json'),
-//   [Contracts.PriceSourceInterface]:
-//     require('../out/PriceSourceInterface.abi.json'),
-//   [Contracts.SelfDestructing]:
-//     require('../out/SelfDestructing.abi.json'),
-//   [Contracts.Shares]:
-//     require('../out/Shares.abi.json'),
-//   [Contracts.SharesFactory]:
-//     require(`../out/${Contracts.SharesFactory}.abi.json`),
-//   [Contracts.Spoke]:
-//     require(`../out/${Contracts.Spoke}.abi.json`),
-//   [Contracts.StakingPriceFeed]:
-//     require(`../out/${Contracts.StakingPriceFeed}.abi.json`,),
-//   [Contracts.StandardToken]:
-//     require('../out/StandardToken.abi.json'),
-//   [Contracts.TestingPriceFeed]:
-//     require('../out/TestingPriceFeed.abi.json'),
-//   [Contracts.Trading]:
-//     require('../out/Trading.abi.json'),
-//   [Contracts.TradingFactory]:
-//     require(`../out/${Contracts.TradingFactory}.abi.json`),
-//   [Contracts.TruePolicy]:
-//     require('../out/TruePolicy.abi.json'),
-//   [Contracts.UserWhitelist]:
-//     require(`../out/${Contracts.UserWhitelist}.abi.json`),
-//   [Contracts.Vault]:
-//     require('../out/Vault.abi.json'),
-//   [Contracts.VaultFactory]:
-//     require('../out/VaultFactory.abi.json'),
-//   [Contracts.Version]:
-//     require('../out/Version.abi.json'),
-//   [Contracts.Weth]:
-//     require('../out/WETH.abi.json'),
-//   [Contracts.WrapperLock]:
-//     require(`../out/${Contracts.WrapperLock}.abi.json`),
-//   [Contracts.WrapperLockEth]:
-//     require(`../out/${Contracts.WrapperLockEth}.abi.json`),
-//   [Contracts.WrapperRegistryEFX]:
-//     require(`../out/${Contracts.WrapperRegistryEFX}.abi.json`),
-//   [Contracts.ZeroExExchange]:
-//     require('../out/Exchange.abi.json'),
-//   [Contracts.ZeroExAdapter]:
-//     require('../out/ZeroExV2Adapter.abi.json'),
-// };
+export const CONTRACT_NAMES = {
+  ACCOUNTING: 'Accounting',
+  ACCOUNTING_FACTORY: 'AccountingFactory',
+  ADDRESS_LIST: 'AddressList',
+  AMGU_CONSUMER: 'AmguConsumer',
+  ASSET_BLACKLIST: 'AssetBlacklist',
+  ASSET_WHITELIST: 'AssetWhitelist',
+  BURNABLE_TOKEN: 'BurnableToken',
+  CANONICAL_PRICEFEED: 'CanonicalPriceFeed',
+  CONVERSION_RATES: 'ConversionRates',
+  ENGINE: 'Engine',
+  ENGINE_ADAPTER: 'EngineAdapter',
+  ETHFINEX_ADAPTER: 'EthfinexAdapter',
+  ERC20_PROXY: 'ERC20Proxy',
+  EXCHANGE_ADAPTER: 'ExchangeAdapter',
+  FALSE_POLICY: 'FalsePolicy',
+  FEE_MANAGER: 'FeeManager',
+  FEE_MANAGER_FACTORY: 'FeeManagerFactory',
+  FUND_FACTORY: 'FundFactory',
+  FUND_RANKING: 'FundRanking',
+  HUB: 'Hub',
+  KYBER_ADAPTER: 'KyberAdapter',
+  KYBER_EXCHANGE: 'KyberNetwork',
+  KYBER_NETWORK_PROXY: 'KyberNetworkProxy',
+  KYBER_PRICEFEED: 'KyberPriceFeed',
+  KYBER_RESERVE: 'KyberReserve',
+  KYBER_WHITELIST: 'KyberWhiteList',
+  MALICIOUS_TOKEN: 'MaliciousToken',
+  MANAGEMENT_FEE: 'ManagementFee',
+  MAX_CONCENTRATION: 'MaxConcentration',
+  MAX_POSITIONS: 'MaxPositions',
+  MOCK_ACCOUNTING: 'MockAccounting',
+  MOCK_ADAPTER: 'MockAdapter',
+  MOCK_FEE: 'MockFee',
+  MOCK_FEE_MANAGER: 'MockFeeManager',
+  MOCK_HUB: 'MockHub',
+  MOCK_REGISTRY: 'MockRegistry',
+  MOCK_SHARES: 'MockShares',
+  MOCK_VERSION: 'MockVersion',
+  OASIS_DEX_ACCESSOR: 'MatchingMarketAccessor',
+  OASIS_DEX_ADAPTER: 'MatchingMarketAdapter',
+  OASIS_DEX_EXCHANGE: 'MatchingMarket',
+  PARTICIPATION: 'Participation',
+  PARTICIPATION_FACTORY: 'ParticipationFactory',
+  PERFORMANCE_FEE: 'PerformanceFee',
+  PERMISSIVE_AUTHORITY: 'PermissiveAuthority',
+  POLICY: 'Policy',
+  POLICY_MANAGER: 'PolicyManager',
+  POLICY_MANAGER_FACTORY: 'PolicyManagerFactory',
+  PREMINED_TOKEN: 'PreminedToken',
+  PRICE_SOURCE_INTERFACE: 'PriceSourceInterface',
+  PRICE_TOLERANCE: 'PriceTolerance',
+  REGISTRY: 'Registry',
+  SELF_DESTRUCTING: 'SelfDestructing',
+  SHARES: 'Shares',
+  SHARES_FACTORY: 'SharesFactory',
+  SPOKE: 'Spoke',
+  STAKING_PRICEFEED: 'StakingPriceFeed',
+  STANDARD_TOKEN: 'StandardToken',
+  TESTING_PRICEFEED: 'TestingPriceFeed',
+  TRADING: 'Trading',
+  TRADING_FACTORY: 'TradingFactory',
+  TRUE_POLICY: 'TruePolicy',
+  USER_WHITELIST: 'UserWhitelist',
+  VAULT: 'Vault',
+  VAULT_FACTORY: 'VaultFactory',
+  VERSION: 'Version',
+  WETH: 'WETH',
+  WRAPPER_LOCK: 'WrapperLock',
+  WRAPPER_LOCK_ETH: 'WrapperLockEth',
+  WRAPPER_REGISTRY_EFX: 'WrapperRegistryEFX',
+  ZERO_EX_ADAPTER: 'ZeroExV2Adapter',
+  ZERO_EX_EXCHANGE: 'Exchange',
+}

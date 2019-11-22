@@ -1,26 +1,26 @@
 import { BN, toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
-import { takeOrderSignature } from '~/utils/constants/orderSignatures';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
+
 import { BNExpMul } from '../utils/new/BNmath';
+import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
+import { getFunctionSignature } from '../utils/new/metadata';
 
 describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;
   let deployer, manager, investor;
   let addresses, contracts;
-  let exchangeIndex;
+  let exchangeIndex, takeOrderSignature;
   let initialTokenAmount;
 
   beforeAll(async () => {
@@ -36,7 +36,7 @@ describe('fund-kyber-trading', () => {
     addresses = system.addresses;
     contracts = system.contracts;
 
-    const KyberAddresses = addresses.exchangeConfigs[Exchanges.KyberNetwork];
+    const KyberAddresses = addresses.exchangeConfigs[EXCHANGES.KYBER];
 
     const {
       version: fundFactory,
@@ -48,7 +48,7 @@ describe('fund-kyber-trading', () => {
 
     await fundFactory.methods
       .beginSetup(
-        stringToBytes32('Test fund'),
+        stringToBytes('Test fund', 32),
         [],
         [],
         [],
@@ -72,7 +72,7 @@ describe('fund-kyber-trading', () => {
 
     contracts.kyberNetworkProxy = getContract(
       environment,
-      Contracts.KyberNetworkProxy,
+      CONTRACT_NAMES.KYBER_NETWORK_PROXY,
       KyberAddresses.exchange.toString(),
     );
 
@@ -82,6 +82,10 @@ describe('fund-kyber-trading', () => {
       .call();
     exchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === KyberAddresses.adapter.toLowerCase(),
+    );
+    takeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder'
     );
 
     initialTokenAmount = toWei('10', 'ether');
@@ -100,11 +104,8 @@ describe('fund-kyber-trading', () => {
 
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).add(new BN(initialTokenAmount)),
-      ),
-    ).toBe(true);
+    expect(new BN(postWethInvestor))
+      .toEqualBN(new BN(preWethInvestor).add(new BN(initialTokenAmount)));
   });
 
   test('fund receives ETH from investment', async () => {
@@ -134,14 +135,10 @@ describe('fund-kyber-trading', () => {
       .call();
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).sub(new BN(offeredValue)),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).add(new BN(offeredValue))),
-    ).toBe(true);
+    expect(new BN(postWethInvestor))
+      .toEqualBN(new BN(preWethInvestor).sub(new BN(offeredValue)));
+    expect(new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).add(new BN(offeredValue)));
   });
 
   test('swap ethToken for mln with specific order price (minRate)', async () => {
@@ -168,10 +165,11 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
+
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -195,12 +193,10 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).sub(new BN(takerQuantity))),
-    ).toBe(true);
-    expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).add(new BN(makerQuantity))),
-    ).toBe(true);
+    expect(new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).sub(new BN(takerQuantity)));
+    expect(new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).add(new BN(makerQuantity)));
   });
 
   test('swap mlnToken for ethToken with specific order price (minRate)', async () => {
@@ -230,7 +226,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -254,12 +250,10 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).sub(new BN(takerQuantity))),
-    ).toBe(true);
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).add(new BN(makerQuantity))),
-    ).toBe(true);
+    expect(new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).sub(new BN(takerQuantity)));
+    expect(new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).add(new BN(makerQuantity)));
   });
 
   test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
@@ -292,7 +286,7 @@ describe('fund-kyber-trading', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
@@ -319,13 +313,11 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(postWethFund).toEqual(preWethFund);
-    expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).sub(new BN(takerQuantity))),
-    ).toBe(true);
-    expect(
-      new BN(postEurFund).eq(new BN(preEurFund).add(new BN(makerQuantity))),
-    ).toBe(true);
+    expect(postWethFund).toBe(preWethFund);
+    expect( new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).sub(new BN(takerQuantity)));
+    expect(new BN(postEurFund))
+      .toEqualBN(new BN(preEurFund).add(new BN(makerQuantity)));
   });
 
   test('takeOrder fails if minPrice is not satisfied', async () => {
@@ -349,7 +341,7 @@ describe('fund-kyber-trading', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          FunctionSignatures.takeOrder,
+          takeOrderSignature,
           [
             emptyAddress,
             emptyAddress,

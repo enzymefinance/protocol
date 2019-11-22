@@ -1,6 +1,5 @@
 import { BN, padLeft, stringToHex, toWei } from 'web3-utils';
 
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getContract } from '~/utils/solidity/getContract';
@@ -8,6 +7,7 @@ import { deployContract } from '~/utils/solidity/deployContract';
 
 import { getUpdatedTestPrices } from '../utils/new/api';
 import { BNExpMul } from '../utils/new/BNmath';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 describe('management-fee', () => {
   const yearInSeconds = 31536000;
@@ -30,8 +30,8 @@ describe('management-fee', () => {
 
     contracts.managementFee = getContract(
       environment,
-      Contracts.ManagementFee,
-      await deployContract(environment, Contracts.ManagementFee, []),
+      CONTRACT_NAMES.MANAGEMENT_FEE,
+      await deployContract(environment, CONTRACT_NAMES.MANAGEMENT_FEE, []),
     );
 
     const {
@@ -73,25 +73,25 @@ describe('management-fee', () => {
     await fundFactory.methods.createVault().send(managerTxOpts);
     const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    const hub = getContract(environment, Contracts.Hub, hubAddress);
+    const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
     const routes = await hub.methods.routes().call();
     contracts.fund = {
       accounting: getContract(
         environment,
-        Contracts.Accounting,
+        CONTRACT_NAMES.ACCOUNTING,
         routes.accounting,
       ),
       feeManager: getContract(
         environment,
-        Contracts.FeeManager,
+        CONTRACT_NAMES.FEE_MANAGER,
         routes.feeManager,
       ),
       participation: getContract(
         environment,
-        Contracts.Participation,
+        CONTRACT_NAMES.PARTICIPATION,
         routes.participation,
       ),
-      shares: getContract(environment, Contracts.Shares, routes.shares),
+      shares: getContract(environment, CONTRACT_NAMES.SHARES, routes.shares),
     };
     addresses.fund = routes;
 

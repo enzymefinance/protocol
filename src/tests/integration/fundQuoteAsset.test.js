@@ -1,13 +1,13 @@
 import { BN, toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
+import { getFunctionSignature } from '../utils/new/metadata';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { makeOrderSignature } from '~/utils/constants/orderSignatures';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { BNExpMul } from '../utils/new/BNmath';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 const deploySystem = require('../../../new/deploy/deploy-system');
@@ -18,12 +18,12 @@ describe('fund-quote-asset', () => {
   let environment, accounts;
   let deployer, manager, investor;
   let defaultTxOpts, investorTxOpts, managerTxOpts;
-  let addresses;
   let fundDenominationAsset;
   let trade1;
   let deployed;
   let dgx, mln, weth, matchingMarket, version, priceSource;
   let hub, accounting, participation, shares, trading, vault;
+  let makeOrderSignature;
 
   beforeAll(async () => {
     accounts = await web3.eth.getAccounts();
@@ -39,10 +39,14 @@ describe('fund-quote-asset', () => {
     weth = fetchContract('WETH', deployed.tokens.addr.WETH);
     matchingMarket = fetchContract('MatchingMarket', deployed.oasis.addr.MatchingMarket);
     priceSource = fetchContract('TestingPriceFeed', deployed.melon.addr.TestingPriceFeed);
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
 
     await version.methods
       .beginSetup(
-        stringToBytes32('Test fund'),
+        stringToBytes('Test fund', 32),
         [],
         [],
         [],
@@ -89,7 +93,7 @@ describe('fund-quote-asset', () => {
     fundDenominationAsset = await accounting.methods
       .DENOMINATION_ASSET()
       .call();
-    expect(fundDenominationAsset).toEqual(dgx.options.address);
+    expect(fundDenominationAsset).toBe(dgx.options.address);
   });
 
   test('Transfer ethToken and mlnToken to the investor', async () => {
@@ -363,23 +367,15 @@ describe('fund-quote-asset', () => {
       .call();
     const postFundCalcs = await accounting.methods.performCalculations().call();
 
-    expect(preMlnExchange).toEqual(postMlnExchange);
-    expect(
-      new BN(postDgxExchange.toString()).eq(
-        new BN(preDgxExchange.toString()).add(new BN(trade1.sellQuantity.toString())),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postDgxFund.toString()).eq(
-        new BN(preDgxFund.toString()).sub(new BN(trade1.sellQuantity.toString())),
-      ),
-    ).toBe(true);
-    expect(new BN(postMlnFund.toString()).eq(new BN(preMlnFund.toString()))).toBe(true);
-    expect(new BN(postFundCalcs.gav.toString()).eq(new BN(preFundCalcs.gav.toString()))).toBe(true);
-    expect(
-      new BN(postFundCalcs.sharePrice.toString()).eq(new BN(preFundCalcs.sharePrice.toString())),
-    ).toBe(true);
-    expect(new BN(postMlnDeployer.toString()).eq(new BN(preMlnDeployer.toString()))).toBe(true);
+    expect(preMlnExchange).toBe(postMlnExchange);
+    expect(postMlnFund).toBe(preMlnFund);
+    expect(new BN(postDgxExchange))
+      .toEqualBN(new BN(preDgxExchange).add(new BN(trade1.sellQuantity)));
+    expect(new BN(postDgxFund))
+      .toEqualBN(new BN(preDgxFund).sub(new BN(trade1.sellQuantity)));
+    expect(postFundCalcs.gav).toBe(preFundCalcs.gav);
+    expect(postFundCalcs.sharePrice).toBe(preFundCalcs.sharePrice);
+    expect(postMlnDeployer).toBe(preMlnDeployer);
   });
 
   test('Third party takes entire order', async () => {
@@ -425,27 +421,15 @@ describe('fund-quote-asset', () => {
       .balanceOf(vault.options.address)
       .call();
 
-    expect(preMlnExchange).toEqual(postMlnExchange);
-    expect(
-      new BN(postDgxExchange.toString()).eq(
-        new BN(preDgxExchange.toString()).sub(new BN(trade1.sellQuantity.toString())),
-      ),
-    ).toBe(true);
-    expect(new BN(postDgxFund.toString()).eq(new BN(preDgxFund.toString()))).toBe(true);
-    expect(
-      new BN(postMlnFund.toString()).eq(
-        new BN(preMlnFund.toString()).add(new BN(trade1.buyQuantity.toString())),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postDgxDeployer.toString()).eq(
-        new BN(preDgxDeployer.toString()).add(new BN(trade1.sellQuantity.toString())),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postMlnDeployer.toString()).eq(
-        new BN(preMlnDeployer.toString()).sub(new BN(trade1.buyQuantity.toString())),
-      ),
-    ).toBe(true);
+    expect(preMlnExchange).toBe(postMlnExchange);
+    expect(new BN(postDgxExchange))
+      .toEqualBN(new BN(preDgxExchange).sub(new BN(trade1.sellQuantity)));
+    expect(postDgxFund).toBe(preDgxFund);
+    expect(new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).add(new BN(trade1.buyQuantity)));
+    expect(new BN(postDgxDeployer))
+      .toEqualBN(new BN(preDgxDeployer).add(new BN(trade1.sellQuantity)));
+    expect(new BN(postMlnDeployer))
+      .toEqualBN(new BN(preMlnDeployer).sub(new BN(trade1.buyQuantity)));
   });
 });

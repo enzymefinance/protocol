@@ -1,5 +1,5 @@
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
 import { orderHashUtils } from '@0x/order-utils';
+import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -8,17 +8,15 @@ import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { Exchanges, Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
+import { getFunctionSignature } from '../utils/new/metadata';
+import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 import {
-  makeOrderSignature,
-  cancelOrderSignature,
-  withdrawTokensSignature,
-} from '~/utils/constants/orderSignatures';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
-import { createUnsignedOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
+  createUnsignedZeroExOrder,
+  signZeroExOrder,
+} from '../utils/new/zeroEx';
 import { increaseTime } from '~/utils/evm';
 import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 
@@ -30,6 +28,7 @@ let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let mlnTokenWrapperInfo, ethTokenWrapperInfo;
 let unsignedOrder, signedOrder;
+let makeOrderSignature, cancelOrderSignature, withdrawTokensSignature;
 let contracts;
 let fund;
 
@@ -41,6 +40,21 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
+
+  makeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'makeOrder',
+  );
+
+  cancelOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'cancelOrder',
+  );
+
+  withdrawTokensSignature = getFunctionSignature(
+    CONTRACT_NAMES.ETHFINEX_ADAPTER,
+    'withdrawTokens',
+  );
 
   const system = await deployAndGetSystem(environment);
   contracts = system.contracts;
@@ -61,13 +75,6 @@ beforeAll(async () => {
     ethfinex.options.address,
   )).toString();
 
-  const exchangeConfigs = {
-    [Exchanges.ethfinex]: {
-      adapter: ethfinexAdapter.options.address,
-      exchange: ethfinex.options.address,
-      takesCustody: true,
-    },
-  };
   const envManager = withDifferentAccount(environment, manager);
 
   const fundName = padLeft(stringToHex('Test fund'), 64);
@@ -99,19 +106,19 @@ beforeAll(async () => {
 
   const wrapperRegistryAddress = await deployContract(
     environment,
-    Contracts.WrapperRegistryEFX,
+    CONTRACT_NAMES.WRAPPER_REGISTRY_EFX,
     [],
   );
 
   const wrapperRegistry = await getContract(
     environment,
-    Contracts.WrapperRegistryEFX,
+    CONTRACT_NAMES.WRAPPER_REGISTRY_EFX,
     wrapperRegistryAddress,
   );
 
   ethTokenWrapperInfo = await getToken(
     environment,
-    await deployContract(environment, Contracts.WrapperLockEth, [
+    await deployContract(environment, CONTRACT_NAMES.WRAPPER_LOCK_ETH, [
       'WETH',
       'WETH Token',
       18,
@@ -122,7 +129,7 @@ beforeAll(async () => {
 
   mlnTokenWrapperInfo = await getToken(
     environment,
-    await deployContract(environment, Contracts.WrapperLock, [
+    await deployContract(environment, CONTRACT_NAMES.WRAPPER_LOCK, [
       mln.options.address,
       'MLN',
       'Melon',
@@ -201,19 +208,23 @@ test('Make order through the fund', async () => {
   const makerAssetAmount = toWei('1', 'ether');
   const takerAssetAmount = toWei('.1', 'ether');
 
-  const order = await createUnsignedOrder(environment, ethfinex.options.address, {
-    makerAddress,
-    makerTokenAddress: mlnTokenWrapperInfo.address,
-    makerAssetAmount,
-    takerTokenAddress: weth.options.address,
-    takerAssetAmount,
-  });
+  const order = await createUnsignedZeroExOrder(
+    environment,
+    ethfinex.options.address,
+    {
+      makerAddress,
+      makerTokenAddress: mlnTokenWrapperInfo.address,
+      makerAssetAmount,
+      takerTokenAddress: weth.options.address,
+      takerAssetAmount,
+    },
+  );
 
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
   const preCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  signedOrder = await signOrder(environment, order, manager);
+  signedOrder = await signZeroExOrder(environment, order, manager);
 
   await fund.trading.methods
     .callOnExchange(
@@ -265,12 +276,13 @@ test('Third party takes the order made by the fund', async () => {
   const pre = await getAllBalances(contracts, accounts, fund, environment);
   const mlnWrapperContract = await getContract(
     environment,
-    Contracts.WrapperLock,
+    CONTRACT_NAMES.WRAPPER_LOCK,
     mlnTokenWrapperInfo.address,
   );
   const preDeployerWrappedMLN = new BN(
     await mlnWrapperContract.methods.balanceOf(deployer).call(),
   );
+
   const result = await fillOrder(environment, ethfinex.options.address, {
     signedOrder: signedOrder,
   });
@@ -306,7 +318,7 @@ test('Make order with native asset', async () => {
   const makerAddress = fund.trading.options.address.toLowerCase();
   const makerAssetAmount = toWei('.05', 'ether');
   const takerAssetAmount = toWei('.5', 'ether');
-  unsignedOrder = await createUnsignedOrder(
+  unsignedOrder = await createUnsignedZeroExOrder(
     environment,
     zeroExExchange.options.address,
     {
@@ -318,7 +330,7 @@ test('Make order with native asset', async () => {
       takerAssetAmount,
     },
   );
-  signedOrder = await signOrder(environment, unsignedOrder, manager);
+  signedOrder = await signZeroExOrder(environment, unsignedOrder, manager);
   await fund.trading.methods
     .callOnExchange(
       0,

@@ -1,24 +1,23 @@
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
 import { stringifyStruct } from '~/utils/solidity/stringifyStruct';
 import {
-  createUnsignedOrder,
-  approveOrder,
-} from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+  createUnsignedZeroExOrder,
+  signZeroExOrder,
+} from '../utils/new/zeroEx';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { toWei } from 'web3-utils';
+import { AssetProxyId } from '@0x/types';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 describe('account-0x-trading', () => {
   let environment, user, defaultTxOpts, takerEnvironment;
   let accounts;
-  let wethTokenInfo, mlnTokenInfo, zrxTokenInfo;
-  let zrxExchangeAddress;
+  let weth, mln;
+  let zeroExExchange, erc20ProxyAddress;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
@@ -27,70 +26,75 @@ describe('account-0x-trading', () => {
     accounts = await environment.eth.getAccounts();
     takerEnvironment = withDifferentAccount(environment, accounts[1]);
 
-    wethTokenInfo = await getToken(
-      environment,
-      await deployToken(environment, 'WETH'),
-    );
-    mlnTokenInfo = await getToken(
-      environment,
-      await deployToken(environment, 'MLN'),
-    );
-    zrxTokenInfo = await getToken(
+    const zrxTokenInfo = await getToken(
       environment,
       await deployToken(environment, 'ZRX'),
     );
 
-    const weth = getContract(
+    mln = getContract(
       environment,
-      Contracts.PreminedToken,
-      wethTokenInfo.address
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      await deployToken(environment, 'MLN'),
+    );
+
+    weth = getContract(
+      environment,
+      CONTRACT_NAMES.PREMINED_TOKEN,
+      await deployToken(environment, 'WETH'),
     );
     await weth.methods
       .transfer(takerEnvironment.wallet.address, toWei('100', 'Ether'))
       .send(defaultTxOpts);
 
-    zrxExchangeAddress = await deploy0xExchange(environment, {
+    const zrxExchangeAddress = await deploy0xExchange(environment, {
       zrxToken: zrxTokenInfo,
     });
+
+    zeroExExchange = getContract(
+      environment,
+      CONTRACT_NAMES.ZERO_EX_EXCHANGE,
+      zrxExchangeAddress,
+    );
+
+    erc20ProxyAddress = await zeroExExchange.methods
+      .getAssetProxy(AssetProxyId.ERC20.toString())
+      .call();
   });
 
   it('Happy path', async () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
 
-    const unsignedOrder = await createUnsignedOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
-      zrxExchangeAddress,
+      zeroExExchange.options.address,
       {
-        makerTokenAddress: mlnTokenInfo.address,
+        makerAddress: user,
+        makerTokenAddress: mln.options.address,
         makerAssetAmount,
-        takerTokenAddress: wethTokenInfo.address,
+        takerTokenAddress: weth.options.address,
         takerAssetAmount,
       }
     );
 
-    await approveOrder(environment, zrxExchangeAddress, unsignedOrder);
+    // await approveOrder(environment, zrxExchangeAddress, unsignedOrder);
+    await mln.methods
+      .approve(erc20ProxyAddress, makerAssetAmount)
+      .send(defaultTxOpts);
 
-    const signedOrder = await signOrder(environment, unsignedOrder);
+    const signedOrder = await signZeroExOrder(environment, unsignedOrder, user);
     expect(signedOrder.exchangeAddress).toBe(
-      zrxExchangeAddress.toLowerCase(),
+      zeroExExchange.options.address.toLowerCase(),
     );
-    expect(signedOrder.makerAddress).toBe(accounts[0].toLowerCase());
+    expect(signedOrder.makerAddress).toBe(user.toLowerCase());
     expect(signedOrder.makerAssetAmount).toBe(makerAssetAmount);
 
-    const exchange = getContract(
-      environment,
-      Contracts.ZeroExExchange,
-      zrxExchangeAddress
-    );
-
-    const stringifiedSignedOrder = stringifyStruct(signedOrder);
-    const signature = stringifiedSignedOrder.signature;
-    const result = await exchange.methods.fillOrder(
-      stringifyStruct(unsignedOrder),
-      takerAssetAmount,
-      signature,
-    ).send(defaultTxOpts);
+    const result = zeroExExchange.methods
+      .fillOrder(
+        unsignedOrder,
+        takerAssetAmount,
+        signedOrder.signature,
+      ).send(defaultTxOpts);
 
     expect(result).toBeTruthy();
   });

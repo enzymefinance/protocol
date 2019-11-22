@@ -1,17 +1,12 @@
+import { encodeFunctionSignature } from 'web3-eth-abi';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import {
-  makeOrderSignature,
-  takeOrderSignature,
-  cancelOrderSignature,
-  makeOrderSignatureBytes,
-  takeOrderSignatureBytes,
-} from '~/utils/constants/orderSignatures';
+import { getFunctionSignature } from '../utils/new/metadata';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { Exchanges } from '~/Contracts';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';
@@ -23,8 +18,10 @@ let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let contracts, exchanges;
 let numberOfExchanges = 1;
-let fund;
 let trade1, trade2;
+let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
+let takeOrderSignatureBytes, makeOrderSignatureBytes;
+let fund;
 
 beforeAll(async () => {
   environment = await initTestEnvironment();
@@ -33,6 +30,25 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
+
+  makeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'makeOrder',
+  );
+  takeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'takeOrder',
+  );
+  cancelOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'cancelOrder',
+  )
+  makeOrderSignatureBytes = encodeFunctionSignature(
+    makeOrderSignature
+  );
+  takeOrderSignatureBytes = encodeFunctionSignature(
+    takeOrderSignature
+  );
 
   const system = await deployAndGetSystem(environment);
   contracts = system.contracts;

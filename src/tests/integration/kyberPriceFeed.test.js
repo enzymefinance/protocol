@@ -1,6 +1,5 @@
 import { BN, toWei } from 'web3-utils';
 
-import { Contracts } from '~/Contracts';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
@@ -10,6 +9,7 @@ import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { BNExpDiv, BNExpInverse } from '../utils/new/BNmath';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 describe('kyber-price-feed', () => {
   let environment, user, defaultTxOpts;
@@ -41,17 +41,17 @@ describe('kyber-price-feed', () => {
 
     conversionRates = getContract(
       environment,
-      Contracts.ConversionRates,
+      CONTRACT_NAMES.CONVERSION_RATES,
       kyberDeployAddresses.conversionRates,
     );
 
     const mockRegistryAddress = await deployContract(
       environment,
-      Contracts.MockRegistry,
+      CONTRACT_NAMES.MOCK_REGISTRY,
     );
     mockRegistry = await getContract(
       environment,
-      Contracts.MockRegistry,
+      CONTRACT_NAMES.MOCK_REGISTRY,
       mockRegistryAddress.toString(),
     );
     await mockRegistry.methods
@@ -68,7 +68,7 @@ describe('kyber-price-feed', () => {
   it('Deploy kyber pricefeed', async () => {
     const kyberPriceFeedAddress = await deployContract(
       environment,
-      Contracts.KyberPriceFeed,
+      CONTRACT_NAMES.KYBER_PRICEFEED,
       [
         mockRegistry.options.address,
         kyberDeployAddresses.kyberNetworkProxy,
@@ -78,7 +78,7 @@ describe('kyber-price-feed', () => {
     );
     kyberPriceFeed = getContract(
       environment,
-      Contracts.KyberPriceFeed,
+      CONTRACT_NAMES.KYBER_PRICEFEED,
       kyberPriceFeedAddress,
     );
 
@@ -98,7 +98,7 @@ describe('kyber-price-feed', () => {
       .getPrice(mlnTokenInfo.address)
       .call();
 
-    expect(mlnPrice).toEqual(toWei('1', 'ether'));
+    expect(mlnPrice).toBe(toWei('1', 'ether'));
   });
 
   it('Update mln price in reserve', async () => {
@@ -137,7 +137,7 @@ describe('kyber-price-feed', () => {
       .getPrice(eurTokenInfo.address)
       .call();
 
-    expect(updatedMlnPrice).toEqual(mlnPrice);
-    expect(updatedEurPrice).toEqual(eurPrice);
+    expect(updatedMlnPrice).toBe(mlnPrice);
+    expect(updatedEurPrice).toBe(eurPrice);
   });
 });
