@@ -1,5 +1,5 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, toWei } from 'web3-utils';
+import { BN, hexToNumber, toWei } from 'web3-utils';
 
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { getContract } from '~/utils/solidity/getContract';
@@ -11,7 +11,10 @@ import {
   TRACKS,
 } from '../utils/new/constants';
 import { stringToBytes } from '../utils/new/formatting';
-import { getFunctionSignature } from '../utils/new/metadata';
+import {
+  getEventFromReceipt,
+  getFunctionSignature
+} from '../utils/new/metadata';
 
 describe('general-walkthrough', () => {
   let environment;
@@ -91,6 +94,9 @@ describe('general-walkthrough', () => {
     };
 
     await weth.methods
+      .transfer(investor, toWei('10', 'ether'))
+      .send(defaultTxOpts);
+    await mln.methods
       .transfer(investor, toWei('10', 'ether'))
       .send(defaultTxOpts);
 
@@ -279,7 +285,7 @@ describe('general-walkthrough', () => {
         takeOrderFunctionSig,
         [
           deployer,
-          trading.options.address,
+          addresses.fund.trading,
           makerAsset,
           takerAsset,
           EMPTY_ADDRESS,
@@ -326,12 +332,12 @@ describe('general-walkthrough', () => {
       'makeOrder',
     );
 
-    // const preMlnFundHoldings = await accounting.methods
-    //   .assetHoldings(mln.options.address)
-    //   .call()
-    // const preWethFundHoldings = await accounting.methods
-    //   .assetHoldings(weth.options.address)
-    //   .call()
+    const preMlnFundHoldings = await accounting.methods
+      .assetHoldings(mln.options.address)
+      .call()
+    const preWethFundHoldings = await accounting.methods
+      .assetHoldings(weth.options.address)
+      .call()
 
     const res = await trading.methods
       .callOnExchange(
@@ -353,38 +359,43 @@ describe('general-walkthrough', () => {
       )
       .send(managerTxOpts);
 
-    // TODO - Why don't we get LogMake event?
-    // const orderId = res.events.LogMake.returnValues.id;
-    // await mln.methods
-    //   .approve(oasisDEX.options.address, takerQuantity)
-    //   .send(defaultTxOpts);
+    const logMake = getEventFromReceipt(
+      res.events,
+      CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
+      'LogMake'
+    );
+    const orderId = hexToNumber(logMake.id);
 
-    // await oasisDEX.methods
-    //   .buy(orderId, takerQuantity)
-    //   .send(defaultTxOpts);
+    await mln.methods
+      .approve(oasisDEX.options.address, takerQuantity)
+      .send(defaultTxOpts);
 
-    // const postMlnFundHoldings = await accounting.methods
-    //   .assetHoldings(mln.options.address)
-    //   .call()
-    // const postWethFundHoldings = await accounting.methods
-    //   .assetHoldings(weth.options.address)
-    //   .call()
+    await oasisDEX.methods
+      .buy(orderId, makerQuantity)
+      .send(defaultTxOpts);
 
-    // expect(
-    //   new BN(postMlnFundHoldings).eq(
-    //     new BN(preMlnFundHoldings).add(new BN(takerQuantity))
-    //   )
-    // ).toBe(true);
-    // expect(
-    //   new BN(postWethFundHoldings).eq(
-    //     new BN(preWethFundHoldings).sub(new BN(makerQuantity))
-    //   )
-    // ).toBe(true);
+    const postMlnFundHoldings = await accounting.methods
+      .assetHoldings(mln.options.address)
+      .call()
+    const postWethFundHoldings = await accounting.methods
+      .assetHoldings(weth.options.address)
+      .call()
+
+    expect(
+      new BN(postMlnFundHoldings).eq(
+        new BN(preMlnFundHoldings).add(new BN(takerQuantity))
+      )
+    ).toBe(true);
+    expect(
+      new BN(postWethFundHoldings).eq(
+        new BN(preWethFundHoldings).sub(new BN(makerQuantity))
+      )
+    ).toBe(true);
   });
 
-  // TODO - redeem shares
+  // TODO - redeem shares?
 
-  // TODO - calculate fees
+  // TODO - calculate fees?
 
   test('Cannot invest in a shutdown fund', async () => {
     const { weth, version } = contracts;
