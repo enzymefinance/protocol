@@ -98,7 +98,7 @@ describe('kyber-price-feed', () => {
       .getPrice(mlnTokenInfo.address)
       .call();
 
-    expect(mlnPrice).toEqual(toWei('1', 'ether'));
+    expect(mlnPrice).toBe(toWei('1', 'ether'));
   });
 
   it('Update mln price in reserve', async () => {
@@ -137,7 +137,7 @@ describe('kyber-price-feed', () => {
       .getPrice(eurTokenInfo.address)
       .call();
 
-    expect(updatedMlnPrice).toEqual(mlnPrice);
-    expect(updatedEurPrice).toEqual(eurPrice);
+    expect(updatedMlnPrice).toBe(mlnPrice);
+    expect(updatedEurPrice).toBe(eurPrice);
   });
 });

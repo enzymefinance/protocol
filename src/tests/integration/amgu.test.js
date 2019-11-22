@@ -54,8 +54,8 @@ describe('amgu', () => {
       .send(defaultTxOpts)
     const newAmguPrice = await engine.methods.getAmguPrice().call();
 
-    expect(newAmguPrice).toEqual(amguPrice);
-    expect(newAmguPrice).not.toEqual(oldAmguPrice);
+    expect(newAmguPrice).toBe(amguPrice);
+    expect(newAmguPrice).not.toBe(oldAmguPrice);
 
     if (environment.track === Tracks.TESTING) {
       const newPrice = toWei('2', 'ether');
@@ -67,7 +67,7 @@ describe('amgu', () => {
         .getPrices([baseToken.address])
         .call();
 
-      expect(price[0][0]).toEqual(newPrice);
+      expect(price[0][0]).toBe(newPrice);
     }
 
     const preBalance = await environment.eth.getBalance(user);

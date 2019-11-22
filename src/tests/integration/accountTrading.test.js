@@ -36,7 +36,7 @@ describe('account-trading', () => {
       environment.deployment.exchangeConfigs[EXCHANGES.OASIS_DEX].exchange.toString();
     matchingMarket = getContract(
       environment,
-      CONTRACT_NAMES.MATCHING_MARKET,
+      CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
       matchingMarketAddress
     );
 
@@ -44,7 +44,7 @@ describe('account-trading', () => {
       environment.deployment.melonContracts.adapters.matchingMarketAccessor.toString();
     matchingMarketAccessor = getContract(
       environment,
-      CONTRACT_NAMES.MATCHING_MARKET_ACCESSOR,
+      CONTRACT_NAMES.OASIS_DEX_ACCESSOR,
       matchingMarketAccessorAddress
     );
   });
@@ -76,8 +76,8 @@ describe('account-trading', () => {
       .call()
 
     order1.id = activeOrders1[0][0];
-    expect(activeOrders1[1][0]).toEqual(order1.sellQuantity);
-    expect(activeOrders1[2][0]).toEqual(order1.buyQuantity);
+    expect(activeOrders1[1][0]).toBe(order1.sellQuantity);
+    expect(activeOrders1[2][0]).toBe(order1.buyQuantity);
 
     await weth.methods
       .approve(matchingMarket.options.address, order1.buyQuantity)
@@ -122,8 +122,8 @@ describe('account-trading', () => {
       .call()
 
     order2.id = activeOrders3[0][0];
-    expect(activeOrders3[1][0]).toEqual(order2.sellQuantity);
-    expect(activeOrders3[2][0]).toEqual(order2.buyQuantity);
+    expect(activeOrders3[1][0]).toBe(order2.sellQuantity);
+    expect(activeOrders3[2][0]).toBe(order2.buyQuantity);
 
     await matchingMarket.methods
       .cancel(order2.id)

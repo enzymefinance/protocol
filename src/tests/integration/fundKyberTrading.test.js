@@ -104,11 +104,8 @@ describe('fund-kyber-trading', () => {
 
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).add(new BN(initialTokenAmount)),
-      ),
-    ).toBe(true);
+    expect(new BN(postWethInvestor))
+      .toEqualBN(new BN(preWethInvestor).add(new BN(initialTokenAmount)));
   });
 
   test('fund receives ETH from investment', async () => {
@@ -138,14 +135,10 @@ describe('fund-kyber-trading', () => {
       .call();
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
-    expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethInvestor).sub(new BN(offeredValue)),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).add(new BN(offeredValue))),
-    ).toBe(true);
+    expect(new BN(postWethInvestor))
+      .toEqualBN(new BN(preWethInvestor).sub(new BN(offeredValue)));
+    expect(new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).add(new BN(offeredValue)));
   });
 
   test('swap ethToken for mln with specific order price (minRate)', async () => {
@@ -200,12 +193,10 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).sub(new BN(takerQuantity))),
-    ).toBe(true);
-    expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).add(new BN(makerQuantity))),
-    ).toBe(true);
+    expect(new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).sub(new BN(takerQuantity)));
+    expect(new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).add(new BN(makerQuantity)));
   });
 
   test('swap mlnToken for ethToken with specific order price (minRate)', async () => {
@@ -259,12 +250,10 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).sub(new BN(takerQuantity))),
-    ).toBe(true);
-    expect(
-      new BN(postWethFund).eq(new BN(preWethFund).add(new BN(makerQuantity))),
-    ).toBe(true);
+    expect(new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).sub(new BN(takerQuantity)));
+    expect(new BN(postWethFund))
+      .toEqualBN(new BN(preWethFund).add(new BN(makerQuantity)));
   });
 
   test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
@@ -324,13 +313,11 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(postWethFund).toEqual(preWethFund);
-    expect(
-      new BN(postMlnFund).eq(new BN(preMlnFund).sub(new BN(takerQuantity))),
-    ).toBe(true);
-    expect(
-      new BN(postEurFund).eq(new BN(preEurFund).add(new BN(makerQuantity))),
-    ).toBe(true);
+    expect(postWethFund).toBe(preWethFund);
+    expect( new BN(postMlnFund))
+      .toEqualBN(new BN(preMlnFund).sub(new BN(takerQuantity)));
+    expect(new BN(postEurFund))
+      .toEqualBN(new BN(preEurFund).add(new BN(makerQuantity)));
   });
 
   test('takeOrder fails if minPrice is not satisfied', async () => {
