@@ -1,10 +1,10 @@
 import { toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
 import { Environment } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
+import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 
 describe('account-trading', () => {
   let environment, user, defaultTxOpts;
@@ -22,21 +22,21 @@ describe('account-trading', () => {
 
     mln = getContract(
       environment,
-      Contracts.PreminedToken,
+      CONTRACT_NAMES.PREMINED_TOKEN,
       mlnTokenInfo.address
     );
 
     weth = getContract(
       environment,
-      Contracts.Weth,
+      CONTRACT_NAMES.WETH,
       wethTokenInfo.address
     );
 
     matchingMarketAddress =
-      environment.deployment.exchangeConfigs[Exchanges.MatchingMarket].exchange.toString();
+      environment.deployment.exchangeConfigs[EXCHANGES.OASIS_DEX].exchange.toString();
     matchingMarket = getContract(
       environment,
-      Contracts.MatchingMarket,
+      CONTRACT_NAMES.MATCHING_MARKET,
       matchingMarketAddress
     );
 
@@ -44,7 +44,7 @@ describe('account-trading', () => {
       environment.deployment.melonContracts.adapters.matchingMarketAccessor.toString();
     matchingMarketAccessor = getContract(
       environment,
-      Contracts.MatchingMarketAccessor,
+      CONTRACT_NAMES.MATCHING_MARKET_ACCESSOR,
       matchingMarketAccessorAddress
     );
   });

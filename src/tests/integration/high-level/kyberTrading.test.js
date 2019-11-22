@@ -1,6 +1,5 @@
 import { BN, padLeft, toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
@@ -11,6 +10,7 @@ import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
+import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -37,28 +37,28 @@ describe('Happy Path', () => {
 
     mln = getContract(
       environment,
-      Contracts.PreminedToken,
+      CONTRACT_NAMES.PREMINED_TOKEN,
       mlnTokenInfo.address,
     );
-    weth = getContract(environment, Contracts.Weth, wethTokenInfo.address);
+    weth = getContract(environment, CONTRACT_NAMES.WETH, wethTokenInfo.address);
 
     routes = await setupInvestedTestFund(environment);
 
     accounting = getContract(
       environment,
-      Contracts.Accounting,
+      CONTRACT_NAMES.ACCOUNTING,
       routes.accountingAddress.toString(),
     );
 
     kyberNetworkProxy = getContract(
       environment,
-      Contracts.KyberNetworkProxy,
-      exchangeConfigs[Exchanges.KyberNetwork].exchange.toString(),
+      CONTRACT_NAMES.KYBER_NETWORK_PROXY,
+      exchangeConfigs[EXCHANGES.KYBER].exchange.toString(),
     );
 
     trading = getContract(
       environment,
-      Contracts.Trading,
+      CONTRACT_NAMES.TRADING,
       routes.tradingAddress.toString(),
     );
 
@@ -66,12 +66,12 @@ describe('Happy Path', () => {
     exchangeIndex = exchangeInfo[1].findIndex(
       e =>
         e.toLowerCase() ===
-        exchangeConfigs[Exchanges.KyberNetwork].adapter.toLowerCase(),
+        exchangeConfigs[EXCHANGES.KYBER].adapter.toLowerCase(),
     );
 
     const policyManager = getContract(
       environment,
-      Contracts.PolicyManager,
+      CONTRACT_NAMES.POLICY_MANAGER,
       routes.policyManagerAddress.toString(),
     );
     await policyManager.methods
@@ -84,7 +84,7 @@ describe('Happy Path', () => {
     // Setting rates on kyber reserve
     const priceSource = getContract(
       environment,
-      Contracts.PriceSourceInterface,
+      CONTRACT_NAMES.PRICE_SOURCE_INTERFACE,
       melonContracts.priceSource.toString(),
     );
     const { 0: mlnPrice } = await priceSource.methods
@@ -95,7 +95,7 @@ describe('Happy Path', () => {
     const blockNumber = (await environment.eth.getBlock('latest')).number;
     const conversionRates = getContract(
       environment,
-      Contracts.ConversionRates,
+      CONTRACT_NAMES.CONVERSION_RATES,
       thirdPartyContracts.exchanges.kyber.conversionRates.toString(),
     );
     await conversionRates.methods

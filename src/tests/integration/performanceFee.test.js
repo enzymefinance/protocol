@@ -6,11 +6,11 @@ import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { Contracts } from '~/Contracts';
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { getAllBalances } from '../utils/getAllBalances';
 import { toWei, BN, padLeft, stringToHex } from 'web3-utils';
 import { BNExpDiv, BNExpMul } from '../utils/new/BNmath';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 let environment, accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
@@ -45,13 +45,13 @@ beforeAll(async () => {
   // Init fees
   managementFee = getContract(
     environment,
-    Contracts.ManagementFee,
-    await deployContract(environment, Contracts.ManagementFee, []),
+    CONTRACT_NAMES.MANAGEMENT_FEE,
+    await deployContract(environment, CONTRACT_NAMES.MANAGEMENT_FEE, []),
   );
   performanceFee = getContract(
     environment,
-    Contracts.PerformanceFee,
-    await deployContract(environment, Contracts.PerformanceFee, []),
+    CONTRACT_NAMES.PERFORMANCE_FEE,
+    await deployContract(environment, CONTRACT_NAMES.PERFORMANCE_FEE, []),
   );
 
   const envManager = withDifferentAccount(environment, manager);

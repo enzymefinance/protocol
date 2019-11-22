@@ -1,14 +1,14 @@
 import { BN, toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 describe('fund-malicious-token', () => {
   let environment, accounts;
@@ -32,7 +32,7 @@ describe('fund-malicious-token', () => {
 
     const maliciousTokenAddress = await deployContract(
       environment,
-      Contracts.MaliciousToken,
+      CONTRACT_NAMES.MALICIOUS_TOKEN,
       ['MLC', 18, 'Malicious'],
     );
 
@@ -50,13 +50,13 @@ describe('fund-malicious-token', () => {
 
     contracts.maliciousToken = await getContract(
       environment,
-      Contracts.MaliciousToken,
+      CONTRACT_NAMES.MALICIOUS_TOKEN,
       maliciousTokenAddress,
     );
 
     await fundFactory.methods
       .beginSetup(
-        stringToBytes32('Test fund'),
+        stringToBytes('Test fund', 32),
         [],
         [],
         [],

@@ -1,6 +1,5 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
-import { Contracts, Exchanges } from '~/Contracts';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { Environment, Tracks } from '~/utils/environment/Environment';
@@ -10,7 +9,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul } from '../../utils/new/BNmath';
 import { getFunctionSignature } from '../../utils/new/metadata';
-import { CONTRACT_NAMES } from '../../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -39,7 +38,7 @@ describe('Happy Path', () => {
 
     engine = getContract(
       environment,
-      Contracts.Engine,
+      CONTRACT_NAMES.ENGINE,
       melonContracts.engine.toString(),
     );
     await engine.methods.setAmguPrice(toWei('1000', 'gwei')).send(defaultTxOpts);
@@ -48,13 +47,13 @@ describe('Happy Path', () => {
 
     priceSource = getContract(
       environment,
-      Contracts.TestingPriceFeed,
+      CONTRACT_NAMES.TESTING_PRICEFEED,
       melonContracts.priceSource.toString(),
     );
 
     trading = getContract(
       environment,
-      Contracts.Trading,
+      CONTRACT_NAMES.TRADING,
       routes.tradingAddress.toString(),
     );
 
@@ -63,14 +62,14 @@ describe('Happy Path', () => {
 
     mln = getContract(
       environment,
-      Contracts.PreminedToken,
+      CONTRACT_NAMES.PREMINED_TOKEN,
       mlnTokenInfo.address,
     );
-    weth = getContract(environment, Contracts.Weth, wethTokenInfo.address);
+    weth = getContract(environment, CONTRACT_NAMES.WETH, wethTokenInfo.address);
 
     const policyManager = getContract(
       environment,
-      Contracts.PolicyManager,
+      CONTRACT_NAMES.POLICY_MANAGER,
       routes.policyManagerAddress.toString(),
     );
     await policyManager.methods
@@ -84,7 +83,7 @@ describe('Happy Path', () => {
     exchangeIndex = exchangeInfo[1].findIndex(
       e =>
         e.toLowerCase() ===
-        exchangeConfigs[Exchanges.MelonEngine].adapter.toLowerCase(),
+        exchangeConfigs[EXCHANGES.MELON_ENGINE].adapter.toLowerCase(),
     );
     mlnPrice = (await priceSource.methods
       .getPrice(mlnTokenInfo.address)

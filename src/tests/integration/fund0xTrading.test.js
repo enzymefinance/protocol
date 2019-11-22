@@ -2,12 +2,11 @@ import { BN, randomHex, toWei } from 'web3-utils';
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 
-import { Contracts, Exchanges } from '~/Contracts';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { getFunctionSignature } from '../utils/new/metadata';
-import { CONTRACT_NAMES } from '../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 
 import { getUpdatedTestPrices } from '../utils/new/api';
 import { stringToBytes } from '../utils/new/formatting';
@@ -51,7 +50,7 @@ describe('fund-0x-trading', () => {
     const system = await deployAndGetSystem(environment);
     addresses = system.addresses;
     contracts = system.contracts;
-    zeroExConfigs = addresses.exchangeConfigs[Exchanges.ZeroEx];
+    zeroExConfigs = addresses.exchangeConfigs[EXCHANGES.ZERO_EX];
 
     const {
       mln,
@@ -87,20 +86,20 @@ describe('fund-0x-trading', () => {
     await fundFactory.methods.createVault().send(managerTxOpts);
     const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    const hub = getContract(environment, Contracts.Hub, hubAddress);
+    const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
     const routes = await hub.methods.routes().call();
     contracts.fund = {
       accounting: getContract(
         environment,
-        Contracts.Accounting,
+        CONTRACT_NAMES.ACCOUNTING,
         routes.accounting,
       ),
       participation: getContract(
         environment,
-        Contracts.Participation,
+        CONTRACT_NAMES.PARTICIPATION,
         routes.participation,
       ),
-      trading: getContract(environment, Contracts.Trading, routes.trading),
+      trading: getContract(environment, CONTRACT_NAMES.TRADING, routes.trading),
     };
     addresses.fund = routes;
 

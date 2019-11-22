@@ -2,7 +2,6 @@ import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
 import { getFunctionSignature } from '../../utils/new/metadata';
 import { CONTRACT_NAMES } from '../../utils/new/constants';
-import { Contracts } from '~/Contracts';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { Environment, Tracks } from '~/utils/environment/Environment';
@@ -47,12 +46,12 @@ describe('Happy Path', () => {
 
     weth = getContract(
       environment,
-      Contracts.Weth,
+      CONTRACT_NAMES.WETH,
       wethTokenInfo.address,
     );
     participation = getContract(
       environment,
-      Contracts.Participation,
+      CONTRACT_NAMES.PARTICIPATION,
       routes.participationAddress.toString(),
     );
 
@@ -63,12 +62,12 @@ describe('Happy Path', () => {
 
     const policyManager = getContract(
       environment,
-      Contracts.PolicyManager,
+      CONTRACT_NAMES.POLICY_MANAGER,
       routes.policyManagerAddress.toString()
     );
     const userWhitelist = await deployContract(
       environment,
-      Contracts.UserWhitelist,
+      CONTRACT_NAMES.USER_WHITELIST,
       [[user]]
     );
     await policyManager.methods

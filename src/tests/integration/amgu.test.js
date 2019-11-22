@@ -1,10 +1,10 @@
 import { toWei } from 'web3-utils';
 
-import { Contracts } from '~/Contracts';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { Environment, Tracks } from '~/utils/environment/Environment';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
+import { CONTRACT_NAMES } from '../utils/new/constants';
 
 describe('amgu', () => {
   let environment, user, defaultTxOpts;
@@ -27,19 +27,19 @@ describe('amgu', () => {
 
     engine = getContract(
       environment,
-      Contracts.Engine,
+      CONTRACT_NAMES.ENGINE,
       melonContracts.engine
     );
 
     fundFactory = getContract(
       environment,
-      Contracts.FundFactory,
+      CONTRACT_NAMES.FUND_FACTORY,
       melonContracts.version
     );
 
     priceSource = getContract(
       environment,
-      Contracts.TestingPriceFeed,
+      CONTRACT_NAMES.TESTING_PRICEFEED,
       melonContracts.priceSource
     );
 
@@ -75,7 +75,7 @@ describe('amgu', () => {
     const exchangeConfigsValues = Object.values(environment.deployment.exchangeConfigs);
     const beginSetupTx = fundFactory.methods
       .beginSetup(
-        stringToBytes32(fundName),
+        stringToBytes(fundName, 32),
         [],
         [],
         [],

@@ -1,6 +1,5 @@
 import { BN, toWei } from 'web3-utils';
 
-import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
@@ -8,13 +7,13 @@ import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 
 import { BNExpMul } from '../utils/new/BNmath';
-import { CONTRACT_NAMES } from '../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 import { getFunctionSignature } from '../utils/new/metadata';
 
 describe('fund-kyber-trading', () => {
@@ -37,7 +36,7 @@ describe('fund-kyber-trading', () => {
     addresses = system.addresses;
     contracts = system.contracts;
 
-    const KyberAddresses = addresses.exchangeConfigs[Exchanges.KyberNetwork];
+    const KyberAddresses = addresses.exchangeConfigs[EXCHANGES.KYBER];
 
     const {
       version: fundFactory,
@@ -49,7 +48,7 @@ describe('fund-kyber-trading', () => {
 
     await fundFactory.methods
       .beginSetup(
-        stringToBytes32('Test fund'),
+        stringToBytes('Test fund', 32),
         [],
         [],
         [],
@@ -73,7 +72,7 @@ describe('fund-kyber-trading', () => {
 
     contracts.kyberNetworkProxy = getContract(
       environment,
-      Contracts.KyberNetworkProxy,
+      CONTRACT_NAMES.KYBER_NETWORK_PROXY,
       KyberAddresses.exchange.toString(),
     );
 

@@ -7,7 +7,6 @@ import { CONTRACT_NAMES } from '../utils/new/constants';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { Exchanges } from '~/Contracts';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';

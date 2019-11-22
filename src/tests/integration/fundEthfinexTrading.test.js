@@ -8,12 +8,11 @@ import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { Exchanges, Contracts } from '~/Contracts';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { getFunctionSignature } from '../utils/new/metadata';
-import { CONTRACT_NAMES } from '../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
@@ -76,13 +75,6 @@ beforeAll(async () => {
     ethfinex.options.address,
   )).toString();
 
-  const exchangeConfigs = {
-    [Exchanges.ethfinex]: {
-      adapter: ethfinexAdapter.options.address,
-      exchange: ethfinex.options.address,
-      takesCustody: true,
-    },
-  };
   const envManager = withDifferentAccount(environment, manager);
 
   const fundName = padLeft(stringToHex('Test fund'), 64);
@@ -114,19 +106,19 @@ beforeAll(async () => {
 
   const wrapperRegistryAddress = await deployContract(
     environment,
-    Contracts.WrapperRegistryEFX,
+    CONTRACT_NAMES.WRAPPER_REGISTRY_EFX,
     [],
   );
 
   const wrapperRegistry = await getContract(
     environment,
-    Contracts.WrapperRegistryEFX,
+    CONTRACT_NAMES.WRAPPER_REGISTRY_EFX,
     wrapperRegistryAddress,
   );
 
   ethTokenWrapperInfo = await getToken(
     environment,
-    await deployContract(environment, Contracts.WrapperLockEth, [
+    await deployContract(environment, CONTRACT_NAMES.WRAPPER_LOCK_ETH, [
       'WETH',
       'WETH Token',
       18,
@@ -137,7 +129,7 @@ beforeAll(async () => {
 
   mlnTokenWrapperInfo = await getToken(
     environment,
-    await deployContract(environment, Contracts.WrapperLock, [
+    await deployContract(environment, CONTRACT_NAMES.WRAPPER_LOCK, [
       mln.options.address,
       'MLN',
       'Melon',
@@ -284,7 +276,7 @@ test('Third party takes the order made by the fund', async () => {
   const pre = await getAllBalances(contracts, accounts, fund, environment);
   const mlnWrapperContract = await getContract(
     environment,
-    Contracts.WrapperLock,
+    CONTRACT_NAMES.WRAPPER_LOCK,
     mlnTokenWrapperInfo.address,
   );
   const preDeployerWrappedMLN = new BN(

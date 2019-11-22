@@ -8,7 +8,6 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { Contracts } from '~/Contracts';
 import { getContract } from '~/utils/solidity/getContract';
 import { toWei } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
@@ -40,7 +39,7 @@ describe('account-0x-trading', () => {
 
     weth = getContract(
       environment,
-      Contracts.PreminedToken,
+      CONTRACT_NAMES.PREMINED_TOKEN,
       await deployToken(environment, 'WETH'),
     );
     await weth.methods

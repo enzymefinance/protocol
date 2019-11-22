@@ -2,13 +2,12 @@ import { BN, toWei } from 'web3-utils';
 
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
-import { Contracts, Exchanges } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
+import { stringToBytes } from '../utils/new/formatting';
 import { BNExpMul } from '../utils/new/BNmath';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 
@@ -49,7 +48,7 @@ describe('fund-quote-asset', () => {
 
     await fundFactory.methods
       .beginSetup(
-        stringToBytes32('Test fund'),
+        stringToBytes('Test fund', 32),
         [],
         [],
         [],
