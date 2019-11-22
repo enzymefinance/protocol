@@ -11,7 +11,7 @@ import { stringToBytes32 } from '~/utils/helpers/stringToBytes32';
 import { BNExpMul } from '../utils/new/BNmath';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 const deploySystem = require('../../../new/deploy/deploy-system');
-const {fetch} = require('../../../new/deploy/deploy-contract');
+const {fetchContract} = require('../../../new/deploy/deploy-contract');
 const web3 = require('../../../new/deploy/get-web3');
 
 describe('fund-quote-asset', () => {
@@ -33,12 +33,12 @@ describe('fund-quote-asset', () => {
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
     deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF)));
-    dgx = fetch('StandardToken', deployed.tokens.addr.DGX);
-    mln = fetch('StandardToken', deployed.tokens.addr.MLN);
-    weth = fetch('WETH', deployed.tokens.addr.WETH);
-    matchingMarket = fetch('MatchingMarket', deployed.oasis.addr.MatchingMarket);
-    version = fetch('Version', deployed.melon.addr.Version);
-    priceSource = fetch('TestingPriceFeed', deployed.melon.addr.TestingPriceFeed);
+    version = fetchContract('Version', deployed.melon.addr.Version);
+    dgx = fetchContract('StandardToken', deployed.tokens.addr.DGX);
+    mln = fetchContract('StandardToken', deployed.tokens.addr.MLN);
+    weth = fetchContract('WETH', deployed.tokens.addr.WETH);
+    matchingMarket = fetchContract('MatchingMarket', deployed.oasis.addr.MatchingMarket);
+    priceSource = fetchContract('TestingPriceFeed', deployed.melon.addr.TestingPriceFeed);
 
     await version.methods
       .beginSetup(
@@ -65,17 +65,17 @@ describe('fund-quote-asset', () => {
     await version.methods.createVault().send(managerTxOpts);
     const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    hub = fetch('Hub', hubAddress);
+    hub = fetchContract('Hub', hubAddress);
     const accountingAddress = await hub.methods.accounting.call();
-    accounting = fetch('Accounting', accountingAddress);
+    accounting = fetchContract('Accounting', accountingAddress);
     const sharesAddress = await hub.methods.shares.call();
-    shares = fetch('Shares', sharesAddress);
+    shares = fetchContract('Shares', sharesAddress);
     const vaultAddress = await hub.methods.vault.call();
-    vault = fetch('Vault', vaultAddress);
+    vault = fetchContract('Vault', vaultAddress);
     const participationAddress = await hub.methods.participation.call();
-    participation = fetch('Participation', participationAddress);
+    participation = fetchContract('Participation', participationAddress);
     const tradingAddress = await hub.methods.trading.call();
-    trading = fetch('Trading', tradingAddress);
+    trading = fetchContract('Trading', tradingAddress);
 
     await matchingMarket.methods
       .addTokenPairWhitelist(

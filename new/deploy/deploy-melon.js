@@ -2,6 +2,7 @@ const {call, send, nab} = require('./deploy-contract');
 const web3 = require('./get-web3');
 const BN = web3.utils.BN;
 
+// TODO: check whether each "send" needs to be done before sending it
 const main = async input => {
   const conf = input.conf;
   const melonConf = input.melon.conf;
@@ -117,9 +118,8 @@ const main = async input => {
   ], melonAddrs);
 
   const versionInformation = await call(registry, 'versionInformation', [version.options.address]);
-  console.log(versionInformation)
 
-  if (!versionInformation['0']) {
+  if (!versionInformation.exists) {
     await send(registry, 'registerVersion',
       [
         version.options.address,

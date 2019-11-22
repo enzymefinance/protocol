@@ -1,4 +1,4 @@
-const {call, fetch, nab, send} = require('./deploy-contract');
+const {call, fetchContract, nab, send} = require('./deploy-contract');
 const web3 = require('./get-web3');
 const BN = web3.utils.BN;
 
@@ -19,8 +19,8 @@ const main = async input => {
   const ethersPerToken = new BN(10).pow(new BN(18));
   const blockNumber = (await web3.eth.getBlock()).number;
 
-  const mln = fetch('StandardToken', input.tokens.addr.MLN);
-  const eur = fetch('StandardToken', input.tokens.addr.EUR);
+  const mln = fetchContract('StandardToken', input.tokens.addr.MLN);
+  const eur = fetchContract('StandardToken', input.tokens.addr.EUR);
 
   const kgtToken = await nab('TestToken', ['KGT', 'KGT', 18], kyberAddrs, 'KgtToken');
   const conversionRates = await nab('ConversionRates', [conversionRateAdmin], kyberAddrs);

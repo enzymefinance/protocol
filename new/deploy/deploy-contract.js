@@ -76,7 +76,7 @@ const deploy = async (name, args) => {
 }
 
 // get a contract with some address
-const fetch = (name, address) => {
+const fetchContract = (name, address) => {
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
   console.log(`Fetching ${name} at ${address}`);
   const contract = new web3.eth.Contract(abi, address);
@@ -92,9 +92,9 @@ const nab = async (name, args, input, explicitKey=null) => {
   if (input[key] === '' || input[key] === undefined) {
     contract = await deploy(name, args);
   } else {
-    contract = fetch(name, input[key]);
+    contract = fetchContract(name, input[key]);
   }
   return contract;
 }
 
-module.exports = { call, send, deploy, fetch, nab };
+module.exports = { call, send, deploy, fetchContract, nab };

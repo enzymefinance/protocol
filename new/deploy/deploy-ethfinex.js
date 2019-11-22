@@ -1,4 +1,4 @@
-const {nab, call, send, fetch} = require('./deploy-contract');
+const {nab, call, send, fetchContract} = require('./deploy-contract');
 
 const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: import from util
 
@@ -7,7 +7,7 @@ const main = async input => {
   addrs.Exchange = input.zeroex.addr.Exchange;
   const wrapperRegistryEFX = await nab('WrapperRegistryEFX', [], input.ethfinex.addr);
   addrs.WrapperRegistryEFX = wrapperRegistryEFX.options.address;
-  const erc20Proxy = await fetch('ERC20Proxy', input.zeroex.addr.ERC20Proxy);
+  const erc20Proxy = await fetchContract('ERC20Proxy', input.zeroex.addr.ERC20Proxy);
 
   const wrapperMap = new Map();
   for (const tokenSym of Object.keys(input.tokens.addr)) {
