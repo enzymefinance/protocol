@@ -1,47 +1,40 @@
 import { BN, padLeft, stringToHex, toWei } from 'web3-utils';
-
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployAndGetSystem } from '../utils/deployAndGetSystem';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployContract } from '~/utils/solidity/deployContract';
-
 import { getUpdatedTestPrices } from '../utils/new/api';
 import { BNExpMul } from '../utils/new/BNmath';
 import { CONTRACT_NAMES } from '../utils/new/constants';
+const getFundComponents = require('../utils/new/getFundComponents');
+const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
+const increaseTime = require('../utils/new/increaseTime');
+const getAllBalances = require('../utils/new/getAllBalances');
+const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
+const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../new/deploy/deploy-system');
 
 describe('management-fee', () => {
   const yearInSeconds = 31536000;
-  let environment;
   let deployer, manager, investor;
   let defaultTxOpts, managerTxOpts, investorTxOpts;
-  let addresses, contracts;
+  let addresses, contracts, deployOut;
   let managementFeeRate;
+  let managementFee, registry, version, mln, priceSource, weth, fund;
+  let deployed;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    [deployer, manager, investor] = await environment.eth.getAccounts();
+    [deployer, manager, investor] = await web3.eth.getAccounts();
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    const system = await deployAndGetSystem(environment);
-    addresses = system.addresses;
-    contracts = system.contracts;
+    const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    deployOut = deployed.deployOut;
+    contracts = deployed.contracts;
 
-    contracts.managementFee = getContract(
-      environment,
-      CONTRACT_NAMES.MANAGEMENT_FEE,
-      await deployContract(environment, CONTRACT_NAMES.MANAGEMENT_FEE, []),
-    );
-
-    const {
-      managementFee,
-      mln,
-      priceSource,
-      registry,
-      version: fundFactory,
-      weth,
-    } = contracts;
+    weth = contracts.WETH;
+    mln = contracts.MLN;
+    managementFee = contracts.ManagementFee;
+    registry = contracts.Registry;
+    version = contracts.Version;
+    priceSource = contracts.TestingPriceFeed;
 
     const managementFeePeriod = 0;
     managementFeeRate = toWei('0.02', 'ether');
@@ -51,7 +44,7 @@ describe('management-fee', () => {
       .send(defaultTxOpts);
 
     const fundName = padLeft(stringToHex('Test fund'), 64);
-    await fundFactory.methods
+    await version.methods
       .beginSetup(
         fundName,
         [managementFee.options.address.toString()],
@@ -64,49 +57,43 @@ describe('management-fee', () => {
       )
       .send(managerTxOpts);
 
-    await fundFactory.methods.createAccounting().send(managerTxOpts);
-    await fundFactory.methods.createFeeManager().send(managerTxOpts);
-    await fundFactory.methods.createParticipation().send(managerTxOpts);
-    await fundFactory.methods.createPolicyManager().send(managerTxOpts);
-    await fundFactory.methods.createShares().send(managerTxOpts);
-    await fundFactory.methods.createTrading().send(managerTxOpts);
-    await fundFactory.methods.createVault().send(managerTxOpts);
-    const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+    await version.methods.createAccounting().send(managerTxOpts);
+    await version.methods.createFeeManager().send(managerTxOpts);
+    await version.methods.createParticipation().send(managerTxOpts);
+    await version.methods.createPolicyManager().send(managerTxOpts);
+    await version.methods.createShares().send(managerTxOpts);
+    await version.methods.createTrading().send(managerTxOpts);
+    await version.methods.createVault().send(managerTxOpts);
+    const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
-    const routes = await hub.methods.routes().call();
-    contracts.fund = {
-      accounting: getContract(
-        environment,
-        CONTRACT_NAMES.ACCOUNTING,
-        routes.accounting,
-      ),
-      feeManager: getContract(
-        environment,
-        CONTRACT_NAMES.FEE_MANAGER,
-        routes.feeManager,
-      ),
-      participation: getContract(
-        environment,
-        CONTRACT_NAMES.PARTICIPATION,
-        routes.participation,
-      ),
-      shares: getContract(environment, CONTRACT_NAMES.SHARES, routes.shares),
-    };
-    addresses.fund = routes;
+    fund = await getFundComponents(hubAddress);
+    // const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
+    // const routes = await hub.methods.routes().call();
+    // contracts.fund = {
+    //   accounting: getContract(
+    //     environment,
+    //     CONTRACT_NAMES.ACCOUNTING,
+    //     routes.accounting,
+    //   ),
+    //   feeManager: getContract(
+    //     environment,
+    //     CONTRACT_NAMES.FEE_MANAGER,
+    //     routes.feeManager,
+    //   ),
+    //   participation: getContract(
+    //     environment,
+    //     CONTRACT_NAMES.PARTICIPATION,
+    //     routes.participation,
+    //   ),
+    //   shares: getContract(environment, CONTRACT_NAMES.SHARES, routes.shares),
+    // };
+    // addresses.fund = routes;
 
-    const prices = await getUpdatedTestPrices();
-    await priceSource.methods
-      .update(
-        Object.keys(prices).map(key => contracts[key].options.address),
-        Object.values(prices)
-      )
-      .send(defaultTxOpts);
+    await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
   });
 
   test(`fund gets ethToken from investment`, async () => {
-    const { weth } = contracts;
-    const { participation, shares } = contracts.fund;
+    const { participation, shares } = fund;
     const offeredValue = toWei('100', 'ether');
     const wantedShares = toWei('100', 'ether');
     const amguAmount = toWei('.01', 'ether');
@@ -127,24 +114,21 @@ describe('management-fee', () => {
 
     const postTotalSupply = await shares.methods.totalSupply().call();
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).add(new BN(wantedShares)),
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString()).add(new BN(wantedShares.toString())),
       ),
     ).toBe(true);
   });
 
   test(`Reward fee rewards management fee in the form of shares`, async () => {
-    const { managementFee, weth } = contracts;
-    const { accounting, feeManager, shares } = contracts.fund;
+    const { accounting, feeManager, shares } = fund;
 
     const fundCreationTime = new BN(
-      await managementFee.methods
-        .lastPayoutTime(feeManager.options.address)
-        .call(),
+      (await managementFee.methods.lastPayoutTime(feeManager.options.address).call()).toString()
     );
 
     const preWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const preWethManager = await weth.methods.balanceOf(manager).call();
     const preManagerShares = await shares.methods.balanceOf(manager).call();
@@ -154,7 +138,7 @@ describe('management-fee', () => {
     await feeManager.methods.rewardManagementFee().send(managerTxOpts);
 
     const postWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const postWethManager = await weth.methods.balanceOf(manager).call();
     const postManagerShares = await shares.methods.balanceOf(manager).call();
@@ -165,46 +149,46 @@ describe('management-fee', () => {
       .lastPayoutTime(feeManager.options.address)
       .call();
     const expectedPreDilutionFeeShares = BNExpMul(
-      new BN(preTotalSupply),
-      new BN(managementFeeRate),
+      new BN(preTotalSupply.toString()),
+      new BN(managementFeeRate.toString()),
     )
-      .mul(new BN(payoutTime).sub(new BN(fundCreationTime)))
-      .div(new BN(yearInSeconds));
+      .mul(new BN(payoutTime.toString()).sub(new BN(fundCreationTime.toString())))
+      .div(new BN(yearInSeconds.toString()));
 
-    const expectedFeeShares = new BN(preTotalSupply)
-      .mul(new BN(expectedPreDilutionFeeShares))
-      .div(new BN(preTotalSupply).sub(new BN(expectedPreDilutionFeeShares)));
+    const expectedFeeShares = new BN(preTotalSupply.toString())
+      .mul(new BN(expectedPreDilutionFeeShares.toString()))
+      .div(new BN(preTotalSupply.toString()).sub(new BN(expectedPreDilutionFeeShares.toString())));
 
     expect(
-      new BN(postManagerShares).eq(
-        new BN(preManagerShares).add(new BN(expectedFeeShares)),
+      new BN(postManagerShares.toString()).eq(
+        new BN(preManagerShares.toString()).add(new BN(expectedFeeShares.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).add(new BN(expectedFeeShares)),
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString()).add(new BN(expectedFeeShares.toString())),
       ),
     ).toBe(true);
-    expect(new BN(postFundGav).eq(new BN(preFundGav))).toBe(true);
+    expect(new BN(postFundGav.toString()).eq(new BN(preFundGav.toString()))).toBe(true);
     // Find out a way to assert this
     // Share price is supposed to change due to time difference (keep constant)
     // expect(postFundCalculations.sharePrice).toEqual(
     //   preFundCalculations.sharePrice,
     // );
-    expect(new BN(postWethFund).eq(new BN(preWethFund))).toBe(true);
-    expect(new BN(postWethManager).eq(new BN(preWethManager))).toBe(true);
+    expect(new BN(postWethFund.toString()).eq(new BN(preWethFund.toString()))).toBe(true);
+    expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
   });
 
+  // TODO: not passing for some reason (time-based?)
   test(`Claims fee using triggerRewardAllFees`, async () => {
-    const { managementFee, weth } = contracts;
-    const { accounting, feeManager, shares } = contracts.fund;
+    const { accounting, feeManager, shares } = fund;
 
     const lastFeeConversion = await managementFee.methods
       .lastPayoutTime(feeManager.options.address)
       .call();
 
     const preWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const preWethManager = await weth.methods.balanceOf(manager).call();
     const preManagerShares = await shares.methods.balanceOf(manager).call();
@@ -214,7 +198,7 @@ describe('management-fee', () => {
     await accounting.methods.triggerRewardAllFees().send(managerTxOpts);
 
     const postWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const postWethManager = await weth.methods.balanceOf(manager).call();
     const postManagerShares = await shares.methods.balanceOf(manager).call();
@@ -228,55 +212,57 @@ describe('management-fee', () => {
       .lastPayoutTime(feeManager.options.address)
       .call();
     const expectedPreDilutionFeeShares = BNExpMul(
-      new BN(preTotalSupply),
-      new BN(managementFeeRate),
+      new BN(preTotalSupply.toString()),
+      new BN(managementFeeRate.toString()),
     )
-      .mul(new BN(payoutTime).sub(new BN(lastFeeConversion)))
-      .div(new BN(yearInSeconds));
-    const expectedFeeShares = new BN(preTotalSupply)
-      .mul(new BN(expectedPreDilutionFeeShares))
-      .div(new BN(preTotalSupply).sub(new BN(expectedPreDilutionFeeShares)));
-    const expectedFeeInDenominationAsset = new BN(expectedFeeShares)
-      .mul(new BN(preFundCalcs.gav))
-      .div(new BN(preTotalSupply).add(new BN(expectedFeeShares)));
+      .mul(new BN(payoutTime.toString()).sub(new BN(lastFeeConversion.toString())))
+      .div(new BN(yearInSeconds.toString()));
+    const expectedFeeShares = new BN(preTotalSupply.toString())
+      .mul(new BN(expectedPreDilutionFeeShares.toString()))
+      .div(new BN(preTotalSupply.toString()).sub(new BN(expectedPreDilutionFeeShares.toString())));
+    const expectedFeeInDenominationAsset = new BN(expectedFeeShares.toString())
+      .mul(new BN(preFundCalcs.gav.toString()))
+      .div(new BN(preTotalSupply.toString()).add(new BN(expectedFeeShares.toString())));
 
     expect(
-      new BN(postManagerShares).eq(
-        new BN(preManagerShares).add(new BN(expectedFeeShares)),
+      new BN(postManagerShares.toString()).eq(
+        new BN(preManagerShares.toString()).add(new BN(expectedFeeShares.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply).add(new BN(expectedFeeShares)),
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString()).add(new BN(expectedFeeShares.toString())),
       ),
     ).toBe(true);
-    expect(new BN(postFundCalcs.gav).eq(new BN(preFundCalcs.gav))).toBe(true);
+    expect(new BN(postFundCalcs.gav.toString()).eq(new BN(preFundCalcs.gav.toString()))).toBe(true);
     // expect(postFundCalculations.sharePrice).toEqual(
     //   preFundCalculations.sharePrice,
     // );
-    expect(new BN(postWethFund).eq(new BN(preWethFund))).toBe(true);
-    expect(new BN(postWethManager).eq(new BN(preWethManager))).toBe(true);
+    expect(new BN(postWethFund.toString()).eq(new BN(preWethFund.toString()))).toBe(true);
+    expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
+    console.log(preFundCalcs.feesInDenominationAsset.toString())
+    console.log(expectedFeeInDenominationAsset)
     expect(
-      new BN(preFundCalcs.feesInDenominationAsset).eq(
+      new BN(preFundCalcs.feesInDenominationAsset.toString()).eq(
         expectedFeeInDenominationAsset,
       ),
     ).toBe(true);
     expect(
-      new BN(lastConversionCalculations.allocatedFees).eq(
+      new BN(lastConversionCalculations.allocatedFees.toString()).eq(
         expectedFeeInDenominationAsset,
       ),
     ).toBe(true);
   });
 
+// TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
   test(`investor redeems his shares`, async () => {
-    const { managementFee, weth } = contracts;
     const {
       accounting,
       feeManager,
       participation,
       shares,
       vault,
-    } = contracts.fund;
+    } = fund;
 
     const investorShares = await shares.methods.balanceOf(investor).call();
     const lastFeeConversion = await managementFee.methods
@@ -284,14 +270,15 @@ describe('management-fee', () => {
       .call();
 
     const preWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const preWethInvestor = await weth.methods.balanceOf(investor).call();
     const preTotalSupply = await shares.methods.totalSupply().call();
     const preFundGav = await accounting.methods.calcGav().call();
 
+    // TODO: use util
     // Increment next block time
-    environment.eth.currentProvider.send(
+    web3.eth.currentProvider.send(
       {
         id: 123,
         jsonrpc: '2.0',
@@ -304,7 +291,7 @@ describe('management-fee', () => {
     await participation.methods.redeem().send(investorTxOpts);
 
     const postWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
     const postTotalSupply = await shares.methods.totalSupply().call();
@@ -314,37 +301,37 @@ describe('management-fee', () => {
       .lastPayoutTime(feeManager.options.address)
       .call();
     const expectedPreDilutionFeeShares = BNExpMul(
-      new BN(preTotalSupply),
-      new BN(managementFeeRate),
+      new BN(preTotalSupply.toString()),
+      new BN(managementFeeRate.toString()),
     )
-      .mul(new BN(payoutTime).sub(new BN(lastFeeConversion)))
-      .div(new BN(yearInSeconds));
-    const expectedFeeShares = new BN(preTotalSupply)
-      .mul(new BN(expectedPreDilutionFeeShares))
-      .div(new BN(preTotalSupply).sub(new BN(expectedPreDilutionFeeShares)));
+      .mul(new BN(payoutTime.toString()).sub(new BN(lastFeeConversion.toString())))
+      .div(new BN(yearInSeconds.toString()));
+    const expectedFeeShares = new BN(preTotalSupply.toString())
+      .mul(new BN(expectedPreDilutionFeeShares.toString()))
+      .div(new BN(preTotalSupply.toString()).sub(new BN(expectedPreDilutionFeeShares.toString())));
 
     expect(
-      new BN(postTotalSupply).eq(
-        new BN(preTotalSupply)
-          .sub(new BN(investorShares))
+      new BN(postTotalSupply.toString()).eq(
+        new BN(preTotalSupply.toString())
+          .sub(new BN(investorShares.toString()))
           .add(expectedFeeShares),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethInvestor).eq(
-        new BN(preWethFund)
-          .mul(new BN(investorShares))
-          .div(new BN(preTotalSupply).add(expectedFeeShares))
-          .add(new BN(preWethInvestor)),
+      new BN(postWethInvestor.toString()).eq(
+        new BN(preWethFund.toString())
+          .mul(new BN(investorShares.toString()))
+          .div(new BN(preTotalSupply.toString()).add(expectedFeeShares))
+          .add(new BN(preWethInvestor.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethFund).eq(
-        new BN(preWethFund).sub(
-          new BN(postWethInvestor).sub(new BN(preWethInvestor)),
+      new BN(postWethFund.toString()).eq(
+        new BN(preWethFund.toString()).sub(
+          new BN(postWethInvestor.toString()).sub(new BN(preWethInvestor.toString())),
         ),
       ),
     ).toBe(true);
-    expect(new BN(postFundGav).eq(new BN(postWethFund))).toBe(true);
+    expect(new BN(postFundGav.toString()).eq(new BN(postWethFund.toString()))).toBe(true);
   });
 });

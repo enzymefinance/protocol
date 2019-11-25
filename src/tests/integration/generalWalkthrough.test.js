@@ -15,73 +15,45 @@ import {
   getEventFromReceipt,
   getFunctionSignature
 } from '../utils/new/metadata';
+const getFundComponents = require('../utils/new/getFundComponents');
+const increaseTime = require('../utils/new/increaseTime');
+const getAllBalances = require('../utils/new/getAllBalances');
+const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
+const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../new/deploy/deploy-system');
 
 describe('general-walkthrough', () => {
-  let environment;
   let deployer, manager, investor;
   let defaultTxOpts, managerTxOpts, investorTxOpts;
-  let addresses, contracts;
+  let contracts;
   let exchangeIndex;
   let offeredValue, wantedShares, amguAmount;
   let order;
+  let mln, weth, engine, version, oasisDEX, matchingMarketAdapter, priceSource;
+  let priceTolerance, userWhitelist;
+  let managementFee, performanceFee;
+  let fund;
 
   beforeAll(async () => {
-    environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(TRACKS.TESTING);
-
-    [deployer, manager, investor] = await environment.eth.getAccounts();
+    [deployer, manager, investor] = await web3.eth.getAccounts();
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    addresses = environment.deployment;
-    const [wethTokenInfo, mlnTokenInfo] = addresses.thirdPartyContracts.tokens;
-    const OasisDEXAddresses = addresses.exchangeConfigs[EXCHANGES.OASIS_DEX];
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    contracts = deployment.contracts;
 
-    const mln = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      mlnTokenInfo.address,
-    );
-    const weth = getContract(
-      environment,
-      CONTRACT_NAMES.WETH,
-      wethTokenInfo.address,
-    );
-    const engine = getContract(
-      environment,
-      CONTRACT_NAMES.ENGINE,
-      addresses.melonContracts.engine,
-    );
-    const version = getContract(
-      environment,
-      CONTRACT_NAMES.VERSION,
-      addresses.melonContracts.version,
-    );
-    const oasisDEX = getContract(
-      environment,
-      CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
-      OasisDEXAddresses.exchange,
-    );
-    const priceSource = getContract(
-      environment,
-      CONTRACT_NAMES.TESTING_PRICEFEED,
-      addresses.melonContracts.priceSource,
-    );
-    const userWhitelist = getContract(
-      environment,
-      CONTRACT_NAMES.USER_WHITELIST,
-      addresses.melonContracts.policies.userWhitelist,
-    );
-    contracts = {
-      engine,
-      version,
-      mln,
-      oasisDEX,
-      priceSource,
-      userWhitelist,
-      weth,
-    };
+    mln = contracts.MLN;
+    weth = contracts.WETH;
+    engine = contracts.Engine;
+    version = contracts.Version;
+    oasisDEX = contracts.MatchingMarket;
+    matchingMarketAdapter = contracts.MatchingMarketAdapter;
+    priceSource = contracts.TestingPriceFeed;
+    userWhitelist = contracts.UserWhitelist;
+    priceTolerance = contracts.PriceTolerance;
+    managementFee = contracts.ManagementFee;
+    performanceFee = contracts.PerformanceFee;
 
     offeredValue = toWei('1', 'ether');
     wantedShares = toWei('1', 'ether');
@@ -105,15 +77,15 @@ describe('general-walkthrough', () => {
 
     await priceSource.methods
       .update(
-        [wethTokenInfo.address, mlnTokenInfo.address],
+        [weth.options.address, mln.options.address],
         [toWei('1', 'ether'), toWei('0.5', 'ether')],
       )
       .send(defaultTxOpts);
 
     const fees = {
       contracts: [
-        addresses.melonContracts.fees.managementFee.toString(),
-        addresses.melonContracts.fees.performanceFee.toString(),
+        managementFee.options.address,
+        performanceFee.options.address
       ],
       rates: [toWei('0.02', 'ether'), toWei('0.2', 'ether')],
       periods: [0, 7776000], // 0 and 90 days
@@ -125,10 +97,10 @@ describe('general-walkthrough', () => {
         fees.contracts,
         fees.rates,
         fees.periods,
-        [OasisDEXAddresses.exchange.toString()],
-        [OasisDEXAddresses.adapter.toString()],
-        wethTokenInfo.address.toString(),
-        [wethTokenInfo.address.toString(), mlnTokenInfo.address.toString()],
+        [oasisDEX.options.address],
+        [matchingMarketAdapter.options.address],
+        weth.options.address,
+        [weth.options.address, mln.options.address],
       )
       .send(managerTxOpts);
 
@@ -141,44 +113,19 @@ describe('general-walkthrough', () => {
     await version.methods.createVault().send(managerTxOpts);
     const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
-    const routes = await hub.methods.routes().call();
 
-    addresses.fund = { ...routes, hub: hubAddress };
-    contracts.fund = {
-      accounting: getContract(
-        environment,
-        CONTRACT_NAMES.ACCOUNTING,
-        routes.accounting,
-      ),
-      participation: getContract(
-        environment,
-        CONTRACT_NAMES.PARTICIPATION,
-        routes.participation,
-      ),
-      policyManager: getContract(
-        environment,
-        CONTRACT_NAMES.POLICY_MANAGER,
-        routes.policyManager,
-      ),
-      shares: getContract(environment, CONTRACT_NAMES.SHARES, routes.shares),
-      trading: getContract(environment, CONTRACT_NAMES.TRADING, routes.trading),
-    };
-    const { policyManager, trading } = contracts.fund;
+    fund = await getFundComponents(hubAddress);
 
-    const exchangeInfo = await trading.methods.getExchangeInfo().call();
-    exchangeIndex = exchangeInfo[1].findIndex(
-      e => e.toLowerCase() === OasisDEXAddresses.adapter.toLowerCase(),
-    );
+    exchangeIndex = 0;
 
     const makeOrderFunctionSig = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'makeOrder',
     );
-    await policyManager.methods
+    await fund.policyManager.methods
       .register(
         encodeFunctionSignature(makeOrderFunctionSig),
-        addresses.melonContracts.policies.priceTolerance.toString(),
+        priceTolerance.options.address,
       )
       .send(managerTxOpts);
 
@@ -186,10 +133,10 @@ describe('general-walkthrough', () => {
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'takeOrder',
     );
-    await policyManager.methods
+    await fund.policyManager.methods
       .register(
         encodeFunctionSignature(takeOrderFunctionSig),
-        addresses.melonContracts.policies.priceTolerance.toString(),
+        priceTolerance.options.address
       )
       .send(managerTxOpts);
 
@@ -197,17 +144,16 @@ describe('general-walkthrough', () => {
       CONTRACT_NAMES.PARTICIPATION,
       'requestInvestment',
     );
-    await policyManager.methods
+    await fund.policyManager.methods
       .register(
         encodeFunctionSignature(requestInvestmentFunctionSig),
-        addresses.melonContracts.policies.userWhitelist.toString(),
+        userWhitelist.options.address
       )
       .send(managerTxOpts);
   });
 
   test('Request investment fails for whitelisted user with no allowance', async () => {
-    const { weth } = contracts;
-    const { participation } = contracts.fund;
+    const { participation } = fund;
 
     await expect(
       participation.methods
@@ -217,8 +163,7 @@ describe('general-walkthrough', () => {
   });
 
   test('Request investment fails for user not on whitelist', async () => {
-    const { weth } = contracts;
-    const { participation } = contracts.fund;
+    const { participation } = fund;
 
     await weth.methods
       .approve(participation.options.address, offeredValue)
@@ -232,8 +177,7 @@ describe('general-walkthrough', () => {
   });
 
   test('Request investment succeeds for whitelisted user with allowance', async () => {
-    const { userWhitelist, weth } = contracts;
-    const { participation, shares } = contracts.fund;
+    const { participation, shares } = fund;
 
     await userWhitelist.methods.addToWhitelist(investor).send(defaultTxOpts);
 
@@ -247,12 +191,11 @@ describe('general-walkthrough', () => {
 
     const investorShares = await shares.methods.balanceOf(investor).call();
 
-    expect(investorShares).toEqual(wantedShares);
+    expect(investorShares.toString()).toEqual(wantedShares.toString());
   });
 
   test('Fund can take an order on Oasis DEX', async () => {
-    const { oasisDEX, mln, weth } = contracts;
-    const { accounting, trading } = contracts.fund;
+    const { accounting, trading } = fund;
 
     const makerQuantity = toWei('2', 'ether');
     const makerAsset = mln.options.address;
@@ -285,7 +228,7 @@ describe('general-walkthrough', () => {
         takeOrderFunctionSig,
         [
           deployer,
-          addresses.fund.trading,
+          fund.trading.options.address,
           makerAsset,
           takerAsset,
           EMPTY_ADDRESS,
@@ -307,20 +250,19 @@ describe('general-walkthrough', () => {
       .call();
 
     expect(
-      new BN(postMlnFundHoldings).eq(
-        new BN(preMlnFundHoldings).add(new BN(makerQuantity)),
+      new BN(postMlnFundHoldings.toString()).eq(
+        new BN(preMlnFundHoldings.toString()).add(new BN(makerQuantity.toString())),
       ),
     ).toBe(true);
     expect(
-      new BN(postWethFundHoldings).eq(
-        new BN(preWethFundHoldings).sub(new BN(takerQuantity)),
+      new BN(postWethFundHoldings.toString()).eq(
+        new BN(preWethFundHoldings.toString()).sub(new BN(takerQuantity.toString())),
       ),
     ).toBe(true);
   });
 
   test('Fund can make an order on Oasis DEX', async () => {
-    const { oasisDEX, mln, weth } = contracts;
-    const { accounting, trading } = contracts.fund;
+    const { accounting, trading } = fund;
 
     const makerQuantity = toWei('0.2', 'ether');
     const makerAsset = weth.options.address;
@@ -344,7 +286,7 @@ describe('general-walkthrough', () => {
         exchangeIndex,
         makeOrderFunctionSig,
         [
-          addresses.fund.trading,
+          fund.trading.options.address,
           EMPTY_ADDRESS,
           makerAsset,
           takerAsset,
@@ -382,13 +324,13 @@ describe('general-walkthrough', () => {
       .call()
 
     expect(
-      new BN(postMlnFundHoldings).eq(
-        new BN(preMlnFundHoldings).add(new BN(takerQuantity))
+      new BN(postMlnFundHoldings.toString()).eq(
+        new BN(preMlnFundHoldings.toString()).add(new BN(takerQuantity.toString()))
       )
     ).toBe(true);
     expect(
-      new BN(postWethFundHoldings).eq(
-        new BN(preWethFundHoldings).sub(new BN(makerQuantity))
+      new BN(postWethFundHoldings.toString()).eq(
+        new BN(preWethFundHoldings.toString()).sub(new BN(makerQuantity.toString()))
       )
     ).toBe(true);
   });
@@ -398,10 +340,9 @@ describe('general-walkthrough', () => {
   // TODO - calculate fees?
 
   test('Cannot invest in a shutdown fund', async () => {
-    const { weth, version } = contracts;
-    const { participation } = contracts.fund;
+    const { participation } = fund;
 
-    await version.methods.shutDownFund(addresses.fund.hub).send(managerTxOpts);
+    await version.methods.shutDownFund(fund.hub.options.address).send(managerTxOpts);
 
     await weth.methods
       .approve(participation.options.address, offeredValue)

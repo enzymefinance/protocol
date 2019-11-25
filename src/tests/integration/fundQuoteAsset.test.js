@@ -20,7 +20,7 @@ describe('fund-quote-asset', () => {
   let defaultTxOpts, investorTxOpts, managerTxOpts;
   let fundDenominationAsset;
   let trade1;
-  let deployed;
+  let contracts, deployOut;
   let dgx, mln, weth, matchingMarket, version, priceSource;
   let hub, accounting, participation, shares, trading, vault;
   let makeOrderSignature;
@@ -32,13 +32,16 @@ describe('fund-quote-asset', () => {
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF)));
-    version = fetchContract('Version', deployed.melon.addr.Version);
-    dgx = fetchContract('StandardToken', deployed.tokens.addr.DGX);
-    mln = fetchContract('StandardToken', deployed.tokens.addr.MLN);
-    weth = fetchContract('WETH', deployed.tokens.addr.WETH);
-    matchingMarket = fetchContract('MatchingMarket', deployed.oasis.addr.MatchingMarket);
-    priceSource = fetchContract('TestingPriceFeed', deployed.melon.addr.TestingPriceFeed);
+    const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    
+    contracts = deployed.contracts;
+    deployOut = deployed.deployOut;
+    version = contracts.Version;
+    dgx = contracts.DGX;
+    mln = contracts.MLN;
+    weth = contracts.WETH;
+    matchingMarket = contracts.MatchingMarket;
+    priceSource = contracts.TestingPriceFeed;
     makeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'makeOrder',
@@ -51,7 +54,7 @@ describe('fund-quote-asset', () => {
         [],
         [],
         [matchingMarket.options.address.toString()],
-        [deployed.melon.addr.MatchingMarketAdapter],
+        [deployOut.melon.addr.MatchingMarketAdapter],
         dgx.options.address.toString(),
         [
           mln.options.address.toString(),
@@ -80,13 +83,6 @@ describe('fund-quote-asset', () => {
     participation = fetchContract('Participation', participationAddress);
     const tradingAddress = await hub.methods.trading.call();
     trading = fetchContract('Trading', tradingAddress);
-
-    await matchingMarket.methods
-      .addTokenPairWhitelist(
-        dgx.options.address.toString(),
-        mln.options.address.toString(),
-      )
-      .send(defaultTxOpts);
   });
 
   test('fund denomination asset is dgx', async () => {
@@ -144,8 +140,8 @@ describe('fund-quote-asset', () => {
     expect(expectedCostOfShares.eq(actualCostOfShares)).toBe(true);
 
     // TODO: use less fake prices
-    const fakePrices = Object.values(deployed.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
-    await priceSource.methods.update(Object.values(deployed.tokens.addr), fakePrices);
+    const fakePrices = Object.values(deployOut.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
+    await priceSource.methods.update(Object.values(deployOut.tokens.addr), fakePrices);
 
     const preWethFund = await weth.methods
       .balanceOf(vault.options.address)
@@ -367,8 +363,8 @@ describe('fund-quote-asset', () => {
       .call();
     const postFundCalcs = await accounting.methods.performCalculations().call();
 
-    expect(preMlnExchange).toBe(postMlnExchange);
-    expect(postMlnFund).toBe(preMlnFund);
+    expect(preMlnExchange).toEqual(postMlnExchange);
+    expect(postMlnFund).toEqual(preMlnFund);
     expect(new BN(postDgxExchange))
       .toEqualBN(new BN(preDgxExchange).add(new BN(trade1.sellQuantity)));
     expect(new BN(postDgxFund))
@@ -421,7 +417,7 @@ describe('fund-quote-asset', () => {
       .balanceOf(vault.options.address)
       .call();
 
-    expect(preMlnExchange).toBe(postMlnExchange);
+    expect(preMlnExchange).toEqual(postMlnExchange);
     expect(new BN(postDgxExchange))
       .toEqualBN(new BN(preDgxExchange).sub(new BN(trade1.sellQuantity)));
     expect(postDgxFund).toBe(preDgxFund);

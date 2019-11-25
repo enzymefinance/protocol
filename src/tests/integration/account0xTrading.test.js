@@ -5,68 +5,49 @@ import {
   signZeroExOrder,
 } from '../utils/new/zeroEx';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { getContract } from '~/utils/solidity/getContract';
 import { toWei } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
 import { CONTRACT_NAMES } from '../utils/new/constants';
+const {fetchContract} = require('../../../new/deploy/deploy-contract');
+const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../new/deploy/deploy-system');
 
 describe('account-0x-trading', () => {
-  let environment, user, defaultTxOpts, takerEnvironment;
+  let user, defaultTxOpts, takerEnvironment;
   let accounts;
-  let weth, mln;
-  let zeroExExchange, erc20ProxyAddress;
+  let weth, mln, zrx;
+  let zeroExExchange, erc20Proxy;
+  let deployOut;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
-    defaultTxOpts = { from: user, gas: 8000000 };
-    accounts = await environment.eth.getAccounts();
-    takerEnvironment = withDifferentAccount(environment, accounts[1]);
+    accounts = await web3.eth.getAccounts();
+    const [deployer, taker] = accounts;
+    defaultTxOpts = { from: deployer, gas: 8000000 };
+    user = deployer;
+    const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF)));
+    const contracts = deployed.contracts;
+    deployOut = deployed.deployOut;
 
-    const zrxTokenInfo = await getToken(
-      environment,
-      await deployToken(environment, 'ZRX'),
-    );
+    weth = contracts.WETH;
+    mln = contracts.MLN;
+    zrx = contracts.ZRX;
+    zeroExExchange = contracts.Exchange;
+    erc20Proxy = contracts.ERC20Proxy;
 
-    mln = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      await deployToken(environment, 'MLN'),
-    );
-
-    weth = getContract(
-      environment,
-      CONTRACT_NAMES.PREMINED_TOKEN,
-      await deployToken(environment, 'WETH'),
-    );
     await weth.methods
-      .transfer(takerEnvironment.wallet.address, toWei('100', 'Ether'))
+      .transfer(taker, toWei('100', 'Ether'))
       .send(defaultTxOpts);
-
-    const zrxExchangeAddress = await deploy0xExchange(environment, {
-      zrxToken: zrxTokenInfo,
-    });
-
-    zeroExExchange = getContract(
-      environment,
-      CONTRACT_NAMES.ZERO_EX_EXCHANGE,
-      zrxExchangeAddress,
-    );
-
-    erc20ProxyAddress = await zeroExExchange.methods
-      .getAssetProxy(AssetProxyId.ERC20.toString())
-      .call();
   });
 
+  // TODO: fix problem with ecSignOrderAsync error for this to pass
   it('Happy path', async () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
       zeroExExchange.options.address,
       {
         makerAddress: user,
@@ -79,10 +60,10 @@ describe('account-0x-trading', () => {
 
     // await approveOrder(environment, zrxExchangeAddress, unsignedOrder);
     await mln.methods
-      .approve(erc20ProxyAddress, makerAssetAmount)
+      .approve(erc20Proxy.options.address, makerAssetAmount)
       .send(defaultTxOpts);
 
-    const signedOrder = await signZeroExOrder(environment, unsignedOrder, user);
+    const signedOrder = await signZeroExOrder(unsignedOrder, user);
     expect(signedOrder.exchangeAddress).toBe(
       zeroExExchange.options.address.toLowerCase(),
     );

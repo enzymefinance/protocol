@@ -1,143 +1,111 @@
 import { BN, toWei } from 'web3-utils';
-
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { isAddress } from '~/utils/checks/isAddress';
-import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { BNExpDiv, BNExpInverse } from '../utils/new/BNmath';
 import { CONTRACT_NAMES } from '../utils/new/constants';
+const getFundComponents = require('../utils/new/getFundComponents');
+const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
+const increaseTime = require('../utils/new/increaseTime');
+const getAllBalances = require('../utils/new/getAllBalances');
+const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
+const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../new/deploy/deploy-system');
 
 describe('kyber-price-feed', () => {
-  let environment, user, defaultTxOpts;
-  let eurTokenInfo, mlnTokenInfo, wethTokenInfo;
-  let conversionRates, kyberDeployAddresses, kyberPriceFeed, mockRegistry;
+  let user, defaultTxOpts;
+  let conversionRates, kyberPriceFeed, kyberNetworkProxy, mockRegistry;
+  let eur, mln, weth;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const contracts = deployment.contracts;
 
-    eurTokenInfo = await getToken(
-      environment,
-      await deployToken(environment, 'EUR'),
-    );
-    mlnTokenInfo = await getToken(
-      environment,
-      await deployToken(environment, 'MLN'),
-    );
-    wethTokenInfo = await getToken(
-      environment,
-      await deployToken(environment, 'WETH'),
-    );
+    eur = contracts.EUR;
+    mln = contracts.MLN;
+    weth = contracts.WETH;
+    conversionRates = contracts.ConversionRates;
+    kyberNetworkProxy = contracts.KyberNetworkProxy;
 
-    kyberDeployAddresses = await deployKyberEnvironment(environment, [
-      mlnTokenInfo,
-      eurTokenInfo,
-    ]);
+    mockRegistry = await deploy(CONTRACT_NAMES.MOCK_REGISTRY);
 
-    conversionRates = getContract(
-      environment,
-      CONTRACT_NAMES.CONVERSION_RATES,
-      kyberDeployAddresses.conversionRates,
-    );
-
-    const mockRegistryAddress = await deployContract(
-      environment,
-      CONTRACT_NAMES.MOCK_REGISTRY,
-    );
-    mockRegistry = await getContract(
-      environment,
-      CONTRACT_NAMES.MOCK_REGISTRY,
-      mockRegistryAddress.toString(),
-    );
-    await mockRegistry.methods
-      .setNativeAsset(wethTokenInfo.address.toString())
-      .send(defaultTxOpts);
-
-    for (const token of [eurTokenInfo, mlnTokenInfo, wethTokenInfo]) {
-      await mockRegistry.methods
-        .register(token.address.toString())
-        .send(defaultTxOpts);
-    }
-  });
-
-  it('Deploy kyber pricefeed', async () => {
-    const kyberPriceFeedAddress = await deployContract(
-      environment,
-      CONTRACT_NAMES.KYBER_PRICEFEED,
+    kyberPriceFeed = await deploy(
+      CONTRACT_NAMES.KYBER_PRICEFEED, 
       [
         mockRegistry.options.address,
-        kyberDeployAddresses.kyberNetworkProxy,
+        kyberNetworkProxy.options.address,
         toWei('0.5', 'ether'),
-        wethTokenInfo.address.toString(),
-      ],
+        weth.options.address
+      ]
     );
-    kyberPriceFeed = getContract(
-      environment,
-      CONTRACT_NAMES.KYBER_PRICEFEED,
-      kyberPriceFeedAddress,
-    );
+    await mockRegistry.methods
+      .setNativeAsset(weth.options.address)
+      .send(defaultTxOpts);
 
-    expect(isAddress(kyberPriceFeedAddress)).toBe(true);
+    for (const addr of [eur.options.address, mln.options.address, weth.options.address]) {
+      await mockRegistry.methods
+        .register(addr)
+        .send(defaultTxOpts);
+    }
+    await kyberPriceFeed.methods.update().send(defaultTxOpts);
   });
 
+  // TODO: not getting price here, but it seems to work after the test is finished
   it('Get price', async () => {
-    await kyberPriceFeed.methods.update().send(defaultTxOpts);
-
+    console.log(kyberPriceFeed.options.address)
+    console.log(mln.options.address)
     const hasValidMlnPrice = await kyberPriceFeed.methods
-      .hasValidPrice(mlnTokenInfo.address)
+      .hasValidPrice(mln.options.address)
       .call();
 
     expect(hasValidMlnPrice).toBe(true);
 
     const { 0: mlnPrice } = await kyberPriceFeed.methods
-      .getPrice(mlnTokenInfo.address)
+      .getPrice(mln.options.address)
       .call();
 
-    expect(mlnPrice).toBe(toWei('1', 'ether'));
+    expect(mlnPrice.toString()).toBe(toWei('1', 'ether'));
   });
 
   it('Update mln price in reserve', async () => {
     const mlnPrice = BNExpDiv(
       new BN(toWei('1', 'ether')),
-      new BN(toWei('0.05', 'ether')),
-    ).toString();
-    const ethPriceInMln = BNExpInverse(new BN(mlnPrice)).toString()
+      new BN(toWei('0.05', 'ether'))
+    );
+    const ethPriceInMln = BNExpInverse(new BN(mlnPrice))
 
     const eurPrice = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.008', 'ether')),
-    ).toString();
-    const ethPriceInEur = BNExpInverse(new BN(eurPrice)).toString()
+    );
+    const ethPriceInEur = BNExpInverse(new BN(eurPrice))
 
-    const blockNumber = (await environment.eth.getBlock('latest')).number;
+    const blockNumber = (await web3.eth.getBlock('latest')).number;
     await conversionRates.methods
       .setBaseRate(
-        [mlnTokenInfo.address, eurTokenInfo.address],
-        [ethPriceInMln, ethPriceInEur],
-        [mlnPrice, eurPrice],
-        ['0x0'],
-        ['0x0'],
+        [mln.options.address, eur.options.address],
+        [ethPriceInMln.toString(), ethPriceInEur.toString()],
+        [mlnPrice.toString(), eurPrice.toString()],
+        ['0x0000000000000000000000000000'],
+        ['0x0000000000000000000000000000'],
         blockNumber,
-        [0],
-      )
-      .send(defaultTxOpts);
+        [0]
+      ).send(defaultTxOpts);
 
     await kyberPriceFeed.methods.update().send(defaultTxOpts);
 
     const { 0: updatedMlnPrice } = await kyberPriceFeed.methods
-      .getPrice(mlnTokenInfo.address)
-      .call();
+      .getPrice(mln.options.address).call();
 
     const { 0: updatedEurPrice } = await kyberPriceFeed.methods
-      .getPrice(eurTokenInfo.address)
-      .call();
+      .getPrice(eur.options.address).call();
 
-    expect(updatedMlnPrice).toBe(mlnPrice);
-    expect(updatedEurPrice).toBe(eurPrice);
+    expect(updatedMlnPrice.toString()).toBe(mlnPrice.toString());
+    expect(updatedEurPrice.toString()).toBe(eurPrice.toString());
   });
 });
