@@ -1,83 +1,150 @@
-import { createQuantity } from '@melonproject/token-math';
-
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { makeEthfinexOrder } from './makeEthfinexOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
-import { Exchanges } from '~/Contracts';
-import { getWrapperLock } from '~/contracts/exchanges/third-party/ethfinex/calls/getWrapperLock';
-import { getHub } from '../../hub/calls/getHub';
-import { getRoutes } from '../../hub/calls/getRoutes';
-import { transfer } from '~/contracts/dependencies/token/transactions/transfer';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
+import { toWei, padLeft } from 'web3-utils';
+import { getContract } from '~/utils/solidity/getContract';
+import {
+  createUnsignedZeroExOrder,
+  signZeroExOrder,
+} from '~/tests/utils/new/zeroEx';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 
-const shared = {};
+let environment, user, defaultTxOpts;
+let zeroEx, zeroExWrapperLock;
+let makeOrderSignature;
+let ethfinexConfig, ethfinexExchange;
+let trading;
 
 beforeAll(async () => {
-  const env = await deployAndInitTestEnv();
-  const wrapperRegistryEFX =
-    env.deployment.thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX;
+  environment = await deployAndInitTestEnv();
+  user = environment.wallet.address;
+  defaultTxOpts = { from: user, gas: 8000000 };
 
-  shared.env = env;
-  shared.accounts = await env.eth.getAccounts();
-  shared.routes = await setupInvestedTestFund(env);
-  shared.ethfinexAddress =
-    env.deployment.exchangeConfigs[Exchanges.Ethfinex].exchange;
+  makeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'makeOrder',
+  );
 
-  shared.mln = getTokenBySymbol(env, 'MLN');
-  shared.weth = getTokenBySymbol(env, 'WETH');
-  shared.zx = getTokenBySymbol(env, 'ZRX');
+  const wrapperRegistryEFXAddress =
+    environment.deployment.thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX;
 
-  shared.mlnWrapperLock = await getWrapperLock(env, wrapperRegistryEFX, {
-    token: shared.mln,
-  });
+  const routes = await setupInvestedTestFund(environment);
 
-  shared.wethWrapperLock = await getWrapperLock(env, wrapperRegistryEFX, {
-    token: shared.weth,
-  });
+  trading = getContract(
+    environment,
+    CONTRACT_NAMES.TRADING,
+    routes.tradingAddress
+  );
 
-  shared.zxWrapperLock = await getWrapperLock(env, wrapperRegistryEFX, {
-    token: shared.zx,
-  });
+  ethfinexConfig =
+    environment.deployment.exchangeConfigs[EXCHANGES.ETHFINEX];
+
+  ethfinexExchange = getContract(
+    environment,
+    CONTRACT_NAMES.ZERO_EX_EXCHANGE,
+    ethfinexConfig.exchange,
+  );
+
+  const zeroExInfo = getTokenBySymbol(environment, 'ZRX');
+
+  zeroEx = getContract(
+    environment,
+    CONTRACT_NAMES.STANDARD_TOKEN,
+    zeroExInfo.address
+  );
+
+  const wrapperRegistry = getContract(
+    environment,
+    CONTRACT_NAMES.WRAPPER_REGISTRY_EFX,
+    wrapperRegistryEFXAddress,
+  );
+
+  const zeroExWrapperLockAddress = await wrapperRegistry.methods
+    .token2WrapperLookup(zeroExInfo.address).call();
+
+  zeroExWrapperLock = getContract(
+    environment,
+    CONTRACT_NAMES.WRAPPER_LOCK,
+    zeroExWrapperLockAddress,
+  );
 });
 
 // tslint:disable-next-line:max-line-length
 test('Make ethfinex order from fund and take it from account in which makerToken is a non-native asset', async () => {
-  const hubAddress = await getHub(shared.env, shared.routes.tradingAddress);
-  const { vaultAddress } = await getRoutes(shared.env, hubAddress);
-  const howMuch = createQuantity(shared.zx, 1);
+  const mlnInfo = getTokenBySymbol(environment, 'MLN');
+  const hubAddress = await trading.methods.hub().call();
+  const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
+  const routes = await hub.methods.routes().call();
+  const vaultAddress = routes.vault;
+  const amount = toWei('1', 'ether');
 
-  const receipt = await transfer(shared.env, { howMuch, to: vaultAddress });
-  expect(receipt).toBeTruthy();
+  await zeroEx.methods
+    .transfer(vaultAddress, amount).send(defaultTxOpts);
 
-  const makerQuantity = createQuantity(shared.zxWrapperLock, 0.05);
-  const takerQuantity = createQuantity(shared.mln, 1);
+  const makerAssetAmount = toWei('0.05', 'ether');
+  const takerAssetAmount = toWei('1', 'ether');
 
-  const unsignedEthfinexOrder = await createOrder(
-    shared.env,
-    shared.ethfinexAddress,
+  const unsignedOrder = await createUnsignedZeroExOrder(
+    environment,
+    ethfinexConfig.exchange,
     {
-      makerAddress: shared.routes.tradingAddress,
-      makerQuantity,
-      takerQuantity,
+      makerAddress: routes.trading,
+      makerTokenAddress: zeroExWrapperLock.options.address,
+      makerAssetAmount,
+      takerTokenAddress: mlnInfo.address,
+      takerAssetAmount,
     },
   );
 
-  const signedOrder = await signOrder(shared.env, unsignedEthfinexOrder);
-
-  const result = await makeEthfinexOrder(
-    shared.env,
-    shared.routes.tradingAddress,
-    { signedOrder },
+  const signedOrder = await signZeroExOrder(
+    environment,
+    unsignedOrder,
+    user,
   );
 
-  expect(result).toBe(true);
+  const makerTokenAddress = await zeroExWrapperLock.methods
+    .originalToken().call();
 
-  const filled = await fillOrder(shared.env, shared.ethfinexAddress, {
-    signedOrder,
-  });
+  const exchanges = await trading.methods.getExchangeInfo().call();
+  const exchangeIndex = exchanges[1].findIndex(
+    e => e.toLowerCase() === ethfinexConfig.adapter.toLowerCase(),
+  );
 
-  expect(filled).toBeTruthy();
+  await trading.methods.callOnExchange(
+    exchangeIndex,
+    makeOrderSignature,
+    [
+      routes.trading,
+      EMPTY_ADDRESS,
+      makerTokenAddress,
+      mlnInfo.address,
+      signedOrder.feeRecipientAddress,
+      EMPTY_ADDRESS,
+    ],
+    [
+      signedOrder.makerAssetAmount,
+      signedOrder.takerAssetAmount,
+      signedOrder.makerFee,
+      signedOrder.takerFee,
+      signedOrder.expirationTimeSeconds,
+      signedOrder.salt,
+      0,
+      0,
+    ],
+    padLeft('0x0', 64),
+    signedOrder.makerAssetData,
+    signedOrder.takerAssetData,
+    signedOrder.signature,
+  ).send(defaultTxOpts);
+
+  const result = ethfinexExchange.methods
+    .fillOrder(
+      unsignedOrder,
+      takerAssetAmount,
+      signedOrder.signature,
+    ).send(defaultTxOpts);
+
+  expect(result).toBeTruthy();
 });
