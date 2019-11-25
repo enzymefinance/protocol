@@ -40,12 +40,30 @@ const main = async input => {
     priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH, input.tokens.conf.WETH.decimals], melonAddrs);
   }
 
-  await send(registry, 'setPriceSource', [priceSource.options.address]);
-  await send(registry, 'setNativeAsset', [tokenAddrs.WETH]);
-  await send(registry, 'setMlnToken', [tokenAddrs.MLN]);
-  await send(registry, 'setEngine', [engine.options.address]);
-  await send(registry, 'setMGM', [melonConf.initialMGM]);
-  await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
+  const previousRegisteredPriceSource = call(registry, 'priceSource');
+  if (`${previousRegisteredPriceSource}`.toLowerCase() !== priceSource.options.address.toLowerCase()) {
+    await send(registry, 'setPriceSource', [priceSource.options.address]);
+  }
+  const previousRegisteredNativeAsset = call(registry, 'nativeAsset');
+  if (`${previousRegisteredNativeAsset}`.toLowerCase() !== tokenAddrs.WETH.toLowerCase()) {
+    await send(registry, 'setNativeAsset', [tokenAddrs.WETH]);
+  }
+  const previousRegisteredMlnToken = call(registry, 'mlnToken');
+  if (`${previousRegisteredMlnToken}`.toLowerCase() !== tokenAddrs.MLN.toLowerCase()) {
+    await send(registry, 'setMlnToken', [tokenAddrs.MLN]);
+  }
+  const previousRegisteredEngine = call(registry, 'engine');
+  if (`${previousRegisteredEngine}`.toLowerCase() !== engine.options.address.toLowerCase()) {
+    await send(registry, 'setEngine', [engine.options.address]);
+  }
+  const previousRegisteredMGM = call(registry, 'MGM');
+  if (`${previousRegisteredMGM}`.toLowerCase() !== melonConf.initialMGM.toLowerCase()) {
+    await send(registry, 'setMGM', [melonConf.initialMGM]);
+  }
+  const previousRegisteredEthfinexWrapperRegistry = call(registry, 'MGM');
+  if (`${previousRegisteredEthfinexWrapperRegistry}`.toLowerCase() !== input.ethfinex.addr.WrapperRegistryEFX.toLowerCase()) {
+    await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
+  }
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
   const sigs = [
@@ -94,14 +112,17 @@ const main = async input => {
 
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
-    const isRegistered = await call(registry, 'assetIsRegistered', [tokenAddress]);
-    if (!isRegistered) {
+    const assetInfo = await call(registry, 'assetInformation', [tokenAddress]);
+    if (!assetInfo.exists) {
       // TODO: fix token.sym and reserveMin
       const reserveMin = 0;
       await send(registry, 'registerAsset', [tokenAddress, info.name, sym, '', reserveMin, [], []]);
     }
     if (conf.track === 'TESTING') {
-      await send(priceSource, 'setDecimals', [tokenAddress, info.decimals]);
+      const previousDecimals = await call(priceSource, 'assetsToDecimals', [tokenAddress]);
+      if (previousDecimals.toString() !== info.decimals.toString()) {
+        await send(priceSource, 'setDecimals', [tokenAddress, info.decimals]);
+      }
     }
   }
 
@@ -123,7 +144,8 @@ const main = async input => {
     await send(registry, 'registerVersion',
       [
         version.options.address,
-        web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64)
+        // web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64) // TODO: change back to this one
+        web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64)
       ]
     );
   }
@@ -136,36 +158,38 @@ const main = async input => {
     await send(priceSource, 'update', [Object.values(tokenAddrs), fakePrices]);
   }
 
-  const addrs = {
-    "EthfinexAdapter": ethfinexAdapter.options.address,
-    "KyberAdapter": kyberAdapter.options.address,
-    "MatchingMarketAdapter": matchingMarketAdapter.options.address,
-    "MatchingMarketAccessor": matchingMarketAccessor.options.address,
-    "ZeroExV2Adapter": zeroExV2Adapter.options.address,
-    "EngineAdapter": engineAdapter.options.address,
-    "PriceTolerance": priceTolerance.options.address,
-    "UserWhitelist": userWhitelist.options.address,
-    "ManagementFee": performanceFee.options.address,
-    "AccountingFactory": accountingFactory.options.address,
-    "FeeManagerFactory": feeManagerFactory.options.address,
-    "ParticipationFactory": participationFactory.options.address,
-    "PolicyManagerFactory": policyManagerFactory.options.address,
-    "SharesFactory": sharesFactory.options.address,
-    "TradingFactory": tradingFactory.options.address,
-    "VaultFactory": vaultFactory.options.address,
-    "Registry": registry.options.address,
-    "Engine": engine.options.address,
-    "FundRanking": fundRanking.options.address,
-    "Version": version.options.address,
+  const contracts = {
+    "EthfinexAdapter": ethfinexAdapter,
+    "KyberAdapter": kyberAdapter,
+    "MatchingMarketAdapter": matchingMarketAdapter,
+    "MatchingMarketAccessor": matchingMarketAccessor,
+    "ZeroExV2Adapter": zeroExV2Adapter,
+    "EngineAdapter": engineAdapter,
+    "PriceTolerance": priceTolerance,
+    "UserWhitelist": userWhitelist,
+    "ManagementFee": performanceFee,
+    "AccountingFactory": accountingFactory,
+    "FeeManagerFactory": feeManagerFactory,
+    "ParticipationFactory": participationFactory,
+    "PolicyManagerFactory": policyManagerFactory,
+    "SharesFactory": sharesFactory,
+    "TradingFactory": tradingFactory,
+    "VaultFactory": vaultFactory,
+    "PerformanceFee": performanceFee,
+    "ManagementFee": managementFee,
+    "Registry": registry,
+    "Engine": engine,
+    "FundRanking": fundRanking,
+    "Version": version,
   };
 
   if (conf.track === 'KYBER_PRICE') {
-    addrs.KyberPriceFeed = priceSource.options.address;
+    contracts.KyberPriceFeed = priceSource;
   } else if (conf.track === 'TESTING') {
-    addrs.TestingPriceFeed = priceSource.options.address;
+    contracts.TestingPriceFeed = priceSource;
   }
 
-  return addrs;
+  return contracts;
 }
 
 module.exports = main;

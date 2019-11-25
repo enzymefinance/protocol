@@ -19,16 +19,16 @@ const main = async input => {
   await send(weth, 'deposit', [], {value: depositAmount});
 
   return {
-    "WETH": weth.options.address,
-    "MLN": mln.options.address,
-    "BAT": bat.options.address,
-    "DAI": dai.options.address,
-    "DGX": dgx.options.address,
-    "EUR": eur.options.address,
-    "KNC": knc.options.address,
-    "MKR": mkr.options.address,
-    "REP": rep.options.address,
-    "ZRX": zrx.options.address,
+    "WETH": weth,
+    "MLN": mln,
+    "BAT": bat,
+    "DAI": dai,
+    "DGX": dgx,
+    "EUR": eur,
+    "KNC": knc,
+    "MKR": mkr,
+    "REP": rep,
+    "ZRX": zrx,
   };
 }
 

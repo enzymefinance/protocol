@@ -3,10 +3,9 @@ const {nab, call, send, fetchContract} = require('./deploy-contract');
 const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: import from util
 
 const main = async input => {
-  const addrs = {};
-  addrs.Exchange = input.zeroex.addr.Exchange;
-  const wrapperRegistryEFX = await nab('WrapperRegistryEFX', [], input.ethfinex.addr);
-  addrs.WrapperRegistryEFX = wrapperRegistryEFX.options.address;
+  const contracts = {};
+  contracts.Exchange = fetchContract('Exchange', input.zeroex.addr.Exchange);
+  contracts.WrapperRegistryEFX = await nab('WrapperRegistryEFX', [], input.ethfinex.addr);
   const erc20Proxy = await fetchContract('ERC20Proxy', input.zeroex.addr.ERC20Proxy);
 
   const wrapperMap = new Map();
@@ -19,7 +18,7 @@ const main = async input => {
         input.zeroex.addr.Exchange,
         input.zeroex.addr.ERC20Proxy,
       ], input.ethfinex.addr);
-      addrs.WrapperLockEth = wrapperLockEth.options.address;
+      contracts.WrapperLockEth = wrapperLockEth;
       wrapperMap.set(input.tokens.addr['WETH'], wrapperLockEth.options.address);
     } else {
       const wrapSym = `W-${tokenSym}`;
@@ -32,7 +31,7 @@ const main = async input => {
         input.zeroex.addr.Exchange,
         input.zeroex.addr.ERC20Proxy,
       ], input.ethfinex.addr, wrapSym);
-      addrs[wrapSym] = wrapper.options.address;
+      contracts[wrapSym] = wrapper;
       wrapperMap.set(input.tokens.addr[tokenSym], wrapper.options.address);
     }
   }
@@ -40,19 +39,19 @@ const main = async input => {
   // remove token/wrapper pairs where the token is already registered
   // otherwise addNewWrapperPair will fail
   for (const originalToken of Array.from(wrapperMap.keys())) {
-    const wrapperForToken = await call(wrapperRegistryEFX, 'token2WrapperLookup', [originalToken]);
+    const wrapperForToken = await call(contracts.WrapperRegistryEFX, 'token2WrapperLookup', [originalToken]);
     if (wrapperForToken !== zeroAddress) {
       wrapperMap.delete(originalToken);
     }
   }
 
   if (wrapperMap.size > 0) {
-    await send(wrapperRegistryEFX, 'addNewWrapperPair', [
+    await send(contracts.WrapperRegistryEFX, 'addNewWrapperPair', [
       Array.from(wrapperMap.keys()), Array.from(wrapperMap.values())
     ]);
   }
 
-  return addrs;
+  return contracts;
 }
 
 module.exports = main;

@@ -54,7 +54,7 @@ const signAndSend = async (tx, pkey) => {
 }
 
 // deploy a contract with some args
-const deploy = async (name, args) => {
+const deploy = async (name, args=[]) => {
   const account = web3.accounts.wallet['0'];
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
   const bin = fs.readFileSync(`${outdir}/${name}.bin`, 'utf8').trim();

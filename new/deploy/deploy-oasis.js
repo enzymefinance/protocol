@@ -14,7 +14,7 @@ const main = async input => {
     }
   }
 
-  return { "MatchingMarket": matchingMarket.options.address };
+  return { "MatchingMarket": matchingMarket };
 }
 
 module.exports = main;

@@ -11,16 +11,19 @@ const main = async input => {
     await send(erc20Proxy, 'addAuthorizedAddress', [exchange.options.address]);
   }
   const proxyId = await call(erc20Proxy, 'getProxyId');
-  const currentProxy = await call(exchange, 'assetProxies', [proxyId]);
-  console.log(currentProxy);
-  if (currentProxy === zeroAddress) {
+  let currentProxy;
+  if (proxyId !== null) {
+    currentProxy = await call(exchange, 'assetProxies', [proxyId]);
+  }
+  if (currentProxy === zeroAddress || proxyId === null) {
     await send(exchange, 'registerAssetProxy', [erc20Proxy.options.address]);
   }
+  // TODO: is this necessary to send each time?
   await send(exchange, 'changeZRXAssetData', [input.tokens.addr.ZRX]);
 
   return {
-    "Exchange": exchange.options.address,
-    "ERC20Proxy": erc20Proxy.options.address
+    "Exchange": exchange,
+    "ERC20Proxy": erc20Proxy
   };
 }
 
