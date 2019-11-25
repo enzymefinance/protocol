@@ -1,5 +1,6 @@
 import { toWei, padLeft } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
+import { orderHashUtils } from '@0x/order-utils';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
@@ -11,27 +12,27 @@ import {
 } from '~/tests/utils/new/zeroEx';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+import { increaseTime } from '~/utils/evm/increaseTime';
 
 let environment, user, defaultTxOpts;
 let zeroEx, zeroExWrapperLock;
-let makeOrderSignature;
 let ethfinexConfig, ethfinexExchange;
+let signedOrder, unsignedOrder;
+let exchangeIndex;
 let trading;
+let mlnInfo;
 
 beforeAll(async () => {
   environment = await deployAndInitTestEnv();
   user = environment.wallet.address;
   defaultTxOpts = { from: user, gas: 8000000 };
 
-  makeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
-    'makeOrder',
-  );
-
   const wrapperRegistryEFXAddress =
     environment.deployment.thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX;
 
   const routes = await setupInvestedTestFund(environment);
+
+  mlnInfo = getTokenBySymbol(environment, 'MLN');
 
   trading = getContract(
     environment,
@@ -70,15 +71,11 @@ beforeAll(async () => {
     CONTRACT_NAMES.WRAPPER_LOCK,
     zeroExWrapperLockAddress,
   );
-});
 
-// tslint:disable-next-line:max-line-length
-test('Make ethfinex order from fund and take it from account in which makerToken is a non-native asset', async () => {
-  const mlnInfo = getTokenBySymbol(environment, 'MLN');
   const hubAddress = await trading.methods.hub().call();
   const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
-  const routes = await hub.methods.routes().call();
-  const vaultAddress = routes.vault;
+  const newRoutes = await hub.methods.routes().call();
+  const vaultAddress = newRoutes.vault;
   const amount = toWei('1', 'ether');
 
   await zeroEx.methods
@@ -87,11 +84,11 @@ test('Make ethfinex order from fund and take it from account in which makerToken
   const makerAssetAmount = toWei('0.05', 'ether');
   const takerAssetAmount = toWei('1', 'ether');
 
-  const unsignedOrder = await createUnsignedZeroExOrder(
+  unsignedOrder = await createUnsignedZeroExOrder(
     environment,
     ethfinexConfig.exchange,
     {
-      makerAddress: routes.trading,
+      makerAddress: newRoutes.trading,
       makerTokenAddress: zeroExWrapperLock.options.address,
       makerAssetAmount,
       takerTokenAddress: mlnInfo.address,
@@ -99,7 +96,7 @@ test('Make ethfinex order from fund and take it from account in which makerToken
     },
   );
 
-  const signedOrder = await signZeroExOrder(
+  signedOrder = await signZeroExOrder(
     environment,
     unsignedOrder,
     user,
@@ -109,15 +106,20 @@ test('Make ethfinex order from fund and take it from account in which makerToken
     .originalToken().call();
 
   const exchanges = await trading.methods.getExchangeInfo().call();
-  const exchangeIndex = exchanges[1].findIndex(
+  exchangeIndex = exchanges[1].findIndex(
     e => e.toLowerCase() === ethfinexConfig.adapter.toLowerCase(),
+  );
+
+  const makeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'makeOrder',
   );
 
   await trading.methods.callOnExchange(
     exchangeIndex,
     makeOrderSignature,
     [
-      routes.trading,
+      newRoutes.trading,
       EMPTY_ADDRESS,
       makerTokenAddress,
       mlnInfo.address,
@@ -139,7 +141,10 @@ test('Make ethfinex order from fund and take it from account in which makerToken
     signedOrder.takerAssetData,
     signedOrder.signature,
   ).send(defaultTxOpts);
+});
 
+// tslint:disable-next-line:max-line-length
+test('Make ethfinex order from fund and take it from account in which makerToken is a non-native asset', async () => {
   const erc20ProxyAddress = await ethfinexExchange.methods
     .getAssetProxy(AssetProxyId.ERC20)
     .call();
@@ -151,14 +156,81 @@ test('Make ethfinex order from fund and take it from account in which makerToken
   );
 
   await mln.methods
-    .approve(erc20ProxyAddress, takerAssetAmount)
+    .approve(erc20ProxyAddress, signedOrder.takerAssetAmount)
     .send(defaultTxOpts);
 
   const result = await ethfinexExchange.methods
     .fillOrder(
       unsignedOrder,
-      takerAssetAmount,
+      signedOrder.takerAssetAmount,
       signedOrder.signature,
+    ).send(defaultTxOpts);
+
+  expect(result).toBeTruthy();
+});
+
+// tslint:disable-next-line:max-line-length
+test('Previously made ethfinex order cancelled and not takeable anymore', async () => {
+  const cancelOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'cancelOrder',
+  );
+
+  const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder)
+
+  await trading.methods.callOnExchange(
+    exchangeIndex,
+    cancelOrderSignature,
+    [
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+    ],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    orderHashHex,
+    '0x0',
+    '0x0',
+    '0x0',
+  ).send(defaultTxOpts);
+
+  await expect(
+    ethfinexExchange.methods
+      .fillOrder(
+        unsignedOrder,
+        signedOrder.takerAssetAmount,
+        signedOrder.signature,
+      ).send(defaultTxOpts)
+  ).rejects.toThrow('ORDER_UNFILLABLE');
+});
+
+test('Withdraw (unwrap) maker asset of cancelled order', async () => {
+  await increaseTime(environment, 25 * 60 * 60);
+
+  const withdrawTokensSignature = getFunctionSignature(
+    CONTRACT_NAMES.ETHFINEX_ADAPTER,
+    'withdrawTokens',
+  );
+
+  const result = await trading.methods
+    .callOnExchange(
+      exchangeIndex,
+      withdrawTokensSignature,
+      [
+        zeroEx.options.address,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+      ],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      '0x0',
+      '0x0',
+      '0x0',
+      '0x0',
     ).send(defaultTxOpts);
 
   expect(result).toBeTruthy();
