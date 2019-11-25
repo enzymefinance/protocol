@@ -7,13 +7,13 @@ import {
 } from '@0x/order-utils';
 
 import { EMPTY_ADDRESS } from './constants';
+const web3 = require('../../../../new/deploy/get-web3');
 
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the
  * Ethfinex Wrapper contract
  */
 export const createUnsignedZeroExOrder = async (
-  environment,
   exchange,
   {
     makerTokenAddress,
@@ -28,7 +28,7 @@ export const createUnsignedZeroExOrder = async (
 ) => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(makerTokenAddress);
   const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
-  const latestBlock = await environment.eth.getBlock('latest');
+  const latestBlock = await web3.eth.getBlock('latest');
   const formattedTakerFee = takerFee
     ? takerFee.toString()
     : '0';
@@ -57,24 +57,27 @@ export const createUnsignedZeroExOrder = async (
 };
 
 export const isValidZeroExSignatureOffChain = (
-  environment,
   order,
   signature,
   makerAddress
 ) => {
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
   return signatureUtils.isValidSignatureAsync(
-    environment.eth.currentProvider,
+    web3.eth.currentProvider,
     orderHashHex,
     signature,
     makerAddress.toLowerCase()
   );
 };
 
-export const signZeroExOrder = async (environment, order, signer) => {
+export const signZeroExOrder = async (order, signer) => {
   const signerFormatted = signer.toLowerCase();
+  console.log('here')
+  console.log(web3.eth.currentProvider)
+  console.log(order)
+  console.log(signerFormatted)
   const signedOrder = await signatureUtils.ecSignOrderAsync(
-    environment.eth.currentProvider,
+    web3.eth.currentProvider,
     order,
     signerFormatted,
   );
