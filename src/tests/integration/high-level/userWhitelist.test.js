@@ -2,30 +2,29 @@ import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
 import { getFunctionSignature } from '../../utils/new/metadata';
 import { CONTRACT_NAMES } from '../../utils/new/constants';
-import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { Environment, Tracks } from '~/utils/environment/Environment';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
+const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
+const web3 = require('../../../../new/deploy/get-web3');
+const deploySystem = require('../../../../new/deploy/deploy-system');
+const {deploy} = require('../../../../new/deploy/deploy-contract');
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
   let userAlt;
   let defaultAmgu;
-  let routes;
-  let wethTokenInfo;
-  let weth, participation;
-  let investmentAmount, investmentAsset, participationAddress, requestedShares;
+  let fund;
+  let weth;
+  let investmentAmount, investmentAsset, requestedShares;
   let requestInvestmentSignatureBytes;
 
   beforeAll(async () => {
-    environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(Tracks.TESTING);
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const contracts = deployment.contracts;
 
-    user = environment.wallet.address;
-    defaultTxOpts = { from: user, gas: 8000000 };
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
+    userAlt = accounts[1];
+    defaultTxOpts = {from: user, gas: 8000000};
+    defaultAmgu = toWei('1', 'ether');
 
     const requestInvestmentSignature = getFunctionSignature(
       CONTRACT_NAMES.PARTICIPATION,
@@ -36,46 +35,21 @@ describe('Happy Path', () => {
       requestInvestmentSignature
     );
 
-    const accounts = await environment.eth.getAccounts();
-    userAlt = accounts[1];
-    defaultAmgu = toWei('0.01', 'ether');
+    fund = await setupInvestedTestFund(contracts, user);
 
-    routes = await setupInvestedTestFund(environment);
-
-    wethTokenInfo = getTokenBySymbol(environment, 'WETH');
-
-    weth = getContract(
-      environment,
-      CONTRACT_NAMES.WETH,
-      wethTokenInfo.address,
-    );
-    participation = getContract(
-      environment,
-      CONTRACT_NAMES.PARTICIPATION,
-      routes.participationAddress.toString(),
-    );
+    weth = contracts.WETH;
 
     investmentAmount = toWei('1', 'ether');
     requestedShares = toWei('1', 'ether');
-    investmentAsset = wethTokenInfo.address;
-    participationAddress = routes.participationAddress.toString();
+    investmentAsset = weth.options.address;
 
-    const policyManager = getContract(
-      environment,
-      CONTRACT_NAMES.POLICY_MANAGER,
-      routes.policyManagerAddress.toString()
-    );
-    const userWhitelist = await deployContract(
-      environment,
-      CONTRACT_NAMES.USER_WHITELIST,
-      [[user]]
-    );
-    await policyManager.methods
+    const userWhitelist = await deploy(CONTRACT_NAMES.USER_WHITELIST, [[user]]);
+
+    await fund.policyManager.methods
       .register(
         requestInvestmentSignatureBytes,
-        userWhitelist.toString()
-      )
-      .send(defaultTxOpts);
+        userWhitelist.options.address
+      ).send(defaultTxOpts);
   });
 
   test('Request investment fails if user is not whitelisted', async () => {
@@ -84,11 +58,11 @@ describe('Happy Path', () => {
       .send(defaultTxOpts);
 
     await weth.methods
-      .approve(participationAddress, investmentAmount)
+      .approve(fund.participation.options.address, investmentAmount)
       .send({ ...defaultTxOpts, from: userAlt });
 
     await expect(
-      participation.methods
+      fund.participation.methods
         .requestInvestment(
           requestedShares,
           investmentAmount,
@@ -100,11 +74,11 @@ describe('Happy Path', () => {
 
   test('Request investment passes if user is whitelisted', async () => {
     await weth.methods
-      .approve(participationAddress, investmentAmount)
+      .approve(fund.participation.options.address, investmentAmount)
       .send(defaultTxOpts);
 
     await expect(
-      participation.methods
+      fund.participation.methods
         .requestInvestment(
           requestedShares,
           investmentAmount,

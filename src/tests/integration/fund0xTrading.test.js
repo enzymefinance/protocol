@@ -16,20 +16,26 @@ import {
   isValidZeroExSignatureOffChain,
   signZeroExOrder
 } from '../utils/new/zeroEx';
+const getFundComponents = require('../utils/new/getFundComponents');
+const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../new/deploy/deploy-system');
+const {deploy} = require('../../../new/deploy/deploy-contract');
 
 describe('fund-0x-trading', () => {
-  let environment;
   let deployer, manager, investor;
   let defaultTxOpts, managerTxOpts, investorTxOpts;
-  let addresses, contracts;
-  let erc20ProxyAddress, zeroExConfigs;
+  let contracts;
+  let mln, zrx, weth, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
   let signedOrder1, signedOrder2, signedOrder3, signedOrder4;
   let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    const accounts = await environment.eth.getAccounts();
+    const accounts = await web3.eth.getAccounts();
     [deployer, manager, investor] = accounts;
+
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    contracts = deployment.contracts;
+
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
@@ -47,65 +53,42 @@ describe('fund-0x-trading', () => {
       'cancelOrder',
     )
 
-    const system = await deployAndGetSystem(environment);
-    addresses = system.addresses;
-    contracts = system.contracts;
-    zeroExConfigs = addresses.exchangeConfigs[EXCHANGES.ZERO_EX];
+    mln = contracts.MLN;
+    zrx = contracts.ZRX;
+    weth = contracts.WETH;
+    priceSource = contracts.TestingPriceFeed;
+    version = contracts.Version;
+    zeroExExchange = contracts.Exchange;
+    zeroExAdapter = contracts.ZeroExV2Adapter;
+    erc20Proxy = contracts.ERC20Proxy;
 
-    const {
-      mln,
-      priceSource,
-      version: fundFactory,
-      weth,
-      zeroExExchange,
-      zrx
-    } = contracts;
-
+    // TODO: can we factor into setupInvestedTestFund?
     const fundName = stringToBytes('Test fund', 32);
-    await fundFactory.methods
+    await version.methods
       .beginSetup(
         fundName,
         [],
         [],
         [],
-        [zeroExConfigs.exchange.toString()],
-        [zeroExConfigs.adapter.toString()],
-        weth.options.address.toString(),
+        [zeroExExchange.options.address],
+        [zeroExAdapter.options.address],
+        weth.options.address,
         [
-          mln.options.address.toString(),
-          weth.options.address.toString()
+          mln.options.address,
+          weth.options.address
         ]
       )
       .send(managerTxOpts);
-    await fundFactory.methods.createAccounting().send(managerTxOpts);
-    await fundFactory.methods.createFeeManager().send(managerTxOpts);
-    await fundFactory.methods.createParticipation().send(managerTxOpts);
-    await fundFactory.methods.createPolicyManager().send(managerTxOpts);
-    await fundFactory.methods.createShares().send(managerTxOpts);
-    await fundFactory.methods.createTrading().send(managerTxOpts);
-    await fundFactory.methods.createVault().send(managerTxOpts);
-    const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+    await version.methods.createAccounting().send(managerTxOpts);
+    await version.methods.createFeeManager().send(managerTxOpts);
+    await version.methods.createParticipation().send(managerTxOpts);
+    await version.methods.createPolicyManager().send(managerTxOpts);
+    await version.methods.createShares().send(managerTxOpts);
+    await version.methods.createTrading().send(managerTxOpts);
+    await version.methods.createVault().send(managerTxOpts);
+    const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
-    const routes = await hub.methods.routes().call();
-    contracts.fund = {
-      accounting: getContract(
-        environment,
-        CONTRACT_NAMES.ACCOUNTING,
-        routes.accounting,
-      ),
-      participation: getContract(
-        environment,
-        CONTRACT_NAMES.PARTICIPATION,
-        routes.participation,
-      ),
-      trading: getContract(environment, CONTRACT_NAMES.TRADING, routes.trading),
-    };
-    addresses.fund = routes;
-
-    erc20ProxyAddress = await zeroExExchange.methods
-      .getAssetProxy(AssetProxyId.ERC20.toString())
-      .call();
+    fund = getFundComponents(hubAddress);
 
     const prices = await getUpdatedTestPrices();
     await priceSource.methods
@@ -119,39 +102,34 @@ describe('fund-0x-trading', () => {
     await weth.methods
       .transfer(investor, toWei('10', 'ether'))
       .send(defaultTxOpts);
-    const { participation } = contracts.fund;
     const offeredValue = toWei('1', 'ether');
     const wantedShares = toWei('1', 'ether');
     const amguAmount = toWei('.01', 'ether');
     await weth.methods
-      .approve(participation.options.address, offeredValue)
+      .approve(fund.participation.options.address, offeredValue)
       .send(investorTxOpts);
-    await participation.methods
+    await fund.participation.methods
       .requestInvestment(
         offeredValue,
         wantedShares,
         weth.options.address,
-      )
-      .send({ ...investorTxOpts, value: amguAmount });
-    await participation.methods
+      ).send({ ...investorTxOpts, value: amguAmount });
+    await fund.participation.methods
       .executeRequestFor(investor)
       .send(investorTxOpts);
     await zrx.methods
-      .transfer(addresses.fund.vault, toWei('10', 'ether'))
+      .transfer(fund.vault.options.address, toWei('10', 'ether'))
       .send(defaultTxOpts);
 
   });
 
-  test('third party makes and validates an off-chain order', async () => {
-    const { mln, weth } = contracts;
-
+  test('third party makes and validates an off-chain order (1)', async () => {
     const makerAddress = deployer;
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
-      zeroExConfigs.exchange,
+      zeroExExchange.options.address,
       {
         makerAddress,
         makerTokenAddress: mln.options.address,
@@ -162,12 +140,11 @@ describe('fund-0x-trading', () => {
     );
 
     await mln.methods
-      .approve(erc20ProxyAddress, makerAssetAmount)
+      .approve(erc20Proxy.options.address, makerAssetAmount)
       .send(defaultTxOpts);
 
-    signedOrder1 = await signZeroExOrder(environment, unsignedOrder, deployer);
+    signedOrder1 = await signZeroExOrder(unsignedOrder, deployer);
     const signatureValid = await isValidZeroExSignatureOffChain(
-      environment,
       unsignedOrder,
       signedOrder1.signature,
       deployer
@@ -176,18 +153,18 @@ describe('fund-0x-trading', () => {
     expect(signatureValid).toBeTruthy();
   });
 
+  // TODO: fix problem with ecSignOrderAsync error for this to pass
   test('manager takes order through 0x adapter', async () => {
-    const { mln, weth } = contracts;
-    const { trading } = contracts.fund;
+    const { trading } = fund;
     const fillQuantity = signedOrder1.takerAssetAmount;
 
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const preMlnFund = await mln.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const preWethDeployer = await weth.methods.balanceOf(deployer).call();
     const preWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
 
     await trading.methods
@@ -221,11 +198,11 @@ describe('fund-0x-trading', () => {
 
     const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const postMlnFund = await mln.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const postWethDeployer = await weth.methods.balanceOf(deployer).call();
     const postWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const heldInExchange = await trading.methods
       .updateAndGetQuantityHeldInExchange(weth.options.address)
@@ -254,9 +231,7 @@ describe('fund-0x-trading', () => {
     ).toBe(true);
   });
 
-  test('third party makes and validates an off-chain order', async () => {
-    const { mln, weth } = contracts;
-
+  test('third party makes and validates an off-chain order (2)', async () => {
     const makerAddress = deployer;
     const takerFee = new BN(toWei('0.0001', 'ether'));
 
@@ -264,8 +239,7 @@ describe('fund-0x-trading', () => {
     const takerAssetAmount = toWei('0.05', 'Ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
-      zeroExConfigs.exchange,
+      zeroExExchange.options.address,
       {
         feeRecipientAddress: investor,
         makerAddress,
@@ -278,12 +252,11 @@ describe('fund-0x-trading', () => {
     );
 
     await mln.methods
-      .approve(erc20ProxyAddress, makerAssetAmount)
+      .approve(erc20Proxy.options.address, makerAssetAmount)
       .send(defaultTxOpts);
 
-    signedOrder2 = await signZeroExOrder(environment, unsignedOrder, deployer);
+    signedOrder2 = await signZeroExOrder(unsignedOrder, deployer);
     const signatureValid = await isValidZeroExSignatureOffChain(
-      environment,
       unsignedOrder,
       signedOrder2.signature,
       deployer
@@ -293,20 +266,19 @@ describe('fund-0x-trading', () => {
   });
 
   test('fund with enough ZRX takes the above order', async () => {
-    const { mln, weth, zrx } = contracts;
-    const { trading } = contracts.fund;
+    const { trading } = fund;
     const fillQuantity = signedOrder2.takerAssetAmount;
 
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const preMlnFund = await mln.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const preWethDeployer = await weth.methods.balanceOf(deployer).call();
     const preWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const preZrxFund = await zrx.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
 
     await trading.methods
@@ -340,14 +312,14 @@ describe('fund-0x-trading', () => {
 
     const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const postMlnFund = await mln.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const postWethDeployer = await weth.methods.balanceOf(deployer).call();
     const postWethFund = await weth.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
     const postZrxFund = await zrx.methods
-      .balanceOf(addresses.fund.vault)
+      .balanceOf(fund.vault.options.address)
       .call();
 
     const heldInExchange = await trading.methods
@@ -383,16 +355,14 @@ describe('fund-0x-trading', () => {
   });
 
   test('Make order through the fund', async () => {
-    const { mln, weth } = contracts;
-    const { trading } = contracts.fund;
+    const { trading } = fund;
 
     const makerAddress = trading.options.address;
     const makerAssetAmount = toWei('0.5', 'ether');
     const takerAssetAmount = toWei('0.05', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
-      zeroExConfigs.exchange,
+      zeroExExchange.options.address,
       {
         makerAddress,
         makerTokenAddress: mln.options.address,
@@ -401,7 +371,7 @@ describe('fund-0x-trading', () => {
         takerAssetAmount,
       },
     );
-    signedOrder3 = await signZeroExOrder(environment, unsignedOrder, manager);
+    signedOrder3 = await signZeroExOrder(unsignedOrder, manager);
     await trading.methods
       .callOnExchange(
         0,
@@ -433,7 +403,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAllowance = await mln.methods
       .allowance(
         trading.options.address,
-        erc20ProxyAddress,
+        erc20Proxy.options.address,
       )
       .call();
     expect(
@@ -478,8 +448,7 @@ describe('fund-0x-trading', () => {
   // );
 
   test('Third party takes the order made by the fund', async () => {
-    const { mln, weth, zeroExExchange } = contracts;
-    const { accounting } = contracts.fund;
+    const { accounting } = fund;
 
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const preMlnFundHoldings = await accounting.methods
@@ -491,7 +460,7 @@ describe('fund-0x-trading', () => {
       .call()
 
     await weth.methods
-      .approve(erc20ProxyAddress, signedOrder3.takerAssetAmount)
+      .approve(erc20Proxy.options.address, signedOrder3.takerAssetAmount)
       .send(defaultTxOpts);
 
     const res = await zeroExExchange.methods
@@ -536,16 +505,14 @@ describe('fund-0x-trading', () => {
 
   // tslint:disable-next-line:max-line-length
   test("Fund can make another make order for same asset (After it's inactive)", async () => {
-    const { mln, weth } = contracts;
-    const { trading } = contracts.fund;
+    const { trading } = fund;
 
     const makerAddress = trading.options.address;
     const makerAssetAmount = toWei('0.05', 'Ether');
     const takerAssetAmount = toWei('0.5', 'Ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
-      zeroExConfigs.exchange,
+      zeroExExchange.options.address,
       {
         makerAddress,
         makerTokenAddress: weth.options.address,
@@ -555,7 +522,7 @@ describe('fund-0x-trading', () => {
       },
     );
 
-    signedOrder4 = await signZeroExOrder(environment, unsignedOrder, manager);
+    signedOrder4 = await signZeroExOrder(unsignedOrder, manager);
     await trading.methods
       .callOnExchange(
         0,
@@ -588,7 +555,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAllowance = await weth.methods
         .allowance(
           trading.options.address,
-          erc20ProxyAddress,
+          erc20Proxy.options.address,
         )
         .call();
     expect(
@@ -597,8 +564,7 @@ describe('fund-0x-trading', () => {
   });
 
    test('Fund can cancel the order using just the orderId', async () => {
-    const { mln, weth, zeroExExchange } = contracts;
-    const { trading } = contracts.fund;
+    const { trading } = fund;
 
      const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder4);
      await trading.methods
@@ -627,7 +593,7 @@ describe('fund-0x-trading', () => {
      const makerAssetAllowance = await mln.methods
        .allowance(
          trading.options.address,
-         erc20ProxyAddress,
+         erc20Proxy.options.address,
        )
        .call();
 
@@ -636,11 +602,11 @@ describe('fund-0x-trading', () => {
    });
 
   test('Expired order is removed from open maker order', async () => {
-    const { mln, weth, zeroExExchange } = contracts;
-    const { trading } = contracts.fund;
+    const { trading } = fund;
 
+    // TODO: factor out to use increaseTime.js
     // Increment next block time and mine block
-    environment.eth.currentProvider.send(
+    web3.eth.currentProvider.send(
       {
         id: 123,
         jsonrpc: '2.0',
@@ -649,7 +615,7 @@ describe('fund-0x-trading', () => {
       },
       (err, res) => {},
     );
-    environment.eth.currentProvider.send(
+    web3.eth.currentProvider.send(
       {
         id: 124,
         jsonrpc: '2.0',
@@ -664,8 +630,7 @@ describe('fund-0x-trading', () => {
     const duration = 50;
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
-      zeroExConfigs.exchange,
+      zeroExExchange.options.address,
       {
         duration,
         makerAddress,
@@ -675,7 +640,7 @@ describe('fund-0x-trading', () => {
         takerAssetAmount,
       },
     );
-    const signedOrder5 = await signZeroExOrder(environment, unsignedOrder, manager);
+    const signedOrder5 = await signZeroExOrder(unsignedOrder, manager);
     await trading.methods
       .callOnExchange(
         0,
@@ -707,7 +672,7 @@ describe('fund-0x-trading', () => {
     const makerAssetAllowance = await weth.methods
       .allowance(
         trading.options.address,
-        erc20ProxyAddress,
+        erc20Proxy.options.address,
       )
       .call();
 

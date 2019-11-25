@@ -1,30 +1,39 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { Environment, Tracks } from '~/utils/environment/Environment';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { increaseTime } from '~/utils/evm/increaseTime';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul } from '../../utils/new/BNmath';
 import { getFunctionSignature } from '../../utils/new/metadata';
 import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
+const getFundComponents = require('../../utils/new/getFundComponents');
+const updateTestingPriceFeed = require('../../utils/new/updateTestingPriceFeed');
+const increaseTime = require('../../utils/new/increaseTime');
+const getAllBalances = require('../../utils/new/getAllBalances');
+const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
+const {deploy, fetchContract} = require('../../../../new/deploy/deploy-contract');
+const web3 = require('../../../../new/deploy/get-web3');
+const deploySystem = require('../../../../new/deploy/deploy-system');
 
 describe('Happy Path', () => {
-  let environment, user, defaultTxOpts;
-  let engine, mln, priceSource, trading, weth;
+  let user, defaultTxOpts;
+  let engine, mln, fund, weth, engineAdapter, priceSource, priceTolerance;
   let routes;
-  let mlnTokenInfo, wethTokenInfo;
   let exchangeIndex, mlnPrice, takerQuantity;
   let takeOrderSignature, takeOrderSignatureBytes;
 
   beforeAll(async () => {
-    environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(Tracks.TESTING);
-
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const contracts = deployment.contracts;
+    engine = contracts.Engine;
+    engineAdapter = contracts.EngineAdapter;
+    priceSource = contracts.TestingPriceFeed;
+    priceTolerance = contracts.PriceTolerance;
+    mln = contracts.MLN;
+    weth = contracts.WETH;
 
     takeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
@@ -34,94 +43,61 @@ describe('Happy Path', () => {
       takeOrderSignature
     );
 
-    const { exchangeConfigs, melonContracts } = environment.deployment;
-
-    engine = getContract(
-      environment,
-      CONTRACT_NAMES.ENGINE,
-      melonContracts.engine.toString(),
-    );
     await engine.methods.setAmguPrice(toWei('1000', 'gwei')).send(defaultTxOpts);
 
-    routes = await setupInvestedTestFund(environment);
+    fund = await setupInvestedTestFund(contracts, user);
 
-    priceSource = getContract(
-      environment,
-      CONTRACT_NAMES.TESTING_PRICEFEED,
-      melonContracts.priceSource.toString(),
-    );
-
-    trading = getContract(
-      environment,
-      CONTRACT_NAMES.TRADING,
-      routes.tradingAddress.toString(),
-    );
-
-    mlnTokenInfo = getTokenBySymbol(environment, 'MLN');
-    wethTokenInfo = getTokenBySymbol(environment, 'WETH');
-
-    mln = getContract(
-      environment,
-      CONTRACT_NAMES.PREMINED_TOKEN,
-      mlnTokenInfo.address,
-    );
-    weth = getContract(environment, CONTRACT_NAMES.WETH, wethTokenInfo.address);
-
-    const policyManager = getContract(
-      environment,
-      CONTRACT_NAMES.POLICY_MANAGER,
-      routes.policyManagerAddress.toString(),
-    );
-    await policyManager.methods
+    await fund.policyManager.methods
       .register(
         takeOrderSignatureBytes,
-        melonContracts.policies.priceTolerance.toString(),
+        priceTolerance.options.address,
       )
       .send(defaultTxOpts);
 
-    const exchangeInfo = await trading.methods.getExchangeInfo().call();
+    const exchangeInfo = await fund.trading.methods.getExchangeInfo().call();
     exchangeIndex = exchangeInfo[1].findIndex(
       e =>
         e.toLowerCase() ===
-        exchangeConfigs[EXCHANGES.MELON_ENGINE].adapter.toLowerCase(),
+        engineAdapter.options.address.toLowerCase(),
     );
     mlnPrice = (await priceSource.methods
-      .getPrice(mlnTokenInfo.address)
+      .getPrice(mln.options.address)
       .call())[0];
     takerQuantity = toWei('0.001', 'ether'); // Mln sell qty
   });
 
+  // TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
   it('Trade on Melon Engine', async () => {
-    await increaseTime(environment, 86400 * 32);
+    await increaseTime(86400 * 32);
 
     await engine.methods.thaw().send(defaultTxOpts);
 
     const makerQuantity = BNExpMul(
-      new BN(takerQuantity),
-      new BN(mlnPrice),
+      new BN(takerQuantity.toString()),
+      new BN(mlnPrice.toString()),
     ).toString();
 
     await mln.methods
-      .transfer(routes.vaultAddress.toString(), takerQuantity)
+      .transfer(fund.vault.options.address, takerQuantity)
       .send(defaultTxOpts);
 
     const preliquidEther = await engine.methods.liquidEther().call();
     const preFundWeth = await weth.methods
-      .balanceOf(routes.vaultAddress.toString())
+      .balanceOf(fund.vault.options.address)
       .call();
     const preFundMln = await mln.methods
-      .balanceOf(routes.vaultAddress.toString())
+      .balanceOf(fund.vault.options.address)
       .call();
 
-    await trading.methods
+    await fund.trading.methods
       .callOnExchange(
         exchangeIndex,
         takeOrderSignature,
         [
           emptyAddress,
           emptyAddress,
-          wethTokenInfo.address,
-          mlnTokenInfo.address,
+          weth.options.address,
+          mln.options.address,
           emptyAddress,
           emptyAddress,
         ],
@@ -135,39 +111,41 @@ describe('Happy Path', () => {
 
     const postliquidEther = await engine.methods.liquidEther().call();
     const postFundWeth = await weth.methods
-      .balanceOf(routes.vaultAddress.toString())
+      .balanceOf(fund.vault.options.address)
       .call();
     const postFundMln = await mln.methods
-      .balanceOf(routes.vaultAddress.toString())
+      .balanceOf(fund.vault.options.address)
       .call();
 
     expect(
-      new BN(preFundMln).sub(new BN(postFundMln)).eq(new BN(takerQuantity))
+      new BN(preFundMln.toString())
+        .sub(new BN(postFundMln.toString()))
+        .eq(new BN(takerQuantity.toString()))
     ).toBe(true);
     expect(
-      new BN(postFundWeth).sub(new BN(preFundWeth)).eq(
-        new BN(preliquidEther).sub(new BN(postliquidEther))
+      new BN(postFundWeth.toString()).sub(new BN(preFundWeth.toString())).eq(
+        new BN(preliquidEther.toString()).sub(new BN(postliquidEther.toString()))
       )
     ).toBe(true);
   });
 
   test('Maker quantity as minimum returned WETH is respected', async () => {
-    const makerQuantity = new BN(mlnPrice).div(new BN(2)).toString();
+    const makerQuantity = new BN(mlnPrice.toString()).div(new BN(2)).toString();
 
     await mln.methods
-      .transfer(routes.vaultAddress.toString(), takerQuantity)
+      .transfer(fund.vault.options.address, takerQuantity)
       .send(defaultTxOpts);
 
     await expect(
-      trading.methods
+      fund.trading.methods
         .callOnExchange(
           exchangeIndex,
           takeOrderSignature,
           [
             emptyAddress,
             emptyAddress,
-            wethTokenInfo.address,
-            mlnTokenInfo.address,
+            weth.options.address,
+            mln.options.address,
             emptyAddress,
             emptyAddress,
           ],

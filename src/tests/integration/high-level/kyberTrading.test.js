@@ -1,110 +1,68 @@
 import { BN, padLeft, toWei } from 'web3-utils';
 
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { Environment, Tracks } from '~/utils/environment/Environment';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
 import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
+const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
+const web3 = require('../../../../new/deploy/get-web3');
+const deploySystem = require('../../../../new/deploy/deploy-system');
 
 describe('Happy Path', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mln, weth;
-  let routes;
-  let accounting, kyberNetworkProxy, trading;
+  let fund;
+  let accounting, kyberNetworkProxy, trading, policyManager, conversionRates;
+  let testingPriceFeed;
   let exchangeIndex;
 
   beforeAll(async () => {
-    environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(Tracks.TESTING);
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
+    defaultTxOpts = {from: user, gas: 8000000};
 
-    user = environment.wallet.address;
-    defaultTxOpts = { from: user, gas: 8000000 };
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const contracts = deployment.contracts;
 
-    const {
-      exchangeConfigs,
-      melonContracts,
-      thirdPartyContracts,
-    } = environment.deployment;
+    fund = await setupInvestedTestFund(contracts, user);
 
-    const wethTokenInfo = getTokenBySymbol(environment, 'WETH');
-    const mlnTokenInfo = getTokenBySymbol(environment, 'MLN');
-
-    mln = getContract(
-      environment,
-      CONTRACT_NAMES.PREMINED_TOKEN,
-      mlnTokenInfo.address,
-    );
-    weth = getContract(environment, CONTRACT_NAMES.WETH, wethTokenInfo.address);
-
-    routes = await setupInvestedTestFund(environment);
-
-    accounting = getContract(
-      environment,
-      CONTRACT_NAMES.ACCOUNTING,
-      routes.accountingAddress.toString(),
-    );
-
-    kyberNetworkProxy = getContract(
-      environment,
-      CONTRACT_NAMES.KYBER_NETWORK_PROXY,
-      exchangeConfigs[EXCHANGES.KYBER].exchange.toString(),
-    );
-
-    trading = getContract(
-      environment,
-      CONTRACT_NAMES.TRADING,
-      routes.tradingAddress.toString(),
-    );
+    weth = contracts.WETH;
+    mln = contracts.MLN;
+    kyberNetworkProxy = contracts.KyberNetworkProxy;
+    conversionRates = contracts.ConversionRates;
+    testingPriceFeed = contracts.TestingPriceFeed;
+    policyManager = fund.policyManager;
+    trading = fund.trading;
+    accounting = fund.accounting;
 
     const exchangeInfo = await trading.methods.getExchangeInfo().call();
     exchangeIndex = exchangeInfo[1].findIndex(
-      e =>
-        e.toLowerCase() ===
-        exchangeConfigs[EXCHANGES.KYBER].adapter.toLowerCase(),
+      e => e.toLowerCase() === contracts.KyberAdapter.options.address.toLowerCase()
     );
 
-    const policyManager = getContract(
-      environment,
-      CONTRACT_NAMES.POLICY_MANAGER,
-      routes.policyManagerAddress.toString(),
-    );
     await policyManager.methods
       .register(
         takeOrderSignatureBytes,
-        melonContracts.policies.priceTolerance.toString(),
-      )
-      .send(defaultTxOpts);
+        contracts.PriceTolerance.options.address
+      ).send(defaultTxOpts);
 
     // Setting rates on kyber reserve
-    const priceSource = getContract(
-      environment,
-      CONTRACT_NAMES.PRICE_SOURCE_INTERFACE,
-      melonContracts.priceSource.toString(),
-    );
-    const { 0: mlnPrice } = await priceSource.methods
-      .getPrice(mlnTokenInfo.address)
+    const { 0: mlnPrice } = await testingPriceFeed.methods
+      .getPrice(mln.options.address)
       .call();
-    const ethPriceInMln = BNExpInverse(new BN(mlnPrice)).toString()
+    const ethPriceInMln = BNExpInverse(new BN(mlnPrice.toString())).toString()
 
-    const blockNumber = (await environment.eth.getBlock('latest')).number;
-    const conversionRates = getContract(
-      environment,
-      CONTRACT_NAMES.CONVERSION_RATES,
-      thirdPartyContracts.exchanges.kyber.conversionRates.toString(),
-    );
+    const blockNumber = (await web3.eth.getBlock('latest')).number;
+
     await conversionRates.methods
       .setBaseRate(
-        [mlnTokenInfo.address],
+        [mln.options.address],
         [ethPriceInMln],
         [mlnPrice],
-        ['0x0'],
-        ['0x0'],
+        ['0x0000000000000000000000000000'],
+        ['0x0000000000000000000000000000'],
         blockNumber,
         [0],
       )
@@ -123,11 +81,11 @@ describe('Happy Path', () => {
     const makerAsset = mln.options.address;
     const makerQuantity = BNExpMul(
       new BN(takerQuantity),
-      new BN(expectedRate),
+      new BN(expectedRate.toString()),
     ).toString();
 
     const preMlnBalance = await mln.methods
-      .balanceOf(routes.vaultAddress.toString())
+      .balanceOf(fund.vault.options.address)
       .call();
 
     await trading.methods
@@ -151,10 +109,10 @@ describe('Happy Path', () => {
       .send(defaultTxOpts);
 
     const postMlnBalance = await mln.methods
-      .balanceOf(routes.vaultAddress.toString())
+      .balanceOf(fund.vault.options.address)
       .call();
 
-    const mlnBalanceDiff = new BN(postMlnBalance).sub(new BN(preMlnBalance));
+    const mlnBalanceDiff = new BN(postMlnBalance.toString()).sub(new BN(preMlnBalance.toString()));
     expect(mlnBalanceDiff.gt(new BN(makerQuantity))).toBe(true);
 
     const holdingsRes = await accounting.methods.getFundHoldings().call();
@@ -166,8 +124,8 @@ describe('Happy Path', () => {
       holding => holding.address === weth.options.address,
     );
     expect(
-      new BN(wethHolding.value)
-        .add(new BN(takerQuantity))
+      new BN(wethHolding.value.toString())
+        .add(new BN(takerQuantity.toString()))
         .eq(new BN(toWei('1', 'ether'))),
     ).toBe(true);
   });

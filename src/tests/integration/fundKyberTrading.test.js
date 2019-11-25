@@ -299,7 +299,7 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(postWethFund).toEqual(preWethFund);
+    expect(postWethFund).toBe(preWethFund);
     expect( new BN(postMlnFund.toString()))
       .toEqualBN(new BN(preMlnFund.toString()).sub(new BN(takerQuantity.toString())));
     expect(new BN(postEurFund.toString()))

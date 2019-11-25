@@ -1,50 +1,37 @@
 import { toWei } from 'web3-utils';
-
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
-import { Environment, Tracks } from '~/utils/environment/Environment';
 import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
 import { CONTRACT_NAMES } from '../utils/new/constants';
+const getFundComponents = require('../utils/new/getFundComponents');
+const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../new/deploy/deploy-system');
 
 describe('amgu', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let baseToken, quoteToken;
-  let engine, fundFactory, priceSource;
+  let engine, version, priceSource;
   let amguPrice;
   let fundName;
 
   beforeAll(async () => {
-    environment = await deployAndInitTestEnv();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    const {
-      melonContracts,
-      thirdPartyContracts,
-    } = environment.deployment;
+    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const contracts = deployment.contracts;
 
-    [quoteToken, baseToken] = thirdPartyContracts.tokens;
+    engine = contracts.Engine;
+    version = contracts.Version;
+    priceSource = contracts.TestingPriceFeed;
 
-    engine = getContract(
-      environment,
-      CONTRACT_NAMES.ENGINE,
-      melonContracts.engine
-    );
-
-    fundFactory = getContract(
-      environment,
-      CONTRACT_NAMES.FUND_FACTORY,
-      melonContracts.version
-    );
-
-    priceSource = getContract(
-      environment,
-      CONTRACT_NAMES.TESTING_PRICEFEED,
-      melonContracts.priceSource
-    );
+    // [quoteToken, baseToken] = thirdPartyContracts.tokens;
+    quoteToken = contracts.WETH;
+    baseToken = contracts.MLN;
 
     amguPrice = '1000000000';
-    fundName = `test-fund-${Math.random().toString(36).substr(2, 4)}`;
+    fundName = `test-fund-${Date.now()}`;
   });
 
   it('Set amgu and check its usage', async () => {
@@ -54,40 +41,37 @@ describe('amgu', () => {
       .send(defaultTxOpts)
     const newAmguPrice = await engine.methods.getAmguPrice().call();
 
-    expect(newAmguPrice).toBe(amguPrice);
-    expect(newAmguPrice).not.toBe(oldAmguPrice);
+    expect(newAmguPrice.toString()).toBe(amguPrice.toString());
+    expect(newAmguPrice.toString()).not.toBe(oldAmguPrice.toString());
 
-    if (environment.track === Tracks.TESTING) {
-      const newPrice = toWei('2', 'ether');
-      await priceSource.methods
-        .update([baseToken.address], [newPrice])
-        .send(defaultTxOpts)
+    const newPrice = toWei('2', 'ether');
+    await priceSource.methods
+      .update([baseToken.options.address], [newPrice])
+      .send(defaultTxOpts)
 
-      const price = await priceSource.methods
-        .getPrices([baseToken.address])
-        .call();
+    const price = await priceSource.methods
+      .getPrices([baseToken.options.address])
+      .call();
 
-      expect(price[0][0]).toBe(newPrice);
-    }
+    expect(price[0][0].toString()).toBe(newPrice.toString());
 
-    const preBalance = await environment.eth.getBalance(user);
+    const preBalance = await web3.eth.getBalance(user);
 
-    const exchangeConfigsValues = Object.values(environment.deployment.exchangeConfigs);
-    const beginSetupTx = fundFactory.methods
+    const beginSetupTx = version.methods
       .beginSetup(
         stringToBytes(fundName, 32),
         [],
         [],
         [],
-        exchangeConfigsValues.map(e => e.exchange.toString()),
-        exchangeConfigsValues.map(e => e.adapter.toString()),
-        quoteToken.address,
-        [baseToken.address, quoteToken.address]
+        [],
+        [],
+        quoteToken.options.address,
+        [baseToken.options.address, quoteToken.options.address]
       );
     const estimatedGas = await beginSetupTx.estimateGas();
     const result = await beginSetupTx.send(defaultTxOpts);
 
-    const postBalance = await environment.eth.getBalance(user);
+    const postBalance = await web3.eth.getBalance(user);
 
     const diffQ = preBalance - postBalance;
 

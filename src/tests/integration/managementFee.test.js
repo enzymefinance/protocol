@@ -240,8 +240,6 @@ describe('management-fee', () => {
     // );
     expect(new BN(postWethFund.toString()).eq(new BN(preWethFund.toString()))).toBe(true);
     expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
-    console.log(preFundCalcs.feesInDenominationAsset.toString())
-    console.log(expectedFeeInDenominationAsset)
     expect(
       new BN(preFundCalcs.feesInDenominationAsset.toString()).eq(
         expectedFeeInDenominationAsset,
