@@ -1,13 +1,8 @@
-import { createPrice, isEqual, createQuantity } from '@melonproject/token-math';
-
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { update } from './update';
-import { deployTestingPriceFeed } from './deployTestingPriceFeed';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 
 describe('update', () => {
-  const shared: any = {};
+  let environment, deployer, altUser;
+  let defaultTxOpts, altUserTxOpts;
 
   beforeAll(async () => {
     shared.env = await initTestEnvironment();
