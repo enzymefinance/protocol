@@ -1,8 +1,9 @@
+import { toWei, padLeft } from 'web3-utils';
+import { AssetProxyId } from '@0x/types';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
-import { toWei, padLeft } from 'web3-utils';
 import { getContract } from '~/utils/solidity/getContract';
 import {
   createUnsignedZeroExOrder,
@@ -139,7 +140,21 @@ test('Make ethfinex order from fund and take it from account in which makerToken
     signedOrder.signature,
   ).send(defaultTxOpts);
 
-  const result = ethfinexExchange.methods
+  const erc20ProxyAddress = await ethfinexExchange.methods
+    .getAssetProxy(AssetProxyId.ERC20)
+    .call();
+
+  const mln = getContract(
+    environment,
+    CONTRACT_NAMES.STANDARD_TOKEN,
+    mlnInfo.address,
+  );
+
+  await mln.methods
+    .approve(erc20ProxyAddress, takerAssetAmount)
+    .send(defaultTxOpts);
+
+  const result = await ethfinexExchange.methods
     .fillOrder(
       unsignedOrder,
       takerAssetAmount,
