@@ -2,6 +2,7 @@ import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { AssetProxyId } from '@0x/types';
+import { orderHashUtils } from '@0x/order-utils';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
@@ -20,7 +21,7 @@ describe('make0xOrder', () => {
   let routes;
   let trading;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     environment = await deployAndInitTestEnv();
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
@@ -60,9 +61,7 @@ describe('make0xOrder', () => {
     exchangeIndex = exchanges[1].findIndex(
       e => e.toLowerCase() === exchangeConfig.adapter.toLowerCase(),
     );
-  });
 
-  it('Make 0x order from fund and take it from account', async () => {
     const makeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'makeOrder',
@@ -115,7 +114,9 @@ describe('make0xOrder', () => {
       signedOrder.takerAssetData,
       signedOrder.signature,
     ).send(defaultTxOpts);
+  });
 
+  it('Make 0x order from fund and take it from account', async () => {
     const erc20ProxyAddress = await exchange.methods
       .getAssetProxy(AssetProxyId.ERC20)
       .call();
@@ -134,4 +135,42 @@ describe('make0xOrder', () => {
 
     expect(result).toBeTruthy();
   });
+
+  // tslint:disable-next-line:max-line-length
+  it('Previously made 0x order cancelled and not takeable anymore', async () => {
+    const cancelOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'cancelOrder',
+    );
+    const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
+
+    await trading.methods
+      .callOnExchange(
+        exchangeIndex,
+        cancelOrderSignature,
+        [
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+        ],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        orderHashHex,
+        '0x0',
+        '0x0',
+        '0x0',
+      ).send(defaultTxOpts);
+
+    await expect(
+      exchange.methods
+        .fillOrder(
+          unsignedOrder,
+          unsignedOrder.takerAssetAmount,
+          signedOrder.signature,
+        ).send(defaultTxOpts),
+    ).rejects.toThrow('ORDER_UNFILLABLE');
+  });
 });
+
