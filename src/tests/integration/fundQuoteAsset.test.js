@@ -1,4 +1,4 @@
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
@@ -6,7 +6,6 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { stringToBytes } from '../utils/new/formatting';
 import { BNExpMul } from '../utils/new/BNmath';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
@@ -346,15 +345,15 @@ describe('fund-quote-asset', () => {
         0,
         makeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           dgx.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-        randomHexOfSize(20),
+        randomHex(20),
         '0x0',
         '0x0',
         '0x0',

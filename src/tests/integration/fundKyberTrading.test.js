@@ -1,18 +1,21 @@
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, ramdomHex } from 'web3-utils';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 
 import { BNExpMul } from '../utils/new/BNmath';
-import { CONTRACT_NAMES, EXCHANGES, EMPTY_ADDRESS } from '../utils/new/constants';
+import {
+  CONTRACT_NAMES,
+  EXCHANGES,
+  EMPTY_ADDRESS,
+  KYBER_ETH_ADDRESS,
+} from '../utils/new/constants';
 import { getFunctionSignature } from '../utils/new/metadata';
 
 describe('fund-kyber-trading', () => {
@@ -149,7 +152,7 @@ describe('fund-kyber-trading', () => {
     const makerAsset = mln.options.address;
 
     const { 0: expectedRate } = await kyberNetworkProxy.methods
-      .getExpectedRate(kyberEthAddress, makerAsset, takerQuantity)
+      .getExpectedRate(KYBER_ETH_ADDRESS, makerAsset, takerQuantity)
       .call(defaultTxOpts);
 
     const makerQuantity = BNExpMul(
@@ -178,7 +181,7 @@ describe('fund-kyber-trading', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHexOfSize(20),
+        randomHex(20),
         '0x0',
         '0x0',
         '0x0',
@@ -207,7 +210,7 @@ describe('fund-kyber-trading', () => {
     const makerAsset = weth.options.address;
 
     const { 0: expectedRate } = await kyberNetworkProxy.methods
-      .getExpectedRate(takerAsset, kyberEthAddress, takerQuantity)
+      .getExpectedRate(takerAsset, KYBER_ETH_ADDRESS, takerQuantity)
       .call(defaultTxOpts);
 
     const makerQuantity = BNExpMul(
@@ -235,7 +238,7 @@ describe('fund-kyber-trading', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHexOfSize(20),
+        randomHex(20),
         '0x0',
         '0x0',
         '0x0',
@@ -295,7 +298,7 @@ describe('fund-kyber-trading', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHexOfSize(20),
+        randomHex(20),
         '0x0',
         '0x0',
         '0x0',
@@ -350,7 +353,7 @@ describe('fund-kyber-trading', () => {
             EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          randomHexOfSize(20),
+          randomHex(20),
           '0x0',
           '0x0',
           '0x0',

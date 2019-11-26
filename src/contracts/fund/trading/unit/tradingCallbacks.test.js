@@ -2,15 +2,16 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
-import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { randomHex } from 'web3-utils';
+import { getFunctionSignature } from '../utils/new/metadata';
 
 describe('tradingCallbacks', () => {
   let environment, user, defaultTxOpts;
   let mockAdapter;
   let mockSystem;
   let trading;
+  let makeOrderSignature,
 
   const mockExchange = randomHex(20);
 
@@ -20,6 +21,12 @@ describe('tradingCallbacks', () => {
     defaultTxOpts = { from: user, gas: 8000000 };
     mockSystem = await deployMockSystem(environment);
     user = environment.wallet.address;
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
     mockAdapter = await getContract(
       environment,
       CONTRACT_NAMES.MOCK_ADAPTER,
@@ -66,7 +73,7 @@ describe('tradingCallbacks', () => {
     await trading.methods
       .callOnExchange(
         0,
-        FunctionSignatures.makeOrder,
+        makeOrderSignature,
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,

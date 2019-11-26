@@ -1,10 +1,9 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
 import { getFunctionSignature } from '../../utils/new/metadata';
-import { CONTRACT_NAMES } from '../../utils/new/constants';
+import { CONTRACT_NAMES, TRACKS } from '../../utils/new/constants';
 import { deployUserWhitelist } from '~/contracts/fund/policies/compliance/transactions/deployUserWhitelist';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
@@ -22,7 +21,7 @@ describe('Happy Path', () => {
 
   beforeAll(async () => {
     environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(Tracks.TESTING);
+    expect(environment.track).toBe(TRACKS.TESTING);
 
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };

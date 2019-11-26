@@ -1,12 +1,14 @@
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { encodeFunctionSignature } from 'web3-eth-abi';
 
 describe('maxConcentration', () => {
   let environment, user, defaultTxOpts;
   let mockSystem;
+  let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
@@ -15,6 +17,15 @@ describe('maxConcentration', () => {
     defaultTxOpts = { from: user, gas: 8000000 };
     mockSystem.quote = mockSystem.weth.options.address;
     mockSystem.nonQuote = mockSystem.mln.options.address;
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
+    makeOrderSignatureBytes = encodeFunctionSignature(
+      makeOrderSignature
+    );
   });
 
   it.each([

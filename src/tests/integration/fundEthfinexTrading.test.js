@@ -7,7 +7,6 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getFundComponents } from '~/utils/getFundComponents';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
@@ -17,7 +16,7 @@ import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '../utils/new/zeroEx';
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 import { stringToBytes } from '../utils/new/formatting';
 import { increaseTime } from '~/utils/evm';
 
@@ -249,7 +248,7 @@ test('Make order through the fund', async () => {
         0,
         0,
       ],
-      randomHexOfSize(20),
+      randomHex(20),
       order.makerAssetData,
       order.takerAssetData,
       signedOrder.signature,
@@ -354,7 +353,7 @@ test('Make order with native asset', async () => {
         0,
         0,
       ],
-      randomHexOfSize(20),
+      randomHex(20),
       signedOrder.makerAssetData,
       signedOrder.takerAssetData,
       signedOrder.signature,

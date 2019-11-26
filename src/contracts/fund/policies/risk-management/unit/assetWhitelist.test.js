@@ -1,13 +1,15 @@
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { randomHex, toChecksumAddress } from 'web3-utils';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { encodeFunctionSignature } from 'web3-eth-abi';
 
 describe('assetWhitelist', () => {
   let environment, user, defaultTxOpts;
   let assetArray;
+  let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
@@ -20,6 +22,15 @@ describe('assetWhitelist', () => {
       randomHex(20),
       randomHex(20),
     ].map(addr => toChecksumAddress(addr));
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
+    makeOrderSignatureBytes = encodeFunctionSignature(
+      makeOrderSignature
+    );
   });
 
   it('Create whitelist', async () => {

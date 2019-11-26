@@ -1,7 +1,6 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
@@ -9,7 +8,7 @@ import { getAllBalances } from '../utils/getAllBalances';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 import { BNExpMul } from '../utils/new/BNmath';
 import { stringToBytes } from '../utils/new/formatting';
 
@@ -192,12 +191,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [
           trade1.sellQuantity,
@@ -209,7 +208,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHexOfSize(20),
+        randomHex(20),
         '0x0',
         '0x0',
         '0x0',
@@ -369,12 +368,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         takeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity, 0],
         `0x${Number(orderId)
@@ -429,12 +428,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [
           trade2.sellQuantity,
@@ -446,7 +445,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHexOfSize(20),
+        randomHex(20),
         '0x0',
         '0x0',
         '0x0',
@@ -458,12 +457,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         cancelOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
         `0x${Number(orderId)
@@ -511,12 +510,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           i,
           takeOrderSignature,
           [
-            randomHexOfSize(20),
-            randomHexOfSize(20),
+            randomHex(20),
+            randomHex(20),
             weth.options.address,
             mln.options.address,
-            randomHexOfSize(20),
-            randomHexOfSize(20),
+            randomHex(20),
+            randomHex(20),
           ],
           [0, 0, 0, 0, 0, 0, `${ bnBuyQuantity }`, 0],
           `0x${Number(orderId)

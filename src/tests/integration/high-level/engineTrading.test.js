@@ -1,14 +1,18 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul } from '../../utils/new/BNmath';
 import { getFunctionSignature } from '../../utils/new/metadata';
-import { CONTRACT_NAMES, EXCHANGES, EMPTY_ADDRESS } from '../../utils/new/constants';
+import {
+  CONTRACT_NAMES,
+  EXCHANGES,
+  EMPTY_ADDRESS,
+  TRACKS,
+} from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -20,7 +24,7 @@ describe('Happy Path', () => {
 
   beforeAll(async () => {
     environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(Tracks.TESTING);
+    expect(environment.track).toBe(TRACKS.TESTING);
 
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };

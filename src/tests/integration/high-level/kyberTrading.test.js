@@ -1,15 +1,19 @@
 import { BN, padLeft, toWei } from 'web3-utils';
 
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
+import { encodeFunctionSignature } from 'web3-eth-abi';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
-import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
-import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
-import { CONTRACT_NAMES, EXCHANGES, EMPTY_ADDRESS } from '../../utils/new/constants';
+import {
+  CONTRACT_NAMES,
+  EXCHANGES,
+  EMPTY_ADDRESS,
+  KYBER_ETH_ADDRESS,
+  TRACKS,
+} from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -17,13 +21,22 @@ describe('Happy Path', () => {
   let routes;
   let accounting, kyberNetworkProxy, trading;
   let exchangeIndex;
+  let takeOrderSignature, takeOrderSignatureBytes;
 
   beforeAll(async () => {
     environment = await deployAndInitTestEnv();
-    expect(environment.track).toBe(Tracks.TESTING);
+    expect(environment.track).toBe(TRACKS.TESTING);
 
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
+
+    takeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+    takeOrderSignatureBytes = encodeFunctionSignature(
+      makeOrderSignature
+    );
 
     const {
       exchangeConfigs,
@@ -73,6 +86,7 @@ describe('Happy Path', () => {
       CONTRACT_NAMES.POLICY_MANAGER,
       routes.policyManagerAddress.toString(),
     );
+
     await policyManager.methods
       .register(
         takeOrderSignatureBytes,
@@ -115,7 +129,7 @@ describe('Happy Path', () => {
     const takerQuantity = toWei('0.1', 'ether');
 
     const { 1: expectedRate } = await kyberNetworkProxy.methods
-      .getExpectedRate(kyberEthAddress, mln.options.address, takerQuantity)
+      .getExpectedRate(KYBER_ETH_ADDRESS, mln.options.address, takerQuantity)
       .call(defaultTxOpts);
 
     // Minimum quantity of dest asset expected to get in return in the trade
@@ -132,7 +146,7 @@ describe('Happy Path', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderSignature,
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
@@ -183,7 +197,7 @@ describe('Happy Path', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          FunctionSignatures.takeOrder,
+          takeOrderSignature,
           [
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,

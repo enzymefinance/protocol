@@ -1,19 +1,30 @@
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { randomHex, toChecksumAddress } from 'web3-utils';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { encodeFunctionSignature } from 'web3-eth-abi';
 
 describe('assetBlacklist', () => {
   let environment, user, defaultTxOpts;
   let mockSystem;
   let assetArray;
+  let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
+    makeOrderSignatureBytes = encodeFunctionSignature(
+      makeOrderSignature
+    );
 
     mockSystem = await deployMockSystem(
       environment,

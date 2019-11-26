@@ -1,10 +1,9 @@
 import { toWei } from 'web3-utils';
 
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
-import { Environment, Tracks } from '~/utils/environment/Environment';
 import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
-import { CONTRACT_NAMES } from '../utils/new/constants';
+import { CONTRACT_NAMES, TRACKS } from '../utils/new/constants';
 
 describe('amgu', () => {
   let environment, user, defaultTxOpts;
@@ -57,7 +56,7 @@ describe('amgu', () => {
     expect(newAmguPrice).toBe(amguPrice);
     expect(newAmguPrice).not.toBe(oldAmguPrice);
 
-    if (environment.track === Tracks.TESTING) {
+    if (environment.track === TRACKS.TESTING) {
       const newPrice = toWei('2', 'ether');
       await priceSource.methods
         .update([baseToken.address], [newPrice])
