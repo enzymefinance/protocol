@@ -74,7 +74,7 @@ const main = async input => {
   await send(kyberReserve, 'enableTrade');
 
   const kyberReserveMlnBalance = await call(mln, 'balanceOf', [kyberReserve.options.address]);
-  if (kyberReserveMlnBalance.toString() === '0') {
+  if (`${kyberReserveMlnBalance}` === '0') {
     await send(mln, 'transfer', [kyberReserve.options.address, tokensToTransfer.toString()]);
   }
   const conversionRateOperators = (await call(conversionRates, 'getOperators')) || [];
