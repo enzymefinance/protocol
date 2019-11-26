@@ -1,5 +1,5 @@
+import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
@@ -272,7 +272,7 @@ test('Make order through the fund', async () => {
 });
 
 test('Third party takes the order made by the fund', async () => {
-  const { ethfinex } = contracts;
+  const { weth, ethfinex } = contracts;
   const pre = await getAllBalances(contracts, accounts, fund, environment);
   const mlnWrapperContract = await getContract(
     environment,
@@ -283,9 +283,20 @@ test('Third party takes the order made by the fund', async () => {
     await mlnWrapperContract.methods.balanceOf(deployer).call(),
   );
 
-  const result = await fillOrder(environment, ethfinex.options.address, {
-    signedOrder: signedOrder,
-  });
+  const erc20ProxyAddress = await ethfinex.methods
+    .getAssetProxy(AssetProxyId.ERC20.toString())
+    .call();
+
+  await weth.methods
+    .approve(erc20ProxyAddress, signedOrder.takerAssetAmount)
+    .send(defaultTxOpts);
+
+  const result = await ethfinex.methods
+    .fillOrder(
+      signedOrder,
+      signedOrder.takerAssetAmount,
+      signedOrder.signature,
+    ).send(defaultTxOpts);
 
   const post = await getAllBalances(contracts, accounts, fund, environment);
   const postDeployerWrappedMLN = new BN(
@@ -304,7 +315,7 @@ test('Third party takes the order made by the fund', async () => {
   expect(post.deployer.weth).toEqualBN(pre.deployer.weth.sub(bnTakerAssetAmount));
 });
 
-// // tslint:disable-next-line:max-line-length
+// tslint:disable-next-line:max-line-length
 test('Make order with native asset', async () => {
   const { weth, dgx, zeroExExchange } = contracts;
   const pre = await getAllBalances(contracts, accounts, fund, environment);

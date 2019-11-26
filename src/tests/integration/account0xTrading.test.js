@@ -76,7 +76,6 @@ describe('account-0x-trading', () => {
       }
     );
 
-    // await approveOrder(environment, zrxExchangeAddress, unsignedOrder);
     await mln.methods
       .approve(erc20ProxyAddress, makerAssetAmount)
       .send(defaultTxOpts);
