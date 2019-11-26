@@ -4,11 +4,15 @@ import { BNExpMul } from '../utils/new/BNmath';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const increaseTime = require('../utils/new/increaseTime');
+const {increaseTime, mine} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
 const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
 const web3 = require('../../../new/deploy/get-web3');
 const deploySystem = require('../../../new/deploy/deploy-system');
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 describe('management-fee', () => {
   const yearInSeconds = 31536000;
@@ -193,6 +197,7 @@ describe('management-fee', () => {
     const preWethManager = await weth.methods.balanceOf(manager).call();
     const preManagerShares = await shares.methods.balanceOf(manager).call();
     const preTotalSupply = await shares.methods.totalSupply().call();
+    await mine();
     const preFundCalcs = await accounting.methods.performCalculations().call();
 
     await accounting.methods.triggerRewardAllFees().send(managerTxOpts);
@@ -235,11 +240,12 @@ describe('management-fee', () => {
       ),
     ).toBe(true);
     expect(new BN(postFundCalcs.gav.toString()).eq(new BN(preFundCalcs.gav.toString()))).toBe(true);
-    // expect(postFundCalculations.sharePrice).toEqual(
-    //   preFundCalculations.sharePrice,
-    // );
+    expect(postFundCalcs.sharePrice.toString()).toEqual(preFundCalcs.sharePrice.toString());
     expect(new BN(postWethFund.toString()).eq(new BN(preWethFund.toString()))).toBe(true);
     expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
+
+    // NB: this assertion is kind of shaky
+    // It depends on performCalculations and triggerRewardAllFees being called in the same second
     expect(
       new BN(preFundCalcs.feesInDenominationAsset.toString()).eq(
         expectedFeeInDenominationAsset,
@@ -252,7 +258,6 @@ describe('management-fee', () => {
     ).toBe(true);
   });
 
-// TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
   test(`investor redeems his shares`, async () => {
     const {
       accounting,
@@ -274,18 +279,7 @@ describe('management-fee', () => {
     const preTotalSupply = await shares.methods.totalSupply().call();
     const preFundGav = await accounting.methods.calcGav().call();
 
-    // TODO: use util
-    // Increment next block time
-    web3.eth.currentProvider.send(
-      {
-        id: 123,
-        jsonrpc: '2.0',
-        method: 'evm_increaseTime',
-        params: [1000],
-      },
-      (err, res) => {},
-    );
-
+    await increaseTime(1000);
     await participation.methods.redeem().send(investorTxOpts);
 
     const postWethFund = await weth.methods

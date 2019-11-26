@@ -1,13 +1,11 @@
 import { BN, randomHex, toWei } from 'web3-utils';
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
-
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getContract } from '~/utils/solidity/getContract';
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
-
 import { getUpdatedTestPrices } from '../utils/new/api';
 import { stringToBytes } from '../utils/new/formatting';
 import { EMPTY_ADDRESS } from '../utils/new/constants';
@@ -19,6 +17,7 @@ import {
 const getFundComponents = require('../utils/new/getFundComponents');
 const web3 = require('../../../new/deploy/get-web3');
 const deploySystem = require('../../../new/deploy/deploy-system');
+const {increaseTime} = require('../../utils/new/rpc');
 const {deploy} = require('../../../new/deploy/deploy-contract');
 
 describe('fund-0x-trading', () => {
@@ -604,25 +603,7 @@ describe('fund-0x-trading', () => {
   test('Expired order is removed from open maker order', async () => {
     const { trading } = fund;
 
-    // TODO: factor out to use increaseTime.js
-    // Increment next block time and mine block
-    web3.eth.currentProvider.send(
-      {
-        id: 123,
-        jsonrpc: '2.0',
-        method: 'evm_increaseTime',
-        params: [1800], // 30 mins
-      },
-      (err, res) => {},
-    );
-    web3.eth.currentProvider.send(
-      {
-        id: 124,
-        jsonrpc: '2.0',
-        method: 'evm_mine',
-      },
-      (err, res) => {},
-    );
+    await increaseTime(1800);
 
     const makerAddress = trading.options.address;
     const makerAssetAmount = toWei('0.05', 'Ether');

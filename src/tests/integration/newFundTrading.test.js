@@ -9,7 +9,7 @@ import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 import { BNExpMul } from '../utils/new/BNmath';
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const increaseTime = require('../utils/new/increaseTime');
+const {increaseTime} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
 const getFundComponents = require('../utils/new/getFundComponents');
 const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');

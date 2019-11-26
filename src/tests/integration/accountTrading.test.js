@@ -6,7 +6,7 @@ import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const increaseTime = require('../utils/new/increaseTime');
+const {increaseTime} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
 const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
 const web3 = require('../../../new/deploy/get-web3');
