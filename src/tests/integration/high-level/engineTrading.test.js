@@ -1,7 +1,6 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { increaseTime } from '~/utils/evm/increaseTime';
@@ -9,7 +8,7 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul } from '../../utils/new/BNmath';
 import { getFunctionSignature } from '../../utils/new/metadata';
-import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES, EMPTY_ADDRESS } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -118,12 +117,12 @@ describe('Happy Path', () => {
         exchangeIndex,
         takeOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           wethTokenInfo.address,
           mlnTokenInfo.address,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         padLeft('0x0', 64),
@@ -164,12 +163,12 @@ describe('Happy Path', () => {
           exchangeIndex,
           takeOrderSignature,
           [
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             wethTokenInfo.address,
             mlnTokenInfo.address,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
           padLeft('0x0', 64),

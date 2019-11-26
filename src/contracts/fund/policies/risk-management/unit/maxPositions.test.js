@@ -1,10 +1,9 @@
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { randomAddress } from '~/utils/helpers/randomAddress';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+import { randomHex } from 'web3-utils';
 
 describe('maxPositions', () => {
   let environment, user, defaultTxOpts;
@@ -20,7 +19,7 @@ describe('maxPositions', () => {
   it('Create and get max', async () => {
     const positions = ['0', '125', '9999999999'];
     for (const n of positions) {
-      const maxPositions = await deploy(environment, Contracts.MaxPositions, [
+      const maxPositions = await deploy(environment, CONTRACT_NAMES.MAX_POSITIONS, [
         n,
       ]);
       expect(await maxPositions.methods.maxPositions().call()).toEqual(n);
@@ -29,10 +28,10 @@ describe('maxPositions', () => {
 
   it('Policy manager and mock accounting with maxPositions', async () => {
     const maxPositions = '3';
-    const policy = await deploy(environment, Contracts.MaxPositions, [
+    const policy = await deploy(environment, CONTRACT_NAMES.MAX_POSITIONS, [
       maxPositions,
     ]);
-    const nonQuoteAsset = `${randomAddress()}`;
+    const nonQuoteAsset = randomHex(20);
     const quoteAsset = mockSystem.weth.options.address;
     await mockSystem.policyManager.methods
       .register(makeOrderSignatureBytes, policy.options.address)
@@ -45,7 +44,7 @@ describe('maxPositions', () => {
       mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
-          [emptyAddress, emptyAddress, emptyAddress, quoteAsset, emptyAddress],
+          [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, quoteAsset, EMPTY_ADDRESS],
           [0, 0, 0],
           '0x0',
         )
@@ -56,11 +55,11 @@ describe('maxPositions', () => {
         .postValidate(
           makeOrderSignatureBytes,
           [
-            emptyAddress,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             nonQuoteAsset,
-            emptyAddress,
+            EMPTY_ADDRESS,
           ],
           [0, 0, 0],
           '0x0',
@@ -71,8 +70,8 @@ describe('maxPositions', () => {
     await mockSystem.accounting.methods
       .setOwnedAssets([
         nonQuoteAsset,
-        `${randomAddress()}`,
-        `${randomAddress()}`,
+        randomHex(20),
+        randomHex(20),
       ])
       .send(defaultTxOpts);
 
@@ -80,7 +79,7 @@ describe('maxPositions', () => {
       mockSystem.policyManager.methods
         .postValidate(
           makeOrderSignatureBytes,
-          [emptyAddress, emptyAddress, emptyAddress, quoteAsset, emptyAddress],
+          [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, quoteAsset, EMPTY_ADDRESS],
           [0, 0, 0],
           '0x0',
         )
@@ -91,11 +90,11 @@ describe('maxPositions', () => {
         .postValidate(
           makeOrderSignatureBytes,
           [
-            emptyAddress,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             nonQuoteAsset,
-            emptyAddress,
+            EMPTY_ADDRESS,
           ],
           [0, 0, 0],
           '0x0',
@@ -106,9 +105,9 @@ describe('maxPositions', () => {
     await mockSystem.accounting.methods
       .setOwnedAssets([
         nonQuoteAsset,
-        `${randomAddress()}`,
-        `${randomAddress()}`,
-        `${randomAddress()}`,
+        randomHex(20),
+        randomHex(20),
+        randomHex(20),
       ])
       .send(defaultTxOpts);
 
@@ -117,11 +116,11 @@ describe('maxPositions', () => {
         .postValidate(
           makeOrderSignatureBytes,
           [
-            emptyAddress,
-            emptyAddress,
-            emptyAddress,
-            `${randomAddress()}`,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            randomHex(20),
+            EMPTY_ADDRESS,
           ],
           [0, 0, 0],
           '0x0',

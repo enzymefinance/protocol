@@ -4,13 +4,12 @@ import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSigna
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { Environment, Tracks } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
-import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES, EMPTY_ADDRESS } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -135,12 +134,12 @@ describe('Happy Path', () => {
         exchangeIndex,
         FunctionSignatures.takeOrder,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           makerAsset,
           takerAsset,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         padLeft('0x0', 64),
@@ -186,12 +185,12 @@ describe('Happy Path', () => {
           exchangeIndex,
           FunctionSignatures.takeOrder,
           [
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             makerAsset,
             takerAsset,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
           padLeft('0x0', 64),

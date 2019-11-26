@@ -1,7 +1,6 @@
 import { BN, toWei } from 'web3-utils';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
@@ -13,7 +12,7 @@ import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 
 import { BNExpMul } from '../utils/new/BNmath';
-import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
+import { CONTRACT_NAMES, EXCHANGES, EMPTY_ADDRESS } from '../utils/new/constants';
 import { getFunctionSignature } from '../utils/new/metadata';
 
 describe('fund-kyber-trading', () => {
@@ -171,12 +170,12 @@ describe('fund-kyber-trading', () => {
         exchangeIndex,
         takeOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           makerAsset,
           takerAsset,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         randomHexOfSize(20),
@@ -228,12 +227,12 @@ describe('fund-kyber-trading', () => {
         exchangeIndex,
         takeOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           makerAsset,
           takerAsset,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         randomHexOfSize(20),
@@ -288,12 +287,12 @@ describe('fund-kyber-trading', () => {
         exchangeIndex,
         takeOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           makerAsset,
           takerAsset,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         randomHexOfSize(20),
@@ -343,12 +342,12 @@ describe('fund-kyber-trading', () => {
           exchangeIndex,
           takeOrderSignature,
           [
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             makerAsset,
             takerAsset,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
           randomHexOfSize(20),

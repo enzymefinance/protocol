@@ -1,8 +1,7 @@
 import { toWei } from 'web3-utils';
-
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 
 describe('accounting', () => {
   let environment, user, defaultTxOpts;
@@ -18,7 +17,7 @@ describe('accounting', () => {
 
     mockSystem = await deployMockSystem(
       environment,
-      { accountingContract: Contracts.Accounting }
+      { accountingContract: CONTRACT_NAMES.ACCOUNTING }
     );
 
     mockDefaultAssets = [

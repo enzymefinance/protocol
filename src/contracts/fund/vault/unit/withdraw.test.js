@@ -4,7 +4,7 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployVaultFactory } from '../transactions/deployVaultFactory';
 import { createVaultInstance } from '../transactions/createVaultInstance';
-import { Contracts } from '~/Contracts';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 
 describe('withdraw', () => {
   let environment, user, defaultTxOpts;
@@ -23,13 +23,13 @@ describe('withdraw', () => {
     const tokenAddress = await deployToken(environment);
     token = getContract(
       environment,
-      Contracts.PreminedToken,
+      CONTRACT_NAMES.PREMINED_TOKEN,
       tokenAddress,
     );
 
     authAddress = await deployContract(
       environment,
-      Contracts.PermissiveAuthority,
+      CONTRACT_NAMES.PERMISSIVE_AUTHORITY,
     );
   });
 
@@ -41,7 +41,7 @@ describe('withdraw', () => {
         hubAddress: authAddress,
       },
     );
-    vault = getContract(environment, Contracts.Vault, vaultAddress);
+    vault = getContract(environment, CONTRACT_NAMES.VAULT, vaultAddress);
   });
 
   it('withdraw token that is not present', async () => {

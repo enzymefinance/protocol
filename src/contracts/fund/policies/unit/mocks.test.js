@@ -1,8 +1,7 @@
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { Contracts } from '~/Contracts';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import * as Web3Utils from 'web3-utils';
 
 describe('mocks', () => {
@@ -12,7 +11,7 @@ describe('mocks', () => {
 
   const createManagerAndRegister = async (contract, policy) => {
     const contracts = await deployMockSystem(environment, {
-      policyManagerContract: Contracts.PolicyManager,
+      policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER,
     });
     await contracts.policyManager.methods
       .register(testPolicy, policy)
@@ -27,18 +26,18 @@ describe('mocks', () => {
 
     falsePolicy = await deployAndGetContract(
       environment,
-      Contracts.FalsePolicy,
+      CONTRACT_NAMES.FALSE_POLICY,
     );
     truePolicy = await deployAndGetContract(
       environment,
-      Contracts.TruePolicy,
+      CONTRACT_NAMES.TRUE_POLICY,
     );
     testPolicy = Web3Utils.sha3(
       'testPolicy(address[4],uint256[2])',
     ).substring(0, 10);
     dummyArgs = [
       testPolicy,
-      [emptyAddress, emptyAddress, emptyAddress, emptyAddress, emptyAddress],
+      [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS],
       [0, 0, 0],
       '0x0',
     ];
@@ -57,7 +56,7 @@ describe('mocks', () => {
 
   it('Boolean policies on policy manager', async () => {
     const manager1 = await createManagerAndRegister(
-      Contracts.PolicyManager,
+      CONTRACT_NAMES.POLICY_MANAGER,
       falsePolicy.options.address,
     );
     await expect(
@@ -65,7 +64,7 @@ describe('mocks', () => {
     ).rejects.toThrow('Rule evaluated to false');
 
     const manager2 = await createManagerAndRegister(
-      Contracts.PolicyManager,
+      CONTRACT_NAMES.POLICY_MANAGER,
       truePolicy.options.address,
     );
     await expect(

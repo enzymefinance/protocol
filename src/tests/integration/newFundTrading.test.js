@@ -6,12 +6,12 @@ import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { increaseTime } from '~/utils/evm/increaseTime';
-import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 import { BNExpMul } from '../utils/new/BNmath';
+import { stringToBytes } from '../utils/new/formatting';
 
 let environment, accounts;
 let deployer, manager, investor;
@@ -67,7 +67,7 @@ beforeAll(async () => {
   exchanges = [matchingMarket];
   const envManager = withDifferentAccount(environment, manager);
 
-  const fundName = padLeft(stringToHex('Test fund'), 64);
+  const fundName = stringToBytes('Test fund', 32);
   await fundFactory.methods
     .beginSetup(
       fundName,

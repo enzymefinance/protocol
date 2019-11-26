@@ -1,9 +1,8 @@
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 
 describe('maxConcentration', () => {
   let environment, user, defaultTxOpts;
@@ -60,7 +59,7 @@ describe('maxConcentration', () => {
       },
     ],
   ])('%s', async (name, trial) => {
-    const policy = await deploy(environment, Contracts.MaxConcentration, [
+    const policy = await deploy(environment, CONTRACT_NAMES.MAX_CONCENTRATION, [
       trial.max,
     ]);
     const trialAsset = mockSystem[trial.asset];
@@ -79,7 +78,7 @@ describe('maxConcentration', () => {
 
     const evaluate = mockSystem.policyManager.methods.postValidate(
       makeOrderSignatureBytes,
-      [emptyAddress, emptyAddress, emptyAddress, trialAsset, emptyAddress],
+      [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, trialAsset, EMPTY_ADDRESS],
       [0, 0, 0],
       '0x0',
     );

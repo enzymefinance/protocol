@@ -1,4 +1,4 @@
-import { BN, padLeft, stringToHex, toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
@@ -8,6 +8,7 @@ import { deployContract } from '~/utils/solidity/deployContract';
 import { getUpdatedTestPrices } from '../utils/new/api';
 import { BNExpMul } from '../utils/new/BNmath';
 import { CONTRACT_NAMES } from '../utils/new/constants';
+import { stringToBytes } from '../utils/new/formatting';
 
 describe('management-fee', () => {
   const yearInSeconds = 31536000;
@@ -50,7 +51,7 @@ describe('management-fee', () => {
       .registerFees([managementFee.options.address.toString()])
       .send(defaultTxOpts);
 
-    const fundName = padLeft(stringToHex('Test fund'), 64);
+    const fundName = stringToBytes('Test fund', 32);
     await fundFactory.methods
       .beginSetup(
         fundName,

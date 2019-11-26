@@ -8,9 +8,10 @@ import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { increaseTime } from '~/utils/evm/increaseTime';
 import { getAllBalances } from '../utils/getAllBalances';
-import { toWei, BN, padLeft, stringToHex } from 'web3-utils';
+import { toWei, BN } from 'web3-utils';
 import { BNExpDiv, BNExpMul } from '../utils/new/BNmath';
 import { CONTRACT_NAMES } from '../utils/new/constants';
+import { stringToBytes } from '../utils/new/formatting';
 
 let environment, accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
@@ -62,7 +63,7 @@ beforeAll(async () => {
 
   await registry.methods.registerFees(feeAddresses).send(defaultTxOpts);
 
-  const fundName = padLeft(stringToHex('Test fund'), 64);
+  const fundName = stringToBytes('Test fund', 32);
   await fundFactory.methods
     .beginSetup(
       fundName,

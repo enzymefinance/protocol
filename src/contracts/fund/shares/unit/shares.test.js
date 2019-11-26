@@ -2,9 +2,8 @@ import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
-import { randomAddress } from '~/utils/helpers/randomAddress';
-import { Contracts } from '~/Contracts';
-import { toWei } from 'web3-utils';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { toWei, randomHex } from 'web3-utils';
 
 describe('shares', () => {
   let environment, user, defaultTxOpts;
@@ -19,8 +18,8 @@ describe('shares', () => {
 
     shares = getContract(
       environment,
-      Contracts.Shares,
-      await deployContract(environment, Contracts.Shares, [
+      CONTRACT_NAMES.SHARES,
+      await deployContract(environment, CONTRACT_NAMES.SHARES, [
         mockSystem.hub.options.address,
       ]),
     );
@@ -34,7 +33,7 @@ describe('shares', () => {
   });
 
   it('Create and destroy shares (auth)', async () => {
-    const mockAccount = randomAddress().toString();
+    const mockAccount = randomHex(20);
     const amount = toWei('1', 'Ether');
     await expect(
       shares.methods.balanceOf(mockAccount).call(),

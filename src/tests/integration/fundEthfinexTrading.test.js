@@ -17,8 +17,9 @@ import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '../utils/new/zeroEx';
+import { BN, toWei } from 'web3-utils';
+import { stringToBytes } from '../utils/new/formatting';
 import { increaseTime } from '~/utils/evm';
-import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -77,7 +78,7 @@ beforeAll(async () => {
 
   const envManager = withDifferentAccount(environment, manager);
 
-  const fundName = padLeft(stringToHex('Test fund'), 64);
+  const fundName = stringToBytes('Test fund', 32);
   await fundFactory.methods
     .beginSetup(
       fundName,
