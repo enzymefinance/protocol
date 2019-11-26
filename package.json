@@ -99,7 +99,7 @@
   },
   "dependencies": {
     "@0x/contract-wrappers": "^4.1.1",
-    "@0x/order-utils": "^3.0.4",
+    "@0x/order-utils": "^8.4.0",
     "@melonproject/token-math": "0.1.5",
     "axios": "^0.18.0",
     "commander": "^2.19.0",

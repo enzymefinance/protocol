@@ -3,7 +3,6 @@ import { orderHashUtils } from '@0x/order-utils';
 import { SignedOrder } from '@0x/types';
 import { Contracts } from '~/Contracts';
 import {
-  PrepareArgsFunction,
   EnhancedExecute,
   transactionFactory,
 } from '~/utils/solidity/transactionFactory';
@@ -15,7 +14,7 @@ interface PreSignArgs {
 
 type PreSignResult = boolean;
 
-const prepareArgs: PrepareArgsFunction<PreSignArgs> = async (
+const prepareArgs = async (
   environment,
   { signedOrder, signerAddress: providedSignerAddress },
   contractAddress,

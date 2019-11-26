@@ -1,21 +1,11 @@
-import { SignedOrder } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-
 import { Contracts, Exchanges } from '~/Contracts';
-import {
-  transactionFactory,
-  PrepareArgsFunction,
-} from '~/utils/solidity/transactionFactory';
+import { transactionFactory } from '~/utils/solidity/transactionFactory';
 import { getExchangeIndex } from '../calls/getExchangeIndex';
 import { FunctionSignatures } from '../utils/FunctionSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 
-interface CancelEthfinexOrderArgs {
-  signedOrder?: SignedOrder;
-  orderHashHex?: string;
-}
-
-const prepareArgs: PrepareArgsFunction<CancelEthfinexOrderArgs> = async (
+const prepareArgs = async (
   environment,
   { signedOrder, orderHashHex: givenOrderHashHex },
   contractAddress,
