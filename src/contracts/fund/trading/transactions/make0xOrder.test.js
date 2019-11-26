@@ -1,8 +1,8 @@
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
-import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
+import { AssetProxyId } from '@0x/types';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
@@ -15,9 +15,8 @@ import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 
 describe('make0xOrder', () => {
   let environment, user, defaultTxOpts;
-  let makerToken, takerToken;
   let exchange, exchangeIndex;
-  let unsignedOrder, signedOrder;
+  let mlnInfo, wethInfo;
   let routes;
   let trading;
 
@@ -36,20 +35,8 @@ describe('make0xOrder', () => {
       exchangeConfig.exchange,
     );
 
-    const wethInfo = getTokenBySymbol(environment, 'WETH');
-    const mlnInfo = getTokenBySymbol(environment, 'MLN');
-
-    makerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      wethInfo.address,
-    );
-
-    takerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      mlnInfo.address,
-    );
+    wethInfo = getTokenBySymbol(environment, 'WETH');
+    mlnInfo = getTokenBySymbol(environment, 'MLN');
 
     trading = getContract(
       environment,
@@ -61,16 +48,23 @@ describe('make0xOrder', () => {
     exchangeIndex = exchanges[1].findIndex(
       e => e.toLowerCase() === exchangeConfig.adapter.toLowerCase(),
     );
+  });
 
-    const makeOrderSignature = getFunctionSignature(
-      CONTRACT_NAMES.EXCHANGE_ADAPTER,
-      'makeOrder',
+  it('Make 0x order from fund and take it from account', async () => {
+    const makerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      wethInfo.address,
     );
-
+    const takerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      mlnInfo.address,
+    );
     const makerAssetAmount = toWei('0.05', 'ether');
     const takerAssetAmount = toWei('1', 'ether');
 
-    unsignedOrder = await createUnsignedZeroExOrder(
+    const unsignedOrder = await createUnsignedZeroExOrder(
       environment,
       exchange.options.address,
       {
@@ -82,10 +76,15 @@ describe('make0xOrder', () => {
       },
     );
 
-    signedOrder = await signZeroExOrder(
+    const signedOrder = await signZeroExOrder(
       environment,
       unsignedOrder,
       user,
+    );
+
+    const makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
     );
 
     await trading.methods.callOnExchange(
@@ -114,9 +113,7 @@ describe('make0xOrder', () => {
       signedOrder.takerAssetData,
       signedOrder.signature,
     ).send(defaultTxOpts);
-  });
 
-  it('Make 0x order from fund and take it from account', async () => {
     const erc20ProxyAddress = await exchange.methods
       .getAssetProxy(AssetProxyId.ERC20)
       .call();
@@ -138,6 +135,69 @@ describe('make0xOrder', () => {
 
   // tslint:disable-next-line:max-line-length
   it('Previously made 0x order cancelled and not takeable anymore', async () => {
+    const makerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      wethInfo.address,
+    );
+    const takerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      mlnInfo.address,
+    );
+    const makerAssetAmount = toWei('0.05', 'ether');
+    const takerAssetAmount = toWei('1', 'ether');
+
+    const unsignedOrder = await createUnsignedZeroExOrder(
+      environment,
+      exchange.options.address,
+      {
+        makerAddress: routes.tradingAddress,
+        makerTokenAddress: makerToken.options.address,
+        makerAssetAmount,
+        takerTokenAddress: takerToken.options.address,
+        takerAssetAmount,
+      },
+    );
+
+    const signedOrder = await signZeroExOrder(
+      environment,
+      unsignedOrder,
+      user,
+    );
+
+    const makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
+    await trading.methods.callOnExchange(
+      exchangeIndex,
+      makeOrderSignature,
+      [
+        trading.options.address,
+        EMPTY_ADDRESS,
+        makerToken.options.address,
+        takerToken.options.address,
+        signedOrder.feeRecipientAddress,
+        EMPTY_ADDRESS,
+      ],
+      [
+        signedOrder.makerAssetAmount,
+        signedOrder.takerAssetAmount,
+        signedOrder.makerFee,
+        signedOrder.takerFee,
+        signedOrder.expirationTimeSeconds,
+        signedOrder.salt,
+        0,
+        0,
+      ],
+      padLeft('0x0', 64),
+      signedOrder.makerAssetData,
+      signedOrder.takerAssetData,
+      signedOrder.signature,
+    ).send(defaultTxOpts);
+
     const cancelOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'cancelOrder',
@@ -171,6 +231,81 @@ describe('make0xOrder', () => {
           signedOrder.signature,
         ).send(defaultTxOpts),
     ).rejects.toThrow('ORDER_UNFILLABLE');
+  });
+
+  it('Take off-chain order from fund', async () => {
+    const makerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      mlnInfo.address,
+    );
+    const takerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      wethInfo.address,
+    );
+    const makerAssetAmount = toWei('1', 'ether');
+    const takerAssetAmount = toWei('0.05', 'ether');
+
+    const unsignedOrder = await createUnsignedZeroExOrder(
+      environment,
+      exchange.options.address,
+      {
+        makerAddress: user,
+        makerTokenAddress: makerToken.options.address,
+        makerAssetAmount,
+        takerTokenAddress: takerToken.options.address,
+        takerAssetAmount,
+      },
+    );
+
+    const signedOrder = await signZeroExOrder(environment, unsignedOrder, user);
+
+    const takeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder',
+    );
+    const amount = toWei('0.02', 'ether');
+
+    const erc20ProxyAddress = await exchange.methods
+      .getAssetProxy(AssetProxyId.ERC20)
+      .call();
+
+    await makerToken.methods
+      .approve(
+        erc20ProxyAddress,
+        unsignedOrder.makerAssetAmount,
+      ).send(defaultTxOpts);
+
+    const result = await trading.methods
+      .callOnExchange(
+        exchangeIndex,
+        takeOrderSignature,
+        [
+          signedOrder.makerAddress,
+          EMPTY_ADDRESS,
+          makerToken.options.address,
+          takerToken.options.address,
+          signedOrder.feeRecipientAddress,
+          EMPTY_ADDRESS,
+        ],
+        [
+          signedOrder.makerAssetAmount,
+          signedOrder.takerAssetAmount,
+          signedOrder.makerFee,
+          signedOrder.takerFee,
+          signedOrder.expirationTimeSeconds,
+          signedOrder.salt,
+          amount,
+          0,
+        ],
+        padLeft('0x0', 64),
+        signedOrder.makerAssetData,
+        signedOrder.takerAssetData,
+        signedOrder.signature,
+      ).send(defaultTxOpts);
+
+    // TODO: expect(isEqual(order.takerFilledAmount, takerQuantity)).toBe(true);
   });
 });
 
