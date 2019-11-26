@@ -1,5 +1,4 @@
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { stringifyStruct } from '~/utils/solidity/stringifyStruct';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,

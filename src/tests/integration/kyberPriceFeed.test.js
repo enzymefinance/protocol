@@ -1,11 +1,9 @@
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, isAddress } from 'web3-utils';
 
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
 import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { isAddress } from '~/utils/checks/isAddress';
-import { Environment } from '~/utils/environment/Environment';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { BNExpDiv, BNExpInverse } from '../utils/new/BNmath';
