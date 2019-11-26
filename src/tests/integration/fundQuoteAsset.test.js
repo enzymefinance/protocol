@@ -294,6 +294,7 @@ describe('fund-quote-asset', () => {
     ).toBe(true);
   });
 
+  // TODO: callOnExchange is failing
   test('Fund make order with a non-18 decimal asset', async () => {
     const wantedShares = toWei('1', 'ether');
     trade1 = {

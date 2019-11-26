@@ -4,7 +4,6 @@ import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAss
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { getFunctionSignature } from '../utils/new/metadata';
@@ -17,7 +16,6 @@ import { increaseTime } from '~/utils/evm';
 const getFundComponents = require('../utils/new/getFundComponents');
 const getAllBalances = require('../utils/new/getAllBalances');
 import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
-// import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 const deploySystem = require('../../../new/deploy/deploy-system');
 const web3 = require('../../../new/deploy/get-web3');
 
@@ -32,15 +30,17 @@ let unsignedOrder, signedOrder;
 let makeOrderSignature, cancelOrderSignature, withdrawTokensSignature;
 let contracts, deployOut;
 let fund;
-let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, fundFactory, registry, mlnWrapper;
+let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, registry, mlnWrapper;
 
 beforeAll(async () => {
-  accounts = await web3.eth.getAccounts();
-  [deployer, manager, investor] = accounts;
-
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
+
+  const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+  deployOut = deployed.deployOut;
+  contracts = deployed.contracts;
 
   makeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
@@ -57,17 +57,13 @@ beforeAll(async () => {
     'withdrawTokens',
   );
 
-  const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-  contracts = deployment.contracts;
-  deployOut = deployment.deployOut;
-
   ethfinex = contracts.Exchange;
   ethfinexAdapter = contracts.EthfinexAdapter;
   mln = contracts.MLN;
   weth = contracts.WETH;
   dgx = contracts.DGX;
   zrx = contracts.ZRX;
-  fundFactory = contracts.Version;
+  version = contracts.Version;
   registry = contracts.Registry;
   mlnWrapper = contracts['W-MLN'];
 
@@ -78,7 +74,7 @@ beforeAll(async () => {
   await contracts.TestingPriceFeed.methods.update(Object.values(deployOut.tokens.addr), fakePrices);
 
   const fundName = padLeft(stringToHex('Test fund'), 64);
-  await fundFactory.methods
+  await version.methods
     .beginSetup(
       fundName,
       [],
@@ -88,20 +84,18 @@ beforeAll(async () => {
       [ethfinexAdapter.options.address],
       weth.options.address,
       [weth.options.address, mln.options.address],
-    )
-    .send(managerTxOpts);
-
-  await fundFactory.methods.createAccounting().send(managerTxOpts);
-  await fundFactory.methods.createFeeManager().send(managerTxOpts);
-  await fundFactory.methods.createParticipation().send(managerTxOpts);
-  await fundFactory.methods.createPolicyManager().send(managerTxOpts);
-  await fundFactory.methods.createShares().send(managerTxOpts);
-  await fundFactory.methods.createTrading().send(managerTxOpts);
-  await fundFactory.methods.createVault().send(managerTxOpts);
-  const res = await fundFactory.methods.completeSetup().send(managerTxOpts);
+    ).send(managerTxOpts);
+  await version.methods.createAccounting().send(managerTxOpts);
+  await version.methods.createFeeManager().send(managerTxOpts);
+  await version.methods.createParticipation().send(managerTxOpts);
+  await version.methods.createPolicyManager().send(managerTxOpts);
+  await version.methods.createShares().send(managerTxOpts);
+  await version.methods.createTrading().send(managerTxOpts);
+  await version.methods.createVault().send(managerTxOpts);
+  const res = await version.methods.completeSetup().send(managerTxOpts);
   const hubAddress = res.events.NewFund.returnValues.hub;
-
   fund = await getFundComponents(hubAddress);
+
   // await updateTestingPriceFeed(contracts, environment);
 
   const wrapperRegistry = contracts.WrapperRegistryEFX;
@@ -156,7 +150,6 @@ test('investor gets initial ethToken for testing)', async () => {
   expect(post.investor.weth).toEqualBN(pre.investor.weth.add(bnInitialTokenAmount));
 });
 
-// tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
   const offeredValue = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
@@ -234,13 +227,12 @@ test('Make order through the fund', async () => {
         0,
         0,
       ],
-      randomHexOfSize(20),
+      randomHexOfSize(32),
       order.makerAssetData,
       order.takerAssetData,
       signedOrder.signature,
     )
     .send(managerTxOpts);
-  console.log('post2')
 
   const postCalculations = await fund.accounting.methods
     .performCalculations()
@@ -264,6 +256,7 @@ test('Third party takes the order made by the fund', async () => {
     await mlnWrapper.methods.balanceOf(deployer).call(),
   );
 
+  // TODO: replace with (some) code from fillOrder function
   const result = await fillOrder(environment, ethfinex.options.address, {
     signedOrder: signedOrder,
   });
@@ -299,7 +292,6 @@ test('Make order with native asset', async () => {
   const makerAssetAmount = toWei('.05', 'ether');
   const takerAssetAmount = toWei('.5', 'ether');
   unsignedOrder = await createUnsignedZeroExOrder(
-    environment,
     zeroExExchange.options.address,
     {
       feeRecipientAddress: investor,
@@ -310,7 +302,7 @@ test('Make order with native asset', async () => {
       takerAssetAmount,
     },
   );
-  signedOrder = await signZeroExOrder(environment, unsignedOrder, manager);
+  signedOrder = await signZeroExOrder(unsignedOrder, manager);
   await fund.trading.methods
     .callOnExchange(
       0,
@@ -333,7 +325,7 @@ test('Make order with native asset', async () => {
         0,
         0,
       ],
-      randomHexOfSize(20),
+      randomHexOfSize(32),
       signedOrder.makerAssetData,
       signedOrder.takerAssetData,
       signedOrder.signature,
@@ -410,7 +402,7 @@ test('Cancel the order and withdraw tokens', async () => {
     .call();
 
   // Withdraw WETH
-  await increaseTime(environment, 25 * 60 * 60);
+  await increaseTime(25 * 60 * 60);
   await fund.trading.methods
     .callOnExchange(
       0,
@@ -424,7 +416,7 @@ test('Cancel the order and withdraw tokens', async () => {
         NULL_ADDRESS,
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
-      '0x0',
+      randomHexOfSize(32),
       '0x0',
       '0x0',
       '0x0',

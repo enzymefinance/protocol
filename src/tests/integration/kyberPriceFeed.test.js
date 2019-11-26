@@ -55,7 +55,7 @@ describe('kyber-price-feed', () => {
     await kyberPriceFeed.methods.update().send(defaultTxOpts);
   });
 
-  // TODO: not getting price here, but it seems to work after the test is finished
+  // TODO: hasValidPrice is returning false here, but when I call it manually afterwards it's true
   it('Get price', async () => {
     console.log(kyberPriceFeed.options.address)
     console.log(mln.options.address)
