@@ -43,7 +43,7 @@
     "deploy:kovan": "node bin/melon.js deploy -c ./deployments/configs/kovan.json",
     "deploy:mainnet": "node bin/melon.js deploy -c ./deployments/configs/mainnet.json",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"sh -c 'tscpaths -p tsconfig.json -s ./src -o ./lib > /dev/null && yarn bundle'\"",
-    "devchain": "ganache-cli --gasLimit 0x989680 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis'  --networkId 4",
+    "devchain": "ganache-cli --gasLimit 0x989680 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis' --networkId=4 --acctKeys ./keys",
     "format": "prettier --write src/**/*.ts",
     "lint:prettier": "yarn prettier --list-different src/**/*.ts",
     "lint:solium": "solium --dir src/contracts",
