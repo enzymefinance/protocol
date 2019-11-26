@@ -21,7 +21,7 @@ let exchangeIndex;
 let trading;
 let mlnInfo;
 
-beforeAll(async () => {
+beforeEach(async () => {
   environment = await deployAndInitTestEnv();
   user = environment.wallet.address;
   defaultTxOpts = { from: user, gas: 8000000 };
