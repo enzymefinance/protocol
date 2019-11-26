@@ -1,55 +1,137 @@
-import { createQuantity } from '@melonproject/token-math';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { make0xOrder } from './make0xOrder';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
-import { Exchanges } from '~/Contracts';
-import { createOrder } from '~/contracts/exchanges/third-party/0x/utils/createOrder';
-import { signOrder } from '~/contracts/exchanges/third-party/0x/utils/signOrder';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
+import { AssetProxyId } from '@0x/types';
+import {
+  createUnsignedZeroExOrder,
+  signZeroExOrder,
+} from '~/tests/utils/new/zeroEx';
+import { toWei, padLeft } from 'web3-utils';
+import { getContract } from '~/utils/solidity/getContract';
+import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 
 describe('make0xOrder', () => {
-  const shared = {};
+  let environment, user, defaultTxOpts;
+  let makerToken, takerToken;
+  let exchange, exchangeIndex;
+  let unsignedOrder, signedOrder;
+  let routes;
+  let trading;
 
   beforeAll(async () => {
-    const env = await deployAndInitTestEnv();
-    shared.env = env;
-    shared.accounts = await shared.env.eth.getAccounts();
-    shared.routes = await setupInvestedTestFund(shared.env);
+    environment = await deployAndInitTestEnv();
+    user = environment.wallet.address;
+    defaultTxOpts = { from: user, gas: 8000000 };
+    routes = await setupInvestedTestFund(environment);
 
-    shared.zeroExAddress =
-      env.deployment.exchangeConfigs[Exchanges.ZeroEx].exchange;
+    const exchangeConfig =
+      environment.deployment.exchangeConfigs[EXCHANGES.ZERO_EX];
 
-    shared.mln = getTokenBySymbol(shared.env, 'MLN');
-    shared.weth = getTokenBySymbol(shared.env, 'WETH');
+    exchange = getContract(
+      environment,
+      CONTRACT_NAMES.ZERO_EX_EXCHANGE,
+      exchangeConfig.exchange,
+    );
+
+    const wethInfo = getTokenBySymbol(environment, 'WETH');
+    const mlnInfo = getTokenBySymbol(environment, 'MLN');
+
+    makerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      wethInfo.address,
+    );
+
+    takerToken = getContract(
+      environment,
+      CONTRACT_NAMES.STANDARD_TOKEN,
+      mlnInfo.address,
+    );
+
+    trading = getContract(
+      environment,
+      CONTRACT_NAMES.TRADING,
+      routes.tradingAddress,
+    );
+
+    const exchanges = await trading.methods.getExchangeInfo().call();
+    exchangeIndex = exchanges[1].findIndex(
+      e => e.toLowerCase() === exchangeConfig.adapter.toLowerCase(),
+    );
   });
 
   it('Make 0x order from fund and take it from account', async () => {
-    const makerQuantity = createQuantity(shared.weth, 0.05);
-    const takerQuantity = createQuantity(shared.mln, 1);
+    const makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
 
-    const unsigned0xOrder = await createOrder(
-      shared.env,
-      shared.zeroExAddress,
+    const makerAssetAmount = toWei('0.05', 'ether');
+    const takerAssetAmount = toWei('1', 'ether');
+
+    unsignedOrder = await createUnsignedZeroExOrder(
+      environment,
+      exchange.options.address,
       {
-        makerAddress: shared.routes.tradingAddress,
-        makerQuantity,
-        takerQuantity,
+        makerAddress: routes.tradingAddress,
+        makerTokenAddress: makerToken.options.address,
+        makerAssetAmount,
+        takerTokenAddress: takerToken.options.address,
+        takerAssetAmount,
       },
     );
 
-    const signedOrder = await signOrder(shared.env, unsigned0xOrder);
+    signedOrder = await signZeroExOrder(
+      environment,
+      unsignedOrder,
+      user,
+    );
 
-    const result = await make0xOrder(shared.env, shared.routes.tradingAddress, {
-      signedOrder,
-    });
+    await trading.methods.callOnExchange(
+      exchangeIndex,
+      makeOrderSignature,
+      [
+        trading.options.address,
+        EMPTY_ADDRESS,
+        makerToken.options.address,
+        takerToken.options.address,
+        signedOrder.feeRecipientAddress,
+        EMPTY_ADDRESS,
+      ],
+      [
+        signedOrder.makerAssetAmount,
+        signedOrder.takerAssetAmount,
+        signedOrder.makerFee,
+        signedOrder.takerFee,
+        signedOrder.expirationTimeSeconds,
+        signedOrder.salt,
+        0,
+        0,
+      ],
+      padLeft('0x0', 64),
+      signedOrder.makerAssetData,
+      signedOrder.takerAssetData,
+      signedOrder.signature,
+    ).send(defaultTxOpts);
 
-    expect(result).toBe(true);
+    const erc20ProxyAddress = await exchange.methods
+      .getAssetProxy(AssetProxyId.ERC20)
+      .call();
 
-    const filled = await fillOrder(shared.env, shared.zeroExAddress, {
-      signedOrder,
-    });
+    await takerToken.methods.approve(
+      erc20ProxyAddress,
+      unsignedOrder.takerAssetAmount,
+    ).send(defaultTxOpts);
 
-    expect(filled).toBeTruthy();
+    const result = await exchange.methods
+      .fillOrder(
+        unsignedOrder,
+        unsignedOrder.takerAssetAmount,
+        signedOrder.signature,
+      ).send(defaultTxOpts);
+
+    expect(result).toBeTruthy();
   });
 });
