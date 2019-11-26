@@ -1,7 +1,6 @@
 import { toWei, randomHex } from 'web3-utils';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { increaseTime } from '~/utils/evm/increaseTime';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 
 const weekInSeconds = 60 * 60 * 24 * 7;
@@ -64,7 +63,26 @@ describe('investment', () => {
     ).rejects.toThrow(errorMessage);
 
     await mockSystem.hub.methods.setShutDownState(false).send(defaultTxOpts);
-    await increaseTime(environment, weekInSeconds);
+
+    // Increment next block time and mine block
+    environment.eth.currentProvider.send(
+      {
+        id: 123,
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [weekInSeconds],
+      },
+      (err, res) => {},
+    );
+    environment.eth.currentProvider.send(
+      {
+        id: 124,
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+      },
+      (err, res) => {},
+    );
+
     await mockSystem.participation.methods
       .cancelRequest()
       .send({ ...defaultTxOpts, value: defaultAmgu });
@@ -93,7 +111,25 @@ describe('investment', () => {
         .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
-    await increaseTime(environment, weekInSeconds);
+    // Increment next block time and mine block
+    environment.eth.currentProvider.send(
+      {
+        id: 123,
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [weekInSeconds],
+      },
+      (err, res) => {},
+    );
+    environment.eth.currentProvider.send(
+      {
+        id: 124,
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+      },
+      (err, res) => {},
+    );
+
     await mockSystem.participation.methods
       .cancelRequest()
       .send({ ...defaultTxOpts, value: defaultAmgu });
@@ -127,7 +163,26 @@ describe('investment', () => {
     await mockSystem.priceSource.methods
       .setNeverValid(false)
       .send(defaultTxOpts);
-    await increaseTime(environment, weekInSeconds);
+
+    // Increment next block time and mine block
+    environment.eth.currentProvider.send(
+      {
+        id: 123,
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [weekInSeconds],
+      },
+      (err, res) => {},
+    );
+    environment.eth.currentProvider.send(
+      {
+        id: 124,
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+      },
+      (err, res) => {},
+    );
+
     await mockSystem.participation.methods
       .cancelRequest()
       .send({ ...defaultTxOpts, value: defaultAmgu })
@@ -172,7 +227,25 @@ describe('investment', () => {
         .send({ ...defaultTxOpts, value: defaultAmgu })
     ).rejects.toThrow(errorMessage);
 
-    await increaseTime(environment, weekInSeconds);
+    // Increment next block time and mine block
+    environment.eth.currentProvider.send(
+      {
+        id: 123,
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [weekInSeconds],
+      },
+      (err, res) => {},
+    );
+    environment.eth.currentProvider.send(
+      {
+        id: 124,
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+      },
+      (err, res) => {},
+    );
+
     await mockSystem.participation.methods
       .cancelRequest()
       .send({ ...defaultTxOpts, value: defaultAmgu });

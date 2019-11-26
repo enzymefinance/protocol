@@ -12,11 +12,10 @@ import {
 } from '~/tests/utils/new/zeroEx';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
-import { increaseTime } from '~/utils/evm/increaseTime';
 
 let environment, user, defaultTxOpts;
 let zeroEx, zeroExWrapperLock;
-let ethfinexConfig, ethfinexExchange;
+let ethfinexConfig, exchange;
 let signedOrder, unsignedOrder;
 let exchangeIndex;
 let trading;
@@ -43,7 +42,7 @@ beforeAll(async () => {
   ethfinexConfig =
     environment.deployment.exchangeConfigs[EXCHANGES.ETHFINEX];
 
-  ethfinexExchange = getContract(
+  exchange = getContract(
     environment,
     CONTRACT_NAMES.ZERO_EX_EXCHANGE,
     ethfinexConfig.exchange,
@@ -145,7 +144,7 @@ beforeAll(async () => {
 
 // tslint:disable-next-line:max-line-length
 test('Make ethfinex order from fund and take it from account in which makerToken is a non-native asset', async () => {
-  const erc20ProxyAddress = await ethfinexExchange.methods
+  const erc20ProxyAddress = await exchange.methods
     .getAssetProxy(AssetProxyId.ERC20)
     .call();
 
@@ -159,7 +158,7 @@ test('Make ethfinex order from fund and take it from account in which makerToken
     .approve(erc20ProxyAddress, signedOrder.takerAssetAmount)
     .send(defaultTxOpts);
 
-  const result = await ethfinexExchange.methods
+  const result = await exchange.methods
     .fillOrder(
       unsignedOrder,
       signedOrder.takerAssetAmount,
@@ -197,7 +196,7 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
   ).send(defaultTxOpts);
 
   await expect(
-    ethfinexExchange.methods
+    exchange.methods
       .fillOrder(
         unsignedOrder,
         signedOrder.takerAssetAmount,
@@ -207,7 +206,24 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
 });
 
 test('Withdraw (unwrap) maker asset of cancelled order', async () => {
-  await increaseTime(environment, 25 * 60 * 60);
+  // Increment next block time and mine block
+  environment.eth.currentProvider.send(
+    {
+      id: 123,
+      jsonrpc: '2.0',
+      method: 'evm_increaseTime',
+      params: [25 * 60 * 60],
+    },
+    (err, res) => {},
+  );
+  environment.eth.currentProvider.send(
+    {
+      id: 124,
+      jsonrpc: '2.0',
+      method: 'evm_mine',
+    },
+    (err, res) => {},
+  );
 
   const withdrawTokensSignature = getFunctionSignature(
     CONTRACT_NAMES.ETHFINEX_ADAPTER,

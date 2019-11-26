@@ -6,7 +6,6 @@ import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { increaseTime } from '~/utils/evm/increaseTime';
 import { getAllBalances } from '../utils/getAllBalances';
 import { toWei, BN } from 'web3-utils';
 import { BNExpDiv, BNExpMul } from '../utils/new/BNmath';
@@ -250,7 +249,24 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
 });
 
 test(`manager calls rewardAllFees to update high watermark`, async () => {
-  await increaseTime(environment, Number(performanceFeePeriod));
+  // Increment next block time and mine block
+  environment.eth.currentProvider.send(
+    {
+      id: 123,
+      jsonrpc: '2.0',
+      method: 'evm_increaseTime',
+      params: [Number(performanceFeePeriod)],
+    },
+    (err, res) => {},
+  );
+  environment.eth.currentProvider.send(
+    {
+      id: 124,
+      jsonrpc: '2.0',
+      method: 'evm_mine',
+    },
+    (err, res) => {},
+  );
 
   const preManagerShares = new BN(
     await fund.shares.methods.balanceOf(manager).call(),

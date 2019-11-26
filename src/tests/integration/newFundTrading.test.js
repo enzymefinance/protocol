@@ -7,7 +7,6 @@ import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
 import { getAllBalances } from '../utils/getAllBalances';
 import { getFundComponents } from '~/utils/getFundComponents';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { increaseTime } from '~/utils/evm/increaseTime';
 import { BN, toWei, randomHex } from 'web3-utils';
 import { BNExpMul } from '../utils/new/BNmath';
 import { stringToBytes } from '../utils/new/formatting';
@@ -412,7 +411,26 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
 
   test(`Exchange ${i + 1}: manager makes an order and cancels it`, async () => {
     const { mln, weth } = contracts;
-    await increaseTime(environment, 60 * 30);
+
+    // Increment next block time and mine block
+    environment.eth.currentProvider.send(
+      {
+        id: 123,
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [60 * 30], // 30 mins
+      },
+      (err, res) => {},
+    );
+    environment.eth.currentProvider.send(
+      {
+        id: 124,
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+      },
+      (err, res) => {},
+    );
+
     const pre = await getAllBalances(contracts, accounts, fund, environment);
     const exchangePreEthToken = new BN(
       await weth.methods.balanceOf(exchanges[i].options.address).call(),

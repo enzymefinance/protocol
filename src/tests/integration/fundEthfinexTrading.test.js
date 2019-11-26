@@ -18,7 +18,6 @@ import {
 } from '../utils/new/zeroEx';
 import { BN, toWei, randomHex } from 'web3-utils';
 import { stringToBytes } from '../utils/new/formatting';
-import { increaseTime } from '~/utils/evm';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -448,7 +447,26 @@ test('Cancel the order and withdraw tokens', async () => {
     .call();
 
   // Withdraw WETH
-  await increaseTime(environment, 25 * 60 * 60);
+
+  // Increment next block time and mine block
+  environment.eth.currentProvider.send(
+    {
+      id: 123,
+      jsonrpc: '2.0',
+      method: 'evm_increaseTime',
+      params: [25 * 60 * 60],
+    },
+    (err, res) => {},
+  );
+  environment.eth.currentProvider.send(
+    {
+      id: 124,
+      jsonrpc: '2.0',
+      method: 'evm_mine',
+    },
+    (err, res) => {},
+  );
+
   await fund.trading.methods
     .callOnExchange(
       0,

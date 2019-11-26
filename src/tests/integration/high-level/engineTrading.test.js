@@ -2,7 +2,6 @@ import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { increaseTime } from '~/utils/evm/increaseTime';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
 import { BNExpMul } from '../../utils/new/BNmath';
@@ -95,7 +94,24 @@ describe('Happy Path', () => {
   });
 
   it('Trade on Melon Engine', async () => {
-    await increaseTime(environment, 86400 * 32);
+    // Increment next block time and mine block
+    environment.eth.currentProvider.send(
+      {
+        id: 123,
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [86400 * 32],
+      },
+      (err, res) => {},
+    );
+    environment.eth.currentProvider.send(
+      {
+        id: 124,
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+      },
+      (err, res) => {},
+    );
 
     await engine.methods.thaw().send(defaultTxOpts);
 
