@@ -27,7 +27,7 @@ const out_obj = {
 }
 
 let solFiles;
-if (process.argv.length < 3) {
+if (process.argv.length == 2) {
   solFiles = glob.sync('./src/**/*.sol');
 } else if (process.argv[2] == '--help') {
   console.log('Usage: generate_input.js [input_file...]');
@@ -38,9 +38,7 @@ if (process.argv.length < 3) {
 
 for (filename of solFiles) {
   const filecontents = fs.readFileSync(filename, 'utf8');
-  out_obj.sources[filename] = {
-    content: filecontents
-  }
+  out_obj.sources[filename] = { content: filecontents }
 }
 
 console.log(JSON.stringify(out_obj));
