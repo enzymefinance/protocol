@@ -112,12 +112,6 @@
     "yup": "^0.26.6",
     "zen-observable-ts": "^0.8.10"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "yarn lint"
-    }
-  },
   "lint-staged": {
     "*.ts": [
       "yarn format",
