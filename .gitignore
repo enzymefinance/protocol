@@ -8,9 +8,6 @@ node_modules/
 # manual backup files
 *.bak
 
-# doxity
-scripts/
-
 # ignore built code
 out/
 build/
