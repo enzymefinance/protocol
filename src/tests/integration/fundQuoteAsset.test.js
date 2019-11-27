@@ -1,5 +1,4 @@
 import { BN, toWei } from 'web3-utils';
-
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
@@ -9,10 +8,9 @@ import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { stringToBytes } from '../utils/new/formatting';
 import { BNExpMul } from '../utils/new/BNmath';
-import { updateTestingPriceFeed } from '../utils/updateTestingPriceFeed';
-const deploySystem = require('../../../new/deploy/deploy-system');
-const {fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
+const {fetchContract} = require('../../../deploy/utils/deploy-contract');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-quote-asset', () => {
   let environment, accounts;

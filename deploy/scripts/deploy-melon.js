@@ -1,5 +1,5 @@
-const {call, send, nab} = require('./deploy-contract');
-const web3 = require('./get-web3');
+const {call, send, nab} = require('../utils/deploy-contract');
+const web3 = require('../utils/get-web3');
 const BN = web3.utils.BN;
 
 // TODO: check whether each "send" needs to be done before sending it

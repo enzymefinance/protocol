@@ -1,5 +1,4 @@
 import { BN, padLeft, toWei } from 'web3-utils';
-
 import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
@@ -7,8 +6,8 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
 import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
-const web3 = require('../../../../new/deploy/get-web3');
-const deploySystem = require('../../../../new/deploy/deploy-system');
+const web3 = require('../../../../deploy/utils/get-web3');
+const deploySystem = require('../../../../deploy/scripts/deploy-system');
 
 describe('Happy Path', () => {
   let user, defaultTxOpts;

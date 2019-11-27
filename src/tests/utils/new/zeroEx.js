@@ -7,7 +7,7 @@ import {
 } from '@0x/order-utils';
 
 import { EMPTY_ADDRESS } from './constants';
-const web3 = require('../../../../new/deploy/get-web3');
+const web3 = require('../../../../deploy/utils/get-web3');
 
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the

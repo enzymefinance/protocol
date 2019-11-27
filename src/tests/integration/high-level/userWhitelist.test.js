@@ -3,9 +3,9 @@ import { toWei } from 'web3-utils';
 import { getFunctionSignature } from '../../utils/new/metadata';
 import { CONTRACT_NAMES } from '../../utils/new/constants';
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
-const web3 = require('../../../../new/deploy/get-web3');
-const deploySystem = require('../../../../new/deploy/deploy-system');
-const {deploy} = require('../../../../new/deploy/deploy-contract');
+const web3 = require('../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../deploy/utils/deploy-contract');
+const deploySystem = require('../../../../deploy/scripts/deploy-system');
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;

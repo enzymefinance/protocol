@@ -1,5 +1,5 @@
-const {nab, send} = require('./deploy-contract');
-const web3 = require('./get-web3');
+const {nab, send} = require('../utils/deploy-contract');
+const web3 = require('../utils/get-web3');
 const BN = web3.utils.BN;
 
 const main = async input => {

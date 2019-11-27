@@ -15,10 +15,9 @@ import {
   signZeroExOrder
 } from '../utils/new/zeroEx';
 const getFundComponents = require('../utils/new/getFundComponents');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
 const {increaseTime} = require('../../utils/new/rpc');
-const {deploy} = require('../../../new/deploy/deploy-contract');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-0x-trading', () => {
   let deployer, manager, investor;

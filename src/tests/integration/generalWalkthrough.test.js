@@ -1,9 +1,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, toWei } from 'web3-utils';
-
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { getContract } from '~/utils/solidity/getContract';
-
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS,
@@ -11,16 +9,10 @@ import {
   TRACKS,
 } from '../utils/new/constants';
 import { stringToBytes } from '../utils/new/formatting';
-import {
-  getEventFromReceipt,
-  getFunctionSignature
-} from '../utils/new/metadata';
+import {getEventFromReceipt, getFunctionSignature} from '../utils/new/metadata';
 const getFundComponents = require('../utils/new/getFundComponents');
-const {increaseTime} = require('../utils/new/rpc');
-const getAllBalances = require('../utils/new/getAllBalances');
-const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('general-walkthrough', () => {
   let deployer, manager, investor;

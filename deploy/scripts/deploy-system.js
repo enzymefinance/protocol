@@ -1,11 +1,10 @@
+const fs = require('fs');
 const deployEthfinex = require('./deploy-ethfinex');
 const deployKyber = require('./deploy-kyber');
 const deployMelon = require('./deploy-melon');
 const deployOasis = require('./deploy-oasis');
 const deployTokens = require('./deploy-tokens');
 const deployZeroex = require('./deploy-zeroex');
-const {fetchContract} = require('./deploy-contract');
-const fs = require('fs');
 
 // strip addresses from contract objects in a deployment
 const getAllAddrs = obj => {
@@ -42,6 +41,10 @@ const deploySystem = async input => {
 }
 
 if (require.main === module) {
+  if (process.argv.length != 4) {
+    console.error('Usage: deploy-system.js <deploy_in> <deploy_out>');
+    process.exit(1);
+  }
   const infile = process.argv[2];
   const outfile = process.argv[3];
   const input = JSON.parse(fs.readFileSync(infile, 'utf8'));

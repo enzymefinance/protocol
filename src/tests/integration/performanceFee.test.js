@@ -7,9 +7,9 @@ const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const {increaseTime} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
-const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const {deploy, fetchContract} = require('../../../deploy/utils/deploy-contract');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 let accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
@@ -230,7 +230,6 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
     );
 });
 
-// TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
 test(`manager calls rewardAllFees to update high watermark`, async () => {
   await increaseTime(Number(performanceFeePeriod));
 

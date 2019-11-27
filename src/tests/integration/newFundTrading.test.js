@@ -12,9 +12,8 @@ const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const {increaseTime} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
 const getFundComponents = require('../utils/new/getFundComponents');
-const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
-const deploySystem = require('../../../new/deploy/deploy-system');
-const web3 = require('../../../new/deploy/get-web3');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 let accounts;
 let deployer, manager, investor;
@@ -405,7 +404,6 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     expect(post.fund.ether).toEqualBN(pre.fund.ether);
   });
 
-  // TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
   test(`Exchange ${i + 1}: manager makes an order and cancels it`, async () => {
     await increaseTime(60 * 30);
     const pre = await getAllBalances(contracts, accounts, fund);

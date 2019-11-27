@@ -6,18 +6,13 @@ import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { stringToBytes } from '../utils/new/formatting';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { BNExpMul } from '../utils/new/BNmath';
 import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 import { getFunctionSignature } from '../utils/new/metadata';
 const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const {increaseTime} = require('../utils/new/rpc');
-const getAllBalances = require('../utils/new/getAllBalances');
-const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;
@@ -56,8 +51,7 @@ describe('fund-kyber-trading', () => {
         [kyberAdapter.options.address],
         weth.options.address.toString(),
         [mln.options.address.toString(), weth.options.address.toString()],
-      )
-      .send(managerTxOpts);
+      ).send(managerTxOpts);
 
     await version.methods.createAccounting().send(managerTxOpts);
     await version.methods.createFeeManager().send(managerTxOpts);
@@ -299,7 +293,7 @@ describe('fund-kyber-trading', () => {
       .balanceOf(fund.vault.options.address)
       .call();
 
-    expect(postWethFund).toBe(preWethFund);
+    expect(postWethFund.toString()).toBe(preWethFund.toString());
     expect( new BN(postMlnFund.toString()))
       .toEqualBN(new BN(preMlnFund.toString()).sub(new BN(takerQuantity.toString())));
     expect(new BN(postEurFund.toString()))

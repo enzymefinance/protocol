@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const web3 = require('./get-web3');
 
-const outdir = path.resolve(`${__dirname}/../out`);
+const outdir = path.resolve(`${__dirname}/../../out`);
 
 const defaultOptions = {
   gas: 10000000,

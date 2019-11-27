@@ -4,8 +4,8 @@ import { stringToBytes } from '../utils/new/formatting';
 import { getContract } from '~/utils/solidity/getContract';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 const getFundComponents = require('../utils/new/getFundComponents');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('amgu', () => {
   let user, defaultTxOpts;

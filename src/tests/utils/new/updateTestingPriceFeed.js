@@ -1,4 +1,4 @@
-const {send} = require('../../../../new/deploy/deploy-contract');
+const {send} = require('../../../../deploy/utils/deploy-contract');
 import { BN } from 'web3-utils';
 
 const updateTestingPriceFeed = async (pricefeedContract, tokenAddresses, prices) => {

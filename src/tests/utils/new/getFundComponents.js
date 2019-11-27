@@ -1,4 +1,4 @@
-const {call, fetchContract} = require('../../../../new/deploy/deploy-contract');
+const {call, fetchContract} = require('../../../../deploy/utils/deploy-contract');
 
 const getFundComponents = async hubAddress => {
   const components = {};

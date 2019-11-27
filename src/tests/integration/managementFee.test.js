@@ -5,10 +5,8 @@ import { CONTRACT_NAMES } from '../utils/new/constants';
 const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const {increaseTime, mine} = require('../utils/new/rpc');
-const getAllBalances = require('../utils/new/getAllBalances');
-const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

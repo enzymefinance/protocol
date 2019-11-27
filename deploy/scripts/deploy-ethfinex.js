@@ -1,4 +1,4 @@
-const {nab, call, send, fetchContract} = require('./deploy-contract');
+const {nab, call, send, fetchContract} = require('../utils/deploy-contract');
 
 const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: import from util
 

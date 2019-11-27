@@ -1,5 +1,4 @@
 import { BN, toWei } from 'web3-utils';
-
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { stringToBytes } from '../utils/new/formatting';
 import { deployContract } from '~/utils/solidity/deployContract';
@@ -8,9 +7,9 @@ import { deployAndGetSystem } from '../utils/deployAndGetSystem';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const {deploy, fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const {deploy} = require('../../../deploy/utils/deploy-contract');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-malicious-token', () => {
   let accounts;

@@ -1,4 +1,4 @@
-const {nab, call, send} = require('./deploy-contract');
+const {nab, call, send} = require('../utils/deploy-contract');
 
 const main = async input => {
   const matchingMarket = await nab('MatchingMarket', [ input.oasis.conf.closeTime ], input.oasis.addr);

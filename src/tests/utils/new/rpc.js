@@ -1,4 +1,4 @@
-const web3 = require('../../../../new/deploy/get-web3');
+const web3 = require('../../../../deploy/utils/get-web3');
 
 const mine = async () => {
   await web3.eth.currentProvider.send('evm_mine', []);

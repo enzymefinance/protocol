@@ -11,9 +11,9 @@ import { getContract } from '~/utils/solidity/getContract';
 import { toWei } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
 import { CONTRACT_NAMES } from '../utils/new/constants';
-const {fetchContract} = require('../../../new/deploy/deploy-contract');
-const web3 = require('../../../new/deploy/get-web3');
-const deploySystem = require('../../../new/deploy/deploy-system');
+const {fetchContract} = require('../../../deploy/utils/deploy-contract');
+const web3 = require('../../../deploy/utils/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('account-0x-trading', () => {
   let user, defaultTxOpts, takerEnvironment;

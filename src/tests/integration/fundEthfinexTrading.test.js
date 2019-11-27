@@ -16,8 +16,8 @@ import { increaseTime } from '~/utils/evm';
 const getFundComponents = require('../utils/new/getFundComponents');
 const getAllBalances = require('../utils/new/getAllBalances');
 import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
-const deploySystem = require('../../../new/deploy/deploy-system');
-const web3 = require('../../../new/deploy/get-web3');
+const deploySystem = require('../../../deploy/scripts/deploy-system');
+const web3 = require('../../../deploy/utils/get-web3');
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: import from utils

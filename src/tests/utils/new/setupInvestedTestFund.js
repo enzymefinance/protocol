@@ -1,6 +1,5 @@
 import { toWei } from 'web3-utils';
 const getFundComponents = require('./getFundComponents');
-const {deploy, fetchContract} = require('../../../../new/deploy/deploy-contract');
 
 // `contracts` is an object of web3.Contract instances
 const setupInvestedTestFund = async (contracts, manager) => {
