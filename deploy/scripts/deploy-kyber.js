@@ -8,7 +8,7 @@ const main = async input => {
   const conf = input.conf;
   const conversionRateAdmin = conf.deployer;
   const kyberNetworkAdmin = conf.deployer;
-  const rateDuration = 500;
+  const rateDuration = 500000;
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BN(10).pow(new BN(29));
   const tokensToTransfer = new BN(10).pow(new BN(23));
