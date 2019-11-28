@@ -38,7 +38,7 @@
     "clean": "rimraf lib && rimraf out && rimraf logs/*.log",
     "clean:logs": "rimraf logs/*.log",
     "compile": "node bin/melon.js compile",
-    "deploy:new": "GANACHE_KEYS=./keys.json DEPLOY_CONF=./deploy_in_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
+    "deploy:new": "GANACHE_KEYS=./keys.json CONF=./deploy_in_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
     "deploy": "node bin/melon.js deploy",
     "deploy:dev": "yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 -T testing && yarn deploy -P 0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721 -T kyberPrice",
     "deploy:kovan": "node bin/melon.js deploy -c ./deployments/configs/kovan.json",
