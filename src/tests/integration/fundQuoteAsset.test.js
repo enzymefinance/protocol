@@ -45,6 +45,11 @@ describe('fund-quote-asset', () => {
       'makeOrder',
     );
 
+    const mlnDgxAlreadyWhitelisted = matchingMarket.methods.isTokenPairWhitelisted(mln.options.address, dgx.options.address).call();
+    if (!mlnDgxAlreadyWhitelisted) {
+      await matchingMarket.methods.addTokenPairWhitelist(mln.options.address, dgx.options.address).send(defaultTxOpts);
+    }
+
     await version.methods
       .beginSetup(
         stringToBytes('Test fund', 32),
@@ -292,7 +297,6 @@ describe('fund-quote-asset', () => {
     ).toBe(true);
   });
 
-  // TODO: callOnExchange is failing
   test('Fund make order with a non-18 decimal asset', async () => {
     const wantedShares = toWei('1', 'ether');
     trade1 = {
@@ -364,13 +368,13 @@ describe('fund-quote-asset', () => {
 
     expect(preMlnExchange).toEqual(postMlnExchange);
     expect(postMlnFund).toEqual(preMlnFund);
-    expect(new BN(postDgxExchange))
-      .toEqualBN(new BN(preDgxExchange).add(new BN(trade1.sellQuantity)));
-    expect(new BN(postDgxFund))
-      .toEqualBN(new BN(preDgxFund).sub(new BN(trade1.sellQuantity)));
-    expect(postFundCalcs.gav).toBe(preFundCalcs.gav);
-    expect(postFundCalcs.sharePrice).toBe(preFundCalcs.sharePrice);
-    expect(postMlnDeployer).toBe(preMlnDeployer);
+    expect(new BN(postDgxExchange.toString()))
+      .toEqualBN(new BN(preDgxExchange.toString()).add(new BN(trade1.sellQuantity.toString())));
+    expect(new BN(postDgxFund.toString()))
+      .toEqualBN(new BN(preDgxFund.toString()).sub(new BN(trade1.sellQuantity.toString())));
+    expect(postFundCalcs.gav.toString()).toBe(preFundCalcs.gav.toString());
+    expect(postFundCalcs.sharePrice.toString()).toBe(preFundCalcs.sharePrice.toString());
+    expect(postMlnDeployer.toString()).toBe(preMlnDeployer.toString());
   });
 
   test('Third party takes entire order', async () => {
@@ -417,14 +421,14 @@ describe('fund-quote-asset', () => {
       .call();
 
     expect(preMlnExchange).toEqual(postMlnExchange);
-    expect(new BN(postDgxExchange))
-      .toEqualBN(new BN(preDgxExchange).sub(new BN(trade1.sellQuantity)));
-    expect(postDgxFund).toBe(preDgxFund);
-    expect(new BN(postMlnFund))
-      .toEqualBN(new BN(preMlnFund).add(new BN(trade1.buyQuantity)));
-    expect(new BN(postDgxDeployer))
-      .toEqualBN(new BN(preDgxDeployer).add(new BN(trade1.sellQuantity)));
-    expect(new BN(postMlnDeployer))
-      .toEqualBN(new BN(preMlnDeployer).sub(new BN(trade1.buyQuantity)));
+    expect(new BN(postDgxExchange.toString()))
+      .toEqualBN(new BN(preDgxExchange.toString()).sub(new BN(trade1.sellQuantity.toString())));
+    expect(postDgxFund.toString()).toBe(preDgxFund.toString());
+    expect(new BN(postMlnFund.toString()))
+      .toEqualBN(new BN(preMlnFund.toString()).add(new BN(trade1.buyQuantity.toString())));
+    expect(new BN(postDgxDeployer.toString()))
+      .toEqualBN(new BN(preDgxDeployer.toString()).add(new BN(trade1.sellQuantity.toString())));
+    expect(new BN(postMlnDeployer.toString()))
+      .toEqualBN(new BN(preMlnDeployer.toString()).sub(new BN(trade1.buyQuantity.toString())));
   });
 });
