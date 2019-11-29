@@ -11,18 +11,22 @@ const defaultOptions = {
   data: null,
 };
 
+const stdout = msg => {
+  process.env.MLN_VERBOSE && console.log(msg);
+}
+
 const call = async (contract, method, args=[], opts) => {
-  console.log(
+  stdout(
     `Calling ${method} at ${contract.options.address}${
         (args.length) ? ` with args [${args}]` : ''
     }`
-  );
+  )
   const result = await contract.methods[method](...args).call(opts);
   return result;
 }
 
 const send = async (contract, method=undefined, args=[], opts) => {
-  console.log(
+  stdout(
     `Sending${
         (method) ? ` ${method}` : ''
     } to ${contract.options.address}${
@@ -68,17 +72,17 @@ const deploy = async (name, args=[]) => {
     defaultOptions,
     { data: input, from: account.address, nonce: nonce, to: null }
   );
-  console.log(`Deploying ${name}${(args.length) ? ` with args [${args}]` : '' }`);
+  stdout(`Deploying ${name}${(args.length) ? ` with args [${args}]` : '' }`);
   const receipt = await signAndSend(tx, account.privateKey);
   contract.options.address = receipt.contractAddress;
-  console.log(`Deployed ${name} at ${contract.options.address}`);
+  stdout(`Deployed ${name} at ${contract.options.address}`);
   return contract;
 }
 
 // get a contract with some address
 const fetchContract = (name, address) => {
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
-  console.log(`Fetching ${name} at ${address}`);
+  stdout(`Fetching ${name} at ${address}`);
   const contract = new web3.eth.Contract(abi, address);
   return contract;
 }
