@@ -1,17 +1,19 @@
+import { randomHex } from 'web3-utils';
+
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
+
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
-import { randomHex } from 'web3-utils';
-import { getFunctionSignature } from '../utils/new/metadata';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
 
 describe('tradingCallbacks', () => {
   let environment, user, defaultTxOpts;
   let mockAdapter;
   let mockSystem;
   let trading;
-  let makeOrderSignature,
+  let makeOrderSignature;
 
   const mockExchange = randomHex(20);
 

@@ -1,4 +1,4 @@
-import { BN, toWei, ramdomHex } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';

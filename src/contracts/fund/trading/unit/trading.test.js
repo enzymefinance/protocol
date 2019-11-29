@@ -67,8 +67,8 @@ describe('trading', () => {
   it('Exchanges are properly initialized', async () => {
     for (const i in mockExchanges) {
       const exchangeObject = await trading.methods.exchanges(i).call();
-      expect(exchangeObject.exchange).toBe(mockExchanges[i]);
-      expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
+      expect(exchangeObject.exchange.toLowerCase()).toBe(mockExchanges[i]);
+      expect(exchangeObject.adapter.toLowerCase()).toBe(mockExchangeAdapters[i]);
       const exchangeAdded = await trading.methods
         .adapterIsAdded(exchangeObject.adapter)
         .call();

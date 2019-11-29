@@ -1,11 +1,11 @@
+import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../../utils/deployAndInitTestEnv';
+
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
 import {
   CONTRACT_NAMES,
@@ -14,6 +14,7 @@ import {
   KYBER_ETH_ADDRESS,
   TRACKS,
 } from '../../utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;
@@ -21,7 +22,7 @@ describe('Happy Path', () => {
   let routes;
   let accounting, kyberNetworkProxy, trading;
   let exchangeIndex;
-  let takeOrderSignature, takeOrderSignatureBytes;
+  let takeOrderFunctionSig;
 
   beforeAll(async () => {
     environment = await deployAndInitTestEnv();
@@ -29,14 +30,6 @@ describe('Happy Path', () => {
 
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
-
-    takeOrderSignature = getFunctionSignature(
-      CONTRACT_NAMES.EXCHANGE_ADAPTER,
-      'makeOrder',
-    );
-    takeOrderSignatureBytes = encodeFunctionSignature(
-      makeOrderSignature
-    );
 
     const {
       exchangeConfigs,
@@ -81,6 +74,11 @@ describe('Happy Path', () => {
         exchangeConfigs[EXCHANGES.KYBER].adapter.toLowerCase(),
     );
 
+    takeOrderFunctionSig = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder',
+    );
+
     const policyManager = getContract(
       environment,
       CONTRACT_NAMES.POLICY_MANAGER,
@@ -89,7 +87,7 @@ describe('Happy Path', () => {
 
     await policyManager.methods
       .register(
-        takeOrderSignatureBytes,
+        encodeFunctionSignature(takeOrderFunctionSig),
         melonContracts.policies.priceTolerance.toString(),
       )
       .send(defaultTxOpts);
@@ -146,7 +144,7 @@ describe('Happy Path', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        takeOrderSignature,
+        takeOrderFunctionSig,
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
@@ -197,7 +195,7 @@ describe('Happy Path', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          takeOrderSignature,
+          takeOrderFunctionSig,
           [
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
