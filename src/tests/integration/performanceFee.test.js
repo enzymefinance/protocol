@@ -10,8 +10,8 @@ const getAllBalances = require('../utils/new/getAllBalances');
 const {deploy, fetchContract} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
 const deploySystem = require('../../../deploy/scripts/deploy-system');
-
-let accounts;
+import { stringToBytes } from '../utils/new/formatting';
+let environment, accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let performanceFeePeriod = '1000';
@@ -46,7 +46,7 @@ beforeAll(async () => {
 
   await registry.methods.registerFees(feeAddresses).send(defaultTxOpts);
 
-  const fundName = padLeft(stringToHex('Test fund'), 64);
+  const fundName = stringToBytes('Test fund', 32);
   await version.methods
     .beginSetup(
       fundName,
@@ -232,7 +232,6 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
 
 test(`manager calls rewardAllFees to update high watermark`, async () => {
   await increaseTime(Number(performanceFeePeriod));
-
   const preManagerShares = new BN(
     (await fund.shares.methods.balanceOf(manager).call()).toString()
   );

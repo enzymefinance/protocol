@@ -1,12 +1,9 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES } from '../utils/new/constants';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
+import { BN, toWei, padLeft, stringToHex, randomHex } from 'web3-utils';
 import { BNExpMul } from '../utils/new/BNmath';
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const {increaseTime} = require('../utils/new/rpc');
@@ -14,8 +11,8 @@ const getAllBalances = require('../utils/new/getAllBalances');
 const getFundComponents = require('../utils/new/getFundComponents');
 const web3 = require('../../../deploy/utils/get-web3');
 const deploySystem = require('../../../deploy/scripts/deploy-system');
-
-let accounts;
+import { stringToBytes } from '../utils/new/formatting';
+let environment, accounts;
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let contracts, exchanges, deployOut;
@@ -66,7 +63,7 @@ beforeAll(async () => {
 
   exchanges = [matchingMarket];
 
-  const fundName = padLeft(stringToHex('Test fund'), 64);
+  const fundName = stringToBytes('Test fund', 32);
   await version.methods
     .beginSetup(
       fundName,
@@ -189,12 +186,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [
           trade1.sellQuantity,
@@ -206,7 +203,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHexOfSize(32),
+        randomHex(32),
         '0x0',
         '0x0',
         '0x0',
@@ -362,12 +359,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         takeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity, 0],
         `0x${Number(orderId)
@@ -421,12 +418,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [
           trade2.sellQuantity,
@@ -438,7 +435,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHexOfSize(32),
+        randomHex(32),
         '0x0',
         '0x0',
         '0x0',
@@ -450,12 +447,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         cancelOrderSignature,
         [
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
           weth.options.address,
           mln.options.address,
-          randomHexOfSize(20),
-          randomHexOfSize(20),
+          randomHex(20),
+          randomHex(20),
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
         `0x${Number(orderId)
@@ -502,12 +499,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           i,
           takeOrderSignature,
           [
-            randomHexOfSize(20),
-            randomHexOfSize(20),
+            randomHex(20),
+            randomHex(20),
             weth.options.address,
             mln.options.address,
-            randomHexOfSize(20),
-            randomHexOfSize(20),
+            randomHex(20),
+            randomHex(20),
           ],
           [0, 0, 0, 0, 0, 0, `${ bnBuyQuantity }`, 0],
           `0x${Number(orderId)

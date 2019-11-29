@@ -4,11 +4,16 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { getContract } from '~/utils/solidity/getContract';
 import { BNExpMul } from '../../utils/new/BNmath';
 import { getFunctionSignature } from '../../utils/new/metadata';
-import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
 const {increaseTime} = require('../../utils/new/rpc');
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
 const web3 = require('../../../../deploy/utils/get-web3');
 const deploySystem = require('../../../../deploy/scripts/deploy-system');
+import {
+  CONTRACT_NAMES,
+  EXCHANGES,
+  EMPTY_ADDRESS,
+  TRACKS,
+} from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let user, defaultTxOpts;
@@ -89,12 +94,12 @@ describe('Happy Path', () => {
         exchangeIndex,
         takeOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         padLeft('0x0', 64),
@@ -137,12 +142,12 @@ describe('Happy Path', () => {
           exchangeIndex,
           takeOrderSignature,
           [
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             weth.options.address,
             mln.options.address,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
           padLeft('0x0', 64),

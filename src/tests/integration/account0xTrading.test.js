@@ -1,5 +1,4 @@
 import { deploy0xExchange } from '~/contracts/exchanges/transactions/deploy0xExchange';
-import { stringifyStruct } from '~/utils/solidity/stringifyStruct';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
@@ -58,7 +57,6 @@ describe('account-0x-trading', () => {
       }
     );
 
-    // await approveOrder(environment, zrxExchangeAddress, unsignedOrder);
     await mln.methods
       .approve(erc20Proxy.options.address, makerAssetAmount)
       .send(defaultTxOpts);

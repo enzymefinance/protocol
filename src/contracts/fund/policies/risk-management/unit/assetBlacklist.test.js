@@ -1,41 +1,50 @@
-import { Contracts } from '~/Contracts';
-
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { makeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { randomAddress } from '~/utils/helpers/randomAddress';
 import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+import { randomHex, toChecksumAddress } from 'web3-utils';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { encodeFunctionSignature } from 'web3-eth-abi';
 
 describe('assetBlacklist', () => {
   let environment, user, defaultTxOpts;
   let mockSystem;
   let assetArray;
+  let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
     user = environment.wallet.address;
     defaultTxOpts = { from: user, gas: 8000000 };
 
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
+    makeOrderSignatureBytes = encodeFunctionSignature(
+      makeOrderSignature
+    );
+
     mockSystem = await deployMockSystem(
       environment,
-      { policyManagerContract: Contracts.PolicyManager }
+      { policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER }
     );
 
     // Define shared vars
     assetArray = [
-      `${randomAddress()}`,
-      `${randomAddress()}`,
-      `${randomAddress()}`,
-      `${randomAddress()}`,
-      `${randomAddress()}`,
-    ];
+      randomHex(20),
+      randomHex(20),
+      randomHex(20),
+      randomHex(20),
+      randomHex(20),
+    ].map(addr => toChecksumAddress(addr));
   });
 
   it('Create blacklist', async () => {
     const blacklist = await deploy(
       environment,
-      Contracts.AssetBlacklist,
+      CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
     );
 
@@ -47,10 +56,10 @@ describe('assetBlacklist', () => {
   it('Add asset to blacklist', async () => {
     const blacklist = await deploy(
       environment,
-      Contracts.AssetBlacklist,
+      CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
     );
-    const mockAsset = `${randomAddress()}`;
+    const mockAsset = randomHex(20);
 
     expect(
       await blacklist.methods.getMembers().call()
@@ -74,10 +83,10 @@ describe('assetBlacklist', () => {
   it('Policy manager with blacklist', async () => {
     const blacklist = await deploy(
       environment,
-      Contracts.AssetBlacklist,
+      CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
     );
-    const mockAsset = `${randomAddress()}`;
+    const mockAsset = randomHex(20);
 
     await mockSystem.policyManager.methods
       .register(makeOrderSignatureBytes, blacklist.options.address)
@@ -85,7 +94,7 @@ describe('assetBlacklist', () => {
 
     const validateArgs = [
       makeOrderSignatureBytes,
-      [emptyAddress, emptyAddress, emptyAddress, mockAsset, emptyAddress],
+      [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, mockAsset, EMPTY_ADDRESS],
       [0, 0, 0],
       '0x0',
     ];

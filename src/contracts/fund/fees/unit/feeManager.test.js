@@ -1,10 +1,9 @@
 import { BN, toWei } from 'web3-utils';
-
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 
 describe('feeManager', () => {
   let environment, user, defaultTxOpts;
@@ -18,13 +17,13 @@ describe('feeManager', () => {
 
     feeA = getContract(
       environment,
-      Contracts.MockFee,
-      await deployContract(environment, Contracts.MockFee, ['0']),
+      CONTRACT_NAMES.MOCK_FEE,
+      await deployContract(environment, CONTRACT_NAMES.MOCK_FEE, ['0']),
     );
     feeB = getContract(
       environment,
-      Contracts.MockFee,
-      await deployContract(environment, Contracts.MockFee, ['1']),
+      CONTRACT_NAMES.MOCK_FEE,
+      await deployContract(environment, CONTRACT_NAMES.MOCK_FEE, ['1']),
     );
     const mockFeeRate = 5000;
     const mockFeePeriod = 1000;
@@ -42,7 +41,7 @@ describe('feeManager', () => {
     ];
 
     mockSystem = await deployMockSystem(environment, {
-      feeManagerContract: Contracts.FeeManager,
+      feeManagerContract: CONTRACT_NAMES.FEE_MANAGER,
       fees: feeArray,
     });
 

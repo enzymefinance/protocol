@@ -1,9 +1,8 @@
-import { toWei } from 'web3-utils';
+import { toWei, randomHex } from 'web3-utils';
 
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { randomAddress } from '~/utils/helpers/randomAddress';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 
 describe('redemption', () => {
   let environment, user, defaultTxOpts;
@@ -16,7 +15,7 @@ describe('redemption', () => {
 
     mockSystem = await deployMockSystem(
       environment,
-      { accountingContract: Contracts.Accounting }
+      { accountingContract: CONTRACT_NAMES.ACCOUNTING }
     );
   });
 
@@ -27,7 +26,7 @@ describe('redemption', () => {
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
 
     await mockSystem.shares.methods
-      .createFor(`${randomAddress()}`, '1000')
+      .createFor(randomHex(20), '1000')
       .send(defaultTxOpts);
 
     expect(preShares).toBe('0');
@@ -45,7 +44,7 @@ describe('redemption', () => {
 
   it('Asset not in list prevents redemption', async () => {
     const errorMessage = 'Requested asset not in asset list';
-    const addr = `${randomAddress()}`;
+    const addr = randomHex(20);
 
     await
       mockSystem.shares.methods.createFor(user, '1000')

@@ -11,6 +11,7 @@ const deploySystem = require('../../../deploy/scripts/deploy-system');
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+import { stringToBytes } from '../utils/new/formatting';
 
 describe('management-fee', () => {
   const yearInSeconds = 31536000;
@@ -45,7 +46,7 @@ describe('management-fee', () => {
       .registerFees([managementFee.options.address.toString()])
       .send(defaultTxOpts);
 
-    const fundName = padLeft(stringToHex('Test fund'), 64);
+    const fundName = stringToBytes('Test fund', 32);
     await version.methods
       .beginSetup(
         fundName,

@@ -1,11 +1,11 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
 import { getFunctionSignature } from '../../utils/new/metadata';
-import { CONTRACT_NAMES } from '../../utils/new/constants';
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
 const web3 = require('../../../../deploy/utils/get-web3');
 const {deploy} = require('../../../../deploy/utils/deploy-contract');
 const deploySystem = require('../../../../deploy/scripts/deploy-system');
+import { CONTRACT_NAMES, TRACKS } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;

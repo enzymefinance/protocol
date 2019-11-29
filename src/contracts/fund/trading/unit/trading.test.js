@@ -1,11 +1,9 @@
-import { Contracts } from '~/Contracts';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployContract } from '~/utils/solidity/deployContract';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { randomAddress } from '~/utils/helpers/randomAddress';
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 
 describe('trading', () => {
   let environment, user, defaulTxOpts;
@@ -14,13 +12,13 @@ describe('trading', () => {
 
   // Mock data
   const mockExchanges = [
-    randomAddress().toString(),
-    randomAddress().toString(),
+    randomHex(20),
+    randomHex(20),
   ];
 
   const mockExchangeAdapters = [
-    randomAddress().toString(),
-    randomAddress().toString(),
+    randomHex(20),
+    randomHex(20),
   ];
 
   beforeAll(async () => {
@@ -36,8 +34,8 @@ describe('trading', () => {
 
     trading = getContract(
       environment,
-      Contracts.Trading,
-      await deployContract(environment, Contracts.Trading, [
+      CONTRACT_NAMES.TRADING,
+      await deployContract(environment, CONTRACT_NAMES.TRADING, [
         mockSystem.hub.options.address,
         mockExchanges,
         mockExchangeAdapters,
@@ -47,18 +45,18 @@ describe('trading', () => {
 
     await mockSystem.hub.methods
       .setSpokes([
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
         mockSystem.vault.options.address,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
       ])
       .send(defaulTxOpts);
     await mockSystem.hub.methods
@@ -69,8 +67,8 @@ describe('trading', () => {
   it('Exchanges are properly initialized', async () => {
     for (const i in mockExchanges) {
       const exchangeObject = await trading.methods.exchanges(i).call();
-      expect(exchangeObject.exchange).toBe(mockExchanges[i]);
-      expect(exchangeObject.adapter).toBe(mockExchangeAdapters[i]);
+      expect(exchangeObject.exchange.toLowerCase()).toBe(mockExchanges[i]);
+      expect(exchangeObject.adapter.toLowerCase()).toBe(mockExchangeAdapters[i]);
       const exchangeAdded = await trading.methods
         .adapterIsAdded(exchangeObject.adapter)
         .call();
@@ -81,7 +79,7 @@ describe('trading', () => {
   it('Exchanges cannot be initialized without its adapter', async () => {
     const errorMessage = 'Array lengths unequal';
     await expect(
-      deployContract(environment, Contracts.Trading, [
+      deployContract(environment, CONTRACT_NAMES.TRADING, [
         mockSystem.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],

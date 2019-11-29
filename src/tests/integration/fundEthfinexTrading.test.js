@@ -1,5 +1,5 @@
+import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-import { fillOrder } from '~/contracts/exchanges/third-party/0x/transactions/fillOrder';
 import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { getToken } from '~/contracts/dependencies/token/calls/getToken';
@@ -12,12 +12,13 @@ import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '../utils/new/zeroEx';
-import { increaseTime } from '~/utils/evm';
 const getFundComponents = require('../utils/new/getFundComponents');
 const getAllBalances = require('../utils/new/getAllBalances');
-import { BN, toWei, padLeft, stringToHex } from 'web3-utils';
 const deploySystem = require('../../../deploy/scripts/deploy-system');
 const web3 = require('../../../deploy/utils/get-web3');
+const { increaseTime } = require('../utils/new/rpc');
+import { BN, toWei, randomHex } from 'web3-utils';
+import { stringToBytes } from '../utils/new/formatting';
 
 // mock data
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: import from utils
@@ -25,12 +26,12 @@ const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: impo
 let accounts;
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
-let mlnTokenWrapperInfo, ethTokenWrapperInfo;
 let unsignedOrder, signedOrder;
 let makeOrderSignature, cancelOrderSignature, withdrawTokensSignature;
 let contracts, deployOut;
 let fund;
-let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, registry, mlnWrapper, version;
+let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, registry, version;
+let ethTokenWrapper, mlnWrapper
 
 beforeAll(async () => {
   accounts = await web3.eth.getAccounts();
@@ -67,6 +68,7 @@ beforeAll(async () => {
   version = contracts.Version;
   registry = contracts.Registry;
   mlnWrapper = contracts['W-MLN'];
+  ethTokenWrapper = contracts.WrapperLockEth;
 
   const erc20ProxyAddress = contracts.ERC20Proxy.options.address;
 
@@ -74,7 +76,7 @@ beforeAll(async () => {
   const fakePrices = Object.values(deployOut.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
   await contracts.TestingPriceFeed.methods.update(Object.values(deployOut.tokens.addr), fakePrices);
 
-  const fundName = padLeft(stringToHex('Test fund'), 64);
+  const fundName = stringToBytes('Test fund', 32);
   await version.methods
     .beginSetup(
       fundName,
@@ -257,10 +259,20 @@ test('Third party takes the order made by the fund', async () => {
     await mlnWrapper.methods.balanceOf(deployer).call(),
   );
 
-  // TODO: replace with (some) code from fillOrder function
-  const result = await fillOrder(ethfinex.options.address, {
-    signedOrder: signedOrder,
-  });
+  const erc20ProxyAddress = await ethfinex.methods
+    .getAssetProxy(AssetProxyId.ERC20.toString())
+    .call();
+
+  await weth.methods
+    .approve(erc20ProxyAddress, signedOrder.takerAssetAmount)
+    .send(defaultTxOpts);
+
+  const result = await ethfinex.methods
+    .fillOrder(
+      signedOrder,
+      signedOrder.takerAssetAmount,
+      signedOrder.signature,
+    ).send(defaultTxOpts);
 
   const post = await getAllBalances(contracts, accounts, fund);
   const postDeployerWrappedMLN = new BN(
@@ -279,7 +291,6 @@ test('Third party takes the order made by the fund', async () => {
   expect(post.deployer.weth).toEqualBN(pre.deployer.weth.sub(bnTakerAssetAmount));
 });
 
-// TODO: fix problem with ecSignOrderAsync error for this to pass
 test('Make order with native asset', async () => {
   const pre = await getAllBalances(contracts, accounts, fund);
   const preCalculations = await fund.accounting.methods
@@ -293,11 +304,11 @@ test('Make order with native asset', async () => {
   const makerAssetAmount = toWei('.05', 'ether');
   const takerAssetAmount = toWei('.5', 'ether');
   unsignedOrder = await createUnsignedZeroExOrder(
-    zeroExExchange.options.address,
+    ethfinex.options.address,
     {
       feeRecipientAddress: investor,
       makerAddress,
-      makerTokenAddress: ethTokenWrapperInfo.address,
+      makerTokenAddress: ethTokenWrapper.options.address,
       makerAssetAmount,
       takerTokenAddress: dgx.options.address,
       takerAssetAmount,
@@ -391,7 +402,7 @@ test('Cancel the order and withdraw tokens', async () => {
       '0x0',
     )
     .send(managerTxOpts);
-  const isOrderCancelled = await zeroExExchange.methods
+  const isOrderCancelled = await ethfinex.methods
     .cancelled(orderHashHex)
     .call();
 
@@ -402,8 +413,8 @@ test('Cancel the order and withdraw tokens', async () => {
     .performCalculations()
     .call();
 
-  // Withdraw WETH
   await increaseTime(25 * 60 * 60);
+
   await fund.trading.methods
     .callOnExchange(
       0,
@@ -423,7 +434,8 @@ test('Cancel the order and withdraw tokens', async () => {
       '0x0',
     )
     .send(managerTxOpts);
-  // To Clean up asset list
+
+  // To clean up asset list
   await fund.accounting.methods
     .performCalculations()
     .send(managerTxOpts);

@@ -1,5 +1,4 @@
 import { toWei } from 'web3-utils';
-import { Environment } from '~/utils/environment/Environment';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
 import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';

@@ -1,21 +1,30 @@
+import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, padLeft, toWei } from 'web3-utils';
-import { FunctionSignatures } from '~/contracts/fund/trading/utils/FunctionSignatures';
 import { kyberEthAddress } from '~/utils/constants/kyberEthAddress';
 import { takeOrderSignatureBytes } from '~/utils/constants/orderSignatures';
 import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
-import { CONTRACT_NAMES, EXCHANGES } from '../../utils/new/constants';
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
 const web3 = require('../../../../deploy/utils/get-web3');
 const deploySystem = require('../../../../deploy/scripts/deploy-system');
+import {
+  CONTRACT_NAMES,
+  EXCHANGES,
+  EMPTY_ADDRESS,
+  KYBER_ETH_ADDRESS,
+  TRACKS,
+} from '../../utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
 
 describe('Happy Path', () => {
   let user, defaultTxOpts;
   let mln, weth;
   let fund;
-  let accounting, kyberNetworkProxy, trading, policyManager, conversionRates;
+  let accounting, trading, policyManager;
+  let kyberNetworkProxy, conversionRates, priceTolerance;
   let testingPriceFeed;
   let exchangeIndex;
+  let takeOrderFunctionSig;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -32,6 +41,7 @@ describe('Happy Path', () => {
     kyberNetworkProxy = contracts.KyberNetworkProxy;
     conversionRates = contracts.ConversionRates;
     testingPriceFeed = contracts.TestingPriceFeed;
+    priceTolerance = contracts.PriceTolerance;
     policyManager = fund.policyManager;
     trading = fund.trading;
     accounting = fund.accounting;
@@ -41,11 +51,17 @@ describe('Happy Path', () => {
       e => e.toLowerCase() === contracts.KyberAdapter.options.address.toLowerCase()
     );
 
+    takeOrderFunctionSig = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'takeOrder',
+    );
+
     await policyManager.methods
       .register(
-        takeOrderSignatureBytes,
-        contracts.PriceTolerance.options.address
-      ).send(defaultTxOpts);
+        encodeFunctionSignature(takeOrderFunctionSig),
+        priceTolerance.options.address
+      )
+      .send(defaultTxOpts);
 
     // Setting rates on kyber reserve
     const { 0: mlnPrice } = await testingPriceFeed.methods
@@ -73,7 +89,7 @@ describe('Happy Path', () => {
     const takerQuantity = toWei('0.1', 'ether');
 
     const { 1: expectedRate } = await kyberNetworkProxy.methods
-      .getExpectedRate(kyberEthAddress, mln.options.address, takerQuantity)
+      .getExpectedRate(KYBER_ETH_ADDRESS, mln.options.address, takerQuantity)
       .call(defaultTxOpts);
 
     // Minimum quantity of dest asset expected to get in return in the trade
@@ -90,14 +106,14 @@ describe('Happy Path', () => {
     await trading.methods
       .callOnExchange(
         exchangeIndex,
-        FunctionSignatures.takeOrder,
+        takeOrderFunctionSig,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           makerAsset,
           takerAsset,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
         padLeft('0x0', 64),
@@ -141,14 +157,14 @@ describe('Happy Path', () => {
       trading.methods
         .callOnExchange(
           exchangeIndex,
-          FunctionSignatures.takeOrder,
+          takeOrderFunctionSig,
           [
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             makerAsset,
             takerAsset,
-            emptyAddress,
-            emptyAddress,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
           padLeft('0x0', 64),

@@ -1,19 +1,21 @@
-import { Contracts } from '~/Contracts';
+import { randomHex } from 'web3-utils';
+
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { randomAddress } from '~/utils/helpers/randomAddress';
-import { FunctionSignatures } from '../utils/FunctionSignatures';
+
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
 
 describe('tradingCallbacks', () => {
   let environment, user, defaultTxOpts;
   let mockAdapter;
   let mockSystem;
   let trading;
+  let makeOrderSignature;
 
-  const mockExchange = randomAddress().toString();
+  const mockExchange = randomHex(20);
 
   beforeAll(async () => {
     environment = await initTestEnvironment();
@@ -21,10 +23,16 @@ describe('tradingCallbacks', () => {
     defaultTxOpts = { from: user, gas: 8000000 };
     mockSystem = await deployMockSystem(environment);
     user = environment.wallet.address;
+
+    makeOrderSignature = getFunctionSignature(
+      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      'makeOrder',
+    );
+
     mockAdapter = await getContract(
       environment,
-      Contracts.MockAdapter,
-      await deployContract(environment, Contracts.MockAdapter),
+      CONTRACT_NAMES.MOCK_ADAPTER,
+      await deployContract(environment, CONTRACT_NAMES.MOCK_ADAPTER),
     );
     await mockSystem.registry.methods
       .registerExchangeAdapter(mockExchange, mockAdapter.options.address)
@@ -32,8 +40,8 @@ describe('tradingCallbacks', () => {
 
     trading = await getContract(
       environment,
-      Contracts.Trading,
-      await deployContract(environment, Contracts.Trading, [
+      CONTRACT_NAMES.TRADING,
+      await deployContract(environment, CONTRACT_NAMES.TRADING, [
         user, // faked so user can call initialize
         [mockExchange],
         [mockAdapter.options.address],
@@ -44,17 +52,17 @@ describe('tradingCallbacks', () => {
     await trading.methods
       .initialize([
         mockSystem.accounting.options.address,
-        emptyAddress,
-        emptyAddress,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
         mockSystem.policyManager.options.address,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
         mockSystem.registry.options.address,
-        emptyAddress,
-        emptyAddress,
-        emptyAddress,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
       ])
       .send(defaultTxOpts);
   });
@@ -67,14 +75,14 @@ describe('tradingCallbacks', () => {
     await trading.methods
       .callOnExchange(
         0,
-        FunctionSignatures.makeOrder,
+        makeOrderSignature,
         [
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           mockSystem.mln.options.address,
           mockSystem.weth.options.address,
-          emptyAddress,
-          emptyAddress,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
         `0x${Number(mockOrderId)

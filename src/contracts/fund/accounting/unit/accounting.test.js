@@ -1,5 +1,4 @@
 import { toWei } from 'web3-utils';
-
 const setupInvestedTestFund = require('../../../../tests/utils/new/setupInvestedTestFund');
 const web3 = require('../../../../../deploy/utils/get-web3');
 const deploySystem = require('../../../../../deploy/scripts/deploy-system');
