@@ -30,10 +30,11 @@ let unsignedOrder, signedOrder;
 let makeOrderSignature, cancelOrderSignature, withdrawTokensSignature;
 let contracts, deployOut;
 let fund;
-let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, registry, mlnWrapper;
+let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, registry, mlnWrapper, version;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await web3.eth.getAccounts();
+  accounts = await web3.eth.getAccounts();
+  [deployer, manager, investor] = accounts;
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
@@ -257,7 +258,7 @@ test('Third party takes the order made by the fund', async () => {
   );
 
   // TODO: replace with (some) code from fillOrder function
-  const result = await fillOrder(environment, ethfinex.options.address, {
+  const result = await fillOrder(ethfinex.options.address, {
     signedOrder: signedOrder,
   });
 

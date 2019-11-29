@@ -1,11 +1,37 @@
 const web3 = require('../../../../deploy/utils/get-web3');
 
 const mine = async () => {
-  await web3.eth.currentProvider.send('evm_mine', []);
+  return new Promise((resolve, reject) => {
+    web3.eth.currentProvider.send(
+      {
+        id: Date.now(),
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+        params: [],
+      },
+      (err, response) => {
+        if (err) reject(err);
+        else resolve(response);
+      },
+    );
+  });
 }
 
 const increaseTime = async seconds => {
-  await web3.eth.currentProvider.send('evm_increaseTime', [seconds]);
+  await new Promise((resolve, reject) => {
+    web3.eth.currentProvider.send(
+      {
+        id: new Date().getSeconds(),
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [seconds],
+      },
+      (err, response) => {
+        if (err) reject(err);
+        else resolve(response);
+      },
+    );
+  });
   await mine();
 }
 

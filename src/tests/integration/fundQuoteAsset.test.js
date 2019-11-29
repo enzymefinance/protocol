@@ -4,10 +4,10 @@ import { CONTRACT_NAMES } from '../utils/new/constants';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
 import { deployAndGetSystem } from '../utils/deployAndGetSystem';
-import { getFundComponents } from '~/utils/getFundComponents';
 import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
 import { stringToBytes } from '../utils/new/formatting';
 import { BNExpMul } from '../utils/new/BNmath';
+const getFundComponents = require('../utils/new/getFundComponents');
 const {fetchContract} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
 const deploySystem = require('../../../deploy/scripts/deploy-system');
@@ -20,7 +20,7 @@ describe('fund-quote-asset', () => {
   let trade1;
   let contracts, deployOut;
   let dgx, mln, weth, matchingMarket, version, priceSource;
-  let hub, accounting, participation, shares, trading, vault;
+  let accounting, vault, participation, trading, shares;
   let makeOrderSignature;
 
   beforeAll(async () => {
@@ -45,7 +45,7 @@ describe('fund-quote-asset', () => {
       'makeOrder',
     );
 
-    const mlnDgxAlreadyWhitelisted = matchingMarket.methods.isTokenPairWhitelisted(mln.options.address, dgx.options.address).call();
+    const mlnDgxAlreadyWhitelisted = await matchingMarket.methods.isTokenPairWhitelisted(mln.options.address, dgx.options.address).call();
     if (!mlnDgxAlreadyWhitelisted) {
       await matchingMarket.methods.addTokenPairWhitelist(mln.options.address, dgx.options.address).send(defaultTxOpts);
     }
@@ -75,20 +75,15 @@ describe('fund-quote-asset', () => {
     await version.methods.createVault().send(managerTxOpts);
     const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    hub = fetchContract('Hub', hubAddress);
-    const accountingAddress = await hub.methods.accounting.call();
-    accounting = fetchContract('Accounting', accountingAddress);
-    const sharesAddress = await hub.methods.shares.call();
-    shares = fetchContract('Shares', sharesAddress);
-    const vaultAddress = await hub.methods.vault.call();
-    vault = fetchContract('Vault', vaultAddress);
-    const participationAddress = await hub.methods.participation.call();
-    participation = fetchContract('Participation', participationAddress);
-    const tradingAddress = await hub.methods.trading.call();
-    trading = fetchContract('Trading', tradingAddress);
+    const fund = await getFundComponents(hubAddress);
+    accounting = fund.accounting;
+    participation = fund.participation;
+    shares = fund.shares;
+    trading = fund.trading;
+    vault = fund.vault;
   });
 
-  test('fund denomination asset is dgx', async () => {
+  test('Fund denomination asset is DGX', async () => {
     fundDenominationAsset = await accounting.methods
       .DENOMINATION_ASSET()
       .call();
@@ -121,7 +116,7 @@ describe('fund-quote-asset', () => {
     ).toBe(true);
   });
 
-  test('fund gets non fund denomination asset from investment', async () => {
+  test('Fund gets non fund denomination asset from investment', async () => {
     const offeredValue = toWei('100', 'ether');
     const wantedShares = toWei('100', 'ether');
     const amguAmount = toWei('.01', 'ether');
@@ -229,7 +224,7 @@ describe('fund-quote-asset', () => {
     expect(new BN(postFundGav.toString()).eq(new BN(0))).toBe(true);
   });
 
-  test('fund gets non pricefeed quote asset from investment', async () => {
+  test('Fund gets non pricefeed quote asset from investment', async () => {
     const offeredValue = toWei('1000', 'ether');
     const wantedShares = toWei('1', 'ether');
     const amguAmount = toWei('.01', 'ether');

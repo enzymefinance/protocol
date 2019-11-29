@@ -1,4 +1,5 @@
 const {nab, call, send} = require('../utils/deploy-contract');
+const { assetDataUtils } = require('@0x/order-utils');
 
 const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: import from util
 
@@ -19,7 +20,9 @@ const main = async input => {
     await send(exchange, 'registerAssetProxy', [erc20Proxy.options.address]);
   }
   // TODO: is this necessary to send each time?
-  await send(exchange, 'changeZRXAssetData', [input.tokens.addr.ZRX]);
+  const zrxAssetData = assetDataUtils.encodeERC20AssetData(input.tokens.addr.ZRX);
+
+  await send(exchange, 'changeZRXAssetData', [zrxAssetData]);
 
   return {
     "Exchange": exchange,

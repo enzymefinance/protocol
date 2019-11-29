@@ -13,7 +13,15 @@ const web3 = new Web3(
 // get private keys stored in a file, like that produced by ganache --acctKeys
 if (process.env.GANACHE_KEYS) { // TODO: move away from env var
   const keys = JSON.parse(fs.readFileSync(process.env.GANACHE_KEYS));
-  for (const v of Object.values(keys.private_keys)) { web3.eth.accounts.wallet.add(v); }
+  for (let [addr, pkey] of Object.entries(keys.private_keys)) {
+    if (!pkey.startsWith('0x')) {
+      pkey = '0x' + pkey;
+    }
+    web3.eth.accounts.wallet.add({
+      address: addr,
+      privateKey: pkey
+    });
+  }
 }
 
 module.exports = web3;

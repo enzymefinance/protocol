@@ -3,7 +3,6 @@ import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
 import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getContract } from '~/utils/solidity/getContract';
 import { getFunctionSignature } from '../utils/new/metadata';
 import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 import { getUpdatedTestPrices } from '../utils/new/api';
@@ -14,15 +13,16 @@ import {
   isValidZeroExSignatureOffChain,
   signZeroExOrder
 } from '../utils/new/zeroEx';
+const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const getFundComponents = require('../utils/new/getFundComponents');
-const {increaseTime} = require('../../utils/new/rpc');
+const {increaseTime} = require('../utils/new/rpc');
 const web3 = require('../../../deploy/utils/get-web3');
 const deploySystem = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-0x-trading', () => {
   let deployer, manager, investor;
   let defaultTxOpts, managerTxOpts, investorTxOpts;
-  let contracts;
+  let contracts, deployOut;
   let mln, zrx, weth, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
   let signedOrder1, signedOrder2, signedOrder3, signedOrder4;
   let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
@@ -33,6 +33,7 @@ describe('fund-0x-trading', () => {
 
     const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
     contracts = deployment.contracts;
+    deployOut = deployment.deployOut;
 
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };
@@ -86,15 +87,9 @@ describe('fund-0x-trading', () => {
     await version.methods.createVault().send(managerTxOpts);
     const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
-    fund = getFundComponents(hubAddress);
+    fund = await getFundComponents(hubAddress);
 
-    const prices = await getUpdatedTestPrices();
-    await priceSource.methods
-      .update(
-        Object.keys(prices).map(key => contracts[key].options.address),
-        Object.values(prices)
-      )
-      .send(defaultTxOpts);
+    await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
 
     // Seed investor and fund with ETH and ZRX
     await weth.methods
@@ -118,7 +113,6 @@ describe('fund-0x-trading', () => {
     await zrx.methods
       .transfer(fund.vault.options.address, toWei('10', 'ether'))
       .send(defaultTxOpts);
-
   });
 
   test('third party makes and validates an off-chain order (1)', async () => {
@@ -151,8 +145,7 @@ describe('fund-0x-trading', () => {
     expect(signatureValid).toBeTruthy();
   });
 
-  // TODO: fix problem with ecSignOrderAsync error for this to pass
-  test('manager takes order through 0x adapter', async () => {
+  test('manager takes order 1 through 0x adapter', async () => {
     const { trading } = fund;
     const fillQuantity = signedOrder1.takerAssetAmount;
 
@@ -263,7 +256,7 @@ describe('fund-0x-trading', () => {
     expect(signatureValid).toBeTruthy();
   });
 
-  test('fund with enough ZRX takes the above order', async () => {
+  test('fund with enough ZRX takes order 2', async () => {
     const { trading } = fund;
     const fillQuantity = signedOrder2.takerAssetAmount;
 
@@ -501,8 +494,7 @@ describe('fund-0x-trading', () => {
     ).toBe(true);
   });
 
-  // tslint:disable-next-line:max-line-length
-  test("Fund can make another make order for same asset (After it's inactive)", async () => {
+  test("Fund can make 2nd order for same asset (after it's inactive)", async () => {
     const { trading } = fund;
 
     const makerAddress = trading.options.address;

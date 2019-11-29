@@ -72,10 +72,6 @@ export const isValidZeroExSignatureOffChain = (
 
 export const signZeroExOrder = async (order, signer) => {
   const signerFormatted = signer.toLowerCase();
-  console.log('here')
-  console.log(web3.eth.currentProvider)
-  console.log(order)
-  console.log(signerFormatted)
   const signedOrder = await signatureUtils.ecSignOrderAsync(
     web3.eth.currentProvider,
     order,
