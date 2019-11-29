@@ -15,6 +15,23 @@ const getAllAddrs = obj => {
   return allAddresses;
 }
 
+// TODO: a more elegant way to do this?
+// pass in names of contracts that should be force redeployed
+const partialRedeploy = async (contractsToRedeploy=[]) => {
+  const deployInput = JSON.parse(fs.readFileSync(process.env.CONF));
+  Object.keys(deployInput).forEach(category => {
+    if (!deployInput[category].addr) {
+      return;
+    }
+    Object.keys(deployInput[category].addr).forEach(contractName => {
+      if (contractsToRedeploy.indexOf(contractName) !== -1) {
+        deployInput[category].addr[contractName] = "";
+      }
+    });
+  });
+  return deploySystem(deployInput);
+}
+
 const deploySystem = async input => {
   const deployOut = Object.assign({}, input);
   const tokens = await deployTokens(input);
@@ -54,4 +71,4 @@ if (require.main === module) {
   }).catch(e => { console.error(e); process.exit(1) });
 }
 
-module.exports = deploySystem;
+module.exports = {deploySystem, partialRedeploy};

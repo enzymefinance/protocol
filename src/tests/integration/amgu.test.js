@@ -5,13 +5,13 @@ import { getContract } from '~/utils/solidity/getContract';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 const getFundComponents = require('../utils/new/getFundComponents');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('amgu', () => {
   let user, defaultTxOpts;
   let baseToken, quoteToken;
   let engine, version, priceSource;
-  let amguPrice;
+  let amguPrice, oldAmguPrice;
   let fundName;
 
   beforeAll(async () => {
@@ -19,8 +19,11 @@ describe('amgu', () => {
     user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    const contracts = deployment.contracts;
+    const deployed = await partialRedeploy([
+      CONTRACT_NAMES.VERSION,
+      CONTRACT_NAMES.ENGINE
+    ]);
+    const contracts = deployed.contracts;
 
     engine = contracts.Engine;
     version = contracts.Version;
@@ -30,19 +33,18 @@ describe('amgu', () => {
     quoteToken = contracts.WETH;
     baseToken = contracts.MLN;
 
+    oldAmguPrice = await engine.methods.getAmguPrice().call();
     amguPrice = '1000000000';
     fundName = `test-fund-${Date.now()}`;
   });
 
   it('Set amgu and check its usage', async () => {
-    const oldAmguPrice = await engine.methods.getAmguPrice().call();
     await engine.methods
       .setAmguPrice(amguPrice)
       .send(defaultTxOpts)
     const newAmguPrice = await engine.methods.getAmguPrice().call();
 
     expect(newAmguPrice.toString()).toBe(amguPrice.toString());
-    expect(newAmguPrice.toString()).not.toBe(oldAmguPrice.toString());
 
     const newPrice = toWei('2', 'ether');
     await priceSource.methods

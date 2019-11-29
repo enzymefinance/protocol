@@ -4,7 +4,7 @@ import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 const web3 = require('../../../deploy/utils/get-web3');
 import { deploy } from '../../../deploy/utils/deploy-contract';
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 const setupInvestedTestFund = require('../utils/new/setupInvestedTestFund');
 const {increaseTime} = require('../utils/new/rpc');
 
@@ -23,8 +23,8 @@ beforeAll(async () => {
   investorTxOpts = { ...defaultTxOpts, from: investor };
   badInvestorTxOpts = { ...defaultTxOpts, from: badInvestor };
 
-  const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-  contracts = deployment.contracts;
+  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  contracts = deployed.contracts;
 
   mln = contracts.MLN;
   weth = contracts.WETH;

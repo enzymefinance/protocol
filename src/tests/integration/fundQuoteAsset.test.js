@@ -10,7 +10,7 @@ import { BNExpMul } from '../utils/new/BNmath';
 const getFundComponents = require('../utils/new/getFundComponents');
 const {fetchContract} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-quote-asset', () => {
   let environment, accounts;
@@ -30,7 +30,7 @@ describe('fund-quote-asset', () => {
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
     
     contracts = deployed.contracts;
     deployOut = deployed.deployOut;

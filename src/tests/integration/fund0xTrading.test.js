@@ -17,7 +17,7 @@ const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const getFundComponents = require('../utils/new/getFundComponents');
 const {increaseTime} = require('../utils/new/rpc');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('fund-0x-trading', () => {
   let deployer, manager, investor;
@@ -31,9 +31,9 @@ describe('fund-0x-trading', () => {
     const accounts = await web3.eth.getAccounts();
     [deployer, manager, investor] = accounts;
 
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    contracts = deployment.contracts;
-    deployOut = deployment.deployOut;
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    contracts = deployed.contracts;
+    deployOut = deployed.deployOut;
 
     defaultTxOpts = { from: deployer, gas: 8000000 };
     managerTxOpts = { ...defaultTxOpts, from: manager };

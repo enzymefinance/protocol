@@ -1,11 +1,10 @@
 import { toWei } from 'web3-utils';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
 import { getContract } from '~/utils/solidity/getContract';
-import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
 import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
 const getAllBalances = require('../utils/new/getAllBalances');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('account-trading', () => {
   let defaultTxOpts;
@@ -16,8 +15,10 @@ describe('account-trading', () => {
     const accounts = await web3.eth.getAccounts();
     defaultTxOpts = { from: accounts[0], gas: 8000000 };
 
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    const contracts = deployment.contracts;
+    const deployed = await partialRedeploy(
+      [CONTRACT_NAMES.VERSION, CONTRACT_NAMES.OASIS_DEX_EXCHANGE]
+    );
+    const contracts = deployed.contracts;
 
     mln = contracts.MLN;
     weth = contracts.WETH;

@@ -1,7 +1,5 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, toWei } from 'web3-utils';
-import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
-import { getContract } from '~/utils/solidity/getContract';
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS,
@@ -12,7 +10,8 @@ import { stringToBytes } from '../utils/new/formatting';
 import {getEventFromReceipt, getFunctionSignature} from '../utils/new/metadata';
 const getFundComponents = require('../utils/new/getFundComponents');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {deploy} = require('../../../deploy/utils/deploy-contract');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('general-walkthrough', () => {
   let deployer, manager, investor;
@@ -32,8 +31,10 @@ describe('general-walkthrough', () => {
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    contracts = deployment.contracts;
+    const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
+    contracts = deployed.contracts;
+
+    userWhitelist = await deploy(CONTRACT_NAMES.USER_WHITELIST, [[]]);
 
     mln = contracts.MLN;
     weth = contracts.WETH;
@@ -42,7 +43,6 @@ describe('general-walkthrough', () => {
     oasisDEX = contracts.MatchingMarket;
     matchingMarketAdapter = contracts.MatchingMarketAdapter;
     priceSource = contracts.TestingPriceFeed;
-    userWhitelist = contracts.UserWhitelist;
     priceTolerance = contracts.PriceTolerance;
     managementFee = contracts.ManagementFee;
     performanceFee = contracts.PerformanceFee;

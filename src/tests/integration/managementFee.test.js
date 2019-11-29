@@ -6,11 +6,7 @@ const getFundComponents = require('../utils/new/getFundComponents');
 const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
 const {increaseTime, mine} = require('../utils/new/rpc');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 import { stringToBytes } from '../utils/new/formatting';
 
 describe('management-fee', () => {
@@ -28,7 +24,7 @@ describe('management-fee', () => {
     managerTxOpts = { ...defaultTxOpts, from: manager };
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+    const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
     deployOut = deployed.deployOut;
     contracts = deployed.contracts;
 

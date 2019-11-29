@@ -10,7 +10,7 @@ const {increaseTime} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
 const getFundComponents = require('../utils/new/getFundComponents');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 import { stringToBytes } from '../utils/new/formatting';
 let environment, accounts;
 let deployer, manager, investor;
@@ -49,9 +49,9 @@ beforeAll(async () => {
     takeOrderSignature
   );
 
-  const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-  contracts = deployment.contracts;
-  deployOut = deployment.deployOut;
+  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  contracts = deployed.contracts;
+  deployOut = deployed.deployOut;
 
   mln = contracts.MLN;
   weth = contracts.WETH;

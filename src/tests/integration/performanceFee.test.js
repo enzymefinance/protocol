@@ -9,7 +9,7 @@ const {increaseTime} = require('../utils/new/rpc');
 const getAllBalances = require('../utils/new/getAllBalances');
 const {deploy, fetchContract} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 import { stringToBytes } from '../utils/new/formatting';
 let environment, accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
@@ -28,9 +28,9 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-  contracts = deployment.contracts;
-  deployOut = deployment.deployOut;
+  const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
+  contracts = deployed.contracts;
+  deployOut = deployed.deployOut;
 
   mln = contracts.MLN;
   weth = contracts.WETH;

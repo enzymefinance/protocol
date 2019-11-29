@@ -4,7 +4,7 @@ import { getFunctionSignature } from '../../utils/new/metadata';
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
 const web3 = require('../../../../deploy/utils/get-web3');
 const {deploy} = require('../../../../deploy/utils/deploy-contract');
-const deploySystem = require('../../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../../deploy/scripts/deploy-system');
 import { CONTRACT_NAMES, TRACKS } from '../../utils/new/constants';
 
 describe('Happy Path', () => {
@@ -17,8 +17,8 @@ describe('Happy Path', () => {
   let requestInvestmentSignatureBytes;
 
   beforeAll(async () => {
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    const contracts = deployment.contracts;
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const contracts = deployed.contracts;
 
     const accounts = await web3.eth.getAccounts();
     user = accounts[0];

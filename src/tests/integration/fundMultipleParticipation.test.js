@@ -1,65 +1,44 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
-
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
+import { CONTRACT_NAMES } from '../utils/new/constants';
+import { BNExpMul } from '../utils/new/BNmath';
+import { increaseTime } from '../utils/new/rpc';
+const setupInvestedTestFund = require('../utils/new/setupInvestedTestFund');
+const web3 = require('../../../deploy/utils/get-web3');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { BNExpMul } from '~/tests/utils/new/BNMath';
-
-let environment;
 let deployer, manager, investor1, investor2, investor3;
 let defaultTxOpts, managerTxOpts;
 let investor1TxOpts, investor2TxOpts, investor3TxOpts;
-let addresses, contracts;
 let daiToEthRate, mlnToEthRate, wethToEthRate;
+let dai, mln, priceSource, weth
+let contracts;
+let accounting, participation, shares;
 
 beforeAll(async () => {
-  environment = await deployAndInitTestEnv();
   [
     deployer,
     manager,
     investor1,
     investor2,
     investor3
-  ] = await environment.eth.getAccounts();
+  ] = await web3.eth.getAccounts();
+
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investor1TxOpts = { ...defaultTxOpts, from: investor1 };
   investor2TxOpts = { ...defaultTxOpts, from: investor2 };
   investor3TxOpts = { ...defaultTxOpts, from: investor3 };
 
-  addresses = environment.deployment;
-
-  const dai = getContract(
-    environment,
-    CONTRACT_NAMES.STANDARD_TOKEN,
-    addresses.thirdPartyContracts.tokens.find(
-      token => token.symbol === 'DAI'
-    ).address
-  );
-  const mln = getContract(
-    environment,
-    CONTRACT_NAMES.BURNABLE_TOKEN,
-    addresses.thirdPartyContracts.tokens.find(
-      token => token.symbol === 'MLN'
-    ).address
-  );
-  const priceSource = getContract(
-    environment,
-    CONTRACT_NAMES.TESTING_PRICEFEED,
-    addresses.melonContracts.priceSource
-  );
-  const weth = getContract(
-    environment,
-    CONTRACT_NAMES.WETH,
-    addresses.thirdPartyContracts.tokens.find(
-      token => token.symbol === 'WETH'
-    ).address
-  );
-  contracts = { dai, mln, priceSource, weth };
+  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  contracts = deployed.contracts;
+  dai = contracts.DAI;
+  mln = contracts.MLN;
+  weth = contracts.WETH;
+  priceSource = contracts.TestingPriceFeed;
 
   // Set initial prices to be predictably the same as prices when updated again later
   wethToEthRate = toWei('1', 'ether');
@@ -85,29 +64,14 @@ beforeAll(async () => {
 });
 
 describe('Fund 1: Multiple investors buying shares with different tokens', () => {
-  let fundAddresses, fundContracts, policyContracts;
   let amguAmount, shareSlippageTolerance;
   let wantedShares1, wantedShares2, wantedShares3;
 
   beforeAll(async () => {
-    fundAddresses = await setupInvestedTestFund(environment);
-
-    const accounting = getContract(
-      environment,
-      CONTRACT_NAMES.ACCOUNTING,
-      fundAddresses.accountingAddress
-    );
-    const participation = getContract(
-      environment,
-      CONTRACT_NAMES.PARTICIPATION,
-      fundAddresses.participationAddress
-    );
-    const shares = getContract(
-      environment,
-      CONTRACT_NAMES.SHARES,
-      fundAddresses.sharesAddress
-    );
-    fundContracts = { accounting, participation, shares };
+    const fund = await setupInvestedTestFund(contracts, manager);
+    accounting = fund.accounting;
+    participation = fund.participation;
+    shares = fund.shares;
 
     amguAmount = toWei('.01', 'ether');
     wantedShares1 = toWei('1', 'ether');
@@ -117,9 +81,6 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('A user can have only one pending investment request', async () => {
-    const { mln, weth } = contracts;
-    const { accounting, participation, } = fundContracts;
-
     const offerAsset = weth.options.address;
     const expectedOfferAssetCost = new BN(
       await accounting.methods
@@ -147,13 +108,10 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       participation.methods
         .requestInvestment(wantedShares1, offerAssetMaxQuantity, offerAsset)
         .send({ ...investor1TxOpts, value: amguAmount })
-    ).rejects.toThrow("Only one request can exist at a time");
+    ).rejects.toThrow('Only one request can exist at a time');
   });
 
   test('Investment request allowed for second user with another default token', async () => {
-    const { mln } = contracts;
-    const { accounting, participation } = fundContracts;
-
     const offerAsset = mln.options.address;
     const expectedOfferAssetCost = new BN(
       await accounting.methods
@@ -175,9 +133,6 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('Investment request allowed for third user with approved token', async () => {
-    const { dai } = contracts;
-    const { accounting, participation } = fundContracts;
-
     const offerAsset = dai.options.address;
     const expectedOfferAssetCost = new BN(
       await accounting.methods
@@ -201,7 +156,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
 
     await participation.methods
       .enableInvestment([offerAsset])
-      .send(defaultTxOpts);
+      .send(managerTxOpts);
 
     await participation.methods
       .requestInvestment(wantedShares3, offerAssetMaxQuantity, offerAsset)
@@ -209,19 +164,8 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('Multiple pending investments can be executed', async () => {
-    const { dai, mln, priceSource, weth } = contracts;
-    const { participation, shares } = fundContracts;
-
     // Need price update before participation executed
-    environment.eth.currentProvider.send(
-      {
-        id: 121,
-        jsonrpc: '2.0',
-        method: 'evm_increaseTime',
-        params: [30], // 30 secs
-      },
-      (err, res) => {},
-    );
+    await increaseTime(30);
     await priceSource.methods
       .update(
         [weth.options.address, mln.options.address, dai.options.address],

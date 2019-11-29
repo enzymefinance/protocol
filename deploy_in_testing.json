@@ -2,9 +2,7 @@
   "conf": {
     "deployer": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
     "provider": "http://localhost:8545",
-    "track": "TESTING",
-    "keystore": "./allKeys/UTC--2019-11-19T13-41-41.019037087Z--c0c82081f2ad248391cd1483ae211d56c280887a",
-    "passfile": "./passfile"
+    "track": "TESTING"
   },
   "melon": {
     "addr": {

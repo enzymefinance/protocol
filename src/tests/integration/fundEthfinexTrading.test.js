@@ -14,7 +14,7 @@ import {
 } from '../utils/new/zeroEx';
 const getFundComponents = require('../utils/new/getFundComponents');
 const getAllBalances = require('../utils/new/getAllBalances');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 const web3 = require('../../../deploy/utils/get-web3');
 const { increaseTime } = require('../utils/new/rpc');
 import { BN, toWei, randomHex } from 'web3-utils';
@@ -40,7 +40,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
+  const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
   deployOut = deployed.deployOut;
   contracts = deployed.contracts;
 

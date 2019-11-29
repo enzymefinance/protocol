@@ -9,7 +9,7 @@ import { BNExpDiv, BNExpInverse } from '../utils/new/BNmath';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 const {deploy} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('kyber-price-feed', () => {
   let user, defaultTxOpts;
@@ -20,8 +20,8 @@ describe('kyber-price-feed', () => {
     const accounts = await web3.eth.getAccounts();
     user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    const contracts = deployment.contracts;
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const contracts = deployed.contracts;
 
     eur = contracts.EUR;
     mln = contracts.MLN;

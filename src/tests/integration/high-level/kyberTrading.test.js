@@ -6,7 +6,7 @@ import { emptyAddress } from '~/utils/constants/emptyAddress';
 import { BNExpMul, BNExpInverse } from '../../utils/new/BNmath';
 const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
 const web3 = require('../../../../deploy/utils/get-web3');
-const deploySystem = require('../../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../../deploy/scripts/deploy-system');
 import {
   CONTRACT_NAMES,
   EXCHANGES,
@@ -31,8 +31,8 @@ describe('Happy Path', () => {
     user = accounts[0];
     defaultTxOpts = {from: user, gas: 8000000};
 
-    const deployment = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF))); // TODO: change from reading file each time
-    const contracts = deployment.contracts;
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const contracts = deployed.contracts;
 
     fund = await setupInvestedTestFund(contracts, user);
 

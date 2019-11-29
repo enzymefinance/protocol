@@ -3,16 +3,12 @@ import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '../utils/new/zeroEx';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { getContract } from '~/utils/solidity/getContract';
 import { toWei } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
 import { CONTRACT_NAMES } from '../utils/new/constants';
 const {fetchContract} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
-const deploySystem = require('../../../deploy/scripts/deploy-system');
+const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
 
 describe('account-0x-trading', () => {
   let user, defaultTxOpts, takerEnvironment;
@@ -26,7 +22,7 @@ describe('account-0x-trading', () => {
     const [deployer, taker] = accounts;
     defaultTxOpts = { from: deployer, gas: 8000000 };
     user = deployer;
-    const deployed = await deploySystem(JSON.parse(require('fs').readFileSync(process.env.CONF)));
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
     const contracts = deployed.contracts;
     deployOut = deployed.deployOut;
 
