@@ -65,7 +65,6 @@ describe('make0xOrder', () => {
     const takerAssetAmount = toWei('1', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
       exchange.options.address,
       {
         makerAddress: routes.tradingAddress,
@@ -77,7 +76,6 @@ describe('make0xOrder', () => {
     );
 
     const signedOrder = await signZeroExOrder(
-      environment,
       unsignedOrder,
       user,
     );
@@ -149,7 +147,6 @@ describe('make0xOrder', () => {
     const takerAssetAmount = toWei('1', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
       exchange.options.address,
       {
         makerAddress: routes.tradingAddress,
@@ -161,7 +158,6 @@ describe('make0xOrder', () => {
     );
 
     const signedOrder = await signZeroExOrder(
-      environment,
       unsignedOrder,
       user,
     );
@@ -248,7 +244,6 @@ describe('make0xOrder', () => {
     const takerAssetAmount = toWei('0.05', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
-      environment,
       exchange.options.address,
       {
         makerAddress: user,
@@ -259,7 +254,7 @@ describe('make0xOrder', () => {
       },
     );
 
-    const signedOrder = await signZeroExOrder(environment, unsignedOrder, user);
+    const signedOrder = await signZeroExOrder(unsignedOrder, user);
 
     const takeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
