@@ -1,17 +1,21 @@
 import { toWei, padLeft } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
+
 import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
 import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
+
 import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
 import { getContract } from '~/utils/solidity/getContract';
+
+import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { increaseTime } from '~/tests/utils/new/rpc';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '~/tests/utils/new/zeroEx';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 
 let environment, user, defaultTxOpts;
 let zeroEx, zeroExWrapperLock;
@@ -84,7 +88,6 @@ beforeEach(async () => {
   const takerAssetAmount = toWei('1', 'ether');
 
   unsignedOrder = await createUnsignedZeroExOrder(
-    environment,
     ethfinexConfig.exchange,
     {
       makerAddress: newRoutes.trading,
@@ -96,7 +99,6 @@ beforeEach(async () => {
   );
 
   signedOrder = await signZeroExOrder(
-    environment,
     unsignedOrder,
     user,
   );
@@ -206,24 +208,7 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
 });
 
 test('Withdraw (unwrap) maker asset of cancelled order', async () => {
-  // Increment next block time and mine block
-  environment.eth.currentProvider.send(
-    {
-      id: 123,
-      jsonrpc: '2.0',
-      method: 'evm_increaseTime',
-      params: [25 * 60 * 60],
-    },
-    (err, res) => {},
-  );
-  environment.eth.currentProvider.send(
-    {
-      id: 124,
-      jsonrpc: '2.0',
-      method: 'evm_mine',
-    },
-    (err, res) => {},
-  );
+  increaseTime(25*60*60);
 
   const withdrawTokensSignature = getFunctionSignature(
     CONTRACT_NAMES.ETHFINEX_ADAPTER,
