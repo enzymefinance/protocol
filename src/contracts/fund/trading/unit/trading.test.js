@@ -77,7 +77,6 @@ describe('trading', () => {
   });
 
   it('Exchanges cannot be initialized without its adapter', async () => {
-    const errorMessage = 'Array lengths unequal';
     await expect(
       deployContract(environment, CONTRACT_NAMES.TRADING, [
         mockSystem.hub.options.address,
@@ -85,7 +84,7 @@ describe('trading', () => {
         [mockExchangeAdapters[0]],
         mockSystem.registry.options.address,
       ]),
-    ).rejects.toThrow(errorMessage);
+    ).rejects.toThrow();
   });
 
   it('returnBatchToVault sends back token balances to the vault', async () => {
