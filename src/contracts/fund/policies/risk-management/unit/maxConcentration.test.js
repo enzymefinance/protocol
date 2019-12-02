@@ -1,19 +1,19 @@
-import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { encodeFunctionSignature } from 'web3-eth-abi';
+const web3 = require('../../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../../tests/utils/new/deployMockSystem');
 
 describe('maxConcentration', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockSystem;
   let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    mockSystem = await  deployMockSystem(environment);
-    user = environment.wallet.address;
+    mockSystem = await deployMockSystem();
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0]
     defaultTxOpts = { from: user, gas: 8000000 };
     mockSystem.quote = mockSystem.weth.options.address;
     mockSystem.nonQuote = mockSystem.mln.options.address;
@@ -70,7 +70,7 @@ describe('maxConcentration', () => {
       },
     ],
   ])('%s', async (name, trial) => {
-    const policy = await deploy(environment, CONTRACT_NAMES.MAX_CONCENTRATION, [
+    const policy = await deploy(CONTRACT_NAMES.MAX_CONCENTRATION, [
       trial.max,
     ]);
     const trialAsset = mockSystem[trial.asset];

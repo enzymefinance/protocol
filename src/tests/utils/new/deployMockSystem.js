@@ -1,6 +1,6 @@
 import { toWei } from 'web3-utils';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
+import { deploy } from '~/../deploy/utils/deploy-contract';
 const web3 = require('../../../../deploy/utils/get-web3');
 
 /**

@@ -1,47 +1,31 @@
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { deployVaultFactory } from '../transactions/deployVaultFactory';
-import { createVaultInstance } from '../transactions/createVaultInstance';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+const {deploy, fetchContract} = require('../../../../../deploy/utils/deploy-contract');
+const web3 = require('../../../../../deploy/utils/get-web3');
 
 describe('withdraw', () => {
-  let environment, user, defaultTxOpts;
-  let token;
-  let factoryAddress;
-  let authAddress;
-  let vault;
+  let user, defaultTxOpts;
+  let token, auth, vault, factory;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
-    defaultTxOpts = { from: user };
-    user = environment.wallet.address;
-    factoryAddress = await deployVaultFactory(environment);
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
+    defaultTxOpts = { from: user, gas: 8000000 };
+    factory = await deploy(CONTRACT_NAMES.VAULT_FACTORY);
 
-    const tokenAddress = await deployToken(environment);
-    token = getContract(
-      environment,
+    token = await deploy(
       CONTRACT_NAMES.PREMINED_TOKEN,
-      tokenAddress,
+      ['ABC', 18, 'Alphabet']
     );
 
-    authAddress = await deployContract(
-      environment,
-      CONTRACT_NAMES.PERMISSIVE_AUTHORITY,
-    );
+    auth = await deploy(CONTRACT_NAMES.PERMISSIVE_AUTHORITY);
   });
 
   beforeEach(async () => {
-    const vaultAddress = await createVaultInstance(
-      environment,
-      factoryAddress,
-      {
-        hubAddress: authAddress,
-      },
-    );
-    vault = getContract(environment, CONTRACT_NAMES.VAULT, vaultAddress);
+    const res = await factory.methods.createInstance(
+      auth.options.address
+    ).send(defaultTxOpts);
+    const vaultAddress = res.events.NewInstance.returnValues.instance;
+    vault = fetchContract(CONTRACT_NAMES.VAULT, vaultAddress);
   });
 
   it('withdraw token that is not present', async () => {

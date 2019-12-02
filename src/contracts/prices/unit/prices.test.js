@@ -1,43 +1,31 @@
 import { BN, toWei } from 'web3-utils';
-
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-
 import { BNExpDiv } from '~/tests/utils/new/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-
+const web3 = require('../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../deploy/utils/deploy-contract');
 
 describe('prices-unit-tests', () => {
-  let environment, user, defaultTxOpts;
-  let mlnAddress, wethAddress;
-  let priceSource;
+  let user, defaultTxOpts;
+  let mln, weth, priceSource;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    wethAddress = await deployContract(
-      environment,
+    weth = await deploy(
       CONTRACT_NAMES.PREMINED_TOKEN,
       ['WETH', 18, '']
     );
 
-    mlnAddress = await deployContract(
-      environment,
+    mln = await deploy(
       CONTRACT_NAMES.BURNABLE_TOKEN,
       ['MLN', 18, '']
     );
 
-    priceSource = await getContract(
-      environment,
+    priceSource = await deploy(
       CONTRACT_NAMES.TESTING_PRICEFEED,
-      await deployContract(
-        environment,
-        CONTRACT_NAMES.TESTING_PRICEFEED,
-        [wethAddress.toString(), 18]
-      )
+      [weth.options.address, 18]
     );
   });
 
@@ -48,13 +36,13 @@ describe('prices-unit-tests', () => {
     ).toString();
     await priceSource.methods
       .update(
-        [mlnAddress.toString()],
+        [mln.options.address],
         [mlnToWeth]
       )
       .send(defaultTxOpts);
 
     const updatedPrice = (await priceSource.methods
-      .getPrice(mlnAddress.toString())
+      .getPrice(mln.options.address)
       .call())[0];
 
     expect(updatedPrice).toEqual(mlnToWeth);

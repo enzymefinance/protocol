@@ -1,15 +1,12 @@
 import { randomHex } from 'web3-utils';
-
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
 
 describe('tradingCallbacks', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockAdapter;
   let mockSystem;
   let trading;
@@ -18,36 +15,27 @@ describe('tradingCallbacks', () => {
   const mockExchange = randomHex(20);
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
-    mockSystem = await deployMockSystem(environment);
-    user = environment.wallet.address;
+    mockSystem = await deployMockSystem();
 
     makeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'makeOrder',
     );
 
-    mockAdapter = await getContract(
-      environment,
-      CONTRACT_NAMES.MOCK_ADAPTER,
-      await deployContract(environment, CONTRACT_NAMES.MOCK_ADAPTER),
-    );
+    mockAdapter = await deploy(CONTRACT_NAMES.MOCK_ADAPTER),
     await mockSystem.registry.methods
       .registerExchangeAdapter(mockExchange, mockAdapter.options.address)
-      .send({ from: user });
+      .send({ from: user, gas: 8000000 });
 
-    trading = await getContract(
-      environment,
-      CONTRACT_NAMES.TRADING,
-      await deployContract(environment, CONTRACT_NAMES.TRADING, [
-        user, // faked so user can call initialize
-        [mockExchange],
-        [mockAdapter.options.address],
-        mockSystem.registry.options.address,
-      ]),
-    );
+    trading = await deploy(CONTRACT_NAMES.TRADING, [
+      user, // faked so user can call initialize
+      [mockExchange],
+      [mockAdapter.options.address],
+      mockSystem.registry.options.address,
+    ]),
 
     await trading.methods
       .initialize([

@@ -1,28 +1,19 @@
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 import { toWei, randomHex } from 'web3-utils';
+const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
+const web3 = require('../../../../../deploy/utils/get-web3');
 
 describe('shares', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockSystem;
   let shares;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    mockSystem = await deployMockSystem(environment);
-    user = environment.wallet.address;
+    mockSystem = await deployMockSystem({sharesContract: CONTRACT_NAMES.SHARES});
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
-
-    shares = getContract(
-      environment,
-      CONTRACT_NAMES.SHARES,
-      await deployContract(environment, CONTRACT_NAMES.SHARES, [
-        mockSystem.hub.options.address,
-      ]),
-    );
+    shares = mockSystem.shares;
   });
 
   it('Shares contract is properly initialized', async () => {

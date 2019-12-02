@@ -1,12 +1,11 @@
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployContract } from '~/utils/solidity/deployContract';
 import { BN, toWei, randomHex } from 'web3-utils';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
 
 describe('trading', () => {
-  let environment, user, defaulTxOpts;
+  let user, defaulTxOpts;
   let mockSystem;
   let trading;
 
@@ -22,26 +21,22 @@ describe('trading', () => {
   ];
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    mockSystem = await deployMockSystem(environment);
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaulTxOpts = { from: user, gas: 8000000 }
+    mockSystem = await deployMockSystem();
     for (const i in mockExchanges) {
       await mockSystem.registry.methods
         .registerExchangeAdapter(mockExchanges[i], mockExchangeAdapters[i])
-        .send({ from: user });
+        .send({ from: user, gas: 8000000 });
     }
 
-    trading = getContract(
-      environment,
-      CONTRACT_NAMES.TRADING,
-      await deployContract(environment, CONTRACT_NAMES.TRADING, [
-        mockSystem.hub.options.address,
-        mockExchanges,
-        mockExchangeAdapters,
-        mockSystem.registry.options.address,
-      ]),
-    );
+    trading = await deploy(CONTRACT_NAMES.TRADING, [
+      mockSystem.hub.options.address,
+      mockExchanges,
+      mockExchangeAdapters,
+      mockSystem.registry.options.address,
+    ]);
 
     await mockSystem.hub.methods
       .setSpokes([
@@ -78,12 +73,12 @@ describe('trading', () => {
 
   it('Exchanges cannot be initialized without its adapter', async () => {
     await expect(
-      deployContract(environment, CONTRACT_NAMES.TRADING, [
+      deploy(CONTRACT_NAMES.TRADING, [
         mockSystem.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],
         mockSystem.registry.options.address,
-      ]),
+      ])
     ).rejects.toThrow();
   });
 

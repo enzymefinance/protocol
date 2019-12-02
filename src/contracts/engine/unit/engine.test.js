@@ -1,68 +1,32 @@
 import { BN, toWei } from 'web3-utils';
-
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-
 import { BNExpDiv } from '~/tests/utils/new/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+const web3 = require('../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../deploy/utils/deploy-contract');
 
 describe('sell-and-burn-mln', () => {
-  let environment, deployer, altUser;
+  let deployer, altUser;
   let defaultTxOpts, altUserTxOpts;
   let contracts;
-  let delay;
+  const delay = 30 * 24 * 60 * 60; // 30 days
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    const accounts = await environment.eth.getAccounts();
-
+    const accounts = await web3.eth.getAccounts();
     [deployer, altUser] = accounts;
     defaultTxOpts = { from: deployer, gas: 8000000 };
     altUserTxOpts = { ...defaultTxOpts, from: altUser };
 
-    const wethAddress = await deployContract(
-      environment,
-      CONTRACT_NAMES.PREMINED_TOKEN,
-      ['WETH', 18, '']
-    );
-    const mln = getContract(
-      environment,
-      CONTRACT_NAMES.BURNABLE_TOKEN,
-      await deployContract(
-        environment,
-        CONTRACT_NAMES.BURNABLE_TOKEN,
-        ['MLN', 18, '']
-      )
-    );
-    const version = getContract(
-      environment,
-      CONTRACT_NAMES.MOCK_VERSION,
-      await deployContract(environment, CONTRACT_NAMES.MOCK_VERSION),
-    );
-    const registry = getContract(
-      environment,
-      CONTRACT_NAMES.MOCK_REGISTRY,
-      await deployContract(environment, CONTRACT_NAMES.MOCK_REGISTRY),
-    );
-    const priceSource = await getContract(
-      environment,
+    const weth = await deploy(CONTRACT_NAMES.PREMINED_TOKEN, ['WETH', 18, '']);
+    const mln = await deploy(CONTRACT_NAMES.BURNABLE_TOKEN, ['MLN', 18, '']);
+    const version = await deploy(CONTRACT_NAMES.MOCK_VERSION);
+    const registry = await deploy(CONTRACT_NAMES.MOCK_REGISTRY);
+    const priceSource = await deploy(
       CONTRACT_NAMES.TESTING_PRICEFEED,
-      await deployContract(
-        environment,
-        CONTRACT_NAMES.TESTING_PRICEFEED,
-        [wethAddress.toString(), 18]
-      )
+      [weth.options.address, 18]
     );
-    delay = 30 * 24 * 60 * 60; // 30 days
-    const engine = getContract(
-      environment,
+    const engine = await deploy(
       CONTRACT_NAMES.ENGINE,
-      await deployContract(
-        environment,
-        CONTRACT_NAMES.ENGINE,
-        [delay, registry.options.address]
-      )
+      [delay, registry.options.address]
     );
     contracts = { engine, mln, priceSource, registry, version }
 
@@ -77,7 +41,7 @@ describe('sell-and-burn-mln', () => {
       .send(defaultTxOpts);
     await priceSource.methods
       .update(
-        [wethAddress.toString(), mln.options.address],
+        [weth.options.address, mln.options.address],
         [toWei('1', 'ether'), toWei('2', 'ether')]
       )
       .send(defaultTxOpts);
@@ -85,13 +49,13 @@ describe('sell-and-burn-mln', () => {
 
   it('directly sending eth fails', async () => {
     const { engine } = contracts;
-
     await expect(
-      environment.eth
+      web3.eth
         .sendTransaction({
           from: deployer,
           to: engine.options.address,
           value: 1,
+          gas: 8000000
         })
     ).rejects.toThrow('revert');
   });
@@ -100,32 +64,24 @@ describe('sell-and-burn-mln', () => {
     const { engine } = contracts;
 
     const sendAmount = toWei('0.1', 'gwei');
-    const selfDestructing = getContract(
-      environment,
-      CONTRACT_NAMES.SELF_DESTRUCTING,
-      await deployContract(
-        environment,
-        CONTRACT_NAMES.SELF_DESTRUCTING
-      ),
-    );
+    const selfDestructing = await deploy(CONTRACT_NAMES.SELF_DESTRUCTING);
 
-    const preEthEngine = await environment.eth
+    const preEthEngine = await web3.eth
       .getBalance(engine.options.address);
     expect(new BN(preEthEngine)).toEqualBN(new BN(0));
 
-    await environment.eth
+    await web3.eth
       .sendTransaction({
         from: deployer,
         to: selfDestructing.options.address,
         value: sendAmount,
+        gas: 8000000
       });
     await selfDestructing.methods
       .bequeath(engine.options.address)
       .send(defaultTxOpts);
 
-    const postEthEngine = await environment.eth.getBalance(
-      engine.options.address,
-    );
+    const postEthEngine = await web3.eth.getBalance(engine.options.address);
     const postFrozenEth = await engine.methods.frozenEther().call();
     const postLiquidEth = await engine.methods.liquidEther().call();
 
@@ -167,8 +123,8 @@ describe('sell-and-burn-mln', () => {
     expect(preFrozenEth).toEqualBN(new BN(sendAmountEth));
     expect(preLiquidEth).toEqualBN(new BN(0));
 
+    // early call to thaw fails
     await expect(
-      // early call to thaw fails
       engine.methods.thaw().send(altUserTxOpts),
     ).rejects.toThrow('revert');
 
@@ -199,7 +155,7 @@ describe('sell-and-burn-mln', () => {
     ).rejects.toThrow('revert');
 
     // Increment next block time and mine block
-    environment.eth.currentProvider.send(
+    web3.eth.currentProvider.send(
       {
         id: 123,
         jsonrpc: '2.0',
@@ -218,9 +174,9 @@ describe('sell-and-burn-mln', () => {
     expect(postLiquidEth).toEqualBN(new BN(sendAmountEth));
 
     const preBurnerMln = new BN(await mln.methods.balanceOf(deployer).call());
-    const preBurnerEth = new BN(await environment.eth.getBalance(deployer));
+    const preBurnerEth = new BN(await web3.eth.getBalance(deployer));
     const preEngineEth = new BN(
-      await environment.eth.getBalance(engine.options.address)
+      await web3.eth.getBalance(engine.options.address)
     );
     const preMlnTotalSupply = new BN(await mln.methods.totalSupply().call());
     const expectedEthPurchased = new BN(
@@ -234,10 +190,10 @@ describe('sell-and-burn-mln', () => {
 
     const gasUsedCost =
       new BN(receipt.gasUsed).mul(gasPrice);
-    const postBurnerEth = new BN(await environment.eth.getBalance(deployer));
+    const postBurnerEth = new BN(await web3.eth.getBalance(deployer));
     const postBurnerMln = new BN(await mln.methods.balanceOf(deployer).call());
     const postEngineEth = new BN(
-      await environment.eth.getBalance(engine.options.address)
+      await web3.eth.getBalance(engine.options.address)
     );
     const postEngineMln = new BN(
       await mln.methods.balanceOf(engine.options.address).call()

@@ -1,21 +1,19 @@
 import { toWei, randomHex } from 'web3-utils';
-
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
+const web3 = require('../../../../../deploy/utils/get-web3');
 
 describe('redemption', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockSystem;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
     mockSystem = await deployMockSystem(
-      environment,
-      { accountingContract: CONTRACT_NAMES.ACCOUNTING }
+      {accountingContract: CONTRACT_NAMES.ACCOUNTING}
     );
   });
 

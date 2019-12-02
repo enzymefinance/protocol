@@ -1,20 +1,20 @@
-import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { randomHex } from 'web3-utils';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { encodeFunctionSignature } from 'web3-eth-abi';
+const web3 = require('../../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../../tests/utils/new/deployMockSystem');
 
 describe('maxPositions', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockSystem;
   let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    mockSystem = await deployMockSystem(environment);
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
+    mockSystem = await deployMockSystem();
     defaultTxOpts = { from: user, gas: 8000000 };
 
     makeOrderSignature = getFunctionSignature(
@@ -30,17 +30,15 @@ describe('maxPositions', () => {
   it('Create and get max', async () => {
     const positions = ['0', '125', '9999999999'];
     for (const n of positions) {
-      const maxPositions = await deploy(environment, CONTRACT_NAMES.MAX_POSITIONS, [
-        n,
-      ]);
+      const maxPositions = await deploy(CONTRACT_NAMES.MAX_POSITIONS, [n]);
       expect(await maxPositions.methods.maxPositions().call()).toEqual(n);
     }
   });
 
   it('Policy manager and mock accounting with maxPositions', async () => {
     const maxPositions = '3';
-    const policy = await deploy(environment, CONTRACT_NAMES.MAX_POSITIONS, [
-      maxPositions,
+    const policy = await deploy(CONTRACT_NAMES.MAX_POSITIONS, [
+      maxPositions
     ]);
     const nonQuoteAsset = randomHex(20);
     const quoteAsset = mockSystem.weth.options.address;

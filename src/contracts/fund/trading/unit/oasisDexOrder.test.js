@@ -1,73 +1,50 @@
 import { BN, toWei } from 'web3-utils';
-
-import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { getContract } from '~/utils/solidity/getContract';
-
 import {
   CONTRACT_NAMES,
-  EMPTY_ADDRESS,
-  EXCHANGES
+  EMPTY_ADDRESS
 } from '~/tests/utils/new/constants';
 import { stringToBytes } from '~/tests/utils/new/formatting';
 import {
   getEventFromReceipt,
   getFunctionSignature
 } from '~/tests/utils/new/metadata';
+import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
+import {increaseTime} from '~/tests/utils/new/rpc';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {partialRedeploy} = require('../../../../../deploy/scripts/deploy-system');
 
 describe('make-oasis-dex-order', () => {
-  let environment, user, defaultTxOpts;
-  let mlnTokenInfo, routes, wethTokenInfo;
-  let mln, oasisDex, oasisDexAccessor, trading;
+  let user, defaultTxOpts;
+  let routes;
+  let mln, weth, oasisDex, oasisDexAccessor, oasisDexAdapter, trading;
   let exchangeIndex;
 
   beforeAll(async () => {
-    environment = await deployAndInitTestEnv();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    routes = await setupInvestedTestFund(environment);
-    const oasisDexAddresses =
-      environment.deployment.exchangeConfigs[EXCHANGES.OASIS_DEX];
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const contracts = deployed.contracts;
+    routes = await setupInvestedTestFund(contracts, user);
 
-    oasisDex = getContract(
-      environment,
-      CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
-      oasisDexAddresses.exchange
-    );
-
-    oasisDexAccessor = getContract(
-      environment,
-      CONTRACT_NAMES.OASIS_DEX_ACCESSOR,
-      environment.deployment.melonContracts.adapters.matchingMarketAccessor
-    );
-
-    trading = getContract(
-      environment,
-      CONTRACT_NAMES.TRADING,
-      routes.tradingAddress
-    );
-
-    const tokenInfo = environment.deployment.thirdPartyContracts.tokens;
-    wethTokenInfo = tokenInfo.find(token => token.symbol === 'WETH');
-    mlnTokenInfo = tokenInfo.find(token => token.symbol === 'MLN');
-
-    mln = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      mlnTokenInfo.address
-    );
+    trading = routes.trading;
+    oasisDex = contracts[CONTRACT_NAMES.OASIS_DEX_EXCHANGE];
+    oasisDexAccessor = contracts[CONTRACT_NAMES.OASIS_DEX_ACCESSOR];
+    oasisDexAdapter = contracts[CONTRACT_NAMES.OASIS_DEX_ADAPTER];
+    mln = contracts.MLN;
+    weth = contracts.WETH;
 
     const exchangeInfo = await trading.methods.getExchangeInfo().call();
     exchangeIndex = exchangeInfo[1].findIndex(
-      e => e.toLowerCase() === oasisDexAddresses.adapter.toLowerCase(),
+      e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase()
     );
   });
 
   it('make oasisdex order', async () => {
-    const makerAsset = wethTokenInfo.address;
+    const makerAsset = weth.options.address;
     const makerQuantity = toWei('0.05', 'ether');
-    const takerAsset = mlnTokenInfo.address;
+    const takerAsset = mln.options.address;
     const takerQuantity = toWei('1', 'ether');
 
     const makeOrderFunctionSig = getFunctionSignature(
@@ -150,16 +127,7 @@ describe('make-oasis-dex-order', () => {
       )
       .send(defaultTxOpts);
 
-    // Increment next block time
-    environment.eth.currentProvider.send(
-      {
-        id: 123,
-        jsonrpc: '2.0',
-        method: 'evm_increaseTime',
-        params: [60 * 30], // 30 mins
-      },
-      (err, res) => {},
-    );
+    await increaseTime(60*30);
 
     const order2 = await trading.methods
       .callOnExchange(

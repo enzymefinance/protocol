@@ -1,14 +1,7 @@
 import { toWei, padLeft } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-
-import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
-import { getContract } from '~/utils/solidity/getContract';
-
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { increaseTime } from '~/tests/utils/new/rpc';
@@ -16,84 +9,49 @@ import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '~/tests/utils/new/zeroEx';
+import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {partialRedeploy} = require('../../../../../deploy/scripts/deploy-system');
 
-let environment, user, defaultTxOpts;
-let zeroEx, zeroExWrapperLock;
-let ethfinexConfig, exchange;
+let user, defaultTxOpts;
+let zrxWrapperLock;
+let exchange;
 let signedOrder, unsignedOrder;
 let exchangeIndex;
 let trading;
-let mlnInfo;
+let mln, zrx;
 
 beforeEach(async () => {
-  environment = await deployAndInitTestEnv();
-  user = environment.wallet.address;
+  const accounts = await web3.eth.getAccounts();
+  user = accounts[0];
   defaultTxOpts = { from: user, gas: 8000000 };
 
-  const wrapperRegistryEFXAddress =
-    environment.deployment.thirdPartyContracts.exchanges.ethfinex.wrapperRegistryEFX;
+  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const contracts = deployed.contracts;
+  const routes = await setupInvestedTestFund(contracts, user);
 
-  const routes = await setupInvestedTestFund(environment);
+  trading = routes.trading;
+  mln = contracts.MLN;
+  zrx = contracts.ZRX;
+  exchange = contracts[CONTRACT_NAMES.ZERO_EX_EXCHANGE];
+  zrxWrapperLock = contracts['W-ZRX'];
+  const ethfinexAdapter = contracts[CONTRACT_NAMES.ETHFINEX_ADAPTER];
 
-  mlnInfo = getTokenBySymbol(environment, 'MLN');
-
-  trading = getContract(
-    environment,
-    CONTRACT_NAMES.TRADING,
-    routes.tradingAddress
-  );
-
-  ethfinexConfig =
-    environment.deployment.exchangeConfigs[EXCHANGES.ETHFINEX];
-
-  exchange = getContract(
-    environment,
-    CONTRACT_NAMES.ZERO_EX_EXCHANGE,
-    ethfinexConfig.exchange,
-  );
-
-  const zeroExInfo = getTokenBySymbol(environment, 'ZRX');
-
-  zeroEx = getContract(
-    environment,
-    CONTRACT_NAMES.STANDARD_TOKEN,
-    zeroExInfo.address
-  );
-
-  const wrapperRegistry = getContract(
-    environment,
-    CONTRACT_NAMES.WRAPPER_REGISTRY_EFX,
-    wrapperRegistryEFXAddress,
-  );
-
-  const zeroExWrapperLockAddress = await wrapperRegistry.methods
-    .token2WrapperLookup(zeroExInfo.address).call();
-
-  zeroExWrapperLock = getContract(
-    environment,
-    CONTRACT_NAMES.WRAPPER_LOCK,
-    zeroExWrapperLockAddress,
-  );
-
-  const hubAddress = await trading.methods.hub().call();
-  const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
-  const newRoutes = await hub.methods.routes().call();
-  const vaultAddress = newRoutes.vault;
   const amount = toWei('1', 'ether');
 
-  await zeroEx.methods
-    .transfer(vaultAddress, amount).send(defaultTxOpts);
+  await zrx.methods
+    .transfer(routes.vault.options.address, amount).send(defaultTxOpts);
 
   const makerAssetAmount = toWei('0.05', 'ether');
   const takerAssetAmount = toWei('1', 'ether');
 
   unsignedOrder = await createUnsignedZeroExOrder(
-    ethfinexConfig.exchange,
+    exchange.options.address,
     {
-      makerAddress: newRoutes.trading,
-      makerTokenAddress: zeroExWrapperLock.options.address,
+      makerAddress: routes.trading.options.address,
+      makerTokenAddress: zrxWrapperLock.options.address,
       makerAssetAmount,
-      takerTokenAddress: mlnInfo.address,
+      takerTokenAddress: mln.options.address,
       takerAssetAmount,
     },
   );
@@ -103,12 +61,12 @@ beforeEach(async () => {
     user,
   );
 
-  const makerTokenAddress = await zeroExWrapperLock.methods
+  const makerTokenAddress = await zrxWrapperLock.methods
     .originalToken().call();
 
   const exchanges = await trading.methods.getExchangeInfo().call();
   exchangeIndex = exchanges[1].findIndex(
-    e => e.toLowerCase() === ethfinexConfig.adapter.toLowerCase(),
+    e => e.toLowerCase() === ethfinexAdapter.options.address.toLowerCase(),
   );
 
   const makeOrderSignature = getFunctionSignature(
@@ -120,10 +78,10 @@ beforeEach(async () => {
     exchangeIndex,
     makeOrderSignature,
     [
-      newRoutes.trading,
+      routes.trading.options.address,
       EMPTY_ADDRESS,
       makerTokenAddress,
-      mlnInfo.address,
+      mln.options.address,
       signedOrder.feeRecipientAddress,
       EMPTY_ADDRESS,
     ],
@@ -149,12 +107,6 @@ test('Make ethfinex order from fund and take it from account in which makerToken
   const erc20ProxyAddress = await exchange.methods
     .getAssetProxy(AssetProxyId.ERC20)
     .call();
-
-  const mln = getContract(
-    environment,
-    CONTRACT_NAMES.STANDARD_TOKEN,
-    mlnInfo.address,
-  );
 
   await mln.methods
     .approve(erc20ProxyAddress, signedOrder.takerAssetAmount)
@@ -220,7 +172,7 @@ test('Withdraw (unwrap) maker asset of cancelled order', async () => {
       exchangeIndex,
       withdrawTokensSignature,
       [
-        zeroEx.options.address,
+        zrx.options.address,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,

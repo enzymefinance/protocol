@@ -1,20 +1,20 @@
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { randomHex, toChecksumAddress } from 'web3-utils';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { encodeFunctionSignature } from 'web3-eth-abi';
+const web3 = require('../../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../../tests/utils/new/deployMockSystem');
 
 describe('assetBlacklist', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockSystem;
   let assetArray;
   let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
     makeOrderSignature = getFunctionSignature(
@@ -27,8 +27,7 @@ describe('assetBlacklist', () => {
     );
 
     mockSystem = await deployMockSystem(
-      environment,
-      { policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER }
+      {policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER}
     );
 
     // Define shared vars
@@ -43,7 +42,6 @@ describe('assetBlacklist', () => {
 
   it('Create blacklist', async () => {
     const blacklist = await deploy(
-      environment,
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
     );
@@ -55,7 +53,6 @@ describe('assetBlacklist', () => {
 
   it('Add asset to blacklist', async () => {
     const blacklist = await deploy(
-      environment,
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
     );
@@ -82,7 +79,6 @@ describe('assetBlacklist', () => {
 
   it('Policy manager with blacklist', async () => {
     const blacklist = await deploy(
-      environment,
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
     );

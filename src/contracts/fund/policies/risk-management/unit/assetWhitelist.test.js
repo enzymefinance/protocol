@@ -1,19 +1,19 @@
-import { deployAndGetContract as deploy } from '~/utils/solidity/deployAndGetContract';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import { randomHex, toChecksumAddress } from 'web3-utils';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { encodeFunctionSignature } from 'web3-eth-abi';
+const web3 = require('../../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../../tests/utils/new/deployMockSystem');
 
 describe('assetWhitelist', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let assetArray;
   let makeOrderSignature, makeOrderSignatureBytes;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
     assetArray = [
       randomHex(20),
@@ -34,18 +34,18 @@ describe('assetWhitelist', () => {
   });
 
   it('Create whitelist', async () => {
-    const whitelist = await deploy(environment, CONTRACT_NAMES.ASSET_WHITELIST, [
-      assetArray,
+    const whitelist = await deploy(CONTRACT_NAMES.ASSET_WHITELIST, [
+      assetArray
     ]);
 
     expect(await whitelist.methods.getMembers().call()).toEqual(
-      assetArray,
+      assetArray
     );
   });
 
   it('Remove asset from whitelist', async () => {
-    const whitelist = await deploy(environment, CONTRACT_NAMES.ASSET_WHITELIST, [
-      assetArray,
+    const whitelist = await deploy(CONTRACT_NAMES.ASSET_WHITELIST, [
+      assetArray
     ]);
     const mockAsset = randomHex(20);
 
@@ -71,10 +71,10 @@ describe('assetWhitelist', () => {
   });
 
   it('Policy manager with whitelist', async () => {
-    const contracts = await deployMockSystem(environment, {
-      policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER,
+    const contracts = await deployMockSystem({
+      policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER
     });
-    const whitelist = await deploy(environment, CONTRACT_NAMES.ASSET_WHITELIST, [
+    const whitelist = await deploy(CONTRACT_NAMES.ASSET_WHITELIST, [
       assetArray,
     ]);
     const asset = assetArray[1];

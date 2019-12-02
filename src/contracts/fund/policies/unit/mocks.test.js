@@ -1,17 +1,17 @@
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { deployAndGetContract } from '~/utils/solidity/deployAndGetContract';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
 import * as Web3Utils from 'web3-utils';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
 
 describe('mocks', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let falsePolicy, truePolicy, testPolicy;
   let dummyArgs;
 
   const createManagerAndRegister = async (contract, policy) => {
-    const contracts = await deployMockSystem(environment, {
-      policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER,
+    const contracts = await deployMockSystem({
+      policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER
     });
     await contracts.policyManager.methods
       .register(testPolicy, policy)
@@ -20,20 +20,14 @@ describe('mocks', () => {
   };
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    falsePolicy = await deployAndGetContract(
-      environment,
-      CONTRACT_NAMES.FALSE_POLICY,
-    );
-    truePolicy = await deployAndGetContract(
-      environment,
-      CONTRACT_NAMES.TRUE_POLICY,
-    );
+    falsePolicy = await deploy(CONTRACT_NAMES.FALSE_POLICY);
+    truePolicy = await deploy(CONTRACT_NAMES.TRUE_POLICY);
     testPolicy = Web3Utils.sha3(
-      'testPolicy(address[4],uint256[2])',
+      'testPolicy(address[4],uint256[2])'
     ).substring(0, 10);
     dummyArgs = [
       testPolicy,

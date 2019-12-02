@@ -1,6 +1,3 @@
-import { setupInvestedTestFund } from '~/tests/utils/setupInvestedTestFund';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { deployAndInitTestEnv } from '~/tests/utils/deployAndInitTestEnv';
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 import {
@@ -8,66 +5,50 @@ import {
   signZeroExOrder,
 } from '~/tests/utils/new/zeroEx';
 import { toWei, padLeft } from 'web3-utils';
-import { getContract } from '~/utils/solidity/getContract';
 import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
 import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {partialRedeploy} = require('../../../../../deploy/scripts/deploy-system');
 
 describe('make0xOrder', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let exchange, exchangeIndex;
-  let mlnInfo, wethInfo;
+  let mln, weth;
   let routes;
   let trading;
 
   beforeEach(async () => {
-    environment = await deployAndInitTestEnv();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
-    routes = await setupInvestedTestFund(environment);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const contracts = deployed.contracts;
+    routes = await setupInvestedTestFund(contracts, user);
 
-    const exchangeConfig =
-      environment.deployment.exchangeConfigs[EXCHANGES.ZERO_EX];
-
-    exchange = getContract(
-      environment,
-      CONTRACT_NAMES.ZERO_EX_EXCHANGE,
-      exchangeConfig.exchange,
-    );
-
-    wethInfo = getTokenBySymbol(environment, 'WETH');
-    mlnInfo = getTokenBySymbol(environment, 'MLN');
-
-    trading = getContract(
-      environment,
-      CONTRACT_NAMES.TRADING,
-      routes.tradingAddress,
-    );
+    exchange = contracts[CONTRACT_NAMES.ZERO_EX_EXCHANGE];
+    const exchangeAdapter = contracts[CONTRACT_NAMES.ZERO_EX_ADAPTER];
+    mln = contracts.MLN;
+    weth = contracts.WETH;
+    trading = routes.trading;
 
     const exchanges = await trading.methods.getExchangeInfo().call();
     exchangeIndex = exchanges[1].findIndex(
-      e => e.toLowerCase() === exchangeConfig.adapter.toLowerCase(),
+      e => e.toLowerCase() === exchangeAdapter.options.address.toLowerCase()
     );
   });
 
   it('Make 0x order from fund and take it from account', async () => {
-    const makerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      wethInfo.address,
-    );
-    const takerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      mlnInfo.address,
-    );
+    const makerToken = weth;
+    const takerToken = mln;
     const makerAssetAmount = toWei('0.05', 'ether');
     const takerAssetAmount = toWei('1', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
       exchange.options.address,
       {
-        makerAddress: routes.tradingAddress,
+        makerAddress: trading.options.address,
         makerTokenAddress: makerToken.options.address,
         makerAssetAmount,
         takerTokenAddress: takerToken.options.address,
@@ -133,23 +114,15 @@ describe('make0xOrder', () => {
 
   // tslint:disable-next-line:max-line-length
   it('Previously made 0x order cancelled and not takeable anymore', async () => {
-    const makerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      wethInfo.address,
-    );
-    const takerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      mlnInfo.address,
-    );
+    const makerToken = weth;
+    const takerToken = mln;
     const makerAssetAmount = toWei('0.05', 'ether');
     const takerAssetAmount = toWei('1', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
       exchange.options.address,
       {
-        makerAddress: routes.tradingAddress,
+        makerAddress: trading.options.address,
         makerTokenAddress: makerToken.options.address,
         makerAssetAmount,
         takerTokenAddress: takerToken.options.address,
@@ -230,16 +203,8 @@ describe('make0xOrder', () => {
   });
 
   it('Take off-chain order from fund', async () => {
-    const makerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      mlnInfo.address,
-    );
-    const takerToken = getContract(
-      environment,
-      CONTRACT_NAMES.STANDARD_TOKEN,
-      wethInfo.address,
-    );
+    const makerToken = mln;
+    const takerToken = weth;
     const makerAssetAmount = toWei('1', 'ether');
     const takerAssetAmount = toWei('0.05', 'ether');
 

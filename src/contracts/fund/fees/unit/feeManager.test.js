@@ -1,30 +1,21 @@
 import { BN, toWei } from 'web3-utils';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+const web3 = require('../../../../../deploy/utils/get-web3');
+const {deploy} = require('../../../../../deploy/utils/deploy-contract');
+const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
 
 describe('feeManager', () => {
-  let environment, user, defaultTxOpts;
+  let user, defaultTxOpts;
   let mockSystem;
   let feeA, feeB, feeArray;
 
   beforeAll(async () => {
-    environment = await initTestEnvironment();
-    user = environment.wallet.address;
+    const accounts = await web3.eth.getAccounts();
+    user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    feeA = getContract(
-      environment,
-      CONTRACT_NAMES.MOCK_FEE,
-      await deployContract(environment, CONTRACT_NAMES.MOCK_FEE, ['0']),
-    );
-    feeB = getContract(
-      environment,
-      CONTRACT_NAMES.MOCK_FEE,
-      await deployContract(environment, CONTRACT_NAMES.MOCK_FEE, ['1']),
-    );
+    feeA = await deploy(CONTRACT_NAMES.MOCK_FEE, ['0']);
+    feeB = await deploy(CONTRACT_NAMES.MOCK_FEE, ['1']);
     const mockFeeRate = 5000;
     const mockFeePeriod = 1000;
     feeArray = [
@@ -40,7 +31,7 @@ describe('feeManager', () => {
       },
     ];
 
-    mockSystem = await deployMockSystem(environment, {
+    mockSystem = await deployMockSystem({
       feeManagerContract: CONTRACT_NAMES.FEE_MANAGER,
       fees: feeArray,
     });
