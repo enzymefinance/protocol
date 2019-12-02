@@ -1,4 +1,7 @@
-import { padLeft, stringToHex } from 'web3-utils';
+import { padLeft, numberToHex, stringToHex } from 'web3-utils';
+
+export const numberToBytes = (value, numBytes) =>
+  padLeft(numberToHex(value), numBytes * 2);
 
 export const stringToBytes = (value, numBytes) =>
   padLeft(stringToHex(value), numBytes * 2);
