@@ -1,11 +1,13 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
-import { getFunctionSignature } from '../../utils/new/metadata';
-const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
-const web3 = require('../../../../deploy/utils/get-web3');
-const {deploy} = require('../../../../deploy/utils/deploy-contract');
-const {partialRedeploy} = require('../../../../deploy/scripts/deploy-system');
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
 import { CONTRACT_NAMES, TRACKS } from '../../utils/new/constants';
+import { getFunctionSignature } from '../../utils/new/metadata';
+import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;

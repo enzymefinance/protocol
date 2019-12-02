@@ -1,17 +1,22 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, toWei } from 'web3-utils';
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS,
   EXCHANGES,
   TRACKS,
-} from '../utils/new/constants';
-import { stringToBytes } from '../utils/new/formatting';
-import {getEventFromReceipt, getFunctionSignature} from '../utils/new/metadata';
-const getFundComponents = require('../utils/new/getFundComponents');
-const web3 = require('../../../deploy/utils/get-web3');
-const {deploy} = require('../../../deploy/utils/deploy-contract');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+} from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import {
+  getEventFromReceipt,
+  getFunctionSignature
+} from '~/tests/utils/new/metadata';
 
 describe('general-walkthrough', () => {
   let deployer, manager, investor;

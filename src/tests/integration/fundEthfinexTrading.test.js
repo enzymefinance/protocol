@@ -1,27 +1,20 @@
-import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-import { getAssetProxy } from '~/contracts/exchanges/third-party/0x/calls/getAssetProxy';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-import { getFunctionSignature } from '../utils/new/metadata';
-import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
+import { AssetProxyId } from '@0x/types';
+import { BN, toWei, randomHex } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getAllBalances from '~/tests/utils/new/getAllBalances';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { increaseTime } from '~/tests/utils/new/rpc';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
 } from '../utils/new/zeroEx';
-const getFundComponents = require('../utils/new/getFundComponents');
-const getAllBalances = require('../utils/new/getAllBalances');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
-const web3 = require('../../../deploy/utils/get-web3');
-const { increaseTime } = require('../utils/new/rpc');
-import { BN, toWei, randomHex } from 'web3-utils';
-import { stringToBytes } from '../utils/new/formatting';
-
-// mock data
-const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: import from utils
 
 let accounts;
 let deployer, manager, investor;
@@ -214,11 +207,11 @@ test('Make order through the fund', async () => {
       makeOrderSignature,
       [
         makerAddress,
-        NULL_ADDRESS,
+        EMPTY_ADDRESS,
         mln.options.address,
         weth.options.address,
         order.feeRecipientAddress,
-        NULL_ADDRESS,
+        EMPTY_ADDRESS,
       ],
       [
         order.makerAssetAmount,
@@ -230,7 +223,7 @@ test('Make order through the fund', async () => {
         0,
         0,
       ],
-      randomHexOfSize(32),
+      randomHex(32),
       order.makerAssetData,
       order.takerAssetData,
       signedOrder.signature,
@@ -321,11 +314,11 @@ test('Make order with native asset', async () => {
       makeOrderSignature,
       [
         makerAddress,
-        NULL_ADDRESS,
+        EMPTY_ADDRESS,
         weth.options.address,
         dgx.options.address,
         signedOrder.feeRecipientAddress,
-        NULL_ADDRESS,
+        EMPTY_ADDRESS,
       ],
       [
         signedOrder.makerAssetAmount,
@@ -337,7 +330,7 @@ test('Make order with native asset', async () => {
         0,
         0,
       ],
-      randomHexOfSize(32),
+      randomHex(32),
       signedOrder.makerAssetData,
       signedOrder.takerAssetData,
       signedOrder.signature,
@@ -388,12 +381,12 @@ test('Cancel the order and withdraw tokens', async () => {
       0,
       cancelOrderSignature,
       [
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
       orderHashHex,
@@ -421,14 +414,14 @@ test('Cancel the order and withdraw tokens', async () => {
       withdrawTokensSignature,
       [
         weth.options.address,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
-      randomHexOfSize(32),
+      randomHex(32),
       '0x0',
       '0x0',
       '0x0',

@@ -1,11 +1,11 @@
 import { toWei } from 'web3-utils';
-import { deployAndInitTestEnv } from '../utils/deployAndInitTestEnv';
-import { stringToBytes } from '../utils/new/formatting';
-import { getContract } from '~/utils/solidity/getContract';
-import { CONTRACT_NAMES } from '../utils/new/constants';
-const getFundComponents = require('../utils/new/getFundComponents');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+
+import web3 from '~/../deploy/utils/get-web3';
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
 
 describe('amgu', () => {
   let user, defaultTxOpts;

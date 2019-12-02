@@ -1,16 +1,17 @@
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { getContract } from '~/utils/solidity/getContract';
-import { toWei, BN, padLeft, stringToHex } from 'web3-utils';
-import { BNExpDiv, BNExpMul } from '../utils/new/BNmath';
-import { CONTRACT_NAMES } from '../utils/new/constants';
-const getFundComponents = require('../utils/new/getFundComponents');
-const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const {increaseTime} = require('../utils/new/rpc');
-const getAllBalances = require('../utils/new/getAllBalances');
-const {deploy, fetchContract} = require('../../../deploy/utils/deploy-contract');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
-import { stringToBytes } from '../utils/new/formatting';
+import { toWei, BN } from 'web3-utils';
+
+import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { BNExpDiv, BNExpMul } from '~/tests/utils/new/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getAllBalances from '~/tests/utils/new/getAllBalances';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import { increaseTime } from '~/tests/utils/new/rpc';
+import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+
 let environment, accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;

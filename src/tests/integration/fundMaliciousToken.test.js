@@ -1,15 +1,13 @@
 import { BN, toWei } from 'web3-utils';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { stringToBytes } from '../utils/new/formatting';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-import { deployAndGetSystem } from '../utils/deployAndGetSystem';
-import { CONTRACT_NAMES } from '../utils/new/constants';
-const getFundComponents = require('../utils/new/getFundComponents');
-const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const {deploy} = require('../../../deploy/utils/deploy-contract');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
 
 describe('fund-malicious-token', () => {
   let accounts;

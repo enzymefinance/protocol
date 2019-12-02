@@ -1,17 +1,18 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
-import { getFunctionSignature } from '../utils/new/metadata';
-import { CONTRACT_NAMES } from '../utils/new/constants';
-import { BN, toWei, padLeft, stringToHex, randomHex } from 'web3-utils';
-import { BNExpMul } from '../utils/new/BNmath';
-const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const {increaseTime} = require('../utils/new/rpc');
-const getAllBalances = require('../utils/new/getAllBalances');
-const getFundComponents = require('../utils/new/getFundComponents');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
-import { stringToBytes } from '../utils/new/formatting';
+import { BN, toWei, randomHex } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { BNExpMul } from '~/tests/utils/new/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getAllBalances from '~/tests/utils/new/getAllBalances';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { increaseTime } from '~/tests/utils/new/rpc';
+import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+
 let environment, accounts;
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;

@@ -1,15 +1,11 @@
 import { BN, toWei, isAddress } from 'web3-utils';
-import { getToken } from '~/contracts/dependencies/token/calls/getToken';
-import { deployToken } from '~/contracts/dependencies/token/transactions/deploy';
-import { deployKyberEnvironment } from '~/contracts/exchanges/transactions/deployKyberEnvironment';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { deployContract } from '~/utils/solidity/deployContract';
-import { getContract } from '~/utils/solidity/getContract';
-import { BNExpDiv, BNExpInverse } from '../utils/new/BNmath';
-import { CONTRACT_NAMES } from '../utils/new/constants';
-const {deploy} = require('../../../deploy/utils/deploy-contract');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { BNExpDiv, BNExpInverse } from '~/tests/utils/new/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 
 describe('kyber-price-feed', () => {
   let user, defaultTxOpts;
@@ -32,7 +28,7 @@ describe('kyber-price-feed', () => {
     mockRegistry = await deploy(CONTRACT_NAMES.MOCK_REGISTRY);
 
     kyberPriceFeed = await deploy(
-      CONTRACT_NAMES.KYBER_PRICEFEED, 
+      CONTRACT_NAMES.KYBER_PRICEFEED,
       [
         mockRegistry.options.address,
         kyberNetworkProxy.options.address,

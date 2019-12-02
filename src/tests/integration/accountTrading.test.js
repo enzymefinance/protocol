@@ -1,10 +1,10 @@
 import { toWei } from 'web3-utils';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { getContract } from '~/utils/solidity/getContract';
-import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
-const getAllBalances = require('../utils/new/getAllBalances');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+
+import web3 from '~/../deploy/utils/get-web3';
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+
+import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
+import getAllBalances from '~/tests/utils/new/getAllBalances';
 
 describe('account-trading', () => {
   let defaultTxOpts;

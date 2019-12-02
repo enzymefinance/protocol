@@ -1,19 +1,19 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, padLeft, toWei } from 'web3-utils';
-import { emptyAddress } from '~/utils/constants/emptyAddress';
-import { getContract } from '~/utils/solidity/getContract';
-import { BNExpMul } from '../../utils/new/BNmath';
-import { getFunctionSignature } from '../../utils/new/metadata';
-const {increaseTime} = require('../../utils/new/rpc');
-const setupInvestedTestFund = require('../../utils/new/setupInvestedTestFund');
-const web3 = require('../../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../../deploy/scripts/deploy-system');
+import { BN, toWei } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { BNExpMul } from '~/tests/utils/new/BNmath';
 import {
   CONTRACT_NAMES,
   EXCHANGES,
   EMPTY_ADDRESS,
   TRACKS,
-} from '../../utils/new/constants';
+} from '~/tests/utils/new/constants';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { increaseTime } from '~/tests/utils/new/rpc';
+import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
 
 describe('Happy Path', () => {
   let user, defaultTxOpts;
@@ -102,10 +102,10 @@ describe('Happy Path', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        padLeft('0x0', 64),
-        padLeft('0x0', 64),
-        padLeft('0x0', 64),
-        padLeft('0x0', 64),
+        '0x0',
+        '0x0',
+        '0x0',
+        '0x0',
       )
       .send(defaultTxOpts);
 
@@ -150,10 +150,10 @@ describe('Happy Path', () => {
             EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          padLeft('0x0', 64),
-          padLeft('0x0', 64),
-          padLeft('0x0', 64),
-          padLeft('0x0', 64),
+          '0x0',
+          '0x0',
+          '0x0',
+          '0x0',
         )
         .send(defaultTxOpts),
     ).rejects.toThrow();

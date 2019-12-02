@@ -1,21 +1,19 @@
 import { BN, toWei, randomHex } from 'web3-utils';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getTokenBySymbol } from '~/utils/environment/getTokenBySymbol';
-import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { stringToBytes } from '../utils/new/formatting';
-import { BNExpMul } from '../utils/new/BNmath';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { BNExpMul } from '~/tests/utils/new/BNmath';
 import {
   CONTRACT_NAMES,
   EXCHANGES,
   EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
-} from '../utils/new/constants';
-import { getFunctionSignature } from '../utils/new/metadata';
-const getFundComponents = require('../utils/new/getFundComponents');
-const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+} from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
 
 describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;
@@ -164,7 +162,7 @@ describe('fund-kyber-trading', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHexOfSize(32),
+        randomHex(32),
         '0x0',
         '0x0',
         '0x0',
@@ -220,7 +218,7 @@ describe('fund-kyber-trading', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHexOfSize(32),
+        randomHex(32),
         '0x0',
         '0x0',
         '0x0',
@@ -279,7 +277,7 @@ describe('fund-kyber-trading', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHexOfSize(32),
+        randomHex(32),
         '0x0',
         '0x0',
         '0x0',
@@ -333,7 +331,7 @@ describe('fund-kyber-trading', () => {
             EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          randomHexOfSize(32),
+          randomHex(32),
           '0x0',
           '0x0',
           '0x0',

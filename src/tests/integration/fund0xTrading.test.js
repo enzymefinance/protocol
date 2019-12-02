@@ -1,23 +1,22 @@
-import { BN, randomHex, toWei } from 'web3-utils';
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
-import { deployAndGetSystem } from '~/tests/utils/deployAndGetSystem';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { getFunctionSignature } from '../utils/new/metadata';
-import { CONTRACT_NAMES, EXCHANGES } from '../utils/new/constants';
-import { getUpdatedTestPrices } from '../utils/new/api';
-import { stringToBytes } from '../utils/new/formatting';
-import { EMPTY_ADDRESS } from '../utils/new/constants';
+import { BN, randomHex, toWei } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { getUpdatedTestPrices } from '~/tests/utils/new/api';
+import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/new/constants';
+import { stringToBytes } from '~/tests/utils/new/formatting';
+import getFundComponents from '~/tests/utils/new/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/new/metadata';
+import { increaseTime } from '~/tests/utils/new/rpc';
+import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
 import {
   createUnsignedZeroExOrder,
   isValidZeroExSignatureOffChain,
   signZeroExOrder
-} from '../utils/new/zeroEx';
-const updateTestingPriceFeed = require('../utils/new/updateTestingPriceFeed');
-const getFundComponents = require('../utils/new/getFundComponents');
-const {increaseTime} = require('../utils/new/rpc');
-const web3 = require('../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
+} from '~/tests/utils/new/zeroEx';
 
 describe('fund-0x-trading', () => {
   let deployer, manager, investor;

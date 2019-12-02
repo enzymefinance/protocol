@@ -1,12 +1,14 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 import { getFunctionSignature } from '~/tests/utils/new/metadata';
-const web3 = require('../../../deploy/utils/get-web3');
-import { deploy } from '../../../deploy/utils/deploy-contract';
-const {partialRedeploy} = require('../../../deploy/scripts/deploy-system');
-const setupInvestedTestFund = require('../utils/new/setupInvestedTestFund');
-const {increaseTime} = require('../utils/new/rpc');
+import { increaseTime } from '~/tests/utils/new/rpc';
+import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
 
 let deployer, manager, investor, badInvestor;
 let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;
