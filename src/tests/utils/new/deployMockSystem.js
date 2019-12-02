@@ -1,14 +1,13 @@
 import { toWei } from 'web3-utils';
-
 import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
 import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
+const web3 = require('../../../../deploy/utils/get-web3');
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.
  * Arguments can be overriden to deploy mock or real contracts as needed.
  */
-export const deployMockSystem = async (
-  env,
+const deployMockSystem = async (
   {
     accountingContract = CONTRACT_NAMES.MOCK_ACCOUNTING,
     engineContract = CONTRACT_NAMES.ENGINE,
@@ -26,7 +25,7 @@ export const deployMockSystem = async (
     rankingContract = CONTRACT_NAMES.FUND_RANKING,
   } = {},
 ) => {
-  const deployer = env.wallet.address;
+  const deployer = web3.eth.accounts.wallet[0].address;
   const defaultTxOpts = { from: deployer, gas: 8000000 };
 
   const weth = await deploy(CONTRACT_NAMES.WETH);
@@ -217,3 +216,5 @@ export const deployMockSystem = async (
 
   return contracts;
 };
+
+module.exports = deployMockSystem;
