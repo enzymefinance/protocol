@@ -1,12 +1,10 @@
 import { BN, toWei, randomHex } from 'web3-utils';
-import { getFunctionSignature } from '../utils/new/metadata';
-import { CONTRACT_NAMES } from '../utils/new/constants';
-import { initTestEnvironment } from '~/tests/utils/initTestEnvironment';
-import { withDifferentAccount } from '~/utils/environment/withDifferentAccount';
-import { deployAndGetSystem } from '../utils/deployAndGetSystem';
-import { randomHexOfSize } from '~/utils/helpers/randomHexOfSize';
-import { stringToBytes } from '../utils/new/formatting';
+
 import { BNExpMul } from '../utils/new/BNmath';
+import { CONTRACT_NAMES } from '../utils/new/constants';
+import { stringToBytes } from '../utils/new/formatting';
+import { getFunctionSignature } from '../utils/new/metadata';
+
 const getFundComponents = require('../utils/new/getFundComponents');
 const {fetchContract} = require('../../../deploy/utils/deploy-contract');
 const web3 = require('../../../deploy/utils/get-web3');
@@ -31,7 +29,7 @@ describe('fund-quote-asset', () => {
     investorTxOpts = { ...defaultTxOpts, from: investor };
 
     const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
-    
+
     contracts = deployed.contracts;
     deployOut = deployed.deployOut;
     version = contracts.Version;
@@ -339,7 +337,7 @@ describe('fund-quote-asset', () => {
           randomHex(20),
         ],
         [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-        randomHexOfSize(32),
+        randomHex(32),
         '0x0',
         '0x0',
         '0x0',
