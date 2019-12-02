@@ -51,6 +51,11 @@ describe('make-oasis-dex-order', () => {
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'makeOrder',
     );
+
+    const activeOrderIdsInitial = (await oasisDexAccessor.methods
+      .getOrders(oasisDex.options.address, makerAsset, takerAsset)
+      .call(defaultTxOpts))[0];
+
     const order1 = await trading.methods
       .callOnExchange(
         exchangeIndex,
@@ -160,11 +165,13 @@ describe('make-oasis-dex-order', () => {
     expect(activeOrder[2]).toEqual(takerQuantity);
     expect(activeOrder[0]).toEqual(makerQuantity);
 
-    let activeOrderIds = (await oasisDexAccessor.methods
+    const activeOrderIdsOpenOrder2 = (await oasisDexAccessor.methods
       .getOrders(oasisDex.options.address, makerAsset, takerAsset)
       .call(defaultTxOpts))[0];
 
-    expect(activeOrderIds.length).toBe(1);
+    expect(
+      activeOrderIdsOpenOrder2.length - activeOrderIdsInitial.length
+    ).toBe(1);
 
     await mln.methods
       .approve(oasisDex.options.address, takerQuantity)
@@ -173,10 +180,12 @@ describe('make-oasis-dex-order', () => {
       .buy(order2Vals.id, makerQuantity)
       .send(defaultTxOpts);
 
-    activeOrderIds = (await oasisDexAccessor.methods
+    const activeOrderIdsClosedOrder2 = (await oasisDexAccessor.methods
       .getOrders(oasisDex.options.address, makerAsset, takerAsset)
       .call(defaultTxOpts))[0];
 
-    expect(activeOrderIds.length).toBe(0);
+    expect(
+      activeOrderIdsClosedOrder2.length - activeOrderIdsInitial.length
+    ).toBe(0);
   });
 });
