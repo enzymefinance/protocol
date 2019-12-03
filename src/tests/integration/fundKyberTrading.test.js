@@ -317,7 +317,7 @@ describe('fund-kyber-trading', () => {
       new BN(expectedRate.toString()).mul(new BN(2)),
     ).toString();
 
-    expect(
+    await expect(
       trading.methods
         .callOnExchange(
           exchangeIndex,
@@ -337,6 +337,6 @@ describe('fund-kyber-trading', () => {
           '0x0',
         )
         .send(managerTxOpts),
-    ).resolves.toThrow();
+    ).rejects.toThrow();
   });
 });
