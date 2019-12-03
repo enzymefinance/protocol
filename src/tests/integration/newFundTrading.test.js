@@ -4,14 +4,14 @@ import { BN, toWei, randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { BNExpMul } from '~/tests/utils/new/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getAllBalances from '~/tests/utils/new/getAllBalances';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import { increaseTime } from '~/tests/utils/new/rpc';
-import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+import { BNExpMul } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getAllBalances from '~/tests/utils/getAllBalances';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import { increaseTime } from '~/tests/utils/rpc';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 let environment, accounts;
 let deployer, manager, investor;

@@ -3,13 +3,13 @@ import { BN, padLeft, stringToHex, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { getUpdatedTestPrices } from '~/tests/utils/new/api';
-import { BNExpMul } from '~/tests/utils/new/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import { increaseTime, mine } from '~/tests/utils/new/rpc';
-import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+import { getUpdatedTestPrices } from '~/tests/utils/api';
+import { BNExpMul } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import { increaseTime, mine } from '~/tests/utils/rpc';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 describe('management-fee', () => {
   const yearInSeconds = 31536000;

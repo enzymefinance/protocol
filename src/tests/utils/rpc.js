@@ -1,4 +1,4 @@
-const web3 = require('../../../../deploy/utils/get-web3');
+import web3 from '~/../deploy/utils/get-web3';
 
 const mine = async () => {
   return new Promise((resolve, reject) => {

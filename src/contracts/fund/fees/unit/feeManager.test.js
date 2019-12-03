@@ -1,8 +1,10 @@
 import { BN, toWei } from 'web3-utils';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-const web3 = require('../../../../../deploy/utils/get-web3');
-const {deploy} = require('../../../../../deploy/utils/deploy-contract');
-const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import deployMockSystem from '~/tests/utils/deployMockSystem';
 
 describe('feeManager', () => {
   let user, defaultTxOpts;

@@ -1,6 +1,7 @@
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-const {deploy, fetchContract} = require('../../../../../deploy/utils/deploy-contract');
-const web3 = require('../../../../../deploy/utils/get-web3');
+import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
 describe('withdraw', () => {
   let user, defaultTxOpts;

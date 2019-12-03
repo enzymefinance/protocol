@@ -5,16 +5,16 @@ import { BN, toWei, randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getAllBalances from '~/tests/utils/new/getAllBalances';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import { increaseTime } from '~/tests/utils/new/rpc';
+import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getAllBalances from '~/tests/utils/getAllBalances';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import { increaseTime } from '~/tests/utils/rpc';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '../utils/new/zeroEx';
+} from '../utils/zeroEx';
 
 let accounts;
 let deployer, manager, investor;

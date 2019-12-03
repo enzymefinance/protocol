@@ -1,5 +1,6 @@
 import { BN } from 'web3-utils';
-const web3 = require('../../../../deploy/utils/get-web3');
+
+import web3 from '~/../deploy/utils/get-web3';
 
 // TODO: JSDoc comments here
 // instances is object containing contract instances of mln and weth

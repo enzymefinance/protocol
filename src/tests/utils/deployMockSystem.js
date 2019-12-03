@@ -1,7 +1,9 @@
 import { toWei } from 'web3-utils';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+
 import { deploy } from '~/../deploy/utils/deploy-contract';
-const web3 = require('../../../../deploy/utils/get-web3');
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
 /**
  * Deploys a fresh set of (potentially) mocked contracts.

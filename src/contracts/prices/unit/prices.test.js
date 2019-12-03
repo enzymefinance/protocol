@@ -1,8 +1,10 @@
 import { BN, toWei } from 'web3-utils';
-import { BNExpDiv } from '~/tests/utils/new/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-const web3 = require('../../../../deploy/utils/get-web3');
-const {deploy} = require('../../../../deploy/utils/deploy-contract');
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { BNExpDiv } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
 describe('prices-unit-tests', () => {
   let user, defaultTxOpts;

@@ -5,18 +5,18 @@ import { BN, randomHex, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { getUpdatedTestPrices } from '~/tests/utils/new/api';
-import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import { increaseTime } from '~/tests/utils/new/rpc';
-import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+import { getUpdatedTestPrices } from '~/tests/utils/api';
+import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import { increaseTime } from '~/tests/utils/rpc';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 import {
   createUnsignedZeroExOrder,
   isValidZeroExSignatureOffChain,
   signZeroExOrder
-} from '~/tests/utils/new/zeroEx';
+} from '~/tests/utils/zeroEx';
 
 describe('fund-0x-trading', () => {
   let deployer, manager, investor;

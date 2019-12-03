@@ -4,13 +4,13 @@ import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { BNExpDiv, BNExpMul } from '~/tests/utils/new/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getAllBalances from '~/tests/utils/new/getAllBalances';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import { increaseTime } from '~/tests/utils/new/rpc';
-import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getAllBalances from '~/tests/utils/getAllBalances';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import { increaseTime } from '~/tests/utils/rpc';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 let environment, accounts;
 let defaultTxOpts, investorTxOpts, managerTxOpts;

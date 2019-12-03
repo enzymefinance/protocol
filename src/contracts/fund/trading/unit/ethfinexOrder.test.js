@@ -1,17 +1,18 @@
-import { toWei, padLeft } from 'web3-utils';
 import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { EMPTY_ADDRESS } from '~/tests/utils/new/constants';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import { increaseTime } from '~/tests/utils/new/rpc';
+import { toWei, padLeft } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import { increaseTime } from '~/tests/utils/rpc';
+import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '~/tests/utils/new/zeroEx';
-import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
-const web3 = require('../../../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../../../deploy/scripts/deploy-system');
+} from '~/tests/utils/zeroEx';
 
 let user, defaultTxOpts;
 let zrxWrapperLock;

@@ -1,17 +1,19 @@
 import { BN, toWei } from 'web3-utils';
+
+import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
+import web3 from '~/../deploy/utils/get-web3';
+
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS
-} from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
+} from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
 import {
   getEventFromReceipt,
   getFunctionSignature
-} from '~/tests/utils/new/metadata';
-import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
-import {increaseTime} from '~/tests/utils/new/rpc';
-const web3 = require('../../../../../deploy/utils/get-web3');
-const {partialRedeploy} = require('../../../../../deploy/scripts/deploy-system');
+} from '~/tests/utils/metadata';
+import {increaseTime} from '~/tests/utils/rpc';
+import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
 describe('make-oasis-dex-order', () => {
   let user, defaultTxOpts;

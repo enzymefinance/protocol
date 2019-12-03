@@ -5,10 +5,10 @@ import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import { deploy } from '~/../deploy/utils/deploy-contract';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import { increaseTime } from '~/tests/utils/new/rpc';
-import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import { increaseTime } from '~/tests/utils/rpc';
+import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
 let deployer, manager, investor, badInvestor;
 let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;

@@ -4,10 +4,10 @@ import { BN, toWei } from 'web3-utils';
 import web3 from '~/../deploy/utils/get-web3';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { BNExpMul } from '~/tests/utils/new/BNmath';
-import { increaseTime } from '~/tests/utils/new/rpc';
-import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { BNExpMul } from '~/tests/utils/BNmath';
+import { increaseTime } from '~/tests/utils/rpc';
+import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
 let deployer, manager, investor1, investor2, investor3;
 let defaultTxOpts, managerTxOpts;

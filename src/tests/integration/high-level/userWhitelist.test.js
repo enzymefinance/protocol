@@ -5,9 +5,9 @@ import { deploy } from '~/../deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { CONTRACT_NAMES, TRACKS } from '../../utils/new/constants';
-import { getFunctionSignature } from '../../utils/new/metadata';
-import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
+import { CONTRACT_NAMES, TRACKS } from '../../utils/constants';
+import { getFunctionSignature } from '../../utils/metadata';
+import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
 describe('Happy Path', () => {
   let environment, user, defaultTxOpts;

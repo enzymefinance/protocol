@@ -3,17 +3,17 @@ import { BN, toWei, randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { BNExpMul } from '~/tests/utils/new/BNmath';
+import { BNExpMul } from '~/tests/utils/BNmath';
 import {
   CONTRACT_NAMES,
   EXCHANGES,
   EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
-} from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+} from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 describe('fund-kyber-trading', () => {
   let environment, accounts, defaultTxOpts, managerTxOpts;

@@ -1,4 +1,4 @@
-const {call, fetchContract} = require('../../../../deploy/utils/deploy-contract');
+import { call, fetchContract } from '~/../deploy/utils/deploy-contract';
 
 const getFundComponents = async hubAddress => {
   const components = {};

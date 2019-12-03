@@ -1,8 +1,10 @@
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
-import * as Web3Utils from 'web3-utils';
-const web3 = require('../../../../../deploy/utils/get-web3');
-const {deploy} = require('../../../../../deploy/utils/deploy-contract');
-const deployMockSystem = require('../../../../tests/utils/new/deployMockSystem');
+import { sha3 } from 'web3-utils';
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import deployMockSystem from '~/tests/utils/deployMockSystem';
 
 describe('mocks', () => {
   let user, defaultTxOpts;
@@ -26,7 +28,7 @@ describe('mocks', () => {
 
     falsePolicy = await deploy(CONTRACT_NAMES.FALSE_POLICY);
     truePolicy = await deploy(CONTRACT_NAMES.TRUE_POLICY);
-    testPolicy = Web3Utils.sha3(
+    testPolicy = sha3(
       'testPolicy(address[4],uint256[2])'
     ).substring(0, 10);
     dummyArgs = [

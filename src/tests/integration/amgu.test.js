@@ -3,9 +3,9 @@ import { toWei } from 'web3-utils';
 import web3 from '~/../deploy/utils/get-web3';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getFundComponents from '~/tests/utils/getFundComponents';
 
 describe('amgu', () => {
   let user, defaultTxOpts;

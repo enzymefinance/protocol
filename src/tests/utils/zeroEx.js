@@ -1,13 +1,14 @@
-import { SignatureType } from '@0x/types';
 import {
   generatePseudoRandomSalt,
   assetDataUtils,
   orderHashUtils,
   signatureUtils
 } from '@0x/order-utils';
+import { SignatureType } from '@0x/types';
 
-import { EMPTY_ADDRESS } from './constants';
-const web3 = require('../../../../deploy/utils/get-web3');
+import web3 from '~/../deploy/utils/get-web3';
+
+import { EMPTY_ADDRESS } from '~/tests/utils/constants';
 
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the

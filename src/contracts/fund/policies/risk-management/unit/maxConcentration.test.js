@@ -1,9 +1,11 @@
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/new/constants';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
 import { encodeFunctionSignature } from 'web3-eth-abi';
-const web3 = require('../../../../../../deploy/utils/get-web3');
-const {deploy} = require('../../../../../../deploy/utils/deploy-contract');
-const deployMockSystem = require('../../../../../tests/utils/new/deployMockSystem');
+
+import { deploy } from '~/../deploy/utils/deploy-contract';
+import web3 from '~/../deploy/utils/get-web3';
+
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import deployMockSystem from '~/tests/utils/deployMockSystem';
+import { getFunctionSignature } from '~/tests/utils/metadata';
 
 describe('maxConcentration', () => {
   let user, defaultTxOpts;

@@ -10,13 +10,13 @@ import {
   EMPTY_ADDRESS,
   EXCHANGES,
   TRACKS,
-} from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
+} from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getFundComponents from '~/tests/utils/getFundComponents';
 import {
   getEventFromReceipt,
   getFunctionSignature
-} from '~/tests/utils/new/metadata';
+} from '~/tests/utils/metadata';
 
 describe('general-walkthrough', () => {
   let deployer, manager, investor;

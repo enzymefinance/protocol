@@ -3,8 +3,8 @@ import { toWei } from 'web3-utils';
 import web3 from '~/../deploy/utils/get-web3';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 
-import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/new/constants';
-import getAllBalances from '~/tests/utils/new/getAllBalances';
+import { CONTRACT_NAMES, EXCHANGES } from '~/tests/utils/constants';
+import getAllBalances from '~/tests/utils/getAllBalances';
 
 describe('account-trading', () => {
   let defaultTxOpts;

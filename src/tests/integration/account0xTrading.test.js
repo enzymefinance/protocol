@@ -5,11 +5,11 @@ import { fetchContract } from '~/../deploy/utils/deploy-contract';
 import web3 from '~/../deploy/utils/get-web3';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '~/tests/utils/new/zeroEx';
+} from '~/tests/utils/zeroEx';
 
 describe('account-0x-trading', () => {
   let user, defaultTxOpts, takerEnvironment;

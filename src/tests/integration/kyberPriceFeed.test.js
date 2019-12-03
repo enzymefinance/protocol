@@ -4,8 +4,8 @@ import { deploy } from '~/../deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { BNExpDiv, BNExpInverse } from '~/tests/utils/new/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
+import { BNExpDiv, BNExpInverse } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
 describe('kyber-price-feed', () => {
   let user, defaultTxOpts;

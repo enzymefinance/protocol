@@ -4,10 +4,10 @@ import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import { deploy } from '~/../deploy/utils/deploy-contract';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { CONTRACT_NAMES } from '~/tests/utils/new/constants';
-import { stringToBytes } from '~/tests/utils/new/formatting';
-import getFundComponents from '~/tests/utils/new/getFundComponents';
-import updateTestingPriceFeed from '~/tests/utils/new/updateTestingPriceFeed';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { stringToBytes } from '~/tests/utils/formatting';
+import getFundComponents from '~/tests/utils/getFundComponents';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 describe('fund-malicious-token', () => {
   let accounts;

@@ -4,16 +4,16 @@ import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { BNExpMul, BNExpInverse } from '~/tests/utils/new/BNmath';
+import { BNExpMul, BNExpInverse } from '~/tests/utils/BNmath';
 import {
   CONTRACT_NAMES,
   EXCHANGES,
   EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
   TRACKS,
-} from '~/tests/utils/new/constants';
-import { getFunctionSignature } from '~/tests/utils/new/metadata';
-import setupInvestedTestFund from '~/tests/utils/new/setupInvestedTestFund';
+} from '~/tests/utils/constants';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
 describe('Happy Path', () => {
   let user, defaultTxOpts;

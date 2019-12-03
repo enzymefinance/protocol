@@ -1,5 +1,6 @@
 import { toWei } from 'web3-utils';
-const getFundComponents = require('./getFundComponents');
+
+import getFundComponents from '~/tests/utils/getFundComponents';
 
 // `contracts` is an object of web3.Contract instances
 const setupInvestedTestFund = async (contracts, manager) => {
