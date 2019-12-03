@@ -51,12 +51,15 @@ beforeAll(async () => {
     )
     .send(defaultTxOpts);
 
+  await weth.methods.transfer(manager, toWei('10', 'ether')).send(defaultTxOpts);
   await weth.methods.transfer(investor1, toWei('10', 'ether')).send(defaultTxOpts);
   await weth.methods.transfer(investor2, toWei('10', 'ether')).send(defaultTxOpts);
   await weth.methods.transfer(investor3, toWei('10', 'ether')).send(defaultTxOpts);
+  await mln.methods.transfer(manager, toWei('20', 'ether')).send(defaultTxOpts);
   await mln.methods.transfer(investor1, toWei('20', 'ether')).send(defaultTxOpts);
   await mln.methods.transfer(investor2, toWei('20', 'ether')).send(defaultTxOpts);
   await mln.methods.transfer(investor3, toWei('20', 'ether')).send(defaultTxOpts);
+  await dai.methods.transfer(manager, toWei('2000', 'ether')).send(defaultTxOpts);
   await dai.methods.transfer(investor1, toWei('2000', 'ether')).send(defaultTxOpts);
   await dai.methods.transfer(investor2, toWei('2000', 'ether')).send(defaultTxOpts);
   await dai.methods.transfer(investor3, toWei('2000', 'ether')).send(defaultTxOpts);
