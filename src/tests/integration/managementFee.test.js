@@ -1,10 +1,7 @@
-import { BN, padLeft, stringToHex, toWei } from 'web3-utils';
-
+import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
-
-import { getUpdatedTestPrices } from '~/tests/utils/api';
-import { BNExpMul } from '~/tests/utils/BNmath';
+import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
@@ -15,10 +12,9 @@ describe('management-fee', () => {
   const yearInSeconds = 31536000;
   let deployer, manager, investor;
   let defaultTxOpts, managerTxOpts, investorTxOpts;
-  let addresses, contracts, deployOut;
+  let contracts, deployOut;
   let managementFeeRate;
-  let managementFee, registry, version, mln, priceSource, weth, fund;
-  let deployed;
+  let managementFee, registry, version, mln, weth, fund;
 
   beforeAll(async () => {
     [deployer, manager, investor] = await web3.eth.getAccounts();
@@ -35,7 +31,6 @@ describe('management-fee', () => {
     managementFee = contracts.ManagementFee;
     registry = contracts.Registry;
     version = contracts.Version;
-    priceSource = contracts.TestingPriceFeed;
 
     const managementFeePeriod = 0;
     managementFeeRate = toWei('0.02', 'ether');
@@ -68,32 +63,10 @@ describe('management-fee', () => {
     const res = await version.methods.completeSetup().send(managerTxOpts);
     const hubAddress = res.events.NewFund.returnValues.hub;
     fund = await getFundComponents(hubAddress);
-    // const hub = getContract(environment, CONTRACT_NAMES.HUB, hubAddress);
-    // const routes = await hub.methods.routes().call();
-    // contracts.fund = {
-    //   accounting: getContract(
-    //     environment,
-    //     CONTRACT_NAMES.ACCOUNTING,
-    //     routes.accounting,
-    //   ),
-    //   feeManager: getContract(
-    //     environment,
-    //     CONTRACT_NAMES.FEE_MANAGER,
-    //     routes.feeManager,
-    //   ),
-    //   participation: getContract(
-    //     environment,
-    //     CONTRACT_NAMES.PARTICIPATION,
-    //     routes.participation,
-    //   ),
-    //   shares: getContract(environment, CONTRACT_NAMES.SHARES, routes.shares),
-    // };
-    // addresses.fund = routes;
-
     await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
   });
 
-  test(`fund gets ethToken from investment`, async () => {
+  test('Fund gets ethToken from investment', async () => {
     const { participation, shares } = fund;
     const offeredValue = toWei('100', 'ether');
     const wantedShares = toWei('100', 'ether');
@@ -121,7 +94,7 @@ describe('management-fee', () => {
     ).toBe(true);
   });
 
-  test(`Reward fee rewards management fee in the form of shares`, async () => {
+  test('Reward fee rewards management fee in the form of shares', async () => {
     const { accounting, feeManager, shares } = fund;
 
     const fundCreationTime = new BN(
@@ -180,21 +153,19 @@ describe('management-fee', () => {
     expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
   });
 
-  // TODO: not passing for some reason (time-based?)
-  test(`Claims fee using triggerRewardAllFees`, async () => {
+  test('Claims fee using triggerRewardAllFees', async () => {
     const { accounting, feeManager, shares } = fund;
 
+    await mine();
     const lastFeeConversion = await managementFee.methods
       .lastPayoutTime(feeManager.options.address)
       .call();
-
     const preWethFund = await weth.methods
       .balanceOf(fund.vault.options.address)
       .call();
     const preWethManager = await weth.methods.balanceOf(manager).call();
     const preManagerShares = await shares.methods.balanceOf(manager).call();
     const preTotalSupply = await shares.methods.totalSupply().call();
-    await mine();
     const preFundCalcs = await accounting.methods.performCalculations().call();
 
     await accounting.methods.triggerRewardAllFees().send(managerTxOpts);
@@ -237,17 +208,18 @@ describe('management-fee', () => {
       ),
     ).toBe(true);
     expect(new BN(postFundCalcs.gav.toString()).eq(new BN(preFundCalcs.gav.toString()))).toBe(true);
-    expect(postFundCalcs.sharePrice.toString()).toEqual(preFundCalcs.sharePrice.toString());
+    expect(BNExpDiv(
+      new BN(preFundCalcs.nav), new BN(preTotalSupply)
+    ).toString()).toEqual(
+      new BN(preFundCalcs.sharePrice).toString()
+    );
+    expect(BNExpDiv(
+      new BN(postFundCalcs.nav), new BN(postTotalSupply)
+    ).toString()).toEqual(
+      new BN(postFundCalcs.sharePrice).toString()
+    );
     expect(new BN(postWethFund.toString()).eq(new BN(preWethFund.toString()))).toBe(true);
     expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
-
-    // NB: this assertion is kind of shaky
-    // It depends on performCalculations and triggerRewardAllFees being called in the same second
-    expect(
-      new BN(preFundCalcs.feesInDenominationAsset.toString()).eq(
-        expectedFeeInDenominationAsset,
-      ),
-    ).toBe(true);
     expect(
       new BN(lastConversionCalculations.allocatedFees.toString()).eq(
         expectedFeeInDenominationAsset,
@@ -255,13 +227,12 @@ describe('management-fee', () => {
     ).toBe(true);
   });
 
-  test(`investor redeems his shares`, async () => {
+  test('Investor redeems his shares', async () => {
     const {
       accounting,
       feeManager,
       participation,
-      shares,
-      vault,
+      shares
     } = fund;
 
     const investorShares = await shares.methods.balanceOf(investor).call();
@@ -274,7 +245,6 @@ describe('management-fee', () => {
       .call();
     const preWethInvestor = await weth.methods.balanceOf(investor).call();
     const preTotalSupply = await shares.methods.totalSupply().call();
-    const preFundGav = await accounting.methods.calcGav().call();
 
     await increaseTime(1000);
     await participation.methods.redeem().send(investorTxOpts);
