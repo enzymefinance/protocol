@@ -3,7 +3,7 @@ import { deployMockSystem } from '~/utils/deploy/deployMockSystem';
 import { deployContract } from '~/utils/solidity/deployContract';
 import { getContract } from '~/utils/solidity/getContract';
 import { Contracts } from '~/Contracts';
-import { add, multiply, BigInteger, power } from '@melonproject/token-math';
+import { add, multiply, BigInteger } from '@melonproject/token-math';
 
 describe('feeManager', () => {
   let shared: any = {};
@@ -64,7 +64,7 @@ describe('feeManager', () => {
   });
 
   it('Total fee amount aggregates individual accumulated fee', async () => {
-    const feeAmount = power(new BigInteger(10), new BigInteger(18));
+    const feeAmount = new BigInteger(10 ** 18);
     await shared.feeA.methods
       .setFeeAmount(`${feeAmount}`)
       .send({ from: shared.user, gas: 8000000 });
@@ -80,7 +80,7 @@ describe('feeManager', () => {
     const preManagerShares = new BigInteger(
       await shared.shares.methods.balanceOf(shared.user).call(),
     );
-    const feeAmount = power(new BigInteger(10), new BigInteger(18));
+    const feeAmount = new BigInteger(10 ** 18);
 
     await shared.feeA.methods
       .setFeeAmount(`${feeAmount}`)

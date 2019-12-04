@@ -5,7 +5,6 @@ import {
   add,
   subtract,
   toBI,
-  power,
 } from '@melonproject/token-math';
 
 import {
@@ -92,7 +91,7 @@ beforeAll(async () => {
   await updateTestingPriceFeed(s, s.environment);
 });
 
-const initialTokenAmount = power(new BigInteger(10), new BigInteger(19));
+const initialTokenAmount = new BigInteger(10 ** 19);
 test('investor gets initial ethToken for testing)', async () => {
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
@@ -107,8 +106,8 @@ test('investor gets initial ethToken for testing)', async () => {
 
 // tslint:disable-next-line:max-line-length
 test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
-  const offeredValue = power(new BigInteger(10), new BigInteger(18));
-  const wantedShares = power(new BigInteger(10), new BigInteger(18));
+  const offeredValue = new BigInteger(10 ** 18);
+  const wantedShares = new BigInteger(10 ** 18);
   const pre = await getAllBalances(s, s.accounts, s.fund, s.environment);
   await s.weth.methods
     .approve(s.fund.participation.options.address, `${offeredValue}`)
@@ -218,7 +217,7 @@ test('third party makes and validates an off-chain order', async () => {
   const makerAddress = s.deployer.toLowerCase();
   const makerQuantity = createQuantity(s.mlnTokenInterface, 1);
   const takerQuantity = createQuantity(s.wethTokenInterface, 0.05);
-  const takerFee = power(new BigInteger(10), new BigInteger(14));
+  const takerFee = new BigInteger(10 ** 14);
 
   const unsignedOrder = await createOrder(
     s.environment,

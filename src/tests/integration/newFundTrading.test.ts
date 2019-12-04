@@ -93,10 +93,7 @@ beforeAll(async () => {
     sellQuantity: sellQuantity1,
   };
 
-  const sellQuantity2 = multiply(
-    5,
-    power(new BigInteger(10), new BigInteger(16)),
-  );
+  const sellQuantity2 = new BigInteger(5 * 10 ** 16);
   s.trade2 = {
     buyQuantity: divide(
       multiply(referencePrice, sellQuantity2),
