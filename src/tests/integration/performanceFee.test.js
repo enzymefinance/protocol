@@ -1,3 +1,12 @@
+/*
+ * @file Tests how setting a performanceFee affects a fund
+ *
+ * @test Sending weth to a fund's vault artificially increases the share price
+ * @test Performance fee is calculated correctly
+ * @test Performance fee is deducted when an investor redeems shares
+ * @test Executing rewardAllFees updates the "high water mark" for performance fees
+ */
+
 import { toWei, BN } from 'web3-utils';
 
 import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
@@ -73,7 +82,7 @@ beforeAll(async () => {
   await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
 });
 
-test(`fund gets ethToken from investment`, async () => {
+test(`fund gets weth from investment`, async () => {
   const initialTokenAmount = new BN(10).pow(new BN(21));
   await weth.methods
     .transfer(investor, `${initialTokenAmount}`)
@@ -101,7 +110,7 @@ test(`fund gets ethToken from investment`, async () => {
   expect(new BN(postTotalSupply.toString()).eq(new BN(preTotalSupply.toString()).add(wantedShares))).toBe(true);
 });
 
-test(`artificially inflate share price by inflating weth`, async () => {
+test(`artificially inflate share price by transfering weth to vault`, async () => {
   const preTotalSupply = new BN(
     (await fund.shares.methods.totalSupply().call()).toString()
   );

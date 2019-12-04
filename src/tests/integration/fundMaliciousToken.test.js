@@ -1,3 +1,11 @@
+/*
+ * @file Tests fund's ability to handle a malicious ERC20 token that attempts denial of service
+ *
+ * @test Fund receives WETH via investor participation
+ * @test Redeem fails when malicious token is present
+ * @test redeemWithConstraints succeeds to withdraw specific assets only
+ */
+
 import { BN, toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
@@ -77,19 +85,11 @@ describe('fund-malicious-token', () => {
 
     fund = await getFundComponents(hubAddress);
     await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
-  });
 
-  test('investor gets initial ethToken for testing)', async () => {
-    const initialTokenAmount = toWei('10', 'ether');
-
-    const preWethInvestor = await weth.methods.balanceOf(investor).call();
+    // Seed investor with weth
     await weth.methods
-      .transfer(investor, initialTokenAmount)
+      .transfer(investor, toWei('10', 'ether'))
       .send(defaultTxOpts);
-    const postWethInvestor = await weth.methods.balanceOf(investor).call();
-
-    expect(new BN(postWethInvestor.toString()))
-      .toEqualBN(new BN(preWethInvestor.toString()).add(new BN(initialTokenAmount.toString())));
   });
 
   test('fund receives ETH from investment', async () => {

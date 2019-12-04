@@ -1,3 +1,13 @@
+/*
+ * @file Tests funds trading via the Kyber adapter
+ *
+ * @test Fund receives WETH via investor participation
+ * @test Fund takes a MLN order with WETH using KyberNetworkProxy's expected price
+ * @test Fund takes a WETH order with MLN using KyberNetworkProxy's expected price
+ * @test Fund takes a EUR order with MLN without intermediary options specified
+ * @test Fund take order fails with too high maker quantity
+ */
+
 import { BN, toWei, randomHex } from 'web3-utils';
 
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
@@ -20,7 +30,6 @@ describe('fund-kyber-trading', () => {
   let deployer, manager, investor;
   let contracts, deployOut;
   let exchangeIndex, takeOrderSignature;
-  let initialTokenAmount;
   let version, kyberAdapter, kyberNetwork, kyberNetworkProxy, weth, mln, eur;
   let fund;
 
@@ -76,22 +85,12 @@ describe('fund-kyber-trading', () => {
       'takeOrder'
     );
 
-    initialTokenAmount = toWei('10', 'ether');
-
     await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
-  });
 
-  test('investor gets initial ethToken for testing)', async () => {
-    const preWethInvestor = await weth.methods.balanceOf(investor).call();
-
+    // Seed investor with weth
     await weth.methods
-      .transfer(investor, initialTokenAmount)
+      .transfer(investor, toWei('10', 'ether'))
       .send(defaultTxOpts);
-
-    const postWethInvestor = await weth.methods.balanceOf(investor).call();
-
-    expect(new BN(postWethInvestor.toString()))
-      .toEqualBN(new BN(preWethInvestor.toString()).add(new BN(initialTokenAmount.toString())));
   });
 
   test('fund receives ETH from investment', async () => {
@@ -126,7 +125,7 @@ describe('fund-kyber-trading', () => {
       .toEqualBN(new BN(preWethFund.toString()).add(new BN(offeredValue.toString())));
   });
 
-  test('swap ethToken for mln with specific order price (minRate)', async () => {
+  test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => {
     const { trading } = fund;
 
     const takerAsset = weth.options.address;
@@ -182,7 +181,7 @@ describe('fund-kyber-trading', () => {
       .toEqualBN(new BN(preMlnFund.toString()).add(new BN(makerQuantity.toString())));
   });
 
-  test('swap mlnToken for ethToken with specific order price (minRate)', async () => {
+  test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => {
     const { trading } = fund;
 
     const takerAsset = mln.options.address;
@@ -238,7 +237,7 @@ describe('fund-kyber-trading', () => {
       .toEqualBN(new BN(preWethFund.toString()).add(new BN(makerQuantity.toString())));
   });
 
-  test('swap mlnToken directly to eurToken without minimum destAmount', async () => {
+  test('swap MLN directly to EUR without intermediary', async () => {
     const { trading } = fund;
 
     const takerAsset = mln.options.address;
@@ -301,7 +300,7 @@ describe('fund-kyber-trading', () => {
       .toEqualBN(new BN(preEurFund.toString()).add(new BN(makerQuantity.toString())));
   });
 
-  test('takeOrder fails if minPrice is not satisfied', async () => {
+  test('swap fails if make quantity is too high', async () => {
     const { trading } = fund;
 
     const takerAsset = mln.options.address;

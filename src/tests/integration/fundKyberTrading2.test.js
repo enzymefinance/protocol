@@ -1,3 +1,11 @@
+/*
+ * @file Tests fund trading on Kyber
+ *
+ * @test A fund takes an order
+ * @test Price tolerance policy prevents too much slippage
+ * TODO: refactor into `fundKyberTrading`
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 

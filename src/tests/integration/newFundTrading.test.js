@@ -1,3 +1,7 @@
+/*
+ * @file Misc fund trading tests, iterating over the same actions
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei, randomHex } from 'web3-utils';
 

@@ -1,3 +1,11 @@
+/*
+ * @file Tests how setting a managementFee affects a fund
+ *
+ * @test The rewardManagementFee function distributes management fee shares to the manager
+ * @test The triggerRewardAllFees function distributes all fee shares to the manager
+ * @test An investor can still redeem their shares for the expected value
+ */
+
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
@@ -94,7 +102,7 @@ describe('management-fee', () => {
     ).toBe(true);
   });
 
-  test('Reward fee rewards management fee in the form of shares', async () => {
+  test('executing rewardManagementFee distributes management fee shares to manager', async () => {
     const { accounting, feeManager, shares } = fund;
 
     const fundCreationTime = new BN(
@@ -153,7 +161,7 @@ describe('management-fee', () => {
     expect(new BN(postWethManager.toString()).eq(new BN(preWethManager.toString()))).toBe(true);
   });
 
-  test('Claims fee using triggerRewardAllFees', async () => {
+  test('executing triggerRewardAllFees distributes fee shares to manager', async () => {
     const { accounting, feeManager, shares } = fund;
 
     await mine();

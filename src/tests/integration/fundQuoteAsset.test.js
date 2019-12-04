@@ -1,3 +1,12 @@
+/*
+ * @file Tests how a non-Ether ERC20 token functions as a fund's quote token
+ *
+ * @test A fund receives an investment that is not its quote token
+ * @test An investor redeems shares made up of only the quote token
+ * @test A fund receives an investment that does not have a direct pair in the pricefeed
+ * @test A fund places a make order with a quote token that is not 18 decimals
+ */
+
 import { BN, toWei, randomHex } from 'web3-utils';
 
 import { fetchContract } from '~/../deploy/utils/deploy-contract';
@@ -79,42 +88,24 @@ describe('fund-quote-asset', () => {
     shares = fund.shares;
     trading = fund.trading;
     vault = fund.vault;
+
+    // Seed investor with MLN and WETH
+    await mln.methods
+      .transfer(investor, toWei('1000', 'ether'))
+      .send(defaultTxOpts);
+    await weth.methods
+      .transfer(investor, toWei('1000', 'ether'))
+      .send(defaultTxOpts);
   });
 
-  test('Fund denomination asset is DGX', async () => {
+  test('Quote asset is DGX', async () => {
     fundDenominationAsset = await accounting.methods
       .DENOMINATION_ASSET()
       .call();
     expect(fundDenominationAsset).toBe(dgx.options.address);
   });
 
-  test('Transfer ethToken and mlnToken to the investor', async () => {
-    const initialTokenAmount = toWei('1000', 'ether');
-
-    const preMlnInvestor = await mln.methods.balanceOf(investor).call();
-    const preWethInvestor = await weth.methods.balanceOf(investor).call();
-    await mln.methods
-      .transfer(investor, initialTokenAmount)
-      .send(defaultTxOpts);
-    await weth.methods
-      .transfer(investor, initialTokenAmount)
-      .send(defaultTxOpts);
-    const postMlnInvestor = await mln.methods.balanceOf(investor).call();
-    const postWethInvestor = await weth.methods.balanceOf(investor).call();
-
-    expect(
-      new BN(postMlnInvestor.toString()).eq(
-        new BN(preMlnInvestor.toString()).add(new BN(initialTokenAmount.toString())),
-      ),
-    ).toBe(true);
-    expect(
-      new BN(postWethInvestor.toString()).eq(
-        new BN(preWethInvestor.toString()).add(new BN(initialTokenAmount.toString())),
-      ),
-    ).toBe(true);
-  });
-
-  test('Fund gets non fund denomination asset from investment', async () => {
+  test('Fund gets non-quote asset from investment', async () => {
     const offeredValue = toWei('100', 'ether');
     const wantedShares = toWei('100', 'ether');
     const amguAmount = toWei('.01', 'ether');
@@ -222,7 +213,7 @@ describe('fund-quote-asset', () => {
     expect(new BN(postFundGav.toString()).eq(new BN(0))).toBe(true);
   });
 
-  test('Fund gets non pricefeed quote asset from investment', async () => {
+  test('Fund gets asset from investment that has no pair with the quote asset in the pricefeed', async () => {
     const offeredValue = toWei('1000', 'ether');
     const wantedShares = toWei('1', 'ether');
     const amguAmount = toWei('.01', 'ether');
@@ -290,7 +281,7 @@ describe('fund-quote-asset', () => {
     ).toBe(true);
   });
 
-  test('Fund make order with a non-18 decimal asset', async () => {
+  test('Fund places a make order with a non-18 decimal quote token', async () => {
     const wantedShares = toWei('1', 'ether');
     trade1 = {
       sellQuantity: toWei('0.1', 'gwei'),

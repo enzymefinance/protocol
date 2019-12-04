@@ -1,3 +1,15 @@
+/*
+ * @file Tests a fund's risk management policies in executing trades
+ *
+ * @test Fund policies are set
+ * @test A fund can only make an order for a non-blacklisted asset
+ * @test A fund can only make an order with a tolerable amount of price slippage
+ * @test A fund cannot make an order with an asset AFTER it has exceeded its max concentration
+ * @test A fund can only make an order for a whitelisted asset
+ * @test A fund can only make an order for its current assets once max positions is reached
+ * @test TODO: Take orders
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, randomHex, toWei } from 'web3-utils';
 

@@ -1,3 +1,15 @@
+/*
+ * @file Tests funds trading via the Ethfinex adapter
+ *
+ * @test Fund makes an order, taken by third party
+ * @test Fund makes an order with the native asset (ETH)
+ * @test Taker asset in open maker order is included in ownedAssets
+ * @test Fund cancels an order and withdraws funds
+ * @test TODO: Fund takes an order
+ * @test TODO: second order with same asset pair
+ * @test TODO: order expiry
+ */
+
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 import { BN, toWei, randomHex } from 'web3-utils';
@@ -92,65 +104,19 @@ beforeAll(async () => {
   const hubAddress = res.events.NewFund.returnValues.hub;
   fund = await getFundComponents(hubAddress);
 
-  // await updateTestingPriceFeed(contracts, environment);
-
   const wrapperRegistry = contracts.WrapperRegistryEFX;
 
-  // ethTokenWrapperInfo = await getToken(
-  //   environment,
-  //   await deployContract(environment, CONTRACT_NAMES.WRAPPER_LOCK_ETH, [
-  //     'WETH',
-  //     'WETH Token',
-  //     18,
-  //     ethfinex.options.address,
-  //     erc20ProxyAddress,
-  //   ]),
-  // );
-
-  // mlnTokenWrapperInfo = await getToken(
-  //   environment,
-  //   await deployContract(environment, CONTRACT_NAMES.WRAPPER_LOCK, [
-  //     mln.options.address,
-  //     'MLN',
-  //     'Melon',
-  //     18,
-  //     false,
-  //     ethfinex.options.address,
-  //     erc20ProxyAddress,
-  //   ]),
-  // );
-
-  // await wrapperRegistry.methods
-  //   .addNewWrapperPair(
-  //     [weth.options.address, mln.options.address],
-  //     [contracts.address, mlnTokenWrapperInfo.address],
-  //   )
-  //   .send(defaultTxOpts);
-
-  // await registry.methods
-  //   .setEthfinexWrapperRegistry(wrapperRegistry.options.address)
-  //   .send(defaultTxOpts);
-});
-
-const initialTokenAmount = toWei('10', 'Ether');
-test('investor gets initial ethToken for testing)', async () => {
-  const pre = await getAllBalances(contracts, accounts, fund);
-
+  // Send WETH to investor and ZRX directly to fund
   await weth.methods
-    .transfer(investor, initialTokenAmount)
+    .transfer(investor, toWei('10', 'Ether'))
+    .send(defaultTxOpts);
+  await zrx.methods
+    .transfer(fund.vault.options.address, toWei('200', 'Ether'))
     .send(defaultTxOpts);
 
-  const post = await getAllBalances(contracts, accounts, fund);
-  const bnInitialTokenAmount = new BN(initialTokenAmount);
-
-  expect(post.investor.weth).toEqualBN(pre.investor.weth.add(bnInitialTokenAmount));
-});
-
-test('fund receives ETH from investment, and gets ZRX from direct transfer', async () => {
+  // Investor participates in fund
   const offeredValue = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
-  const pre = await getAllBalances(contracts, accounts, fund);
-
   await weth.methods
     .approve(fund.participation.options.address, offeredValue)
     .send(investorTxOpts);
@@ -164,15 +130,6 @@ test('fund receives ETH from investment, and gets ZRX from direct transfer', asy
   await fund.participation.methods
     .executeRequestFor(investor)
     .send(investorTxOpts);
-  await zrx.methods
-    .transfer(fund.vault.options.address, initialTokenAmount)
-    .send(defaultTxOpts);
-
-  const post = await getAllBalances(contracts, accounts, fund);
-  const bnOfferedValue = new BN(offeredValue);
-
-  expect(post.investor.weth).toEqualBN(pre.investor.weth.sub(bnOfferedValue));
-  expect(post.fund.weth).toEqualBN(pre.fund.weth.add(bnOfferedValue));
 });
 
 test('Make order through the fund', async () => {

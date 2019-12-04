@@ -1,3 +1,12 @@
+/*
+ * @file Tests multiple participations in a fund from multiple investors
+ *
+ * @test A user can only have 1 pending investment at a time
+ * @test A second user can simultaneously invest (with a second default token)
+ * @test A third user can simultaneously invest (with a newly approved token)
+ * @test Multiple pending investment requests can all be exectuted
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 

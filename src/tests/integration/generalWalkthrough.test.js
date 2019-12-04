@@ -1,3 +1,14 @@
+/*
+ * @file General actions taken by users and funds in the lifespan of a fund
+ *
+ * @test A user can only invest in a fund if they are whitelisted and have set a token allowance for the fund
+ * @test A fund can take an order (on OasisDex)
+ * @test A fund can make an order (on OasisDex)
+ * @test A user cannot invest in a fund that has been shutdown
+ * @test TODO: Calculate fees?
+ * @test TODO: Redeem shares?
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, toWei } from 'web3-utils';
 

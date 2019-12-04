@@ -1,3 +1,10 @@
+/*
+ * @file Tests a fund trading with the Melon Engine
+ *
+ * @test A fund can take an order once liquid ETH is thawed
+ * @test The amount of WETH being asked for by the fund is respected as a minimum
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 
@@ -67,7 +74,7 @@ describe('Happy Path', () => {
   });
 
   // TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
-  it('Trade on Melon Engine', async () => {
+  test('Trade on Melon Engine', async () => {
     await increaseTime(86400 * 32);
 
     await engine.methods.thaw().send(defaultTxOpts);

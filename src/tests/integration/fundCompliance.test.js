@@ -1,3 +1,11 @@
+/*
+ * @file Tests fund compliance policy rules in a real fund
+ *
+ * @test Fund policies are set
+ * @test Whitelist policy prohibits un-whitelisted user from participating in fund
+ * @test Whitelist policy allows whitelisted user to participate
+ */
+
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 
