@@ -1,3 +1,14 @@
+/*
+ * @file Tests funds trading via the 0x adapter
+ *
+ * @test Fund takes an order
+ * @test Fund takes an order with a taker fee
+ * @test Fund makes an order, taken by third party
+ * @test Fund makes a second order with same asset pair (after accounting updated)
+ * @test Fund can cancel order with the orderId
+ * @test TODO: order expiry
+ */
+
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
 import { BN, randomHex, toWei } from 'web3-utils';
@@ -10,7 +21,7 @@ import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/constant
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import { increaseTime } from '~/tests/utils/rpc';
+import { increaseTime, mine } from '~/tests/utils/rpc';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 import {
   createUnsignedZeroExOrder,
@@ -179,7 +190,7 @@ describe('fund-0x-trading', () => {
           fillQuantity,
           0,
         ],
-        randomHex(20),
+        randomHex(32),
         signedOrder1.makerAssetData,
         signedOrder1.takerAssetData,
         signedOrder1.signature,
@@ -293,7 +304,7 @@ describe('fund-0x-trading', () => {
           fillQuantity,
           0,
         ],
-        randomHex(20),
+        randomHex(32),
         signedOrder2.makerAssetData,
         signedOrder2.takerAssetData,
         signedOrder2.signature,
@@ -348,16 +359,18 @@ describe('fund-0x-trading', () => {
     const { trading } = fund;
 
     const makerAddress = trading.options.address;
-    const makerAssetAmount = toWei('0.5', 'ether');
-    const takerAssetAmount = toWei('0.05', 'ether');
+    const makerTokenAddress = weth.options.address;
+    const makerAssetAmount = toWei('0.05', 'ether');
+    const takerTokenAddress = mln.options.address;
+    const takerAssetAmount = toWei('0.5', 'ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
       zeroExExchange.options.address,
       {
         makerAddress,
-        makerTokenAddress: mln.options.address,
+        makerTokenAddress,
         makerAssetAmount,
-        takerTokenAddress: weth.options.address,
+        takerTokenAddress,
         takerAssetAmount,
       },
     );
@@ -369,8 +382,8 @@ describe('fund-0x-trading', () => {
         [
           makerAddress,
           EMPTY_ADDRESS,
-          mln.options.address,
-          weth.options.address,
+          makerTokenAddress,
+          takerTokenAddress,
           signedOrder3.feeRecipientAddress,
           EMPTY_ADDRESS,
         ],
@@ -384,15 +397,15 @@ describe('fund-0x-trading', () => {
           0,
           0,
         ],
-        randomHex(20),
+        randomHex(32),
         signedOrder3.makerAssetData,
         signedOrder3.takerAssetData,
         signedOrder3.signature,
       )
       .send(managerTxOpts);
-    const makerAssetAllowance = await mln.methods
+    const makerAssetAllowance = await weth.methods
       .allowance(
-        trading.options.address,
+        makerAddress,
         erc20Proxy.options.address,
       )
       .call();
@@ -401,44 +414,8 @@ describe('fund-0x-trading', () => {
     ).toBe(true);
   });
 
-  // test.serial(
-  //   'Fund cannot make multiple orders for same asset unless fulfilled',
-  //   async t => {
-  //     await t.throws(
-  //       fund.trading.methods
-  //         .callOnExchange(
-  //           0,
-  //           makeOrderSignature,
-  //           [
-  //             fund.trading.options.address,
-  //             EMPTY_ADDRESS,
-  //             mlnToken.options.address,
-  //             ethToken.options.address,
-  //             order.feeRecipientAddress,
-  //             EMPTY_ADDRESS,
-  //           ],
-  //           [
-  //             order.makerAssetAmount.toFixed(),
-  //             order.takerAssetAmount.toFixed(),
-  //             order.makerFee.toFixed(),
-  //             order.takerFee.toFixed(),
-  //             order.expirationTimeSeconds.toFixed(),
-  //             559,
-  //             0,
-  //             0,
-  //           ],
-  //           web3.utils.padLeft('0x0', 64),
-  //           order.makerAssetData,
-  //           order.takerAssetData,
-  //           orderSignature,
-  //         )
-  //         .send({ from: manager, gas: config.gas }),
-  //     );
-  //   },
-  // );
-
   test('Third party takes the order made by the fund', async () => {
-    const { accounting } = fund;
+    const { accounting, trading } = fund;
 
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const preMlnFundHoldings = await accounting.methods
@@ -449,7 +426,7 @@ describe('fund-0x-trading', () => {
       .assetHoldings(weth.options.address)
       .call()
 
-    await weth.methods
+    await mln.methods
       .approve(erc20Proxy.options.address, signedOrder3.takerAssetAmount)
       .send(defaultTxOpts);
 
@@ -470,30 +447,45 @@ describe('fund-0x-trading', () => {
       .assetHoldings(weth.options.address)
       .call()
 
+    // Update accounting so maker asset is no longer marked as in an open order
+    await trading.methods
+      .updateAndGetQuantityBeingTraded(weth.options.address)
+      .send(managerTxOpts);
+
+    const isInOpenMakeOrder = await trading.methods
+      .isInOpenMakeOrder(weth.options.address)
+      .call();
+    expect(isInOpenMakeOrder).toEqual(false);
+
+    // Increment next block time past the maker asset cooldown period
+    const cooldownTime = await trading.methods.MAKE_ORDER_COOLDOWN().call();
+    await increaseTime(Number(cooldownTime)+1);
+    await mine();
+
     expect(
       new BN(postMlnFundHoldings).eq(
-        new BN(preMlnFundHoldings).sub(new BN(signedOrder3.makerAssetAmount))
+        new BN(preMlnFundHoldings).add(new BN(signedOrder3.takerAssetAmount))
       )
     ).toBe(true);
     expect(
       new BN(postWethFundHoldings).eq(
-        new BN(preWethFundHoldings).add(new BN(signedOrder3.takerAssetAmount))
+        new BN(preWethFundHoldings).sub(new BN(signedOrder3.makerAssetAmount))
       )
     ).toBe(true);
 
     expect(
       new BN(postMlnDeployer).eq(
-        new BN(preMlnDeployer).add(new BN(signedOrder3.makerAssetAmount))
+        new BN(preMlnDeployer).sub(new BN(signedOrder3.takerAssetAmount))
       )
     ).toBe(true);
     expect(
       new BN(postWethDeployer).eq(
-        new BN(preWethDeployer).sub(new BN(signedOrder3.takerAssetAmount))
+        new BN(preWethDeployer).add(new BN(signedOrder3.makerAssetAmount))
       )
     ).toBe(true);
   });
 
-  test("Fund can make 2nd order for same asset (after it's inactive)", async () => {
+  test("Fund can make 2nd order for same asset pair (after it's taken)", async () => {
     const { trading } = fund;
 
     const makerAddress = trading.options.address;
@@ -534,7 +526,7 @@ describe('fund-0x-trading', () => {
           0,
           0,
         ],
-        randomHex(20),
+        randomHex(32),
         signedOrder4.makerAssetData,
         signedOrder4.takerAssetData,
         signedOrder4.signature,
@@ -555,129 +547,50 @@ describe('fund-0x-trading', () => {
    test('Fund can cancel the order using just the orderId', async () => {
     const { trading } = fund;
 
-     const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder4);
-     await trading.methods
-       .callOnExchange(
-         0,
-         cancelOrderSignature,
-         [
-           EMPTY_ADDRESS,
-           EMPTY_ADDRESS,
-           EMPTY_ADDRESS,
-           EMPTY_ADDRESS,
-           EMPTY_ADDRESS,
-           EMPTY_ADDRESS,
-         ],
-         [0, 0, 0, 0, 0, 0, 0, 0],
-         orderHashHex,
-         '0x0',
-         '0x0',
-         '0x0',
-       )
-       .send(managerTxOpts);
-     const isOrderCancelled = await zeroExExchange.methods
-       .cancelled(orderHashHex)
-       .call();
+      const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder4);
+      await trading.methods
+        .callOnExchange(
+          0,
+          cancelOrderSignature,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+          ],
+          [0, 0, 0, 0, 0, 0, 0, 0],
+          orderHashHex,
+          '0x0',
+          '0x0',
+          '0x0',
+        )
+        .send(managerTxOpts);
+      const isOrderCancelled = await zeroExExchange.methods
+        .cancelled(orderHashHex)
+        .call();
 
-     const makerAssetAllowance = await mln.methods
-       .allowance(
-         trading.options.address,
-         erc20Proxy.options.address,
-       )
-       .call();
+      const makerAssetAllowance = await mln.methods
+        .allowance(
+          trading.options.address,
+          erc20Proxy.options.address,
+        )
+        .call();
 
-     expect(new BN(makerAssetAllowance).eq(new BN(0))).toBe(true);
-     expect(isOrderCancelled).toBeTruthy();
+      expect(new BN(makerAssetAllowance).eq(new BN(0))).toBe(true);
+      expect(isOrderCancelled).toBeTruthy();
+
+      // Confirm open make order has been removed
+      await trading.methods
+        .updateAndGetQuantityBeingTraded(weth.options.address)
+        .send(managerTxOpts);
+      const isInOpenMakeOrder = await trading.methods
+        .isInOpenMakeOrder(weth.options.address)
+        .call();
+
+      expect(isInOpenMakeOrder).toBeFalsy();
    });
 
-  test('Expired order is removed from open maker order', async () => {
-    const { trading } = fund;
-
-    await increaseTime(1800);
-
-    const makerAddress = trading.options.address;
-    const makerAssetAmount = toWei('0.05', 'Ether');
-    const takerAssetAmount = toWei('0.5', 'Ether');
-    const duration = 50;
-
-    const unsignedOrder = await createUnsignedZeroExOrder(
-      zeroExExchange.options.address,
-      {
-        duration,
-        makerAddress,
-        makerTokenAddress: weth.options.address,
-        makerAssetAmount,
-        takerTokenAddress: mln.options.address,
-        takerAssetAmount,
-      },
-    );
-    const signedOrder5 = await signZeroExOrder(unsignedOrder, manager);
-    await trading.methods
-      .callOnExchange(
-        0,
-        makeOrderSignature,
-        [
-          makerAddress,
-          EMPTY_ADDRESS,
-          weth.options.address,
-          mln.options.address,
-          signedOrder5.feeRecipientAddress,
-          EMPTY_ADDRESS,
-        ],
-        [
-          signedOrder5.makerAssetAmount,
-          signedOrder5.takerAssetAmount,
-          signedOrder5.makerFee,
-          signedOrder5.takerFee,
-          signedOrder5.expirationTimeSeconds,
-          signedOrder5.salt,
-          0,
-          0,
-        ],
-        randomHex(20),
-        signedOrder5.makerAssetData,
-        signedOrder5.takerAssetData,
-        signedOrder5.signature,
-      )
-      .send(managerTxOpts);
-    const makerAssetAllowance = await weth.methods
-      .allowance(
-        trading.options.address,
-        erc20Proxy.options.address,
-      )
-      .call();
-
-    expect(
-      new BN(makerAssetAllowance).eq(new BN(signedOrder5.makerAssetAmount))
-    ).toBe(true);
-
-    const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder5);
-    await trading.methods
-      .callOnExchange(
-        0,
-        cancelOrderSignature,
-        [
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-        ],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        orderHashHex,
-        '0x0',
-        '0x0',
-        '0x0',
-      )
-      .send(managerTxOpts);
-    await trading.methods
-      .updateAndGetQuantityBeingTraded(weth.options.address)
-      .send(managerTxOpts);
-    const isInOpenMakeOrder = await trading.methods
-      .isInOpenMakeOrder(weth.options.address)
-      .call();
-
-    expect(isInOpenMakeOrder).toBeFalsy();
-  });
+   // TODO - Expired order
 });
