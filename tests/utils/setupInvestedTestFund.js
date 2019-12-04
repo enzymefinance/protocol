@@ -24,6 +24,7 @@ const setupInvestedTestFund = async (contracts, manager) => {
     contracts.ZeroExV2Exchange.options.address,
     contracts.ZeroExV2Exchange.options.address,
     contracts.Engine.options.address,
+    contracts.UniswapFactory.options.address
   ];
 
   const exchangeAdapterAddresses = [
@@ -32,6 +33,7 @@ const setupInvestedTestFund = async (contracts, manager) => {
     contracts.ZeroExV2Adapter.options.address,
     contracts.EthfinexAdapter.options.address,
     contracts.EngineAdapter.options.address,
+    contracts.UniswapAdapter.options.address
   ];
 
   let txOptionsWithValue = Object.assign({}, managerTxOpts);
