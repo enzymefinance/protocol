@@ -105,6 +105,9 @@ describe('management-fee', () => {
   test('executing rewardManagementFee distributes management fee shares to manager', async () => {
     const { accounting, feeManager, shares } = fund;
 
+    const ONE_DAY = 86400;
+    await increaseTime(ONE_DAY);
+
     const fundCreationTime = new BN(
       (await managementFee.methods.lastPayoutTime(feeManager.options.address).call()).toString()
     );
