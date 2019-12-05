@@ -78,11 +78,12 @@ describe('amgu', () => {
 
     const gasPrice = await web3.eth.getGasPrice();
     const gasUsed = result.gasUsed;
+    const estimatedGasUsedWithoutAmgu = result.gasUsed;
 
     const nativeAssetAddress = await registry.methods.nativeAsset().call();
     const mlnAddress = await version.methods.mlnToken().call();
 
-    const mlnAmount = new BN(amguPrice).mul(new BN(gasUsed));
+    const mlnAmount = new BN(amguPrice).mul(new BN(estimatedGasUsedWithoutAmgu));
     const ethToPay = await priceSource.methods.convertQuantity(
       mlnAmount.toString(),
       mlnAddress,
@@ -90,10 +91,10 @@ describe('amgu', () => {
     ).call();
 
     const txCostInWei = new BN(gasPrice).mul(new BN(gasUsed));
-    const totalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
+    const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
     const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
 
     expect(txCostInWei.lt(realUserCost)).toBe(true);
-    expect(totalUserCost.gt(realUserCost)).toBe(true);
+    expect(estimatedTotalUserCost.gt(realUserCost)).toBe(true);
   });
 });
