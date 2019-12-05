@@ -33,7 +33,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
 
     /// @dev Define and register a quote asset against which all prices are measured/based against
     constructor(
-        address ofRegistrar,
+        address ofRegistry,
         address ofKyberNetworkProxy,
         uint ofMaxSpread,
         address ofQuoteAsset
@@ -41,8 +41,8 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
-        REGISTRY = Registry(ofRegistrar);
-        UPDATER = REGISTRY.owner();
+        REGISTRY = Registry(ofRegistry);
+        UPDATER = msg.sender;
     }
 
     /// @dev Stores zero as a convention for invalid price
@@ -56,12 +56,22 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         for (uint i; i < assets.length; i++) {
             bool isValid;
             uint price;
-            (isValid, price) = getKyberPrice(assets[i], QUOTE_ASSET);
+            if (assets[i] == QUOTE_ASSET) {
+                isValid = true;
+                price = 1 ether;
+            } else {
+                (isValid, price) = getKyberPrice(assets[i], QUOTE_ASSET);
+            }
             newPrices[i] = isValid ? price : 0;
             prices[assets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
         PriceUpdate(assets, newPrices);
+    }
+
+    function setUpdaterToRegistryOwner() external {
+        require(msg.sender == UPDATER, "Only current updater can do this");
+        UPDATER = REGISTRY.owner();
     }
 
     function setUpdater(address _updater) external {
@@ -239,12 +249,8 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         }
 
         uint askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
-        // Check the the spread and average the price on both sides
-        uint spreadFromKyber = mul(
-            sub(askRate, bidRate),
-            10 ** uint(KYBER_PRECISION)
-        ) / bidRate;
         /**
+          Average the bid/ask prices:
           avgPriceFromKyber = (bidRate + astRate) / 2
           kyberPrice = (avgPriceFromKyber * 10^quoteDecimals) / 10^kyberPrecision
           or, rearranged:
@@ -254,6 +260,17 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             add(bidRate, askRate),
             10 ** uint(ERC20Clone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
         ) / mul(2, 10 ** uint(KYBER_PRECISION));
+
+        // Find the "quoted spread", to inform caller whether it is below maximum
+        uint spreadFromKyber;
+        if (bidRate > askRate) {
+            spreadFromKyber = 0; // crossed market condition
+        } else {
+            spreadFromKyber = mul(
+                sub(askRate, bidRate),
+                10 ** uint(KYBER_PRECISION)
+            ) / kyberPrice;
+        }
 
         return (
             spreadFromKyber <= MAX_SPREAD && bidRate != 0 && askRate != 0,
