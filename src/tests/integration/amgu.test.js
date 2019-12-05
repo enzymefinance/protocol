@@ -1,4 +1,4 @@
-import { toWei } from 'web3-utils';
+import { toWei, BN } from 'web3-utils';
 
 import web3 from '~/../deploy/utils/get-web3';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
@@ -10,7 +10,7 @@ import getFundComponents from '~/tests/utils/getFundComponents';
 describe('amgu', () => {
   let user, defaultTxOpts;
   let baseToken, quoteToken;
-  let engine, version, priceSource;
+  let engine, version, priceSource, registry;
   let amguPrice, oldAmguPrice;
   let fundName;
 
@@ -27,6 +27,7 @@ describe('amgu', () => {
 
     engine = contracts.Engine;
     version = contracts.Version;
+    registry = contracts.Registry;
     priceSource = contracts.TestingPriceFeed;
 
     // [quoteToken, baseToken] = thirdPartyContracts.tokens;
@@ -57,9 +58,7 @@ describe('amgu', () => {
 
     expect(price[0][0].toString()).toBe(newPrice.toString());
 
-    const preBalance = await web3.eth.getBalance(user);
-
-    const beginSetupTx = version.methods
+    await version.methods
       .beginSetup(
         stringToBytes(fundName, 32),
         [],
@@ -69,15 +68,32 @@ describe('amgu', () => {
         [],
         quoteToken.options.address,
         [baseToken.options.address, quoteToken.options.address]
-      );
-    const estimatedGas = await beginSetupTx.estimateGas();
-    const result = await beginSetupTx.send(defaultTxOpts);
+      ).send(defaultTxOpts);
 
-    const postBalance = await web3.eth.getBalance(user);
+    const amguTx = version.methods.createAccounting();
 
-    const diffQ = preBalance - postBalance;
+    const preUserBalance = await web3.eth.getBalance(user);
+    const result = await amguTx.send({ ...defaultTxOpts, value: toWei('1', 'ether') });
+    const postUserBalance = await web3.eth.getBalance(user);
 
-    expect(result).toBeTruthy();
-    expect(diffQ).toBeGreaterThan(estimatedGas);
+    const gasPrice = await web3.eth.getGasPrice();
+    const gasUsed = result.gasUsed;
+
+    const nativeAssetAddress = await registry.methods.nativeAsset().call();
+    const mlnAddress = await version.methods.mlnToken().call();
+
+    const mlnAmount = new BN(amguPrice).mul(new BN(gasUsed));
+    const ethToPay = await priceSource.methods.convertQuantity(
+      mlnAmount.toString(),
+      mlnAddress,
+      nativeAssetAddress,
+    ).call();
+
+    const txCostInWei = new BN(gasPrice).mul(new BN(gasUsed));
+    const totalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
+    const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
+
+    expect(txCostInWei.lt(realUserCost)).toBe(true);
+    expect(totalUserCost.gt(realUserCost)).toBe(true);
   });
 });
