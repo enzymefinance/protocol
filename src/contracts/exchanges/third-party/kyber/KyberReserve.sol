@@ -1,6 +1,13 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.25;
 
-import "./KyberDependencies.sol";
+
+import "./ERC20Interface.sol";
+import "./Utils.sol";
+import "./Withdrawable.sol";
+import "./ConversionRatesInterface.sol";
+import "./SanityRatesInterface.sol";
+import "./KyberReserveInterface.sol";
+
 
 /// @title Kyber Reserve contract
 contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
@@ -22,7 +29,7 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
         tradeEnabled = true;
     }
 
-    event DepositToken(ERC20Clone token, uint amount);
+    event DepositToken(ERC20KyberClone token, uint amount);
 
     function() public payable {
         DepositToken(ETH_TOKEN_ADDRESS, msg.value);
@@ -38,9 +45,9 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
     );
 
     function trade(
-        ERC20Clone srcToken,
+        ERC20KyberClone srcToken,
         uint srcAmount,
-        ERC20Clone destToken,
+        ERC20KyberClone destToken,
         address destAddress,
         uint conversionRate,
         bool validate
@@ -73,9 +80,9 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
         return true;
     }
 
-    event WithdrawAddressApproved(ERC20Clone token, address addr, bool approve);
+    event WithdrawAddressApproved(ERC20KyberClone token, address addr, bool approve);
 
-    function approveWithdrawAddress(ERC20Clone token, address addr, bool approve) public onlyAdmin {
+    function approveWithdrawAddress(ERC20KyberClone token, address addr, bool approve) public onlyAdmin {
         approvedWithdrawAddresses[keccak256(token, addr)] = approve;
         WithdrawAddressApproved(token, addr, approve);
 
@@ -86,17 +93,17 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
         }
     }
 
-    event NewTokenWallet(ERC20Clone token, address wallet);
+    event NewTokenWallet(ERC20KyberClone token, address wallet);
 
-    function setTokenWallet(ERC20Clone token, address wallet) public onlyAdmin {
+    function setTokenWallet(ERC20KyberClone token, address wallet) public onlyAdmin {
         require(wallet != address(0x0));
         tokenWallet[token] = wallet;
         NewTokenWallet(token, wallet);
     }
 
-    event WithdrawFunds(ERC20Clone token, uint amount, address destination);
+    event WithdrawFunds(ERC20KyberClone token, uint amount, address destination);
 
-    function withdraw(ERC20Clone token, uint amount, address destination) public onlyOperator returns(bool) {
+    function withdraw(ERC20KyberClone token, uint amount, address destination) public onlyOperator returns(bool) {
         require(approvedWithdrawAddresses[keccak256(token, destination)]);
 
         if (token == ETH_TOKEN_ADDRESS) {
@@ -133,7 +140,7 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
     ////////////////////////////////////////////////////////////////////////////
     /// status functions ///////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    function getBalance(ERC20Clone token) public view returns(uint) {
+    function getBalance(ERC20KyberClone token) public view returns(uint) {
         if (token == ETH_TOKEN_ADDRESS)
             return this.balance;
         else {
@@ -145,22 +152,22 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
         }
     }
 
-    function getDestQty(ERC20Clone src, ERC20Clone dest, uint srcQty, uint rate) public view returns(uint) {
+    function getDestQty(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, uint rate) public view returns(uint) {
         uint dstDecimals = getDecimals(dest);
         uint srcDecimals = getDecimals(src);
 
         return calcDstQty(srcQty, srcDecimals, dstDecimals, rate);
     }
 
-    function getSrcQty(ERC20Clone src, ERC20Clone dest, uint dstQty, uint rate) public view returns(uint) {
+    function getSrcQty(ERC20KyberClone src, ERC20KyberClone dest, uint dstQty, uint rate) public view returns(uint) {
         uint dstDecimals = getDecimals(dest);
         uint srcDecimals = getDecimals(src);
 
         return calcSrcQty(dstQty, srcDecimals, dstDecimals, rate);
     }
 
-    function getConversionRate(ERC20Clone src, ERC20Clone dest, uint srcQty, uint blockNumber) public view returns(uint) {
-        ERC20Clone token;
+    function getConversionRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, uint blockNumber) public view returns(uint) {
+        ERC20KyberClone token;
         bool  isBuy;
 
         if (!tradeEnabled) return 0;
@@ -196,9 +203,9 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
     /// @param validate If true, additional validations are applicable
     /// @return true iff trade is successful
     function doTrade(
-        ERC20Clone srcToken,
+        ERC20KyberClone srcToken,
         uint srcAmount,
-        ERC20Clone destToken,
+        ERC20KyberClone destToken,
         address destAddress,
         uint conversionRate,
         bool validate
@@ -220,7 +227,7 @@ contract KyberReserve is KyberReserveInterface, Withdrawable, Utils {
         require(destAmount > 0);
 
         // add to imbalance
-        ERC20Clone token;
+        ERC20KyberClone token;
         int tradeAmount;
         if (srcToken == ETH_TOKEN_ADDRESS) {
             tradeAmount = int(destAmount);

@@ -1,8 +1,8 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 // https://github.com/ethereum/EIPs/issues/20
-interface ERC20 {
+interface ERC20KyberClone {
     function totalSupply() public view returns (uint supply);
     function balanceOf(address _owner) public view returns (uint balance);
     function transfer(address _to, uint _value) public returns (bool success);

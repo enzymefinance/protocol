@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -77,9 +77,9 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
 
     struct TradeInput {
         address trader;
-        ERC20 src;
+        ERC20KyberClone src;
         uint srcAmount;
-        ERC20 dest;
+        ERC20KyberClone dest;
         address destAddress;
         uint maxDestAmount;
         uint minConversionRate;
@@ -89,9 +89,9 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
 
     function tradeWithHint(
         address trader,
-        ERC20 src,
+        ERC20KyberClone src,
         uint srcAmount,
-        ERC20 dest,
+        ERC20KyberClone dest,
         address destAddress,
         uint maxDestAmount,
         uint minConversionRate,
@@ -162,7 +162,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         return true;
     }
 
-    event ListReservePairs(address indexed reserve, ERC20 src, ERC20 dest, bool add);
+    event ListReservePairs(address indexed reserve, ERC20KyberClone src, ERC20KyberClone dest, bool add);
 
     /// @notice can be called only by operator
     /// @dev allow or prevent a specific reserve to trade a pair of tokens
@@ -171,7 +171,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     /// @param ethToToken will it support ether to token trade
     /// @param tokenToEth will it support token to ether trade
     /// @param add If true then list this pair, otherwise unlist it.
-    function listPairForReserve(address reserve, ERC20 token, bool ethToToken, bool tokenToEth, bool add)
+    function listPairForReserve(address reserve, ERC20KyberClone token, bool ethToToken, bool tokenToEth, bool add)
         public
         onlyOperator
         returns(bool)
@@ -285,7 +285,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         return maxGasPriceValue;
     }
 
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty)
+    function getExpectedRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty)
         public view
         returns(uint expectedRate, uint slippageRate)
     {
@@ -300,7 +300,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         return expectedRateContract.getExpectedRate(src, dest, srcQty, includePermissionless);
     }
 
-    function getExpectedRateOnlyPermission(ERC20 src, ERC20 dest, uint srcQty)
+    function getExpectedRateOnlyPermission(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty)
         public view
         returns(uint expectedRate, uint slippageRate)
     {
@@ -313,7 +313,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         return whiteListContract.getUserCapInWei(user);
     }
 
-    function getUserCapInTokenWei(address user, ERC20 token) public view returns(uint) {
+    function getUserCapInTokenWei(address user, ERC20KyberClone token) public view returns(uint) {
         //future feature
         user;
         token;
@@ -335,12 +335,12 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     /// @param src Src token
     /// @param dest Destination token
     /// @return obsolete - used to return best reserve index. not relevant anymore for this API.
-    function findBestRate(ERC20 src, ERC20 dest, uint srcAmount) public view returns(uint obsolete, uint rate) {
+    function findBestRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount) public view returns(uint obsolete, uint rate) {
         BestRateResult memory result = findBestRateTokenToToken(src, dest, srcAmount, EMPTY_HINT);
         return(0, result.rate);
     }
 
-    function findBestRateOnlyPermission(ERC20 src, ERC20 dest, uint srcAmount)
+    function findBestRateOnlyPermission(ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount)
         public
         view
         returns(uint obsolete, uint rate)
@@ -361,7 +361,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     // Regarding complexity. Below code follows the required algorithm for choosing a reserve.
     //  It has been tested, reviewed and found to be clear enough.
     //@dev this function always src or dest are ether. can't do token to token
-    function searchBestRate(ERC20 src, ERC20 dest, uint srcAmount, bool usePermissionless)
+    function searchBestRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount, bool usePermissionless)
         public
         view
         returns(address, uint)
@@ -419,7 +419,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     }
     /* solhint-enable code-complexity */
 
-    function findBestRateTokenToToken(ERC20 src, ERC20 dest, uint srcAmount, bytes hint) internal view
+    function findBestRateTokenToToken(ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount, bytes hint) internal view
         returns(BestRateResult result)
     {
         //by default we use permission less reserves
@@ -443,7 +443,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         result.rate = calcRateFromQty(srcAmount, result.destAmount, getDecimals(src), getDecimals(dest));
     }
 
-    function listPairs(address reserve, ERC20 token, bool isTokenToEth, bool add) internal {
+    function listPairs(address reserve, ERC20KyberClone token, bool isTokenToEth, bool add) internal {
         uint i;
         address[] storage reserveArr = reservesPerTokenDest[token];
 
@@ -470,7 +470,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         }
     }
 
-    event KyberTrade(address indexed trader, ERC20 src, ERC20 dest, uint srcAmount, uint dstAmount,
+    event KyberTrade(address indexed trader, ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount, uint dstAmount,
         address destAddress, uint ethWeiValue, address reserve1, address reserve2, bytes hint);
 
     /* solhint-disable function-max-lines */
@@ -545,7 +545,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     }
     /* solhint-enable function-max-lines */
 
-    function calcActualAmounts (ERC20 src, ERC20 dest, uint srcAmount, uint maxDestAmount, BestRateResult rateResult)
+    function calcActualAmounts (ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount, uint maxDestAmount, BestRateResult rateResult)
         internal view returns(uint actualSrcAmount, uint weiAmount, uint actualDestAmount)
     {
         if (rateResult.destAmount > maxDestAmount) {
@@ -570,9 +570,9 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     /// @param validate If true, additional validations are applicable
     /// @return true if trade is successful
     function doReserveTrade(
-        ERC20 src,
+        ERC20KyberClone src,
         uint amount,
-        ERC20 dest,
+        ERC20KyberClone dest,
         address destAddress,
         uint expectedDestAmount,
         KyberReserveInterface reserve,
@@ -611,7 +611,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     }
 
     /// when user sets max dest amount we could have too many source tokens == change. so we send it back to user.
-    function handleChange (ERC20 src, uint srcAmount, uint requiredSrcAmount, address trader) internal returns (bool) {
+    function handleChange (ERC20KyberClone src, uint srcAmount, uint requiredSrcAmount, address trader) internal returns (bool) {
 
         if (requiredSrcAmount < srcAmount) {
             //if there is "change" send back to trader
@@ -630,7 +630,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     /// @param src Src token
     /// @param srcAmount amount of src tokens
     /// @return true if tradeInput is valid
-    function validateTradeInput(ERC20 src, uint srcAmount, ERC20 dest, address destAddress)
+    function validateTradeInput(ERC20KyberClone src, uint srcAmount, ERC20KyberClone dest, address destAddress)
         internal
         view
         returns(bool)

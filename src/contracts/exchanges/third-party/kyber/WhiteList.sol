@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./Withdrawable.sol";
@@ -12,9 +12,9 @@ contract WhiteList is WhiteListInterface, Withdrawable {
     mapping (address=>uint) public userCategory; // each user has a category defining cap on trade. 0 for standard.
     mapping (uint=>uint)    public categoryCap;  // will define cap on trade amount per category in singapore Dollar.
     uint constant public kgtHolderCategory = 2;
-    ERC20 public kgtToken;
+    ERC20KyberClone public kgtToken;
 
-    function WhiteList(address _admin, ERC20 _kgtToken) public {
+    function WhiteList(address _admin, ERC20KyberClone _kgtToken) public {
         require(_admin != address(0));
         require(_kgtToken != address(0));
         kgtToken = _kgtToken;

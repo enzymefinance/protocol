@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -13,13 +13,13 @@ import "./PermissionGroups.sol";
  */
 contract Withdrawable is PermissionGroups {
 
-    event TokenWithdraw(ERC20 token, uint amount, address sendTo);
+    event TokenWithdraw(ERC20KyberClone token, uint amount, address sendTo);
 
     /**
-     * @dev Withdraw all ERC20 compatible tokens
-     * @param token ERC20 The address of the token contract
+     * @dev Withdraw all ERC20KyberClone compatible tokens
+     * @param token ERC20KyberClone The address of the token contract
      */
-    function withdrawToken(ERC20 token, uint amount, address sendTo) external onlyAdmin {
+    function withdrawToken(ERC20KyberClone token, uint amount, address sendTo) external onlyAdmin {
         require(token.transfer(sendTo, amount));
         TokenWithdraw(token, amount, sendTo);
     }

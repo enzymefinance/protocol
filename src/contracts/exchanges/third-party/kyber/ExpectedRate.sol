@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -13,9 +13,9 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
     uint public quantityFactor = 2;
     uint public worstCaseRateFactorInBps = 50;
     uint constant UNIT_QTY_FOR_FEE_BURNER = 10 ** 18;
-    ERC20 public knc;
+    ERC20KyberClone public knc;
 
-    function ExpectedRate(KyberNetwork _kyberNetwork, ERC20 _knc, address _admin) public {
+    function ExpectedRate(KyberNetwork _kyberNetwork, ERC20KyberClone _knc, address _admin) public {
         require(_admin != address(0));
         require(_knc != address(0));
         require(_kyberNetwork != address(0));
@@ -45,7 +45,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
     //@dev when srcQty too small or 0 the expected rate will be calculated without quantity,
     // will enable rate reference before committing to any quantity
     //@dev when srcQty too small (no actual dest qty) slippage rate will be 0.
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty, bool usePermissionless)
+    function getExpectedRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, bool usePermissionless)
         public view
         returns (uint expectedRate, uint slippageRate)
     {
@@ -95,7 +95,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
 
     //@dev for small src quantities dest qty might be 0, then returned rate is zero.
     //@dev for backward compatibility we would like to return non zero rate (correct one) for small src qty
-    function expectedRateSmallQty(ERC20 src, ERC20 dest, uint srcQty, bool usePermissionless)
+    function expectedRateSmallQty(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, bool usePermissionless)
         internal view returns(uint)
     {
         address reserve;
@@ -109,7 +109,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
         return rateSrcToEth * rateEthToDest / PRECISION;
     }
 
-    function safeFindBestRate(ERC20 src, ERC20 dest, uint srcQty, bool usePermissionless)
+    function safeFindBestRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, bool usePermissionless)
         internal view
         returns (bool didRevert, uint expectedRate, uint slippageRate)
     {
@@ -128,7 +128,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
         }
     }
 
-    function assemblyFindBestRate(ERC20 src, ERC20 dest, uint srcQty, bytes4 sig)
+    function assemblyFindBestRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, bytes4 sig)
         internal view
         returns (bool didRevert, uint rate)
     {
@@ -143,7 +143,7 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
             mstore(add(x,0x44),srcQty)  // uint 32 bytes
             mstore(0x40,add(x,0xa4))    // set free storage pointer to empty space after output
 
-            // input size = sig + ERC20 (address) + ERC20 + uint
+            // input size = sig + ERC20KyberClone (address) + ERC20KyberClone + uint
             // = 4 + 32 + 32 + 32 = 100 = 0x64
             success := staticcall(
                 gas,  // gas

@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -7,7 +7,7 @@ import "./ERC20Interface.sol";
 /// @title Kyber constants contract
 contract Utils {
 
-    ERC20 constant internal ETH_TOKEN_ADDRESS = ERC20(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
+    ERC20KyberClone constant internal ETH_TOKEN_ADDRESS = ERC20KyberClone(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
     uint  constant internal PRECISION = (10**18);
     uint  constant internal MAX_QTY   = (10**28); // 10B tokens
     uint  constant internal MAX_RATE  = (PRECISION * 10**6); // up to 1M tokens per ETH
@@ -15,12 +15,12 @@ contract Utils {
     uint  constant internal ETH_DECIMALS = 18;
     mapping(address=>uint) internal decimals;
 
-    function setDecimals(ERC20 token) internal {
+    function setDecimals(ERC20KyberClone token) internal {
         if (token == ETH_TOKEN_ADDRESS) decimals[token] = ETH_DECIMALS;
         else decimals[token] = token.decimals();
     }
 
-    function getDecimals(ERC20 token) internal view returns(uint) {
+    function getDecimals(ERC20KyberClone token) internal view returns(uint) {
         if (token == ETH_TOKEN_ADDRESS) return ETH_DECIMALS; // save storage access
         uint tokenDecimals = decimals[token];
         // technically, there might be token with decimals 0

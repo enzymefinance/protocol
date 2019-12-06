@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -7,9 +7,9 @@ import "./ERC20Interface.sol";
 interface KyberReserveInterface {
 
     function trade(
-        ERC20 srcToken,
+        ERC20KyberClone srcToken,
         uint srcAmount,
-        ERC20 destToken,
+        ERC20KyberClone destToken,
         address destAddress,
         uint conversionRate,
         bool validate
@@ -18,5 +18,5 @@ interface KyberReserveInterface {
         payable
         returns(bool);
 
-    function getConversionRate(ERC20 src, ERC20 dest, uint srcQty, uint blockNumber) public view returns(uint);
+    function getConversionRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, uint blockNumber) public view returns(uint);
 }

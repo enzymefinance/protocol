@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./FeeBurnerInterface.sol";
@@ -7,7 +7,7 @@ import "./Utils2.sol";
 import "./KyberNetworkInterface.sol";
 
 
-interface BurnableToken {
+interface BurnableTokenKyberClone {
     function transferFrom(address _from, address _to, uint _value) public returns (bool);
     function burnFrom(address _from, uint256 _value) public returns (bool);
 }
@@ -24,13 +24,13 @@ contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils2 {
     address public taxWallet;
     uint public taxFeeBps = 0; // burned fees are taxed. % out of burned fees.
 
-    BurnableToken public knc;
+    BurnableTokenKyberClone public knc;
     KyberNetworkInterface public kyberNetwork;
     uint public kncPerEthRatePrecision = 600 * PRECISION; //--> 1 ether = 600 knc tokens
 
     function FeeBurner(
         address _admin,
-        BurnableToken _kncToken,
+        BurnableTokenKyberClone _kncToken,
         KyberNetworkInterface _kyberNetwork,
         uint _initialKncToEthRatePrecision
     )
@@ -87,8 +87,8 @@ contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils2 {
         //query kyber for knc rate sell and buy
         uint kyberEthKncRate;
         uint kyberKncEthRate;
-        (kyberEthKncRate, ) = kyberNetwork.getExpectedRate(ETH_TOKEN_ADDRESS, ERC20(knc), (10 ** 18));
-        (kyberKncEthRate, ) = kyberNetwork.getExpectedRate(ERC20(knc), ETH_TOKEN_ADDRESS, (10 ** 18));
+        (kyberEthKncRate, ) = kyberNetwork.getExpectedRate(ETH_TOKEN_ADDRESS, ERC20KyberClone(knc), (10 ** 18));
+        (kyberKncEthRate, ) = kyberNetwork.getExpectedRate(ERC20KyberClone(knc), ETH_TOKEN_ADDRESS, (10 ** 18));
 
         //check "reasonable" spread == diff not too big. rate wasn't tampered.
         require(kyberEthKncRate * kyberKncEthRate < PRECISION ** 2 * 2);
@@ -106,7 +106,7 @@ contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils2 {
         require(msg.sender == address(kyberNetwork));
         require(tradeWeiAmount <= MAX_QTY);
 
-        uint kncAmount = calcDestAmount(ETH_TOKEN_ADDRESS, ERC20(knc), tradeWeiAmount, kncPerEthRatePrecision);
+        uint kncAmount = calcDestAmount(ETH_TOKEN_ADDRESS, ERC20KyberClone(knc), tradeWeiAmount, kncPerEthRatePrecision);
         uint fee = kncAmount * reserveFeesInBps[reserve] / 10000;
 
         uint walletFee = fee * walletFeesInBps[wallet] / 10000;

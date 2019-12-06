@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -8,13 +8,13 @@ import "./ERC20Interface.sol";
 interface KyberNetworkProxyInterface {
     function maxGasPrice() public view returns(uint);
     function getUserCapInWei(address user) public view returns(uint);
-    function getUserCapInTokenWei(address user, ERC20 token) public view returns(uint);
+    function getUserCapInTokenWei(address user, ERC20KyberClone token) public view returns(uint);
     function enabled() public view returns(bool);
     function info(bytes32 id) public view returns(uint);
 
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty) public view
+    function getExpectedRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty) public view
         returns (uint expectedRate, uint slippageRate);
 
-    function tradeWithHint(ERC20 src, uint srcAmount, ERC20 dest, address destAddress, uint maxDestAmount,
+    function tradeWithHint(ERC20KyberClone src, uint srcAmount, ERC20KyberClone dest, address destAddress, uint maxDestAmount,
         uint minConversionRate, address walletId, bytes hint) public payable returns(uint);
 }

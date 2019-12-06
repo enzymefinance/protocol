@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -7,12 +7,12 @@ import "./ERC20Interface.sol";
 interface ConversionRatesInterface {
 
     function recordImbalance(
-        ERC20 token,
+        ERC20KyberClone token,
         int buyAmount,
         uint rateUpdateBlock,
         uint currentBlock
     )
         public;
 
-    function getRate(ERC20 token, uint currentBlockNumber, bool buy, uint qty) public view returns(uint);
+    function getRate(ERC20KyberClone token, uint currentBlockNumber, bool buy, uint qty) public view returns(uint);
 }
