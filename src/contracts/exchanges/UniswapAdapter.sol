@@ -1,15 +1,14 @@
 pragma solidity ^0.4.25;
 
-import "Weth.sol";
-import "Trading.sol";
-import "Hub.sol";
-import "Vault.sol";
-import "Accounting.sol";
-import "UniswapFactoryInterface.sol";
-import "UniswapExchangeInterface.sol";
-import "ExchangeAdapter.sol";
-import "ERC20.i.sol";
-
+import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/Weth.sol";
+import "../fund/accounting/Accounting.sol";
+import "../fund/hub/Hub.sol";
+import "../fund/trading/Trading.sol";
+import "../fund/vault/Vault.sol";
+import "./third-party/uniswap/UniswapFactory.i.sol";
+import "./third-party/uniswap/UniswapExchange.i.sol";
+import "./ExchangeAdapter.sol";
 
 contract UniswapAdapter is DSMath, ExchangeAdapter {
 
