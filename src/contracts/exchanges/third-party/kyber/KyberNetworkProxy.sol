@@ -1,29 +1,13 @@
-pragma solidity ^0.4.21;
-
-import "./KyberDependencies.sol";
-
-/// @title Kyber Network interface
-interface KyberNetworkProxyInterface {
-    function maxGasPrice() public view returns(uint);
-    function getUserCapInWei(address user) public view returns(uint);
-    function getUserCapInTokenWei(address user, ERC20Clone token) public view returns(uint);
-    function enabled() public view returns(bool);
-    function info(bytes32 id) public view returns(uint);
-
-    function getExpectedRate(ERC20Clone src, ERC20Clone dest, uint srcQty) public view
-        returns (uint expectedRate, uint slippageRate);
-
-    function tradeWithHint(ERC20Clone src, uint srcAmount, ERC20Clone dest, address destAddress, uint maxDestAmount,
-        uint minConversionRate, address walletId, bytes hint) public payable returns(uint);
-}
+pragma solidity 0.4.18;
 
 
-/// @title simple interface for Kyber Network
-interface SimpleNetworkInterface {
-    function swapTokenToToken(ERC20Clone src, uint srcAmount, ERC20Clone dest, uint minConversionRate) public returns(uint);
-    function swapEtherToToken(ERC20Clone token, uint minConversionRate) public payable returns(uint);
-    function swapTokenToEther(ERC20Clone token, uint srcAmount, uint minConversionRate) public returns(uint);
-}
+import "./ERC20Interface.sol";
+import "./Withdrawable.sol";
+import "./Utils2.sol";
+import "./KyberNetworkInterface.sol";
+import "./KyberNetworkProxyInterface.sol";
+import "./SimpleNetworkInterface.sol";
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// @title Kyber Network proxy for main contract
@@ -47,9 +31,9 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
     /// @param walletId is the wallet ID to send part of the fees
     /// @return amount of actual dest tokens
     function trade(
-        ERC20Clone src,
+        ERC20 src,
         uint srcAmount,
-        ERC20Clone dest,
+        ERC20 dest,
         address destAddress,
         uint maxDestAmount,
         uint minConversionRate,
@@ -80,9 +64,9 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
     /// @param minConversionRate The minimal conversion rate. If actual rate is lower, trade is canceled.
     /// @return amount of actual dest tokens
     function swapTokenToToken(
-        ERC20Clone src,
+        ERC20 src,
         uint srcAmount,
-        ERC20Clone dest,
+        ERC20 dest,
         uint minConversionRate
     )
         public
@@ -106,7 +90,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
     /// @param token Destination token
     /// @param minConversionRate The minimal conversion rate. If actual rate is lower, trade is canceled.
     /// @return amount of actual dest tokens
-    function swapEtherToToken(ERC20Clone token, uint minConversionRate) public payable returns(uint) {
+    function swapEtherToToken(ERC20 token, uint minConversionRate) public payable returns(uint) {
         bytes memory hint;
 
         return tradeWithHint(
@@ -126,7 +110,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
     /// @param srcAmount amount of src tokens
     /// @param minConversionRate The minimal conversion rate. If actual rate is lower, trade is canceled.
     /// @return amount of actual dest tokens
-    function swapTokenToEther(ERC20Clone token, uint srcAmount, uint minConversionRate) public returns(uint) {
+    function swapTokenToEther(ERC20 token, uint srcAmount, uint minConversionRate) public returns(uint) {
         bytes memory hint;
 
         return tradeWithHint(
@@ -146,7 +130,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
         uint destBalance;
     }
 
-    event ExecuteTrade(address indexed trader, ERC20Clone src, ERC20Clone dest, uint actualSrcAmount, uint actualDestAmount);
+    event ExecuteTrade(address indexed trader, ERC20 src, ERC20 dest, uint actualSrcAmount, uint actualDestAmount);
 
     /// @notice use token address ETH_TOKEN_ADDRESS for ether
     /// @dev makes a trade between src and dest token and send dest token to destAddress
@@ -160,9 +144,9 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
     /// @param hint will give hints for the trade.
     /// @return amount of actual dest tokens
     function tradeWithHint(
-        ERC20Clone src,
+        ERC20 src,
         uint srcAmount,
-        ERC20Clone dest,
+        ERC20 dest,
         address destAddress,
         uint maxDestAmount,
         uint minConversionRate,
@@ -174,7 +158,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
         returns(uint)
     {
         require(src == ETH_TOKEN_ADDRESS || msg.value == 0);
-
+        
         UserBalance memory userBalanceBefore;
 
         userBalanceBefore.srcBalance = getBalance(src, msg.sender);
@@ -225,7 +209,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
         kyberNetworkContract = _kyberNetworkContract;
     }
 
-    function getExpectedRate(ERC20Clone src, ERC20Clone dest, uint srcQty)
+    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty)
         public view
         returns(uint expectedRate, uint slippageRate)
     {
@@ -236,7 +220,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
         return kyberNetworkContract.getUserCapInWei(user);
     }
 
-    function getUserCapInTokenWei(address user, ERC20Clone token) public view returns(uint) {
+    function getUserCapInTokenWei(address user, ERC20 token) public view returns(uint) {
         return kyberNetworkContract.getUserCapInTokenWei(user, token);
     }
 
@@ -258,7 +242,7 @@ contract KyberNetworkProxy is KyberNetworkProxyInterface, SimpleNetworkInterface
         uint actualRate;
     }
 
-    function calculateTradeOutcome (uint srcBalanceBefore, uint destBalanceBefore, ERC20Clone src, ERC20Clone dest,
+    function calculateTradeOutcome (uint srcBalanceBefore, uint destBalanceBefore, ERC20 src, ERC20 dest,
         address destAddress)
         internal returns(TradeOutcome outcome)
     {

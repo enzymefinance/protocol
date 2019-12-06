@@ -1,211 +1,11 @@
-pragma solidity ^0.4.21;
-
-import "./KyberDependencies.sol";
+pragma solidity 0.4.18;
 
 
-contract VolumeImbalanceRecorder is Withdrawable {
+import "../../ERC20Interface.sol";
+import "../../Utils.sol";
+import "../../ConversionRatesInterface.sol";
+import "../VolumeImbalanceRecorder.sol";
 
-    uint constant internal SLIDING_WINDOW_SIZE = 5;
-    uint constant internal POW_2_64 = 2 ** 64;
-
-    struct TokenControlInfo {
-        uint minimalRecordResolution; // can be roughly 1 cent
-        uint maxPerBlockImbalance; // in twei resolution
-        uint maxTotalImbalance; // max total imbalance (between rate updates)
-                            // before halting trade
-    }
-
-    mapping(address => TokenControlInfo) internal tokenControlInfo;
-
-    struct TokenImbalanceData {
-        int  lastBlockBuyUnitsImbalance;
-        uint lastBlock;
-
-        int  totalBuyUnitsImbalance;
-        uint lastRateUpdateBlock;
-    }
-
-    mapping(address => mapping(uint=>uint)) public tokenImbalanceData;
-
-    function VolumeImbalanceRecorder(address _admin) public {
-        require(_admin != address(0));
-        admin = _admin;
-    }
-
-    function setTokenControlInfo(
-        ERC20Clone token,
-        uint minimalRecordResolution,
-        uint maxPerBlockImbalance,
-        uint maxTotalImbalance
-    )
-        public
-        onlyAdmin
-    {
-        tokenControlInfo[token] =
-            TokenControlInfo(
-                minimalRecordResolution,
-                maxPerBlockImbalance,
-                maxTotalImbalance
-            );
-    }
-
-    function getTokenControlInfo(ERC20Clone token) public view returns(uint, uint, uint) {
-        return (tokenControlInfo[token].minimalRecordResolution,
-                tokenControlInfo[token].maxPerBlockImbalance,
-                tokenControlInfo[token].maxTotalImbalance);
-    }
-
-    function addImbalance(
-        ERC20Clone token,
-        int buyAmount,
-        uint rateUpdateBlock,
-        uint currentBlock
-    )
-        internal
-    {
-        uint currentBlockIndex = currentBlock % SLIDING_WINDOW_SIZE;
-        int recordedBuyAmount = int(buyAmount / int(tokenControlInfo[token].minimalRecordResolution));
-
-        int prevImbalance = 0;
-
-        TokenImbalanceData memory currentBlockData =
-            decodeTokenImbalanceData(tokenImbalanceData[token][currentBlockIndex]);
-
-        // first scenario - this is not the first tx in the current block
-        if (currentBlockData.lastBlock == currentBlock) {
-            if (uint(currentBlockData.lastRateUpdateBlock) == rateUpdateBlock) {
-                // just increase imbalance
-                currentBlockData.lastBlockBuyUnitsImbalance += recordedBuyAmount;
-                currentBlockData.totalBuyUnitsImbalance += recordedBuyAmount;
-            } else {
-                // imbalance was changed in the middle of the block
-                prevImbalance = getImbalanceInRange(token, rateUpdateBlock, currentBlock);
-                currentBlockData.totalBuyUnitsImbalance = int(prevImbalance) + recordedBuyAmount;
-                currentBlockData.lastBlockBuyUnitsImbalance += recordedBuyAmount;
-                currentBlockData.lastRateUpdateBlock = uint(rateUpdateBlock);
-            }
-        } else {
-            // first tx in the current block
-            int currentBlockImbalance;
-            (prevImbalance, currentBlockImbalance) = getImbalanceSinceRateUpdate(token, rateUpdateBlock, currentBlock);
-
-            currentBlockData.lastBlockBuyUnitsImbalance = recordedBuyAmount;
-            currentBlockData.lastBlock = uint(currentBlock);
-            currentBlockData.lastRateUpdateBlock = uint(rateUpdateBlock);
-            currentBlockData.totalBuyUnitsImbalance = int(prevImbalance) + recordedBuyAmount;
-        }
-
-        tokenImbalanceData[token][currentBlockIndex] = encodeTokenImbalanceData(currentBlockData);
-    }
-
-    function setGarbageToVolumeRecorder(ERC20Clone token) internal {
-        for (uint i = 0; i < SLIDING_WINDOW_SIZE; i++) {
-            tokenImbalanceData[token][i] = 0x1;
-        }
-    }
-
-    function getImbalanceInRange(ERC20Clone token, uint startBlock, uint endBlock) internal view returns(int buyImbalance) {
-        // check the imbalance in the sliding window
-        require(startBlock <= endBlock);
-
-        buyImbalance = 0;
-
-        for (uint windowInd = 0; windowInd < SLIDING_WINDOW_SIZE; windowInd++) {
-            TokenImbalanceData memory perBlockData = decodeTokenImbalanceData(tokenImbalanceData[token][windowInd]);
-
-            if (perBlockData.lastBlock <= endBlock && perBlockData.lastBlock >= startBlock) {
-                buyImbalance += int(perBlockData.lastBlockBuyUnitsImbalance);
-            }
-        }
-    }
-
-    function getImbalanceSinceRateUpdate(ERC20Clone token, uint rateUpdateBlock, uint currentBlock)
-        internal view
-        returns(int buyImbalance, int currentBlockImbalance)
-    {
-        buyImbalance = 0;
-        currentBlockImbalance = 0;
-        uint latestBlock = 0;
-        int imbalanceInRange = 0;
-        uint startBlock = rateUpdateBlock;
-        uint endBlock = currentBlock;
-
-        for (uint windowInd = 0; windowInd < SLIDING_WINDOW_SIZE; windowInd++) {
-            TokenImbalanceData memory perBlockData = decodeTokenImbalanceData(tokenImbalanceData[token][windowInd]);
-
-            if (perBlockData.lastBlock <= endBlock && perBlockData.lastBlock >= startBlock) {
-                imbalanceInRange += perBlockData.lastBlockBuyUnitsImbalance;
-            }
-
-            if (perBlockData.lastRateUpdateBlock != rateUpdateBlock) continue;
-            if (perBlockData.lastBlock < latestBlock) continue;
-
-            latestBlock = perBlockData.lastBlock;
-            buyImbalance = perBlockData.totalBuyUnitsImbalance;
-            if (uint(perBlockData.lastBlock) == currentBlock) {
-                currentBlockImbalance = perBlockData.lastBlockBuyUnitsImbalance;
-            }
-        }
-
-        if (buyImbalance == 0) {
-            buyImbalance = imbalanceInRange;
-        }
-    }
-
-    function getImbalance(ERC20Clone token, uint rateUpdateBlock, uint currentBlock)
-        internal view
-        returns(int totalImbalance, int currentBlockImbalance)
-    {
-
-        int resolution = int(tokenControlInfo[token].minimalRecordResolution);
-
-        (totalImbalance, currentBlockImbalance) =
-            getImbalanceSinceRateUpdate(
-                token,
-                rateUpdateBlock,
-                currentBlock);
-
-        totalImbalance *= resolution;
-        currentBlockImbalance *= resolution;
-    }
-
-    function getMaxPerBlockImbalance(ERC20Clone token) internal view returns(uint) {
-        return tokenControlInfo[token].maxPerBlockImbalance;
-    }
-
-    function getMaxTotalImbalance(ERC20Clone token) internal view returns(uint) {
-        return tokenControlInfo[token].maxTotalImbalance;
-    }
-
-    function encodeTokenImbalanceData(TokenImbalanceData data) internal pure returns(uint) {
-        // check for overflows
-        require(data.lastBlockBuyUnitsImbalance < int(POW_2_64 / 2));
-        require(data.lastBlockBuyUnitsImbalance > int(-1 * int(POW_2_64) / 2));
-        require(data.lastBlock < POW_2_64);
-        require(data.totalBuyUnitsImbalance < int(POW_2_64 / 2));
-        require(data.totalBuyUnitsImbalance > int(-1 * int(POW_2_64) / 2));
-        require(data.lastRateUpdateBlock < POW_2_64);
-
-        // do encoding
-        uint result = uint(data.lastBlockBuyUnitsImbalance) & (POW_2_64 - 1);
-        result |= data.lastBlock * POW_2_64;
-        result |= (uint(data.totalBuyUnitsImbalance) & (POW_2_64 - 1)) * POW_2_64 * POW_2_64;
-        result |= data.lastRateUpdateBlock * POW_2_64 * POW_2_64 * POW_2_64;
-
-        return result;
-    }
-
-    function decodeTokenImbalanceData(uint input) internal pure returns(TokenImbalanceData) {
-        TokenImbalanceData memory data;
-
-        data.lastBlockBuyUnitsImbalance = int(int64(input & (POW_2_64 - 1)));
-        data.lastBlock = uint(uint64((input / POW_2_64) & (POW_2_64 - 1)));
-        data.totalBuyUnitsImbalance = int(int64((input / (POW_2_64 * POW_2_64)) & (POW_2_64 - 1)));
-        data.lastRateUpdateBlock = uint(uint64((input / (POW_2_64 * POW_2_64 * POW_2_64))));
-
-        return data;
-    }
-}
 
 contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, Utils {
 
@@ -244,7 +44,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
         uint32 blockNumber;
     } */
     uint public validRateDurationInBlocks = 10; // rates are valid for this amount of blocks
-    ERC20Clone[] internal listedTokens;
+    ERC20[] internal listedTokens;
     mapping(address=>TokenData) internal tokenData;
     bytes32[] internal tokenRatesCompactData;
     uint public numTokensInCurrentCompactData = 0;
@@ -258,7 +58,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     function ConversionRates(address _admin) public VolumeImbalanceRecorder(_admin)
         { } // solhint-disable-line no-empty-blocks
 
-    function addToken(ERC20Clone token) public onlyAdmin {
+    function addToken(ERC20 token) public onlyAdmin {
 
         require(!tokenData[token].listed);
         tokenData[token].listed = true;
@@ -294,7 +94,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
 
     function setBaseRate(
-        ERC20Clone[] tokens,
+        ERC20[] tokens,
         uint[] baseBuy,
         uint[] baseSell,
         bytes14[] buy,
@@ -320,7 +120,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
 
     function setQtyStepFunction(
-        ERC20Clone token,
+        ERC20 token,
         int[] xBuy,
         int[] yBuy,
         int[] xSell,
@@ -340,7 +140,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
 
     function setImbalanceStepFunction(
-        ERC20Clone token,
+        ERC20 token,
         int[] xBuy,
         int[] yBuy,
         int[] xSell,
@@ -363,13 +163,13 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
         validRateDurationInBlocks = duration;
     }
 
-    function enableTokenTrade(ERC20Clone token) public onlyAdmin {
+    function enableTokenTrade(ERC20 token) public onlyAdmin {
         require(tokenData[token].listed);
         require(tokenControlInfo[token].minimalRecordResolution != 0);
         tokenData[token].enabled = true;
     }
 
-    function disableTokenTrade(ERC20Clone token) public onlyAlerter {
+    function disableTokenTrade(ERC20 token) public onlyAlerter {
         require(tokenData[token].listed);
         tokenData[token].enabled = false;
     }
@@ -379,7 +179,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
 
     function recordImbalance(
-        ERC20Clone token,
+        ERC20 token,
         int buyAmount,
         uint rateUpdateBlock,
         uint currentBlock
@@ -394,7 +194,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
 
     /* solhint-disable function-max-lines */
-    function getRate(ERC20Clone token, uint currentBlockNumber, bool buy, uint qty) public view returns(uint) {
+    function getRate(ERC20 token, uint currentBlockNumber, bool buy, uint qty) public view returns(uint) {
         // check if trade is enabled
         if (!tokenData[token].enabled) return 0;
         if (tokenControlInfo[token].minimalRecordResolution == 0) return 0; // token control info not set
@@ -465,14 +265,14 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
     /* solhint-enable function-max-lines */
 
-    function getBasicRate(ERC20Clone token, bool buy) public view returns(uint) {
+    function getBasicRate(ERC20 token, bool buy) public view returns(uint) {
         if (buy)
             return tokenData[token].baseBuyRate;
         else
             return tokenData[token].baseSellRate;
     }
 
-    function getCompactData(ERC20Clone token) public view returns(uint, uint, byte, byte) {
+    function getCompactData(ERC20 token) public view returns(uint, uint, byte, byte) {
         require(tokenData[token].listed);
 
         uint arrayIndex = tokenData[token].compactDataArrayIndex;
@@ -486,12 +286,12 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
         );
     }
 
-    function getTokenBasicData(ERC20Clone token) public view returns(bool, bool) {
+    function getTokenBasicData(ERC20 token) public view returns(bool, bool) {
         return (tokenData[token].listed, tokenData[token].enabled);
     }
 
     /* solhint-disable code-complexity */
-    function getStepFunctionData(ERC20Clone token, uint command, uint param) public view returns(int) {
+    function getStepFunctionData(ERC20 token, uint command, uint param) public view returns(int) {
         if (command == 0) return int(tokenData[token].buyRateQtyStepFunction.x.length);
         if (command == 1) return tokenData[token].buyRateQtyStepFunction.x[param];
         if (command == 2) return int(tokenData[token].buyRateQtyStepFunction.y.length);
@@ -516,16 +316,16 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
     }
     /* solhint-enable code-complexity */
 
-    function getRateUpdateBlock(ERC20Clone token) public view returns(uint) {
+    function getRateUpdateBlock(ERC20 token) public view returns(uint) {
         bytes32 compactData = tokenRatesCompactData[tokenData[token].compactDataArrayIndex];
         return getLast4Bytes(compactData);
     }
 
-    function getListedTokens() public view returns(ERC20Clone[]) {
+    function getListedTokens() public view returns(ERC20[]) {
         return listedTokens;
     }
 
-    function getTokenQty(ERC20Clone token, uint ethQty, uint rate) internal view returns(uint) {
+    function getTokenQty(ERC20 token, uint ethQty, uint rate) internal view returns(uint) {
         uint dstDecimals = getDecimals(token);
         uint srcDecimals = ETH_DECIMALS;
 
@@ -537,7 +337,7 @@ contract ConversionRates is ConversionRatesInterface, VolumeImbalanceRecorder, U
         return uint(b) / (BYTES_14_OFFSET * BYTES_14_OFFSET);
     }
 
-    function getRateByteFromCompactData(bytes32 data, ERC20Clone token, bool buy) internal view returns(int8) {
+    function getRateByteFromCompactData(bytes32 data, ERC20 token, bool buy) internal view returns(int8) {
         uint fieldOffset = tokenData[token].compactDataFieldIndex;
         uint byteOffset;
         if (buy)

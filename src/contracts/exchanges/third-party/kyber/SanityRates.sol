@@ -1,6 +1,11 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.18;
 
-import "./KyberDependencies.sol";
+
+import "./ERC20Interface.sol";
+import "./Withdrawable.sol";
+import "./Utils.sol";
+import "./SanityRatesInterface.sol";
+
 
 contract SanityRates is SanityRatesInterface, Withdrawable, Utils {
     mapping(address=>uint) public tokenRate;
@@ -11,7 +16,7 @@ contract SanityRates is SanityRatesInterface, Withdrawable, Utils {
         admin = _admin;
     }
 
-    function setReasonableDiff(ERC20Clone[] srcs, uint[] diff) public onlyAdmin {
+    function setReasonableDiff(ERC20[] srcs, uint[] diff) public onlyAdmin {
         require(srcs.length == diff.length);
         for (uint i = 0; i < srcs.length; i++) {
             require(diff[i] <= 100 * 100);
@@ -19,7 +24,7 @@ contract SanityRates is SanityRatesInterface, Withdrawable, Utils {
         }
     }
 
-    function setSanityRates(ERC20Clone[] srcs, uint[] rates) public onlyOperator {
+    function setSanityRates(ERC20[] srcs, uint[] rates) public onlyOperator {
         require(srcs.length == rates.length);
 
         for (uint i = 0; i < srcs.length; i++) {
@@ -28,7 +33,7 @@ contract SanityRates is SanityRatesInterface, Withdrawable, Utils {
         }
     }
 
-    function getSanityRate(ERC20Clone src, ERC20Clone dest) public view returns(uint) {
+    function getSanityRate(ERC20 src, ERC20 dest) public view returns(uint) {
         if (src != ETH_TOKEN_ADDRESS && dest != ETH_TOKEN_ADDRESS) return 0;
 
         uint rate;
