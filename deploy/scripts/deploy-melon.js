@@ -13,6 +13,7 @@ const main = async input => {
   const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
   const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
   const oasisDexAccessor = await nab('OasisDexAccessor', [], melonAddrs);
+  const uniswapAdapter = await nab('UniswapAdapter', [], melonAddrs);
   const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
   const engineAdapter = await nab('EngineAdapter', [], melonAddrs);
   const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
@@ -101,6 +102,13 @@ const main = async input => {
       takesCustody: melonConf.exchangeTakesCustody.oasis
     };
   }
+  if (input.uniswap) {
+    exchanges.uniswap = {
+      exchange: input.uniswap.addr.UniswapFactory,
+      adapter: uniswapAdapter.options.address,
+      takesCustody: melonConf.exchangeTakesCustody.uniswap
+    };
+  }
   if (input.zeroex) {
     exchanges.zeroex = {
       exchange: input.zeroex.addr.ZeroExV2Exchange,
@@ -171,6 +179,7 @@ const main = async input => {
     "KyberAdapter": kyberAdapter,
     "OasisDexAdapter": oasisDexAdapter,
     "OasisDexAccessor": oasisDexAccessor,
+    "UniswapAdapter": uniswapAdapter,
     "ZeroExV2Adapter": zeroExV2Adapter,
     "EngineAdapter": engineAdapter,
     "PriceTolerance": priceTolerance,
