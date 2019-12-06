@@ -20,11 +20,12 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     // - place asset in ownedAssets if not already tracked
     /// @notice Swaps srcAmount of srcToken for a minimum of minDestAmount of destToken
     /// @dev For the purpose of PriceTolerance, fillTakerQuantity == takerAssetQuantity = Dest token amount
-    /// @param targetExchange Address of the exchange
+    /// @param targetExchange Address of Uniswap factory contract
     /// @param orderAddresses [2] Maker asset (Dest token)
     /// @param orderAddresses [3] Taker asset (Src token)
     /// @param orderValues [0] Maker asset quantity (Dest token amount)
     /// @param orderValues [1] Taker asset quantity (Src token amount)
+    /// @param orderValues [6] Fill amount: amount of taker token to be traded
     function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -112,6 +113,12 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     // INTERNAL FUNCTIONS
 
     /// @notice Call different functions based on type of assets supplied
+    /// @param targetExchange Address of Uniswap factory contract
+    /// @param srcToken Address of src token
+    /// @param srcAmount Amount of src token supplied
+    /// @param destToken Address of dest token
+    /// @param minDestAmount Minimum amount of dest token to receive
+    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
     function dispatchSwap(
         address targetExchange,
         address srcToken,
@@ -161,8 +168,8 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     /// @param nativeAsset Native asset address as src token
     /// @param srcAmount Amount of native asset supplied
     /// @param destToken Address of dest token
-    /// @param minDestAmount Minimum amount of minimum dest token to get back
-    /// @return receivedAmount Actual amount of destToken received from the exchange
+    /// @param minDestAmount Minimum amount of dest token to get back
+    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
     function swapNativeAssetToToken(
         address targetExchange,
         address nativeAsset,
@@ -171,7 +178,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         uint minDestAmount
     )
         internal
-        returns (uint receivedAmount)
+        returns (uint actualReceiveAmount)
     {
         // Convert WETH to ETH
         Hub hub = getHub();
@@ -180,15 +187,15 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         WETH(nativeAsset).withdraw(srcAmount);
 
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
-        receivedAmount = UniswapExchangeInterface(tokenExchange).ethToTokenSwapInput.value(srcAmount)(minDestAmount, add(block.timestamp, 1));
+        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).ethToTokenSwapInput.value(srcAmount)(minDestAmount, add(block.timestamp, 1));
     }
 
     /// @param targetExchange Address of Uniswap factory contract
     /// @param srcToken Address of src token
     /// @param srcAmount Amount of src token supplied
-    /// @param nativeAsset Native asset address as src token
-    /// @param minDestAmount Minimum amount of minimum dest token to get back
-    /// @return receivedAmount Actual amount of destToken received from the exchange
+    /// @param nativeAsset Native asset address as dest token
+    /// @param minDestAmount Minimum amount of dest token to get back
+    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
     function swapTokenToNativeAsset(
         address targetExchange,
         address srcToken,
@@ -197,7 +204,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         uint minDestAmount
     )
         internal
-        returns (uint receivedAmount)
+        returns (uint actualReceiveAmount)
     {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
@@ -205,18 +212,18 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
         ERC20(srcToken).approve(tokenExchange, srcAmount);
-        receivedAmount = UniswapExchangeInterface(tokenExchange).tokenToEthSwapInput(srcAmount, minDestAmount, add(block.timestamp, 1));
+        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).tokenToEthSwapInput(srcAmount, minDestAmount, add(block.timestamp, 1));
 
         // Convert ETH to WETH
-        WETH(nativeAsset).deposit.value(receivedAmount)();
+        WETH(nativeAsset).deposit.value(actualReceiveAmount)();
     }
 
     /// @param targetExchange Address of Uniswap factory contract
     /// @param srcToken Address of src token
     /// @param srcAmount Amount of src token supplied
     /// @param destToken Address of dest token
-    /// @param minDestAmount Minimum amount of minimum dest token to get back
-    /// @return receivedAmount Actual amount of destToken received from the exchange
+    /// @param minDestAmount Minimum amount of dest token to get back
+    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
     function swapTokenToToken(
         address targetExchange,
         address srcToken,
@@ -225,7 +232,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         uint minDestAmount
     )
         internal
-        returns (uint receivedAmount)
+        returns (uint actualReceiveAmount)
     {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
@@ -234,7 +241,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
         ERC20(srcToken).approve(tokenExchange, srcAmount);
         // TODO: Better way of passing min_eth_bought parameter instead of passing a hardcoded '1'
-        receivedAmount = UniswapExchangeInterface(tokenExchange).tokenToTokenSwapInput(
+        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).tokenToTokenSwapInput(
             srcAmount, minDestAmount, 1, add(block.timestamp, 1), destToken
         );
     }
