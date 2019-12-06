@@ -67,49 +67,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         );
     }
 
-    // PUBLIC VIEW FUNCTIONS
-
-    /// @dev This is different from Uniswap's Input Price functions because Uniswap functions return the quantity instead of the rate
-    /// @notice Calculates the Uniswap rates between tokens for the srcAmount
-    function getInputRate(
-        address targetExchange,
-        address nativeAsset,
-        address srcToken,
-        uint srcAmount,
-        address destToken
-    )
-        public view
-        returns (uint inputRate)
-    {
-        require(
-            srcToken != destToken,
-            "Src token cannot be the same as dest token"
-        );
-
-        address tokenExchange;
-        uint expectedDestAmount;
-        if (srcToken == nativeAsset) {
-
-            tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
-            expectedDestAmount = UniswapExchangeInterface(tokenExchange).getEthToTokenInputPrice(srcAmount);
-
-        } else if (destToken == nativeAsset) {
-
-            tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
-            expectedDestAmount = UniswapExchangeInterface(tokenExchange).getTokenToEthInputPrice(srcAmount);
-
-        } else {
-
-            address intermediateTokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
-            uint intermediateEthBought = UniswapExchangeInterface(intermediateTokenExchange).getTokenToEthInputPrice(srcAmount);
-            tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
-            expectedDestAmount = UniswapExchangeInterface(tokenExchange).getEthToTokenInputPrice(intermediateEthBought);
-
-        }
-
-        inputRate = mul(expectedDestAmount, 10 ** uint(ERC20WithFields(srcToken).decimals())) / srcAmount;
-    }
-
     // INTERNAL FUNCTIONS
 
     /// @notice Call different functions based on type of assets supplied
@@ -240,7 +197,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
         ERC20(srcToken).approve(tokenExchange, srcAmount);
-        // TODO: Better way of passing min_eth_bought parameter instead of passing a hardcoded '1'
         actualReceiveAmount = UniswapExchangeInterface(tokenExchange).tokenToTokenSwapInput(
             srcAmount, minDestAmount, 1, add(block.timestamp, 1), destToken
         );
