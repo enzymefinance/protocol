@@ -12,6 +12,7 @@
       "KyberAdapter": "",
       "MatchingMarketAdapter": "",
       "MatchingMarketAccessor": "",
+      "UniswapAdapter": "",
       "ZeroExV2Adapter": "",
       "EngineAdapter": "",
       "PriceTolerance": "",
@@ -45,7 +46,8 @@
         "kyber": false,
         "zeroex": false,
         "ethfinex": true,
-        "engine": false
+        "engine": false,
+        "uniswap": false
       }
     }
   },
@@ -74,6 +76,13 @@
   "ethfinex": {
     "addr": {
       "WrapperRegistryEFX": ""
+    },
+    "conf": {}
+  },
+  "uniswap": {
+    "addr": {
+      "UniswapExchange": "",
+      "UniswapFactory": ""
     },
     "conf": {}
   },
