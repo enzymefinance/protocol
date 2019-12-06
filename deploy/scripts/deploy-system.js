@@ -34,26 +34,37 @@ const partialRedeploy = async (contractsToRedeploy=[]) => {
 
 const deploySystem = async input => {
   const deployOut = Object.assign({}, input);
-  const tokens = await deployTokens(input);
-  deployOut.tokens.addr = getAllAddrs(tokens);
-  const oasis = await deployOasis(input);
-  deployOut.oasis.addr = getAllAddrs(oasis);
-  const zeroex = await deployZeroex(input);
-  deployOut.zeroex.addr = getAllAddrs(zeroex);
-  const ethfinex = await deployEthfinex(input);
-  deployOut.ethfinex.addr = getAllAddrs(ethfinex);
-  const kyber = await deployKyber(input);
-  deployOut.kyber.addr = getAllAddrs(kyber);
-  const melon = await deployMelon(input);
-  deployOut.melon.addr = getAllAddrs(melon);
-  const contracts = {
-    ...tokens,
-    ...oasis,
-    ...zeroex,
-    ...ethfinex,
-    ...kyber,
-    ...melon
-  };
+  let contracts = {};
+  if (input.tokens) {
+    const tokens = await deployTokens(input);
+    deployOut.tokens.addr = getAllAddrs(tokens);
+    contracts = Object.assign(contracts, tokens);
+  }
+  if (input.oasis) {
+    const oasis = await deployOasis(input);
+    deployOut.oasis.addr = getAllAddrs(oasis);
+    contracts = Object.assign(contracts, oasis);
+  }
+  if (input.zeroex) {
+    const zeroex = await deployZeroex(input);
+    deployOut.zeroex.addr = getAllAddrs(zeroex);
+    contracts = Object.assign(contracts, zeroex);
+  }
+  if (input.ethfinex) {
+    const ethfinex = await deployEthfinex(input);
+    deployOut.ethfinex.addr = getAllAddrs(ethfinex);
+    contracts = Object.assign(contracts, ethfinex);
+  }
+  if (input.kyber) {
+    const kyber = await deployKyber(input);
+    deployOut.kyber.addr = getAllAddrs(kyber);
+    contracts = Object.assign(contracts, kyber);
+  }
+   if(input.melon) {
+    const melon = await deployMelon(input);
+    deployOut.melon.addr = getAllAddrs(melon);
+    contracts = Object.assign(contracts, melon);
+  }
   return {contracts, deployOut};
 }
 

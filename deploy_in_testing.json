@@ -100,7 +100,8 @@
     "conf": {
       "WETH": {
         "name": "Eth Token",
-        "decimals": 18
+        "decimals": 18,
+        "initialDepositAmount": "1000000000000000000000000"
       },
       "MLN": {
         "name": "Melon Token",

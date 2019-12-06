@@ -6,7 +6,6 @@ const main = async input => {
   const contracts = {};
   contracts.Exchange = fetchContract('Exchange', input.zeroex.addr.Exchange);
   contracts.WrapperRegistryEFX = await nab('WrapperRegistryEFX', [], input.ethfinex.addr);
-  const erc20Proxy = await fetchContract('ERC20Proxy', input.zeroex.addr.ERC20Proxy);
 
   const wrapperMap = new Map();
   for (const tokenSym of Object.keys(input.tokens.addr)) {

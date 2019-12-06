@@ -15,8 +15,10 @@ const main = async input => {
   const rep = await nab('PreminedToken', ['REP', 18, ''], tokenAddrs, 'REP');
   const zrx = await nab('PreminedToken', ['ZRX', 18, ''], tokenAddrs, 'ZRX');
 
-  const depositAmount = (new BN('10')).pow(new BN('24'));
-  await send(weth, 'deposit', [], {value: depositAmount});
+  const initialWeth = input.tokens.conf.WETH.initialDepositAmount;
+  if (new BN(initialWeth) > 0) {
+    await send(weth, 'deposit', [], {value: initialWeth});
+  }
 
   return {
     "WETH": weth,

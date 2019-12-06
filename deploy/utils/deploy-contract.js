@@ -11,6 +11,20 @@ const defaultOptions = {
   data: null,
 };
 
+// takes a web3 account object and gets the next nonce
+// we manually track the nonce, since remote nodes tend to get out of sync
+const getNextNonce = async account => {
+  // TODO: re-enable; nonce tracking needed when using infura,
+  //    but doesn't seem to work in local testing
+  // if (account.nonce === undefined) {
+  //   account.nonce = await web3.eth.getTransactionCount(account.address, 'pending');
+  // }
+  // const nextNonce = account.nonce;
+  // account.nonce++;
+  return await web3.eth.getTransactionCount(account.address, 'pending');
+  // return nextNonce;
+}
+
 const stdout = msg => {
   process.env.MLN_VERBOSE && console.log(msg);
 }
@@ -34,8 +48,8 @@ const send = async (contract, method=undefined, args=[], opts) => {
     }`
   );
   const account = web3.eth.accounts.wallet['0']; // TODO: change so it can be overridden
-  const nonce = await web3.eth.getTransactionCount(account.address, 'pending');
   const clonedDefaults = Object.assign({}, defaultOptions);
+  const nonce = await getNextNonce(account);
   const tx = Object.assign(
     clonedDefaults,
     Object.assign({
@@ -67,7 +81,7 @@ const deploy = async (name, args=[]) => {
     arguments: args,
     data: bin.indexOf('0x') === 0 ? bin : `0x${bin}`
   }).encodeABI();
-  const nonce = await web3.eth.getTransactionCount(account.address, 'pending');
+  const nonce = await getNextNonce(account);
   const tx = Object.assign(
     defaultOptions,
     { data: input, from: account.address, nonce: nonce, to: null }

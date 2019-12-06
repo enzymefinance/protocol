@@ -73,33 +73,40 @@ const main = async input => {
     'withdrawTokens(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
   ].map(s => web3.utils.keccak256(s).slice(0,10));
 
-  const exchanges = {
-    engine: {
-      exchange: engine.options.address,
-      adapter: engineAdapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.engine
-    },
-    ethfinex: {
+  const exchanges = {};
+  exchanges.engine = {
+    exchange: engine.options.address,
+    adapter: engineAdapter.options.address,
+    takesCustody: melonConf.exchangeTakesCustody.engine
+  };
+  if (input.ethfinex) {
+    exchanges.ethfinex = {
       exchange: input.ethfinex.addr.Exchange,
       adapter: ethfinexAdapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.ethfinex
-    },
-    kyber: {
+    };
+  }
+  if (input.kyber) {
+    exchanges.kyber = {
       exchange: input.kyber.addr.KyberNetworkProxy,
       adapter: kyberAdapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.kyber
-    },
-    oasis: {
+    };
+  }
+  if (input.oasis) {
+    exchanges.oasis = {
       exchange: input.oasis.addr.MatchingMarket,
       adapter: matchingMarketAdapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.oasis
-    },
-    zeroex: {
+    };
+  }
+  if (input.zeroex) {
+    exchanges.zeroex = {
       exchange: input.zeroex.addr.Exchange,
       adapter: zeroExV2Adapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.zeroex
-    }
-  };
+    };
+  }
 
   for (const info of Object.values(exchanges)) {
     const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);

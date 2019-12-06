@@ -24,4 +24,10 @@ if (process.env.GANACHE_KEYS) { // TODO: move away from env var
   }
 }
 
+if (process.env.PASSFILE && process.env.KEYSTORE) {
+  const password = fs.readFileSync(process.env.PASSFILE, 'utf8').trim();
+  const keystore = JSON.parse(fs.readFileSync(process.env.KEYSTORE, 'utf8'));
+  web3.eth.accounts.wallet.decrypt([keystore], password);
+}
+
 module.exports = web3;
