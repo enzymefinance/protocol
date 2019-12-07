@@ -116,22 +116,24 @@ beforeAll(async () => {
 });
 
 test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, trading, vault } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
   const makerAsset = mln.options.address;
 
-  // TODO: Also, make liquidity pools and pull from actual rate?
   const makerQuantity = await mlnExchange.methods
     .getEthToTokenInputPrice(takerQuantity)
     .call();
 
   const preMlnFundHoldings = new BN(
     await accounting.methods.assetHoldings(mln.options.address).call()
-  )
+  );
   const preWethFundHoldings = new BN(
     await accounting.methods.assetHoldings(weth.options.address).call()
+  );
+  const preMlnVault = new BN(
+    await mln.methods.balanceOf(vault.options.address).call()
   );
 
   await trading.methods
@@ -160,6 +162,9 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const postWethFundHoldings = new BN(
     await accounting.methods.assetHoldings(weth.options.address).call()
   );
+  const postMlnVault = new BN(
+    await mln.methods.balanceOf(vault.options.address).call()
+  );
 
   expect(postWethFundHoldings).toEqualBN(
     preWethFundHoldings.sub(new BN(takerQuantity))
@@ -167,10 +172,11 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   expect(postMlnFundHoldings).toEqualBN(
     preMlnFundHoldings.add(new BN(makerQuantity))
   );
+  expect(postMlnVault).toEqualBN(preMlnVault.add(new BN(makerQuantity)));
 });
 
 test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, trading, vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -186,6 +192,9 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const preWethFundHoldings = new BN(
     await accounting.methods.assetHoldings(weth.options.address).call()
   );
+  const preWethVault = new BN(
+    await weth.methods.balanceOf(vault.options.address).call()
+  );
 
   await trading.methods
     .callOnExchange(
@@ -213,6 +222,9 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const postWethFundHoldings = new BN(
     await accounting.methods.assetHoldings(weth.options.address).call()
   );
+  const postWethVault = new BN(
+    await weth.methods.balanceOf(vault.options.address).call()
+  );
 
   expect(postWethFundHoldings).toEqualBN(
     preWethFundHoldings.add(new BN(makerQuantity))
@@ -220,10 +232,11 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   expect(postMlnFundHoldings).toEqualBN(
     preMlnFundHoldings.sub(new BN(takerQuantity))
   );
+  expect(postWethVault).toEqualBN(preWethVault.add(new BN(makerQuantity)));
 });
 
 test('Swap MLN directly to EUR without specifying a minimum maker quantity', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, trading, vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -245,6 +258,9 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   )
   const preWethFundHoldings = new BN(
     await accounting.methods.assetHoldings(weth.options.address).call()
+  );
+  const preEurVault = new BN(
+    await eur.methods.balanceOf(vault.options.address).call()
   );
 
   await trading.methods
@@ -276,6 +292,9 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const postWethFundHoldings = new BN(
     await accounting.methods.assetHoldings(weth.options.address).call()
   );
+  const postEurVault = new BN(
+    await eur.methods.balanceOf(vault.options.address).call()
+  );
 
   expect(postWethFundHoldings).toEqualBN(preWethFundHoldings);
   expect(postMlnFundHoldings).toEqualBN(
@@ -284,6 +303,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   expect(postEurFundHoldings).toEqualBN(
     preEurFundHoldings.add(new BN(expectedMakerQuantity))
   );
+  expect(postEurVault).toEqualBN(preEurVault.add(new BN(expectedMakerQuantity)));
 });
 
 test('Order fails if maker amount is not satisfied', async () => {

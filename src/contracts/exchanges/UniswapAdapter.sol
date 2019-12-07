@@ -25,7 +25,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     /// @param orderAddresses [3] Taker asset (Src token)
     /// @param orderValues [0] Maker asset quantity (Dest token amount)
     /// @param orderValues [1] Taker asset quantity (Src token amount)
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param orderValues [6] Taker asset fill amount
     function takeOrder(
         address targetExchange,
         address[6] orderAddresses,
@@ -57,7 +57,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
         getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),
@@ -75,7 +74,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     /// @param srcAmount Amount of src token supplied
     /// @param destToken Address of dest token
     /// @param minDestAmount Minimum amount of dest token to receive
-    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
+    /// @return actualReceiveAmount Actual amount of destToken received
     function dispatchSwap(
         address targetExchange,
         address srcToken,
@@ -126,7 +125,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     /// @param srcAmount Amount of native asset supplied
     /// @param destToken Address of dest token
     /// @param minDestAmount Minimum amount of dest token to get back
-    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
+    /// @return actualReceiveAmount Actual amount of destToken received
     function swapNativeAssetToToken(
         address targetExchange,
         address nativeAsset,
@@ -144,7 +143,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         WETH(nativeAsset).withdraw(srcAmount);
 
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(destToken);
-        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).ethToTokenSwapInput.value(srcAmount)(minDestAmount, add(block.timestamp, 1));
+        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).ethToTokenTransferInput.value(srcAmount)(minDestAmount, add(block.timestamp, 1), address(vault));
     }
 
     /// @param targetExchange Address of Uniswap factory contract
@@ -152,7 +151,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     /// @param srcAmount Amount of src token supplied
     /// @param nativeAsset Native asset address as dest token
     /// @param minDestAmount Minimum amount of dest token to get back
-    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
+    /// @return actualReceiveAmount Actual amount of destToken received
     function swapTokenToNativeAsset(
         address targetExchange,
         address srcToken,
@@ -171,8 +170,9 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         ERC20(srcToken).approve(tokenExchange, srcAmount);
         actualReceiveAmount = UniswapExchangeInterface(tokenExchange).tokenToEthSwapInput(srcAmount, minDestAmount, add(block.timestamp, 1));
 
-        // Convert ETH to WETH
+        // Convert ETH to WETH and move to Vault
         WETH(nativeAsset).deposit.value(actualReceiveAmount)();
+        getTrading().returnAssetToVault(nativeAsset);
     }
 
     /// @param targetExchange Address of Uniswap factory contract
@@ -180,7 +180,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     /// @param srcAmount Amount of src token supplied
     /// @param destToken Address of dest token
     /// @param minDestAmount Minimum amount of dest token to get back
-    /// @return actualReceiveAmount Actual amount of destToken received from the exchange
+    /// @return actualReceiveAmount Actual amount of destToken received
     function swapTokenToToken(
         address targetExchange,
         address srcToken,
@@ -197,8 +197,8 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
         address tokenExchange = UniswapFactoryInterface(targetExchange).getExchange(srcToken);
         ERC20(srcToken).approve(tokenExchange, srcAmount);
-        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).tokenToTokenSwapInput(
-            srcAmount, minDestAmount, 1, add(block.timestamp, 1), destToken
+        actualReceiveAmount = UniswapExchangeInterface(tokenExchange).tokenToTokenTransferInput(
+            srcAmount, minDestAmount, 1, add(block.timestamp, 1), address(vault), destToken
         );
     }
 }
