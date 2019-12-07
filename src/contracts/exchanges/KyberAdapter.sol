@@ -127,7 +127,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
         WETH(nativeAsset).withdraw(srcAmount);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20Clone(destToken), minRate);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(ERC20KyberClone(destToken), minRate);
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
@@ -150,8 +150,8 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
-        ERC20Clone(srcToken).approve(targetExchange, srcAmount);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20Clone(srcToken), srcAmount, minRate);
+        ERC20KyberClone(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToEther(ERC20KyberClone(srcToken), srcAmount, minRate);
 
         // Convert ETH to WETH
         WETH(nativeAsset).deposit.value(receivedAmount)();
@@ -177,8 +177,8 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
-        ERC20Clone(srcToken).approve(targetExchange, srcAmount);
-        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20Clone(srcToken), srcAmount, ERC20Clone(destToken), minRate);
+        ERC20KyberClone(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = KyberNetworkProxy(targetExchange).swapTokenToToken(ERC20KyberClone(srcToken), srcAmount, ERC20KyberClone(destToken), minRate);
     }
 
     /// @dev Calculate min rate to be supplied to the network based on provided order parameters

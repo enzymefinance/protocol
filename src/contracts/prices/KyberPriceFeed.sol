@@ -167,7 +167,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         returns (bool isValid, uint referencePrice, uint decimals)
     {
         isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
-        uint quoteDecimals = ERC20Clone(_quoteAsset).decimals();
+        uint quoteDecimals = ERC20KyberClone(_quoteAsset).decimals();
 
         if (prices[_quoteAsset] == 0) {
             return (false, 0, 0);  // return early and avoid revert
@@ -224,13 +224,13 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         uint bidRate;
         uint bidRateOfReversePair;
         (bidRate,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20Clone(getKyberMaskAsset(_baseAsset)),
-            ERC20Clone(getKyberMaskAsset(_quoteAsset)),
+            ERC20KyberClone(getKyberMaskAsset(_baseAsset)),
+            ERC20KyberClone(getKyberMaskAsset(_quoteAsset)),
             REGISTRY.getReserveMin(_baseAsset)
         );
         (bidRateOfReversePair,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20Clone(getKyberMaskAsset(_quoteAsset)),
-            ERC20Clone(getKyberMaskAsset(_baseAsset)),
+            ERC20KyberClone(getKyberMaskAsset(_quoteAsset)),
+            ERC20KyberClone(getKyberMaskAsset(_baseAsset)),
             REGISTRY.getReserveMin(_quoteAsset)
         );
 
@@ -252,7 +252,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         */
         uint kyberPrice = mul(
             add(bidRate, askRate),
-            10 ** uint(ERC20Clone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
+            10 ** uint(ERC20KyberClone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
         ) / mul(2, 10 ** uint(KYBER_PRECISION));
 
         return (
@@ -278,7 +278,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         returns (uint orderPrice)
     {
         // TODO: decimals
-        return mul(buyQuantity, 10 ** uint(ERC20Clone(sellAsset).decimals())) / sellQuantity;
+        return mul(buyQuantity, 10 ** uint(ERC20KyberClone(sellAsset).decimals())) / sellQuantity;
     }
 
     /// @notice Checks whether data exists for a given asset pair
