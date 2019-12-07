@@ -5,11 +5,7 @@ import { toWei, padLeft } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import {
-  CONTRACT_NAMES,
-  EMPTY_ADDRESS,
-  EXCHANGES
-} from '~/tests/utils/constants';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 import {

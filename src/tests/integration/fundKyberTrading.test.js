@@ -16,7 +16,6 @@ import web3 from '~/../deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import {
   CONTRACT_NAMES,
-  EXCHANGES,
   EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
 } from '~/tests/utils/constants';

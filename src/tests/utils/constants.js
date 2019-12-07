@@ -8,14 +8,6 @@ export const TRACKS = {
   KYBER_PRICE: 'kyberPrice',
 }
 
-export const EXCHANGES = {
-  OASIS_DEX: 'MatchingMarket',
-  KYBER: 'KyberNetwork',
-  ZERO_EX: 'ZeroEx',
-  ETHFINEX: 'Ethfinex',
-  MELON_ENGINE: 'MelonEngine',
-}
-
 export const CONTRACT_NAMES = {
   ACCOUNTING: 'Accounting',
   ACCOUNTING_FACTORY: 'AccountingFactory',

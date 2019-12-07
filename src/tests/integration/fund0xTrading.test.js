@@ -17,7 +17,7 @@ import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
 import { getUpdatedTestPrices } from '~/tests/utils/api';
-import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/constants';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
