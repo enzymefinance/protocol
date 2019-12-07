@@ -21,14 +21,15 @@ const main = async input => {
 
   const mln = fetchContract('StandardToken', input.tokens.addr.MLN);
   const eur = fetchContract('StandardToken', input.tokens.addr.EUR);
+  const knc = fetchContract('StandardToken', input.tokens.addr.KNC);
 
   const kgtToken = await nab('TestToken', ['KGT', 'KGT', 18], kyberAddrs, 'KgtToken');
   const conversionRates = await nab('ConversionRates', [conversionRateAdmin], kyberAddrs);
   const kyberNetwork = await nab('KyberNetwork', [kyberNetworkAdmin], kyberAddrs);
   const kyberReserve = await nab('KyberReserve', [kyberNetwork.options.address, conversionRates.options.address, conf.deployer], kyberAddrs);
   const kyberWhiteList = await nab('KyberWhiteList', [conf.deployer, kgtToken.options.address], kyberAddrs);
-  const feeBurner = await nab('FeeBurner', [conf.deployer, mln.options.address, kyberNetwork.options.address], kyberAddrs);
-  const expectedRate = await nab('ExpectedRate', [kyberNetwork.options.address, conf.deployer], kyberAddrs);
+  const feeBurner = await nab('FeeBurner', [conf.deployer, knc.options.address, kyberNetwork.options.address, 18], kyberAddrs);
+  const expectedRate = await nab('ExpectedRate', [kyberNetwork.options.address, knc.options.address, conf.deployer], kyberAddrs);
   const kyberNetworkProxy = await nab('KyberNetworkProxy', [conf.deployer], kyberAddrs);
 
   const kyberNetworkContractFromProxy = await call(kyberNetworkProxy, 'kyberNetworkContract');
@@ -66,8 +67,13 @@ const main = async input => {
   await send(conversionRates, 'setTokenControlInfo', [mln.options.address, minimalRecordResolution, maxPerBlockImbalance.toString(), maxTotalImbalance.toString()]);
   await send(conversionRates, 'enableTokenTrade', [mln.options.address]);
   await send(conversionRates, 'setReserveAddress', [kyberReserve.options.address]);
-  const reserveAlreadyAdded = await call(kyberNetwork, 'isReserve', [kyberReserve.options.address]);
-  if (!reserveAlreadyAdded) {
+  const kyberNetworkOperators = (await call(kyberNetwork, 'getOperators')) || [];
+  if (kyberNetworkOperators.map(s => s.toLowerCase()).indexOf(conf.deployer.toLowerCase()) === -1) {
+    await send(kyberNetwork, 'addOperator', [conf.deployer]);
+  }
+
+  const reserveType = await call(kyberNetwork, 'reserveType', [kyberReserve.options.address]);
+  if (`${reserveType}` === '0') {
     await send(kyberNetwork, 'addReserve', [kyberReserve.options.address, true]);
   }
   await send(kyberReserve, 'approveWithdrawAddress', [mln.options.address, conf.deployer, true]);
