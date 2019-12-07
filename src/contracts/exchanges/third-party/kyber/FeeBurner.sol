@@ -3,7 +3,7 @@ pragma solidity 0.4.25;
 
 import "./FeeBurnerInterface.sol";
 import "./Withdrawable.sol";
-import "./Utils2.sol";
+import "./Utils3.sol";
 import "./KyberNetworkInterface.sol";
 
 
@@ -13,7 +13,7 @@ interface BurnableTokenKyberClone {
 }
 
 
-contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils2 {
+contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils3 {
 
     mapping(address=>uint) public reserveFeesInBps;
     mapping(address=>address) public reserveKNCWallet; //wallet holding knc per reserve. from here burn and send fees.
@@ -106,7 +106,8 @@ contract FeeBurner is Withdrawable, FeeBurnerInterface, Utils2 {
         require(msg.sender == address(kyberNetwork));
         require(tradeWeiAmount <= MAX_QTY);
 
-        uint kncAmount = calcDestAmount(ETH_TOKEN_ADDRESS, ERC20KyberClone(knc), tradeWeiAmount, kncPerEthRatePrecision);
+        // MAX_DECIMALS = 18 = KNC_DECIMALS, use this value instead of calling getDecimals() to save gas
+        uint kncAmount = calcDestAmountWithDecimals(ETH_DECIMALS, MAX_DECIMALS, tradeWeiAmount, kncPerEthRatePrecision);
         uint fee = kncAmount * reserveFeesInBps[reserve] / 10000;
 
         uint walletFee = fee * walletFeesInBps[wallet] / 10000;

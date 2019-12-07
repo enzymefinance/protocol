@@ -5,7 +5,7 @@ import "./ERC20Interface.sol";
 import "./KyberReserveInterface.sol";
 import "./KyberNetworkInterface.sol";
 import "./Withdrawable.sol";
-import "./Utils2.sol";
+import "./Utils3.sol";
 import "./WhiteListInterface.sol";
 import "./ExpectedRateInterface.sol";
 import "./FeeBurnerInterface.sol";
@@ -37,7 +37,7 @@ contract ReentrancyGuard {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// @title Kyber Network main contract
-contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, ReentrancyGuard {
+contract KyberNetwork is Withdrawable, Utils3, KyberNetworkInterface, ReentrancyGuard {
 
     bytes public constant PERM_HINT = "PERM";
     uint  public constant PERM_HINT_GET_RATE = 1 << 255; // for get rate. bit mask hint.
@@ -67,10 +67,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     event EtherReceival(address indexed sender, uint amount);
 
     /* solhint-disable no-complex-fallback */
-    // To avoid users trying to swap tokens using default payable function. We added this short code
-    //  to verify Ethers will be received only from reserves if transferred without a specific function call.
     function() public payable {
-        require(reserveType[msg.sender] != ReserveType.NONE);
         EtherReceival(msg.sender, msg.value);
     }
     /* solhint-enable no-complex-fallback */
@@ -290,6 +287,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         returns(uint expectedRate, uint slippageRate)
     {
         require(expectedRateContract != address(0));
+        if (src == dest) return (0,0);
         bool includePermissionless = true;
 
         if (srcQty & PERM_HINT_GET_RATE > 0) {
@@ -305,6 +303,7 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
         returns(uint expectedRate, uint slippageRate)
     {
         require(expectedRateContract != address(0));
+        if (src == dest) return (0,0);
         return expectedRateContract.getExpectedRate(src, dest, srcQty, false);
     }
 
@@ -419,6 +418,27 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
     }
     /* solhint-enable code-complexity */
 
+    function getReservesRates(ERC20KyberClone token, uint optionalAmount) public view
+        returns(address[] buyReserves, uint[] buyRates, address[] sellReserves, uint[] sellRates)
+    {
+        uint amount = optionalAmount > 0 ? optionalAmount : 1000;
+        ERC20KyberClone ETH = ETH_TOKEN_ADDRESS;
+
+        buyReserves = reservesPerTokenDest[token];
+        buyRates = new uint[](buyReserves.length);
+
+        for (uint i = 0; i < buyReserves.length; i++) {
+            buyRates[i] = (KyberReserveInterface(buyReserves[i])).getConversionRate(ETH, token, amount, block.number);
+        }
+
+        sellReserves = reservesPerTokenSrc[token];
+        sellRates = new uint[](sellReserves.length);
+
+        for (i = 0; i < sellReserves.length; i++) {
+            sellRates[i] = (KyberReserveInterface(sellReserves[i])).getConversionRate(token, ETH, amount, block.number);
+        }
+    }
+
     function findBestRateTokenToToken(ERC20KyberClone src, ERC20KyberClone dest, uint srcAmount, bytes hint) internal view
         returns(BestRateResult result)
     {
@@ -430,17 +450,25 @@ contract KyberNetwork is Withdrawable, Utils2, KyberNetworkInterface, Reentrancy
             usePermissionless = false;
         }
 
+        uint srcDecimals = getDecimals(src);
+        uint destDecimals = getDecimals(dest);
+
         (result.reserve1, result.rateSrcToEth) =
             searchBestRate(src, ETH_TOKEN_ADDRESS, srcAmount, usePermissionless);
 
-        result.weiAmount = calcDestAmount(src, ETH_TOKEN_ADDRESS, srcAmount, result.rateSrcToEth);
-
+        result.weiAmount = calcDestAmountWithDecimals(srcDecimals, ETH_DECIMALS, srcAmount, result.rateSrcToEth);
+        //if weiAmount is zero, return zero rate to avoid revert in ETH -> token call
+        if (result.weiAmount == 0) {
+            result.rate = 0;
+            return;
+        }
+        
         (result.reserve2, result.rateEthToDest) =
             searchBestRate(ETH_TOKEN_ADDRESS, dest, result.weiAmount, usePermissionless);
 
-        result.destAmount = calcDestAmount(ETH_TOKEN_ADDRESS, dest, result.weiAmount, result.rateEthToDest);
+        result.destAmount = calcDestAmountWithDecimals(ETH_DECIMALS, destDecimals, result.weiAmount, result.rateEthToDest);
 
-        result.rate = calcRateFromQty(srcAmount, result.destAmount, getDecimals(src), getDecimals(dest));
+        result.rate = calcRateFromQty(srcAmount, result.destAmount, srcDecimals, destDecimals);
     }
 
     function listPairs(address reserve, ERC20KyberClone token, bool isTokenToEth, bool add) internal {

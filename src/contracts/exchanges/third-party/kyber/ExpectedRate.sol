@@ -55,10 +55,27 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
 
         if (srcQty == 0) srcQty = 1;
 
-        bool didRevert = false;
+        //not needed
+        uint bestReserve;
 
-        (didRevert, expectedRate, slippageRate) = safeFindBestRate(src, dest, srcQty, usePermissionless);
-        if (didRevert) return (0, 0);
+        if (usePermissionless) {
+            (bestReserve, expectedRate) = kyberNetwork.findBestRate(src, dest, srcQty);
+
+            if (quantityFactor != 1) {
+                (bestReserve, slippageRate) = kyberNetwork.findBestRate(src, dest, (srcQty * quantityFactor));
+            } else {
+                slippageRate = expectedRate;
+            }
+        } else {
+            (bestReserve, expectedRate) = kyberNetwork.findBestRateOnlyPermission(src, dest, srcQty);
+
+            if (quantityFactor != 1) {
+                (bestReserve, slippageRate) = kyberNetwork.findBestRateOnlyPermission(src, dest,
+                    (srcQty * quantityFactor));
+            } else {
+                slippageRate = expectedRate;
+            }
+        }
 
         if (expectedRate == 0) {
             expectedRate = expectedRateSmallQty(src, dest, srcQty, usePermissionless);
@@ -104,59 +121,9 @@ contract ExpectedRate is Withdrawable, ExpectedRateInterface, Utils2 {
         (reserve, rateSrcToEth) = kyberNetwork.searchBestRate(src, ETH_TOKEN_ADDRESS, srcQty, usePermissionless);
 
         uint ethQty = calcDestAmount(src, ETH_TOKEN_ADDRESS, srcQty, rateSrcToEth);
+        if (ethQty == 0) ethQty = 1;
 
         (reserve, rateEthToDest) = kyberNetwork.searchBestRate(ETH_TOKEN_ADDRESS, dest, ethQty, usePermissionless);
         return rateSrcToEth * rateEthToDest / PRECISION;
-    }
-
-    function safeFindBestRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, bool usePermissionless)
-        internal view
-        returns (bool didRevert, uint expectedRate, uint slippageRate)
-    {
-        bytes4 sig = usePermissionless ?
-            bytes4(keccak256("findBestRate(address,address,uint256)")) :
-            bytes4(keccak256("findBestRateOnlyPermission(address,address,uint256)")); //Function signatures
-
-        (didRevert, expectedRate) = assemblyFindBestRate(src, dest, srcQty, sig);
-
-        if (didRevert) return (true, 0, 0);
-
-        if (quantityFactor != 1) {
-            (didRevert, slippageRate) = assemblyFindBestRate(src, dest, (srcQty * quantityFactor), sig);
-        } else {
-            slippageRate = expectedRate;
-        }
-    }
-
-    function assemblyFindBestRate(ERC20KyberClone src, ERC20KyberClone dest, uint srcQty, bytes4 sig)
-        internal view
-        returns (bool didRevert, uint rate)
-    {
-        address addr = address(kyberNetwork);  // kyber address
-        uint success;
-
-        assembly {
-            let x := mload(0x40)        // "free memory pointer"
-            mstore(x,sig)               // function signature
-            mstore(add(x,0x04),src)     // src address padded to 32 bytes
-            mstore(add(x,0x24),dest)    // dest padded to 32 bytes
-            mstore(add(x,0x44),srcQty)  // uint 32 bytes
-            mstore(0x40,add(x,0xa4))    // set free storage pointer to empty space after output
-
-            // input size = sig + ERC20KyberClone (address) + ERC20KyberClone + uint
-            // = 4 + 32 + 32 + 32 = 100 = 0x64
-            success := staticcall(
-                gas,  // gas
-                addr, // Kyber addr
-                x,    // Inputs at location x
-                0x64, // Inputs size bytes
-                add(x, 0x64),    // output storage after input
-                0x40) // Output size are (uint, uint) = 64 bytes
-
-            rate := mload(add(x,0x84))  //Assign 2nd output to rate, first output not used,
-            mstore(0x40,x)    // Set empty storage pointer back to start position
-        }
-
-        if (success != 1) didRevert = true;
     }
 }
