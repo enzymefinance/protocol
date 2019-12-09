@@ -104,6 +104,15 @@ describe('amgu', () => {
     await assertAmguTx(createAccountingTx);
   });
 
+  afterEach(async () => {
+    await engine.methods
+      .setAmguPrice('0')
+      .send(defaultTxOpts)
+    const newAmguPrice = await engine.methods.getAmguPrice().call();
+
+    expect(newAmguPrice.toString()).toBe('0');
+  });
+
   it('set amgu with incentive attatched and check its usage', async () => {
     await engine.methods
       .setAmguPrice(amguPrice)
