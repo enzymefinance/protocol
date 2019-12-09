@@ -61,8 +61,10 @@ const main = async input => {
     await send(registry, 'setMGM', [melonConf.initialMGM]);
   }
   const previousRegisteredEthfinexWrapperRegistry = call(registry, 'MGM');
-  if (`${previousRegisteredEthfinexWrapperRegistry}`.toLowerCase() !== input.ethfinex.addr.WrapperRegistryEFX.toLowerCase()) {
-    await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
+  if (input.ethfinex) {
+    if (`${previousRegisteredEthfinexWrapperRegistry}`.toLowerCase() !== input.ethfinex.addr.WrapperRegistryEFX.toLowerCase()) {
+      await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
+    }
   }
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
