@@ -14,6 +14,35 @@ describe('amgu', () => {
   let amguPrice, oldAmguPrice;
   let fundName;
 
+  async function assertAmguTx(tx) {
+    const preUserBalance = await web3.eth.getBalance(user);
+    const result = await tx.send({ ...defaultTxOpts, value: toWei('1', 'ether') });
+    const postUserBalance = await web3.eth.getBalance(user);
+
+    const gasPrice = await web3.eth.getGasPrice();
+    const gasUsed = result.gasUsed;
+    const estimatedGasUsedWithoutAmgu = result.gasUsed;
+
+    const nativeAssetAddress = await registry.methods.nativeAsset().call();
+    const mlnAddress = await version.methods.mlnToken().call();
+
+    const mlnAmount = new BN(amguPrice).mul(new BN(estimatedGasUsedWithoutAmgu));
+    const ethToPay = await priceSource.methods.convertQuantity(
+      mlnAmount.toString(),
+      mlnAddress,
+      nativeAssetAddress,
+    ).call();
+
+    const txCostInWei = new BN(gasPrice).mul(new BN(gasUsed));
+    const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
+    const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
+
+    expect(txCostInWei.lt(realUserCost)).toBe(true);
+    expect(estimatedTotalUserCost.gt(realUserCost)).toBe(true);
+
+    return result;
+  }
+
   beforeEach(async () => {
     const accounts = await web3.eth.getAccounts();
     user = accounts[0];
@@ -71,32 +100,8 @@ describe('amgu', () => {
         [baseToken.options.address, quoteToken.options.address]
       ).send(defaultTxOpts);
 
-    const amguTx = version.methods.createAccounting();
-
-    const preUserBalance = await web3.eth.getBalance(user);
-    const result = await amguTx.send({ ...defaultTxOpts, value: toWei('1', 'ether') });
-    const postUserBalance = await web3.eth.getBalance(user);
-
-    const gasPrice = await web3.eth.getGasPrice();
-    const gasUsed = result.gasUsed;
-    const estimatedGasUsedWithoutAmgu = result.gasUsed;
-
-    const nativeAssetAddress = await registry.methods.nativeAsset().call();
-    const mlnAddress = await version.methods.mlnToken().call();
-
-    const mlnAmount = new BN(amguPrice).mul(new BN(estimatedGasUsedWithoutAmgu));
-    const ethToPay = await priceSource.methods.convertQuantity(
-      mlnAmount.toString(),
-      mlnAddress,
-      nativeAssetAddress,
-    ).call();
-
-    const txCostInWei = new BN(gasPrice).mul(new BN(gasUsed));
-    const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
-    const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
-
-    expect(txCostInWei.lt(realUserCost)).toBe(true);
-    expect(estimatedTotalUserCost.gt(realUserCost)).toBe(true);
+    const createAccountingTx = version.methods.createAccounting();
+    await assertAmguTx(createAccountingTx);
   });
 
   it('set amgu with incentive attatched and check its usage', async () => {
@@ -129,14 +134,30 @@ describe('amgu', () => {
         quoteToken.options.address,
         [baseToken.options.address, quoteToken.options.address]
       ).send(defaultTxOpts);
-    await version.methods.createAccounting().send(defaultTxOptsWithValue);
-    await version.methods.createFeeManager().send(defaultTxOptsWithValue);
-    await version.methods.createParticipation().send(defaultTxOptsWithValue);
-    await version.methods.createPolicyManager().send(defaultTxOptsWithValue);
-    await version.methods.createShares().send(defaultTxOptsWithValue);
-    await version.methods.createTrading().send(defaultTxOptsWithValue);
-    await version.methods.createVault().send(defaultTxOptsWithValue);
+
+    const createAccountingTx = version.methods.createAccounting();
+    await assertAmguTx(createAccountingTx);
+
+    const createFeeManagerTx = version.methods.createFeeManager();
+    await assertAmguTx(createFeeManagerTx);
+
+    const createParticipationTx = version.methods.createParticipation();
+    await assertAmguTx(createParticipationTx);
+
+    const createPolicyManagerTx = version.methods.createPolicyManager();
+    await assertAmguTx(createPolicyManagerTx);
+
+    const createSharesTx = version.methods.createShares();
+    await assertAmguTx(createSharesTx);
+
+    const createTradingTx = version.methods.createTrading();
+    await assertAmguTx(createTradingTx);
+
+    const createVaultTx = version.methods.createVault();
+    await assertAmguTx(createVaultTx);
+
     const res = await version.methods.completeSetup().send(defaultTxOptsWithValue);
+
     const hubAddress = res.events.NewFund.returnValues.hub;
     const fund = await getFundComponents(hubAddress);
 
