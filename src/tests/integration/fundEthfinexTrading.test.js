@@ -17,7 +17,7 @@ import { BN, toWei, randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/../deploy/scripts/deploy-system';
 import web3 from '~/../deploy/utils/get-web3';
 
-import { CONTRACT_NAMES, EMPTY_ADDRESS, EXCHANGES } from '~/tests/utils/constants';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getAllBalances from '~/tests/utils/getAllBalances';
 import getFundComponents from '~/tests/utils/getFundComponents';

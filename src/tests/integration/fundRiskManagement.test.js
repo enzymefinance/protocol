@@ -18,11 +18,7 @@ import { deploy, fetchContract } from '~/../deploy/utils/deploy-contract';
 import web3 from '~/../deploy/utils/get-web3';
 
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
-import {
-  CONTRACT_NAMES,
-  EMPTY_ADDRESS,
-  EXCHANGES
-} from '~/tests/utils/constants';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { numberToBytes, stringToBytes } from '~/tests/utils/formatting';
 import {
   getEventFromReceipt,

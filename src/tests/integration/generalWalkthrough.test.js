@@ -19,7 +19,6 @@ import web3 from '~/../deploy/utils/get-web3';
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS,
-  EXCHANGES,
   TRACKS,
 } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
