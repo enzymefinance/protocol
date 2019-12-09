@@ -37,8 +37,8 @@ describe('amgu', () => {
     const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
     const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
 
-    expect(txCostInWei.lt(realUserCost)).toBe(true);
-    expect(estimatedTotalUserCost.gt(realUserCost)).toBe(true);
+    expect(txCostInWei).bigNumberLt(realUserCost);
+    expect(estimatedTotalUserCost).bigNumberGt(realUserCost);
 
     return result;
   }
@@ -201,7 +201,7 @@ describe('amgu', () => {
     const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei)).add(new BN(incentiveAmount));
     const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
 
-    expect(txCostInWei.add(new BN(incentiveAmount)).lt(realUserCost)).toBe(true);
-    expect(estimatedTotalUserCost.gt(realUserCost)).toBe(true);
+    expect(txCostInWei.add(new BN(incentiveAmount))).bigNumberLt(realUserCost);
+    expect(estimatedTotalUserCost).bigNumberGt(realUserCost);
   });
 });
