@@ -1,8 +1,6 @@
 import { toWei, BN } from 'web3-utils';
-
 import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
@@ -11,7 +9,7 @@ describe('amgu', () => {
   let user, defaultTxOpts, defaultTxOptsWithValue;
   let baseToken, quoteToken;
   let engine, version, priceSource, registry;
-  let amguPrice, oldAmguPrice;
+  let amguPrice;
   let fundName;
 
   async function assertAmguTx(tx) {
@@ -60,11 +58,9 @@ describe('amgu', () => {
     registry = contracts.Registry;
     priceSource = contracts.TestingPriceFeed;
 
-    // [quoteToken, baseToken] = thirdPartyContracts.tokens;
     quoteToken = contracts.WETH;
     baseToken = contracts.MLN;
 
-    oldAmguPrice = await engine.methods.getAmguPrice().call();
     amguPrice = '1000000000';
     fundName = `test-fund-${Date.now()}`;
   });
