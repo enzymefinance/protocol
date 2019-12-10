@@ -25,17 +25,17 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     /// @notice Make order by pre-approving signatures
     function makeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory wrappedMakerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
-
-        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
+        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
+        bytes memory wrappedMakerAssetData = orderData[0];
+        bytes memory takerAssetData = orderData[1];
         address makerAsset = orderAddresses[2];
         address takerAsset = getAssetAddress(takerAssetData);
         require(
@@ -67,10 +67,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         getTrading().addOpenMakeOrder(
-            targetExchange, 
+            targetExchange,
             makerAsset,
             takerAsset,
-            uint256(orderInfo.orderHash), 
+            uint256(orderInfo.orderHash),
             order.expirationTimeSeconds
         );
         getTrading().addZeroExOrderData(orderInfo.orderHash, order);
@@ -79,11 +79,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     /// @notice Cancel the 0x make order
     function cancelOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory wrappedMakerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
@@ -105,11 +104,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     /// @notice Unwrap (withdraw) tokens, uses orderAddresses for input list of tokens to be unwrapped
     function withdrawTokens(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public {
         Hub hub = getHub();
@@ -192,10 +190,9 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     // VIEW METHODS
 
     function constructOrderStruct(
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData
     )
         internal
         view
@@ -212,8 +209,8 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             takerFee: orderValues[3],
             expirationTimeSeconds: orderValues[4],
             salt: orderValues[5],
-            makerAssetData: makerAssetData,
-            takerAssetData: takerAssetData
+            makerAssetData: orderData[0],
+            takerAssetData: orderData[1]
         });
     }
 

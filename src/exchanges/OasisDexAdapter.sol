@@ -1,4 +1,5 @@
 pragma solidity 0.5.15;
+pragma experimental ABIEncoderV2;
 
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
@@ -37,11 +38,10 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
     /// @param orderValues [1] Taker token quantity
     function makeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
@@ -95,11 +95,10 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
     /// @param identifier Active order id
     function takeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
@@ -159,11 +158,10 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
     /// @param identifier Order ID on the exchange
     function cancelOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
