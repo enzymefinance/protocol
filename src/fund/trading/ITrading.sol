@@ -1,15 +1,18 @@
 pragma solidity 0.5.15;
 
+pragma experimental ABIEncoderV2;
+
+// TODO: Restore indexed params
+
 /// @notice Mediation between a Fund and exchanges
 interface ITrading {
     function callOnExchange(
         uint exchangeIndex,
         string calldata methodSignature,
-        address[6] calldata orderAddresses,
+        address[8] calldata orderAddresses,
         uint[8] calldata orderValues,
+        bytes[4] calldata orderData,
         bytes32 identifier,
-        bytes calldata makerAssetData,
-        bytes calldata takerAssetData,
         bytes calldata signature
     ) external;
 

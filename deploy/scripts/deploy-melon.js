@@ -68,10 +68,10 @@ const main = async input => {
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
   const sigs = [
-    'makeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
-    'takeOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
-    'cancelOrder(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
-    'withdrawTokens(address,address[6],uint256[8],bytes32,bytes,bytes,bytes)',
+    'makeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
+    'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
+    'cancelOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
+    'withdrawTokens(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
   ].map(s => web3.utils.keccak256(s).slice(0,10));
 
   const exchanges = {};

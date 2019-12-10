@@ -1,4 +1,5 @@
 pragma solidity 0.5.15;
+pragma experimental ABIEncoderV2;
 
 import "../engine/Engine.sol";
 import "../fund/hub/Hub.sol";
@@ -22,11 +23,10 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
     /// @param orderAddresses [3] MLN token
     function takeOrder (
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
@@ -36,13 +36,13 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         uint minEthToReceive = orderValues[0];
         uint mlnQuantity = orderValues[1];
 
-        require(	
-            wethAddress == Registry(hub.registry()).nativeAsset(),	
-            "maker asset doesnt match nativeAsset on registry"	
+        require(
+            wethAddress == Registry(hub.registry()).nativeAsset(),
+            "maker asset doesnt match nativeAsset on registry"
         );
-        require(	
-            orderValues[1] == orderValues[6],	
-            "fillTakerQuantity must equal takerAssetQuantity"	
+        require(
+            orderValues[1] == orderValues[6],
+            "fillTakerQuantity must equal takerAssetQuantity"
         );
 
         Vault vault = Vault(hub.vault());
@@ -53,16 +53,16 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         );
 
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
-    
+
         require(
             ethToReceive >= minEthToReceive,
             "Expected ETH to receive is less than takerQuantity (minEthToReceive)"
         );
-        
+
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(address(uint160(wethAddress))).deposit.value(ethToReceive)();
         safeTransfer(wethAddress, address(vault), ethToReceive);
-  
+
         getAccounting().addAssetToOwnedAssets(wethAddress);
         getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(

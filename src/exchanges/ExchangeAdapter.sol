@@ -1,4 +1,5 @@
 pragma solidity 0.5.15;
+pragma experimental ABIEncoderV2;
 
 import "../fund/accounting/Accounting.sol";
 import "../fund/hub/Hub.sol";
@@ -76,6 +77,8 @@ contract ExchangeAdapter {
     /// @param orderAddresses [3] Order taker asset
     /// @param orderAddresses [4] feeRecipientAddress
     /// @param orderAddresses [5] senderAddress
+    /// @param orderAddresses [6] maker fee asset
+    /// @param orderAddresses [7] taker fee asset
     /// @param orderValues [0] makerAssetAmount
     /// @param orderValues [1] takerAssetAmount
     /// @param orderValues [2] Maker fee
@@ -84,9 +87,11 @@ contract ExchangeAdapter {
     /// @param orderValues [5] Salt/nonce
     /// @param orderValues [6] Fill amount: amount of taker token to be traded
     /// @param orderValues [7] Dexy signature mode
+    /// @param orderData [0] Encoded data specific to maker asset
+    /// @param orderData [1] Encoded data specific to taker asset
+    /// @param orderData [2] Encoded data specific to maker asset fee
+    /// @param orderData [3] Encoded data specific to taker asset fee
     /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset
-    /// @param takerAssetData Encoded data specific to takerAsset
     /// @param signature Signature of order maker
 
     // Responsibilities of makeOrder are:
@@ -100,11 +105,10 @@ contract ExchangeAdapter {
     // - place asset in ownedAssets if not already tracked
     function makeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
+        address[8] memory orderAddresses,
         uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public { revert("Unimplemented"); }
 
@@ -121,11 +125,10 @@ contract ExchangeAdapter {
     // - place asset in ownedAssets if not already tracked
     function takeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
+        address[8] memory orderAddresses,
         uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public { revert("Unimplemented"); }
 
@@ -135,11 +138,10 @@ contract ExchangeAdapter {
     // - cancel order on exchange
     function cancelOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
+        address[8] memory orderAddresses,
         uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public { revert("Unimplemented"); }
 

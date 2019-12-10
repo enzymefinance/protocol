@@ -15,11 +15,10 @@ contract Trading is DSMath, TokenUser, Spoke {
     event ExchangeMethodCall(
         address indexed exchangeAddress,
         string indexed methodSignature,
-        address[6] orderAddresses,
+        address[8] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     );
 
@@ -122,6 +121,8 @@ contract Trading is DSMath, TokenUser, Spoke {
     /// @param orderAddresses [3] Order taker asset
     /// @param orderAddresses [4] feeRecipientAddress
     /// @param orderAddresses [5] senderAddress
+    /// @param orderAddresses [6] maker fee asset
+    /// @param orderAddresses [7] taker fee asset
     /// @param orderValues [0] makerAssetAmount
     /// @param orderValues [1] takerAssetAmount
     /// @param orderValues [2] Maker fee
@@ -130,18 +131,19 @@ contract Trading is DSMath, TokenUser, Spoke {
     /// @param orderValues [5] Salt/nonce
     /// @param orderValues [6] Fill amount: amount of taker token to be traded
     /// @param orderValues [7] Dexy signature mode
+    /// @param orderData [0] Encoded data specific to maker asset
+    /// @param orderData [1] Encoded data specific to taker asset
+    /// @param orderData [2] Encoded data specific to maker asset fee
+    /// @param orderData [3] Encoded data specific to taker asset fee
     /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset.
-    /// @param takerAssetData Encoded data specific to takerAsset.
-    /// @param signature Signature of order maker.
+    /// @param signature Signature of order maker
     function callOnExchange(
         uint exchangeIndex,
         string memory methodSignature,
-        address[6] memory orderAddresses,
+        address[8] memory orderAddresses,
         uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     )
         public
@@ -152,7 +154,8 @@ contract Trading is DSMath, TokenUser, Spoke {
             Registry(routes.registry).adapterMethodIsAllowed(
                 exchanges[exchangeIndex].adapter,
                 methodSelector
-            )
+            ),
+            "Adapter method not allowed"
         );
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         if (
@@ -172,9 +175,8 @@ contract Trading is DSMath, TokenUser, Spoke {
                 exchanges[exchangeIndex].exchange,
                 orderAddresses,
                 orderValues,
+                orderData,
                 identifier,
-                makerAssetData,
-                takerAssetData,
                 signature
             )
         );
@@ -185,9 +187,8 @@ contract Trading is DSMath, TokenUser, Spoke {
             methodSignature,
             orderAddresses,
             orderValues,
+            orderData,
             identifier,
-            makerAssetData,
-            takerAssetData,
             signature
         );
     }

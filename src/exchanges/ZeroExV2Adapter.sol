@@ -22,18 +22,18 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     /// @notice Make order by pre-approving signatures
     function makeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
-        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
-        address makerAsset = getAssetAddress(makerAssetData);
-        address takerAsset = getAssetAddress(takerAssetData);
+
+        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
+        address makerAsset = getAssetAddress(orderData[0]);
+        address takerAsset = getAssetAddress(orderData[1]);
         require(
             makerAsset == orderAddresses[2],
             "Maker asset data does not match order address in array"
@@ -47,7 +47,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
 
-        approveMakerAsset(targetExchange, makerAsset, makerAssetData, order.makerAssetAmount);
+        approveMakerAsset(targetExchange, makerAsset, orderData[0], order.makerAssetAmount);
         IZeroExV2.OrderInfo memory orderInfo = IZeroExV2(targetExchange).getOrderInfo(order);
         IZeroExV2(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
 
@@ -68,10 +68,10 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         getTrading().addOpenMakeOrder(
-            targetExchange, 
+            targetExchange,
             makerAsset,
             takerAsset,
-            uint256(orderInfo.orderHash), 
+            uint256(orderInfo.orderHash),
             order.expirationTimeSeconds
         );
         getTrading().addZeroExOrderData(orderInfo.orderHash, order);
@@ -105,25 +105,26 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     /// @param orderValues [5] Salt/nonce
     /// @param orderValues [6] Fill amount: amount of taker token to be traded
     /// @param orderValues [7] Dexy signature mode
+    /// @param orderData [0] Encoded data specific to maker asset
+    /// @param orderData [1] Encoded data specific to taker asset
+    /// @param orderData [2] Encoded data specific to maker asset fee
+    /// @param orderData [3] Encoded data specific to taker asset fee
     /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset.
-    /// @param takerAssetData Encoded data specific to takerAsset.
     /// @param signature Signature of the order.
     function takeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
 
-        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, makerAssetData, takerAssetData);
+        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
         uint fillTakerQuantity = orderValues[6];
-        address makerAsset = getAssetAddress(makerAssetData);
-        address takerAsset = getAssetAddress(takerAssetData);
+        address makerAsset = getAssetAddress(orderData[0]);
+        address takerAsset = getAssetAddress(orderData[1]);
         require(
             makerAsset == orderAddresses[2],
             "Maker asset data does not match order address in array"
@@ -132,7 +133,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             takerAsset == orderAddresses[3],
             "Taker asset data does not match order address in array"
         );
-        approveTakerAsset(targetExchange, takerAsset, takerAssetData, fillTakerQuantity);
+        approveTakerAsset(targetExchange, takerAsset, orderData[1], fillTakerQuantity);
         IZeroExV2.OrderInfo memory orderInfo = IZeroExV2(targetExchange).getOrderInfo(order);
         uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
 
@@ -155,11 +156,10 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     /// @notice Cancel the 0x make order
     function cancelOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
@@ -285,10 +285,9 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     // VIEW METHODS
 
     function constructOrderStruct(
-        address[6] memory orderAddresses,
-        uint256[8] memory orderValues,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData
     )
         internal
         view
@@ -305,8 +304,8 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             takerFee: orderValues[3],
             expirationTimeSeconds: orderValues[4],
             salt: orderValues[5],
-            makerAssetData: makerAssetData,
-            takerAssetData: takerAssetData
+            makerAssetData: orderData[0],
+            takerAssetData: orderData[1]
         });
     }
 

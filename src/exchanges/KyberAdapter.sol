@@ -1,4 +1,5 @@
 pragma solidity 0.5.15;
+pragma experimental ABIEncoderV2;
 
 import "../dependencies/WETH.sol";
 import "../dependencies/token/IERC20.sol";
@@ -31,11 +32,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
     /// @param orderValues [1] Taker asset quantity (Src token amount)
     function takeOrder(
         address targetExchange,
-        address[6] memory orderAddresses,
+        address[8] memory orderAddresses,
         uint[8] memory orderValues,
+        bytes[4] memory orderData,
         bytes32 identifier,
-        bytes memory makerAssetData,
-        bytes memory takerAssetData,
         bytes memory signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
