@@ -1,6 +1,6 @@
 import { BN } from 'web3-utils';
 import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
-// Allow asynchronous operations (async/await) as long as 2 minutes.
+// Default timeout interval for tests and before/after hooks as 2 mins
 jest.setTimeout(240000);
 
 expect.extend({

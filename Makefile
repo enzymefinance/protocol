@@ -10,5 +10,5 @@ compile_out.json: compile_in.json
 compile_in.json:
 	generate_input.js $(files) > compile_in.json
 clean:
-	rm -rf compile_in.json compile_out.json
+	rm -rf compile_in.json compile_out.json out
 .PHONY: all extract ok clean
