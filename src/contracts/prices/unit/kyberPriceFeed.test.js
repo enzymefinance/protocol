@@ -33,7 +33,8 @@ describe('kyber-price-feed', () => {
         mockRegistry.options.address,
         kyberNetworkProxy.options.address,
         toWei('0.5', 'ether'),
-        weth.options.address
+        weth.options.address,
+        user
       ]
     );
     await mockRegistry.methods
