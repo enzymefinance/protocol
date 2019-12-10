@@ -108,8 +108,7 @@ describe('Happy Path', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        '0x0',
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -156,8 +155,7 @@ describe('Happy Path', () => {
             EMPTY_ADDRESS,
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          '0x0',
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )

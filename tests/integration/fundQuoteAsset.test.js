@@ -7,7 +7,7 @@
  * @test A fund places a make order with a quote token that is not 18 decimals
  */
 
-import { BN, toWei, randomHex } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 
 import { fetchContract } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
@@ -328,8 +328,7 @@ describe('fund-quote-asset', () => {
           randomHex(20),
         ],
         [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )

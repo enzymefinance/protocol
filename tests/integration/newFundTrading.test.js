@@ -10,7 +10,7 @@ import web3 from '~/deploy/utils/get-web3';
 
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
+import { numberToBytes, stringToBytes } from '~/tests/utils/formatting';
 import getAllBalances from '~/tests/utils/getAllBalances';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -208,8 +208,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -372,11 +371,8 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           randomHex(20),
         ],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity, 0],
-        `0x${Number(orderId)
-          .toString(16)
-          .padStart(64, '0')}`,
-        '0x0',
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
+        numberToBytes(Number(orderId), 32),
         '0x0',
       )
       .send(managerTxOpts);
@@ -440,8 +436,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -460,11 +455,8 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           randomHex(20),
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        `0x${Number(orderId)
-          .toString(16)
-          .padStart(64, '0')}`,
-        '0x0',
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
+        numberToBytes(Number(orderId), 32),
         '0x0',
       )
       .send(managerTxOpts);
@@ -512,11 +504,8 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
             randomHex(20),
           ],
           [0, 0, 0, 0, 0, 0, `${ bnBuyQuantity }`, 0],
-          `0x${Number(orderId)
-            .toString(16)
-            .padStart(64, '0')}`,
-          '0x0',
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
+          numberToBytes(Number(orderId), 32),
           '0x0',
         )
         .send(managerTxOpts),

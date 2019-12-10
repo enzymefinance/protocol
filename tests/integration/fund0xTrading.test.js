@@ -11,7 +11,7 @@
 
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
-import { BN, randomHex, toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
@@ -190,9 +190,8 @@ describe('fund-0x-trading', () => {
           fillQuantity,
           0,
         ],
-        randomHex(32),
-        signedOrder1.makerAssetData,
-        signedOrder1.takerAssetData,
+        [signedOrder1.makerAssetData, signedOrder1.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder1.signature,
       )
       .send(managerTxOpts);
@@ -304,9 +303,8 @@ describe('fund-0x-trading', () => {
           fillQuantity,
           0,
         ],
-        randomHex(32),
-        signedOrder2.makerAssetData,
-        signedOrder2.takerAssetData,
+        [signedOrder2.makerAssetData, signedOrder2.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder2.signature,
       )
       .send(managerTxOpts);
@@ -397,9 +395,8 @@ describe('fund-0x-trading', () => {
           0,
           0,
         ],
-        randomHex(32),
-        signedOrder3.makerAssetData,
-        signedOrder3.takerAssetData,
+        [signedOrder3.makerAssetData, signedOrder3.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder3.signature,
       )
       .send(managerTxOpts);
@@ -526,9 +523,8 @@ describe('fund-0x-trading', () => {
           0,
           0,
         ],
-        randomHex(32),
-        signedOrder4.makerAssetData,
-        signedOrder4.takerAssetData,
+        [signedOrder4.makerAssetData, signedOrder4.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder4.signature,
       )
       .send(managerTxOpts);
@@ -561,9 +557,8 @@ describe('fund-0x-trading', () => {
             EMPTY_ADDRESS,
           ],
           [0, 0, 0, 0, 0, 0, 0, 0],
+          ['0x0', '0x0', '0x0', '0x0'],
           orderHashHex,
-          '0x0',
-          '0x0',
           '0x0',
         )
         .send(managerTxOpts);

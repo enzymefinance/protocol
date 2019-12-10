@@ -242,10 +242,9 @@ describe('general-walkthrough', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+        ['0x0', '0x0', '0x0', '0x0'],
         orderId,
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
+        '0x0',
       )
       .send(managerTxOpts);
 
@@ -301,10 +300,9 @@ describe('general-walkthrough', () => {
           EMPTY_ADDRESS,
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
+        ['0x0', '0x0', '0x0', '0x0'],
+        '0x0',
+        '0x0',
       )
       .send(managerTxOpts);
 
