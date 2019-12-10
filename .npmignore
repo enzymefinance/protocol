@@ -1,5 +1,0 @@
-out/compilerMessages.txt
-out/compilerResult.json
-
-# Ignore binaries.
-out/**/*.bin
