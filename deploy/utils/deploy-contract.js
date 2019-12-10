@@ -48,8 +48,8 @@ const send = async (contract, method=undefined, args=[], opts) => {
     }`
   );
   const account = web3.eth.accounts.wallet['0']; // TODO: change so it can be overridden
-  const clonedDefaults = Object.assign({}, defaultOptions);
   const nonce = await getNextNonce(account);
+  const clonedDefaults = Object.assign({}, defaultOptions);
   const tx = Object.assign(
     clonedDefaults,
     Object.assign({
@@ -72,7 +72,7 @@ const signAndSend = async (tx, pkey) => {
 }
 
 // deploy a contract with some args
-const deploy = async (name, args=[]) => {
+const deploy = async (name, args=[], overrideOpts={}) => {
   const account = web3.eth.accounts.wallet['0']; // TODO: change so it can be overridden
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
   const bin = fs.readFileSync(`${outdir}/${name}.bin`, 'utf8').trim();
@@ -82,10 +82,12 @@ const deploy = async (name, args=[]) => {
     data: bin.indexOf('0x') === 0 ? bin : `0x${bin}`
   }).encodeABI();
   const nonce = await getNextNonce(account);
-  const tx = Object.assign(
-    defaultOptions,
+  const clonedDefaults = Object.assign({}, defaultOptions);
+  const normalOpts = Object.assign(
+    clonedDefaults,
     { data: input, from: account.address, nonce: nonce, to: null }
   );
+  const tx = Object.assign(normalOpts, overrideOpts);
   stdout(`Deploying ${name}${(args.length) ? ` with args [${args}]` : '' }`);
   const receipt = await signAndSend(tx, account.privateKey);
   contract.options.address = receipt.contractAddress;

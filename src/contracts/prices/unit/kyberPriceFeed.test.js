@@ -8,14 +8,16 @@ import { BNExpDiv, BNExpInverse } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
 describe('kyber-price-feed', () => {
-  let user, defaultTxOpts;
+  let deployerTxOpts, updaterTxOpts;
   let conversionRates, kyberPriceFeed, kyberNetworkProxy, mockRegistry;
+  let deployer, updater;
   let eur, mln, weth;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
-    user = accounts[0];
-    defaultTxOpts = { from: user, gas: 8000000 };
+    [deployer, updater] = accounts;
+    deployerTxOpts = { from: deployer, gas: 8000000 };
+    updaterTxOpts = { from: updater, gas: 8000000 };
     const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
     const contracts = deployed.contracts;
 
@@ -25,7 +27,7 @@ describe('kyber-price-feed', () => {
     conversionRates = contracts.ConversionRates;
     kyberNetworkProxy = contracts.KyberNetworkProxy;
 
-    mockRegistry = await deploy(CONTRACT_NAMES.MOCK_REGISTRY);
+    mockRegistry = await deploy(CONTRACT_NAMES.MOCK_REGISTRY, [], deployerTxOpts);
 
     kyberPriceFeed = await deploy(
       CONTRACT_NAMES.KYBER_PRICEFEED,
@@ -34,22 +36,27 @@ describe('kyber-price-feed', () => {
         kyberNetworkProxy.options.address,
         toWei('0.5', 'ether'),
         weth.options.address,
-        user
-      ]
+        updater
+      ],
+      deployerTxOpts
     );
     await mockRegistry.methods
       .setNativeAsset(weth.options.address)
-      .send(defaultTxOpts);
+      .send(deployerTxOpts);
 
     for (const addr of [eur.options.address, mln.options.address, weth.options.address]) {
       await mockRegistry.methods
         .register(addr)
-        .send(defaultTxOpts);
+        .send(deployerTxOpts);
     }
-    await kyberPriceFeed.methods.update().send(defaultTxOpts);
   });
 
-  it('Get price', async () => {
+  it('Registry owner updates pricefeed', async () => {
+    const registryOwner = await mockRegistry.methods.owner().call();
+
+    expect(registryOwner).toBe(deployer);
+
+    await kyberPriceFeed.methods.update().send({from: deployer, gas: 8000000});
     const hasValidMlnPrice = await kyberPriceFeed.methods
       .hasValidPrice(mln.options.address)
       .call();
@@ -63,7 +70,11 @@ describe('kyber-price-feed', () => {
     expect(mlnPrice.toString()).toBe(toWei('1', 'ether'));
   });
 
-  it('Update mln price in reserve', async () => {
+  it('MLN price is changed in reserve, and Updater updates', async () => {
+    const listedUpdater = await kyberPriceFeed.methods.UPDATER().call();
+
+    expect(listedUpdater).toBe(updater);
+
     const mlnPrice = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.05', 'ether'))
@@ -86,9 +97,9 @@ describe('kyber-price-feed', () => {
         ['0x0000000000000000000000000000'],
         blockNumber,
         [0]
-      ).send(defaultTxOpts);
+      ).send(deployerTxOpts);
 
-    await kyberPriceFeed.methods.update().send(defaultTxOpts);
+    await kyberPriceFeed.methods.update().send({from: updater, gas: 8000000});
 
     const { 0: updatedMlnPrice } = await kyberPriceFeed.methods
       .getPrice(mln.options.address).call();
