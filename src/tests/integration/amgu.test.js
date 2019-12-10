@@ -108,9 +108,12 @@ describe('amgu', () => {
     await engine.methods
       .setAmguPrice('0')
       .send(defaultTxOpts)
-    const newAmguPrice = await engine.methods.getAmguPrice().call();
+    const resetAmguPrice = await engine.methods.getAmguPrice().call();
+    expect(resetAmguPrice).toBe('0');
 
-    expect(newAmguPrice.toString()).toBe('0');
+    await registry.methods.setIncentive(toWei('10', 'finney')).send(defaultTxOpts);
+    const resetIncentive = await registry.methods.incentive().call();
+    expect(resetIncentive).toBe(toWei('10', 'finney'));
   });
 
   it('set amgu with incentive attatched and check its usage', async () => {
