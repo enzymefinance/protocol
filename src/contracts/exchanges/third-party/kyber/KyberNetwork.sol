@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.4.25;
 
 
 import "./ERC20Interface.sol";
@@ -462,7 +462,7 @@ contract KyberNetwork is Withdrawable, Utils3, KyberNetworkInterface, Reentrancy
             result.rate = 0;
             return;
         }
-        
+
         (result.reserve2, result.rateEthToDest) =
             searchBestRate(ETH_TOKEN_ADDRESS, dest, result.weiAmount, usePermissionless);
 
