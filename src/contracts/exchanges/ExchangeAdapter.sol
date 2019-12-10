@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 import "../fund/accounting/Accounting.sol";
 import "../fund/hub/Hub.sol";
@@ -84,9 +85,11 @@ contract ExchangeAdapter {
     /// @param orderValues [5] Salt/nonce
     /// @param orderValues [6] Fill amount: amount of taker token to be traded
     /// @param orderValues [7] Dexy signature mode
+    /// @param orderData [0] Encoded data specific to maker asset
+    /// @param orderData [1] Encoded data specific to taker asset
+    /// @param orderData [2] Encoded data specific to maker asset fee
+    /// @param orderData [3] Encoded data specific to taker asset fee
     /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset
-    /// @param takerAssetData Encoded data specific to takerAsset
     /// @param signature Signature of order maker
 
     // Responsibilities of makeOrder are:
@@ -102,9 +105,8 @@ contract ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public { revert("Unimplemented"); }
 
@@ -123,9 +125,8 @@ contract ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public { revert("Unimplemented"); }
 
@@ -137,9 +138,8 @@ contract ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public { revert("Unimplemented"); }
 

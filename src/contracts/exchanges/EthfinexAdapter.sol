@@ -29,15 +29,16 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes wrappedMakerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
 
-        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, wrappedMakerAssetData, takerAssetData);
+        LibOrder.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
+        bytes memory wrappedMakerAssetData = orderData[0];
+        bytes memory takerAssetData = orderData[1];
         address makerAsset = orderAddresses[2];
         address takerAsset = getAssetAddress(takerAssetData);
         require(
@@ -69,10 +70,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         getTrading().addOpenMakeOrder(
-            targetExchange, 
+            targetExchange,
             makerAsset,
             takerAsset,
-            uint256(orderInfo.orderHash), 
+            uint256(orderInfo.orderHash),
             order.expirationTimeSeconds
         );
         getTrading().addZeroExOrderData(orderInfo.orderHash, order);
@@ -83,9 +84,8 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes wrappedMakerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
@@ -109,9 +109,8 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public {
         Hub hub = getHub();
@@ -196,8 +195,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     function constructOrderStruct(
         address[6] orderAddresses,
         uint[8] orderValues,
-        bytes makerAssetData,
-        bytes takerAssetData
+        bytes[4] orderData
     )
         internal
         view
@@ -214,8 +212,8 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             takerFee: orderValues[3],
             expirationTimeSeconds: orderValues[4],
             salt: orderValues[5],
-            makerAssetData: makerAssetData,
-            takerAssetData: takerAssetData
+            makerAssetData: orderData[0],
+            takerAssetData: orderData[1]
         });
     }
 

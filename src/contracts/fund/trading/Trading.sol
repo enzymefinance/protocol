@@ -47,7 +47,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
-    mapping (address => uint) public makerAssetCooldown; 
+    mapping (address => uint) public makerAssetCooldown;
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
 
     uint public constant ORDER_LIFESPAN = 1 days;
@@ -114,18 +114,19 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     /// @param orderValues [5] Salt/nonce
     /// @param orderValues [6] Fill amount: amount of taker token to be traded
     /// @param orderValues [7] Dexy signature mode
+    /// @param orderData [0] Encoded data specific to maker asset
+    /// @param orderData [1] Encoded data specific to taker asset
+    /// @param orderData [2] Encoded data specific to maker asset fee
+    /// @param orderData [3] Encoded data specific to taker asset fee
     /// @param identifier Order identifier
-    /// @param makerAssetData Encoded data specific to makerAsset.
-    /// @param takerAssetData Encoded data specific to takerAsset.
-    /// @param signature Signature of order maker.
+    /// @param signature Signature of order maker
     function callOnExchange(
         uint exchangeIndex,
         string methodSignature,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     )
         public
@@ -136,7 +137,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             Registry(routes.registry).adapterMethodIsAllowed(
                 exchanges[exchangeIndex].adapter,
                 methodSelector
-            )
+            ),
+            "Adapter method not allowed"
         );
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         if (
@@ -157,9 +159,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
                     exchanges[exchangeIndex].exchange,
                     orderAddresses,
                     orderValues,
+                    orderData,
                     identifier,
-                    makerAssetData,
-                    takerAssetData,
                     signature
                 )
             ),
@@ -171,9 +172,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             methodSignature,
             orderAddresses,
             orderValues,
+            orderData,
             identifier,
-            makerAssetData,
-            takerAssetData,
             signature
         );
     }
@@ -213,7 +213,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     ) internal {
         if (isInOpenMakeOrder[sellAsset]) {
 
-            makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN); 
+            makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN);
             address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
             delete exchangesToOpenMakeOrders[exchange][sellAsset];
             openMakeOrdersAgainstAsset[buyAsset] = sub(openMakeOrdersAgainstAsset[buyAsset], 1);

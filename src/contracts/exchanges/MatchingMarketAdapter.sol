@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
@@ -39,9 +40,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
@@ -97,9 +97,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
@@ -161,9 +160,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();

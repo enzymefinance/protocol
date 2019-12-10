@@ -1,15 +1,20 @@
 pragma solidity ^0.4.25;
 
+pragma experimental ABIEncoderV2;
+
+// TODO: Restore indexed params
+
 /// @notice Mediation between a Fund and exchanges
 interface TradingInterface {
     event ExchangeMethodCall(
-        address indexed exchangeAddress,
-        string indexed methodSignature,
+        // address indexed exchangeAddress,
+        // string indexed methodSignature,
+        address exchangeAddress,
+        string methodSignature,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     );
 
@@ -18,9 +23,8 @@ interface TradingInterface {
         string methodSignature,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public;
 

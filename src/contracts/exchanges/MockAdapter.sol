@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
@@ -16,9 +17,8 @@ contract MockAdapter is ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public {
         Hub hub = getHub();
@@ -42,9 +42,8 @@ contract MockAdapter is ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public {
         address makerAsset = orderAddresses[2];
@@ -67,9 +66,8 @@ contract MockAdapter is ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public {
         Hub hub = getHub();

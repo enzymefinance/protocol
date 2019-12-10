@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 import "../dependencies/Weth.sol";
 import "../fund/trading/Trading.sol";
@@ -33,16 +34,15 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         address targetExchange,
         address[6] orderAddresses,
         uint[8] orderValues,
+        bytes[4] orderData,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
         bytes signature
     ) public onlyManager notShutDown {
         Hub hub = getHub();
 
-        require(	
-            orderValues[1] == orderValues[6],	
-            "fillTakerQuantity must equal takerAssetQuantity"	
+        require(
+            orderValues[1] == orderValues[6],
+            "fillTakerQuantity must equal takerAssetQuantity"
         );
 
         address makerAsset = orderAddresses[2];
@@ -66,7 +66,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         );
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
-        getAccounting().updateOwnedAssets(); 
+        getAccounting().updateOwnedAssets();
         getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
