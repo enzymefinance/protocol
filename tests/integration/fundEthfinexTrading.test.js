@@ -12,7 +12,7 @@
 
 import { orderHashUtils } from '@0x/order-utils';
 import { AssetProxyId } from '@0x/types';
-import { BN, toWei, randomHex } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
@@ -169,6 +169,8 @@ test('Make order through the fund', async () => {
         weth.options.address,
         order.feeRecipientAddress,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [
         order.makerAssetAmount,
@@ -180,9 +182,8 @@ test('Make order through the fund', async () => {
         0,
         0,
       ],
-      randomHex(32),
-      order.makerAssetData,
-      order.takerAssetData,
+      [signedOrder.makerAssetData, signedOrder.takerAssetData, '0x0', '0x0'],
+      '0x0',
       signedOrder.signature,
     )
     .send(managerTxOpts);
@@ -276,6 +277,8 @@ test('Make order with native asset', async () => {
         dgx.options.address,
         signedOrder.feeRecipientAddress,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [
         signedOrder.makerAssetAmount,
@@ -287,9 +290,8 @@ test('Make order with native asset', async () => {
         0,
         0,
       ],
-      randomHex(32),
-      signedOrder.makerAssetData,
-      signedOrder.takerAssetData,
+      [signedOrder.makerAssetData, signedOrder.takerAssetData, '0x0', '0x0'],
+      '0x0',
       signedOrder.signature,
     )
     .send(managerTxOpts);
@@ -344,11 +346,12 @@ test('Cancel the order and withdraw tokens', async () => {
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
+      ['0x0', '0x0', '0x0', '0x0'],
       orderHashHex,
-      '0x0',
-      '0x0',
       '0x0',
     )
     .send(managerTxOpts);
@@ -376,10 +379,11 @@ test('Cancel the order and withdraw tokens', async () => {
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
-      randomHex(32),
-      '0x0',
+      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
       '0x0',
     )

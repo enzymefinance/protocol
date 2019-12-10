@@ -5,6 +5,7 @@ import web3 from '~/deploy/utils/get-web3';
 
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
+import { numberToBytes } from '~/tests/utils/formatting';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
 describe('tradingCallbacks', () => {
@@ -73,14 +74,13 @@ describe('tradingCallbacks', () => {
           mockSystem.weth.options.address,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-        `0x${Number(mockOrderId)
-          .toString(16)
-          .padStart(64, '0')}`,
-        '0x0',
-        '0x0',
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
+        numberToBytes(mockOrderId, 32),
+        '0x0'
       )
       .send(defaultTxOpts);
 

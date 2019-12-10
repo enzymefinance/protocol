@@ -77,6 +77,8 @@ describe('make0xOrder', () => {
         takerToken.options.address,
         signedOrder.feeRecipientAddress,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [
         signedOrder.makerAssetAmount,
@@ -88,9 +90,8 @@ describe('make0xOrder', () => {
         0,
         0,
       ],
-      padLeft('0x0', 64),
-      signedOrder.makerAssetData,
-      signedOrder.takerAssetData,
+      [signedOrder.makerAssetData, signedOrder.takerAssetData, '0x0', '0x0'],
+      '0x0',
       signedOrder.signature,
     ).send(defaultTxOpts);
 
@@ -151,6 +152,8 @@ describe('make0xOrder', () => {
         takerToken.options.address,
         signedOrder.feeRecipientAddress,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [
         signedOrder.makerAssetAmount,
@@ -162,9 +165,8 @@ describe('make0xOrder', () => {
         0,
         0,
       ],
-      padLeft('0x0', 64),
-      signedOrder.makerAssetData,
-      signedOrder.takerAssetData,
+      [signedOrder.makerAssetData, signedOrder.takerAssetData, '0x0', '0x0'],
+      '0x0',
       signedOrder.signature,
     ).send(defaultTxOpts);
 
@@ -185,11 +187,12 @@ describe('make0xOrder', () => {
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
+        ['0x0', '0x0', '0x0', '0x0'],
         orderHashHex,
-        '0x0',
-        '0x0',
         '0x0',
       ).send(defaultTxOpts);
 
@@ -249,6 +252,8 @@ describe('make0xOrder', () => {
           takerToken.options.address,
           signedOrder.feeRecipientAddress,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           signedOrder.makerAssetAmount,
@@ -260,9 +265,8 @@ describe('make0xOrder', () => {
           amount,
           0,
         ],
-        padLeft('0x0', 64),
-        signedOrder.makerAssetData,
-        signedOrder.takerAssetData,
+        [signedOrder.makerAssetData, signedOrder.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder.signature,
       ).send(defaultTxOpts);
 

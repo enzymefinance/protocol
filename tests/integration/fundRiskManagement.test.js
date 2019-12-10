@@ -11,7 +11,8 @@
  */
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, hexToNumber, randomHex, toWei } from 'web3-utils';
+import { BN, hexToNumber, toWei } from 'web3-utils';
+
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
@@ -276,10 +277,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
               takerAsset,
               EMPTY_ADDRESS,
               EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS
             ],
             [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-            randomHex(32),
-            '0x0',
+            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
           )
@@ -309,10 +311,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-          randomHex(32),
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )
@@ -393,10 +396,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
               takerAsset,
               EMPTY_ADDRESS,
               EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS
             ],
             [makerQuantity, badTakerQuantity, 0, 0, 0, 0, 0, 0],
-            randomHex(32),
-            '0x0',
+            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
           )
@@ -422,10 +426,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, toleratedTakerQuantity, 0, 0, 0, 0, 0, 0],
-          randomHex(32),
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )
@@ -509,10 +514,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-          randomHex(32),
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )
@@ -569,10 +575,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
               takerAsset,
               EMPTY_ADDRESS,
               EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS
             ],
             [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-            randomHex(32),
-            '0x0',
+            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
           )
@@ -708,10 +715,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
               takerAsset,
               EMPTY_ADDRESS,
               EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS
             ],
             [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-            randomHex(32),
-            '0x0',
+            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
           )
@@ -743,10 +751,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-          randomHex(32),
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )
@@ -818,11 +827,12 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+          ['0x0', '0x0', '0x0', '0x0'],
           orderId,
-          '0x0',
-          '0x0',
           '0x0',
         )
         .send(managerTxOpts)
@@ -857,10 +867,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
               takerAsset,
               EMPTY_ADDRESS,
               EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS
             ],
             [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-            randomHex(32),
-            '0x0',
+            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
           )
@@ -893,10 +904,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-          randomHex(32),
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )

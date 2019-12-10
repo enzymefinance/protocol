@@ -10,7 +10,8 @@
  */
 
 import { orderHashUtils } from '@0x/order-utils';
-import { BN, randomHex, toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
+
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
@@ -174,6 +175,8 @@ describe('fund-0x-trading', () => {
           weth.options.address,
           signedOrder1.feeRecipientAddress,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           signedOrder1.makerAssetAmount,
@@ -185,9 +188,8 @@ describe('fund-0x-trading', () => {
           fillQuantity,
           0,
         ],
-        randomHex(32),
-        signedOrder1.makerAssetData,
-        signedOrder1.takerAssetData,
+        [signedOrder1.makerAssetData, signedOrder1.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder1.signature,
       )
       .send(managerTxOpts);
@@ -288,6 +290,8 @@ describe('fund-0x-trading', () => {
           weth.options.address,
           signedOrder2.feeRecipientAddress,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           signedOrder2.makerAssetAmount,
@@ -299,9 +303,8 @@ describe('fund-0x-trading', () => {
           fillQuantity,
           0,
         ],
-        randomHex(32),
-        signedOrder2.makerAssetData,
-        signedOrder2.takerAssetData,
+        [signedOrder2.makerAssetData, signedOrder2.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder2.signature,
       )
       .send(managerTxOpts);
@@ -381,6 +384,8 @@ describe('fund-0x-trading', () => {
           takerTokenAddress,
           signedOrder3.feeRecipientAddress,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           signedOrder3.makerAssetAmount,
@@ -392,9 +397,8 @@ describe('fund-0x-trading', () => {
           0,
           0,
         ],
-        randomHex(32),
-        signedOrder3.makerAssetData,
-        signedOrder3.takerAssetData,
+        [signedOrder3.makerAssetData, signedOrder3.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder3.signature,
       )
       .send(managerTxOpts);
@@ -510,6 +514,8 @@ describe('fund-0x-trading', () => {
           mln.options.address,
           signedOrder4.feeRecipientAddress,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           signedOrder4.makerAssetAmount,
@@ -521,9 +527,8 @@ describe('fund-0x-trading', () => {
           0,
           0,
         ],
-        randomHex(32),
-        signedOrder4.makerAssetData,
-        signedOrder4.takerAssetData,
+        [signedOrder4.makerAssetData, signedOrder4.takerAssetData, '0x0', '0x0'],
+        '0x0',
         signedOrder4.signature,
       )
       .send(managerTxOpts);
@@ -554,11 +559,12 @@ describe('fund-0x-trading', () => {
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [0, 0, 0, 0, 0, 0, 0, 0],
+          ['0x0', '0x0', '0x0', '0x0'],
           orderHashHex,
-          '0x0',
-          '0x0',
           '0x0',
         )
         .send(managerTxOpts);

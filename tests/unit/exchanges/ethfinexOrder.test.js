@@ -1,6 +1,6 @@
 import { AssetProxyId } from '@0x/types';
 import { orderHashUtils } from '@0x/order-utils';
-import { toWei, padLeft } from 'web3-utils';
+import { toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
@@ -85,6 +85,8 @@ beforeEach(async () => {
       mln.options.address,
       signedOrder.feeRecipientAddress,
       EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS
     ],
     [
       signedOrder.makerAssetAmount,
@@ -96,9 +98,8 @@ beforeEach(async () => {
       0,
       0,
     ],
-    padLeft('0x0', 64),
-    signedOrder.makerAssetData,
-    signedOrder.takerAssetData,
+    [signedOrder.makerAssetData, signedOrder.takerAssetData, '0x0', '0x0'],
+    '0x0',
     signedOrder.signature,
   ).send(defaultTxOpts);
 });
@@ -142,11 +143,12 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
       EMPTY_ADDRESS,
       EMPTY_ADDRESS,
       EMPTY_ADDRESS,
+      EMPTY_ADDRESS,
+      EMPTY_ADDRESS
     ],
     [0, 0, 0, 0, 0, 0, 0, 0],
+    ['0x0', '0x0', '0x0', '0x0'],
     orderHashHex,
-    '0x0',
-    '0x0',
     '0x0',
   ).send(defaultTxOpts);
 
@@ -179,10 +181,11 @@ test('Withdraw (unwrap) maker asset of cancelled order', async () => {
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
-      '0x0',
-      '0x0',
+      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
       '0x0',
     ).send(defaultTxOpts);
