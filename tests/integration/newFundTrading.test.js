@@ -3,12 +3,13 @@
  */
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, toWei, randomHex } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
+
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { numberToBytes, stringToBytes } from '~/tests/utils/formatting';
 import getAllBalances from '~/tests/utils/getAllBalances';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -189,12 +190,14 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           trade1.sellQuantity,
@@ -206,8 +209,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -362,19 +364,18 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         takeOrderSignature,
         [
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, trade2.buyQuantity, 0],
-        `0x${Number(orderId)
-          .toString(16)
-          .padStart(64, '0')}`,
-        '0x0',
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
+        numberToBytes(Number(orderId), 32),
         '0x0',
       )
       .send(managerTxOpts);
@@ -421,12 +422,14 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         makeOrderSignature,
         [
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [
           trade2.sellQuantity,
@@ -438,8 +441,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           0,
           0,
         ],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -450,19 +452,18 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         i,
         cancelOrderSignature,
         [
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           weth.options.address,
           mln.options.address,
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        `0x${Number(orderId)
-          .toString(16)
-          .padStart(64, '0')}`,
-        '0x0',
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
+        numberToBytes(Number(orderId), 32),
         '0x0',
       )
       .send(managerTxOpts);
@@ -502,19 +503,18 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           i,
           takeOrderSignature,
           [
-            randomHex(20),
-            randomHex(20),
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
             weth.options.address,
             mln.options.address,
-            randomHex(20),
-            randomHex(20),
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [0, 0, 0, 0, 0, 0, `${ bnBuyQuantity }`, 0],
-          `0x${Number(orderId)
-            .toString(16)
-            .padStart(64, '0')}`,
-          '0x0',
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
+          numberToBytes(Number(orderId), 32),
           '0x0',
         )
         .send(managerTxOpts),

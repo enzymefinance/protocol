@@ -8,7 +8,7 @@
  * @test Fund take order fails with too high maker quantity
  */
 
-import { BN, toWei, randomHex } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
@@ -158,10 +158,11 @@ describe('fund-kyber-trading', () => {
           takerAsset,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -214,10 +215,11 @@ describe('fund-kyber-trading', () => {
           takerAsset,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -273,10 +275,11 @@ describe('fund-kyber-trading', () => {
           takerAsset,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )
@@ -327,10 +330,11 @@ describe('fund-kyber-trading', () => {
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          randomHex(32),
-          '0x0',
+          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
         )

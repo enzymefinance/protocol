@@ -7,7 +7,6 @@ import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS
 } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import {
   getEventFromReceipt,
   getFunctionSignature
@@ -69,12 +68,13 @@ describe('make-oasis-dex-order', () => {
           takerAsset,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
+        ['0x0', '0x0', '0x0', '0x0'],
+        '0x0',
+        '0x0'
       )
       .send(defaultTxOpts);
 
@@ -100,12 +100,13 @@ describe('make-oasis-dex-order', () => {
             takerAsset,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-          stringToBytes('0', 32),
-          stringToBytes('0', 32),
-          stringToBytes('0', 32),
-          stringToBytes('0', 32),
+          ['0x0', '0x0', '0x0', '0x0'],
+          '0x0',
+          '0x0'
         )
         .send(defaultTxOpts)
     ).rejects.toThrow();
@@ -125,12 +126,13 @@ describe('make-oasis-dex-order', () => {
           takerAsset,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
+        ['0x0', '0x0', '0x0', '0x0'],
         order1Vals.id,
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
+        '0x0'
       )
       .send(defaultTxOpts);
 
@@ -147,12 +149,13 @@ describe('make-oasis-dex-order', () => {
           takerAsset,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
-        stringToBytes('0', 32),
+        ['0x0', '0x0', '0x0', '0x0'],
+        '0x0',
+        '0x0'
       )
       .send(defaultTxOpts);
 

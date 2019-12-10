@@ -7,11 +7,11 @@
  * @test A fund places a make order with a quote token that is not 18 decimals
  */
 
-import { BN, toWei, randomHex } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -317,16 +317,17 @@ describe('fund-quote-asset', () => {
         0,
         makeOrderSignature,
         [
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
           dgx.options.address,
           mln.options.address,
-          randomHex(20),
-          randomHex(20),
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
         ],
         [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-        randomHex(32),
-        '0x0',
+        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
       )

@@ -148,10 +148,11 @@ test('fund takes an order on Kyber', async () => {
         takerAsset,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
+        EMPTY_ADDRESS,
+        EMPTY_ADDRESS
       ],
       [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      '0x0',
-      '0x0',
+      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
       '0x0',
     )
