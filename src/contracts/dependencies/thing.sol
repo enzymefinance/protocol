@@ -15,16 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity ^0.5.13;
+pragma solidity >=0.4.23;
 
-import "./auth.sol";
-import "./note.sol";
-import "./math.sol";
+import './auth.sol';
+import './note.sol';
+import './math.sol';
 
 contract DSThing is DSAuth, DSNote, DSMath {
-
-    function S(string s) internal pure returns (bytes4) {
-        return bytes4(keccak256(s));
+    function S(string memory s) internal pure returns (bytes4) {
+        return bytes4(keccak256(abi.encodePacked(s)));
     }
 
 }
