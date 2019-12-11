@@ -9,7 +9,7 @@ contract MockFee is Fee {
     uint public FEE_PERIOD;
     uint public feeNumber;
 
-    constructor(uint _feeNumber) {
+    constructor(uint _feeNumber) public {
         feeNumber = _feeNumber;
     }
 
