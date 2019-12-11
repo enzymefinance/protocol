@@ -7,7 +7,7 @@ contract PreminedToken is StandardToken {
     string public  name;
     uint8 public decimals;
 
-    constructor(string _symbol, uint8 _decimals, string _name) public {
+    constructor(string memory _symbol, uint8 _decimals, string memory _name) public {
         symbol = _symbol;
         decimals = _decimals;
         name = _name;

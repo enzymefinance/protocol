@@ -6,7 +6,7 @@ contract MaliciousToken is PreminedToken {
 
     bool public isReverting = false;
 
-    constructor(string _symbol, uint8 _decimals, string _name)
+    constructor(string memory _symbol, uint8 _decimals, string memory _name)
         public
         PreminedToken(_symbol, _decimals, _name)
     {}
