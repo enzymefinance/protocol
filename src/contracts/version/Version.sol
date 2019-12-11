@@ -19,6 +19,7 @@ contract Version is FundFactory, DSAuth, VersionInterface {
         address _registry,
         address _postDeployOwner
     )
+        public
         FundFactory(
             _accountingFactory,
             _feeManagerFactory,

@@ -100,7 +100,7 @@ contract Registry is DSAuth {
 
     // METHODS
 
-    constructor(address _postDeployOwner) {
+    constructor(address _postDeployOwner) public {
         setOwner(_postDeployOwner);
     }
 
