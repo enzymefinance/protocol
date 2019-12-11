@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 /// @notice Investor Fund interactions
 /// @notice Handles redemptions and requests for investment

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 contract TradingSignatures {
     bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature

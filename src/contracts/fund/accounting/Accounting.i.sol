@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 /// @notice Gives metrics about a Fund
 interface AccountingInterface {
