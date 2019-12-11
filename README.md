@@ -25,6 +25,22 @@ cd protocol
 yarn install
 ```
 
+### Uniswap source files
+
+(This is a temporary step until we dockerize)
+
+Download the Uniswap contract `.abi` and `.bin` source files
+
+```sh
+curl -s -H "Accept:application/vnd.github.v3.raw" https://api.github.com/repos/Uniswap/contracts-vyper/contents/abi/uniswap_exchange.json\?ref\=c10c08d81d6114f694baa8bd32f555a40f6264da > out/UniswapExchange.abi
+
+curl -s -H "Accept:application/vnd.github.v3.raw" https://api.github.com/repos/Uniswap/contracts-vyper/contents/abi/uniswap_factory.json\?ref\=c10c08d81d6114f694baa8bd32f555a40f6264da > out/UniswapFactory.abi
+
+curl -s -H "Accept:application/vnd.github.v3.raw" https://api.github.com/repos/Uniswap/contracts-vyper/contents/bytecode/exchange.txt\?ref\=c10c08d81d6114f694baa8bd32f555a40f6264da > out/UniswapExchange.bin
+
+curl -s -H "Accept:application/vnd.github.v3.raw" https://api.github.com/repos/Uniswap/contracts-vyper/contents/bytecode/factory.txt\?ref\=c10c08d81d6114f694baa8bd32f555a40f6264da > out/UniswapFactory.bin
+```
+
 ## Test
 
 After installation, go to the above `protocol` directory, open a terminal and:
