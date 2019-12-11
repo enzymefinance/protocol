@@ -74,7 +74,9 @@ contract FundFactory is AmguConsumer, Factory {
         address _vaultFactory,
         address _policyManagerFactory,
         address _version
-    ) {
+    )
+        public
+    {
         accountingFactory = AccountingFactoryInterface(_accountingFactory);
         feeManagerFactory = FeeManagerFactoryInterface(_feeManagerFactory);
         participationFactory = ParticipationFactoryInterface(_participationFactory);
@@ -90,14 +92,14 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function beginSetup(
-        string _name,
-        address[] _fees,
-        uint[] _feeRates,
-        uint[] _feePeriods,
-        address[] _exchanges,
-        address[] _adapters,
+        string memory _name,
+        address[] memory _fees,
+        uint[] memory _feeRates,
+        uint[] memory _feePeriods,
+        address[] memory _exchanges,
+        address[] memory _adapters,
         address _denominationAsset,
-        address[] _defaultAssets
+        address[] memory _defaultAssets
     )
         public
         componentNotSet(managersToHubs[msg.sender])
@@ -297,10 +299,8 @@ contract FundFactory is AmguConsumer, Factory {
     function priceSource() public view returns (address) {
         return address(Registry(registry).priceSource());
     }
-    function version() public view returns (address) { return address(version); }
-    function registry() public view returns (address) { return address(registry); }
-    function getExchangesInfo(address user) public view returns (address[]) { 
-        return (managersToSettings[user].exchanges); 
+    function getExchangesInfo(address user) public view returns (address[] memory) {
+        return (managersToSettings[user].exchanges);
     }
 }
 
