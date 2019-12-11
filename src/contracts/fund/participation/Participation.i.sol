@@ -37,13 +37,13 @@ interface ParticipationInterface {
         uint investmentAmount,
         address investmentAsset
     ) external payable;
-    function hasRequest(address) view returns (bool);
+    function hasRequest(address) external view returns (bool);
     function cancelRequest() external payable;
     function executeRequestFor(address requestOwner) external payable;
     function redeem() external;
-    function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public;
+    function redeemWithConstraints(uint shareQuantity, address[] calldata requestedAssets) external;
 }
 
 interface ParticipationFactoryInterface {
-    function createInstance(address _hub, address[] _defaultAssets, address _registry) external returns (address);
+    function createInstance(address _hub, address[] calldata _defaultAssets, address _registry) external returns (address);
 }
