@@ -48,9 +48,9 @@ contract AmguConsumer is DSMath {
         );
     }
 
-    function engine() view returns (address);
-    function mlnToken() view returns (address);
-    function priceSource() view returns (address);
-    function registry() view returns (address);
+    function engine() public view returns (address);
+    function mlnToken() public view returns (address);
+    function priceSource() public view returns (address);
+    function registry() public view returns (address);
 }
 
