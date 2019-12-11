@@ -24,7 +24,7 @@ contract FeeManager is DSMath, Spoke {
     Fee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
-    constructor(address _hub, address _denominationAsset, address[] _fees, uint[] _rates, uint[] _periods, address _registry) Spoke(_hub) public {
+    constructor(address _hub, address _denominationAsset, address[] memory _fees, uint[] memory _rates, uint[] memory _periods, address _registry) Spoke(_hub) public {
         for (uint i = 0; i < _fees.length; i++) {
             require(
                 Registry(_registry).isFeeRegistered(_fees[i]),
@@ -115,4 +115,3 @@ contract FeeManagerFactory is Factory {
         return feeManager;
     }
 }
-
