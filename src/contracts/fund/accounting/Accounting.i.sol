@@ -12,12 +12,12 @@ interface AccountingInterface {
     );
 
     function getOwnedAssetsLength() external view returns (uint);
-    function getFundHoldings() external returns (uint[], address[]);
+    function getFundHoldings() external returns (uint[] memory, address[] memory);
     function calcAssetGAV(address ofAsset) external returns (uint);
-    function calcGav() public returns (uint gav);
-    function calcNav(uint gav, uint unclaimedFees) pure returns (uint);
-    function valuePerShare(uint totalValue, uint numShares) public view returns (uint);
-    function performCalculations() public returns (
+    function calcGav() external returns (uint gav);
+    function calcNav(uint gav, uint unclaimedFees) external pure returns (uint);
+    function valuePerShare(uint totalValue, uint numShares) external view returns (uint);
+    function performCalculations() external returns (
         uint gav,
         uint unclaimedFees,
         uint feesInShares,
@@ -26,9 +26,9 @@ interface AccountingInterface {
         uint gavPerShareNetManagementFee
     );
     function calcSharePrice() external returns (uint);
-    function calcGavPerShareNetManagementFee() public returns (uint);
+    function calcGavPerShareNetManagementFee() external returns (uint);
 }
 
 interface AccountingFactoryInterface {
-    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) external returns (address);
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] calldata _defaultAssets) external returns (address);
 }

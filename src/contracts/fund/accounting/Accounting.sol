@@ -31,7 +31,8 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     uint public DEFAULT_SHARE_PRICE;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] memory _defaultAssets)
+        public
         Spoke(_hub)
     {
         for (uint i = 0; i < _defaultAssets.length; i++) {
@@ -55,7 +56,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 
     /// @dev Returns sparse array
-    function getFundHoldings() external returns (uint[], address[]) {
+    function getFundHoldings() external returns (uint[] memory, address[] memory) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);
         for (uint i = 0; i < ownedAssets.length; i++) {
