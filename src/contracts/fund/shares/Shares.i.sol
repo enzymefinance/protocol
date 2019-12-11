@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 /// @notice Token representing ownership of the Fund
 interface SharesInterface {

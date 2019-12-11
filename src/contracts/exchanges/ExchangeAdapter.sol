@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 import "../fund/accounting/Accounting.sol";
 import "../fund/hub/Hub.sol";

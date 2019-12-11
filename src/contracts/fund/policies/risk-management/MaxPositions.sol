@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 import "../../../prices/PriceSource.i.sol";
 import "../../accounting/Accounting.sol";
