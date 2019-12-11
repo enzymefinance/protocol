@@ -145,7 +145,7 @@ test(`artificially inflate share price by transfering weth to vault`, async () =
     postTotalSupply,
   );
 
-  expect(postTotalSupply).toEqualBN(preTotalSupply);
+  expect(postTotalSupply).bigNumberEq(preTotalSupply);
   expect(Number(postFundCalculations.sharePrice)).toBeGreaterThan(
     Number(preFundCalculations.sharePrice),
   );
@@ -222,7 +222,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
     new BN(fundCalculations.feesInShares.toString()),
   );
   expect(postManagerShares.sub(preManagerShares))
-    .toEqualBN(expectedOwedPerformanceFee);
+    .bigNumberEq(expectedOwedPerformanceFee);
 
   await fund.participation.methods
     .redeem()

@@ -4,10 +4,10 @@ import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
 jest.setTimeout(240000);
 
 expect.extend({
-  toEqualBN(received, expected) {
+  bigNumberEq(received, expected) {
     const passMessage = (received, expected) => () => {
       return (
-        matcherHint('.not.toEqualBN') +
+        matcherHint('.not.bigNumberEq') +
         '\n\n' +
         'Expected and expected.toString() values to not be equal:\n' +
         `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
@@ -18,7 +18,7 @@ expect.extend({
 
     const failMessage = (received, expected) => () => {
       return (
-        matcherHint('.toEqualBN') +
+        matcherHint('.bigNumberEq') +
         '\n\n' +
         'Expected and expected.toString():\n' +
         `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +

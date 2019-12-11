@@ -135,7 +135,7 @@ test('Transfer ethToken to the investor', async () => {
   const post = await getAllBalances(contracts, accounts, fund);
   const bnInitialTokenAmount = new BN(initialTokenAmount);
 
-  expect(post.investor.weth).toEqualBN(
+  expect(post.investor.weth).bigNumberEq(
     pre.investor.weth.add(bnInitialTokenAmount),
   );
 });
@@ -170,7 +170,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const bnPreTotalSupply = new BN(preTotalSupply.toString());
     const bnPostTotalSupply = new BN(postTotalSupply.toString());
 
-    expect(bnPostTotalSupply).toEqualBN(bnPreTotalSupply.add(bnWantedShares));
+    expect(bnPostTotalSupply).bigNumberEq(bnPreTotalSupply.add(bnWantedShares));
   });
 
   test(`Exchange ${i +
@@ -231,12 +231,12 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
 
     const bnSellQuantity = new BN(trade1.sellQuantity);
 
-    expect(exchangePostMln).toEqualBN(exchangePreMln);
-    expect(exchangePostEthToken).toEqualBN(
+    expect(exchangePostMln).bigNumberEq(exchangePreMln);
+    expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.add(bnSellQuantity),
     );
-    expect(post.fund.weth).toEqualBN(pre.fund.weth);
-    expect(post.deployer.mln).toEqualBN(pre.deployer.mln);
+    expect(post.fund.weth).bigNumberEq(pre.fund.weth);
+    expect(post.deployer.mln).bigNumberEq(pre.deployer.mln);
     expect(postIsMlnInAssetList).toBeTruthy();
     expect(preIsMlnInAssetList).toBeFalsy();
     expect(Number(openOrdersAgainstMln)).toBe(1);
@@ -289,20 +289,20 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const bnSellQuantity = new BN(trade1.sellQuantity);
     const bnBuyQuantity = new BN(trade1.buyQuantity);
 
-    expect(exchangePostMln).toEqualBN(exchangePreMln);
-    expect(exchangePostEthToken).toEqualBN(
+    expect(exchangePostMln).bigNumberEq(exchangePreMln);
+    expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.sub(bnSellQuantity),
     );
-    expect(post.fund.weth).toEqualBN(
+    expect(post.fund.weth).bigNumberEq(
       pre.fund.weth.sub(bnSellQuantity),
     );
-    expect(post.fund.mln).toEqualBN(
+    expect(post.fund.mln).bigNumberEq(
       pre.fund.mln.add(bnBuyQuantity),
     );
-    expect(post.deployer.weth).toEqualBN(
+    expect(post.deployer.weth).bigNumberEq(
       pre.deployer.weth.add(bnSellQuantity),
     );
-    expect(post.deployer.mln).toEqualBN(
+    expect(post.deployer.mln).bigNumberEq(
       pre.deployer.mln.sub(bnBuyQuantity),
     );
   });
@@ -339,14 +339,14 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const post = await getAllBalances(contracts, accounts, fund);
     const bnSellQuantity = new BN(trade2.sellQuantity);
 
-    expect(exchangePostMln).toEqualBN(exchangePreMln);
-    expect(exchangePostEthToken).toEqualBN(
+    expect(exchangePostMln).bigNumberEq(exchangePreMln);
+    expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.add(bnSellQuantity),
     );
-    expect(post.deployer.weth).toEqualBN(
+    expect(post.deployer.weth).bigNumberEq(
       pre.deployer.weth.sub(bnSellQuantity),
     );
-    expect(post.deployer.mln).toEqualBN(pre.deployer.mln);
+    expect(post.deployer.mln).bigNumberEq(pre.deployer.mln);
   });
 
   test(`Exchange ${i +
@@ -390,20 +390,20 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const bnSellQuantity = new BN(trade2.sellQuantity);
     const bnBuyQuantity = new BN(trade2.buyQuantity);
 
-    expect(exchangePostMln).toEqualBN(exchangePreMln);
-    expect(exchangePostEthToken).toEqualBN(
+    expect(exchangePostMln).bigNumberEq(exchangePreMln);
+    expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.sub(bnSellQuantity),
     );
-    expect(post.deployer.mln).toEqualBN(
+    expect(post.deployer.mln).bigNumberEq(
       pre.deployer.mln.add(bnBuyQuantity),
     );
-    expect(post.fund.mln).toEqualBN(
+    expect(post.fund.mln).bigNumberEq(
       pre.fund.mln.sub(bnBuyQuantity),
     );
-    expect(post.fund.weth).toEqualBN(
+    expect(post.fund.weth).bigNumberEq(
       pre.fund.weth.add(bnSellQuantity),
     );
-    expect(post.fund.ether).toEqualBN(pre.fund.ether);
+    expect(post.fund.ether).bigNumberEq(pre.fund.ether);
   });
 
   test(`Exchange ${i + 1}: manager makes an order and cancels it`, async () => {
@@ -476,9 +476,9 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     );
 
     expect(orderOpen).toBeFalsy();
-    expect(exchangePostEthToken).toEqualBN(exchangePreEthToken);
-    expect(post.fund.mln).toEqualBN(pre.fund.mln);
-    expect(post.fund.weth).toEqualBN(pre.fund.weth);
+    expect(exchangePostEthToken).bigNumberEq(exchangePreEthToken);
+    expect(post.fund.mln).bigNumberEq(pre.fund.mln);
+    expect(post.fund.weth).bigNumberEq(pre.fund.weth);
   });
 
   test(`Exchange ${i +

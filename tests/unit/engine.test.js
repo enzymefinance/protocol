@@ -70,7 +70,7 @@ describe('sell-and-burn-mln', () => {
 
     const preEthEngine = await web3.eth
       .getBalance(engine.options.address);
-    expect(new BN(preEthEngine)).toEqualBN(new BN(0));
+    expect(new BN(preEthEngine)).bigNumberEq(new BN(0));
 
     await web3.eth
       .sendTransaction({
@@ -87,9 +87,9 @@ describe('sell-and-burn-mln', () => {
     const postFrozenEth = await engine.methods.frozenEther().call();
     const postLiquidEth = await engine.methods.liquidEther().call();
 
-    expect(new BN(postEthEngine)).toEqualBN(new BN(sendAmount));
-    expect(new BN(postFrozenEth)).toEqualBN(new BN(0));
-    expect(new BN(postLiquidEth)).toEqualBN(new BN(0));
+    expect(new BN(postEthEngine)).bigNumberEq(new BN(sendAmount));
+    expect(new BN(postFrozenEth)).bigNumberEq(new BN(0));
+    expect(new BN(postLiquidEth)).bigNumberEq(new BN(0));
   });
 
   it('AMGU payment fails when sender not fund', async () => {
@@ -122,8 +122,8 @@ describe('sell-and-burn-mln', () => {
     const preFrozenEth = new BN(await engine.methods.frozenEther().call());
     const preLiquidEth = new BN(await engine.methods.liquidEther().call());
 
-    expect(preFrozenEth).toEqualBN(new BN(sendAmountEth));
-    expect(preLiquidEth).toEqualBN(new BN(0));
+    expect(preFrozenEth).bigNumberEq(new BN(sendAmountEth));
+    expect(preLiquidEth).bigNumberEq(new BN(0));
 
     // early call to thaw fails
     await expect(
@@ -140,7 +140,7 @@ describe('sell-and-burn-mln', () => {
     const premiumPrice =
       ethPerMln.add(ethPerMln.mul(premiumPercent).div(new BN(100)));
 
-    expect(enginePrice).toEqualBN(premiumPrice);
+    expect(enginePrice).bigNumberEq(premiumPrice);
 
     const sendAmountMln = BNExpDiv(
       new BN(sendAmountEth),
@@ -172,8 +172,8 @@ describe('sell-and-burn-mln', () => {
     const postFrozenEth = new BN(await engine.methods.frozenEther().call());
     const postLiquidEth = new BN(await engine.methods.liquidEther().call());
 
-    expect(postFrozenEth).toEqualBN(new BN(0));
-    expect(postLiquidEth).toEqualBN(new BN(sendAmountEth));
+    expect(postFrozenEth).bigNumberEq(new BN(0));
+    expect(postLiquidEth).bigNumberEq(new BN(sendAmountEth));
 
     const preBurnerMln = new BN(await mln.methods.balanceOf(deployer).call());
     const preBurnerEth = new BN(await web3.eth.getBalance(deployer));
@@ -202,15 +202,15 @@ describe('sell-and-burn-mln', () => {
     );
     const postMlnTotalSupply = new BN(await mln.methods.totalSupply().call());
 
-    expect(postBurnerMln).toEqualBN(preBurnerMln.sub(new BN(sendAmountMln)));
-    expect(postBurnerEth).toEqualBN(
+    expect(postBurnerMln).bigNumberEq(preBurnerMln.sub(new BN(sendAmountMln)));
+    expect(postBurnerEth).bigNumberEq(
       preBurnerEth.sub(gasUsedCost).add(expectedEthPurchased)
     );
-    expect(postEngineMln).toEqualBN(new BN(0));
-    expect(postEngineEth).toEqualBN(preEngineEth.sub(expectedEthPurchased));
+    expect(postEngineMln).bigNumberEq(new BN(0));
+    expect(postEngineEth).bigNumberEq(preEngineEth.sub(expectedEthPurchased));
 
     expect(
-      postMlnTotalSupply).toEqualBN(preMlnTotalSupply.sub(new BN(sendAmountMln))
+      postMlnTotalSupply).bigNumberEq(preMlnTotalSupply.sub(new BN(sendAmountMln))
     );
   });
 

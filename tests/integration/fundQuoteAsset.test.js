@@ -353,9 +353,9 @@ describe('fund-quote-asset', () => {
     expect(preMlnExchange).toEqual(postMlnExchange);
     expect(postMlnFund).toEqual(preMlnFund);
     expect(new BN(postDgxExchange.toString()))
-      .toEqualBN(new BN(preDgxExchange.toString()).add(new BN(trade1.sellQuantity.toString())));
+      .bigNumberEq(new BN(preDgxExchange.toString()).add(new BN(trade1.sellQuantity.toString())));
     expect(new BN(postDgxFund.toString()))
-      .toEqualBN(new BN(preDgxFund.toString()).sub(new BN(trade1.sellQuantity.toString())));
+      .bigNumberEq(new BN(preDgxFund.toString()).sub(new BN(trade1.sellQuantity.toString())));
     expect(postFundCalcs.gav.toString()).toBe(preFundCalcs.gav.toString());
     expect(postFundCalcs.sharePrice.toString()).toBe(preFundCalcs.sharePrice.toString());
     expect(postMlnDeployer.toString()).toBe(preMlnDeployer.toString());
@@ -406,13 +406,13 @@ describe('fund-quote-asset', () => {
 
     expect(preMlnExchange).toEqual(postMlnExchange);
     expect(new BN(postDgxExchange.toString()))
-      .toEqualBN(new BN(preDgxExchange.toString()).sub(new BN(trade1.sellQuantity.toString())));
+      .bigNumberEq(new BN(preDgxExchange.toString()).sub(new BN(trade1.sellQuantity.toString())));
     expect(postDgxFund.toString()).toBe(preDgxFund.toString());
     expect(new BN(postMlnFund.toString()))
-      .toEqualBN(new BN(preMlnFund.toString()).add(new BN(trade1.buyQuantity.toString())));
+      .bigNumberEq(new BN(preMlnFund.toString()).add(new BN(trade1.buyQuantity.toString())));
     expect(new BN(postDgxDeployer.toString()))
-      .toEqualBN(new BN(preDgxDeployer.toString()).add(new BN(trade1.sellQuantity.toString())));
+      .bigNumberEq(new BN(preDgxDeployer.toString()).add(new BN(trade1.sellQuantity.toString())));
     expect(new BN(postMlnDeployer.toString()))
-      .toEqualBN(new BN(preMlnDeployer.toString()).sub(new BN(trade1.buyQuantity.toString())));
+      .bigNumberEq(new BN(preMlnDeployer.toString()).sub(new BN(trade1.buyQuantity.toString())));
   });
 });

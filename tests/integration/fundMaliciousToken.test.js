@@ -118,9 +118,9 @@ describe('fund-malicious-token', () => {
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
     expect(new BN(postWethInvestor.toString()))
-      .toEqualBN(new BN(preWethInvestor.toString()).sub(new BN(offeredValue.toString())));
+      .bigNumberEq(new BN(preWethInvestor.toString()).sub(new BN(offeredValue.toString())));
     expect(new BN(postWethFund.toString()))
-      .toEqualBN(new BN(preWethFund.toString()).add(new BN(offeredValue.toString())));
+      .bigNumberEq(new BN(preWethFund.toString()).add(new BN(offeredValue.toString())));
   });
 
   test(`General redeem fails in presence of malicious token`, async () => {
@@ -166,12 +166,13 @@ describe('fund-malicious-token', () => {
     const postFundGav = await accounting.methods.calcGav().call();
 
     expect(new BN(postTotalSupply.toString()))
-      .toEqualBN(new BN(preTotalSupply.toString()).sub(new BN(investorShares.toString())));
+      .bigNumberEq(new BN(preTotalSupply.toString()).sub(new BN(investorShares.toString())));
       expect(new BN(postWethInvestor.toString()))
-        .toEqualBN(new BN(preWethInvestor.toString()).add(new BN(preWethFund.toString())));
-    expect(new BN(postWethFund.toString())).toEqualBN(new BN(0));
+        .bigNumberEq(new BN(preWethInvestor.toString()).add(new BN(preWethFund.toString())));
+    expect(new BN(postWethFund.toString())).bigNumberEq(new BN(0));
     expect(postMlnFund).toEqual(preMlnFund);
     expect(postMlnInvestor).toEqual(preMlnInvestor);
-    expect(new BN(postFundGav.toString())).toEqualBN(new BN(0));
+    expect(new BN(postFundGav.toString())).bigNumberEq(new BN(0));
   });
 });
+

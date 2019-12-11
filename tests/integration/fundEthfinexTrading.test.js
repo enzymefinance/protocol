@@ -233,12 +233,12 @@ test('Third party takes the order made by the fund', async () => {
   const bnTakerAssetAmount = new BN(signedOrder.takerAssetAmount);
 
   expect(result).toBeTruthy();
-  expect(post.fund.mln).toEqualBN(pre.fund.mln.sub(bnMakerAssetAmount));
-  expect(post.fund.weth).toEqualBN(pre.fund.weth.add(bnTakerAssetAmount));
-  expect(postDeployerWrappedMLN).toEqualBN(
+  expect(post.fund.mln).bigNumberEq(pre.fund.mln.sub(bnMakerAssetAmount));
+  expect(post.fund.weth).bigNumberEq(pre.fund.weth.add(bnTakerAssetAmount));
+  expect(postDeployerWrappedMLN).bigNumberEq(
     preDeployerWrappedMLN.add(bnMakerAssetAmount),
   );
-  expect(post.deployer.weth).toEqualBN(pre.deployer.weth.sub(bnTakerAssetAmount));
+  expect(post.deployer.weth).bigNumberEq(pre.deployer.weth.sub(bnTakerAssetAmount));
 });
 
 test('Make order with native asset', async () => {
@@ -306,7 +306,7 @@ test('Make order with native asset', async () => {
 
   expect(postCalculations.gav).toBe(preCalculations.gav);
   expect(postCalculations.sharePrice).toBe(preCalculations.sharePrice);
-  expect(post.fund.weth).toEqualBN(pre.fund.weth);
+  expect(post.fund.weth).bigNumberEq(pre.fund.weth);
   expect(postIsDgxInAssetList).toBeTruthy();
   expect(preIsDgxInAssetList).toBeFalsy();
   expect(Number(openOrdersAgainstDgx)).toBe(1);
@@ -404,8 +404,8 @@ test('Cancel the order and withdraw tokens', async () => {
     .openMakeOrdersAgainstAsset(dgx.options.address)
     .call();
 
-  expect(post.fund.weth).toEqualBN(preWithdraw.fund.weth);
-  expect(preWithdraw.fund.weth).toEqualBN(pre.fund.weth);
+  expect(post.fund.weth).bigNumberEq(preWithdraw.fund.weth);
+  expect(preWithdraw.fund.weth).bigNumberEq(pre.fund.weth);
   expect(postCalculations.gav).toBe(preWithdrawCalculations.gav);
   expect(preWithdrawCalculations.gav).toBe(preCalculations.gav);
   expect(postCalculations.sharePrice).toBe(

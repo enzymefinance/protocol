@@ -119,9 +119,9 @@ describe('fund-kyber-trading', () => {
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
 
     expect(new BN(postWethInvestor.toString()))
-      .toEqualBN(new BN(preWethInvestor.toString()).sub(new BN(offeredValue.toString())));
+      .bigNumberEq(new BN(preWethInvestor.toString()).sub(new BN(offeredValue.toString())));
     expect(new BN(postWethFund.toString()))
-      .toEqualBN(new BN(preWethFund.toString()).add(new BN(offeredValue.toString())));
+      .bigNumberEq(new BN(preWethFund.toString()).add(new BN(offeredValue.toString())));
   });
 
   test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => {
@@ -175,9 +175,9 @@ describe('fund-kyber-trading', () => {
       .call();
 
     expect(new BN(postWethFund.toString()))
-      .toEqualBN(new BN(preWethFund.toString()).sub(new BN(takerQuantity.toString())));
+      .bigNumberEq(new BN(preWethFund.toString()).sub(new BN(takerQuantity.toString())));
     expect(new BN(postMlnFund.toString()))
-      .toEqualBN(new BN(preMlnFund.toString()).add(new BN(makerQuantity.toString())));
+      .bigNumberEq(new BN(preMlnFund.toString()).add(new BN(makerQuantity.toString())));
   });
 
   test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => {
@@ -231,9 +231,9 @@ describe('fund-kyber-trading', () => {
       .call();
 
     expect(new BN(postMlnFund.toString()))
-      .toEqualBN(new BN(preMlnFund.toString()).sub(new BN(takerQuantity.toString())));
+      .bigNumberEq(new BN(preMlnFund.toString()).sub(new BN(takerQuantity.toString())));
     expect(new BN(postWethFund.toString()))
-      .toEqualBN(new BN(preWethFund.toString()).add(new BN(makerQuantity.toString())));
+      .bigNumberEq(new BN(preWethFund.toString()).add(new BN(makerQuantity.toString())));
   });
 
   test('swap MLN directly to EUR without intermediary', async () => {
@@ -294,9 +294,9 @@ describe('fund-kyber-trading', () => {
 
     expect(postWethFund.toString()).toBe(preWethFund.toString());
     expect( new BN(postMlnFund.toString()))
-      .toEqualBN(new BN(preMlnFund.toString()).sub(new BN(takerQuantity.toString())));
+      .bigNumberEq(new BN(preMlnFund.toString()).sub(new BN(takerQuantity.toString())));
     expect(new BN(postEurFund.toString()))
-      .toEqualBN(new BN(preEurFund.toString()).add(new BN(makerQuantity.toString())));
+      .bigNumberEq(new BN(preEurFund.toString()).add(new BN(makerQuantity.toString())));
   });
 
   test('swap fails if make quantity is too high', async () => {
