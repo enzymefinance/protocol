@@ -31,14 +31,17 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
 
     address[] public historicalInvestors; // for information purposes only (read)
 
-    constructor(address _hub, address[] _defaultAssets, address _registry) Spoke(_hub) {
+    constructor(address _hub, address[] memory _defaultAssets, address _registry)
+        public
+        Spoke(_hub)
+    {
         routes.registry = _registry;
         _enableInvestment(_defaultAssets);
     }
 
     function() public payable {}
 
-    function _enableInvestment(address[] _assets) internal {
+    function _enableInvestment(address[] memory _assets) internal {
         for (uint i = 0; i < _assets.length; i++) {
             require(
                 Registry(routes.registry).assetIsRegistered(_assets[i]),
@@ -49,11 +52,11 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         emit EnableInvestment(_assets);
     }
 
-    function enableInvestment(address[] _assets) external auth {
+    function enableInvestment(address[] calldata _assets) external auth {
         _enableInvestment(_assets);
     }
 
-    function disableInvestment(address[] _assets) external auth {
+    function disableInvestment(address[] calldata _assets) external auth {
         for (uint i = 0; i < _assets.length; i++) {
             investAllowed[_assets[i]] = false;
         }
@@ -271,7 +274,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
 
     // TODO: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     /// @dev Redeem only selected assets (used only when an asset throws)
-    function redeemWithConstraints(uint shareQuantity, address[] requestedAssets) public {
+    function redeemWithConstraints(uint shareQuantity, address[] memory requestedAssets) public {
         Shares shares = Shares(routes.shares);
         require(
             shares.balanceOf(msg.sender) >= shareQuantity &&
@@ -336,7 +339,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         );
     }
 
-    function getHistoricalInvestors() external view returns (address[]) {
+    function getHistoricalInvestors() external view returns (address[] memory) {
         return historicalInvestors;
     }
 }
