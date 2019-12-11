@@ -62,11 +62,11 @@ contract CanonicalRegistrar is DSThing {
         address ofAsset,
         bytes32 inputName,
         bytes8 inputSymbol,
-        string inputUrl,
-        string inputIpfsHash,
-        address[2] breakInBreakOut,
-        uint[] inputStandards,
-        bytes4[] inputFunctionSignatures
+        string memory inputUrl,
+        string memory inputIpfsHash,
+        address[2] memory breakInBreakOut,
+        uint[] memory inputStandards,
+        bytes4[] memory inputFunctionSignatures
     )
         public
         auth
@@ -101,7 +101,7 @@ contract CanonicalRegistrar is DSThing {
         address ofExchange,
         address ofExchangeAdapter,
         bool inputTakesCustody,
-        bytes4[] inputFunctionSignatures
+        bytes4[] memory inputFunctionSignatures
     )
         public
         auth
@@ -133,11 +133,11 @@ contract CanonicalRegistrar is DSThing {
         address ofAsset,
         bytes32 inputName,
         bytes8 inputSymbol,
-        string inputUrl,
-        string inputIpfsHash,
-        address[2] ofBreakInBreakOut,
-        uint[] inputStandards,
-        bytes4[] inputFunctionSignatures
+        string memory inputUrl,
+        string memory inputIpfsHash,
+        address[2] memory ofBreakInBreakOut,
+        uint[] memory inputStandards,
+        bytes4[] memory inputFunctionSignatures
     )
         public
         auth
@@ -146,7 +146,7 @@ contract CanonicalRegistrar is DSThing {
             assetInformation[ofAsset].exists,
             "Asset is not registered"
         );
-        Asset asset = assetInformation[ofAsset];
+        Asset storage asset = assetInformation[ofAsset];
         asset.name = inputName;
         asset.symbol = inputSymbol;
         asset.decimals = ERC20WithFields(ofAsset).decimals();
@@ -162,7 +162,7 @@ contract CanonicalRegistrar is DSThing {
         address ofExchange,
         address ofExchangeAdapter,
         bool inputTakesCustody,
-        bytes4[] inputFunctionSignatures
+        bytes4[] memory inputFunctionSignatures
     )
         public
         auth
@@ -171,7 +171,7 @@ contract CanonicalRegistrar is DSThing {
             exchangeInformation[ofExchange].exists,
             "Exchange is not registered"
         );
-        Exchange exchange = exchangeInformation[ofExchange];
+        Exchange storage exchange = exchangeInformation[ofExchange];
         exchange.adapter = ofExchangeAdapter;
         exchange.takesCustody = inputTakesCustody;
         exchange.functionSignatures = inputFunctionSignatures;
@@ -233,7 +233,7 @@ contract CanonicalRegistrar is DSThing {
     function getSymbol(address ofAsset) external view returns (bytes8) { return assetInformation[ofAsset].symbol; }
     function getDecimals(address ofAsset) public view returns (uint) { return assetInformation[ofAsset].decimals; }
     function assetIsRegistered(address ofAsset) public view returns (bool) { return assetInformation[ofAsset].exists; }
-    function getRegisteredAssets() external view returns (address[]) { return registeredAssets; }
+    function getRegisteredAssets() external view returns (address[] memory) { return registeredAssets; }
     function assetMethodIsAllowed(
         address ofAsset, bytes4 querySignature
     )
@@ -251,13 +251,13 @@ contract CanonicalRegistrar is DSThing {
 
     // get exchange-specific information
     function exchangeIsRegistered(address ofExchange) external view returns (bool) { return exchangeInformation[ofExchange].exists; }
-    function getRegisteredExchanges() external view returns (address[]) { return registeredExchanges; }
+    function getRegisteredExchanges() external view returns (address[] memory) { return registeredExchanges; }
     function getExchangeInformation(address ofExchange)
         external
         view
         returns (address, bool)
     {
-        Exchange exchange = exchangeInformation[ofExchange];
+        Exchange memory exchange = exchangeInformation[ofExchange];
         return (
             exchange.adapter,
             exchange.takesCustody
@@ -266,7 +266,7 @@ contract CanonicalRegistrar is DSThing {
     function getExchangeFunctionSignatures(address ofExchange)
         external
         view
-        returns (bytes4[])
+        returns (bytes4[] memory)
     {
         return exchangeInformation[ofExchange].functionSignatures;
     }

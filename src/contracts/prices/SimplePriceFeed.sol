@@ -57,7 +57,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing {
      */
     /// @param ofAssets list of asset addresses
     /// @param newPrices list of prices for each of the assets
-    function update(address[] ofAssets, uint[] newPrices)
+    function update(address[] calldata ofAssets, uint[] calldata newPrices)
         external
         auth
     {
@@ -97,10 +97,10 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing {
         "timestamps":   "Array of timestamps",
     }
     */
-    function getPrices(address[] ofAssets)
+    function getPrices(address[] memory ofAssets)
         public
         view
-        returns (uint[], uint[])
+        returns (uint[] memory, uint[] memory)
     {
         uint[] memory prices = new uint[](ofAssets.length);
         uint[] memory timestamps = new uint[](ofAssets.length);
@@ -117,7 +117,7 @@ contract SimplePriceFeed is UpdatableFeedInterface, DSThing {
     // INTERNAL METHODS
 
     /// @dev Internal so that feeds inheriting this one are not obligated to have an exposed update(...) method, but can still perform updates
-    function _updatePrices(address[] ofAssets, uint[] newPrices) internal {
+    function _updatePrices(address[] memory ofAssets, uint[] memory newPrices) internal {
         require(
             ofAssets.length == newPrices.length,
             "Arrays must be same length"

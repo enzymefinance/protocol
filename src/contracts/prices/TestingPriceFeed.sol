@@ -22,7 +22,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     bool mockIsRecent = true;
     bool neverValid = false;
 
-    constructor(address _quoteAsset, uint _quoteDecimals) {
+    constructor(address _quoteAsset, uint _quoteDecimals) public {
         QUOTE_ASSET = _quoteAsset;
         setDecimals(_quoteAsset, _quoteDecimals);
     }

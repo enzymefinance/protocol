@@ -60,6 +60,7 @@ contract CanonicalPriceFeed is PriceSourceInterface, OperatorStaking, SimplePric
         uint[3] stakingInfo, // minStake, numOperators, unstakeDelay
         address ofGovernance
     )
+        public
         OperatorStaking(
             ERC20(ofStakingAsset), stakingInfo[0], stakingInfo[1], stakingInfo[2]
         )
