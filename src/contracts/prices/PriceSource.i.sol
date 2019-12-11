@@ -8,23 +8,23 @@ interface PriceSourceInterface {
     function getLastUpdate() external view returns (uint);
 
     /// @notice Returns false if asset not applicable, or price not recent
-    function hasValidPrice(address) public view returns (bool);
-    function hasValidPrices(address[]) public view returns (bool);
+    function hasValidPrice(address) external view returns (bool);
+    function hasValidPrices(address[] calldata) external view returns (bool);
 
     /// @notice Return the last known price, and when it was issued
-    function getPrice(address _asset) public view returns (uint price, uint timestamp);
-    function getPrices(address[] _assets) public view returns (uint[] prices, uint[] timestamps);
+    function getPrice(address _asset) external view returns (uint price, uint timestamp);
+    function getPrices(address[] calldata _assets) external view returns (uint[] memory prices, uint[] memory timestamps);
 
     /// @notice Get price info, and revert if not valid
-    function getPriceInfo(address _asset) view returns (uint price, uint decimals);
-    function getInvertedPriceInfo(address ofAsset) view returns (uint price, uint decimals);
+    function getPriceInfo(address _asset) external view returns (uint price, uint decimals);
+    function getInvertedPriceInfo(address ofAsset) external view returns (uint price, uint decimals);
 
-    function getReferencePriceInfo(address _base, address _quote) public view returns (uint referencePrice, uint decimal);
-    function getOrderPriceInfo(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) public view returns (uint orderPrice);
-    function existsPriceOnAssetPair(address sellAsset, address buyAsset) public view returns (bool isExistent);
+    function getReferencePriceInfo(address _base, address _quote) external view returns (uint referencePrice, uint decimal);
+    function getOrderPriceInfo(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external view returns (uint orderPrice);
+    function existsPriceOnAssetPair(address sellAsset, address buyAsset) external view returns (bool isExistent);
     function convertQuantity(
         uint fromAssetQuantity,
         address fromAsset,
         address toAsset
-    ) public view returns (uint);
+    ) external view returns (uint);
 }

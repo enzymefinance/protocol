@@ -38,7 +38,9 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         uint ofMaxSpread,
         address ofQuoteAsset,
         address initialUpdater
-    ) {
+    )
+        public
+    {
         KYBER_NETWORK_PROXY = ofKyberNetworkProxy;
         MAX_SPREAD = ofMaxSpread;
         QUOTE_ASSET = ofQuoteAsset;
@@ -113,12 +115,12 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         view
         returns (uint[], uint[])
     {
-        uint[] memory prices = new uint[](_assets.length);
+        uint[] memory newPrices = new uint[](_assets.length);
         uint[] memory timestamps = new uint[](_assets.length);
         for (uint i; i < _assets.length; i++) {
-            (prices[i], timestamps[i]) = getPrice(_assets[i]);
+            (newPrices[i], timestamps[i]) = getPrice(_assets[i]);
         }
-        return (prices, timestamps);
+        return (newPrices, timestamps);
     }
 
     function hasValidPrice(address _asset)
