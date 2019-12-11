@@ -10,7 +10,7 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND (express or implied).
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 import "./exec.sol";
 import "./note.sol";

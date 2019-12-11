@@ -1,6 +1,6 @@
 /// @notice Retrieved from DappHub (https://git.io/fpwrq)
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.13;
 
 contract DSAuthority {
     function canCall(
