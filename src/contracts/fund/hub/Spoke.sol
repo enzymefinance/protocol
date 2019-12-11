@@ -19,13 +19,13 @@ contract Spoke is DSAuth {
         _;
     }
 
-    constructor(address _hub) {
+    constructor(address _hub) public {
         hub = Hub(_hub);
         setAuthority(hub);
         setOwner(hub); // temporary, to allow initialization
     }
 
-    function initialize(address[12] _spokes) external auth {
+    function initialize(address[12] calldata _spokes) external auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
         routes = Hub.Routes(

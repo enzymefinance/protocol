@@ -35,7 +35,7 @@ contract Hub is DSGuard {
     uint public creationTime;
     mapping (address => bool) public isSpoke;
 
-    constructor(address _manager, string _name) {
+    constructor(address _manager, string _name) public {
         creator = msg.sender;
         manager = _manager;
         name = _name;
