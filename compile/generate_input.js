@@ -28,7 +28,7 @@ const out_obj = {
 
 let solFiles;
 if (process.argv.length == 2) {
-  solFiles = glob.sync('./src/contracts/factory/**/*.sol');
+  solFiles = glob.sync('./src/**/*.sol');
 } else if (process.argv[2] == '--help') {
   console.log('Usage: generate_input.js [input_file...]');
   process.exit(0);
