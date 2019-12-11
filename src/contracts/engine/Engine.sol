@@ -26,7 +26,7 @@ contract Engine is DSMath {
     uint public totalAmguConsumed;
     uint public totalMlnBurned;
 
-    constructor(uint _delay, address _registry) {
+    constructor(uint _delay, address _registry) public {
         lastThaw = block.timestamp;
         thawingDelay = _delay;
         _setRegistry(_registry);
