@@ -233,7 +233,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     /// @dev Bit of Redundancy for now
     function addZeroExOrderData(
         bytes32 orderId,
-        LibOrder.Order zeroExOrderData
+        LibOrder.Order memory zeroExOrderData
     ) public delegateInternal {
         orderIdToZeroExOrder[orderId] = zeroExOrderData;
     }
@@ -323,7 +323,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     }
 
     function getOpenOrderInfo(address ofExchange, address ofAsset) public view returns (uint, uint, uint) {
-        OpenMakeOrder order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
+        OpenMakeOrder memory order = exchangesToOpenMakeOrders[ofExchange][ofAsset];
         return (order.id, order.expiresAt, order.orderIndex);
     }
 
@@ -336,7 +336,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 
-    function getZeroExOrderDetails(bytes32 orderId) public view returns (LibOrder.Order) {
+    function getZeroExOrderDetails(bytes32 orderId) public view returns (LibOrder.Order memory) {
         return orderIdToZeroExOrder[orderId];
     }
 }
@@ -352,8 +352,8 @@ contract TradingFactory is TradingFactoryInterface, Factory {
 
     function createInstance(
         address _hub,
-        address[] _exchanges,
-        address[] _adapters,
+        address[] memory _exchanges,
+        address[] memory _adapters,
         address _registry
     ) public returns (address) {
         address trading = new Trading(_hub, _exchanges, _adapters, _registry);

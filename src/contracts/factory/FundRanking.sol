@@ -8,7 +8,7 @@ contract FundRanking {
     function getFundDetails(address _factory)
         external
         view
-        returns(address[], uint[], uint[], string[], address[])
+        returns(address[] memory, uint[] memory, uint[] memory, string[] memory, address[] memory)
     {
         FundFactory factory = FundFactory(_factory);
         uint numberOfFunds = factory.getLastFundId() + 1;
@@ -33,7 +33,7 @@ contract FundRanking {
     function getFundGavs(address _factory)
         external
         view
-        returns(address[], uint[])
+        returns(address[] memory, uint[] memory)
     {
         FundFactory factory = FundFactory(_factory);
         uint numberOfFunds = factory.getLastFundId() + 1;
@@ -54,7 +54,7 @@ contract FundRanking {
     function getFundVersions(address _factory)
         external
         view
-        returns(address[], bytes32[])
+        returns(address[] memory, bytes32[] memory)
     {
         FundFactory factory = FundFactory(_factory);
         uint numberOfFunds = factory.getLastFundId() + 1;

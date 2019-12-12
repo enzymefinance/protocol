@@ -35,7 +35,7 @@ contract Hub is DSGuard {
     uint public creationTime;
     mapping (address => bool) public isSpoke;
 
-    constructor(address _manager, string _name) public {
+    constructor(address _manager, string memory _name) public {
         creator = msg.sender;
         manager = _manager;
         name = _name;
@@ -53,7 +53,7 @@ contract Hub is DSGuard {
         emit FundShutDown();
     }
 
-    function setSpokes(address[12] _spokes) external onlyCreator {
+    function setSpokes(address[12] calldata _spokes) external onlyCreator {
         require(!spokesSet, "Spokes already set");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;

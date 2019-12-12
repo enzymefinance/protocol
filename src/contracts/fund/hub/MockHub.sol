@@ -27,13 +27,13 @@ contract MockHub is DSGuard {
 
     function setManager(address _manager) public { manager = _manager; }
 
-    function setName(string _name) public { name = _name; }
+    function setName(string memory _name) public { name = _name; }
 
     function shutDownFund() public { isShutDown = true; }
 
     function setShutDownState(bool _state) public { isShutDown = _state; }
 
-    function setSpokes(address[12] _spokes) public {
+    function setSpokes(address[12] memory _spokes) public {
         routes.accounting = _spokes[0];
         routes.feeManager = _spokes[1];
         routes.participation = _spokes[2];

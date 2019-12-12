@@ -246,7 +246,7 @@ contract AccountingFactory is AccountingFactoryInterface, Factory {
         address[] defaultAssets
     );
 
-    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] _defaultAssets) external returns (address) {
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] calldata _defaultAssets) external returns (address) {
         address accounting = new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets);
         childExists[accounting] = true;
         emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset, _defaultAssets);
