@@ -240,7 +240,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         address ofExchange,
         bytes32 orderId,
         UpdateType updateType,
-        address[2] memory orderAddresses,
+        address payable[2] memory orderAddresses,
         uint[3] memory orderValues
     ) public delegateInternal {
         // only save make/take

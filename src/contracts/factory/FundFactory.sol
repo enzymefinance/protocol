@@ -23,7 +23,7 @@ contract FundFactory is AmguConsumer, Factory {
     );
 
     VersionInterface public version;
-    address public associatedRegistry;
+    Registry public associatedRegistry;
     AccountingFactoryInterface public accountingFactory;
     FeeManagerFactoryInterface public feeManagerFactory;
     ParticipationFactoryInterface public participationFactory;
@@ -104,12 +104,12 @@ contract FundFactory is AmguConsumer, Factory {
         public
         componentNotSet(managersToHubs[msg.sender])
     {
-        Registry(registry).reserveFundName(
+        registry.reserveFundName(
             msg.sender,
             _name
         );
         require(
-            Registry(registry).assetIsRegistered(_denominationAsset),
+            registry.assetIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
 
@@ -141,7 +141,7 @@ contract FundFactory is AmguConsumer, Factory {
         managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].denominationAsset,
-            Registry(associatedRegistry).nativeAsset(),
+            associatedRegistry.nativeAsset(),
             managersToSettings[msg.sender].defaultAssets
         );
     }
@@ -261,7 +261,7 @@ contract FundFactory is AmguConsumer, Factory {
         hub.setRouting();
         hub.setPermissions();
         funds.push(hub);
-        Registry(associatedRegistry).registerFund(
+        associatedRegistry.registerFund(
             address(hub),
             msg.sender,
             managersToSettings[msg.sender].name
@@ -291,13 +291,13 @@ contract FundFactory is AmguConsumer, Factory {
     function getLastFundId() external view returns (uint) { return funds.length - 1; }
 
     function mlnToken() public view returns (address) {
-        return address(Registry(associatedRegistry).mlnToken());
+        return address(associatedRegistry.mlnToken());
     }
     function engine() public view returns (address) {
-        return address(Registry(associatedRegistry).engine());
+        return address(associatedRegistry.engine());
     }
     function priceSource() public view returns (address) {
-        return address(Registry(associatedRegistry).priceSource());
+        return address(associatedRegistry.priceSource());
     }
     function registry() public view returns (address) { return associatedRegistry; }
     function getExchangesInfo(address user) public view returns (address[] memory) {
