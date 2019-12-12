@@ -8,7 +8,7 @@ import "../../dependencies/TokenUser.sol";
 /// @notice Dumb custody component
 contract Vault is VaultInterface, TokenUser, Spoke {
 
-    constructor(address _hub) Spoke(_hub) {}
+    constructor(address _hub) public Spoke(_hub) {}
 
     function withdraw(address token, uint amount) external auth {
         safeTransfer(token, msg.sender, amount);
