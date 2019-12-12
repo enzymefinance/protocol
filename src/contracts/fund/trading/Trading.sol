@@ -47,7 +47,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
-    mapping (address => uint) public makerAssetCooldown; 
+    mapping (address => uint) public makerAssetCooldown;
     mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
 
     uint public constant ORDER_LIFESPAN = 1 days;
@@ -60,10 +60,13 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
 
     constructor(
         address _hub,
-        address[] _exchanges,
-        address[] _adapters,
+        address[] memory _exchanges,
+        address[] memory _adapters,
         address _registry
-    ) Spoke(_hub) {
+    )
+        public
+        Spoke(_hub)
+    {
         routes.registry = _registry;
         require(_exchanges.length == _adapters.length, "Array lengths unequal");
         for (uint i = 0; i < _exchanges.length; i++) {
@@ -120,13 +123,13 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     /// @param signature Signature of order maker.
     function callOnExchange(
         uint exchangeIndex,
-        string methodSignature,
-        address[6] orderAddresses,
-        uint[8] orderValues,
+        string memory methodSignature,
+        address[6] memory orderAddresses,
+        uint[8] memory orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
+        bytes memory makerAssetData,
+        bytes memory takerAssetData,
+        bytes memory signature
     )
         public
         onlyInitialized
@@ -213,7 +216,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     ) internal {
         if (isInOpenMakeOrder[sellAsset]) {
 
-            makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN); 
+            makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN);
             address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
             delete exchangesToOpenMakeOrders[exchange][sellAsset];
             openMakeOrdersAgainstAsset[buyAsset] = sub(openMakeOrdersAgainstAsset[buyAsset], 1);
@@ -239,8 +242,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         address ofExchange,
         bytes32 orderId,
         UpdateType updateType,
-        address[2] orderAddresses,
-        uint[3] orderValues
+        address[2] memory orderAddresses,
+        uint[3] memory orderValues
     ) public delegateInternal {
         // only save make/take
         if (updateType == UpdateType.make || updateType == UpdateType.take) {
@@ -293,7 +296,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
 
-    function returnBatchToVault(address[] _tokens) public {
+    function returnBatchToVault(address[] memory _tokens) public {
         for (uint i = 0; i < _tokens.length; i++) {
             returnAssetToVault(_tokens[i]);
         }
@@ -307,7 +310,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         safeTransfer(_token, routes.vault, ERC20(_token).balanceOf(this));
     }
 
-    function getExchangeInfo() public view returns (address[], address[], bool[]) {
+    function getExchangeInfo() public view returns (address[] memory, address[] memory, bool[] memory) {
         address[] memory ofExchanges = new address[](exchanges.length);
         address[] memory ofAdapters = new address[](exchanges.length);
         bool[] memory takesCustody = new bool[](exchanges.length);
