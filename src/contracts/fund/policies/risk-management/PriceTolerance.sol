@@ -2,7 +2,6 @@ pragma solidity ^0.5.13;
 
 import "../../hub/Hub.sol";
 import "../Policy.sol";
-import "../../../exchanges/MatchingMarketAdapter.sol";
 import "../../../prices/PriceSource.i.sol";
 import "../TradingSignatures.sol";
 import "../../../dependencies/math.sol";
