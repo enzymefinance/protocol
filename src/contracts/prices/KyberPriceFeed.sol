@@ -110,10 +110,10 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         timestamp = now;
     }
 
-    function getPrices(address[] _assets)
+    function getPrices(address[] memory _assets)
         public
         view
-        returns (uint[], uint[])
+        returns (uint256[] memory, uint256[] memory)
     {
         uint[] memory newPrices = new uint[](_assets.length);
         uint[] memory timestamps = new uint[](_assets.length);
@@ -133,7 +133,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
         return prices[_asset] != 0 && isRegistered && isFresh;
     }
 
-    function hasValidPrices(address[] _assets)
+    function hasValidPrices(address[] memory _assets)
         public
         view
         returns (bool)
