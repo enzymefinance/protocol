@@ -19,7 +19,7 @@ contract MaxConcentration is TradingSignatures, DSMath, Policy {
         maxConcentration = _maxConcentration;
     }
 
-    function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier)
+    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier)
         external
         view
         returns (bool)
@@ -37,5 +37,5 @@ contract MaxConcentration is TradingSignatures, DSMath, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.post; }
-    function identifier() external view returns (string) { return 'Max concentration'; }
+    function identifier() external view returns (string memory) { return 'Max concentration'; }
 }

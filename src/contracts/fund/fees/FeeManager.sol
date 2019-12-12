@@ -104,9 +104,9 @@ contract FeeManagerFactory is Factory {
     function createInstance(
         address _hub,
         address _denominationAsset,
-        address[] _fees,
-        uint[] _feeRates,
-        uint[] _feePeriods,
+        address[] memory _fees,
+        uint[] memory _feeRates,
+        uint[] memory _feePeriods,
         address _registry
     ) public returns (address) {
         address feeManager = new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods, _registry);

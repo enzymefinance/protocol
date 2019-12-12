@@ -13,7 +13,7 @@ contract MaxPositions is TradingSignatures, Policy {
     /// @dev _maxPositions = 0 means no asset tokens are investable
     constructor(uint _maxPositions) public { maxPositions = _maxPositions; }
 
-    function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier)
+    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier)
         external
         view
         returns (bool)
@@ -27,5 +27,5 @@ contract MaxPositions is TradingSignatures, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.post; }
-    function identifier() external view returns (string) { return 'Max positions'; }
+    function identifier() external view returns (string memory) { return 'Max positions'; }
 }

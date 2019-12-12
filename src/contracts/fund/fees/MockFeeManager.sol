@@ -22,8 +22,8 @@ contract MockFeeManager is DSMath, AmguConsumer, Spoke {
     constructor(
         address _hub,
         address _denominationAsset,
-        address[] _fees,
-        uint[] _periods,
+        address[] memory _fees,
+        uint[] memory _periods,
         uint _rates,
         address registry
     ) Spoke(_hub) public {}

@@ -100,12 +100,12 @@ contract ExchangeAdapter {
     // - place asset in ownedAssets if not already tracked
     function makeOrder(
         address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
+        address[6] memory orderAddresses,
+        uint[8] memory orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
+        bytes memory makerAssetData,
+        bytes memory takerAssetData,
+        bytes memory signature
     ) public { revert("Unimplemented"); }
 
     // Responsibilities of takeOrder are:
@@ -121,12 +121,12 @@ contract ExchangeAdapter {
     // - place asset in ownedAssets if not already tracked
     function takeOrder(
         address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
+        address[6] memory orderAddresses,
+        uint[8] memory orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
+        bytes memory makerAssetData,
+        bytes memory takerAssetData,
+        bytes memory signature
     ) public { revert("Unimplemented"); }
 
     // responsibilities of cancelOrder are:
@@ -135,12 +135,12 @@ contract ExchangeAdapter {
     // - cancel order on exchange
     function cancelOrder(
         address targetExchange,
-        address[6] orderAddresses,
-        uint[8] orderValues,
+        address[6] memory orderAddresses,
+        uint[8] memory orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
+        bytes memory makerAssetData,
+        bytes memory takerAssetData,
+        bytes memory signature
     ) public { revert("Unimplemented"); }
 
     // PUBLIC METHODS

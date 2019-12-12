@@ -30,18 +30,18 @@ contract MockAccounting is Spoke {
         DEFAULT_SHARE_PRICE = 10 ** uint(SHARES_DECIMALS);
     }
 
-    function setOwnedAssets(address[] _assets) public { ownedAssets = _assets; }
+    function setOwnedAssets(address[] memory _assets) public { ownedAssets = _assets; }
     function getOwnedAssetsLength() public returns (uint) { return ownedAssets.length; }
     function setGav(uint _gav) public { gav = _gav; }
     function setNav(uint _nav) public { nav = _nav; }
     function setAssetGAV(address _asset, uint _amt) public { assetGav[_asset] = _amt; }
-    function setFundHoldings(uint[] _amounts, address[] _assets) public {
+    function setFundHoldings(uint[] memory _amounts, address[] memory _assets) public {
         for (uint i = 0; i < _assets.length; i++) {
             held[_assets[i]] = _amounts[i];
         }
     }
 
-    function getFundHoldings() public returns (uint[], address[]) {
+    function getFundHoldings() public returns (uint[] memory, address[] memory) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);
         for (uint i = 0; i < ownedAssets.length; i++) {

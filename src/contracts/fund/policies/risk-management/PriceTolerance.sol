@@ -5,6 +5,7 @@ import "../Policy.sol";
 import "../../../prices/PriceSource.i.sol";
 import "../TradingSignatures.sol";
 import "../../../dependencies/math.sol";
+import "../../trading/Trading.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath, Policy {
     uint public tolerance;
@@ -64,7 +65,7 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
     function takeGenericOrder(
         address makerAsset,
         address takerAsset,
-        uint[3] values
+        uint[3] memory values
     ) public view returns (bool) {
         uint fillTakerQuantity = values[2];
         uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
@@ -87,8 +88,8 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
     }
 
     function takeOrder(
-        address[5] addresses,
-        uint[3] values,
+        address[5] memory addresses,
+        uint[3] memory values,
         bytes32 identifier
     ) public view returns (bool) {
         if (identifier == 0x0) {
@@ -99,8 +100,8 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
     }
 
     function makeOrder(
-        address[5] addresses,
-        uint[3] values,
+        address[5] memory addresses,
+        uint[3] memory values,
         bytes32 identifier
     ) public view returns (bool) {
         PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
@@ -119,8 +120,8 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
 
     function rule(
         bytes4 sig,
-        address[5] addresses,
-        uint[3] values,
+        address[5] calldata addresses,
+        uint[3] calldata values,
         bytes32 identifier
     ) external view returns (bool) {
         if (sig == MAKE_ORDER) {
@@ -132,5 +133,5 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
     }
 
     function position() external view returns (Applied) { return Applied.pre; }
-    function identifier() external view returns (string) { return 'Price tolerance'; }
+    function identifier() external view returns (string memory) { return 'Price tolerance'; }
 }

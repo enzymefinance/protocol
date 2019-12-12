@@ -352,7 +352,7 @@ contract ParticipationFactory is ParticipationFactoryInterface, Factory {
         address registry
     );
 
-    function createInstance(address _hub, address[] _defaultAssets, address _registry)
+    function createInstance(address _hub, address[] calldata _defaultAssets, address _registry)
         external
         returns (address)
     {

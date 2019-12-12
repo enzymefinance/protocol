@@ -229,7 +229,7 @@ contract FundFactory is AmguConsumer, Factory {
     }
 
     function completeSetup() external amguPayable(false) payable {
-        Hub.Routes routes = managersToRoutes[msg.sender];
+        Hub.Routes memory routes = managersToRoutes[msg.sender];
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");
         require(
