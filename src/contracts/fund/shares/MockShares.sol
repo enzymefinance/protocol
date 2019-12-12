@@ -10,7 +10,7 @@ contract MockShares is Spoke, StandardToken, SharesInterface {
     string public name;
     uint8 public decimals;
 
-    constructor(address _hub) Spoke(_hub) {
+    constructor(address _hub) public Spoke(_hub) {
         name = hub.name();
         symbol = "MOCK";
         decimals = 18;
