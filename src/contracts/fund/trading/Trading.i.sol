@@ -15,14 +15,14 @@ interface TradingInterface {
 
     function callOnExchange(
         uint exchangeIndex,
-        string methodSignature,
-        address[6] orderAddresses,
-        uint[8] orderValues,
+        string calldata methodSignature,
+        address[6] calldata orderAddresses,
+        uint[8] calldata orderValues,
         bytes32 identifier,
-        bytes makerAssetData,
-        bytes takerAssetData,
-        bytes signature
-    ) public;
+        bytes calldata makerAssetData,
+        bytes calldata takerAssetData,
+        bytes calldata signature
+    ) external;
 
     function addOpenMakeOrder(
         address ofExchange,
@@ -30,19 +30,19 @@ interface TradingInterface {
         address ofBuyAsset,
         uint orderId,
         uint expiryTime
-    ) public;
+    ) external;
 
     function removeOpenMakeOrder(
         address ofExchange,
         address ofSellAsset
-    ) public;
+    ) external;
 }
 
 interface TradingFactoryInterface {
      function createInstance(
         address _hub,
-        address[] _exchanges,
-        address[] _adapters,
+        address[] calldata _exchanges,
+        address[] calldata _adapters,
         address _registry
-    ) public returns (address);
+    ) external returns (address);
 }
