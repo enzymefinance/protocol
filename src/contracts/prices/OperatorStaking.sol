@@ -1,6 +1,5 @@
 pragma solidity ^0.5.13;
 
-import "../dependencies/group.sol";
 import "../dependencies/Owned.sol";
 import "../dependencies/token/ERC20.i.sol";
 
