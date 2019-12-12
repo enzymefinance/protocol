@@ -31,7 +31,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
       Input price is how much quote asset you would get
       for one unit of _asset (10**assetDecimals)
      */
-    function update(address[] _assets, uint[] _prices) external {
+    function update(address[] calldata _assets, uint[] calldata _prices) external {
         require(_assets.length == _prices.length, "Array lengths unequal");
         updateId++;
         for (uint i = 0; i < _assets.length; ++i) {
@@ -49,14 +49,14 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         view
         returns (uint price, uint timestamp)
     {
-        Data data = assetsToPrices[ofAsset];
+        Data storage data = assetsToPrices[ofAsset];
         return (data.price, data.timestamp);
     }
 
-    function getPrices(address[] ofAssets)
+    function getPrices(address[] memory ofAssets)
         public
         view
-        returns (uint[], uint[])
+        returns (uint[] memory, uint[] memory)
     {
         uint[] memory prices = new uint[](ofAssets.length);
         uint[] memory timestamps = new uint[](ofAssets.length);
@@ -114,7 +114,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
     }
 
     // needed just to get decimals for prices
-    function batchSetDecimals(address[] _assets, uint[] _decimals) public {
+    function batchSetDecimals(address[] memory _assets, uint[] memory _decimals) public {
         require(_assets.length == _decimals.length, "Array lengths unequal");
         for (uint i = 0; i < _assets.length; i++) {
             setDecimals(_assets[i], _decimals[i]);
@@ -168,7 +168,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
         return !neverValid && price != 0;
     }
 
-    function hasValidPrices(address[] _assets)
+    function hasValidPrices(address[] memory _assets)
         public
         view
         returns (bool)
