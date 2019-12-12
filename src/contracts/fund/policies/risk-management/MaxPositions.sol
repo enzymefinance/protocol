@@ -11,7 +11,7 @@ contract MaxPositions is TradingSignatures, Policy {
 
     /// @dev _maxPositions = 10 means max 10 different asset tokens
     /// @dev _maxPositions = 0 means no asset tokens are investable
-    constructor(uint _maxPositions) { maxPositions = _maxPositions; }
+    constructor(uint _maxPositions) public { maxPositions = _maxPositions; }
 
     function rule(bytes4 sig, address[5] addresses, uint[3] values, bytes32 identifier)
         external

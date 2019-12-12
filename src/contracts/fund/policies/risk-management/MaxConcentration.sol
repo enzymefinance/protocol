@@ -11,7 +11,7 @@ contract MaxConcentration is TradingSignatures, DSMath, Policy {
     uint internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
     uint public maxConcentration;
 
-    constructor(uint _maxConcentration) {
+    constructor(uint _maxConcentration) public {
         require(
             _maxConcentration <= ONE_HUNDRED_PERCENT,
             "Max concentration cannot exceed 100%"
