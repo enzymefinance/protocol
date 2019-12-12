@@ -6,6 +6,7 @@ import "../../../prices/PriceSource.i.sol";
 import "../TradingSignatures.sol";
 import "../../../dependencies/math.sol";
 import "../../trading/Trading.sol";
+import "../../../exchanges/interfaces/MatchingMarket.i.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath, Policy {
     uint public tolerance;
@@ -41,7 +42,7 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
             makerAsset,
             maxTakerQuantity,
             takerAsset
-        ) = MatchingMarket(ofExchange).getOffer(uint(identifier));
+        ) = IMatchingMarket(ofExchange).getOffer(uint(identifier));
 
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
