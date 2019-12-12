@@ -23,7 +23,7 @@ contract FundFactory is AmguConsumer, Factory {
     );
 
     VersionInterface public version;
-    address public registry;
+    address public associatedRegistry;
     AccountingFactoryInterface public accountingFactory;
     FeeManagerFactoryInterface public feeManagerFactory;
     ParticipationFactoryInterface public participationFactory;
@@ -125,7 +125,7 @@ contract FundFactory is AmguConsumer, Factory {
             _feePeriods
         );
         managersToRoutes[msg.sender].priceSource = priceSource();
-        managersToRoutes[msg.sender].registry = registry;
+        managersToRoutes[msg.sender].registry = associatedRegistry;
         managersToRoutes[msg.sender].version = address(version);
         managersToRoutes[msg.sender].engine = engine();
         managersToRoutes[msg.sender].mlnToken = mlnToken();
@@ -141,7 +141,7 @@ contract FundFactory is AmguConsumer, Factory {
         managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].denominationAsset,
-            Registry(registry).nativeAsset(),
+            Registry(associatedRegistry).nativeAsset(),
             managersToSettings[msg.sender].defaultAssets
         );
     }
@@ -159,7 +159,7 @@ contract FundFactory is AmguConsumer, Factory {
             managersToSettings[msg.sender].fees,
             managersToSettings[msg.sender].feeRates,
             managersToSettings[msg.sender].feePeriods,
-            registry
+            associatedRegistry
         );
     }
 
@@ -261,7 +261,7 @@ contract FundFactory is AmguConsumer, Factory {
         hub.setRouting();
         hub.setPermissions();
         funds.push(hub);
-        Registry(registry).registerFund(
+        Registry(associatedRegistry).registerFund(
             address(hub),
             msg.sender,
             managersToSettings[msg.sender].name
@@ -291,14 +291,15 @@ contract FundFactory is AmguConsumer, Factory {
     function getLastFundId() external view returns (uint) { return funds.length - 1; }
 
     function mlnToken() public view returns (address) {
-        return address(Registry(registry).mlnToken());
+        return address(Registry(associatedRegistry).mlnToken());
     }
     function engine() public view returns (address) {
-        return address(Registry(registry).engine());
+        return address(Registry(associatedRegistry).engine());
     }
     function priceSource() public view returns (address) {
-        return address(Registry(registry).priceSource());
+        return address(Registry(associatedRegistry).priceSource());
     }
+    function registry() public view returns (address) { return associatedRegistry; }
     function getExchangesInfo(address user) public view returns (address[] memory) {
         return (managersToSettings[user].exchanges);
     }

@@ -7,8 +7,15 @@ import "../version/Version.i.sol";
 import "./Engine.sol";
 import "../version/Registry.sol";
 
+/// @notice Abstract contracts
 /// @notice inherit this to pay AMGU on a function call
 contract AmguConsumer is DSMath {
+
+    /// @dev each of these must be implemented by the inheriting contract
+    function engine() public view returns (address);
+    function mlnToken() public view returns (address);
+    function priceSource() public view returns (address);
+    function registry() public view returns (address);
 
     /// bool deductIncentive is used when sending extra eth beyond amgu
     modifier amguPayable(bool deductIncentive) {
@@ -47,10 +54,4 @@ contract AmguConsumer is DSMath {
             "Refund failed"
         );
     }
-
-    function engine() public view returns (address);
-    function mlnToken() public view returns (address);
-    function priceSource() public view returns (address);
-    function registry() public view returns (address);
 }
-
