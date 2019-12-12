@@ -128,7 +128,7 @@ contract Registry is DSAuth {
 
     /// @notice Whether _user can use _name for their fund
     function canUseFundName(address _user, string memory _name) public view returns (bool) {
-        bytes32 nameHash = keccak256(_name);
+        bytes32 nameHash = keccak256(bytes(_name));
         return (
             isValidFundName(_name) &&
             (
@@ -143,7 +143,7 @@ contract Registry is DSAuth {
         onlyVersion
     {
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
-        fundNameHashToOwner[keccak256(_name)] = _owner;
+        fundNameHashToOwner[keccak256(bytes(_name))] = _owner;
     }
 
     function registerFund(address _fund, address _owner, string calldata _name)
@@ -458,12 +458,12 @@ contract Registry is DSAuth {
         if (fundsToVersions[_who] != address(0)) {
             return true; // directly from a hub
         } else {
-            address hub = Hub(Spoke(_who).hub());
+            Hub hub = Hub(Spoke(_who).hub());
             require(
-                Hub(hub).isSpoke(_who),
+                hub.isSpoke(_who),
                 "Call from either a spoke or hub"
             );
-            return fundsToVersions[hub] != address(0);
+            return fundsToVersions[address(hub)] != address(0);
         }
     }
 

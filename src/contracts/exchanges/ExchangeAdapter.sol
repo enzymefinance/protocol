@@ -37,7 +37,7 @@ contract ExchangeAdapter {
     }
 
     function getTrading() internal view returns (Trading) {
-        return Trading(address(this));
+        return Trading(address(uint160(address(this))));
     }
 
     function getHub() internal view returns (Hub) {

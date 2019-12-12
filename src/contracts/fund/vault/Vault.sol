@@ -17,9 +17,9 @@ contract Vault is VaultInterface, TokenUser, Spoke {
 
 contract VaultFactory is VaultFactoryInterface, Factory {
     function createInstance(address _hub) external returns (address) {
-        address vault = new Vault(_hub);
+        address vault = address(new Vault(_hub));
         childExists[vault] = true;
-        NewInstance(_hub, vault);
+        emit NewInstance(_hub, vault);
         return vault;
     }
 }

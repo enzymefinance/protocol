@@ -36,6 +36,9 @@ interface TradingInterface {
         address ofExchange,
         address ofSellAsset
     ) external;
+
+    function updateAndGetQuantityBeingTraded(address _asset) external returns (uint256);
+    function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256);
 }
 
 interface TradingFactoryInterface {

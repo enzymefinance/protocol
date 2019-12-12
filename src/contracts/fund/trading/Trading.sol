@@ -75,7 +75,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     }
 
     /// @notice Fallback function to receive ETH from WETH
-    function() public payable {}
+    function() external payable {}
 
     function _addExchange(
         address _exchange,
@@ -134,7 +134,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         public
         onlyInitialized
     {
-        bytes4 methodSelector = bytes4(keccak256(methodSignature));
+        bytes4 methodSelector = bytes4(keccak256(bytes(methodSignature)));
         require(
             Registry(routes.registry).adapterMethodIsAllowed(
                 exchanges[exchangeIndex].adapter,
@@ -153,21 +153,19 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
                 orderAddresses[3]), 'Taker asset not registered'
             );
         }
-        require(
-            exchanges[exchangeIndex].adapter.delegatecall(
-                abi.encodeWithSignature(
-                    methodSignature,
-                    exchanges[exchangeIndex].exchange,
-                    orderAddresses,
-                    orderValues,
-                    identifier,
-                    makerAssetData,
-                    takerAssetData,
-                    signature
-                )
-            ),
-            "Delegated call to exchange failed"
+        (bool success, ) = exchanges[exchangeIndex].adapter.delegatecall(
+            abi.encodeWithSignature(
+                methodSignature,
+                exchanges[exchangeIndex].exchange,
+                orderAddresses,
+                orderValues,
+                identifier,
+                makerAssetData,
+                takerAssetData,
+                signature
+            )
         );
+        require(success, "Delegated call to exchange failed");
         PolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         emit ExchangeMethodCall(
             exchanges[exchangeIndex].exchange,
@@ -261,8 +259,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         }
     }
 
-    function updateAndGetQuantityBeingTraded(address _asset) public returns (uint) {
-        uint quantityHere = ERC20(_asset).balanceOf(this);
+    function updateAndGetQuantityBeingTraded(address _asset) external returns (uint) {
+        uint quantityHere = ERC20(_asset).balanceOf(address(this));
         return add(updateAndGetQuantityHeldInExchange(_asset), quantityHere);
     }
 
@@ -307,7 +305,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
             msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
             "Sender is not this contract or manager"
         );
-        safeTransfer(_token, routes.vault, ERC20(_token).balanceOf(this));
+        safeTransfer(_token, routes.vault, ERC20(_token).balanceOf(address(this)));
     }
 
     function getExchangeInfo() public view returns (address[] memory, address[] memory, bool[] memory) {
@@ -339,6 +337,10 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     function getZeroExOrderDetails(bytes32 orderId) public view returns (LibOrder.Order memory) {
         return orderIdToZeroExOrder[orderId];
     }
+
+    function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256) {
+        openMakeOrdersAgainstAsset[_asset];
+    }
 }
 
 contract TradingFactory is TradingFactoryInterface, Factory {
@@ -356,7 +358,7 @@ contract TradingFactory is TradingFactoryInterface, Factory {
         address[] memory _adapters,
         address _registry
     ) public returns (address) {
-        address trading = new Trading(_hub, _exchanges, _adapters, _registry);
+        address trading = address(new Trading(_hub, _exchanges, _adapters, _registry));
         childExists[trading] = true;
         emit NewInstance(
             _hub,

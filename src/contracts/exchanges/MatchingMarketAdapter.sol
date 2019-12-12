@@ -45,8 +45,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         bytes memory signature
     ) public onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
-        ERC20 makerAsset = ERC20(orderAddresses[2]);
-        ERC20 takerAsset = ERC20(orderAddresses[3]);
+        address makerAsset = orderAddresses[2];
+        address takerAsset = orderAddresses[3];
         uint256 makerQuantity = orderValues[0];
         uint256 takerQuantity = orderValues[1];
 
@@ -56,7 +56,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
 
         Vault(Hub(getHub()).vault()).withdraw(makerAsset, makerQuantity);
         require(
-            makerAsset.approve(targetExchange, makerQuantity),
+            ERC20(makerAsset).approve(targetExchange, makerQuantity),
             "Could not approve maker asset"
         );
 
@@ -70,7 +70,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(orderId),
             Trading.UpdateType.make,
-            [address(makerAsset), address(takerAsset)],
+            [makerAsset, takerAsset],
             [makerQuantity, takerQuantity, uint256(0)]
         );
         getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, orderId, orderValues[4]);
@@ -105,9 +105,9 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         uint256 fillTakerQuantity = orderValues[6];
         uint256 maxMakerQuantity;
-        ERC20 makerAsset;
+        address makerAsset;
         uint256 maxTakerQuantity;
-        ERC20 takerAsset;
+        address takerAsset;
         (
             maxMakerQuantity,
             makerAsset,
@@ -117,11 +117,11 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         uint256 fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
         require(
-            address(makerAsset) == orderAddresses[2] && address(takerAsset) == orderAddresses[3],
+            makerAsset == orderAddresses[2] && takerAsset == orderAddresses[3],
             "Maker and taker assets do not match the order addresses"
         );
         require(
-            address(makerAsset) != address(takerAsset),
+            makerAsset != takerAsset,
             "Maker and taker assets cannot be the same"
         );
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
@@ -129,7 +129,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
 
         Vault(hub.vault()).withdraw(takerAsset, fillTakerQuantity);
         require(
-            takerAsset.approve(targetExchange, fillTakerQuantity),
+            ERC20(takerAsset).approve(targetExchange, fillTakerQuantity),
             "Taker asset could not be approved"
         );
         require(
@@ -144,7 +144,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.take,
-            [address(makerAsset), address(takerAsset)],
+            [makerAsset, takerAsset],
             [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
         );
     }

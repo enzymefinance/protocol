@@ -51,7 +51,7 @@ contract Engine is DSMath {
 
     function _setRegistry(address _registry) internal {
         registry = Registry(_registry);
-        emit RegistryChange(registry);
+        emit RegistryChange(address(registry));
     }
 
     /// @dev only callable by MTC
