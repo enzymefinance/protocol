@@ -70,7 +70,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(orderId),
             Trading.UpdateType.make,
-            [makerAsset, takerAsset],
+            [address(uint160(makerAsset)), address(uint160(takerAsset))],
             [makerQuantity, takerQuantity, uint256(0)]
         );
         getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, orderId, orderValues[4]);
@@ -144,7 +144,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.take,
-            [makerAsset, takerAsset],
+            [address(uint160(makerAsset)), address(uint160(takerAsset))],
             [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
         );
     }
@@ -200,9 +200,9 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         returns (address, address, uint256, uint256)
     {
         uint256 sellQuantity;
-        ERC20 sellAsset;
+        address sellAsset;
         uint256 buyQuantity;
-        ERC20 buyAsset;
+        address buyAsset;
         (
             sellQuantity,
             sellAsset,
@@ -210,8 +210,8 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             buyAsset
         ) = IMatchingMarket(targetExchange).getOffer(id);
         return (
-            address(sellAsset),
-            address(buyAsset),
+            sellAsset,
+            buyAsset,
             sellQuantity,
             buyQuantity
         );
