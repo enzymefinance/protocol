@@ -3,7 +3,7 @@ pragma solidity ^0.5.13;
 import "./PriceSource.i.sol";
 import "../dependencies/token/ERC20.i.sol";
 import "../dependencies/thing.sol";
-import "../exchanges/third-party/kyber/KyberNetworkProxy.sol";
+import "../exchanges/third-party/kyber/KyberNetworkProxyInterface.sol";
 import "../version/Registry.sol";
 
 /// @title Price Feed Template
@@ -231,12 +231,12 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     {
         uint bidRate;
         uint bidRateOfReversePair;
-        (bidRate,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+        (bidRate,) = KyberNetworkProxyInterface(KYBER_NETWORK_PROXY).getExpectedRate(
             ERC20KyberClone(getKyberMaskAsset(_baseAsset)),
             ERC20KyberClone(getKyberMaskAsset(_quoteAsset)),
             REGISTRY.getReserveMin(_baseAsset)
         );
-        (bidRateOfReversePair,) = KyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+        (bidRateOfReversePair,) = KyberNetworkProxyInterface(KYBER_NETWORK_PROXY).getExpectedRate(
             ERC20KyberClone(getKyberMaskAsset(_quoteAsset)),
             ERC20KyberClone(getKyberMaskAsset(_baseAsset)),
             REGISTRY.getReserveMin(_quoteAsset)
