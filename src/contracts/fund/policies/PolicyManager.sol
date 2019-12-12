@@ -20,7 +20,7 @@ contract PolicyManager is Spoke {
 
     mapping(bytes4 => Entry) policies;
 
-    constructor (address _hub) Spoke(_hub) {}
+    constructor (address _hub) public Spoke(_hub) {}
 
     function register(bytes4 sig, address _policy) public auth {
         Policy.Applied position = Policy(_policy).position();

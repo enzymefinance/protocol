@@ -10,7 +10,7 @@ contract AddressList is DSAuth {
     mapping(address => bool) internal list;
     address[] internal mirror;
 
-    constructor(address[] _assets) {
+    constructor(address[] memory _assets) public {
         for (uint i = 0; i < _assets.length; i++) {
             if (!isMember(_assets[i])) { // filter duplicates in _assets
                 list[_assets[i]] = true;
@@ -31,5 +31,5 @@ contract AddressList is DSAuth {
     }
 
     /// @return array of all listed asset addresses
-    function getMembers() external view returns (address[]) { return mirror; }
+    function getMembers() external view returns (address[] memory) { return mirror; }
 }

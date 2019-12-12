@@ -6,7 +6,7 @@ import "../TradingSignatures.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
 contract AssetWhitelist is TradingSignatures, AddressList, Policy {
-    constructor(address[] _assets) AddressList(_assets) {}
+    constructor(address[] memory _assets) public AddressList(_assets) {}
 
     function removeFromWhitelist(address _asset) external auth {
         require(isMember(_asset), "Asset not in whitelist");

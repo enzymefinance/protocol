@@ -10,7 +10,7 @@ contract AssetBlacklist is TradingSignatures, AddressList, Policy {
     // bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature
     // bytes4 constant public TAKE_ORDER = 0xe51be6e8; // takeOrderSignature
 
-    constructor(address[] _assets) AddressList(_assets) {}
+    constructor(address[] memory _assets) AddressList(_assets) public {}
 
     function addToBlacklist(address _asset) external auth {
         require(!isMember(_asset), "Asset already in blacklist");
