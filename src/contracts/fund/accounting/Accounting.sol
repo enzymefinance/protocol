@@ -6,7 +6,7 @@ import "../../prices/PriceSource.i.sol";
 import "../fees/FeeManager.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
-import "../trading/Trading.sol";
+import "../trading/Trading.i.sol";
 import "../vault/Vault.sol";
 import "./Accounting.i.sol";
 import "../../engine/AmguConsumer.sol";
@@ -48,10 +48,10 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         return ownedAssets.length;
     }
 
-    function assetHoldings(address _asset) public returns (uint) {
+    function assetHoldings(address _asset) public returns (uint256) {
         return add(
-            uint(ERC20WithFields(_asset).balanceOf(Vault(routes.vault))),
-            Trading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
+            uint256(ERC20WithFields(_asset).balanceOf(routes.vault)),
+            TradingInterface(routes.trading).updateAndGetQuantityBeingTraded(_asset)
         );
     }
 
@@ -170,12 +170,12 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
         payable
     {
         updateOwnedAssets();
-        uint gav;
-        uint feesInDenomination;
-        uint feesInShares;
-        uint nav;
-        (gav, feesInDenomination, feesInShares, nav, ) = performCalculations();
-        uint totalSupply = Shares(routes.shares).totalSupply();
+        uint256 gav;
+        uint256 feesInDenomination;
+        uint256 feesInShares;
+        uint256 nav;
+        (gav, feesInDenomination, feesInShares, nav,,) = performCalculations();
+        uint256 totalSupply = Shares(routes.shares).totalSupply();
         FeeManager(routes.feeManager).rewardAllFees();
         atLastAllocation = Calculations({
             gav: gav,
@@ -193,7 +193,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             if (
                 assetHoldings(asset) == 0 &&
                 !(asset == address(DENOMINATION_ASSET)) &&
-                Trading(routes.trading).openMakeOrdersAgainstAsset(asset) == 0
+                TradingInterface(routes.trading).getOpenMakeOrdersAgainstAsset(asset) == 0
             ) {
                 _removeFromOwnedAssets(asset);
             }
@@ -247,7 +247,7 @@ contract AccountingFactory is AccountingFactoryInterface, Factory {
     );
 
     function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] calldata _defaultAssets) external returns (address) {
-        address accounting = new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets);
+        address accounting = address(new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets));
         childExists[accounting] = true;
         emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset, _defaultAssets);
         return accounting;

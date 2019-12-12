@@ -63,7 +63,7 @@ contract FeeManager is DSMath, Spoke {
 
     /// @dev Shares to be inflated after update state
     function _rewardFee(Fee fee) internal {
-        require(feeIsRegistered[fee], "Fee is not registered");
+        require(feeIsRegistered[address(fee)], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
         fee.updateState();
         Shares(routes.shares).createFor(hub.manager(), rewardShares);
@@ -109,7 +109,9 @@ contract FeeManagerFactory is Factory {
         uint[] memory _feePeriods,
         address _registry
     ) public returns (address) {
-        address feeManager = new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods, _registry);
+        address feeManager = address(
+            new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods, _registry)
+        );
         childExists[feeManager] = true;
         emit NewInstance(_hub, feeManager);
         return feeManager;

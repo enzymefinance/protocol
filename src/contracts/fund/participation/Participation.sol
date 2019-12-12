@@ -39,7 +39,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         _enableInvestment(_defaultAssets);
     }
 
-    function() public payable {}
+    function() external payable {}
 
     function _enableInvestment(address[] memory _assets) internal {
         for (uint i = 0; i < _assets.length; i++) {

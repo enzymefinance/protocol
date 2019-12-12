@@ -66,7 +66,7 @@ contract Shares is Spoke, StandardToken, SharesInterface {
 
 contract SharesFactory is Factory {
     function createInstance(address _hub) external returns (address) {
-        address shares = new Shares(_hub);
+        address shares = address(new Shares(_hub));
         childExists[shares] = true;
         emit NewInstance(_hub, shares);
         return shares;

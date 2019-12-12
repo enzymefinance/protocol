@@ -84,8 +84,8 @@ contract PolicyManager is Spoke {
 }
 
 contract PolicyManagerFactory is PolicyManagerFactoryInterface, Factory {
-    function createInstance(address _hub) public returns (address) {
-        address policyManager = new PolicyManager(_hub);
+    function createInstance(address _hub) external returns (address) {
+        address policyManager = address(new PolicyManager(_hub));
         childExists[policyManager] = true;
         emit NewInstance(_hub, policyManager);
         return policyManager;
