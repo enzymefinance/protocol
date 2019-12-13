@@ -104,16 +104,16 @@ contract FundFactory is AmguConsumer, Factory {
         public
         componentNotSet(managersToHubs[msg.sender])
     {
-        registry.reserveFundName(
+        associatedRegistry.reserveFundName(
             msg.sender,
             _name
         );
         require(
-            registry.assetIsRegistered(_denominationAsset),
+            associatedRegistry.assetIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
 
-        managersToHubs[msg.sender] = new Hub(msg.sender, _name);
+        managersToHubs[msg.sender] = address(new Hub(msg.sender, _name));
         managersToSettings[msg.sender] = Settings(
             _name,
             _exchanges,
@@ -125,7 +125,7 @@ contract FundFactory is AmguConsumer, Factory {
             _feePeriods
         );
         managersToRoutes[msg.sender].priceSource = priceSource();
-        managersToRoutes[msg.sender].registry = associatedRegistry;
+        managersToRoutes[msg.sender].registry = address(associatedRegistry);
         managersToRoutes[msg.sender].version = address(version);
         managersToRoutes[msg.sender].engine = engine();
         managersToRoutes[msg.sender].mlnToken = mlnToken();
@@ -159,7 +159,7 @@ contract FundFactory is AmguConsumer, Factory {
             managersToSettings[msg.sender].fees,
             managersToSettings[msg.sender].feeRates,
             managersToSettings[msg.sender].feePeriods,
-            associatedRegistry
+            managersToRoutes[msg.sender].registry
         );
     }
 
@@ -233,7 +233,7 @@ contract FundFactory is AmguConsumer, Factory {
         Hub hub = Hub(managersToHubs[msg.sender]);
         require(!childExists[address(hub)], "Setup already complete");
         require(
-            componentExists(hub) &&
+            componentExists(address(hub)) &&
             componentExists(routes.accounting) &&
             componentExists(routes.feeManager) &&
             componentExists(routes.participation) &&
