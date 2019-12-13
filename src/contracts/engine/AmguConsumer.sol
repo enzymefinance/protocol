@@ -4,7 +4,7 @@ import "../dependencies/math.sol";
 import "../dependencies/token/ERC20.i.sol";
 import "../prices/PriceSource.i.sol";
 import "../version/Version.i.sol";
-import "./Engine.sol";
+import "./Engine.i.sol";
 import "../version/Registry.sol";
 
 /// @notice Abstract contracts
@@ -21,7 +21,7 @@ contract AmguConsumer is DSMath {
     modifier amguPayable(bool deductIncentive) {
         uint initialGas = gasleft();
         _;
-        uint mlnPerAmgu = Engine(engine()).getAmguPrice();
+        uint mlnPerAmgu = IEngine(engine()).getAmguPrice();
         uint mlnQuantity = mul(
             mlnPerAmgu,
             sub(initialGas, gasleft())
@@ -42,7 +42,7 @@ contract AmguConsumer is DSMath {
             msg.value >= add(ethToPay, incentiveAmount),
             "Insufficent AMGU and/or incentive"
         );
-        Engine(engine()).payAmguInEther.value(ethToPay)();
+        IEngine(engine()).payAmguInEther.value(ethToPay)();
 
         require(
             msg.sender.send(
