@@ -39,9 +39,15 @@ This makes them more legible, thereby helping maintain a high level of security.
 
 Some of our style choices are enforceable by a linter.
 
-We will soon be implementing linting with [solhint](https://github.com/protofire/solhint) for solidity and [eslint](https://eslint.org/) for javascript.
-
 Using a linter is not a substitute for understanding the style guide, however, since some of our style choices do not have rules that can be enforced by these linters yet.
+
+#### Solhint
+
+We use [solhint](https://github.com/protofire/solhint) for linting Solidity code. We extend solhint's [recommended rules](https://github.com/protofire/solhint/blob/master/docs/rules.md) with a few of our own, which can be found in `.solhint.json`.
+
+#### ESLint
+
+We will soon be implementing [ESLint](https://eslint.org/) for the javascript (e.g., tests, deployment scripts, utils) in the repo.
 
 ### Solidity
 
