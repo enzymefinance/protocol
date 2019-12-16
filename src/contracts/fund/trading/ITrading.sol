@@ -1,7 +1,7 @@
 pragma solidity ^0.5.13;
 
 /// @notice Mediation between a Fund and exchanges
-interface TradingInterface {
+interface ITrading {
     event ExchangeMethodCall(
         address indexed exchangeAddress,
         string indexed methodSignature,
@@ -41,7 +41,7 @@ interface TradingInterface {
     function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256);
 }
 
-interface TradingFactoryInterface {
+interface ITradingFactory {
      function createInstance(
         address _hub,
         address[] calldata _exchanges,

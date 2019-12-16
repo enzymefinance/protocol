@@ -1,18 +1,18 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "./Trading.i.sol";
+import "./ITrading.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../policies/PolicyManager.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/DSMath.sol";
 import "../../exchanges/ExchangeAdapter.sol";
-import "../../exchanges/third-party/0x/LibOrder.sol";
+import "../../exchanges/interfaces/IZeroExV2.sol";
 import "../../version/Registry.sol";
 import "../../dependencies/TokenUser.sol";
 
-contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
+contract Trading is DSMath, TokenUser, Spoke, ITrading {
 
     struct Exchange {
         address exchange;
@@ -48,7 +48,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (address => uint) public makerAssetCooldown;
-    mapping (bytes32 => LibOrder.Order) public orderIdToZeroExOrder;
+    mapping (bytes32 => IZeroExV2.Order) public orderIdToZeroExOrder;
 
     uint public constant ORDER_LIFESPAN = 1 days;
     uint public constant MAKE_ORDER_COOLDOWN = 30 minutes;
@@ -231,7 +231,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     /// @dev Bit of Redundancy for now
     function addZeroExOrderData(
         bytes32 orderId,
-        LibOrder.Order memory zeroExOrderData
+        IZeroExV2.Order memory zeroExOrderData
     ) public delegateInternal {
         orderIdToZeroExOrder[orderId] = zeroExOrderData;
     }
@@ -334,7 +334,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
         return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 
-    function getZeroExOrderDetails(bytes32 orderId) public view returns (LibOrder.Order memory) {
+    function getZeroExOrderDetails(bytes32 orderId) public view returns (IZeroExV2.Order memory) {
         return orderIdToZeroExOrder[orderId];
     }
 
@@ -343,7 +343,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingInterface {
     }
 }
 
-contract TradingFactory is TradingFactoryInterface, Factory {
+contract TradingFactory is ITradingFactory, Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

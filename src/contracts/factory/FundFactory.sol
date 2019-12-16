@@ -7,7 +7,7 @@ import "../fund/hub/Hub.sol";
 import "../fund/policies/PolicyManager.i.sol";
 import "../fund/participation/Participation.i.sol";
 import "../fund/shares/Shares.i.sol";
-import "../fund/trading/Trading.i.sol";
+import "../fund/trading/ITrading.sol";
 import "../fund/vault/Vault.i.sol";
 import "../version/Version.i.sol";
 import "../engine/AmguConsumer.sol";
@@ -29,7 +29,7 @@ contract FundFactory is AmguConsumer, Factory {
     ParticipationFactoryInterface public participationFactory;
     PolicyManagerFactoryInterface public policyManagerFactory;
     SharesFactoryInterface public sharesFactory;
-    TradingFactoryInterface public tradingFactory;
+    ITradingFactory public tradingFactory;
     VaultFactoryInterface public vaultFactory;
 
     address[] public funds;
@@ -81,7 +81,7 @@ contract FundFactory is AmguConsumer, Factory {
         feeManagerFactory = FeeManagerFactoryInterface(_feeManagerFactory);
         participationFactory = ParticipationFactoryInterface(_participationFactory);
         sharesFactory = SharesFactoryInterface(_sharesFactory);
-        tradingFactory = TradingFactoryInterface(_tradingFactory);
+        tradingFactory = ITradingFactory(_tradingFactory);
         vaultFactory = VaultFactoryInterface(_vaultFactory);
         policyManagerFactory = PolicyManagerFactoryInterface(_policyManagerFactory);
         version = VersionInterface(_version);
