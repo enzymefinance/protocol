@@ -1,8 +1,8 @@
 pragma solidity ^0.5.13;
 
-import "./Fee.i.sol";
+import "./IFee.sol";
 
-contract MockFee is Fee {
+contract MockFee is IFee {
 
     uint public fee;
     uint public FEE_RATE;
@@ -17,7 +17,7 @@ contract MockFee is Fee {
         fee = amount;
     }
 
-    function feeAmount() public view returns (uint feeInShares) {
+    function feeAmount() external returns (uint feeInShares) {
         return fee;
     }
 
