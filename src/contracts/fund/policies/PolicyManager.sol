@@ -65,15 +65,15 @@ contract PolicyManager is Spoke {
         postValidate(msg.sig, addresses, values, identifier);
     }
 
-    function preValidate(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) view public {
+    function preValidate(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) public {
         validate(policies[sig].pre, sig, addresses, values, identifier);
     }
 
-    function postValidate(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) view public {
+    function postValidate(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) public {
         validate(policies[sig].post, sig, addresses, values, identifier);
     }
 
-    function validate(Policy[] storage aux, bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) view internal {
+    function validate(Policy[] storage aux, bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) internal {
         for(uint i = 0; i < aux.length; i++) {
             require(
                 aux[i].rule(sig, addresses, values, identifier),
