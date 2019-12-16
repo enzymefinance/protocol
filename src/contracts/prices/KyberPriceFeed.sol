@@ -216,7 +216,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     }
 
     /// @dev Get Kyber representation of ETH if necessary
-    function getKyberMaskAsset(address _asset) public returns (address) {
+    function getKyberMaskAsset(address _asset) public view returns (address) {
         if (_asset == REGISTRY.nativeAsset()) {
             return KYBER_ETH_TOKEN;
         }
