@@ -149,7 +149,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
         uint investmentAmount = request.investmentAmount;
         delete requests[requestOwner];
         msg.sender.transfer(Registry(routes.registry).incentive());
-        safeTransfer(investmentAsset, requestOwner, investmentAmount);
+        safeTransfer(address(investmentAsset), requestOwner, investmentAmount);
 
         emit CancelRequest(requestOwner);
     }
@@ -356,7 +356,9 @@ contract ParticipationFactory is ParticipationFactoryInterface, Factory {
         external
         returns (address)
     {
-        address participation = new Participation(_hub, _defaultAssets, _registry);
+        address participation = address(
+            new Participation(_hub, _defaultAssets, _registry)
+        );
         childExists[participation] = true;
         emit NewInstance(_hub, participation, _defaultAssets, _registry);
         return participation;

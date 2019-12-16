@@ -18,7 +18,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
     address public UPDATER;
     Registry public REGISTRY;
     uint public MAX_SPREAD;
-    address public constant KYBER_ETH_TOKEN = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    address public constant KYBER_ETH_TOKEN = address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
     uint public constant KYBER_PRECISION = 18;
     uint public constant VALIDITY_INTERVAL = 2 days;
     uint public lastUpdate;
