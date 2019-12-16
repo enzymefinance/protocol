@@ -31,7 +31,7 @@ contract MockAccounting is Spoke {
     }
 
     function setOwnedAssets(address[] memory _assets) public { ownedAssets = _assets; }
-    function getOwnedAssetsLength() public returns (uint) { return ownedAssets.length; }
+    function getOwnedAssetsLength() public view returns (uint) { return ownedAssets.length; }
     function setGav(uint _gav) public { gav = _gav; }
     function setNav(uint _nav) public { nav = _nav; }
     function setAssetGAV(address _asset, uint _amt) public { assetGav[_asset] = _amt; }
@@ -41,7 +41,7 @@ contract MockAccounting is Spoke {
         }
     }
 
-    function getFundHoldings() public returns (uint[] memory, address[] memory) {
+    function getFundHoldings() public view returns (uint[] memory, address[] memory) {
         uint[] memory _quantities = new uint[](ownedAssets.length);
         address[] memory _assets = new address[](ownedAssets.length);
         for (uint i = 0; i < ownedAssets.length; i++) {
@@ -57,10 +57,10 @@ contract MockAccounting is Spoke {
         return (_quantities, _assets);
     }
 
-    function calcGav() public returns (uint) { return gav; }
-    function calcNav() public returns (uint) { return nav; }
+    function calcGav() public view returns (uint) { return gav; }
+    function calcNav() public view returns (uint) { return nav; }
 
-    function calcAssetGAV(address _a) public returns (uint) { return assetGav[_a]; }
+    function calcAssetGAV(address _a) public view returns (uint) { return assetGav[_a]; }
 
     function valuePerShare(uint totalValue, uint numShares) public view returns (uint) {
         return mockValuePerShare;
