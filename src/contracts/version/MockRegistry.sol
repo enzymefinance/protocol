@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "../dependencies/auth.sol";
+import "../dependencies/DSAuth.sol";
 
 /// @dev Simplified for testing, and by default rigged to always return true
 contract MockRegistry is DSAuth {

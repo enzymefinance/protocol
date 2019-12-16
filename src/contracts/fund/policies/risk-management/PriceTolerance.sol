@@ -4,7 +4,7 @@ import "../../hub/Hub.sol";
 import "../Policy.sol";
 import "../../../prices/PriceSource.i.sol";
 import "../TradingSignatures.sol";
-import "../../../dependencies/math.sol";
+import "../../../dependencies/DSMath.sol";
 import "../../trading/Trading.sol";
 import "../../../exchanges/interfaces/MatchingMarket.i.sol";
 

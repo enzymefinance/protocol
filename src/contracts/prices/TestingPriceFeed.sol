@@ -3,7 +3,7 @@ pragma solidity ^0.5.13;
 import "../dependencies/token/ERC20.i.sol";
 import "./PriceSource.i.sol";
 import "./UpdatableFeed.i.sol";
-import "../dependencies/math.sol";
+import "../dependencies/DSMath.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information

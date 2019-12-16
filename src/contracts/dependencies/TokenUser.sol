@@ -1,7 +1,7 @@
 pragma solidity ^0.5.13;
 
 import "./token/ERC20.i.sol";
-import "./math.sol";
+import "./DSMath.sol";
 
 /// @notice Wrapper to ensure tokens are received
 contract TokenUser is DSMath {

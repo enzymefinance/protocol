@@ -10,7 +10,7 @@ import "../../prices/PriceSource.i.sol";
 import "../../factory/Factory.sol";
 import "../../engine/AmguConsumer.sol";
 import "../../dependencies/token/ERC20.i.sol";
-import "../../dependencies/math.sol";
+import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
 
 /// @notice Entry and exit point for investors

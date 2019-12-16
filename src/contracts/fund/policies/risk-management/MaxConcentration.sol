@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "../../../dependencies/math.sol";
+import "../../../dependencies/DSMath.sol";
 import "../../../prices/PriceSource.i.sol";
 import "../../accounting/Accounting.sol";
 import "../../trading/Trading.sol";
