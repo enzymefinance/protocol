@@ -1,7 +1,7 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "./Fee.i.sol";
+import "./IFee.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
@@ -21,7 +21,7 @@ contract FeeManager is DSMath, Spoke {
         uint feePeriod;
     }
 
-    Fee[] public fees;
+    IFee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
     constructor(address _hub, address _denominationAsset, address[] memory _fees, uint[] memory _rates, uint[] memory _periods, address _registry) Spoke(_hub) public {
@@ -49,12 +49,12 @@ contract FeeManager is DSMath, Spoke {
     function register(address feeAddress, uint feeRate, uint feePeriod, address denominationAsset) internal {
         require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
-        fees.push(Fee(feeAddress));
-        Fee(feeAddress).initializeForUser(feeRate, feePeriod, denominationAsset);  // initialize state
+        fees.push(IFee(feeAddress));
+        IFee(feeAddress).initializeForUser(feeRate, feePeriod, denominationAsset);  // initialize state
         emit FeeRegistration(feeAddress);
     }
 
-    function totalFeeAmount() public view returns (uint total) {
+    function totalFeeAmount() external returns (uint total) {
         for (uint i = 0; i < fees.length; i++) {
             total = add(total, fees[i].feeAmount());
         }
@@ -62,7 +62,7 @@ contract FeeManager is DSMath, Spoke {
     }
 
     /// @dev Shares to be inflated after update state
-    function _rewardFee(Fee fee) internal {
+    function _rewardFee(IFee fee) internal {
         require(feeIsRegistered[address(fee)], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
         fee.updateState();
@@ -87,14 +87,14 @@ contract FeeManager is DSMath, Spoke {
 
     /// @dev Convenience function
     /// @dev Convention that management fee is 0
-    function managementFeeAmount() public view returns (uint) {
+    function managementFeeAmount() external returns (uint) {
         if (fees.length < 1) return 0;
         return fees[0].feeAmount();
     }
 
     /// @dev Convenience function
     /// @dev Convention that performace fee is 1
-    function performanceFeeAmount() public view returns (uint) {
+    function performanceFeeAmount() external returns (uint) {
         if (fees.length < 2) return 0;
         return fees[1].feeAmount();
     }

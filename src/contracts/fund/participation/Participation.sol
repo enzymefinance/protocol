@@ -239,7 +239,6 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
 
     function getOwedPerformanceFees(uint shareQuantity)
         public
-        view
         returns (uint remainingShareQuantity)
     {
         Shares shares = Shares(routes.shares);

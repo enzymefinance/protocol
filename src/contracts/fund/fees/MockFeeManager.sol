@@ -1,7 +1,7 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "./Fee.i.sol";
+import "./IFee.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
@@ -32,6 +32,6 @@ contract MockFeeManager is DSMath, AmguConsumer, Spoke {
     function setPerformanceFeeAmount(uint _amt) public { performanceFees = _amt; }
 
     function rewardManagementFee() public { return; }
-    function performanceFeeAmount() public view returns (uint) { return performanceFees; }
-    function totalFeeAmount() public view returns (uint) { return totalFees; }
+    function performanceFeeAmount() external returns (uint) { return performanceFees; }
+    function totalFeeAmount() external returns (uint) { return totalFees; }
 }

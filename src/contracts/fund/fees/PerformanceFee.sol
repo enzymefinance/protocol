@@ -1,13 +1,13 @@
 pragma solidity ^0.5.13;
 
-import "./Fee.i.sol";
+import "./IFee.sol";
 import "./FeeManager.sol";
 import "../accounting/Accounting.sol";
 import "../hub/Hub.sol";
 import "../shares/Shares.sol";
 import "../../dependencies/DSMath.sol";
 
-contract PerformanceFee is DSMath, Fee {
+contract PerformanceFee is DSMath, IFee {
 
     event HighWaterMarkUpdate(address indexed feeManager, uint indexed hwm);
 
@@ -31,7 +31,7 @@ contract PerformanceFee is DSMath, Fee {
     }
 
     /// @notice Assumes management fee is zero
-    function feeAmount() public view returns (uint feeInShares) {
+    function feeAmount() external returns (uint feeInShares) {
         Hub hub = FeeManager(msg.sender).hub();
         Accounting accounting = Accounting(hub.accounting());
         Shares shares = Shares(hub.shares());
