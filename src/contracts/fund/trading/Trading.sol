@@ -6,7 +6,7 @@ import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../policies/PolicyManager.sol";
 import "../../factory/Factory.sol";
-import "../../dependencies/math.sol";
+import "../../dependencies/DSMath.sol";
 import "../../exchanges/ExchangeAdapter.sol";
 import "../../exchanges/third-party/0x/LibOrder.sol";
 import "../../version/Registry.sol";

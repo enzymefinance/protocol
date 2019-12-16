@@ -5,7 +5,7 @@ import "./Fee.i.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
-import "../../dependencies/math.sol";
+import "../../dependencies/DSMath.sol";
 import "../../engine/AmguConsumer.sol";
 
 contract MockFeeManager is DSMath, AmguConsumer, Spoke {

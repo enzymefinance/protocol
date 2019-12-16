@@ -6,7 +6,7 @@ import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";
 import "../../version/Registry.sol";
-import "../../dependencies/math.sol";
+import "../../dependencies/DSMath.sol";
 import "./FeeManager.i.sol";
 
 /// @notice Manages and allocates fees for a particular fund

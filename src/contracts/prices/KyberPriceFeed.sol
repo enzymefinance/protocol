@@ -2,7 +2,7 @@ pragma solidity ^0.5.13;
 
 import "./PriceSource.i.sol";
 import "../dependencies/token/ERC20.i.sol";
-import "../dependencies/thing.sol";
+import "../dependencies/DSThing.sol";
 import "../exchanges/third-party/kyber/KyberNetworkProxyInterface.sol";
 import "../version/Registry.sol";
 

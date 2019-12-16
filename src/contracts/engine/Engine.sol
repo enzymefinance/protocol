@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "../dependencies/math.sol";
+import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
 import "../prices/PriceSource.i.sol";
 import "../version/Registry.sol";

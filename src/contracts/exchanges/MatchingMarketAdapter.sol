@@ -4,7 +4,7 @@ import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
-import "../dependencies/math.sol";
+import "../dependencies/DSMath.sol";
 import "./interfaces/MatchingMarket.i.sol";
 import "./ExchangeAdapter.sol";
 

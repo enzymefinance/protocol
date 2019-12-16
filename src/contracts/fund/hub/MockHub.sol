@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "../../dependencies/guard.sol";
+import "../../dependencies/DSGuard.sol";
 import "./Spoke.sol";
 
 /// @notice Hub used for testing

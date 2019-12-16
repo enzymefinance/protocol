@@ -4,7 +4,7 @@ import "./Fee.i.sol";
 import "./FeeManager.sol";
 import "../hub/Hub.sol";
 import "../shares/Shares.sol";
-import "../../dependencies/math.sol";
+import "../../dependencies/DSMath.sol";
 
 contract ManagementFee is DSMath, Fee {
 

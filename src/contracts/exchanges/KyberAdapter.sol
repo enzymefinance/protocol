@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "../dependencies/Weth.sol";
+import "../dependencies/WETH.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";

@@ -1,6 +1,5 @@
-// thing.sol - `auth` with handy mixins. your things should be DSThings
 
-// Copyright (C) 2017  DappHub, LLC
+/// DSNote.sol -- the `note' modifier, for logging calls as events
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,13 +16,29 @@
 
 pragma solidity >=0.4.23;
 
-import './auth.sol';
-import './note.sol';
-import './math.sol';
+contract DSNote {
+    event LogNote(
+        bytes4   indexed  sig,
+        address  indexed  guy,
+        bytes32  indexed  foo,
+        bytes32  indexed  bar,
+        uint256           wad,
+        bytes             fax
+    ) anonymous;
 
-contract DSThing is DSAuth, DSNote, DSMath {
-    function S(string memory s) internal pure returns (bytes4) {
-        return bytes4(keccak256(abi.encodePacked(s)));
+    modifier note {
+        bytes32 foo;
+        bytes32 bar;
+        uint256 wad;
+
+        assembly {
+            foo := calldataload(4)
+            bar := calldataload(36)
+            wad := callvalue
+        }
+
+        emit LogNote(msg.sig, msg.sender, foo, bar, wad, msg.data);
+
+        _;
     }
-
 }

@@ -5,7 +5,7 @@ import "./FeeManager.sol";
 import "../accounting/Accounting.sol";
 import "../hub/Hub.sol";
 import "../shares/Shares.sol";
-import "../../dependencies/math.sol";
+import "../../dependencies/DSMath.sol";
 
 contract PerformanceFee is DSMath, Fee {
 
