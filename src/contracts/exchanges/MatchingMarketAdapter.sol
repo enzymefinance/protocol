@@ -5,7 +5,7 @@ import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/DSMath.sol";
-import "./interfaces/MatchingMarket.i.sol";
+import "./interfaces/IMatchingMarket.sol";
 import "./ExchangeAdapter.sol";
 
 /// @title MatchingMarketAdapter Contract

@@ -6,7 +6,7 @@ import "../../../prices/PriceSource.i.sol";
 import "../TradingSignatures.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../trading/Trading.sol";
-import "../../../exchanges/interfaces/MatchingMarket.i.sol";
+import "../../../exchanges/interfaces/IMatchingMarket.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath, Policy {
     uint public tolerance;

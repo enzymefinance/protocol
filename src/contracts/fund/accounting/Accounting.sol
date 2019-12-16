@@ -13,6 +13,9 @@ import "../../engine/AmguConsumer.sol";
 
 contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
+    event AssetAddition(address indexed asset);
+    event AssetRemoval(address indexed asset);
+
     struct Calculations {
         uint gav;
         uint nav;

@@ -2,15 +2,6 @@ pragma solidity ^0.5.13;
 
 /// @notice Gives metrics about a Fund
 interface AccountingInterface {
-
-    event AssetAddition(
-        address indexed asset
-    );
-
-    event AssetRemoval(
-        address indexed asset
-    );
-
     function getOwnedAssetsLength() external view returns (uint);
     function getFundHoldings() external returns (uint[] memory, address[] memory);
     function calcAssetGAV(address ofAsset) external returns (uint);
