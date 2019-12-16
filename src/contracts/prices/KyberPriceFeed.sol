@@ -2,7 +2,8 @@ pragma solidity ^0.5.13;
 
 import "./PriceSource.i.sol";
 import "../dependencies/token/ERC20.i.sol";
-import "../dependencies/DSThing.sol";
+import "../dependencies/DSMath.sol";
+import "../dependencies/DSAuth.sol"; // TODO: remove? this may not be used at all
 import "../exchanges/third-party/kyber/KyberNetworkProxyInterface.sol";
 import "../version/Registry.sol";
 
@@ -11,7 +12,7 @@ import "../version/Registry.sol";
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract KyberPriceFeed is PriceSourceInterface, DSThing {
+contract KyberPriceFeed is PriceSourceInterface, DSMath, DSAuth {
 
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
