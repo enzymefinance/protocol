@@ -8,8 +8,10 @@ import "../fund/accounting/Accounting.sol";
 import "../prices/PriceSource.i.sol";
 import "./third-party/kyber/KyberNetworkProxyInterface.sol";
 import "./ExchangeAdapter.sol";
+import "../lib/AddressUtils.sol";
 
 contract KyberAdapter is DSMath, ExchangeAdapter {
+    using AddressUtils for address;
 
     address public constant ETH_TOKEN_ADDRESS = address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
 
@@ -72,7 +74,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(0),
             Trading.UpdateType.take,
-            [makerAsset, takerAsset],
+            [makerAsset.castPayable(), takerAsset.castPayable()],
             [actualReceiveAmount, takerAssetAmount, takerAssetAmount]
         );
     }
@@ -126,7 +128,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
-        WETH(nativeAsset).withdraw(srcAmount);
+        WETH(nativeAsset.castPayable()).withdraw(srcAmount);
         receivedAmount = KyberNetworkProxyInterface(targetExchange).swapEtherToToken.value(srcAmount)(ERC20KyberClone(destToken), minRate);
     }
 
@@ -154,7 +156,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         receivedAmount = KyberNetworkProxyInterface(targetExchange).swapTokenToEther(ERC20KyberClone(srcToken), srcAmount, minRate);
 
         // Convert ETH to WETH
-        WETH(nativeAsset).deposit.value(receivedAmount)();
+        WETH(nativeAsset.castPayable()).deposit.value(receivedAmount)();
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
@@ -196,7 +198,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         view
         returns (uint minRate)
     {
-        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(this)).hub()).priceSource());
+        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(this).castPayable()).hub()).priceSource());
         minRate = pricefeed.getOrderPriceInfo(
             srcToken,
             destToken,
