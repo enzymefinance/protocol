@@ -15,7 +15,6 @@ contract MaxPositions is TradingSignatures, Policy {
 
     function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier)
         external
-        view
         returns (bool)
     {
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());

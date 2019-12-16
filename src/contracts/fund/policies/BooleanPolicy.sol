@@ -5,7 +5,7 @@ import "./Policy.sol";
 contract BooleanPolicy is Policy {
     bool allowed;
 
-    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external view returns (bool) {
+    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {
         return allowed;
     }
 

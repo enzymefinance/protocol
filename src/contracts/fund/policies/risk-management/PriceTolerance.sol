@@ -124,7 +124,7 @@ contract PriceTolerance is TradingSignatures, DSMath, Policy {
         address[5] calldata addresses,
         uint[3] calldata values,
         bytes32 identifier
-    ) external view returns (bool) {
+    ) external returns (bool) {
         if (sig == MAKE_ORDER) {
             return makeOrder(addresses, values, identifier);
         } else if (sig == TAKE_ORDER) {
