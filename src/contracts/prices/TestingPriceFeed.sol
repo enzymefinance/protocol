@@ -41,7 +41,7 @@ contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMat
             });
         }
         lastUpdate = block.timestamp;
-        PriceUpdate(_assets, _prices);
+        emit PriceUpdate(_assets, _prices);
     }
 
     function getPrice(address ofAsset)
