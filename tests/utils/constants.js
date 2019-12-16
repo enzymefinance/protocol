@@ -26,7 +26,6 @@ export const CONTRACT_NAMES = {
   FEE_MANAGER: 'FeeManager',
   FEE_MANAGER_FACTORY: 'FeeManagerFactory',
   FUND_FACTORY: 'FundFactory',
-  FUND_RANKING: 'FundRanking',
   HUB: 'Hub',
   KYBER_ADAPTER: 'KyberAdapter',
   KYBER_EXCHANGE: 'KyberNetwork',

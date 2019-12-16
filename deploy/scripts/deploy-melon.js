@@ -28,7 +28,6 @@ const main = async input => {
   const vaultFactory = await nab('VaultFactory', [], melonAddrs);
   const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
-  const fundRanking = await nab('FundRanking', [], melonAddrs);
 
   let priceSource;
   if (conf.track === 'KYBER_PRICE') {
