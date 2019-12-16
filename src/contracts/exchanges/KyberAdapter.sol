@@ -8,7 +8,7 @@ import "../fund/accounting/Accounting.sol";
 import "../prices/PriceSource.i.sol";
 import "./third-party/kyber/KyberNetworkProxyInterface.sol";
 import "./ExchangeAdapter.sol";
-import "../lib/AddressUtils.sol";
+import "../../lib/AddressUtils.sol";
 
 contract KyberAdapter is DSMath, ExchangeAdapter {
     using AddressUtils for address;
