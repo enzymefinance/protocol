@@ -260,7 +260,7 @@ contract FundFactory is AmguConsumer, Factory {
         ]);
         hub.setRouting();
         hub.setPermissions();
-        funds.push(hub);
+        funds.push(address(hub));
         associatedRegistry.registerFund(
             address(hub),
             msg.sender,
@@ -269,7 +269,7 @@ contract FundFactory is AmguConsumer, Factory {
 
         emit NewFund(
             msg.sender,
-            hub,
+            address(hub),
             [
                 routes.accounting,
                 routes.feeManager,
@@ -299,7 +299,7 @@ contract FundFactory is AmguConsumer, Factory {
     function priceSource() public view returns (address) {
         return address(associatedRegistry.priceSource());
     }
-    function registry() public view returns (address) { return associatedRegistry; }
+    function registry() public view returns (address) { return address(associatedRegistry); }
     function getExchangesInfo(address user) public view returns (address[] memory) {
         return (managersToSettings[user].exchanges);
     }
