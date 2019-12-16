@@ -31,7 +31,7 @@ contract Version is FundFactory, DSAuth, VersionInterface {
             address(this)
         )
     {
-        associatedRegistry = _registry;
+        associatedRegistry = Registry(_registry);
         setOwner(_postDeployOwner);
     }
 
