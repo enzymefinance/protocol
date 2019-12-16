@@ -20,7 +20,7 @@ contract ManagementFee is DSMath, Fee {
             feeInShares = 0;
         } else {
             uint timePassed = sub(block.timestamp, lastPayoutTime[msg.sender]);
-            uint preDilutionFeeShares = mul(mul(shares.totalSupply(), managementFeeRate[msg.sender]) / DIVISOR, timePassed) / 1 years;
+            uint preDilutionFeeShares = mul(mul(shares.totalSupply(), managementFeeRate[msg.sender]) / DIVISOR, timePassed) / 365 days;
             feeInShares =
                 mul(preDilutionFeeShares, shares.totalSupply()) /
                 sub(shares.totalSupply(), preDilutionFeeShares);
