@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../policies/PolicyManager.sol";
+import "../policies/TradingSignatures.sol";
 import "../../factory/Factory.sol";
 import "../../dependencies/DSMath.sol";
 import "../../exchanges/ExchangeAdapter.sol";
@@ -11,7 +12,7 @@ import "../../exchanges/interfaces/IZeroExV2.sol";
 import "../../version/Registry.sol";
 import "../../dependencies/TokenUser.sol";
 
-contract Trading is DSMath, TokenUser, Spoke {
+contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     event ExchangeMethodCall(
         address indexed exchangeAddress,
         string indexed methodSignature,
@@ -159,8 +160,8 @@ contract Trading is DSMath, TokenUser, Spoke {
         );
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         if (
-            methodSelector == bytes4(hex'79705be7') ||  // make
-            methodSelector == bytes4(hex'e51be6e8')     // take
+            methodSelector == MAKE_ORDER ||
+            methodSelector == TAKE_ORDER
         ) {
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[2]), 'Maker asset not registered'
@@ -168,6 +169,18 @@ contract Trading is DSMath, TokenUser, Spoke {
             require(Registry(routes.registry).assetIsRegistered(
                 orderAddresses[3]), 'Taker asset not registered'
             );
+            if (orderAddresses[6] != address(0) && methodSelector == MAKE_ORDER) {
+                require(
+                    Registry(routes.registry).assetIsRegistered(orderAddresses[6]),
+                    'Maker fee asset not registered'
+                );
+            }
+            if (orderAddresses[7] != address(0) && methodSelector == TAKE_ORDER) {
+                require(
+                    Registry(routes.registry).assetIsRegistered(orderAddresses[7]),
+                    'Taker fee asset not registered'
+                );
+            }
         }
         (bool success, ) = exchanges[exchangeIndex].adapter.delegatecall(
             abi.encodeWithSignature(
