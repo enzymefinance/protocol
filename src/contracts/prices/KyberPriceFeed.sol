@@ -69,7 +69,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSThing {
             prices[assets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
-        PriceUpdate(assets, newPrices);
+        emit PriceUpdate(assets, newPrices);
     }
 
     function setUpdater(address _updater) external {
