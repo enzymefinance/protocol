@@ -6,7 +6,7 @@ import "../../prices/PriceSource.i.sol";
 import "../fees/FeeManager.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
-import "../trading/Trading.i.sol";
+import "../trading/ITrading.sol";
 import "../vault/Vault.sol";
 import "./Accounting.i.sol";
 import "../../engine/AmguConsumer.sol";
@@ -51,7 +51,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     function assetHoldings(address _asset) public returns (uint256) {
         return add(
             uint256(ERC20WithFields(_asset).balanceOf(routes.vault)),
-            TradingInterface(routes.trading).updateAndGetQuantityBeingTraded(_asset)
+            ITrading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
         );
     }
 
@@ -193,7 +193,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             if (
                 assetHoldings(asset) == 0 &&
                 !(asset == address(DENOMINATION_ASSET)) &&
-                TradingInterface(routes.trading).getOpenMakeOrdersAgainstAsset(asset) == 0
+                ITrading(routes.trading).getOpenMakeOrdersAgainstAsset(asset) == 0
             ) {
                 _removeFromOwnedAssets(asset);
             }
