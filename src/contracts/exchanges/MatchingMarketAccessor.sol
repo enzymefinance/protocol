@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "./interfaces/MatchingMarket.i.sol";
+import "./interfaces/IMatchingMarket.sol";
 
 contract MatchingMarketAccessor {
     function getUnsortedOfferIds(

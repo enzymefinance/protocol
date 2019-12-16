@@ -4,7 +4,7 @@ import "./PriceSource.i.sol";
 import "../dependencies/token/ERC20.i.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/DSAuth.sol"; // TODO: remove? this may not be used at all
-import "../exchanges/third-party/kyber/KyberNetworkProxyInterface.sol";
+import "../exchanges/interfaces/IKyberNetworkProxy.sol";
 import "../version/Registry.sol";
 
 /// @title Price Feed Template
@@ -176,7 +176,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSMath, DSAuth {
         returns (bool isValid, uint referencePrice, uint decimals)
     {
         isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
-        uint quoteDecimals = ERC20KyberClone(_quoteAsset).decimals();
+        uint256 quoteDecimals = ERC20WithFields(_quoteAsset).decimals();
 
         if (prices[_quoteAsset] == 0) {
             return (false, 0, 0);  // return early and avoid revert
@@ -232,14 +232,14 @@ contract KyberPriceFeed is PriceSourceInterface, DSMath, DSAuth {
     {
         uint bidRate;
         uint bidRateOfReversePair;
-        (bidRate,) = KyberNetworkProxyInterface(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20KyberClone(getKyberMaskAsset(_baseAsset)),
-            ERC20KyberClone(getKyberMaskAsset(_quoteAsset)),
+        (bidRate,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+            getKyberMaskAsset(_baseAsset),
+            getKyberMaskAsset(_quoteAsset),
             REGISTRY.getReserveMin(_baseAsset)
         );
-        (bidRateOfReversePair,) = KyberNetworkProxyInterface(KYBER_NETWORK_PROXY).getExpectedRate(
-            ERC20KyberClone(getKyberMaskAsset(_quoteAsset)),
-            ERC20KyberClone(getKyberMaskAsset(_baseAsset)),
+        (bidRateOfReversePair,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
+            getKyberMaskAsset(_quoteAsset),
+            getKyberMaskAsset(_baseAsset),
             REGISTRY.getReserveMin(_quoteAsset)
         );
 
@@ -257,7 +257,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSMath, DSAuth {
         */
         uint kyberPrice = mul(
             add(bidRate, askRate),
-            10 ** uint(ERC20KyberClone(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
+            10 ** uint(ERC20WithFields(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
         ) / mul(2, 10 ** uint(KYBER_PRECISION));
 
         // Find the "quoted spread", to inform caller whether it is below maximum
@@ -294,7 +294,7 @@ contract KyberPriceFeed is PriceSourceInterface, DSMath, DSAuth {
         returns (uint orderPrice)
     {
         // TODO: decimals
-        return mul(buyQuantity, 10 ** uint(ERC20KyberClone(sellAsset).decimals())) / sellQuantity;
+        return mul(buyQuantity, 10 ** uint(ERC20WithFields(sellAsset).decimals())) / sellQuantity;
     }
 
     /// @notice Checks whether data exists for a given asset pair

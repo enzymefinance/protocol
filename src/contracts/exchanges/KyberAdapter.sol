@@ -1,12 +1,13 @@
 pragma solidity ^0.5.13;
 
 import "../dependencies/WETH.sol";
+import "../dependencies/token/ERC20.i.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../prices/PriceSource.i.sol";
-import "./third-party/kyber/KyberNetworkProxyInterface.sol";
+import "./interfaces/IKyberNetworkProxy.sol";
 import "./ExchangeAdapter.sol";
 import "../../lib/AddressUtils.sol";
 
@@ -129,7 +130,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
         WETH(nativeAsset.castPayable()).withdraw(srcAmount);
-        receivedAmount = KyberNetworkProxyInterface(targetExchange).swapEtherToToken.value(srcAmount)(ERC20KyberClone(destToken), minRate);
+        receivedAmount = IKyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(destToken, minRate);
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
@@ -152,8 +153,8 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
-        ERC20KyberClone(srcToken).approve(targetExchange, srcAmount);
-        receivedAmount = KyberNetworkProxyInterface(targetExchange).swapTokenToEther(ERC20KyberClone(srcToken), srcAmount, minRate);
+        ERC20(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
 
         // Convert ETH to WETH
         WETH(nativeAsset.castPayable()).deposit.value(receivedAmount)();
@@ -179,8 +180,8 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
-        ERC20KyberClone(srcToken).approve(targetExchange, srcAmount);
-        receivedAmount = KyberNetworkProxyInterface(targetExchange).swapTokenToToken(ERC20KyberClone(srcToken), srcAmount, ERC20KyberClone(destToken), minRate);
+        ERC20(srcToken).approve(targetExchange, srcAmount);
+        receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
     }
 
     /// @dev Calculate min rate to be supplied to the network based on provided order parameters
