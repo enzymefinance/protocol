@@ -339,7 +339,7 @@ contract Trading is DSMath, TokenUser, Spoke, ITrading {
     }
 
     function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256) {
-        openMakeOrdersAgainstAsset[_asset];
+        return openMakeOrdersAgainstAsset[_asset];
     }
 }
 
