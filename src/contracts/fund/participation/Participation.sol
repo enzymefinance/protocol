@@ -15,6 +15,35 @@ import "../../dependencies/TokenUser.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is IParticipation, TokenUser, AmguConsumer, Spoke {
+    event EnableInvestment (address[] asset);
+    event DisableInvestment (address[] assets);
+
+    event InvestmentRequest (
+        address indexed requestOwner,
+        address indexed investmentAsset,
+        uint requestedShares,
+        uint investmentAmount
+    );
+
+    event RequestExecution (
+        address indexed requestOwner,
+        address indexed executor,
+        address indexed investmentAsset,
+        uint investmentAmount,
+        uint requestedShares
+    );
+
+    event CancelRequest (
+        address indexed requestOwner
+    );
+
+    event Redemption (
+        address indexed redeemer,
+        address[] assets,
+        uint[] assetQuantities,
+        uint redeemedShares
+    );
+
     struct Request {
         address investmentAsset;
         uint investmentAmount;

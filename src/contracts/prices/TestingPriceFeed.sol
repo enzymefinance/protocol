@@ -8,6 +8,7 @@ import "../dependencies/DSMath.sol";
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
 contract TestingPriceFeed is IUpdatableFeed, IPriceSource, DSMath {
+    event PriceUpdate(address[] token, uint[] price);
 
     struct Data {
         uint price;

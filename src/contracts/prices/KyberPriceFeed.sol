@@ -13,6 +13,7 @@ import "../version/Registry.sol";
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
 contract KyberPriceFeed is IPriceSource, DSMath, DSAuth {
+    event PriceUpdate(address[] token, uint[] price);
 
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
