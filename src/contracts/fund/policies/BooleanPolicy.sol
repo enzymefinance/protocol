@@ -1,8 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "./Policy.i.sol";
-
-contract BooleanPolicy is IPolicy {
+contract BooleanPolicy {
     bool allowed;
 
     function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {

@@ -3,10 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "../factory/FundFactory.sol";
 import "../fund/hub/Hub.sol";
-import "./Version.i.sol";
 
 /// @notice Controlled by governance
-contract Version is FundFactory, DSAuth, IVersion {
+contract Version is FundFactory, DSAuth {
 
     constructor(
         address _accountingFactory,

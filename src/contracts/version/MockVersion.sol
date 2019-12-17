@@ -1,10 +1,9 @@
 pragma solidity ^0.5.13;
 
-import "./Version.i.sol";
 import "../fund/hub/Hub.sol";
 
 /// @notice Version contract useful for testing
-contract MockVersion is IVersion {
+contract MockVersion {
     uint public amguPrice;
     bool public isShutDown;
 

@@ -8,10 +8,9 @@ import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../trading/ITrading.sol";
 import "../vault/Vault.sol";
-import "./Accounting.i.sol";
 import "../../engine/AmguConsumer.sol";
 
-contract Accounting is IAccounting, AmguConsumer, Spoke {
+contract Accounting is AmguConsumer, Spoke {
 
     event AssetAddition(address indexed asset);
     event AssetRemoval(address indexed asset);
@@ -240,7 +239,7 @@ contract Accounting is IAccounting, AmguConsumer, Spoke {
     }
 }
 
-contract AccountingFactory is IAccountingFactory, Factory {
+contract AccountingFactory is Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,
