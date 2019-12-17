@@ -12,6 +12,16 @@ import "../../version/Registry.sol";
 import "../../dependencies/TokenUser.sol";
 
 contract Trading is DSMath, TokenUser, Spoke {
+    event ExchangeMethodCall(
+        address indexed exchangeAddress,
+        string indexed methodSignature,
+        address[6] orderAddresses,
+        uint[8] orderValues,
+        bytes32 identifier,
+        bytes makerAssetData,
+        bytes takerAssetData,
+        bytes signature
+    );
 
     struct Exchange {
         address exchange;

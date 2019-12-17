@@ -1,6 +1,8 @@
 pragma solidity ^0.5.13;
 
 contract BooleanPolicy {
+    enum Applied { pre, post }
+
     bool allowed;
 
     function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {

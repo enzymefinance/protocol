@@ -6,6 +6,8 @@ import "../../trading/Trading.sol";
 import "../TradingSignatures.sol";
 
 contract MaxPositions is TradingSignatures {
+    enum Applied { pre, post }
+
     uint public maxPositions;
 
     /// @dev _maxPositions = 10 means max 10 different asset tokens

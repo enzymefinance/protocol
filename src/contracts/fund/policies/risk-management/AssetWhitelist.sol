@@ -5,6 +5,8 @@ import "../TradingSignatures.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
 contract AssetWhitelist is TradingSignatures, AddressList {
+    enum Applied { pre, post }
+
     constructor(address[] memory _assets) public AddressList(_assets) {}
 
     function removeFromWhitelist(address _asset) external auth {
