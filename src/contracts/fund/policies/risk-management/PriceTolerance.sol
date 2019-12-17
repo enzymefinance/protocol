@@ -8,6 +8,8 @@ import "../../trading/Trading.sol";
 import "../../../exchanges/interfaces/IMatchingMarket.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath {
+    enum Applied { pre, post }
+
     uint public tolerance;
 
     uint constant MULTIPLIER = 10 ** 16; // to give effect of a percentage

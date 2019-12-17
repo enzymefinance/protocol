@@ -5,6 +5,7 @@ import "../TradingSignatures.sol";
 
 /// @notice Assets can be added but not removed from blacklist
 contract AssetBlacklist is TradingSignatures, AddressList {
+    enum Applied { pre, post }
 
     // bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature
     // bytes4 constant public TAKE_ORDER = 0xe51be6e8; // takeOrderSignature

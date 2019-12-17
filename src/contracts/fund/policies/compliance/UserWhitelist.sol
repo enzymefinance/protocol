@@ -3,6 +3,7 @@ pragma solidity ^0.5.13;
 import "../../../dependencies/DSAuth.sol";
 
 contract UserWhitelist is DSAuth {
+    enum Applied { pre, post }
 
     event ListAddition(address indexed who);
     event ListRemoval(address indexed who);

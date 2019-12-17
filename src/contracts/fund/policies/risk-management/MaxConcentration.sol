@@ -7,6 +7,8 @@ import "../../trading/Trading.sol";
 import "../TradingSignatures.sol";
 
 contract MaxConcentration is TradingSignatures, DSMath {
+    enum Applied { pre, post }
+
     uint internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
     uint public maxConcentration;
 
