@@ -1,20 +1,20 @@
 const {nab, call, send} = require('../utils/deploy-contract');
 
 const main = async input => {
-  const matchingMarket = await nab('MatchingMarket', [ input.oasis.conf.closeTime ], input.oasis.addr);
+  const oasisDex = await nab('OasisDexExchange', [ input.oasis.conf.closeTime ], input.oasis.addr);
   const quoteSym = input.oasis.conf.quoteToken;
   const quoteTokenAddress = input.tokens.addr[quoteSym];
   for (const [sym, baseTokenAddress] of Object.entries(input.tokens.addr)) {
     if (sym === quoteSym) {
       continue;
     }
-    const alreadyWhitelisted = await call(matchingMarket, 'isTokenPairWhitelisted', [ baseTokenAddress, quoteTokenAddress ]);
+    const alreadyWhitelisted = await call(oasisDex, 'isTokenPairWhitelisted', [ baseTokenAddress, quoteTokenAddress ]);
     if (!alreadyWhitelisted) {
-      await send(matchingMarket, 'addTokenPairWhitelist', [ baseTokenAddress, quoteTokenAddress ]);
+      await send(oasisDex, 'addTokenPairWhitelist', [ baseTokenAddress, quoteTokenAddress ]);
     }
   }
 
-  return { "MatchingMarket": matchingMarket };
+  return { "OasisDexExchange": oasisDex };
 }
 
 module.exports = main;

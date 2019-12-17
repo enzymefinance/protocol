@@ -19,7 +19,7 @@ const setupInvestedTestFund = async (contracts, manager) => {
   const performanceFeePeriod = 60 * 60 * 24 * 90; // 90 days
 
   const exchangeAddresses = [
-    contracts.MatchingMarket.options.address,
+    contracts.OasisDexExchange.options.address,
     contracts.KyberNetworkProxy.options.address,
     contracts.Exchange.options.address,
     contracts.Exchange.options.address,
@@ -27,7 +27,7 @@ const setupInvestedTestFund = async (contracts, manager) => {
   ];
 
   const exchangeAdapterAddresses = [
-    contracts.MatchingMarketAdapter.options.address,
+    contracts.OasisDexAdapter.options.address,
     contracts.KyberAdapter.options.address,
     contracts.ZeroExV2Adapter.options.address,
     contracts.EthfinexAdapter.options.address,

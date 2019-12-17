@@ -11,8 +11,8 @@ const main = async input => {
 
   const ethfinexAdapter = await nab('EthfinexAdapter', [], melonAddrs);
   const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
-  const matchingMarketAdapter = await nab('MatchingMarketAdapter', [], melonAddrs);
-  const matchingMarketAccessor = await nab('MatchingMarketAccessor', [], melonAddrs);
+  const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
+  const oasisDexAccessor = await nab('OasisDexAccessor', [], melonAddrs);
   const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
   const engineAdapter = await nab('EngineAdapter', [], melonAddrs);
   const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
@@ -96,8 +96,8 @@ const main = async input => {
   }
   if (input.oasis) {
     exchanges.oasis = {
-      exchange: input.oasis.addr.MatchingMarket,
-      adapter: matchingMarketAdapter.options.address,
+      exchange: input.oasis.addr.OasisDexExchange,
+      adapter: oasisDexAdapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.oasis
     };
   }
@@ -169,8 +169,8 @@ const main = async input => {
   const contracts = {
     "EthfinexAdapter": ethfinexAdapter,
     "KyberAdapter": kyberAdapter,
-    "MatchingMarketAdapter": matchingMarketAdapter,
-    "MatchingMarketAccessor": matchingMarketAccessor,
+    "OasisDexAdapter": oasisDexAdapter,
+    "OasisDexAccessor": oasisDexAccessor,
     "ZeroExV2Adapter": zeroExV2Adapter,
     "EngineAdapter": engineAdapter,
     "PriceTolerance": priceTolerance,

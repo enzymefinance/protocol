@@ -1,15 +1,11 @@
 import { toWei } from 'web3-utils';
-
 import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import getAllBalances from '~/tests/utils/getAllBalances';
 
 describe('account-trading', () => {
   let defaultTxOpts;
-  let mlnTokenInfo, wethTokenInfo;
-  let mln, weth, matchingMarket, matchingMarketAccessor;
+  let mln, weth, oasisDex, oasisDexAccessor;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -22,8 +18,8 @@ describe('account-trading', () => {
 
     mln = contracts.MLN;
     weth = contracts.WETH;
-    matchingMarket = contracts.MatchingMarket;
-    matchingMarketAccessor = contracts.MatchingMarketAccessor;
+    oasisDex = contracts.OasisDexExchange;
+    oasisDexAccessor = contracts.OasisDexAccessor;
   });
 
   it('Happy path', async () => {
@@ -35,10 +31,10 @@ describe('account-trading', () => {
     };
 
     await mln.methods
-      .approve(matchingMarket.options.address, order1.sellQuantity)
+      .approve(oasisDex.options.address, order1.sellQuantity)
       .send(defaultTxOpts);
 
-    await matchingMarket.methods
+    await oasisDex.methods
       .offer(
         order1.sellQuantity,
         order1.sellAsset,
@@ -48,8 +44,8 @@ describe('account-trading', () => {
       )
       .send(defaultTxOpts);
 
-    const activeOrders1 = await matchingMarketAccessor.methods
-      .getOrders(matchingMarket.options.address, order1.sellAsset, order1.buyAsset)
+    const activeOrders1 = await oasisDexAccessor.methods
+      .getOrders(oasisDex.options.address, order1.sellAsset, order1.buyAsset)
       .call()
 
     order1.id = activeOrders1[0][0];
@@ -57,18 +53,18 @@ describe('account-trading', () => {
     expect(activeOrders1[2][0].toString()).toBe(order1.buyQuantity.toString());
 
     await weth.methods
-      .approve(matchingMarket.options.address, order1.buyQuantity)
+      .approve(oasisDex.options.address, order1.buyQuantity)
       .send(defaultTxOpts);
 
-    await matchingMarket.methods
+    await oasisDex.methods
       .buy(
         order1.id,
         order1.sellQuantity
       )
       .send(defaultTxOpts);
 
-    const activeOrders2 = await matchingMarketAccessor.methods
-      .getOrders(matchingMarket.options.address, order1.sellAsset, order1.buyAsset)
+    const activeOrders2 = await oasisDexAccessor.methods
+      .getOrders(oasisDex.options.address, order1.sellAsset, order1.buyAsset)
       .call()
 
     expect(activeOrders2[0].length).toBe(0);
@@ -81,10 +77,10 @@ describe('account-trading', () => {
     };
 
     await weth.methods
-      .approve(matchingMarket.options.address, order2.sellQuantity)
+      .approve(oasisDex.options.address, order2.sellQuantity)
       .send(defaultTxOpts);
 
-    await matchingMarket.methods
+    await oasisDex.methods
       .offer(
         order2.sellQuantity,
         order2.sellAsset,
@@ -94,20 +90,20 @@ describe('account-trading', () => {
       )
       .send(defaultTxOpts);
 
-    const activeOrders3 = await matchingMarketAccessor.methods
-      .getOrders(matchingMarket.options.address, order2.sellAsset, order2.buyAsset)
+    const activeOrders3 = await oasisDexAccessor.methods
+      .getOrders(oasisDex.options.address, order2.sellAsset, order2.buyAsset)
       .call()
 
     order2.id = activeOrders3[0][0];
     expect(activeOrders3[1][0].toString()).toBe(order2.sellQuantity.toString());
     expect(activeOrders3[2][0].toString()).toBe(order2.buyQuantity.toString());
 
-    await matchingMarket.methods
+    await oasisDex.methods
       .cancel(order2.id)
       .send(defaultTxOpts);
 
-    const activeOrders4 = await matchingMarketAccessor.methods
-      .getOrders(matchingMarket.options.address, order2.sellAsset, order2.buyAsset)
+    const activeOrders4 = await oasisDexAccessor.methods
+      .getOrders(oasisDex.options.address, order2.sellAsset, order2.buyAsset)
       .call()
 
     expect(activeOrders4[0].length).toBe(0);

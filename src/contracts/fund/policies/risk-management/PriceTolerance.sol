@@ -5,7 +5,7 @@ import "../../../prices/IPriceSource.sol";
 import "../TradingSignatures.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../trading/Trading.sol";
-import "../../../exchanges/interfaces/IMatchingMarket.sol";
+import "../../../exchanges/interfaces/IOasisDex.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath {
     enum Applied { pre, post }
@@ -43,7 +43,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
             makerAsset,
             maxTakerQuantity,
             takerAsset
-        ) = IMatchingMarket(ofExchange).getOffer(uint(identifier));
+        ) = IOasisDex(ofExchange).getOffer(uint(identifier));
 
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 

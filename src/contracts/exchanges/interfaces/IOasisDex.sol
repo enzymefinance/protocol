@@ -1,7 +1,7 @@
 pragma solidity ^0.5.13;
 
-/// @dev Minimal interface for our interactions with MatchingMarket
-interface IMatchingMarket {
+/// @dev Minimal interface for our interactions with OasisDex MatchingMarket
+interface IOasisDex {
     function getFirstUnsortedOffer() external view returns(uint256);
     function getNextUnsortedOffer(uint256) external view returns(uint256);
     function getBestOffer(address, address) external view returns(uint256);

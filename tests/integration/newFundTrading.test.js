@@ -4,10 +4,8 @@
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei, randomHex } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
@@ -17,7 +15,7 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 import { increaseTime } from '~/tests/utils/rpc';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
-let environment, accounts;
+let accounts;
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let contracts, exchanges, deployOut;
@@ -26,7 +24,7 @@ let trade1, trade2;
 let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
 let takeOrderSignatureBytes, makeOrderSignatureBytes;
 let fund;
-let mln, weth, matchingMarket, matchingMarketAdapter, version, priceSource, priceTolerance;
+let mln, weth, oasisDex, oasisDexAdapter, version, priceSource, priceTolerance;
 
 beforeAll(async () => {
   accounts = await web3.eth.getAccounts();
@@ -60,13 +58,13 @@ beforeAll(async () => {
 
   mln = contracts.MLN;
   weth = contracts.WETH;
-  matchingMarket = contracts.MatchingMarket;
-  matchingMarketAdapter = contracts.MatchingMarketAdapter;
+  oasisDex = contracts.OasisDexExchange;
+  oasisDexAdapter = contracts.OasisDexAdapter;
   version = contracts.Version;
   priceSource = contracts.TestingPriceFeed;
   priceTolerance = contracts.PriceTolerance;
 
-  exchanges = [matchingMarket];
+  exchanges = [oasisDex];
 
   const fundName = stringToBytes('Test fund', 32);
   await version.methods
@@ -75,8 +73,8 @@ beforeAll(async () => {
       [],
       [],
       [],
-      [matchingMarket.options.address],
-      [matchingMarketAdapter.options.address],
+      [oasisDex.options.address],
+      [oasisDexAdapter.options.address],
       weth.options.address,
       [weth.options.address]
     )
