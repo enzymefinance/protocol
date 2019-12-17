@@ -1,13 +1,12 @@
 pragma solidity ^0.5.13;
 
-import "./IFee.sol";
 import "./FeeManager.sol";
 import "../accounting/Accounting.sol";
 import "../hub/Hub.sol";
 import "../shares/Shares.sol";
 import "../../dependencies/DSMath.sol";
 
-contract PerformanceFee is DSMath, IFee {
+contract PerformanceFee is DSMath {
 
     event HighWaterMarkUpdate(address indexed feeManager, uint indexed hwm);
 

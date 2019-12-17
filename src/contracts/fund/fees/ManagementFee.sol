@@ -1,12 +1,11 @@
 pragma solidity ^0.5.13;
 
-import "./IFee.sol";
 import "./FeeManager.sol";
 import "../hub/Hub.sol";
 import "../shares/Shares.sol";
 import "../../dependencies/DSMath.sol";
 
-contract ManagementFee is DSMath, IFee {
+contract ManagementFee is DSMath {
 
     uint public DIVISOR = 10 ** 18;
 

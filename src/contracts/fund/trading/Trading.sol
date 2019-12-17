@@ -1,7 +1,6 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "./ITrading.sol";
 import "../hub/Spoke.sol";
 import "../vault/Vault.sol";
 import "../policies/PolicyManager.sol";
@@ -12,7 +11,7 @@ import "../../exchanges/interfaces/IZeroExV2.sol";
 import "../../version/Registry.sol";
 import "../../dependencies/TokenUser.sol";
 
-contract Trading is DSMath, TokenUser, Spoke, ITrading {
+contract Trading is DSMath, TokenUser, Spoke {
 
     struct Exchange {
         address exchange;
@@ -343,7 +342,7 @@ contract Trading is DSMath, TokenUser, Spoke, ITrading {
     }
 }
 
-contract TradingFactory is ITradingFactory, Factory {
+contract TradingFactory is Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

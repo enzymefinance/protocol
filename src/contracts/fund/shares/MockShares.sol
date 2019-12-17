@@ -1,11 +1,10 @@
 pragma solidity ^0.5.13;
 
-import "./Shares.i.sol";
 import "../hub/Spoke.sol";
 import "../../dependencies/token/StandardToken.sol";
 
 /// @dev Shares can be destroyed and created by anyone (testing)
-contract MockShares is Spoke, StandardToken, IShares {
+contract MockShares is Spoke, StandardToken {
     string public symbol;
     string public name;
     uint8 public decimals;

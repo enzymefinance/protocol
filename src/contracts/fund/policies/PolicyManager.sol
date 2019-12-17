@@ -3,7 +3,6 @@ pragma solidity ^0.5.13;
 import "../../factory/Factory.sol";
 import "../hub/Spoke.sol";
 import "./Policy.i.sol";
-import "./PolicyManager.i.sol";
 
 contract PolicyManager is Spoke {
 
@@ -83,7 +82,7 @@ contract PolicyManager is Spoke {
     }
 }
 
-contract PolicyManagerFactory is IPolicyManagerFactory, Factory {
+contract PolicyManagerFactory is Factory {
     function createInstance(address _hub) external returns (address) {
         address policyManager = address(new PolicyManager(_hub));
         childExists[policyManager] = true;

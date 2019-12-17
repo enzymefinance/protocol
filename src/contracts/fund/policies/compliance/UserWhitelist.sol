@@ -1,9 +1,8 @@
 pragma solidity ^0.5.13;
 
 import "../../../dependencies/DSAuth.sol";
-import "../Policy.i.sol";
 
-contract UserWhitelist is IPolicy, DSAuth {
+contract UserWhitelist is DSAuth {
 
     event ListAddition(address indexed who);
     event ListRemoval(address indexed who);

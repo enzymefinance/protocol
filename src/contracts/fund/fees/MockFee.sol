@@ -1,8 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "./IFee.sol";
-
-contract MockFee is IFee {
+contract MockFee {
 
     uint public fee;
     uint public FEE_RATE;

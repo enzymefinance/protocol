@@ -1,7 +1,6 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "./IFee.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../../factory/Factory.sol";

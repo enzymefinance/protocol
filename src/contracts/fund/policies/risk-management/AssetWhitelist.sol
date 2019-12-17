@@ -1,11 +1,10 @@
 pragma solidity ^0.5.13;
 
-import "../Policy.i.sol";
 import "../AddressList.sol";
 import "../TradingSignatures.sol";
 
 /// @notice Assets can be removed from but not added to whitelist
-contract AssetWhitelist is TradingSignatures, AddressList, IPolicy {
+contract AssetWhitelist is TradingSignatures, AddressList {
     constructor(address[] memory _assets) public AddressList(_assets) {}
 
     function removeFromWhitelist(address _asset) external auth {

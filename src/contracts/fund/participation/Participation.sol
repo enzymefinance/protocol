@@ -1,6 +1,5 @@
 pragma solidity ^0.5.13;
 
-import "./Participation.i.sol";
 import "../vault/Vault.sol";
 import "../shares/Shares.sol";
 import "../policies/PolicyManager.sol";
@@ -14,7 +13,7 @@ import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is IParticipation, TokenUser, AmguConsumer, Spoke {
+contract Participation is TokenUser, AmguConsumer, Spoke {
     event EnableInvestment (address[] asset);
     event DisableInvestment (address[] assets);
 
@@ -372,7 +371,7 @@ contract Participation is IParticipation, TokenUser, AmguConsumer, Spoke {
     }
 }
 
-contract ParticipationFactory is IParticipationFactory, Factory {
+contract ParticipationFactory is Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

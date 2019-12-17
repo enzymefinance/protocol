@@ -1,14 +1,13 @@
 pragma solidity ^0.5.13;
 
 import "../../hub/Hub.sol";
-import "../Policy.i.sol";
 import "../../../prices/PriceSource.i.sol";
 import "../TradingSignatures.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../trading/Trading.sol";
 import "../../../exchanges/interfaces/IMatchingMarket.sol";
 
-contract PriceTolerance is TradingSignatures, DSMath, IPolicy {
+contract PriceTolerance is TradingSignatures, DSMath {
     uint public tolerance;
 
     uint constant MULTIPLIER = 10 ** 16; // to give effect of a percentage

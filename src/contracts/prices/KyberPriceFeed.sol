@@ -1,6 +1,5 @@
 pragma solidity ^0.5.13;
 
-import "./PriceSource.i.sol";
 import "../dependencies/token/ERC20.i.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/DSAuth.sol"; // TODO: remove? this may not be used at all
@@ -12,7 +11,7 @@ import "../version/Registry.sol";
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract KyberPriceFeed is IPriceSource, DSMath, DSAuth {
+contract KyberPriceFeed is DSMath, DSAuth {
     event PriceUpdate(address[] token, uint[] price);
 
     address public KYBER_NETWORK_PROXY;

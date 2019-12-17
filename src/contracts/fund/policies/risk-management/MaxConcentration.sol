@@ -5,9 +5,8 @@ import "../../../prices/PriceSource.i.sol";
 import "../../accounting/Accounting.sol";
 import "../../trading/Trading.sol";
 import "../TradingSignatures.sol";
-import "../Policy.i.sol";
 
-contract MaxConcentration is TradingSignatures, DSMath, IPolicy {
+contract MaxConcentration is TradingSignatures, DSMath {
     uint internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
     uint public maxConcentration;
 
