@@ -23,8 +23,7 @@ const deployMockSystem = async (
     sharesContract = CONTRACT_NAMES.MOCK_SHARES,
     tradingContract = CONTRACT_NAMES.TRADING,
     vaultContract = CONTRACT_NAMES.VAULT,
-    versionContract = CONTRACT_NAMES.MOCK_VERSION,
-    rankingContract = CONTRACT_NAMES.FUND_RANKING,
+    versionContract = CONTRACT_NAMES.MOCK_VERSION
   } = {},
 ) => {
   const deployer = web3.eth.accounts.wallet[0].address;
@@ -83,8 +82,6 @@ const deployMockSystem = async (
       oasisDexAdapter.options.address,
     )
     .send(defaultTxOpts);
-
-  const ranking = await deploy(rankingContract);
 
   const hub = await deploy(hubContract);
   await hub.methods
@@ -207,7 +204,6 @@ const deployMockSystem = async (
     participation,
     policyManager,
     priceSource,
-    ranking,
     registry,
     shares,
     trading,
