@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-contract Policy {
+interface IPolicy {
     enum Applied { pre, post }
 
     // In Trading context:

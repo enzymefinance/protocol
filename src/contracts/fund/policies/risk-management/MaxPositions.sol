@@ -2,11 +2,11 @@ pragma solidity ^0.5.13;
 
 import "../../../prices/PriceSource.i.sol";
 import "../../accounting/Accounting.sol";
-import "../Policy.sol";
+import "../Policy.i.sol";
 import "../../trading/Trading.sol";
 import "../TradingSignatures.sol";
 
-contract MaxPositions is TradingSignatures, Policy {
+contract MaxPositions is TradingSignatures, IPolicy {
     uint public maxPositions;
 
     /// @dev _maxPositions = 10 means max 10 different asset tokens
