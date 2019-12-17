@@ -6,7 +6,7 @@ import "../fund/hub/Hub.sol";
 import "./Version.i.sol";
 
 /// @notice Controlled by governance
-contract Version is FundFactory, DSAuth, VersionInterface {
+contract Version is FundFactory, DSAuth, IVersion {
 
     constructor(
         address _accountingFactory,

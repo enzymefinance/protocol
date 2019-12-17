@@ -6,7 +6,7 @@ import "../../factory/Factory.sol";
 import "../../dependencies/TokenUser.sol";
 
 /// @notice Dumb custody component
-contract Vault is VaultInterface, TokenUser, Spoke {
+contract Vault is IVault, TokenUser, Spoke {
 
     constructor(address _hub) public Spoke(_hub) {}
 
@@ -15,7 +15,7 @@ contract Vault is VaultInterface, TokenUser, Spoke {
     }
 }
 
-contract VaultFactory is VaultFactoryInterface, Factory {
+contract VaultFactory is IVaultFactory, Factory {
     function createInstance(address _hub) external returns (address) {
         address vault = address(new Vault(_hub));
         childExists[vault] = true;

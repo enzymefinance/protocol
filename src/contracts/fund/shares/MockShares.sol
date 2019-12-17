@@ -5,7 +5,7 @@ import "../hub/Spoke.sol";
 import "../../dependencies/token/StandardToken.sol";
 
 /// @dev Shares can be destroyed and created by anyone (testing)
-contract MockShares is Spoke, StandardToken, SharesInterface {
+contract MockShares is Spoke, StandardToken, IShares {
     string public symbol;
     string public name;
     uint8 public decimals;

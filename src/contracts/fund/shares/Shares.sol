@@ -5,7 +5,7 @@ import "../hub/Spoke.sol";
 import "../../dependencies/token/StandardToken.sol";
 import "../../factory/Factory.sol";
 
-contract Shares is Spoke, StandardToken, SharesInterface {
+contract Shares is Spoke, StandardToken, IShares {
     string public symbol;
     string public name;
     uint8 public decimals;

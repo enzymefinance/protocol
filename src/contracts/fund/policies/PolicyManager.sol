@@ -83,7 +83,7 @@ contract PolicyManager is Spoke {
     }
 }
 
-contract PolicyManagerFactory is PolicyManagerFactoryInterface, Factory {
+contract PolicyManagerFactory is IPolicyManagerFactory, Factory {
     function createInstance(address _hub) external returns (address) {
         address policyManager = address(new PolicyManager(_hub));
         childExists[policyManager] = true;

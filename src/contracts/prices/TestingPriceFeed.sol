@@ -7,7 +7,7 @@ import "../dependencies/DSMath.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
-contract TestingPriceFeed is UpdatableFeedInterface, PriceSourceInterface, DSMath {
+contract TestingPriceFeed is IUpdatableFeed, IPriceSource, DSMath {
 
     struct Data {
         uint price;

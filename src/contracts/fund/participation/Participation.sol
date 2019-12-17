@@ -14,7 +14,7 @@ import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
 
 /// @notice Entry and exit point for investors
-contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke {
+contract Participation is IParticipation, TokenUser, AmguConsumer, Spoke {
     struct Request {
         address investmentAsset;
         uint investmentAmount;
@@ -75,7 +75,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
     /// @dev Request valid if price update happened since request and not expired
     /// @dev If no shares exist and not expired, request can be executed immediately
     function hasValidRequest(address _who) public view returns (bool) {
-        PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
+        IPriceSource priceSource = IPriceSource(routes.priceSource);
         bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.getLastUpdate() ||
             Shares(routes.shares).totalSupply() == 0;
 
@@ -137,7 +137,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
 
     function _cancelRequestFor(address requestOwner) internal {
         require(hasRequest(requestOwner), "No request to cancel");
-        PriceSourceInterface priceSource = PriceSourceInterface(routes.priceSource);
+        IPriceSource priceSource = IPriceSource(routes.priceSource);
         Request memory request = requests[requestOwner];
         require(
             !priceSource.hasValidPrice(request.investmentAsset) ||
@@ -180,7 +180,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
             "No valid request for this address"
         );
         require(
-            PriceSourceInterface(routes.priceSource).hasValidPrice(request.investmentAsset),
+            IPriceSource(routes.priceSource).hasValidPrice(request.investmentAsset),
             "Price not valid"
         );
 
@@ -283,7 +283,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
 
         uint owedPerformanceFees = 0;
         if (
-            PriceSourceInterface(routes.priceSource).hasValidPrices(requestedAssets)
+            IPriceSource(routes.priceSource).hasValidPrices(requestedAssets)
         ) {
             FeeManager(routes.feeManager).rewardManagementFee();
             owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
@@ -343,7 +343,7 @@ contract Participation is ParticipationInterface, TokenUser, AmguConsumer, Spoke
     }
 }
 
-contract ParticipationFactory is ParticipationFactoryInterface, Factory {
+contract ParticipationFactory is IParticipationFactory, Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

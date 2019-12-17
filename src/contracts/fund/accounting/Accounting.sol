@@ -11,7 +11,7 @@ import "../vault/Vault.sol";
 import "./Accounting.i.sol";
 import "../../engine/AmguConsumer.sol";
 
-contract Accounting is AccountingInterface, AmguConsumer, Spoke {
+contract Accounting is IAccounting, AmguConsumer, Spoke {
 
     event AssetAddition(address indexed asset);
     event AssetRemoval(address indexed asset);
@@ -74,7 +74,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
 
     function calcAssetGAV(address _queryAsset) external returns (uint) {
         uint queryAssetQuantityHeld = assetHoldings(_queryAsset);
-        return PriceSourceInterface(routes.priceSource).convertQuantity(
+        return IPriceSource(routes.priceSource).convertQuantity(
             queryAssetQuantityHeld, _queryAsset, DENOMINATION_ASSET
         );
     }
@@ -92,7 +92,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(
                 gav,
-                PriceSourceInterface(routes.priceSource).convertQuantity(
+                IPriceSource(routes.priceSource).convertQuantity(
                     quantityHeld, asset, DENOMINATION_ASSET
                 )
             );
@@ -160,7 +160,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
             _numShares,
             calcGavPerShareNetManagementFee()
         ) / 10 ** uint(SHARES_DECIMALS);
-        return PriceSourceInterface(routes.priceSource).convertQuantity(
+        return IPriceSource(routes.priceSource).convertQuantity(
             denominationAssetQuantity, DENOMINATION_ASSET, _altAsset
         );
     }
@@ -240,7 +240,7 @@ contract Accounting is AccountingInterface, AmguConsumer, Spoke {
     }
 }
 
-contract AccountingFactory is AccountingFactoryInterface, Factory {
+contract AccountingFactory is IAccountingFactory, Factory {
     event NewInstance(
         address indexed hub,
         address indexed instance,

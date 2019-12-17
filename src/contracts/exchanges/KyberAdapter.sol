@@ -196,7 +196,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         view
         returns (uint minRate)
     {
-        PriceSourceInterface pricefeed = PriceSourceInterface(getHub().priceSource());
+        IPriceSource pricefeed = IPriceSource(getHub().priceSource());
         minRate = pricefeed.getOrderPriceInfo(
             srcToken,
             destToken,

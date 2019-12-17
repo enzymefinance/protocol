@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-interface FeeManagerFactoryInterface {
+interface IFeeManagerFactory {
     function createInstance(
         address _hub,
         address _denominationAsset,

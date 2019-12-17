@@ -163,9 +163,9 @@ contract Engine is DSMath {
     function priceSource()
         public
         view
-        returns (PriceSourceInterface)
+        returns (IPriceSource)
     {
-        return PriceSourceInterface(registry.priceSource());
+        return IPriceSource(registry.priceSource());
     }
 }
 
