@@ -34,8 +34,7 @@ describe('general-walkthrough', () => {
   let contracts;
   let exchangeIndex;
   let offeredValue, wantedShares, amguAmount;
-  let order;
-  let mln, weth, engine, version, oasisDEX, matchingMarketAdapter, priceSource;
+  let mln, weth, version, oasisDex, oasisDexAdapter, priceSource;
   let priceTolerance, userWhitelist;
   let managementFee, performanceFee;
   let fund;
@@ -53,10 +52,9 @@ describe('general-walkthrough', () => {
 
     mln = contracts.MLN;
     weth = contracts.WETH;
-    engine = contracts.Engine;
     version = contracts.Version;
-    oasisDEX = contracts.MatchingMarket;
-    matchingMarketAdapter = contracts.MatchingMarketAdapter;
+    oasisDex = contracts.OasisDexExchange;
+    oasisDexAdapter = contracts.OasisDexAdapter;
     priceSource = contracts.TestingPriceFeed;
     priceTolerance = contracts.PriceTolerance;
     managementFee = contracts.ManagementFee;
@@ -65,12 +63,6 @@ describe('general-walkthrough', () => {
     offeredValue = toWei('1', 'ether');
     wantedShares = toWei('1', 'ether');
     amguAmount = toWei('.01', 'ether');
-    order = {
-      makerQuantity: toWei('0.1', 'ether'),
-      makerAsset: weth.options.address,
-      takerQuantity: toWei('2', 'ether'),
-      takerAsset: mln.options.address,
-    };
 
     await weth.methods
       .transfer(investor, toWei('10', 'ether'))
@@ -78,9 +70,6 @@ describe('general-walkthrough', () => {
     await mln.methods
       .transfer(investor, toWei('10', 'ether'))
       .send(defaultTxOpts);
-
-    // const amguPrice = toWei('1', 'gwei');
-    // await engine.methods.setAmguPrice(amguPrice).send(defaultTxOpts);
 
     await priceSource.methods
       .update(
@@ -104,8 +93,8 @@ describe('general-walkthrough', () => {
         fees.contracts,
         fees.rates,
         fees.periods,
-        [oasisDEX.options.address],
-        [matchingMarketAdapter.options.address],
+        [oasisDex.options.address],
+        [oasisDexAdapter.options.address],
         weth.options.address,
         [weth.options.address, mln.options.address],
       )
@@ -210,9 +199,9 @@ describe('general-walkthrough', () => {
     const takerAsset = weth.options.address;
 
     await mln.methods
-      .approve(oasisDEX.options.address, makerQuantity)
+      .approve(oasisDex.options.address, makerQuantity)
       .send(defaultTxOpts);
-    const res = await oasisDEX.methods
+    const res = await oasisDex.methods
       .offer(makerQuantity, makerAsset, takerQuantity, takerAsset, 0)
       .send(defaultTxOpts);
 
@@ -316,10 +305,10 @@ describe('general-walkthrough', () => {
     const orderId = hexToNumber(logMake.id);
 
     await mln.methods
-      .approve(oasisDEX.options.address, takerQuantity)
+      .approve(oasisDex.options.address, takerQuantity)
       .send(defaultTxOpts);
 
-    await oasisDEX.methods
+    await oasisDex.methods
       .buy(orderId, makerQuantity)
       .send(defaultTxOpts);
 

@@ -12,14 +12,11 @@
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, randomHex, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { deploy, fetchContract } from '~/deploy/utils/deploy-contract';
+import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { numberToBytes, stringToBytes } from '~/tests/utils/formatting';
 import {
   getEventFromReceipt,
   getFunctionSignature
@@ -31,7 +28,6 @@ let deployer, manager1, manager2, investor;
 let defaultTxOpts, investorTxOpts;
 let makeOrderFunctionSig, takeOrderFunctionSig;
 let dai, dgx, mln, weth, zrx, oasisDex, oasisDexAdapter, priceSource, priceTolerance;
-let fund;
 let contracts;
 
 beforeAll(async () => {
@@ -57,8 +53,8 @@ beforeAll(async () => {
   weth = contracts.WETH;
   zrx = contracts.ZRX;
 
-  oasisDex = contracts.MatchingMarket;
-  oasisDexAdapter = contracts.MatchingMarketAdapter;
+  oasisDex = contracts.OasisDexExchange;
+  oasisDexAdapter = contracts.OasisDexAdapter;
   priceSource = contracts.TestingPriceFeed;
   priceTolerance = contracts.PriceTolerance;
 

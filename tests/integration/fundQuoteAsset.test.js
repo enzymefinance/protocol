@@ -8,11 +8,8 @@
  */
 
 import { BN, toWei, randomHex } from 'web3-utils';
-
-import { fetchContract } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
@@ -20,13 +17,13 @@ import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
 describe('fund-quote-asset', () => {
-  let environment, accounts;
+  let accounts;
   let deployer, manager, investor;
   let defaultTxOpts, investorTxOpts, managerTxOpts;
   let fundDenominationAsset;
   let trade1;
   let contracts, deployOut;
-  let dgx, mln, weth, matchingMarket, version, priceSource;
+  let dgx, mln, weth, oasisDex, version, priceSource;
   let accounting, vault, participation, trading, shares;
   let makeOrderSignature;
 
@@ -45,16 +42,16 @@ describe('fund-quote-asset', () => {
     dgx = contracts.DGX;
     mln = contracts.MLN;
     weth = contracts.WETH;
-    matchingMarket = contracts.MatchingMarket;
+    oasisDex = contracts.OasisDexExchange;
     priceSource = contracts.TestingPriceFeed;
     makeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'makeOrder',
     );
 
-    const mlnDgxAlreadyWhitelisted = await matchingMarket.methods.isTokenPairWhitelisted(mln.options.address, dgx.options.address).call();
+    const mlnDgxAlreadyWhitelisted = await oasisDex.methods.isTokenPairWhitelisted(mln.options.address, dgx.options.address).call();
     if (!mlnDgxAlreadyWhitelisted) {
-      await matchingMarket.methods.addTokenPairWhitelist(mln.options.address, dgx.options.address).send(defaultTxOpts);
+      await oasisDex.methods.addTokenPairWhitelist(mln.options.address, dgx.options.address).send(defaultTxOpts);
     }
 
     await version.methods
@@ -63,8 +60,8 @@ describe('fund-quote-asset', () => {
         [],
         [],
         [],
-        [matchingMarket.options.address.toString()],
-        [deployOut.melon.addr.MatchingMarketAdapter],
+        [oasisDex.options.address.toString()],
+        [deployOut.melon.addr.OasisDexAdapter],
         dgx.options.address.toString(),
         [
           mln.options.address.toString(),
@@ -301,14 +298,14 @@ describe('fund-quote-asset', () => {
     ).toString();
 
     const preDgxExchange = await dgx.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const preDgxFund = await dgx.methods
       .balanceOf(vault.options.address)
       .call();
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const preMlnExchange = await mln.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const preMlnFund = await mln.methods
       .balanceOf(vault.options.address)
@@ -336,14 +333,14 @@ describe('fund-quote-asset', () => {
       .send(managerTxOpts);
 
     const postDgxExchange = await dgx.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const postDgxFund = await dgx.methods
       .balanceOf(vault.options.address)
       .call();
     const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const postMlnExchange = await mln.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const postMlnFund = await mln.methods
       .balanceOf(vault.options.address)
@@ -362,27 +359,27 @@ describe('fund-quote-asset', () => {
   });
 
   test('Third party takes entire order', async () => {
-    const orderId = await matchingMarket.methods.last_offer_id().call();
+    const orderId = await oasisDex.methods.last_offer_id().call();
 
     const preDgxDeployer = await dgx.methods.balanceOf(deployer).call();
     const preDgxExchange = await dgx.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const preDgxFund = await dgx.methods
       .balanceOf(vault.options.address)
       .call();
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const preMlnExchange = await mln.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const preMlnFund = await mln.methods
       .balanceOf(vault.options.address)
       .call();
 
     await mln.methods
-      .approve(matchingMarket.options.address, trade1.buyQuantity)
+      .approve(oasisDex.options.address, trade1.buyQuantity)
       .send(defaultTxOpts);
-    await matchingMarket.methods
+    await oasisDex.methods
       .buy(orderId, trade1.sellQuantity)
       .send(defaultTxOpts);
     await trading.methods
@@ -391,14 +388,14 @@ describe('fund-quote-asset', () => {
 
     const postDgxDeployer = await dgx.methods.balanceOf(deployer).call();
     const postDgxExchange = await dgx.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const postDgxFund = await dgx.methods
       .balanceOf(vault.options.address)
       .call();
     const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
     const postMlnExchange = await mln.methods
-      .balanceOf(matchingMarket.options.address)
+      .balanceOf(oasisDex.options.address)
       .call();
     const postMlnFund = await mln.methods
       .balanceOf(vault.options.address)

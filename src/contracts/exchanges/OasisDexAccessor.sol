@@ -1,8 +1,8 @@
 pragma solidity ^0.5.13;
 
-import "./interfaces/IMatchingMarket.sol";
+import "./interfaces/IOasisDex.sol";
 
-contract MatchingMarketAccessor {
+contract OasisDexAccessor {
     function getUnsortedOfferIds(
         address targetExchange,
         address sellAsset,
@@ -12,7 +12,7 @@ contract MatchingMarketAccessor {
     view
     returns (uint[] memory)
     {
-        IMatchingMarket market = IMatchingMarket(targetExchange);
+        IOasisDex market = IOasisDex(targetExchange);
         uint[] memory ids = new uint[](1000);
         uint count = 0;
 
@@ -55,7 +55,7 @@ contract MatchingMarketAccessor {
     view
     returns(uint[] memory)
     {
-        IMatchingMarket market = IMatchingMarket(targetExchange);
+        IOasisDex market = IOasisDex(targetExchange);
         uint[] memory ids = new uint[](1000);
         uint count = 0;
 
@@ -91,7 +91,7 @@ contract MatchingMarketAccessor {
     public
     view
     returns (uint[] memory, uint[] memory, uint[] memory) {
-        IMatchingMarket market = IMatchingMarket(targetExchange);
+        IOasisDex market = IOasisDex(targetExchange);
         uint[] memory sIds = getSortedOfferIds(targetExchange, sellAsset, buyAsset);
         uint[] memory uIds = getUnsortedOfferIds(targetExchange, sellAsset, buyAsset);
         uint[] memory ids = new uint[](uIds.length + sIds.length);

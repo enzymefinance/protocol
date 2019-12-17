@@ -5,13 +5,13 @@ import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/DSMath.sol";
-import "./interfaces/IMatchingMarket.sol";
+import "./interfaces/IOasisDex.sol";
 import "./ExchangeAdapter.sol";
 
-/// @title MatchingMarketAdapter Contract
+/// @title OasisDexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
+contract OasisDexAdapter is DSMath, ExchangeAdapter {
 
     event OrderCreated(uint256 id);
 
@@ -60,7 +60,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             "Could not approve maker asset"
         );
 
-        uint256 orderId = IMatchingMarket(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
+        uint256 orderId = IOasisDex(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
 
         // defines success in MatchingMarket
         require(orderId != 0, "Order ID should not be zero");
@@ -113,7 +113,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             makerAsset,
             maxTakerQuantity,
             takerAsset
-        ) = IMatchingMarket(targetExchange).getOffer(uint256(identifier));
+        ) = IOasisDex(targetExchange).getOffer(uint256(identifier));
         uint256 fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
         require(
@@ -133,7 +133,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             "Taker asset could not be approved"
         );
         require(
-            IMatchingMarket(targetExchange).buy(uint256(identifier), fillMakerQuantity),
+            IOasisDex(targetExchange).buy(uint256(identifier), fillMakerQuantity),
             "Buy on matching market failed"
         );
 
@@ -170,7 +170,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         require(uint256(identifier) != 0, "ID cannot be zero");
 
         address makerAsset;
-        (, makerAsset, ,) = IMatchingMarket(targetExchange).getOffer(uint256(identifier));
+        (, makerAsset, ,) = IOasisDex(targetExchange).getOffer(uint256(identifier));
 
         require(
             address(makerAsset) == orderAddresses[2],
@@ -178,7 +178,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
         );
 
         getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
-        IMatchingMarket(targetExchange).cancel(
+        IOasisDex(targetExchange).cancel(
             uint256(identifier)
         );
         getTrading().returnAssetToVault(makerAsset);
@@ -208,7 +208,7 @@ contract MatchingMarketAdapter is DSMath, ExchangeAdapter {
             sellAsset,
             buyQuantity,
             buyAsset
-        ) = IMatchingMarket(targetExchange).getOffer(id);
+        ) = IOasisDex(targetExchange).getOffer(id);
         return (
             sellAsset,
             buyAsset,
