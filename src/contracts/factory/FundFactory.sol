@@ -1,4 +1,4 @@
-pragma solidity ^0.5.13;
+pragma solidity 0.5.15;
 pragma experimental ABIEncoderV2;
 
 import "../fund/accounting/IAccounting.sol";

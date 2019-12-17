@@ -1,6 +1,6 @@
 /// @notice Retrieved from DappHub (https://git.io/fpwMi)
 
-pragma solidity ^0.5.13;
+pragma solidity 0.5.15;
 
 import "./DSAuth.sol";
 

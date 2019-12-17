@@ -1,4 +1,4 @@
-pragma solidity ^0.5.13;
+pragma solidity 0.5.15;
 
 /// @notice Gives metrics about a Fund
 interface IAccounting {
