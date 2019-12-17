@@ -11,7 +11,7 @@ const out_obj = {
       "enabled": true,
       "runs": 200
     },
-    "evmVersion": "byzantium",
+    "evmVersion": "istanbul",
     "outputSelection": {
       "*": {
         "*": [
