@@ -4,7 +4,7 @@ const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: impor
 
 const main = async input => {
   const contracts = {};
-  contracts.Exchange = fetchContract('Exchange', input.zeroex.addr.Exchange);
+  contracts.ZeroExV2Exchange = fetchContract('ZeroExV2Exchange', input.zeroex.addr.ZeroExV2Exchange);
   contracts.WrapperRegistryEFX = await nab('WrapperRegistryEFX', [], input.ethfinex.addr);
 
   const wrapperMap = new Map();
@@ -14,7 +14,7 @@ const main = async input => {
         'WETH',
         'WETH token',
         18,
-        input.zeroex.addr.Exchange,
+        input.zeroex.addr.ZeroExV2Exchange,
         input.zeroex.addr.ERC20Proxy,
       ], input.ethfinex.addr);
       contracts.WrapperLockEth = wrapperLockEth;
@@ -27,7 +27,7 @@ const main = async input => {
         `Wrapped ${tokenSym} Token`,
         input.tokens.conf[tokenSym].decimals,
         false,
-        input.zeroex.addr.Exchange,
+        input.zeroex.addr.ZeroExV2Exchange,
         input.zeroex.addr.ERC20Proxy,
       ], input.ethfinex.addr, wrapSym);
       contracts[wrapSym] = wrapper;

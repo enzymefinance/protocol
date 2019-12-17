@@ -10,13 +10,9 @@
  */
 
 import { orderHashUtils } from '@0x/order-utils';
-import { AssetProxyId } from '@0x/types';
 import { BN, randomHex, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
-import { getUpdatedTestPrices } from '~/tests/utils/api';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
@@ -33,7 +29,7 @@ describe('fund-0x-trading', () => {
   let deployer, manager, investor;
   let defaultTxOpts, managerTxOpts, investorTxOpts;
   let contracts, deployOut;
-  let mln, zrx, weth, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
+  let mln, zrx, weth, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
   let signedOrder1, signedOrder2, signedOrder3, signedOrder4;
   let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
 
@@ -65,9 +61,8 @@ describe('fund-0x-trading', () => {
     mln = contracts.MLN;
     zrx = contracts.ZRX;
     weth = contracts.WETH;
-    priceSource = contracts.TestingPriceFeed;
     version = contracts.Version;
-    zeroExExchange = contracts.Exchange;
+    zeroExExchange = contracts.ZeroExV2Exchange;
     zeroExAdapter = contracts.ZeroExV2Adapter;
     erc20Proxy = contracts.ERC20Proxy;
 
