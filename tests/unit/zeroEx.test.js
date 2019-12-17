@@ -1,10 +1,6 @@
-import { AssetProxyId } from '@0x/types';
 import { toWei } from 'web3-utils';
-
-import { fetchContract } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import {
   createUnsignedZeroExOrder,
@@ -12,11 +8,10 @@ import {
 } from '~/tests/utils/zeroEx';
 
 describe('account-0x-trading', () => {
-  let user, defaultTxOpts, takerEnvironment;
+  let user, defaultTxOpts;
   let accounts;
-  let weth, mln, zrx;
+  let weth, mln;
   let zeroExExchange, erc20Proxy;
-  let deployOut;
 
   beforeAll(async () => {
     accounts = await web3.eth.getAccounts();
@@ -25,12 +20,10 @@ describe('account-0x-trading', () => {
     user = deployer;
     const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
     const contracts = deployed.contracts;
-    deployOut = deployed.deployOut;
 
     weth = contracts.WETH;
     mln = contracts.MLN;
-    zrx = contracts.ZRX;
-    zeroExExchange = contracts.Exchange;
+    zeroExExchange = contracts.ZeroExV2Exchange;
     erc20Proxy = contracts.ERC20Proxy;
 
     await weth.methods

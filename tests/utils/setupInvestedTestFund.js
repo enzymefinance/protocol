@@ -21,8 +21,8 @@ const setupInvestedTestFund = async (contracts, manager) => {
   const exchangeAddresses = [
     contracts.OasisDexExchange.options.address,
     contracts.KyberNetworkProxy.options.address,
-    contracts.Exchange.options.address,
-    contracts.Exchange.options.address,
+    contracts.ZeroExV2Exchange.options.address,
+    contracts.ZeroExV2Exchange.options.address,
     contracts.Engine.options.address,
   ];
 

@@ -82,7 +82,7 @@ const main = async input => {
   };
   if (input.ethfinex) {
     exchanges.ethfinex = {
-      exchange: input.ethfinex.addr.Exchange,
+      exchange: input.ethfinex.addr.ZeroExV2Exchange,
       adapter: ethfinexAdapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.ethfinex
     };
@@ -103,7 +103,7 @@ const main = async input => {
   }
   if (input.zeroex) {
     exchanges.zeroex = {
-      exchange: input.zeroex.addr.Exchange,
+      exchange: input.zeroex.addr.ZeroExV2Exchange,
       adapter: zeroExV2Adapter.options.address,
       takesCustody: melonConf.exchangeTakesCustody.zeroex
     };

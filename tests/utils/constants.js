@@ -77,5 +77,5 @@ export const CONTRACT_NAMES = {
   WRAPPER_LOCK_ETH: 'WrapperLockEth',
   WRAPPER_REGISTRY_EFX: 'WrapperRegistryEFX',
   ZERO_EX_ADAPTER: 'ZeroExV2Adapter',
-  ZERO_EX_EXCHANGE: 'Exchange',
+  ZERO_EX_EXCHANGE: 'ZeroExV2Exchange',
 }

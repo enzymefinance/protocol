@@ -4,7 +4,7 @@ const { assetDataUtils } = require('@0x/order-utils');
 const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: import from util
 
 const main = async input => {
-  const exchange = await nab('Exchange', [], input.zeroex.addr);
+  const exchange = await nab('ZeroExV2Exchange', [], input.zeroex.addr);
   const erc20Proxy = await nab('ERC20Proxy', [], input.zeroex.addr);
 
   const alreadyAuth = await call(erc20Proxy, 'authorized', [exchange.options.address]);
@@ -25,7 +25,7 @@ const main = async input => {
   await send(exchange, 'changeZRXAssetData', [zrxAssetData]);
 
   return {
-    "Exchange": exchange,
+    "ZeroExV2Exchange": exchange,
     "ERC20Proxy": erc20Proxy
   };
 }

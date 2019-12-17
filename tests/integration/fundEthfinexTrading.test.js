@@ -64,7 +64,7 @@ beforeAll(async () => {
     'withdrawTokens',
   );
 
-  ethfinex = contracts.Exchange;
+  ethfinex = contracts.ZeroExV2Exchange;
   ethfinexAdapter = contracts.EthfinexAdapter;
   mln = contracts.MLN;
   weth = contracts.WETH;
