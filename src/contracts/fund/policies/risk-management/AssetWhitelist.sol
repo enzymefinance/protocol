@@ -30,6 +30,6 @@ contract AssetWhitelist is TradingSignatures, AddressList {
         return isMember(incomingToken);
     }
 
-    function position() external view returns (Applied) { return Applied.pre; }
-    function identifier() external view returns (string memory) { return 'Asset whitelist'; }
+    function position() external pure returns (Applied) { return Applied.pre; }
+    function identifier() external pure returns (string memory) { return 'Asset whitelist'; }
 }

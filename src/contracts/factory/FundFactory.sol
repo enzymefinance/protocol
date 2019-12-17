@@ -87,7 +87,7 @@ contract FundFactory is AmguConsumer, Factory {
         version = IVersion(_version);
     }
 
-    function componentExists(address _component) internal returns (bool) {
+    function componentExists(address _component) internal pure returns (bool) {
         return _component != address(0);
     }
 

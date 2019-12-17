@@ -36,6 +36,6 @@ contract MaxConcentration is TradingSignatures, DSMath {
         return concentration <= maxConcentration;
     }
 
-    function position() external view returns (Applied) { return Applied.post; }
-    function identifier() external view returns (string memory) { return 'Max concentration'; }
+    function position() external pure returns (Applied) { return Applied.post; }
+    function identifier() external pure returns (string memory) { return 'Max concentration'; }
 }
