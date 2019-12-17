@@ -187,7 +187,6 @@ const main = async input => {
     "ManagementFee": managementFee,
     "Registry": registry,
     "Engine": engine,
-    "FundRanking": fundRanking,
     "Version": version,
   };
 
