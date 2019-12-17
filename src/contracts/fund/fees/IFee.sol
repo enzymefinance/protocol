@@ -1,4 +1,4 @@
-pragma solidity ^0.5.13;
+pragma solidity 0.5.15;
 
 /// @dev Exposes "feeAmount", which maps fund state and fee state to uint
 /// @dev Notice that "feeAmount" *may* change contract state

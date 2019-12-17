@@ -1,6 +1,6 @@
 DIR = ./compile
 files =
-all: clean extract
+all: clean extract thirdparty_contracts
 thirdparty_contracts: extract
 	cp thirdparty/* out/
 extract: compile_out.json ok
@@ -13,4 +13,4 @@ compile_in.json:
 	${DIR}/generate_input.js $(files) > compile_in.json
 clean:
 	rm -rf compile_in.json compile_out.json out
-.PHONY: all extract ok clean
+.PHONY: all extract ok clean thirdparty_contracts
