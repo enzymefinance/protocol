@@ -5,7 +5,7 @@ import "../shares/Shares.sol";
 import "../policies/PolicyManager.sol";
 import "../hub/Spoke.sol";
 import "../accounting/Accounting.sol";
-import "../../prices/PriceSource.i.sol";
+import "../../prices/IPriceSource.sol";
 import "../../factory/Factory.sol";
 import "../../engine/AmguConsumer.sol";
 import "../../dependencies/token/ERC20.i.sol";

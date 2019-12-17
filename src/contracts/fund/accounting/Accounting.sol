@@ -2,7 +2,7 @@ pragma solidity ^0.5.13;
 
 import "../../dependencies/token/StandardToken.sol";
 import "../../factory/Factory.sol";
-import "../../prices/PriceSource.i.sol";
+import "../../prices/IPriceSource.sol";
 import "../fees/FeeManager.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";

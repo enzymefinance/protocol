@@ -2,9 +2,9 @@ pragma solidity ^0.5.13;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/ERC20.i.sol";
-import "../prices/PriceSource.i.sol";
-import "../version/Version.i.sol";
-import "./Engine.i.sol";
+import "../prices/IPriceSource.sol";
+import "../version/IVersion.sol";
+import "./IEngine.sol";
 import "../version/Registry.sol";
 
 /// @notice Abstract contracts
