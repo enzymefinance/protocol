@@ -22,15 +22,15 @@ contract FundFactory is AmguConsumer, Factory {
         address[12] routes
     );
 
-    VersionInterface public version;
+    IVersion public version;
     Registry public associatedRegistry;
-    AccountingFactoryInterface public accountingFactory;
-    FeeManagerFactoryInterface public feeManagerFactory;
-    ParticipationFactoryInterface public participationFactory;
-    PolicyManagerFactoryInterface public policyManagerFactory;
-    SharesFactoryInterface public sharesFactory;
+    IAccountingFactory public accountingFactory;
+    IFeeManagerFactory public feeManagerFactory;
+    IParticipationFactory public participationFactory;
+    IPolicyManagerFactory public policyManagerFactory;
+    ISharesFactory public sharesFactory;
     ITradingFactory public tradingFactory;
-    VaultFactoryInterface public vaultFactory;
+    IVaultFactory public vaultFactory;
 
     address[] public funds;
     mapping (address => address) public managersToHubs;
@@ -77,14 +77,14 @@ contract FundFactory is AmguConsumer, Factory {
     )
         public
     {
-        accountingFactory = AccountingFactoryInterface(_accountingFactory);
-        feeManagerFactory = FeeManagerFactoryInterface(_feeManagerFactory);
-        participationFactory = ParticipationFactoryInterface(_participationFactory);
-        sharesFactory = SharesFactoryInterface(_sharesFactory);
+        accountingFactory = IAccountingFactory(_accountingFactory);
+        feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
+        participationFactory = IParticipationFactory(_participationFactory);
+        sharesFactory = ISharesFactory(_sharesFactory);
         tradingFactory = ITradingFactory(_tradingFactory);
-        vaultFactory = VaultFactoryInterface(_vaultFactory);
-        policyManagerFactory = PolicyManagerFactoryInterface(_policyManagerFactory);
-        version = VersionInterface(_version);
+        vaultFactory = IVaultFactory(_vaultFactory);
+        policyManagerFactory = IPolicyManagerFactory(_policyManagerFactory);
+        version = IVersion(_version);
     }
 
     function componentExists(address _component) internal returns (bool) {

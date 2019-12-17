@@ -1,7 +1,7 @@
 pragma solidity ^0.5.13;
 
 /// @notice Gives metrics about a Fund
-interface AccountingInterface {
+interface IAccounting {
     function getOwnedAssetsLength() external view returns (uint);
     function getFundHoldings() external returns (uint[] memory, address[] memory);
     function calcAssetGAV(address ofAsset) external returns (uint);
@@ -20,6 +20,6 @@ interface AccountingInterface {
     function calcGavPerShareNetManagementFee() external returns (uint);
 }
 
-interface AccountingFactoryInterface {
+interface IAccountingFactory {
     function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] calldata _defaultAssets) external returns (address);
 }

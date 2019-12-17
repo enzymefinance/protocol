@@ -46,7 +46,7 @@ contract PriceTolerance is TradingSignatures, DSMath, IPolicy {
 
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(Hub(Trading(address(msg.sender)).hub()).priceSource());
         uint referencePrice;
         (referencePrice,) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
@@ -71,7 +71,7 @@ contract PriceTolerance is TradingSignatures, DSMath, IPolicy {
         uint fillTakerQuantity = values[2];
         uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
 
-        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(Hub(Trading(address(msg.sender)).hub()).priceSource());
         uint referencePrice;
         (referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
@@ -105,11 +105,11 @@ contract PriceTolerance is TradingSignatures, DSMath, IPolicy {
         uint[3] memory values,
         bytes32 identifier
     ) public view returns (bool) {
-        PriceSourceInterface pricefeed = PriceSourceInterface(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(Hub(Trading(address(msg.sender)).hub()).priceSource());
 
         uint ratio;
-        (ratio,) = PriceSourceInterface(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
-        uint _value = PriceSourceInterface(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
+        (ratio,) = IPriceSource(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
+        uint _value = IPriceSource(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
 
         int res = signedSafeSub(int(ratio), int(_value));
         if (res < 0) {

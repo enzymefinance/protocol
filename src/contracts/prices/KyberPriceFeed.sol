@@ -12,7 +12,7 @@ import "../version/Registry.sol";
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract KyberPriceFeed is PriceSourceInterface, DSMath, DSAuth {
+contract KyberPriceFeed is IPriceSource, DSMath, DSAuth {
 
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;

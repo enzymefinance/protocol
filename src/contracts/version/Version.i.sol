@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-interface VersionInterface {
+interface IVersion {
     function shutDownFund(address) external;
 }
 

@@ -4,7 +4,7 @@ import "./Version.i.sol";
 import "../fund/hub/Hub.sol";
 
 /// @notice Version contract useful for testing
-contract MockVersion is VersionInterface {
+contract MockVersion is IVersion {
     uint public amguPrice;
     bool public isShutDown;
 

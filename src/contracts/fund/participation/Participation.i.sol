@@ -2,7 +2,7 @@ pragma solidity ^0.5.13;
 
 /// @notice Investor Fund interactions
 /// @notice Handles redemptions and requests for investment
-interface ParticipationInterface {
+interface IParticipation {
     event EnableInvestment (address[] asset);
     event DisableInvestment (address[] assets);
 
@@ -44,6 +44,6 @@ interface ParticipationInterface {
     function redeemWithConstraints(uint shareQuantity, address[] calldata requestedAssets) external;
 }
 
-interface ParticipationFactoryInterface {
+interface IParticipationFactory {
     function createInstance(address _hub, address[] calldata _defaultAssets, address _registry) external returns (address);
 }

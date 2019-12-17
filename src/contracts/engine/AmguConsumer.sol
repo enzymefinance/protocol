@@ -27,7 +27,7 @@ contract AmguConsumer is DSMath {
             sub(initialGas, gasleft())
         );
         address nativeAsset = Registry(registry()).nativeAsset();
-        uint ethToPay = PriceSourceInterface(priceSource()).convertQuantity(
+        uint ethToPay = IPriceSource(priceSource()).convertQuantity(
             mlnQuantity,
             mlnToken(),
             nativeAsset
