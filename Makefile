@@ -1,6 +1,8 @@
 DIR = ./compile
 files =
 all: clean extract
+thirdparty_contracts: extract
+	cp thirdparty/* out/
 extract: compile_out.json ok
 	${DIR}/extract_build.js compile_out.json out
 ok: compile_out.json
