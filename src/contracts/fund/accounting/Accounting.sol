@@ -103,7 +103,7 @@ contract Accounting is AmguConsumer, Spoke {
         return sub(gav, unclaimedFeesInDenominationAsset);
     }
 
-    function valuePerShare(uint totalValue, uint numShares) public view returns (uint) {
+    function valuePerShare(uint totalValue, uint numShares) public pure returns (uint) {
         require(numShares > 0, "No shares to calculate value for");
         return (totalValue * 10 ** uint(SHARES_DECIMALS)) / numShares;
     }

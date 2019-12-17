@@ -134,6 +134,6 @@ contract PriceTolerance is TradingSignatures, DSMath {
         revert("Signature was neither MakeOrder nor TakeOrder");
     }
 
-    function position() external view returns (Applied) { return Applied.pre; }
-    function identifier() external view returns (string memory) { return 'Price tolerance'; }
+    function position() external pure returns (Applied) { return Applied.pre; }
+    function identifier() external pure returns (string memory) { return 'Price tolerance'; }
 }

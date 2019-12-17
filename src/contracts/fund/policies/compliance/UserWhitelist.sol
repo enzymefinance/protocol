@@ -40,7 +40,7 @@ contract UserWhitelist is DSAuth {
         return whitelisted[addresses[0]];
     }
 
-    function position() external view returns (Applied) { return Applied.pre; }
-    function identifier() external view returns (string memory) { return 'UserWhitelist'; }
+    function position() external pure returns (Applied) { return Applied.pre; }
+    function identifier() external pure returns (string memory) { return 'UserWhitelist'; }
 }
 

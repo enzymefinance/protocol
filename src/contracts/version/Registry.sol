@@ -107,7 +107,7 @@ contract Registry is DSAuth {
     // PUBLIC METHODS
 
     /// @notice Whether _name has only valid characters
-    function isValidFundName(string memory _name) public view returns (bool) {
+    function isValidFundName(string memory _name) public pure returns (bool) {
         bytes memory b = bytes(_name);
         if (b.length > MAX_FUND_NAME_BYTES) return false;
         for (uint i; i < b.length; i++){

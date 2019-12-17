@@ -26,6 +26,6 @@ contract MaxPositions is TradingSignatures {
         return accounting.getOwnedAssetsLength() <= maxPositions;
     }
 
-    function position() external view returns (Applied) { return Applied.post; }
-    function identifier() external view returns (string memory) { return 'Max positions'; }
+    function position() external pure returns (Applied) { return Applied.post; }
+    function identifier() external pure returns (string memory) { return 'Max positions'; }
 }
