@@ -12,7 +12,7 @@ contract ManagementFee is DSMath {
     mapping (address => uint) public managementFeeRate;
     mapping (address => uint) public lastPayoutTime;
 
-    function feeAmount() external returns (uint feeInShares) {
+    function feeAmount() external view returns (uint feeInShares) {
         Hub hub = FeeManager(msg.sender).hub();
         Shares shares = Shares(hub.shares());
         if (shares.totalSupply() == 0 || managementFeeRate[msg.sender] == 0) {
