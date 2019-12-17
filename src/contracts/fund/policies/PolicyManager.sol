@@ -2,7 +2,7 @@ pragma solidity ^0.5.13;
 
 import "../../factory/Factory.sol";
 import "../hub/Spoke.sol";
-import "./Policy.i.sol";
+import "./IPolicy.sol";
 
 contract PolicyManager is Spoke {
 

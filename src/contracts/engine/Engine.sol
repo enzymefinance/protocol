@@ -2,7 +2,7 @@ pragma solidity ^0.5.13;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
-import "../prices/PriceSource.i.sol";
+import "../prices/IPriceSource.sol";
 import "../version/Registry.sol";
 
 /// @notice Liquidity contract and token sink

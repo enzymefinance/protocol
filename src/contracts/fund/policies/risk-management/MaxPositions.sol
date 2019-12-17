@@ -1,6 +1,6 @@
 pragma solidity ^0.5.13;
 
-import "../../../prices/PriceSource.i.sol";
+import "../../../prices/IPriceSource.sol";
 import "../../accounting/Accounting.sol";
 import "../../trading/Trading.sol";
 import "../TradingSignatures.sol";

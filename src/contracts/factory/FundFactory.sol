@@ -1,15 +1,15 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "../fund/accounting/Accounting.i.sol";
-import "../fund/fees/FeeManager.i.sol";
+import "../fund/accounting/IAccounting.sol";
+import "../fund/fees/IFeeManager.sol";
 import "../fund/hub/Hub.sol";
-import "../fund/policies/PolicyManager.i.sol";
-import "../fund/participation/Participation.i.sol";
-import "../fund/shares/Shares.i.sol";
+import "../fund/policies/IPolicyManager.sol";
+import "../fund/participation/IParticipation.sol";
+import "../fund/shares/IShares.sol";
 import "../fund/trading/ITrading.sol";
-import "../fund/vault/Vault.i.sol";
-import "../version/Version.i.sol";
+import "../fund/vault/IVault.sol";
+import "../version/IVersion.sol";
 import "../engine/AmguConsumer.sol";
 import "./Factory.sol";
 
