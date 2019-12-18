@@ -1,7 +1,7 @@
 pragma solidity 0.5.15;
 
-import "../../dependencies/DSGuard.sol";
-import "./Spoke.sol";
+import "main/dependencies/DSGuard.sol";
+import "main/fund/hub/Spoke.sol";
 
 /// @notice Hub used for testing
 contract MockHub is DSGuard {

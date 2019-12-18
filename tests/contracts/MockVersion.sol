@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "../fund/hub/Hub.sol";
+import "main/fund/hub/Hub.sol";
 
 /// @notice Version contract useful for testing
 contract MockVersion {

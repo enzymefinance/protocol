@@ -1,7 +1,7 @@
 pragma solidity 0.5.15;
 
-import "../hub/Spoke.sol";
-import "../../dependencies/token/StandardToken.sol";
+import "main/fund/hub/Spoke.sol";
+import "main/dependencies/token/StandardToken.sol";
 
 /// @dev Shares can be destroyed and created by anyone (testing)
 contract MockShares is Spoke, StandardToken {

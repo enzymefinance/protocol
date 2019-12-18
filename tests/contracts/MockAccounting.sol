@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "../hub/Spoke.sol";
+import "main/fund/hub/Spoke.sol";
 
 /// @dev Balances are fake and can be set by anyone (testing)
 contract MockAccounting is Spoke {

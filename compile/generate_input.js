@@ -7,6 +7,7 @@ const out_obj = {
   "language": "Solidity",
   "settings":
   {
+    "remappings": [ "main=./src/contracts" ],
     "optimizer": {
       "enabled": true,
       "runs": 200
@@ -28,7 +29,7 @@ const out_obj = {
 
 let solFiles;
 if (process.argv.length == 2) {
-  solFiles = glob.sync('./src/**/*.sol');
+  solFiles = glob.sync('./{src,tests}/**/*.sol');
 } else if (process.argv[2] == '--help') {
   console.log('Usage: generate_input.js [input_file...]');
   process.exit(0);

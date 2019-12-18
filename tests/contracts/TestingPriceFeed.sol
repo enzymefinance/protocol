@@ -1,7 +1,7 @@
 pragma solidity 0.5.15;
 
-import "../dependencies/token/ERC20.i.sol";
-import "../dependencies/DSMath.sol";
+import "main/dependencies/token/ERC20.i.sol";
+import "main/dependencies/DSMath.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
