@@ -56,7 +56,6 @@ export const CONTRACT_NAMES = {
   POLICY_MANAGER: 'PolicyManager',
   POLICY_MANAGER_FACTORY: 'PolicyManagerFactory',
   PREMINED_TOKEN: 'PreminedToken',
-  PRICE_SOURCE_INTERFACE: 'PriceSourceInterface',
   PRICE_TOLERANCE: 'PriceTolerance',
   REGISTRY: 'Registry',
   SELF_DESTRUCTING: 'SelfDestructing',
