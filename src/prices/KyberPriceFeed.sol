@@ -250,7 +250,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
         uint askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
         /**
           Average the bid/ask prices:
-          avgPriceFromKyber = (bidRate + astRate) / 2
+          avgPriceFromKyber = (bidRate + askRate) / 2
           kyberPrice = (avgPriceFromKyber * 10^quoteDecimals) / 10^kyberPrecision
           or, rearranged:
           kyberPrice = ((bidRate + askRate) * 10^quoteDecimals) / 2 * 10^kyberPrecision

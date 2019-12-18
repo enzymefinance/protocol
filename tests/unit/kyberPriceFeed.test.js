@@ -107,4 +107,73 @@ describe('kyber-price-feed', () => {
     expect(updatedMlnPrice.toString()).toBe(mlnPrice.toString());
     expect(updatedEurPrice.toString()).toBe(eurPrice.toString());
   });
+ 
+  it('Normal (positive) spread condition yields midpoint price', async () => {
+    const mlnBid = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      new BN(toWei('0.05', 'ether'))
+    );
+    const mlnAsk = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      new BN(toWei('0.04', 'ether'))
+    );
+    const ethBidInMln = BNExpInverse(mlnBid); // ETH per 1 MLN (based on bid)
+
+    const blockNumber = (await web3.eth.getBlock('latest')).number;
+    await conversionRates.methods
+      .setBaseRate(
+        [mln.options.address],
+        [ethBidInMln.toString()],
+        [mlnAsk.toString()],
+        ['0x0000000000000000000000000000'],
+        ['0x0000000000000000000000000000'],
+        blockNumber,
+        [0]
+      ).send(deployerTxOpts);
+
+    await kyberPriceFeed.methods.update().send(deployerTxOpts);
+
+    const mlnPrice = await kyberPriceFeed.methods.getPrice(
+      mln.options.address
+    ).call();
+    const midpointPrice = BNExpDiv(
+      mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
+    ).toString();
+    expect(mlnPrice.price).toBe(midpointPrice);
+  });
+
+  it('Crossed market condition yields midpoint price', async () => {
+    const mlnBid = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      new BN(toWei('0.04', 'ether'))
+    );
+    const mlnAsk = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      new BN(toWei('0.05', 'ether'))
+    );
+    const ethBidInMln = BNExpInverse(mlnBid); // ETH per 1 MLN (based on bid)
+
+    const blockNumber = (await web3.eth.getBlock('latest')).number;
+    await conversionRates.methods
+      .setBaseRate(
+        [mln.options.address],
+        [ethBidInMln.toString()],
+        [mlnAsk.toString()],
+        ['0x0000000000000000000000000000'],
+        ['0x0000000000000000000000000000'],
+        blockNumber,
+        [0]
+      ).send(deployerTxOpts);
+
+    await kyberPriceFeed.methods.update().send(deployerTxOpts);
+ 
+    const mlnPrice = await kyberPriceFeed.methods.getPrice(
+      mln.options.address
+    ).call();
+
+    const midpointPrice = BNExpDiv(
+      mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
+    ).toString();
+    expect(mlnPrice.price).toBe(midpointPrice);
+  });
 });
