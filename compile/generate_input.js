@@ -7,7 +7,7 @@ const out_obj = {
   "language": "Solidity",
   "settings":
   {
-    "remappings": [ "main=./src/contracts" ],
+    "remappings": [ "main=./src" ],
     "optimizer": {
       "enabled": true,
       "runs": 200
