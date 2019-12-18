@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "./DSAuth.sol";
+import "main/dependencies/DSAuth.sol";
 
 contract PermissiveAuthority is DSAuthority {
     function canCall(address src, address dst, bytes4 sig)
