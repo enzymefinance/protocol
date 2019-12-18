@@ -6,7 +6,7 @@ import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/WETH.sol";
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/IERC20.sol";
 import "./ExchangeAdapter.sol";
 import "../dependencies/TokenUser.sol";
 
@@ -48,7 +48,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         Vault vault = Vault(hub.vault());
         vault.withdraw(mlnAddress, mlnQuantity);
         require(
-            ERC20(mlnAddress).approve(targetExchange, mlnQuantity),
+            IERC20(mlnAddress).approve(targetExchange, mlnQuantity),
             "MLN could not be approved"
         );
 

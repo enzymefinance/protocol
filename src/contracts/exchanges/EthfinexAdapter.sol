@@ -1,7 +1,7 @@
 pragma solidity 0.5.15;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/IERC20.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -184,7 +184,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             WETH(address(uint160(nativeAsset))).withdraw(makerQuantity);
             IWrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
         } else {
-            ERC20(makerAsset).approve(wrappedToken, makerQuantity);
+            IERC20(makerAsset).approve(wrappedToken, makerQuantity);
             IWrapperLock(wrappedToken).deposit(makerQuantity, depositTime);
         }
     }

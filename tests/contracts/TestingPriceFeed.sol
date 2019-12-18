@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "main/dependencies/token/ERC20.i.sol";
+import "main/dependencies/token/IERC20.sol";
 import "main/dependencies/DSMath.sol";
 
 /// @notice Intended for testing purposes only

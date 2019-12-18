@@ -5,7 +5,7 @@ pragma solidity 0.5.15;
  * @dev see https://github.com/ethereum/EIPs/issues/20
  * Altered from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a466e76d26c394b1faa6e2797aefe34668566392/contracts/token/ERC20/ERC20.sol
  */
-interface ERC20 {
+interface IERC20 {
   function totalSupply() external view returns (uint256);
 
   function balanceOf(address _who) external view returns (uint256);
@@ -33,7 +33,7 @@ interface ERC20 {
 }
 
 /// @dev Just adds extra functions that we use elsewhere
-contract ERC20WithFields is ERC20 {
+contract ERC20WithFields is IERC20 {
     string public symbol;
     string public name;
     uint8 public decimals;

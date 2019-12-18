@@ -1,7 +1,7 @@
 pragma solidity 0.5.15;
 
 import "../dependencies/WETH.sol";
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/IERC20.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -150,7 +150,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
-        ERC20(srcToken).approve(targetExchange, srcAmount);
+        IERC20(srcToken).approve(targetExchange, srcAmount);
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
 
         // Convert ETH to WETH
@@ -177,7 +177,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(srcToken, srcAmount);
-        ERC20(srcToken).approve(targetExchange, srcAmount);
+        IERC20(srcToken).approve(targetExchange, srcAmount);
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
     }
 

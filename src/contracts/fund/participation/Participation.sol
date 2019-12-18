@@ -8,7 +8,7 @@ import "../accounting/Accounting.sol";
 import "../../prices/IPriceSource.sol";
 import "../../factory/Factory.sol";
 import "../../engine/AmguConsumer.sol";
-import "../../dependencies/token/ERC20.i.sol";
+import "../../dependencies/token/IERC20.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
 
@@ -173,7 +173,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             hub.isShutDown(),
             "No cancellation condition was met"
         );
-        ERC20 investmentAsset = ERC20(request.investmentAsset);
+        IERC20 investmentAsset = IERC20(request.investmentAsset);
         uint investmentAmount = request.investmentAmount;
         delete requests[requestOwner];
         msg.sender.transfer(Registry(routes.registry).incentive());
