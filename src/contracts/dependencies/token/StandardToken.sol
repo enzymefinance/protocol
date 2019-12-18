@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "./ERC20.i.sol";
+import "./IERC20.sol";
 import "../SafeMath.sol";
 
 /**
@@ -11,7 +11,7 @@ import "../SafeMath.sol";
  * Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  * Rearranged from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a466e76d26c394b1faa6e2797aefe34668566392/contracts/token/ERC20/StandardToken.sol
  */
-contract StandardToken is ERC20 {
+contract StandardToken is IERC20 {
     using SafeMath for uint256;
 
     mapping (address => uint256) balances;

@@ -56,7 +56,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
 
         Vault(Hub(getHub()).vault()).withdraw(makerAsset, makerQuantity);
         require(
-            ERC20(makerAsset).approve(targetExchange, makerQuantity),
+            IERC20(makerAsset).approve(targetExchange, makerQuantity),
             "Could not approve maker asset"
         );
 
@@ -129,7 +129,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
 
         Vault(hub.vault()).withdraw(takerAsset, fillTakerQuantity);
         require(
-            ERC20(takerAsset).approve(targetExchange, fillTakerQuantity),
+            IERC20(takerAsset).approve(targetExchange, fillTakerQuantity),
             "Taker asset could not be approved"
         );
         require(

@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "./token/ERC20.i.sol";
+import "./token/IERC20.sol";
 import "./DSMath.sol";
 
 /// @notice Wrapper to ensure tokens are received
@@ -10,9 +10,9 @@ contract TokenUser is DSMath {
         address _to,
         uint _value
     ) internal {
-        uint receiverPreBalance = ERC20(_token).balanceOf(_to);
-        ERC20(_token).transfer(_to, _value);
-        uint receiverPostBalance = ERC20(_token).balanceOf(_to);
+        uint receiverPreBalance = IERC20(_token).balanceOf(_to);
+        IERC20(_token).transfer(_to, _value);
+        uint receiverPostBalance = IERC20(_token).balanceOf(_to);
         require(
             add(receiverPreBalance, _value) == receiverPostBalance,
             "Receiver did not receive tokens in transfer"
@@ -25,9 +25,9 @@ contract TokenUser is DSMath {
         address _to,
         uint _value
     ) internal {
-        uint receiverPreBalance = ERC20(_token).balanceOf(_to);
-        ERC20(_token).transferFrom(_from, _to, _value);
-        uint receiverPostBalance = ERC20(_token).balanceOf(_to);
+        uint receiverPreBalance = IERC20(_token).balanceOf(_to);
+        IERC20(_token).transferFrom(_from, _to, _value);
+        uint receiverPostBalance = IERC20(_token).balanceOf(_to);
         require(
             add(receiverPreBalance, _value) == receiverPostBalance,
             "Receiver did not receive tokens in transferFrom"

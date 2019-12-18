@@ -1,6 +1,6 @@
 pragma solidity 0.5.15;
 
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/IERC20.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/DSAuth.sol"; // TODO: remove? this may not be used at all
 import "../exchanges/interfaces/IKyberNetworkProxy.sol";

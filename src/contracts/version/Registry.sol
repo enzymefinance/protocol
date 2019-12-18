@@ -2,7 +2,7 @@ pragma solidity 0.5.15;
 
 import "../dependencies/DSAuth.sol";
 import "../fund/hub/Hub.sol";
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/IERC20.sol";
 
 contract Registry is DSAuth {
 

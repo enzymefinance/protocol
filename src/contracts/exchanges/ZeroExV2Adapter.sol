@@ -1,7 +1,7 @@
 pragma solidity 0.5.15;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/token/ERC20.i.sol";
+import "../dependencies/token/IERC20.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/vault/Vault.sol";
@@ -222,7 +222,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         vault.withdraw(takerAsset, fillTakerQuantity);
         address assetProxy = getAssetProxy(targetExchange, takerAssetData);
         require(
-            ERC20(takerAsset).approve(assetProxy, fillTakerQuantity),
+            IERC20(takerAsset).approve(assetProxy, fillTakerQuantity),
             "Taker asset could not be approved"
         );
     }
@@ -236,7 +236,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         vault.withdraw(makerAsset, makerQuantity);
         address assetProxy = getAssetProxy(targetExchange, makerAssetData);
         require(
-            ERC20(makerAsset).approve(assetProxy, makerQuantity),
+            IERC20(makerAsset).approve(assetProxy, makerQuantity),
             "Maker asset could not be approved"
         );
     }
@@ -259,13 +259,13 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             Vault vault = Vault(hub.vault());
             vault.withdraw(getAssetAddress(assetData), takerFee);
             require(
-                ERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee),
+                IERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee),
                 "Fee asset could not be approved"
             );
         }
 
         address makerAsset = getAssetAddress(order.makerAssetData);
-        uint preMakerAssetBalance = ERC20(makerAsset).balanceOf(address(this));
+        uint preMakerAssetBalance = IERC20(makerAsset).balanceOf(address(this));
 
         IZeroExV2.FillResults memory fillResults = IZeroExV2(targetExchange).fillOrder(
             order,
@@ -273,7 +273,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             signature
         );
 
-        uint256 postMakerAssetBalance = ERC20(makerAsset).balanceOf(address(this));
+        uint256 postMakerAssetBalance = IERC20(makerAsset).balanceOf(address(this));
         require(
             postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount),
             "Maker asset balance different than expected"

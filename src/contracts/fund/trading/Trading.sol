@@ -269,7 +269,7 @@ contract Trading is DSMath, TokenUser, Spoke {
     }
 
     function updateAndGetQuantityBeingTraded(address _asset) external returns (uint) {
-        uint quantityHere = ERC20(_asset).balanceOf(address(this));
+        uint quantityHere = IERC20(_asset).balanceOf(address(this));
         return add(updateAndGetQuantityHeldInExchange(_asset), quantityHere);
     }
 
@@ -314,7 +314,7 @@ contract Trading is DSMath, TokenUser, Spoke {
             msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
             "Sender is not this contract or manager"
         );
-        safeTransfer(_token, routes.vault, ERC20(_token).balanceOf(address(this)));
+        safeTransfer(_token, routes.vault, IERC20(_token).balanceOf(address(this)));
     }
 
     function getExchangeInfo() public view returns (address[] memory, address[] memory, bool[] memory) {
