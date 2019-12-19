@@ -182,7 +182,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
                 );
             }
         }
-        (bool success, ) = exchanges[exchangeIndex].adapter.delegatecall(
+        (bool success, bytes memory returnData) = exchanges[exchangeIndex].adapter.delegatecall(
             abi.encodeWithSignature(
                 methodSignature,
                 exchanges[exchangeIndex].exchange,
@@ -193,7 +193,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
                 signature
             )
         );
-        require(success, "Delegated call to exchange failed");
+        require(success, string(returnData));
         PolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         emit ExchangeMethodCall(
             exchanges[exchangeIndex].exchange,
