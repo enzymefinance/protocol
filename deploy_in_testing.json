@@ -44,7 +44,7 @@
       "exchangeTakesCustody": {
         "oasis": true,
         "kyber": false,
-        "zeroex": false,
+        "zeroExV2": false,
         "ethfinex": true,
         "engine": false,
         "uniswap": false
@@ -86,10 +86,10 @@
     },
     "conf": {}
   },
-  "zeroex": {
+  "zeroExV2": {
     "addr": {
-      "Exchange": "",
-      "ERC20Proxy": ""
+      "ZeroExV2Exchange": "",
+      "ZeroExV2ERC20Proxy": ""
     },
     "conf": {}
   },

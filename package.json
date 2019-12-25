@@ -30,8 +30,8 @@
     "test": "GANACHE_KEYS=./keys.json CONF=./deploy_in_testing.json yarn jest --runInBand --detectOpenHandles"
   },
   "devDependencies": {
-    "@0x/order-utils": "^8.4.0",
-    "@0x/types": "^1.3.0",
+    "@0x/order-utils-v2": "npm:@0x/order-utils@8.4.0",
+    "@0x/types-v2": "npm:@0x/types@2.4.3",
     "@babel/core": "^7.1.6",
     "@babel/preset-env": "^7.1.6",
     "babel-jest": "^24.9.0",

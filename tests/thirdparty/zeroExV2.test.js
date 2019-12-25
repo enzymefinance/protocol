@@ -5,7 +5,7 @@ import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '~/tests/utils/zeroEx';
+} from '~/tests/utils/zeroExV2';
 
 describe('account-0x-trading', () => {
   let user, defaultTxOpts;
@@ -24,14 +24,13 @@ describe('account-0x-trading', () => {
     weth = contracts.WETH;
     mln = contracts.MLN;
     zeroExExchange = contracts.ZeroExV2Exchange;
-    erc20Proxy = contracts.ERC20Proxy;
+    erc20Proxy = contracts.ZeroExV2ERC20Proxy;
 
     await weth.methods
       .transfer(taker, toWei('100', 'Ether'))
       .send(defaultTxOpts);
   });
 
-  // TODO: fix problem with ecSignOrderAsync error for this to pass
   it('Happy path', async () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');

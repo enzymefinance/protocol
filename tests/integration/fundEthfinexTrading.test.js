@@ -10,8 +10,8 @@
  * @test TODO: order expiry
  */
 
-import { orderHashUtils } from '@0x/order-utils';
-import { AssetProxyId } from '@0x/types';
+import { orderHashUtils } from '@0x/order-utils-v2';
+import { AssetProxyId } from '@0x/types-v2';
 import { BN, toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
@@ -26,7 +26,7 @@ import { increaseTime } from '~/tests/utils/rpc';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '../utils/zeroEx';
+} from '../utils/zeroExV2';
 
 let accounts;
 let deployer, manager, investor;
@@ -74,8 +74,6 @@ beforeAll(async () => {
   registry = contracts.Registry;
   mlnWrapper = contracts['W-MLN'];
   ethTokenWrapper = contracts.WrapperLockEth;
-
-  const erc20ProxyAddress = contracts.ERC20Proxy.options.address;
 
   // TODO: use less fake prices
   const fakePrices = Object.values(deployOut.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
