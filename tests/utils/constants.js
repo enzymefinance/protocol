@@ -20,7 +20,6 @@ export const CONTRACT_NAMES = {
   ENGINE: 'Engine',
   ENGINE_ADAPTER: 'EngineAdapter',
   ETHFINEX_ADAPTER: 'EthfinexAdapter',
-  ERC20_PROXY: 'ERC20Proxy',
   EXCHANGE_ADAPTER: 'ExchangeAdapter',
   FALSE_POLICY: 'FalsePolicy',
   FEE_MANAGER: 'FeeManager',
@@ -78,6 +77,7 @@ export const CONTRACT_NAMES = {
   WRAPPER_LOCK: 'WrapperLock',
   WRAPPER_LOCK_ETH: 'WrapperLockEth',
   WRAPPER_REGISTRY_EFX: 'WrapperRegistryEFX',
-  ZERO_EX_ADAPTER: 'ZeroExV2Adapter',
-  ZERO_EX_EXCHANGE: 'ZeroExV2Exchange',
+  ZERO_EX_V2_ADAPTER: 'ZeroExV2Adapter',
+  ZERO_EX_V2_ERC20_PROXY: 'ZeroExV2ERC20Proxy',
+  ZERO_EX_V2_EXCHANGE: 'ZeroExV2Exchange',
 }

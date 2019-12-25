@@ -1,5 +1,5 @@
-import { orderHashUtils } from '@0x/order-utils';
-import { AssetProxyId } from '@0x/types';
+import { orderHashUtils } from '@0x/order-utils-v2';
+import { AssetProxyId } from '@0x/types-v2';
 import { toWei, padLeft } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
@@ -11,7 +11,7 @@ import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '~/tests/utils/zeroEx';
+} from '~/tests/utils/zeroExV2';
 
 describe('make0xOrder', () => {
   let user, defaultTxOpts;
@@ -28,8 +28,8 @@ describe('make0xOrder', () => {
     const contracts = deployed.contracts;
     routes = await setupInvestedTestFund(contracts, user);
 
-    exchange = contracts[CONTRACT_NAMES.ZERO_EX_EXCHANGE];
-    const exchangeAdapter = contracts[CONTRACT_NAMES.ZERO_EX_ADAPTER];
+    exchange = contracts[CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE];
+    const exchangeAdapter = contracts[CONTRACT_NAMES.ZERO_EX_V2_ADAPTER];
     mln = contracts.MLN;
     weth = contracts.WETH;
     trading = routes.trading;

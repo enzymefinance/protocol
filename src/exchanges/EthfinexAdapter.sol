@@ -73,7 +73,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             uint256(orderInfo.orderHash),
             order.expirationTimeSeconds
         );
-        getTrading().addZeroExOrderData(orderInfo.orderHash, order);
+        getTrading().addZeroExV2OrderData(orderInfo.orderHash, order);
     }
 
     /// @notice Cancel the 0x make order
@@ -87,7 +87,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
 
-        IZeroExV2.Order memory order = getTrading().getZeroExOrderDetails(identifier);
+        IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
         IZeroExV2(targetExchange).cancelOrder(order);
 
         getAccounting().updateOwnedAssets();

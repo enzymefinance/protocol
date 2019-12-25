@@ -9,6 +9,7 @@ import "../../factory/Factory.sol";
 import "../../dependencies/DSMath.sol";
 import "../../exchanges/ExchangeAdapter.sol";
 import "../../exchanges/interfaces/IZeroExV2.sol";
+import "../../exchanges/interfaces/IZeroExV3.sol";
 import "../../version/Registry.sol";
 import "../../dependencies/TokenUser.sol";
 
@@ -57,7 +58,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     mapping (address => uint) public openMakeOrdersAgainstAsset;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (address => uint) public makerAssetCooldown;
-    mapping (bytes32 => IZeroExV2.Order) public orderIdToZeroExOrder;
+    mapping (bytes32 => IZeroExV2.Order) internal orderIdToZeroExV2Order;
 
     uint public constant ORDER_LIFESPAN = 1 days;
     uint public constant MAKE_ORDER_COOLDOWN = 30 minutes;
@@ -256,11 +257,11 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     }
 
     /// @dev Bit of Redundancy for now
-    function addZeroExOrderData(
+    function addZeroExV2OrderData(
         bytes32 orderId,
         IZeroExV2.Order memory zeroExOrderData
     ) public delegateInternal {
-        orderIdToZeroExOrder[orderId] = zeroExOrderData;
+        orderIdToZeroExV2Order[orderId] = zeroExOrderData;
     }
 
     function orderUpdateHook(
@@ -361,8 +362,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 
-    function getZeroExOrderDetails(bytes32 orderId) public view returns (IZeroExV2.Order memory) {
-        return orderIdToZeroExOrder[orderId];
+    function getZeroExV2OrderDetails(bytes32 orderId) public view returns (IZeroExV2.Order memory) {
+        return orderIdToZeroExV2Order[orderId];
     }
 
     function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256) {

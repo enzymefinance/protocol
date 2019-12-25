@@ -1,5 +1,5 @@
-import { AssetProxyId } from '@0x/types';
-import { orderHashUtils } from '@0x/order-utils';
+import { AssetProxyId } from '@0x/types-v2';
+import { orderHashUtils } from '@0x/order-utils-v2';
 import { toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
@@ -12,7 +12,7 @@ import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
-} from '~/tests/utils/zeroEx';
+} from '~/tests/utils/zeroExV2';
 
 let user, defaultTxOpts;
 let zrxWrapperLock;
@@ -34,7 +34,7 @@ beforeEach(async () => {
   trading = routes.trading;
   mln = contracts.MLN;
   zrx = contracts.ZRX;
-  exchange = contracts[CONTRACT_NAMES.ZERO_EX_EXCHANGE];
+  exchange = contracts[CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE];
   zrxWrapperLock = contracts['W-ZRX'];
   const ethfinexAdapter = contracts[CONTRACT_NAMES.ETHFINEX_ADAPTER];
 

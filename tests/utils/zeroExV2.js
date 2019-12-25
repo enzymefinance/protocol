@@ -3,8 +3,8 @@ import {
   assetDataUtils,
   orderHashUtils,
   signatureUtils
-} from '@0x/order-utils';
-import { SignatureType } from '@0x/types';
+} from '@0x/order-utils-v2';
+import { SignatureType } from '@0x/types-v2';
 
 import web3 from '~/deploy/utils/get-web3';
 

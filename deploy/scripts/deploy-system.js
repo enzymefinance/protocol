@@ -5,7 +5,7 @@ const deployMelon = require('./deploy-melon');
 const deployOasis = require('./deploy-oasis');
 const deployTokens = require('./deploy-tokens');
 const deployUniswap = require('./deploy-uniswap');
-const deployZeroex = require('./deploy-zeroex');
+const deployZeroExV2 = require('./deploy-zeroex-v2');
 
 // strip addresses from contract objects in a deployment
 const getAllAddrs = obj => {
@@ -46,10 +46,10 @@ const deploySystem = async input => {
     deployOut.oasis.addr = getAllAddrs(oasis);
     contracts = Object.assign(contracts, oasis);
   }
-  if (input.zeroex) {
-    const zeroex = await deployZeroex(input);
-    deployOut.zeroex.addr = getAllAddrs(zeroex);
-    contracts = Object.assign(contracts, zeroex);
+  if (input.zeroExV2) {
+    const zeroExV2 = await deployZeroExV2(input);
+    deployOut.zeroExV2.addr = getAllAddrs(zeroExV2);
+    contracts = Object.assign(contracts, zeroExV2);
   }
   if (input.ethfinex) {
     const ethfinex = await deployEthfinex(input);

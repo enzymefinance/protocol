@@ -4,7 +4,7 @@ const zeroAddress = '0x0000000000000000000000000000000000000000'; // TODO: impor
 
 const main = async input => {
   const contracts = {};
-  contracts.ZeroExV2Exchange = fetchContract('ZeroExV2Exchange', input.zeroex.addr.ZeroExV2Exchange);
+  contracts.ZeroExV2Exchange = fetchContract('ZeroExV2Exchange', input.zeroExV2.addr.ZeroExV2Exchange);
   contracts.WrapperRegistryEFX = await nab('WrapperRegistryEFX', [], input.ethfinex.addr);
 
   const wrapperMap = new Map();
@@ -14,8 +14,8 @@ const main = async input => {
         'WETH',
         'WETH token',
         18,
-        input.zeroex.addr.ZeroExV2Exchange,
-        input.zeroex.addr.ERC20Proxy,
+        input.zeroExV2.addr.ZeroExV2Exchange,
+        input.zeroExV2.addr.ZeroExV2ERC20Proxy,
       ], input.ethfinex.addr);
       contracts.WrapperLockEth = wrapperLockEth;
       wrapperMap.set(input.tokens.addr['WETH'], wrapperLockEth.options.address);
@@ -27,8 +27,8 @@ const main = async input => {
         `Wrapped ${tokenSym} Token`,
         input.tokens.conf[tokenSym].decimals,
         false,
-        input.zeroex.addr.ZeroExV2Exchange,
-        input.zeroex.addr.ERC20Proxy,
+        input.zeroExV2.addr.ZeroExV2Exchange,
+        input.zeroExV2.addr.ZeroExV2ERC20Proxy,
       ], input.ethfinex.addr, wrapSym);
       contracts[wrapSym] = wrapper;
       wrapperMap.set(input.tokens.addr[tokenSym], wrapper.options.address);

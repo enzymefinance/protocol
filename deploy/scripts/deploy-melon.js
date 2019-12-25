@@ -109,11 +109,11 @@ const main = async input => {
       takesCustody: melonConf.exchangeTakesCustody.uniswap
     };
   }
-  if (input.zeroex) {
-    exchanges.zeroex = {
-      exchange: input.zeroex.addr.ZeroExV2Exchange,
+  if (input.zeroExV2) {
+    exchanges.zeroExV2 = {
+      exchange: input.zeroExV2.addr.ZeroExV2Exchange,
       adapter: zeroExV2Adapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.zeroex
+      takesCustody: melonConf.exchangeTakesCustody.zeroExV2
     };
   }
 

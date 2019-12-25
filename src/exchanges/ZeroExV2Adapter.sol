@@ -74,7 +74,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             uint256(orderInfo.orderHash),
             order.expirationTimeSeconds
         );
-        getTrading().addZeroExOrderData(orderInfo.orderHash, order);
+        getTrading().addZeroExV2OrderData(orderInfo.orderHash, order);
     }
 
     // Responsibilities of takeOrder are:
@@ -163,7 +163,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes memory signature
     ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
-        IZeroExV2.Order memory order = getTrading().getZeroExOrderDetails(identifier);
+        IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
         address makerAsset = getAssetAddress(order.makerAssetData);
 
         if (order.expirationTimeSeconds > block.timestamp) {
