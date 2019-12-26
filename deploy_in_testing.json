@@ -14,6 +14,7 @@
       "MatchingMarketAccessor": "",
       "UniswapAdapter": "",
       "ZeroExV2Adapter": "",
+      "ZeroExV3Adapter": "",
       "EngineAdapter": "",
       "PriceTolerance": "",
       "UserWhitelist": "",
@@ -45,6 +46,7 @@
         "oasis": true,
         "kyber": false,
         "zeroExV2": false,
+        "zeroExV3": false,
         "ethfinex": true,
         "engine": false,
         "uniswap": false
@@ -92,6 +94,18 @@
       "ZeroExV2ERC20Proxy": ""
     },
     "conf": {}
+  },
+  "zeroExV3": {
+    "addr": {
+      "ZeroExV3Exchange": "",
+      "ZeroExV3ERC20Proxy": "",
+      "ZeroExV3Staking": "",
+      "ZeroExV3StakingProxy": "",
+      "ZeroExV3ZrxVault": ""
+    },
+    "conf": {
+      "protocolFeeMultiplier": 150000
+    }
   },
   "tokens": {
     "addr": {
