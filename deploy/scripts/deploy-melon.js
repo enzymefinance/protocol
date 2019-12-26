@@ -15,6 +15,7 @@ const main = async input => {
   const oasisDexAccessor = await nab('OasisDexAccessor', [], melonAddrs);
   const uniswapAdapter = await nab('UniswapAdapter', [], melonAddrs);
   const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
+  const zeroExV3Adapter = await nab('ZeroExV3Adapter', [], melonAddrs);
   const engineAdapter = await nab('EngineAdapter', [], melonAddrs);
   const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
   const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], melonAddrs);
@@ -116,6 +117,13 @@ const main = async input => {
       takesCustody: melonConf.exchangeTakesCustody.zeroExV2
     };
   }
+  if (input.zeroExV3) {
+    exchanges.zeroExV3 = {
+      exchange: input.zeroExV3.addr.ZeroExV3Exchange,
+      adapter: zeroExV3Adapter.options.address,
+      takesCustody: melonConf.exchangeTakesCustody.zeroExV3
+    };
+  }
 
   for (const info of Object.values(exchanges)) {
     const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);
@@ -181,6 +189,7 @@ const main = async input => {
     "OasisDexAccessor": oasisDexAccessor,
     "UniswapAdapter": uniswapAdapter,
     "ZeroExV2Adapter": zeroExV2Adapter,
+    "ZeroExV3Adapter": zeroExV3Adapter,
     "EngineAdapter": engineAdapter,
     "PriceTolerance": priceTolerance,
     "UserWhitelist": userWhitelist,
