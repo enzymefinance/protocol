@@ -80,4 +80,10 @@ export const CONTRACT_NAMES = {
   ZERO_EX_V2_ADAPTER: 'ZeroExV2Adapter',
   ZERO_EX_V2_ERC20_PROXY: 'ZeroExV2ERC20Proxy',
   ZERO_EX_V2_EXCHANGE: 'ZeroExV2Exchange',
+  ZERO_EX_V3_ADAPTER: 'ZeroExV3Adapter',
+  ZERO_EX_V3_ERC20_PROXY: 'ZeroExV3ERC20Proxy',
+  ZERO_EX_V3_EXCHANGE: 'ZeroExV3Exchange',
+  ZERO_EX_V3_STAKING: 'ZeroExV3Staking',
+  ZERO_EX_V3_STAKING_PROXY: 'ZeroExV3StakingProxy',
+  ZERO_EX_V3_ZRX_VAULT: 'ZeroExV3ZrxVault'
 }
