@@ -59,6 +59,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (address => uint) public makerAssetCooldown;
     mapping (bytes32 => IZeroExV2.Order) internal orderIdToZeroExV2Order;
+    mapping (bytes32 => IZeroExV3.Order) internal orderIdToZeroExV3Order;
 
     uint public constant ORDER_LIFESPAN = 1 days;
     uint public constant MAKE_ORDER_COOLDOWN = 30 minutes;
@@ -263,6 +264,12 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     ) public delegateInternal {
         orderIdToZeroExV2Order[orderId] = zeroExOrderData;
     }
+    function addZeroExV3OrderData(
+        bytes32 orderId,
+        IZeroExV3.Order memory zeroExOrderData
+    ) public delegateInternal {
+        orderIdToZeroExV3Order[orderId] = zeroExOrderData;
+    }
 
     function orderUpdateHook(
         address ofExchange,
@@ -364,6 +371,10 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
 
     function getZeroExV2OrderDetails(bytes32 orderId) public view returns (IZeroExV2.Order memory) {
         return orderIdToZeroExV2Order[orderId];
+    }
+
+    function getZeroExV3OrderDetails(bytes32 orderId) public view returns (IZeroExV3.Order memory) {
+        return orderIdToZeroExV3Order[orderId];
     }
 
     function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256) {
