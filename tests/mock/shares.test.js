@@ -1,7 +1,5 @@
 import { toWei, randomHex } from 'web3-utils';
-
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 
@@ -18,14 +16,14 @@ describe('shares', () => {
     shares = mockSystem.shares;
   });
 
-  it('Shares contract is properly initialized', async () => {
+  test('Shares contract is properly initialized', async () => {
     const hubName = await mockSystem.hub.methods.name().call();
     await expect(shares.methods.name().call()).resolves.toEqual(hubName);
     await expect(shares.methods.symbol().call()).resolves.toBe('MLNF');
     await expect(shares.methods.decimals().call()).resolves.toBe('18');
   });
 
-  it('Create and destroy shares (auth)', async () => {
+  test('Create and destroy shares (auth)', async () => {
     const mockAccount = randomHex(20);
     const amount = toWei('1', 'Ether');
     await expect(

@@ -1,9 +1,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { randomHex } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -29,7 +27,7 @@ describe('maxPositions', () => {
     );
   });
 
-  it('Create and get max', async () => {
+  test('Create and get max', async () => {
     const positions = ['0', '125', '9999999999'];
     for (const n of positions) {
       const maxPositions = await deploy(CONTRACT_NAMES.MAX_POSITIONS, [n]);
@@ -37,7 +35,7 @@ describe('maxPositions', () => {
     }
   });
 
-  it('Policy manager and mock accounting with maxPositions', async () => {
+  test('Policy manager and mock accounting with maxPositions', async () => {
     const maxPositions = '3';
     const policy = await deploy(CONTRACT_NAMES.MAX_POSITIONS, [
       maxPositions

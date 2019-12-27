@@ -7,11 +7,10 @@ import {
 import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subproviders';
 import { SignatureType } from '@0x/types-v2';
 import { providerUtils } from '@0x/utils';
-
 import web3 from '~/deploy/utils/get-web3';
-
 import { EMPTY_ADDRESS } from '~/tests/utils/constants';
 
+// TODO: refactor along with zeroExV3 util
 /**
  * For Ethfinex orders: The makerQuantity.token has to be the
  * Ethfinex Wrapper contract

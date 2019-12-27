@@ -48,7 +48,7 @@ describe('sell-and-burn-mln', () => {
       .send(defaultTxOpts);
   });
 
-  it('directly sending eth fails', async () => {
+  test('directly sending eth fails', async () => {
     const { engine } = contracts;
     await expect(
       web3.eth
@@ -61,7 +61,7 @@ describe('sell-and-burn-mln', () => {
     ).rejects.toThrow('revert');
   });
 
-  it('eth sent via contract selfdestruct is not tracked', async () => {
+  test('eth sent via contract selfdestruct is not tracked', async () => {
     const { engine } = contracts;
 
     const sendAmount = toWei('0.1', 'gwei');
@@ -91,7 +91,7 @@ describe('sell-and-burn-mln', () => {
     expect(new BN(postLiquidEth)).bigNumberEq(new BN(0));
   });
 
-  it('AMGU payment fails when sender not fund', async () => {
+  test('AMGU payment fails when sender not fund', async () => {
     const { engine, registry } = contracts;
     const sendAmount = toWei('0.001', 'gwei');
 
@@ -105,7 +105,7 @@ describe('sell-and-burn-mln', () => {
     ).rejects.toThrow('revert');
   });
 
-  it('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
+  test('eth sent as AMGU from a "fund" thaws and can be bought', async () => {
     const { engine, priceSource, mln, registry } = contracts;
 
     const sendAmountEth = '100000';
@@ -204,6 +204,7 @@ describe('sell-and-burn-mln', () => {
     );
   });
 
-  // it('Other contracts can pay amgu on function calls', async () => {});
-  // it('Engine price and premium computes at multiple values', async () => {});
+  // TODO:
+  // test('Other contracts can pay amgu on function calls', async () => {});
+  // test('Engine price and premium computes at multiple values', async () => {});
 });

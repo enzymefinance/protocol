@@ -1,7 +1,5 @@
 import { toWei, randomHex } from 'web3-utils';
-
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 
@@ -19,7 +17,7 @@ describe('redemption', () => {
     );
   });
 
-  it('Redeem with no shares fails', async () => {
+  test('Redeem with no shares fails', async () => {
     const errorMessage =
       'Sender does not have enough shares to fulfill request';
 
@@ -42,7 +40,7 @@ describe('redemption', () => {
     ).rejects.toThrow(errorMessage);
   });
 
-  it('Asset not in list prevents redemption', async () => {
+  test('Asset not in list prevents redemption', async () => {
     const errorMessage = 'Requested asset not in asset list';
     const addr = randomHex(20);
 
@@ -63,7 +61,7 @@ describe('redemption', () => {
     expect(preShares).toBe(postShares);
   });
 
-  it('Asset cannot be redeemed twice', async () => {
+  test('Asset cannot be redeemed twice', async () => {
     const errorMessage = 'Asset can only be redeemed once';
 
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
@@ -85,7 +83,7 @@ describe('redemption', () => {
     expect(preShares).toBe(postShares);
   });
 
-  it('Vault-held assets can be redeemed', async () => {
+  test('Vault-held assets can be redeemed', async () => {
     const wethAmount = toWei('1', 'ether');
 
     await mockSystem.weth.methods

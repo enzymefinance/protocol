@@ -1,8 +1,6 @@
 import { randomHex } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 import { numberToBytes } from '~/tests/utils/formatting';
@@ -57,7 +55,7 @@ describe('tradingCallbacks', () => {
       .send(defaultTxOpts);
   });
 
-  it('Make order associated callbacks add data to Trading spoke', async () => {
+  test('Make order associated callbacks add data to Trading spoke', async () => {
     const mockOrderId = 42;
     const makerQuantity = 100;
     const takerQuantity = 200;

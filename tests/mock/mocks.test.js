@@ -1,8 +1,6 @@
 import { sha3 } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 
@@ -11,7 +9,7 @@ describe('mocks', () => {
   let falsePolicy, truePolicy, testPolicy;
   let dummyArgs;
 
-  const createManagerAndRegister = async (contract, policy) => {
+  const createManagerAndRegister = async policy => {
     const contracts = await deployMockSystem({
       policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER
     });
@@ -39,7 +37,7 @@ describe('mocks', () => {
     ];
   });
 
-  it('Boolean policies', async () => {
+  test('Boolean policies', async () => {
     const res1 = await falsePolicy.methods
       .rule(...dummyArgs)
       .call();
@@ -50,18 +48,16 @@ describe('mocks', () => {
     expect(res2).toBe(true);
   });
 
-  it('Boolean policies on policy manager', async () => {
+  test('Boolean policies on policy manager', async () => {
     const manager1 = await createManagerAndRegister(
-      CONTRACT_NAMES.POLICY_MANAGER,
-      falsePolicy.options.address,
+      falsePolicy.options.address
     );
     await expect(
       manager1.methods.preValidate(...dummyArgs).call(),
     ).rejects.toThrow('FalsePolicy');
 
     const manager2 = await createManagerAndRegister(
-      CONTRACT_NAMES.POLICY_MANAGER,
-      truePolicy.options.address,
+      truePolicy.options.address
     );
     await expect(
       manager2.methods.preValidate(...dummyArgs).call(),

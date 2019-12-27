@@ -1,8 +1,6 @@
 import { BN, toWei, randomHex } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 
@@ -12,15 +10,8 @@ describe('trading', () => {
   let trading;
 
   // Mock data
-  const mockExchanges = [
-    randomHex(20),
-    randomHex(20),
-  ];
-
-  const mockExchangeAdapters = [
-    randomHex(20),
-    randomHex(20),
-  ];
+  const mockExchanges = [ randomHex(20), randomHex(20) ];
+  const mockExchangeAdapters = [ randomHex(20), randomHex(20) ];
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -60,7 +51,7 @@ describe('trading', () => {
       .send({ from: user, gas: 8000000 });
   });
 
-  it('Exchanges are properly initialized', async () => {
+  test('Exchanges are properly initialized', async () => {
     for (const i in mockExchanges) {
       const exchangeObject = await trading.methods.exchanges(i).call();
       expect(exchangeObject.exchange.toLowerCase()).toBe(mockExchanges[i]);
@@ -72,18 +63,18 @@ describe('trading', () => {
     }
   });
 
-  it('Exchanges cannot be initialized without their adapters', async () => {
+  test('Exchanges cannot be initialized without their adapters', async () => {
     await expect(
       deploy(CONTRACT_NAMES.TRADING, [
         mockSystem.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],
         mockSystem.registry.options.address,
-      ])
+      ], {gas: 8000000})
     ).rejects.toThrow('Array lengths unequal');
   });
 
-  it('returnBatchToVault sends back token balances to the vault', async () => {
+  test('returnBatchToVault sends back token balances to the vault', async () => {
     const tokenQuantity = new BN(toWei('1', 'Ether'));
 
     await mockSystem.mln.methods

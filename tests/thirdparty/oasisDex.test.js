@@ -22,7 +22,7 @@ describe('account-trading', () => {
     oasisDexAccessor = contracts.OasisDexAccessor;
   });
 
-  it('Happy path', async () => {
+  test('Happy path', async () => {
     const order1 = {
       buyQuantity: toWei('0.1', 'ether'),
       buyAsset: weth.options.address,

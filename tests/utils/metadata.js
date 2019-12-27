@@ -22,6 +22,23 @@ export const getEventFromReceipt = (receiptEvents, contractName, eventName) => {
   return null;
 }
 
+export const getEventFromLogs = (logs, contractName, eventName) => {
+  const abi = getABI(contractName);
+  const eventAbi = abi.find(e => e.type === 'event' && e.name === eventName);
+
+  for (const log of Object.values(logs)) {
+    if (log.topics[0] === web3EthAbi.encodeEventSignature(eventAbi)) {
+      return web3EthAbi.decodeLog(
+        eventAbi.inputs,
+        log.data,
+        log.topics.slice(1)
+      );
+    }
+  }
+
+  return null;
+}
+
 // this will fail in the case where there is an overload on the abi
 export const getFunctionSignature = (contractName, functionName) => {
   const abi = getABI(contractName);

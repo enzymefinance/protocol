@@ -20,10 +20,9 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
-import getFundComponents from '~/tests/utils/getFundComponents';
+import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import { increaseTime, mine } from '~/tests/utils/rpc';
+import getAccounts from '~/deploy/utils/getAccounts';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder
@@ -32,21 +31,19 @@ import {
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let contracts;
-let dai, mln, weth, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
+let dai, mln, weth, zrx, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
 let exchangeIndex;
 let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
 let protocolFeeAmount, protocolFeeCollector, chainId;
 
 beforeAll(async () => {
-  const accounts = await web3.eth.getAccounts();
-  [deployer, manager, investor] = accounts;
+  const gasPrice = toWei('2', 'gwei');
+  [deployer, manager, investor] = await getAccounts();
+  defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
 
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   contracts = deployed.contracts;
-
-  const gasPrice = toWei('2', 'gwei');
-  defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
-  managerTxOpts = { ...defaultTxOpts, from: manager };
 
   makeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
@@ -64,6 +61,7 @@ beforeAll(async () => {
   dai = contracts.DAI;
   mln = contracts.MLN;
   weth = contracts.WETH;
+  zrx = contracts.ZRX;
   priceSource = contracts.TestingPriceFeed;
   version = contracts.Version;
   zeroExExchange = contracts.ZeroExV3Exchange;
@@ -73,53 +71,22 @@ beforeAll(async () => {
   // Seed manager with ETH
   await send(weth, 'transfer', [manager, toWei('20', 'ether')], defaultTxOpts);
 
-  // Spin up fund for manager
-  const fundName = stringToBytes('Test fund', 32);
-  await version.methods
-    .beginSetup(
-      fundName,
-      [],
-      [],
-      [],
-      [zeroExExchange.options.address],
-      [zeroExAdapter.options.address],
-      weth.options.address,
-      [
-        mln.options.address,
-        weth.options.address
-      ]
-    )
-    .send(managerTxOpts);
-  await version.methods.createAccounting().send(managerTxOpts);
-  await version.methods.createFeeManager().send(managerTxOpts);
-  await version.methods.createParticipation().send(managerTxOpts);
-  await version.methods.createPolicyManager().send(managerTxOpts);
-  await version.methods.createShares().send(managerTxOpts);
-  await version.methods.createTrading().send(managerTxOpts);
-  await version.methods.createVault().send(managerTxOpts);
-  const res = await version.methods.completeSetup().send(managerTxOpts);
-  const hubAddress = res.events.NewFund.returnValues.hub;
-  fund = await getFundComponents(hubAddress);
+  fund = await setupFundWithParams({
+    defaultTokens: [mln.options.address, weth.options.address],
+    exchanges: [zeroExExchange.options.address],
+    exchangeAdapters: [zeroExAdapter.options.address],
+    initialInvestment: {
+      contribAmount: toWei('5', 'ether'),
+      investor,
+      tokenContract: weth
+    },
+    manager,
+    quoteToken: weth.options.address,
+    version
+  });
 
-  // Invest in fund
-  await weth.methods
-    .transfer(investor, toWei('6', 'ether'))
-    .send(defaultTxOpts);
-  const offeredValue = toWei('5', 'ether');
-  const wantedShares = toWei('5', 'ether');
-  const amguAmount = toWei('.01', 'ether');
-  await weth.methods
-    .approve(fund.participation.options.address, offeredValue)
-    .send(investorTxOpts);
-  await fund.participation.methods
-    .requestInvestment(
-      offeredValue,
-      wantedShares,
-      weth.options.address,
-    ).send({ ...investorTxOpts, value: amguAmount });
-  await fund.participation.methods
-    .executeRequestFor(investor)
-    .send(investorTxOpts);
+  // Seed fund with ZRX
+  await send(zrx, 'transfer', [fund.vault.options.address, toWei('10', 'ether')], defaultTxOpts);
 
   // Get 0x exchangeIndex
   const exchangeInfo = await call(fund.trading, 'getExchangeInfo');
@@ -349,7 +316,7 @@ describe('Fund takes an order with a taker fee', () => {
         callOnExchangeArgs,
         managerTxOpts
       )
-    ).rejects.toThrow("Insufficient balance: takerFeeAsset");
+    ).rejects.toThrowFlexible("Insufficient balance: takerFeeAsset");
 
     // Send dai to vault and re-try
     await send(dai, 'transfer', [vault.options.address, signedOrder.takerFee], defaultTxOpts);
@@ -511,7 +478,7 @@ describe('Fund makes an order (no maker/taker fees)', () => {
     const { trading } = fund;
 
     const makerAddress = trading.options.address;
-    const makerTokenAddress = weth.options.address;
+    const makerTokenAddress = zrx.options.address;
     const makerAssetAmount = toWei('0.05', 'ether');
     const takerTokenAddress = mln.options.address;
     const takerAssetAmount = toWei('0.5', 'ether');
@@ -574,7 +541,7 @@ describe('Fund makes an order (no maker/taker fees)', () => {
       managerTxOpts
     );
     const makerAssetAllowance = new BN(
-      await call(weth, 'allowance', [makerAddress, erc20Proxy.options.address])
+      await call(zrx, 'allowance', [makerAddress, erc20Proxy.options.address])
     )
     expect(makerAssetAllowance).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
@@ -587,8 +554,9 @@ describe('Fund makes an order (no maker/taker fees)', () => {
       await call(accounting, 'assetHoldings', [mln.options.address])
     );
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const preWethFundHoldings = new BN(
-      await call(accounting, 'assetHoldings', [weth.options.address])
+    const preZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
+    const preZrxFundHoldings = new BN(
+      await call(accounting, 'assetHoldings', [zrx.options.address])
     );
 
     await send(mln, 'approve', [erc20Proxy.options.address, signedOrder.takerAssetAmount], defaultTxOpts);
@@ -609,33 +577,30 @@ describe('Fund makes an order (no maker/taker fees)', () => {
       await call(accounting, 'assetHoldings', [mln.options.address])
     );
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const postWethFundHoldings = new BN(
-      await call(accounting, 'assetHoldings', [weth.options.address])
+    const postZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
+    const postZrxFundHoldings = new BN(
+      await call(accounting, 'assetHoldings', [zrx.options.address])
     );
 
     // Update accounting so maker asset is no longer marked as in an open order
-    await send(trading, 'updateAndGetQuantityBeingTraded', [weth.options.address], managerTxOpts);
+    await send(trading, 'updateAndGetQuantityBeingTraded', [zrx.options.address], managerTxOpts);
 
-    const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [weth.options.address]);
+    const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [zrx.options.address]);
     expect(isInOpenMakeOrder).toEqual(false);
-
-    // Increment next block time past the maker asset cooldown period
-    const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
-    await increaseTime(Number(cooldownTime)+1);
-    await mine();
 
     expect(postMlnFundHoldings).bigNumberEq(
       preMlnFundHoldings.add(new BN(signedOrder.takerAssetAmount))
     );
-    expect(postWethFundHoldings).bigNumberEq(
-      preWethFundHoldings.sub(new BN(signedOrder.makerAssetAmount))
+    expect(postZrxFundHoldings).bigNumberEq(
+      preZrxFundHoldings.sub(new BN(signedOrder.makerAssetAmount))
     );
     expect(postMlnDeployer).bigNumberEq(
       preMlnDeployer.sub(new BN(signedOrder.takerAssetAmount))
     );
-    expect(postWethDeployer).bigNumberEq(
-      preWethDeployer.add(new BN(signedOrder.makerAssetAmount).sub(new BN(protocolFeeAmount)))
+    expect(postZrxDeployer).bigNumberEq(
+      preZrxDeployer.add(new BN(signedOrder.makerAssetAmount))
     );
+    expect(postWethDeployer).bigNumberEq(preWethDeployer.sub(new BN(protocolFeeAmount)));
   });
 });
 
@@ -646,9 +611,9 @@ describe('Fund makes an order with a maker and taker fee', () => {
     const { trading, vault } = fund;
 
     const makerAddress = trading.options.address;
-    const makerTokenAddress = weth.options.address;
+    const makerTokenAddress = mln.options.address;
     const makerAssetAmount = toWei('0.05', 'ether');
-    const takerTokenAddress = mln.options.address;
+    const takerTokenAddress = weth.options.address;
     const takerAssetAmount = toWei('0.5', 'ether');
 
     const makerFee = new BN(toWei('1', 'ether'));
@@ -717,14 +682,14 @@ describe('Fund makes an order with a maker and taker fee', () => {
 
     await expect(
       send(trading, 'callOnExchange', callOnExchangeArgs, managerTxOpts)
-    ).rejects.toThrow("Insufficient balance: makerFeeAsset");
+    ).rejects.toThrowFlexible("Insufficient balance: makerFeeAsset");
 
     // Send dai to vault and re-try
     await send(dai, 'transfer', [vault.options.address, signedOrder.takerFee], defaultTxOpts);
     await send(trading, 'callOnExchange', callOnExchangeArgs, managerTxOpts)
 
     const makerAssetAllowance = new BN(
-      await call(weth, 'allowance', [makerAddress, erc20Proxy.options.address])
+      await call(mln, 'allowance', [makerAddress, erc20Proxy.options.address])
     )
     const makerFeeAssetAllowance = new BN(
       await call(dai, 'allowance', [makerAddress, erc20Proxy.options.address])
@@ -745,7 +710,7 @@ describe('Fund makes an order with a maker and taker fee', () => {
       await call(accounting, 'assetHoldings', [weth.options.address])
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, signedOrder.takerAssetAmount], defaultTxOpts);
+    await send(weth, 'approve', [erc20Proxy.options.address, signedOrder.takerAssetAmount], defaultTxOpts);
     await send(weth, 'approve', [protocolFeeCollector, protocolFeeAmount], defaultTxOpts);
     await send(dai, 'approve', [erc20Proxy.options.address, signedOrder.takerFee], defaultTxOpts);
 
@@ -770,36 +735,33 @@ describe('Fund makes an order with a maker and taker fee', () => {
     );
 
     // Update accounting so maker asset is no longer marked as in an open order
-    await send(trading, 'updateAndGetQuantityBeingTraded', [weth.options.address], managerTxOpts);
+    await send(trading, 'updateAndGetQuantityBeingTraded', [mln.options.address], managerTxOpts);
 
-    const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [weth.options.address]);
+    const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [mln.options.address]);
     expect(isInOpenMakeOrder).toEqual(false);
 
-    // Increment next block time past the maker asset cooldown period
-    const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
-    await increaseTime(Number(cooldownTime)+1);
-    await mine();
-
     expect(postMlnFundHoldings).bigNumberEq(
-      preMlnFundHoldings.add(new BN(signedOrder.takerAssetAmount))
+      preMlnFundHoldings.sub(new BN(signedOrder.makerAssetAmount))
     );
     expect(postWethFundHoldings).bigNumberEq(
-      preWethFundHoldings.sub(new BN(signedOrder.makerAssetAmount))
+      preWethFundHoldings.add(new BN(signedOrder.takerAssetAmount))
     );
     expect(postMlnDeployer).bigNumberEq(
-      preMlnDeployer.sub(new BN(signedOrder.takerAssetAmount))
+      preMlnDeployer.add(new BN(signedOrder.makerAssetAmount))
     );
     expect(postWethDeployer).bigNumberEq(
-      preWethDeployer.add(new BN(signedOrder.makerAssetAmount).sub(new BN(protocolFeeAmount)))
+      preWethDeployer.sub(
+        new BN(signedOrder.takerAssetAmount).add(new BN(protocolFeeAmount))
+      )
     );
   });
 });
 
-describe('Fund makes an order with same makere asset and maker fee asset', () => {
+describe('Fund makes an order with same maker asset and maker fee asset', () => {
   let signedOrder;
 
   test('Fund makes an order', async () => {
-    const { trading, vault } = fund;
+    const { trading } = fund;
 
     const makerAddress = trading.options.address;
     const makerTokenAddress = weth.options.address;
@@ -919,12 +881,6 @@ describe('Fund makes an order with same makere asset and maker fee asset', () =>
 
     const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [weth.options.address]);
     expect(isInOpenMakeOrder).toEqual(false);
-
-    // Increment next block time past the maker asset cooldown period
-    const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
-    await increaseTime(Number(cooldownTime)+1);
-    await mine();
-
     expect(postMlnFundHoldings).bigNumberEq(
       preMlnFundHoldings.add(new BN(signedOrder.takerAssetAmount))
     );
@@ -947,8 +903,11 @@ describe('Fund can cancel an order with only the orderId', () => {
   test('Fund makes an order', async () => {
     const { trading } = fund;
 
+    // Seed fund with DAI
+    await send(dai, 'transfer', [fund.vault.options.address, toWei('1', 'ether')], defaultTxOpts);
+
     const makerAddress = trading.options.address;
-    const makerTokenAddress = weth.options.address;
+    const makerTokenAddress = dai.options.address;
     const makerAssetAmount = toWei('0.05', 'ether');
     const takerTokenAddress = mln.options.address;
     const takerAssetAmount = toWei('0.5', 'ether');
@@ -1011,7 +970,7 @@ describe('Fund can cancel an order with only the orderId', () => {
       managerTxOpts
     );
     const makerAssetAllowance = new BN(
-      await call(weth, 'allowance', [makerAddress, erc20Proxy.options.address])
+      await call(dai, 'allowance', [makerAddress, erc20Proxy.options.address])
     )
     expect(makerAssetAllowance).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });

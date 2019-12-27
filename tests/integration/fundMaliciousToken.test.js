@@ -1,210 +1,153 @@
 /*
  * @file Tests fund's ability to handle a malicious ERC20 token that attempts denial of service
  *
- * @test Fund receives WETH via investor participation
  * @test Redeem fails when malicious token is present
  * @test redeemWithConstraints succeeds to withdraw specific assets only
  */
 
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { deploy } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
-import { increaseTime } from '~/tests/utils/rpc';
+import { call, deploy, send } from '~/deploy/utils/deploy-contract';
+import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import getFundComponents from '~/tests/utils/getFundComponents';
-import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
+import { setupFundWithParams } from '~/tests/utils/fund';
+import getAccounts from '~/deploy/utils/getAccounts';
+import { delay } from '~/tests/utils/time';
 
-describe('fund-malicious-token', () => {
-  let accounts;
-  let defaultTxOpts, investorTxOpts, managerTxOpts;
-  let deployer, manager, investor;
-  let contracts, deployOut;
-  let fund, weth, mln, registry, version, maliciousToken;
+let defaultTxOpts, investorTxOpts;
+let deployer, manager, investor;
+let contracts;
+let fund, weth, mln, priceSource, maliciousToken;
 
-  beforeAll(async () => {
-    accounts = await web3.eth.getAccounts();
-    [deployer, manager, investor] = accounts;
-    defaultTxOpts = { from: deployer, gas: 8000000 };
-    managerTxOpts = { ...defaultTxOpts, from: manager };
-    investorTxOpts = { ...defaultTxOpts, from: investor };
+beforeAll(async () => {
+  [deployer, manager, investor] = await getAccounts();
+  defaultTxOpts = { from: deployer, gas: 8000000 };
+  investorTxOpts = { ...defaultTxOpts, from: investor };
 
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
-    contracts = deployed.contracts;
-    deployOut = deployed.deployOut;
-    weth = contracts.WETH;
-    mln = contracts.MLN;
-    registry = contracts.Registry;
-    version = contracts.Version;
+  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  contracts = deployed.contracts;
+  weth = contracts.WETH;
+  mln = contracts.MLN;
+  priceSource = contracts.TestingPriceFeed;
+  const registry = contracts.Registry;
+  const version = contracts.Version;
 
-    maliciousToken = await deploy(
-      CONTRACT_NAMES.MALICIOUS_TOKEN,
-      ['MLC', 18, 'Malicious']
-    );
+  maliciousToken = await deploy(
+    CONTRACT_NAMES.MALICIOUS_TOKEN,
+    ['MLC', 18, 'Malicious']
+  );
 
-    await contracts.TestingPriceFeed.methods.setDecimals(
-      maliciousToken.options.address, 18
-    ).send(defaultTxOpts);
+  await send(priceSource, 'setDecimals', [maliciousToken.options.address, 18], defaultTxOpts);
 
-    await registry.methods
-      .registerAsset(
-        maliciousToken.options.address.toLowerCase(),
-        'Malicious',
-        'MLC',
-        '',
-        0,
-        [],
-        [],
-      )
-      .send(defaultTxOpts);
+  await send(
+    registry,
+    'registerAsset',
+    [
+      maliciousToken.options.address.toLowerCase(),
+      'Malicious',
+      'MLC',
+      '',
+      0,
+      [],
+      [],
+    ],
+    defaultTxOpts
+  );
 
-    await version.methods
-      .beginSetup(
-        'Test fund',
-        [],
-        [],
-        [],
-        [],
-        [],
-        weth.options.address.toString(),
-        [
-          mln.options.address.toString(),
-          weth.options.address.toString(),
-          maliciousToken.options.address.toString(),
-        ],
-      )
-      .send(managerTxOpts);
-
-    await version.methods.createAccounting().send(managerTxOpts);
-    await version.methods.createFeeManager().send(managerTxOpts);
-    await version.methods.createParticipation().send(managerTxOpts);
-    await version.methods.createPolicyManager().send(managerTxOpts);
-    await version.methods.createShares().send(managerTxOpts);
-    await version.methods.createTrading().send(managerTxOpts);
-    await version.methods.createVault().send(managerTxOpts);
-    const res = await version.methods.completeSetup().send(managerTxOpts);
-    const hubAddress = res.events.NewFund.returnValues.hub;
-
-    fund = await getFundComponents(hubAddress);
-    await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
-
-    // Seed investor with weth and maliciousToken
-    await weth.methods
-      .transfer(investor, toWei('10', 'ether'))
-      .send(defaultTxOpts);
-    await maliciousToken.methods
-      .transfer(investor, toWei('10', 'ether'))
-      .send(defaultTxOpts);
+  fund = await setupFundWithParams({
+    defaultTokens: [mln.options.address, weth.options.address, maliciousToken.options.address],
+    initialInvestment: {
+      contribAmount: toWei('1', 'ether'),
+      investor, // Buy all shares with investor to make calcs simpler
+      tokenContract: weth
+    },
+    manager,
+    quoteToken: weth.options.address,
+    version
   });
+});
 
-  test('fund receives ETH from investment', async () => {
-    const offeredValue = toWei('1', 'ether');
-    const wantedShares = toWei('1', 'ether');
-    const amguAmount = toWei('.01', 'ether');
+test(`General redeem fails in presence of malicious token`, async () => {
+  const { participation } = fund;
+  const maliciousTokenAmount = toWei('1', 'ether');
+  const wantedShares = toWei('1', 'ether');
+  const amguAmount = toWei('.01', 'ether');
 
-    const preWethFund = await weth.methods
-      .balanceOf(fund.vault.options.address)
-      .call();
-    const preWethInvestor = await weth.methods.balanceOf(investor).call();
-
-    await weth.methods
-      .approve(fund.participation.options.address, offeredValue)
-      .send(investorTxOpts);
-    await fund.participation.methods
-      .requestInvestment(offeredValue, wantedShares, weth.options.address)
-      .send({ ...investorTxOpts, value: amguAmount });
-    await fund.participation.methods
-      .executeRequestFor(investor)
-      .send(investorTxOpts);
-
-    const postWethFund = await weth.methods
-      .balanceOf(fund.vault.options.address)
-      .call();
-    const postWethInvestor = await weth.methods.balanceOf(investor).call();
-
-    expect(new BN(postWethInvestor.toString()))
-      .bigNumberEq(new BN(preWethInvestor.toString()).sub(new BN(offeredValue.toString())));
-    expect(new BN(postWethFund.toString()))
-      .bigNumberEq(new BN(preWethFund.toString()).add(new BN(offeredValue.toString())));
-  });
-
-  test(`General redeem fails in presence of malicious token`, async () => {
-    const { participation } = fund;
-
-    const amguAmount = toWei('.01', 'ether');
-    const dummyAmount = toWei('1', 'ether');
-
-    await maliciousToken.methods
-      .approve(fund.participation.options.address, dummyAmount)
-      .send(investorTxOpts);
-    await fund.participation.methods
-      .requestInvestment(dummyAmount, dummyAmount, maliciousToken.options.address)
-      .send({ ...investorTxOpts, value: amguAmount });
-
-    await increaseTime(5); // to avoid executing in same block as update
-
-    await contracts.TestingPriceFeed.methods
-      .update([weth.options.address, maliciousToken.options.address],
+  // Buy shares with malicious token
+  await send(maliciousToken, 'transfer', [investor, maliciousTokenAmount], defaultTxOpts);
+  await send(
+    maliciousToken,
+    'approve',
+    [participation.options.address, maliciousTokenAmount],
+    investorTxOpts
+  );
+  await send(
+    fund.participation,
+    'requestInvestment',
+    [wantedShares, maliciousTokenAmount, maliciousToken.options.address],
+    { ...investorTxOpts, value: amguAmount }
+  );
+  await delay(1000); // Delay 1 sec to ensure block new blocktime
+  await send(
+    priceSource,
+    'update',
+    [
+      [weth.options.address, maliciousToken.options.address],
       [toWei('1', 'ether'), toWei('1', 'ether')]
-    ).send(defaultTxOpts);
+    ],
+    defaultTxOpts
+  );
+  await send(
+    participation,
+    'executeRequestFor',
+    [investor],
+    investorTxOpts
+  );
 
-    await fund.participation.methods
-      .executeRequestFor(investor)
-      .send(investorTxOpts);
+  // Activate malicious token
+  await send(maliciousToken, 'startReverting', [], defaultTxOpts);
 
-    await contracts.TestingPriceFeed.methods
-      .update([weth.options.address, maliciousToken.options.address],
-      [toWei('1', 'ether'), toWei('1', 'ether')]
-    ).send(defaultTxOpts);
+  await expect(
+    send(participation, 'redeem', [], investorTxOpts)
+  ).rejects.toThrowFlexible();
+});
 
-    await maliciousToken.methods.startReverting().send(defaultTxOpts);
+test(`Redeem with constraints works as expected`, async () => {
+  const { accounting, participation, shares, vault } = fund;
 
-    await expect(
-      participation.methods.redeem().send(investorTxOpts),
-    ).rejects.toThrow();
-  });
+  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
+  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
+  const investorShares = await call(shares, 'balanceOf', [investor]);
+  const preTotalSupply = new BN(await call(shares, 'totalSupply'));
+  const preMaliciousTokenVault = new BN(
+    await call(maliciousToken, 'balanceOf', [vault.options.address])
+  );
 
-  test(`Redeem with constraints works as expected`, async () => {
-    const { accounting, participation, shares, vault } = fund;
+  await send(
+    participation,
+    'redeemWithConstraints',
+    [investorShares, [weth.options.address]],
+    investorTxOpts
+  );
 
-    const valueOfMaliciousToken = toWei('1', 'ether');
+  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
+  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
+  const postTotalSupply = new BN(await call(shares, 'totalSupply'));
+  const postFundGav = new BN(await call(accounting, 'calcGav'));
 
-    const preMlnFund = await mln.methods
-      .balanceOf(vault.options.address)
-      .call();
-    const preMlnInvestor = await mln.methods.balanceOf(investor).call();
-    const preWethFund = await weth.methods
-      .balanceOf(vault.options.address)
-      .call();
-    const preWethInvestor = await weth.methods.balanceOf(investor).call();
-    const investorShares = await shares.methods.balanceOf(investor).call();
-    const preTotalSupply = await shares.methods.totalSupply().call();
+  const maliciousTokenPrice = new BN(
+    (await call(priceSource, 'getPrice', [maliciousToken.options.address]))[0]
+  );
+  const fundMaliciousTokenValue = BNExpMul(preMaliciousTokenVault, maliciousTokenPrice);
 
-    await participation.methods
-      .redeemWithConstraints(investorShares, [weth.options.address])
-      .send(investorTxOpts);
-
-    const postMlnFund = await mln.methods
-      .balanceOf(vault.options.address)
-      .call();
-    const postMlnInvestor = await mln.methods.balanceOf(investor).call();
-    const postWethFund = await weth.methods
-      .balanceOf(vault.options.address)
-      .call();
-    const postMaliciousTokenFund = await maliciousToken.methods
-      .balanceOf(vault.options.address)
-      .call();
-    const postWethInvestor = await weth.methods.balanceOf(investor).call();
-    const postTotalSupply = await shares.methods.totalSupply().call();
-    const postFundGav = await accounting.methods.calcGav().call();
-
-    expect(new BN(postTotalSupply.toString()))
-      .bigNumberEq(new BN(preTotalSupply.toString()).sub(new BN(investorShares.toString())));
-      expect(new BN(postWethInvestor.toString()))
-        .bigNumberEq(new BN(preWethInvestor.toString()).add(new BN(preWethFund.toString())));
-    expect(new BN(postWethFund.toString())).bigNumberEq(new BN(0));
-    expect(postMlnFund).toEqual(preMlnFund);
-    expect(postMlnInvestor).toEqual(preMlnInvestor);
-    expect(new BN(postFundGav.toString()).toString()).toBe(new BN(valueOfMaliciousToken.toString()).toString());
-  });
+  expect(postTotalSupply).bigNumberEq(preTotalSupply.sub(new BN(investorShares)));
+  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preWethVault));
+  expect(postWethVault).bigNumberEq(new BN(0));
+  expect(postMlnVault).toEqual(preMlnVault);
+  expect(postMlnInvestor).toEqual(preMlnInvestor);
+  expect(postFundGav).bigNumberEq(fundMaliciousTokenValue);
 });

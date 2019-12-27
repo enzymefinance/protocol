@@ -12,22 +12,20 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { randomHex, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { deploy } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
+import { deploy, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import getFundComponents from '~/tests/utils/getFundComponents';
+import { setupFundWithParams } from '~/tests/utils/fund';
+import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
-let contracts;
 let exchangeIndex, makeOrderSignature, takeOrderSignature;
 let weth, mln;
 let fund;
 
 beforeAll(async () => {
-  const accounts = await web3.eth.getAccounts();
-  [deployer, manager, investor] = accounts;
+  [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
@@ -44,9 +42,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
-  contracts = deployed.contracts;
+  const contracts = deployed.contracts;
 
   const registry = contracts.Registry;
   const version = contracts.Version;
@@ -56,66 +53,38 @@ beforeEach(async () => {
   // Register a mock exchange and adapter
   const mockExchangeAddress = randomHex(20);
   const mockAdapter = await deploy(CONTRACT_NAMES.MOCK_ADAPTER);
-  const takesCustody = false;
-  const sigs = [
-    encodeFunctionSignature(makeOrderSignature),
-    encodeFunctionSignature(takeOrderSignature)
-  ];
-  await registry.methods
-    .registerExchangeAdapter(
+  await send(
+    registry,
+    'registerExchangeAdapter',
+    [
       mockExchangeAddress,
       mockAdapter.options.address,
-      takesCustody,
-      sigs
-    )
-    .send(defaultTxOpts);
+      false,
+      [
+        encodeFunctionSignature(makeOrderSignature),
+        encodeFunctionSignature(takeOrderSignature)
+      ]
+    ],
+    defaultTxOpts
+  );
 
-  // Startup a fund
-  await version.methods
-    .beginSetup(
-      'Test fund',
-      [],
-      [],
-      [],
-      [mockExchangeAddress],
-      [mockAdapter.options.address],
-      weth.options.address.toString(),
-      [mln.options.address.toString(), weth.options.address.toString()],
-    ).send(managerTxOpts);
-
-  await version.methods.createAccounting().send(managerTxOpts);
-  await version.methods.createFeeManager().send(managerTxOpts);
-  await version.methods.createParticipation().send(managerTxOpts);
-  await version.methods.createPolicyManager().send(managerTxOpts);
-  await version.methods.createShares().send(managerTxOpts);
-  await version.methods.createTrading().send(managerTxOpts);
-  await version.methods.createVault().send(managerTxOpts);
-  const res = await version.methods.completeSetup().send(managerTxOpts);
-  const hubAddress = res.events.NewFund.returnValues.hub;
-  fund = await getFundComponents(hubAddress);
-
-  // Seed investor with weth and invest in fund
-  await weth.methods
-    .transfer(investor, toWei('1', 'ether'))
-    .send(defaultTxOpts);
-
-  const investorTxOpts = { ...defaultTxOpts, from: investor };
-  const offeredValue = toWei('1', 'ether');
-  const wantedShares = toWei('1', 'ether');
-  const amguAmount = toWei('.01', 'ether');
-  await weth.methods
-    .approve(fund.participation.options.address, offeredValue)
-    .send(investorTxOpts);
-  await fund.participation.methods
-    .requestInvestment(offeredValue, wantedShares, weth.options.address)
-    .send({ ...investorTxOpts, value: amguAmount });
-  await fund.participation.methods
-    .executeRequestFor(investor)
-    .send(investorTxOpts);
+  fund = await setupFundWithParams({
+    defaultTokens: [mln.options.address, weth.options.address],
+    exchanges: [mockExchangeAddress],
+    exchangeAdapters: [mockAdapter.options.address],
+    initialInvestment: {
+      contribAmount: toWei('1', 'ether'),
+      investor,
+      tokenContract: weth
+    },
+    investor,
+    quoteToken: weth.options.address,
+    version
+  });
 });
 
 describe('Asset in Registry', () => {
-  it('can NOT trade when maker or taker asset NOT in Registry', async () => {
+  test('can NOT trade when maker or taker asset NOT in Registry', async () => {
     const { trading } = fund;
 
     const makerQuantity = 100;
@@ -123,8 +92,10 @@ describe('Asset in Registry', () => {
 
     // Make orders
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           makeOrderSignature,
           [
@@ -141,13 +112,16 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).rejects.toThrow("Maker asset not registered");
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible("Maker asset not registered");
 
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           makeOrderSignature,
           [
@@ -164,14 +138,17 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).rejects.toThrow("Taker asset not registered");
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible("Taker asset not registered");
 
     // Take orders
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           takeOrderSignature,
           [
@@ -188,13 +165,16 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).rejects.toThrow("Maker asset not registered");
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible("Maker asset not registered");
 
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           takeOrderSignature,
           [
@@ -211,20 +191,23 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).rejects.toThrow("Taker asset not registered");
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible("Taker asset not registered");
   });
 
-  it('can NOT MAKE order when MAKER fee asset NOT in Registry', async () => {
+  test('can NOT MAKE order when MAKER fee asset NOT in Registry', async () => {
     const { trading } = fund;
 
     const makerQuantity = 100;
     const takerQuantity = 200;
 
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           makeOrderSignature,
           [
@@ -241,12 +224,13 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).rejects.toThrow("Maker fee asset not registered");
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible("Maker fee asset not registered");
   });
 
-  it('can MAKE order when TAKER fee asset NOT in Registry', async () => {
+  test('can MAKE order when TAKER fee asset NOT in Registry', async () => {
     const { trading } = fund;
 
     const makerQuantity = 100;
@@ -254,8 +238,10 @@ describe('Asset in Registry', () => {
 
     // Take order
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           makeOrderSignature,
           [
@@ -272,20 +258,23 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).resolves.not.toThrow();
+        ],
+        managerTxOpts
+      )
+    ).resolves.not.toThrowFlexible();
   });
 
-  it('can NOT TAKE order when TAKER fee asset NOT in Registry', async () => {
+  test('can NOT TAKE order when TAKER fee asset NOT in Registry', async () => {
     const { trading } = fund;
 
     const makerQuantity = 100;
     const takerQuantity = 200;
 
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           takeOrderSignature,
           [
@@ -302,12 +291,13 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).rejects.toThrow("Taker fee asset not registered");
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible("Taker fee asset not registered");
   });
 
-  it('can TAKE order when MAKER fee asset NOT in Registry', async () => {
+  test('can TAKE order when MAKER fee asset NOT in Registry', async () => {
     const { trading } = fund;
 
     const makerQuantity = 100;
@@ -315,8 +305,10 @@ describe('Asset in Registry', () => {
 
     // Take order
     await expect(
-      trading.methods
-        .callOnExchange(
+      send(
+        trading,
+        'callOnExchange',
+        [
           exchangeIndex,
           takeOrderSignature,
           [
@@ -333,8 +325,9 @@ describe('Asset in Registry', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-    ).resolves.not.toThrow();
+        ],
+        managerTxOpts
+      )
+    ).resolves.not.toThrowFlexible();
   });
 });

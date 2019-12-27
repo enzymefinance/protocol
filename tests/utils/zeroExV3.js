@@ -3,13 +3,13 @@ import {
   assetDataUtils,
   signatureUtils
 } from '@0x/order-utils';
-
+import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subproviders';
+import { providerUtils } from '@0x/utils';
 import { SignatureType } from '@0x/types';
-
 import web3 from '~/deploy/utils/get-web3';
-
 import { EMPTY_ADDRESS } from '~/tests/utils/constants';
 
+// TODO: refactor along with zeroExV2 util
 export const createUnsignedZeroExOrder = async (
   exchange,
   chainId,
@@ -69,10 +69,22 @@ export const createUnsignedZeroExOrder = async (
   return order;
 };
 
+const getPrivateKeyProvider = (wallet, signer) => {
+  const providerEngine = new Web3ProviderEngine();
+
+  const key = wallet[signer].privateKey.replace(/^0x/, '');
+  const pkProvider = new PrivateKeyWalletSubprovider(key);
+  providerEngine.addProvider(pkProvider);
+  providerUtils.startProviderEngine(providerEngine);
+
+  return providerEngine;
+}
+
 export const signZeroExOrder = async (order, signer) => {
   const signerFormatted = signer.toLowerCase();
+  const pkProvider = getPrivateKeyProvider(web3.eth.accounts.wallet, signer);
   const signedOrder = await signatureUtils.ecSignOrderAsync(
-    web3.eth.currentProvider,
+    pkProvider,
     order,
     signerFormatted,
   );

@@ -48,7 +48,7 @@ describe('kyber-price-feed', () => {
     }
   });
 
-  it('Registry owner updates pricefeed', async () => {
+  test('Registry owner updates pricefeed', async () => {
     const registryOwner = await mockRegistry.methods.owner().call();
 
     expect(registryOwner).toBe(deployer);
@@ -67,7 +67,7 @@ describe('kyber-price-feed', () => {
     expect(mlnPrice.toString()).toBe(toWei('1', 'ether'));
   });
 
-  it('MLN price is changed in reserve, and Updater updates', async () => {
+  test('MLN price is changed in reserve, and Updater updates', async () => {
     const listedUpdater = await kyberPriceFeed.methods.UPDATER().call();
 
     expect(listedUpdater).toBe(updater);
@@ -108,7 +108,7 @@ describe('kyber-price-feed', () => {
     expect(updatedEurPrice.toString()).toBe(eurPrice.toString());
   });
  
-  it('Normal (positive) spread condition yields midpoint price', async () => {
+  test('Normal (positive) spread condition yields midpoint price', async () => {
     const mlnBid = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.05', 'ether'))
@@ -142,7 +142,7 @@ describe('kyber-price-feed', () => {
     expect(mlnPrice.price).toBe(midpointPrice);
   });
 
-  it('Crossed market condition yields midpoint price', async () => {
+  test('Crossed market condition yields midpoint price', async () => {
     const mlnBid = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.04', 'ether'))

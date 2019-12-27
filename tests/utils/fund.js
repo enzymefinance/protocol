@@ -2,6 +2,7 @@ import { BN, toWei } from 'web3-utils';
 
 import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
+
 import { BNExpDiv } from '~/tests/utils/BNmath';
 
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
@@ -43,6 +44,7 @@ export const setupFundWithParams = async ({
   quoteToken,
   version
 }) => {
+  const [deployer] = await getAccounts();
   const managerTxOpts = { from: manager, gas: 8000000 };
 
   // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
@@ -84,25 +86,31 @@ export const setupFundWithParams = async ({
     // const amguAmount = toWei('.1', 'ether');
     // Calculate amount of shares to buy with contribution
     const shareCost = new BN(
-      await fund.accounting.methods
-        .getShareCostInAsset(toWei('1', 'ether'), initialInvestment.tokenContract.options.address)
-        .call()
+      await call(
+        fund.accounting,
+        'getShareCostInAsset',
+        [toWei('1', 'ether'), initialInvestment.tokenContract.options.address]
+      )
     );
     const wantedShares = BNExpDiv(new BN(initialInvestment.contribAmount), shareCost).toString();
 
     // Fund investor with contribution token, if necessary
     const investorTokenBalance = new BN(
-      await initialInvestment.tokenContract.methods
-        .balanceOf(initialInvestment.investor)
-        .call()
+      await call(
+        initialInvestment.tokenContract,
+        'balanceOf',
+        [initialInvestment.investor]
+      )
     );
     const investorTokenShortfall =
       new BN(initialInvestment.contribAmount).sub(investorTokenBalance);
     if (investorTokenShortfall.gt(new BN(0))) {
-      const [deployer] = await web3.eth.getAccounts();
-      await initialInvestment.tokenContract.methods
-        .transfer(initialInvestment.investor, investorTokenShortfall.toString())
-        .send({ ...managerTxOpts, from: deployer });
+      await send(
+        initialInvestment.tokenContract,
+        'transfer',
+        [initialInvestment.investor, investorTokenShortfall.toString()],
+        { ...managerTxOpts, from: deployer }
+      )
     }
     // Invest in fund
     await send(

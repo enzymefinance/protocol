@@ -111,9 +111,14 @@ const deploy = async (name, args=[], overrideOpts={}) => {
     arguments: args,
     data: bin.indexOf('0x') === 0 ? bin : `0x${bin}`
   });
-  const estimatedGas = web3.utils.toHex(
-    Math.floor(await txFunction.estimateGas({ from: account.address }) * 1.5)
-  );
+  let gas;
+  if (!overrideOpts.gas) {
+     gas = web3.utils.toHex(
+      Math.floor(await txFunction.estimateGas({ from: account.address }) * 1.5)
+    );
+  } else {
+    gas = overrideOpts.gas;
+  }
   const input = await txFunction.encodeABI();
   const nonce = await getNextNonce(account);
   const clonedDefaults = Object.assign({}, defaultOptions);
@@ -121,7 +126,7 @@ const deploy = async (name, args=[], overrideOpts={}) => {
     clonedDefaults,
     {
       data: input,
-      gas: estimatedGas,
+      gas: gas,
       from: account.address,
       nonce: nonce,
       to: null
