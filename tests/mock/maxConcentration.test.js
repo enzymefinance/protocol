@@ -1,9 +1,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
 import { toWei } from 'web3-utils';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -50,7 +48,7 @@ describe('maxConcentration', () => {
   // so that takerTokenGavBeingTraded = makerTokenGavBeingTraded => the totalGav won't change
   // which helps us write tests more easily
 
-  it.each([
+  test.each([
     [
       'Asset gav > concentration limit',
       {
@@ -99,7 +97,7 @@ describe('maxConcentration', () => {
         expectPass: true,
       },
     ],
-  ])('%s', async (name, trial) => {
+  ])('%s', async (_, trial) => {
     const policy = await deploy(CONTRACT_NAMES.MAX_CONCENTRATION, [
       trial.max,
     ]);

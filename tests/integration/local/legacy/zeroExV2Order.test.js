@@ -1,13 +1,11 @@
 import { orderHashUtils } from '@0x/order-utils-v2';
 import { AssetProxyId } from '@0x/types-v2';
-import { toWei, padLeft } from 'web3-utils';
-
+import { toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
+import { setupInvestedTestFund } from '~/tests/utils/fund';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,
@@ -40,7 +38,7 @@ describe('make0xOrder', () => {
     );
   });
 
-  it('Make 0x order from fund and take it from account', async () => {
+  test('Make 0x order from fund and take it from account', async () => {
     const makerToken = weth;
     const takerToken = mln;
     const makerAssetAmount = toWei('0.05', 'ether');
@@ -114,8 +112,7 @@ describe('make0xOrder', () => {
     expect(result).toBeTruthy();
   });
 
-  // tslint:disable-next-line:max-line-length
-  it('Previously made 0x order cancelled and not takeable anymore', async () => {
+  test('Previously made 0x order cancelled and not takeable anymore', async () => {
     const makerToken = weth;
     const takerToken = mln;
     const makerAssetAmount = toWei('0.05', 'ether');
@@ -206,7 +203,7 @@ describe('make0xOrder', () => {
     ).rejects.toThrow('ORDER_UNFILLABLE');
   });
 
-  it('Take off-chain order from fund', async () => {
+  test('Take off-chain order from fund', async () => {
     const makerToken = mln;
     const takerToken = weth;
     const makerAssetAmount = toWei('1', 'ether');
@@ -241,7 +238,7 @@ describe('make0xOrder', () => {
         unsignedOrder.makerAssetAmount,
       ).send(defaultTxOpts);
 
-    const result = await trading.methods
+    await trading.methods
       .callOnExchange(
         exchangeIndex,
         takeOrderSignature,
@@ -273,4 +270,3 @@ describe('make0xOrder', () => {
     // TODO: expect(isEqual(order.takerFilledAmount, takerQuantity)).toBe(true);
   });
 });
-

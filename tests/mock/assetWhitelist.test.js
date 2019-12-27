@@ -1,9 +1,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { randomHex, toChecksumAddress } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -35,7 +33,7 @@ describe('assetWhitelist', () => {
     );
   });
 
-  it('Create whitelist', async () => {
+  test('Create whitelist', async () => {
     const whitelist = await deploy(CONTRACT_NAMES.ASSET_WHITELIST, [
       assetArray
     ]);
@@ -45,7 +43,7 @@ describe('assetWhitelist', () => {
     );
   });
 
-  it('Remove asset from whitelist', async () => {
+  test('Remove asset from whitelist', async () => {
     const whitelist = await deploy(CONTRACT_NAMES.ASSET_WHITELIST, [
       assetArray
     ]);
@@ -72,7 +70,7 @@ describe('assetWhitelist', () => {
     );
   });
 
-  it('Policy manager with whitelist', async () => {
+  test('Policy manager with whitelist', async () => {
     const contracts = await deployMockSystem({
       policyManagerContract: CONTRACT_NAMES.POLICY_MANAGER
     });

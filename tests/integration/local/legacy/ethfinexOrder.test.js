@@ -6,7 +6,7 @@ import web3 from '~/deploy/utils/get-web3';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { increaseTime } from '~/tests/utils/rpc';
-import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
+import { setupInvestedTestFund } from '~/tests/utils/fund';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder,

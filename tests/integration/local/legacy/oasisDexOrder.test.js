@@ -1,8 +1,6 @@
-import { BN, toWei } from 'web3-utils';
-
+import { toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS
@@ -12,7 +10,7 @@ import {
   getFunctionSignature
 } from '~/tests/utils/metadata';
 import {increaseTime} from '~/tests/utils/rpc';
-import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
+import { setupInvestedTestFund } from '~/tests/utils/fund';
 
 describe('make-oasis-dex-order', () => {
   let user, defaultTxOpts;
@@ -42,7 +40,7 @@ describe('make-oasis-dex-order', () => {
     );
   });
 
-  it('make oasisdex order', async () => {
+  test('make oasisdex order', async () => {
     const makerAsset = weth.options.address;
     const makerQuantity = toWei('0.05', 'ether');
     const takerAsset = mln.options.address;

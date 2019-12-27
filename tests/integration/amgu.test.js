@@ -1,214 +1,215 @@
 import { toWei, BN } from 'web3-utils';
 import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { call, send } from '~/deploy/utils/deploy-contract';
+import getAccounts from '~/deploy/utils/getAccounts';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import getFundComponents from '~/tests/utils/getFundComponents';
+import { getFundComponents } from '~/tests/utils/fund';
+import { getEventFromLogs } from '~/tests/utils/metadata';
 
-describe('amgu', () => {
-  let user, defaultTxOpts, defaultTxOptsWithValue;
-  let baseToken, quoteToken;
-  let engine, version, priceSource, registry;
-  let amguPrice;
-  let fundName;
+let deployer;
+let defaultTxOpts, managerTxOpts;
+let baseToken, quoteToken;
+let engine, version, priceSource, registry;
+let amguPrice;
 
-  async function assertAmguTx(tx) {
-    const preUserBalance = await web3.eth.getBalance(user);
-    const result = await tx.send({ ...defaultTxOpts, value: toWei('1', 'ether') });
-    const postUserBalance = await web3.eth.getBalance(user);
+async function assertAmguTx(contract, method, args = []) {
+  const preUserBalance = new BN(await web3.eth.getBalance(deployer));
 
-    const gasPrice = await web3.eth.getGasPrice();
-    const gasUsed = result.gasUsed;
-    const estimatedGasUsedWithoutAmgu = result.gasUsed;
+  const arbitraryEthAmount = toWei('1', 'ether');
+  const gasPrice = await web3.eth.getGasPrice();
+  const result = await send(
+    contract,
+    method,
+    args,
+    { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice }
+  );
 
-    const nativeAssetAddress = await registry.methods.nativeAsset().call();
-    const mlnAddress = await version.methods.mlnToken().call();
+  // TODO: This method does not result in less than the estimate
+  if (method === 'completeSetup') return result;
 
-    const mlnAmount = new BN(amguPrice).mul(new BN(estimatedGasUsedWithoutAmgu));
-    const ethToPay = await priceSource.methods.convertQuantity(
-      mlnAmount.toString(),
-      mlnAddress,
-      nativeAssetAddress,
-    ).call();
+  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
-    const txCostInWei = new BN(gasPrice).mul(new BN(gasUsed));
-    const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei))
-    const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
+  const gasUsedWithoutAmgu = new BN(result.gasUsed);
 
-    expect(txCostInWei).bigNumberLt(realUserCost);
-    expect(estimatedTotalUserCost).bigNumberGt(realUserCost);
+  const wethAddress = await call(registry, 'nativeAsset');
+  const mlnAddress = await call(version, 'mlnToken');
+  const mlnAmguAmount = new BN(amguPrice).mul(gasUsedWithoutAmgu);
+  const ethAmguAmount = new BN(
+    await call(
+      priceSource,
+      'convertQuantity',
+      [mlnAmguAmount.toString(), mlnAddress, wethAddress]
+    )
+  );
 
-    return result;
-  }
+  const txCostInWei = new BN(gasPrice).mul(gasUsedWithoutAmgu);
+  const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
+  const totalUserCost = preUserBalance.sub(postUserBalance);
 
-  beforeEach(async () => {
-    const accounts = await web3.eth.getAccounts();
-    user = accounts[0];
-    defaultTxOpts = { from: user, gas: 8000000 };
-    defaultTxOptsWithValue = { ...defaultTxOpts, value: toWei('1', 'ether') };
+  expect(txCostInWei).bigNumberLt(totalUserCost);
+  expect(estimatedTotalUserCost).bigNumberGt(totalUserCost);
 
-    const deployed = await partialRedeploy([
-      CONTRACT_NAMES.VERSION,
-      CONTRACT_NAMES.ENGINE
-    ]);
-    const contracts = deployed.contracts;
+  return result;
+}
 
-    engine = contracts.Engine;
-    version = contracts.Version;
-    registry = contracts.Registry;
-    priceSource = contracts.TestingPriceFeed;
+beforeAll(async () => {
+  [deployer] = await getAccounts();
+  defaultTxOpts = { from: deployer, gas: 8000000 };
 
-    quoteToken = contracts.WETH;
-    baseToken = contracts.MLN;
+  amguPrice = toWei('1', 'gwei');
+})
 
-    amguPrice = '1000000000';
-    fundName = `test-fund-${Date.now()}`;
-  });
+beforeEach(async () => {
+  const deployed = await partialRedeploy([
+    CONTRACT_NAMES.VERSION
+  ]);
+  const contracts = deployed.contracts;
 
-  it('Set amgu and check its usage', async () => {
-    await engine.methods
-      .setAmguPrice(amguPrice)
-      .send(defaultTxOpts)
-    const newAmguPrice = await engine.methods.getAmguPrice().call();
+  engine = contracts.Engine;
+  version = contracts.Version;
+  registry = contracts.Registry;
+  priceSource = contracts.TestingPriceFeed;
 
-    expect(newAmguPrice.toString()).toBe(amguPrice.toString());
+  quoteToken = contracts.WETH;
+  baseToken = contracts.MLN;
+});
 
-    const newPrice = toWei('2', 'ether');
-    await priceSource.methods
-      .update([baseToken.options.address], [newPrice])
-      .send(defaultTxOpts)
+// Reset amgu and incentive after all tests so as not to affect other tests in suite
+afterEach(async () => {
+  await send(engine, 'setAmguPrice', [0], defaultTxOpts);
+  const resetAmguPrice = await call(engine, 'getAmguPrice');
+  expect(resetAmguPrice).toBe('0');
 
-    const price = await priceSource.methods
-      .getPrices([baseToken.options.address])
-      .call();
+  const incentivePrice = toWei('0.01', 'ether');
+  await send(registry, 'setIncentive', [incentivePrice], defaultTxOpts);
+  const resetIncentive = await call(registry, 'incentive');
+  expect(resetIncentive).toBe(incentivePrice);
+});
 
-    expect(price[0][0].toString()).toBe(newPrice.toString());
+test('Set amgu and check its usage in single amguPayable function', async () => {
+  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
+  const newAmguPrice = await call(engine, 'getAmguPrice');
+  expect(newAmguPrice).toBe(amguPrice);
 
-    await version.methods
-      .beginSetup(
-        fundName,
-        [],
-        [],
-        [],
-        [],
-        [],
-        quoteToken.options.address,
-        [baseToken.options.address, quoteToken.options.address]
-      ).send(defaultTxOpts);
+  const newInputBaseTokenPrice = toWei('2', 'ether');
+  await send(
+    priceSource,
+    'update',
+    [[baseToken.options.address], [newInputBaseTokenPrice]],
+    defaultTxOpts
+  );
+  const newBaseTokenPrice = await call(priceSource, 'getPrice', [baseToken.options.address]);
+  expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
-    const createAccountingTx = version.methods.createAccounting();
-    await assertAmguTx(createAccountingTx);
-  });
+  await send(
+    version,
+    'beginSetup',
+    [
+      `test-fund-${Date.now()}`,
+      [],
+      [],
+      [],
+      [],
+      [],
+      quoteToken.options.address,
+      [baseToken.options.address, quoteToken.options.address]
+    ],
+    managerTxOpts
+  );
 
-  afterEach(async () => {
-    await engine.methods
-      .setAmguPrice('0')
-      .send(defaultTxOpts)
-    const resetAmguPrice = await engine.methods.getAmguPrice().call();
-    expect(resetAmguPrice).toBe('0');
+  await assertAmguTx(version, 'createAccounting');
+});
 
-    await registry.methods.setIncentive(toWei('10', 'finney')).send(defaultTxOpts);
-    const resetIncentive = await registry.methods.incentive().call();
-    expect(resetIncentive).toBe(toWei('10', 'finney'));
-  });
+test('set amgu with incentive attatched and check its usage in creating a fund', async () => {
+  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
+  const newAmguPrice = await call(engine, 'getAmguPrice');
+  expect(newAmguPrice).toBe(amguPrice);
 
-  it('set amgu with incentive attatched and check its usage', async () => {
-    await engine.methods
-      .setAmguPrice(amguPrice)
-      .send(defaultTxOpts)
-    const newAmguPrice = await engine.methods.getAmguPrice().call();
+  const newInputBaseTokenPrice = toWei('2', 'ether');
+  await send(
+    priceSource,
+    'update',
+    [[baseToken.options.address], [newInputBaseTokenPrice]],
+    defaultTxOpts
+  );
+  const newBaseTokenPrice = await call(priceSource, 'getPrice', [baseToken.options.address]);
+  expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
-    expect(newAmguPrice.toString()).toBe(amguPrice.toString());
+  await send(
+    version,
+    'beginSetup',
+    [
+      `test-fund-${Date.now()}`,
+      [],
+      [],
+      [],
+      [],
+      [],
+      quoteToken.options.address,
+      [baseToken.options.address, quoteToken.options.address]
+    ],
+    managerTxOpts
+  );
 
-    const newPrice = toWei('2', 'ether');
-    await priceSource.methods
-      .update([baseToken.options.address], [newPrice])
-      .send(defaultTxOpts)
+  await assertAmguTx(version, 'createAccounting');
+  await assertAmguTx(version, 'createFeeManager');
+  await assertAmguTx(version, 'createParticipation');
+  await assertAmguTx(version, 'createPolicyManager');
+  await assertAmguTx(version, 'createShares');
+  await assertAmguTx(version, 'createTrading');
+  await assertAmguTx(version, 'createVault');
+  const res = await assertAmguTx(version, 'completeSetup');
 
-    const price = await priceSource.methods
-      .getPrices([baseToken.options.address])
-      .call();
+  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
+  const fund = await getFundComponents(hubAddress);
 
-    expect(price[0][0].toString()).toBe(newPrice.toString());
+  const requestedShares = toWei('100', 'ether');
+  const investmentAmount = toWei('100', 'ether');
 
-    await version.methods
-      .beginSetup(
-        fundName,
-        [],
-        [],
-        [],
-        [],
-        [],
-        quoteToken.options.address,
-        [baseToken.options.address, quoteToken.options.address]
-      ).send(defaultTxOpts);
+  await send(
+    quoteToken,
+    'approve',
+    [fund.participation.options.address, investmentAmount],
+    defaultTxOpts
+  );
 
-    const createAccountingTx = version.methods.createAccounting();
-    await assertAmguTx(createAccountingTx);
+  const incentiveInputAmount = toWei('100', 'ether');
+  await send(registry, 'setIncentive', [incentiveInputAmount], defaultTxOpts);
+  const newIncentiveAmount = await call(registry, 'incentive');
+  expect(newIncentiveAmount).toBe(incentiveInputAmount);
 
-    const createFeeManagerTx = version.methods.createFeeManager();
-    await assertAmguTx(createFeeManagerTx);
+  const preUserBalance = new BN(await web3.eth.getBalance(deployer));
+  const gasPrice = await web3.eth.getGasPrice();
+  const requestInvestmentRes = await send(
+    fund.participation,
+    'requestInvestment',
+    [
+      requestedShares,
+      investmentAmount,
+      quoteToken.options.address
+    ],
+    { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
+  );
+  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
-    const createParticipationTx = version.methods.createParticipation();
-    await assertAmguTx(createParticipationTx);
+  const gasUsedWithoutAmgu = new BN(requestInvestmentRes.gasUsed);
 
-    const createPolicyManagerTx = version.methods.createPolicyManager();
-    await assertAmguTx(createPolicyManagerTx);
+  const wethAddress = await call(registry, 'nativeAsset');
+  const mlnAddress = await call(version, 'mlnToken');
+  const mlnAmguAmount = new BN(amguPrice).mul(gasUsedWithoutAmgu);
+  const ethAmguAmount = new BN(
+    await call(
+      priceSource,
+      'convertQuantity',
+      [mlnAmguAmount.toString(), mlnAddress, wethAddress]
+    )
+  );
 
-    const createSharesTx = version.methods.createShares();
-    await assertAmguTx(createSharesTx);
+  const txCostInWei = new BN(gasPrice).mul(gasUsedWithoutAmgu);
+  const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei).add(new BN(newIncentiveAmount));
+  const totalUserCost = preUserBalance.sub(postUserBalance);
 
-    const createTradingTx = version.methods.createTrading();
-    await assertAmguTx(createTradingTx);
-
-    const createVaultTx = version.methods.createVault();
-    await assertAmguTx(createVaultTx);
-
-    const res = await version.methods.completeSetup().send(defaultTxOptsWithValue);
-
-    const hubAddress = res.events.NewFund.returnValues.hub;
-    const fund = await getFundComponents(hubAddress);
-
-    const requestedShares = toWei('100', 'ether');
-    const investmentAmount = toWei('100', 'ether');
-
-    await quoteToken.methods
-      .approve(fund.participation.options.address, investmentAmount)
-      .send(defaultTxOpts);
-
-    await registry.methods.setIncentive(toWei('100', 'ether')).send(defaultTxOpts);
-    const incentiveAmount = await registry.methods.incentive().call();
-    expect(incentiveAmount).toBe(toWei('100', 'ether'));
-
-    const amguTx = fund.participation.methods
-      .requestInvestment(
-        requestedShares,
-        investmentAmount,
-        quoteToken.options.address,
-      )
-
-    const preUserBalance = await web3.eth.getBalance(user);
-    const result = await amguTx.send({ ...defaultTxOpts, value: toWei('101', 'ether') });
-    const postUserBalance = await web3.eth.getBalance(user);
-
-    const gasPrice = await web3.eth.getGasPrice();
-    const gasUsed = result.gasUsed;
-    const estimatedGasUsedWithoutAmgu = result.gasUsed;
-
-    const nativeAssetAddress = await registry.methods.nativeAsset().call();
-    const mlnAddress = await version.methods.mlnToken().call();
-
-    const mlnAmount = new BN(amguPrice).mul(new BN(estimatedGasUsedWithoutAmgu));
-    const ethToPay = await priceSource.methods.convertQuantity(
-      mlnAmount.toString(),
-      mlnAddress,
-      nativeAssetAddress,
-    ).call();
-
-    const txCostInWei = new BN(gasPrice).mul(new BN(gasUsed));
-    const estimatedTotalUserCost = new BN(ethToPay).add(new BN(txCostInWei)).add(new BN(incentiveAmount));
-    const realUserCost = new BN(preUserBalance).sub(new BN(postUserBalance));
-
-    expect(txCostInWei.add(new BN(incentiveAmount))).bigNumberLt(realUserCost);
-    expect(estimatedTotalUserCost).bigNumberGt(realUserCost);
-  });
+  expect(txCostInWei).bigNumberLt(totalUserCost);
+  expect(estimatedTotalUserCost).bigNumberGt(totalUserCost);
 });

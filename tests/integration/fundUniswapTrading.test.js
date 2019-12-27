@@ -10,32 +10,31 @@
 
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { fetchContract } from '~/deploy/utils/deploy-contract';
+import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { setupFundWithParams } from '~/tests/utils/fund';
+import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
-let deployer, manager;
+let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let contracts;
-let eur, mln, weth, fund, uniswapAdapter;
+let eur, mln, weth, fund;
 let mlnExchange, eurExchange;
 let takeOrderSignature;
 let exchangeIndex;
 let takerAddress;
 
 beforeAll(async () => {
-  const accounts = await web3.eth.getAccounts();
-  [deployer, manager] = accounts;
+  [deployer, manager, investor] = await getAccounts();
+  defaultTxOpts = { from: deployer, gas: 8000000 };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
 
   const deployed = await partialRedeploy(
     [CONTRACT_NAMES.VERSION, CONTRACT_NAMES.UNISWAP_EXCHANGE]
   );
   contracts = deployed.contracts;
-
-  defaultTxOpts = { from: deployer, gas: 8000000 };
-  managerTxOpts = { ...defaultTxOpts, from: manager };
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
@@ -45,63 +44,78 @@ beforeAll(async () => {
   eur = contracts.EUR;
   mln = contracts.MLN;
   weth = contracts.WETH;
-  uniswapAdapter = contracts.UniswapAdapter;
+  const version = contracts.Version;
 
-  // Seed manager with funds
-  await weth.methods.transfer(manager, toWei('10', 'ether')).send(defaultTxOpts);
+  const uniswapFactory = contracts.UniswapFactory;
+  const uniswapAdapter = contracts.UniswapAdapter;
 
-  // Set up fund with investment from manager
-  fund = await setupInvestedTestFund(contracts, manager);
-
-  // Set exchangeIndex for Uniswap
-  const exchangeInfo = await fund.trading.methods.getExchangeInfo().call();
-  exchangeIndex = exchangeInfo[1].findIndex(
-    e => e.toLowerCase() === uniswapAdapter.options.address.toLowerCase(),
-  );
+  fund = await setupFundWithParams({
+    defaultTokens: [mln.options.address, weth.options.address],
+    exchanges: [uniswapFactory.options.address],
+    exchangeAdapters: [uniswapAdapter.options.address],
+    initialInvestment: {
+      contribAmount: toWei('1', 'ether'),
+      investor,
+      tokenContract: weth
+    },
+    manager,
+    quoteToken: weth.options.address,
+    version
+  });
+  exchangeIndex = 0;
 
   takerAddress = fund.trading.options.address;
 
   // Load interfaces for uniswap exchanges of tokens to be traded
-  const uniswapFactory = await fetchContract(
+  const iUniswapFactory = await fetchContract(
     "IUniswapFactory",
     contracts.UniswapFactory.options.address
   );
-  const mlnExchangeAddress = await uniswapFactory.methods
-    .getExchange(mln.options.address)
-    .call();
+  const mlnExchangeAddress = await call(iUniswapFactory, 'getExchange', [mln.options.address]);
   mlnExchange = await fetchContract(
     "IUniswapExchange",
     mlnExchangeAddress
   );
-  const eurExchangeAddress = await uniswapFactory.methods
-    .getExchange(eur.options.address)
-    .call();
+  const eurExchangeAddress = await call(uniswapFactory, 'getExchange', [eur.options.address]);
   eurExchange = await fetchContract(
     "IUniswapExchange",
     eurExchangeAddress
   );
 
   // Seed uniswap exchanges with liquidity
-  const ethLiquidityAmount = toWei('10', 'ether');
-  const eurLiquidityAmount = toWei('1000', 'ether');
-  const mlnLiquidityAmount = toWei('20', 'ether');
+  const ethLiquidityAmount = toWei('1', 'ether');
+  const eurLiquidityAmount = toWei('100', 'ether');
+  const mlnLiquidityAmount = toWei('2', 'ether');
 
   const minLiquidity = 0; // For first liquidity provider
   const deadline = (await web3.eth.getBlock('latest')).timestamp + 300 // Arbitrary
 
-  await mln.methods
-    .approve(mlnExchange.options.address, mlnLiquidityAmount)
-    .send(defaultTxOpts);
-  await mlnExchange.methods
-    .addLiquidity(minLiquidity, mlnLiquidityAmount, deadline)
-    .send({ ...defaultTxOpts, value: ethLiquidityAmount });
+  await send(
+    mln,
+    'approve',
+    [mlnExchange.options.address, mlnLiquidityAmount],
+    defaultTxOpts
+  );
+  await send(
+    mlnExchange,
+    'addLiquidity',
+    [minLiquidity, mlnLiquidityAmount, deadline],
+    { ...defaultTxOpts, value: ethLiquidityAmount }
+  );
 
-  await eur.methods
-    .approve(eurExchange.options.address, eurLiquidityAmount)
-    .send(defaultTxOpts);
-  await eurExchange.methods
-    .addLiquidity(minLiquidity, eurLiquidityAmount, deadline)
-    .send({ ...defaultTxOpts, value: ethLiquidityAmount });
+  await send(
+    eur,
+    'approve',
+    [eurExchange.options.address, eurLiquidityAmount],
+    defaultTxOpts
+  );
+  await send(
+    eurExchange,
+    'addLiquidity',
+    [minLiquidity, eurLiquidityAmount, deadline],
+    { ...defaultTxOpts, value: ethLiquidityAmount }
+  );
+
 });
 
 test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
@@ -111,22 +125,24 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const takerQuantity = toWei('0.1', 'ether');
   const makerAsset = mln.options.address;
 
-  const makerQuantity = await mlnExchange.methods
-    .getEthToTokenInputPrice(takerQuantity)
-    .call();
+  const makerQuantity = await call(
+    mlnExchange,
+    'getEthToTokenInputPrice',
+    [takerQuantity]
+  );
 
   const preMlnFundHoldings = new BN(
-    await accounting.methods.assetHoldings(mln.options.address).call()
+    await call(accounting, 'assetHoldings', [mln.options.address])
   );
   const preWethFundHoldings = new BN(
-    await accounting.methods.assetHoldings(weth.options.address).call()
+    await call(accounting, 'assetHoldings', [weth.options.address])
   );
-  const preMlnVault = new BN(
-    await mln.methods.balanceOf(vault.options.address).call()
-  );
+  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  await trading.methods
-    .callOnExchange(
+  await send(
+    trading,
+    'callOnExchange',
+    [
       exchangeIndex,
       takeOrderSignature,
       [
@@ -143,18 +159,17 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
       ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
       '0x0',
-    )
-    .send(managerTxOpts);
+    ],
+    managerTxOpts
+  );
 
   const postMlnFundHoldings = new BN(
-    await accounting.methods.assetHoldings(mln.options.address).call()
-  )
+    await call(accounting, 'assetHoldings', [mln.options.address])
+  );
   const postWethFundHoldings = new BN(
-    await accounting.methods.assetHoldings(weth.options.address).call()
+    await call(accounting, 'assetHoldings', [weth.options.address])
   );
-  const postMlnVault = new BN(
-    await mln.methods.balanceOf(vault.options.address).call()
-  );
+  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
   expect(postWethFundHoldings).bigNumberEq(
     preWethFundHoldings.sub(new BN(takerQuantity))
@@ -172,22 +187,24 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const takerQuantity = toWei('0.01', 'ether');
   const makerAsset = weth.options.address;
 
-  const makerQuantity = await mlnExchange.methods
-    .getTokenToEthInputPrice(takerQuantity)
-    .call();
+  const makerQuantity = await call(
+    mlnExchange,
+    'getTokenToEthInputPrice',
+    [takerQuantity]
+  );
 
   const preMlnFundHoldings = new BN(
-    await accounting.methods.assetHoldings(mln.options.address).call()
-  )
+    await call(accounting, 'assetHoldings', [mln.options.address])
+  );
   const preWethFundHoldings = new BN(
-    await accounting.methods.assetHoldings(weth.options.address).call()
+    await call(accounting, 'assetHoldings', [weth.options.address])
   );
-  const preWethVault = new BN(
-    await weth.methods.balanceOf(vault.options.address).call()
-  );
+  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
 
-  await trading.methods
-    .callOnExchange(
+  await send(
+    trading,
+    'callOnExchange',
+    [
       exchangeIndex,
       takeOrderSignature,
       [
@@ -204,18 +221,17 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
       ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
       '0x0',
-    )
-    .send(managerTxOpts);
+    ],
+    managerTxOpts
+  );
 
   const postMlnFundHoldings = new BN(
-    await accounting.methods.assetHoldings(mln.options.address).call()
-  )
+    await call(accounting, 'assetHoldings', [mln.options.address])
+  );
   const postWethFundHoldings = new BN(
-    await accounting.methods.assetHoldings(weth.options.address).call()
+    await call(accounting, 'assetHoldings', [weth.options.address])
   );
-  const postWethVault = new BN(
-    await weth.methods.balanceOf(vault.options.address).call()
-  );
+  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
 
   expect(postWethFundHoldings).bigNumberEq(
     preWethFundHoldings.add(new BN(makerQuantity))
@@ -234,28 +250,32 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const makerAsset = eur.options.address;
   const makerQuantity = "1";
 
-  const intermediateEth = await mlnExchange.methods
-    .getTokenToEthInputPrice(takerQuantity)
-    .call();
-  const expectedMakerQuantity = new BN(
-    await eurExchange.methods.getEthToTokenInputPrice(intermediateEth).call()
+  const intermediateEth = await call(
+    mlnExchange,
+    'getTokenToEthInputPrice',
+    [takerQuantity]
+  );
+  const expectedMakerQuantity = await call(
+    eurExchange,
+    'getEthToTokenInputPrice',
+    [intermediateEth]
   );
 
   const preEurFundHoldings = new BN(
-    await accounting.methods.assetHoldings(eur.options.address).call()
+    await call(accounting, 'assetHoldings', [eur.options.address])
   );
   const preMlnFundHoldings = new BN(
-    await accounting.methods.assetHoldings(mln.options.address).call()
-  )
+    await call(accounting, 'assetHoldings', [mln.options.address])
+  );
   const preWethFundHoldings = new BN(
-    await accounting.methods.assetHoldings(weth.options.address).call()
+    await call(accounting, 'assetHoldings', [weth.options.address])
   );
-  const preEurVault = new BN(
-    await eur.methods.balanceOf(vault.options.address).call()
-  );
+  const preEurVault = new BN(await call(eur, 'balanceOf', [vault.options.address]));
 
-  await trading.methods
-    .callOnExchange(
+  await send(
+    trading,
+    'callOnExchange',
+    [
       exchangeIndex,
       takeOrderSignature,
       [
@@ -272,21 +292,20 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
       ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
       '0x0',
-    )
-    .send(managerTxOpts);
+    ],
+    managerTxOpts
+  );
 
   const postEurFundHoldings = new BN(
-    await accounting.methods.assetHoldings(eur.options.address).call()
+    await call(accounting, 'assetHoldings', [eur.options.address])
   );
   const postMlnFundHoldings = new BN(
-    await accounting.methods.assetHoldings(mln.options.address).call()
-  )
+    await call(accounting, 'assetHoldings', [mln.options.address])
+  );
   const postWethFundHoldings = new BN(
-    await accounting.methods.assetHoldings(weth.options.address).call()
+    await call(accounting, 'assetHoldings', [weth.options.address])
   );
-  const postEurVault = new BN(
-    await eur.methods.balanceOf(vault.options.address).call()
-  );
+  const postEurVault = new BN(await call(eur, 'balanceOf', [vault.options.address]));
 
   expect(postWethFundHoldings).bigNumberEq(preWethFundHoldings);
   expect(postMlnFundHoldings).bigNumberEq(
@@ -305,14 +324,18 @@ test('Order fails if maker amount is not satisfied', async () => {
   const takerQuantity = toWei('0.1', 'ether');
   const makerAsset = weth.options.address;
 
-  const makerQuantity = await mlnExchange.methods
-    .getTokenToEthInputPrice(takerQuantity)
-    .call();
+  const makerQuantity = await call(
+    mlnExchange,
+    'getTokenToEthInputPrice',
+    [takerQuantity]
+  );
   const highMakerQuantity = new BN(makerQuantity).mul(new BN(2)).toString();
 
   await expect(
-    trading.methods
-      .callOnExchange(
+    send(
+      trading,
+      'callOnExchange',
+      [
         exchangeIndex,
         takeOrderSignature,
         [
@@ -329,7 +352,8 @@ test('Order fails if maker amount is not satisfied', async () => {
         ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
-      )
-      .send(managerTxOpts)
-  ).rejects.toThrow();
+      ],
+      managerTxOpts
+    )
+  ).rejects.toThrowFlexible();
 });

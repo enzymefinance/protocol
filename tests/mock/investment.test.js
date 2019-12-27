@@ -35,7 +35,7 @@ describe('investment', () => {
       .send(defaultTxOpts);
   });
 
-  it('Invest fails in shut down fund', async () => {
+  test('Invest fails in shut down fund', async () => {
     const errorMessage = 'Hub is shut down';
     const amount = toWei('1', 'ether');
     await mockSystem.hub.methods.setShutDownState(true).send(defaultTxOpts);
@@ -71,7 +71,7 @@ describe('investment', () => {
       .send({ ...defaultTxOpts, value: defaultAmgu });
   });
 
-  it('Request must exist to execute', async () => {
+  test('Request must exist to execute', async () => {
     const errorMessage = 'No valid request for this address';
     const requestExists = await mockSystem.participation.methods
       .hasRequest(user)
@@ -102,7 +102,7 @@ describe('investment', () => {
       .send({ ...defaultTxOpts, value: defaultAmgu });
   });
 
-  it('Need fresh price to execute request', async () => {
+  test('Need fresh price to execute request', async () => {
     const errorMessage = 'Price not valid';
     const amount = toWei('1', 'ether');
 
@@ -139,7 +139,7 @@ describe('investment', () => {
       .send({ ...defaultTxOpts, value: defaultAmgu })
   });
 
-  it('Asset must be permitted', async () => {
+  test('Asset must be permitted', async () => {
     const errorMessage = 'Investment not allowed in this asset';
     const asset = randomHex(20);
     const amount = '100';
@@ -156,7 +156,7 @@ describe('investment', () => {
     ).rejects.toThrow(errorMessage);
   });
 
-  it('Invested amount must be above price minimum', async () => {
+  test('Invested amount must be above price minimum', async () => {
     const errorMessage = 'Invested amount too low';
     const price = toWei('1', 'ether');
     await mockSystem.priceSource.methods
@@ -186,7 +186,7 @@ describe('investment', () => {
       .send({ ...defaultTxOpts, value: defaultAmgu });
   });
 
-  it('Basic investment works', async () => {
+  test('Basic investment works', async () => {
     const investAmount = '1000';
     const sharesAmount = '1000';
     const preVaultWeth = await mockSystem.weth.methods

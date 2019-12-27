@@ -1,6 +1,5 @@
 import { deploy, fetchContract } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
 describe('withdraw', () => {
@@ -29,7 +28,7 @@ describe('withdraw', () => {
     vault = fetchContract(CONTRACT_NAMES.VAULT, vaultAddress);
   });
 
-  it('withdraw token that is not present', async () => {
+  test('withdraw token that is not present', async () => {
     await expect(
       vault.methods
         .withdraw(token.options.address, 100)
@@ -37,7 +36,7 @@ describe('withdraw', () => {
     ).rejects.toThrow();
   });
 
-  it('withdraw available token', async () => {
+  test('withdraw available token', async () => {
     const amount = 100000;
     const amountInWalletPre = Number(
       await token.methods.balanceOf(user).call(),
@@ -62,7 +61,7 @@ describe('withdraw', () => {
       await token.methods.balanceOf(user).call(),
     );
 
-    await expect(amountInVault).toBe(0);
-    await expect(amountInWalletPost).toBe(amountInWalletPre);
+    expect(amountInVault).toBe(0);
+    expect(amountInWalletPost).toBe(amountInWalletPre);
   });
 });

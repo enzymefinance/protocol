@@ -1,9 +1,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { randomHex, toChecksumAddress } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -42,7 +40,7 @@ describe('assetBlacklist', () => {
     ].map(addr => toChecksumAddress(addr));
   });
 
-  it('Create blacklist', async () => {
+  test('Create blacklist', async () => {
     const blacklist = await deploy(
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
@@ -53,7 +51,7 @@ describe('assetBlacklist', () => {
     ).toEqual(assetArray);
   });
 
-  it('Add asset to blacklist', async () => {
+  test('Add asset to blacklist', async () => {
     const blacklist = await deploy(
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]
@@ -79,7 +77,7 @@ describe('assetBlacklist', () => {
     expect(await blacklist.methods.isMember(mockAsset).call()).toBe(true);
   });
 
-  it('Policy manager with blacklist', async () => {
+  test('Policy manager with blacklist', async () => {
     const blacklist = await deploy(
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [assetArray]

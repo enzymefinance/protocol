@@ -9,8 +9,7 @@ import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { numberToBytes } from '~/tests/utils/formatting';
-import getAllBalances from '~/tests/utils/getAllBalances';
-import getFundComponents from '~/tests/utils/getFundComponents';
+import { getFundComponents } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { increaseTime } from '~/tests/utils/rpc';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
@@ -124,24 +123,23 @@ beforeAll(async () => {
 
 test('Transfer ethToken to the investor', async () => {
   const initialTokenAmount = toWei('1000', 'ether');
-  const pre = await getAllBalances(contracts, accounts, fund);
+  const preInvestorWeth = new BN(await weth.methods.balanceOf(investor).call());
 
   await weth.methods
     .transfer(investor, initialTokenAmount)
     .send(defaultTxOpts);
 
-  const post = await getAllBalances(contracts, accounts, fund);
+  const postInvestorWeth = new BN(await weth.methods.balanceOf(investor).call());
   const bnInitialTokenAmount = new BN(initialTokenAmount);
 
-  expect(post.investor.weth).bigNumberEq(
-    pre.investor.weth.add(bnInitialTokenAmount),
+  expect(postInvestorWeth).bigNumberEq(
+    preInvestorWeth.add(bnInitialTokenAmount),
   );
 });
 
 Array.from(Array(numberOfExchanges).keys()).forEach(i => {
   test(`fund gets ETH Token from investment [round ${i + 1}]`, async () => {
     const wantedShares = toWei('100', 'ether');
-    // const pre = await getAllBalances(contracts, accounts, fund);
     const preTotalSupply = await fund.shares.methods.totalSupply().call();
 
     await weth.methods
@@ -162,7 +160,6 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
       .executeRequestFor(investor)
       .send(investorTxOpts);
 
-    // const post = await getAllBalances(contracts, accounts, fund);
     const postTotalSupply = await fund.shares.methods.totalSupply().call();
     const bnWantedShares = new BN(wantedShares);
     const bnPreTotalSupply = new BN(preTotalSupply.toString());
@@ -173,13 +170,16 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
 
   test(`Exchange ${i +
     1}: manager makes order, sellToken sent to exchange`, async () => {
-    const pre = await getAllBalances(contracts, accounts, fund);
     const exchangePreMln = new BN(
       (await mln.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
     const exchangePreEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
+    const preFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const preDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
     const preIsMlnInAssetList = await fund.accounting.methods
       .isInAssetList(mln.options.address)
       .call();
@@ -220,7 +220,10 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const exchangePostEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
-    const post = await getAllBalances(contracts, accounts, fund);
+    const postFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const postDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
     const postIsMlnInAssetList = await fund.accounting.methods
       .isInAssetList(mln.options.address)
       .call();
@@ -234,8 +237,8 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.add(bnSellQuantity),
     );
-    expect(post.fund.weth).bigNumberEq(pre.fund.weth);
-    expect(post.deployer.mln).bigNumberEq(pre.deployer.mln);
+    expect(postFundWeth).bigNumberEq(preFundWeth);
+    expect(postDeployerMln).bigNumberEq(preDeployerMln);
     expect(postIsMlnInAssetList).toBeTruthy();
     expect(preIsMlnInAssetList).toBeFalsy();
     expect(Number(openOrdersAgainstMln)).toBe(1);
@@ -260,13 +263,20 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
   test(`Exchange ${i +
     1}: third party takes entire order, allowing fund to receive mlnToken`, async () => {
     const orderId = await exchanges[i].methods.last_offer_id().call();
-    const pre = await getAllBalances(contracts, accounts, fund);
     const exchangePreMln = new BN(
       (await mln.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
     const exchangePreEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
+    const preFundMln = new BN(
+      await fund.accounting.methods.assetHoldings(mln.options.address).call()
+    );
+    const preFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const preDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
+    const preDeployerWeth = new BN(await weth.methods.balanceOf(deployer).call());
 
     await mln.methods
       .approve(exchanges[i].options.address, `${trade1.buyQuantity}`)
@@ -284,7 +294,14 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const exchangePostEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
-    const post = await getAllBalances(contracts, accounts, fund);
+    const postFundMln = new BN(
+      await fund.accounting.methods.assetHoldings(mln.options.address).call()
+    );
+    const postFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const postDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
+    const postDeployerWeth = new BN(await weth.methods.balanceOf(deployer).call());
     const bnSellQuantity = new BN(trade1.sellQuantity);
     const bnBuyQuantity = new BN(trade1.buyQuantity);
 
@@ -292,42 +309,42 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.sub(bnSellQuantity),
     );
-    expect(post.fund.weth).bigNumberEq(
-      pre.fund.weth.sub(bnSellQuantity),
+    expect(postFundWeth).bigNumberEq(
+      preFundWeth.sub(bnSellQuantity),
     );
-    expect(post.fund.mln).bigNumberEq(
-      pre.fund.mln.add(bnBuyQuantity),
+    expect(postFundMln).bigNumberEq(
+      preFundMln.add(bnBuyQuantity),
     );
-    expect(post.deployer.weth).bigNumberEq(
-      pre.deployer.weth.add(bnSellQuantity),
+    expect(postDeployerWeth).bigNumberEq(
+      preDeployerWeth.add(bnSellQuantity),
     );
-    expect(post.deployer.mln).bigNumberEq(
-      pre.deployer.mln.sub(bnBuyQuantity),
+    expect(postDeployerMln).bigNumberEq(
+      preDeployerMln.sub(bnBuyQuantity),
     );
   });
 
   test(`Exchange ${i +
     // tslint:disable-next-line:max-line-length
     1}: third party makes order (sell ETH-T for MLN-T),and ETH-T is transferred to exchange`, async () => {
-    const pre = await getAllBalances(contracts, accounts, fund);
     const exchangePreMln = new BN(
       (await mln.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
     const exchangePreEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
+    const preDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
+    const preDeployerWeth = new BN(await weth.methods.balanceOf(deployer).call());
+
     await weth.methods
       .approve(exchanges[i].options.address, trade2.sellQuantity)
       .send(defaultTxOpts);
-
     await exchanges[i].methods
       .offer(
         trade2.sellQuantity,
         weth.options.address,
         trade2.buyQuantity,
         mln.options.address,
-      )
-      .send(defaultTxOpts);
+      ).send(defaultTxOpts);
 
     const exchangePostMln = new BN(
       (await mln.methods.balanceOf(exchanges[i].options.address).call()).toString()
@@ -335,28 +352,37 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     const exchangePostEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
-    const post = await getAllBalances(contracts, accounts, fund);
+    const postDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
+    const postDeployerWeth = new BN(await weth.methods.balanceOf(deployer).call());
     const bnSellQuantity = new BN(trade2.sellQuantity);
 
     expect(exchangePostMln).bigNumberEq(exchangePreMln);
     expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.add(bnSellQuantity),
     );
-    expect(post.deployer.weth).bigNumberEq(
-      pre.deployer.weth.sub(bnSellQuantity),
+    expect(postDeployerWeth).bigNumberEq(
+      preDeployerWeth.sub(bnSellQuantity),
     );
-    expect(post.deployer.mln).bigNumberEq(pre.deployer.mln);
+    expect(postDeployerMln).bigNumberEq(preDeployerMln);
   });
 
   test(`Exchange ${i +
     1}: manager takes order (buys ETH-T for MLN-T)`, async () => {
-    const pre = await getAllBalances(contracts, accounts, fund);
     const exchangePreMln = new BN(
       (await mln.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
     const exchangePreEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
+    const preDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
+    const preFundMln = new BN(
+      await fund.accounting.methods.assetHoldings(mln.options.address).call()
+    );
+    const preFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const preFundEther = new BN(await web3.eth.getBalance(fund.vault.options.address));
+
     const orderId = await exchanges[i].methods.last_offer_id().call();
     await fund.trading.methods
       .callOnExchange(
@@ -378,13 +404,20 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         '0x0',
       )
       .send(managerTxOpts);
-    const post = await getAllBalances(contracts, accounts, fund);
     const exchangePostMln = new BN(
       (await mln.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
     const exchangePostEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
+    const postDeployerMln = new BN(await mln.methods.balanceOf(deployer).call());
+    const postFundMln = new BN(
+      await fund.accounting.methods.assetHoldings(mln.options.address).call()
+    );
+    const postFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const postFundEther = new BN(await web3.eth.getBalance(fund.vault.options.address));
     const bnSellQuantity = new BN(trade2.sellQuantity);
     const bnBuyQuantity = new BN(trade2.buyQuantity);
 
@@ -392,24 +425,30 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     expect(exchangePostEthToken).bigNumberEq(
       exchangePreEthToken.sub(bnSellQuantity),
     );
-    expect(post.deployer.mln).bigNumberEq(
-      pre.deployer.mln.add(bnBuyQuantity),
+    expect(postDeployerMln).bigNumberEq(
+      preDeployerMln.add(bnBuyQuantity),
     );
-    expect(post.fund.mln).bigNumberEq(
-      pre.fund.mln.sub(bnBuyQuantity),
+    expect(postFundMln).bigNumberEq(
+      preFundMln.sub(bnBuyQuantity),
     );
-    expect(post.fund.weth).bigNumberEq(
-      pre.fund.weth.add(bnSellQuantity),
+    expect(postFundWeth).bigNumberEq(
+      preFundWeth.add(bnSellQuantity),
     );
-    expect(post.fund.ether).bigNumberEq(pre.fund.ether);
+    expect(postFundEther).bigNumberEq(preFundEther);
   });
 
   test(`Exchange ${i + 1}: manager makes an order and cancels it`, async () => {
     await increaseTime(60 * 30);
-    const pre = await getAllBalances(contracts, accounts, fund);
     const exchangePreEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
     );
+    const preFundMln = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const preFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+
     await fund.trading.methods
       .returnBatchToVault([mln.options.address, weth.options.address])
       .send(managerTxOpts);
@@ -464,19 +503,23 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         ['0x0', '0x0', '0x0', '0x0'],
         numberToBytes(Number(orderId), 32),
         '0x0',
-      )
-      .send(managerTxOpts);
+      ).send(managerTxOpts);
 
     const orderOpen = await exchanges[i].methods.isActive(orderId).call();
-    const post = await getAllBalances(contracts, accounts, fund);
     const exchangePostEthToken = new BN(
       (await weth.methods.balanceOf(exchanges[i].options.address).call()).toString()
+    );
+    const postFundMln = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
+    );
+    const postFundWeth = new BN(
+      await fund.accounting.methods.assetHoldings(weth.options.address).call()
     );
 
     expect(orderOpen).toBeFalsy();
     expect(exchangePostEthToken).bigNumberEq(exchangePreEthToken);
-    expect(post.fund.mln).bigNumberEq(pre.fund.mln);
-    expect(post.fund.weth).bigNumberEq(pre.fund.weth);
+    expect(postFundMln).bigNumberEq(preFundMln);
+    expect(postFundWeth).bigNumberEq(preFundWeth);
   });
 
   test(`Exchange ${i +

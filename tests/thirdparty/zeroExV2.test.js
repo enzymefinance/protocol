@@ -31,7 +31,7 @@ describe('account-0x-trading', () => {
       .send(defaultTxOpts);
   });
 
-  it('Happy path', async () => {
+  test('Happy path', async () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
 

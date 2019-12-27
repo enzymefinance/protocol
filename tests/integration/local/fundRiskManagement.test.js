@@ -12,18 +12,17 @@
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { deploy } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
+import { call, deploy, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { setupInvestedTestFund } from '~/tests/utils/fund';
+import getAccounts from '~/deploy/utils/getAccounts';
 import {
-  getEventFromReceipt,
+  getEventFromLogs,
   getFunctionSignature
 } from '~/tests/utils/metadata';
 import { increaseTime, mine } from '~/tests/utils/rpc';
-import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 
 let deployer, manager1, manager2, investor;
 let defaultTxOpts, investorTxOpts;
@@ -34,7 +33,7 @@ let contracts;
 const ruleFailureString = 'Rule evaluated to false: ';
 
 beforeAll(async () => {
-  [deployer, manager1, manager2, investor] = await web3.eth.getAccounts();
+  [deployer, manager1, manager2, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
@@ -66,8 +65,10 @@ beforeAll(async () => {
   const wethToKncRate = toWei('0.005', 'ether');
   const wethToMlnRate = toWei('0.5', 'ether');
   const wethToZrxRate = toWei('0.25', 'ether');
-  await priceSource.methods
-    .update(
+  await send(
+    priceSource,
+    'update',
+    [
       [
         weth.options.address,
         mln.options.address,
@@ -82,24 +83,9 @@ beforeAll(async () => {
         wethToDaiRate,
         wethToZrxRate
       ]
-    )
-    .send(defaultTxOpts);
-
-  await weth.methods.transfer(manager1, toWei('10', 'ether')).send(defaultTxOpts);
-  await weth.methods.transfer(manager2, toWei('10', 'ether')).send(defaultTxOpts);
-  await weth.methods.transfer(investor, toWei('10', 'ether')).send(defaultTxOpts);
-  await mln.methods.transfer(manager1, toWei('20', 'ether')).send(defaultTxOpts);
-  await mln.methods.transfer(manager2, toWei('20', 'ether')).send(defaultTxOpts);
-  await mln.methods.transfer(investor, toWei('20', 'ether')).send(defaultTxOpts);
-  await dai.methods.transfer(manager1, toWei('2000', 'ether')).send(defaultTxOpts);
-  await dai.methods.transfer(manager2, toWei('2000', 'ether')).send(defaultTxOpts);
-  await dai.methods.transfer(investor, toWei('2000', 'ether')).send(defaultTxOpts);
-  await knc.methods.transfer(manager1, toWei('2000', 'ether')).send(defaultTxOpts);
-  await knc.methods.transfer(manager2, toWei('2000', 'ether')).send(defaultTxOpts);
-  await knc.methods.transfer(investor, toWei('2000', 'ether')).send(defaultTxOpts);
-  await zrx.methods.transfer(manager1, toWei('50', 'ether')).send(defaultTxOpts);
-  await zrx.methods.transfer(manager2, toWei('50', 'ether')).send(defaultTxOpts);
-  await zrx.methods.transfer(investor, toWei('50', 'ether')).send(defaultTxOpts);
+    ],
+    defaultTxOpts
+  );
 });
 
 /*
@@ -113,7 +99,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
   let fund;
   let manager, managerTxOpts;
   let assetBlacklist, maxConcentration, maxPositions;
-  let priceToleranceVal, maxConcentrationVal, maxPositionsVal;
+  let priceToleranceVal, maxConcentrationVal;
   let oasisDexExchangeIndex;
 
   beforeAll(async () => {
@@ -123,7 +109,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     fund = await setupInvestedTestFund(contracts, manager);
     const { accounting, policyManager, trading } = fund;
 
-    const exchangeInfo = await trading.methods.getExchangeInfo().call();
+    const exchangeInfo = await call(trading, 'getExchangeInfo');
     oasisDexExchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase(),
     );
@@ -132,7 +118,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [[knc.options.address]]
     );
-    const currentPositions = await accounting.methods.getOwnedAssetsLength().call();
+    const currentPositions = await call(accounting, 'getOwnedAssetsLength');
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
       [Number(currentPositions) + 2]
@@ -142,79 +128,100 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       [toWei('0.1', 'ether')],
     );
 
-    await policyManager.methods
-      .register(
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(makeOrderFunctionSig),
         priceTolerance.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(takeOrderFunctionSig),
         priceTolerance.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(makeOrderFunctionSig),
         assetBlacklist.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(takeOrderFunctionSig),
         assetBlacklist.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(makeOrderFunctionSig),
         maxPositions.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(takeOrderFunctionSig),
         maxPositions.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(makeOrderFunctionSig),
         maxConcentration.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(takeOrderFunctionSig),
         maxConcentration.options.address
-      )
-      .send(managerTxOpts);
+      ],
+      managerTxOpts
+    );
 
-    maxConcentrationVal = await maxConcentration.methods
-      .maxConcentration()
-      .call();
-    maxPositionsVal = await maxPositions.methods
-      .maxPositions()
-      .call();
-    priceToleranceVal = await priceTolerance.methods
-      .tolerance()
-      .call();
+    maxConcentrationVal = await call(maxConcentration, 'maxConcentration');
+    priceToleranceVal = await call(priceTolerance, 'tolerance');
   });
 
   test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const makeOrderPoliciesRes = await policyManager.methods
-      .getPoliciesBySig(encodeFunctionSignature(makeOrderFunctionSig))
-      .call();
+    const makeOrderPoliciesRes = await call(
+      policyManager,
+      'getPoliciesBySig',
+      [encodeFunctionSignature(makeOrderFunctionSig)]
+    );
     const makeOrderPolicyAddresses = [
       ...makeOrderPoliciesRes[0],
       ...makeOrderPoliciesRes[1]
     ];
-    const takeOrderPoliciesRes = await policyManager.methods
-      .getPoliciesBySig(encodeFunctionSignature(takeOrderFunctionSig))
-      .call();
+    const takeOrderPoliciesRes = await call(
+      policyManager,
+      'getPoliciesBySig',
+      [encodeFunctionSignature(takeOrderFunctionSig)]
+    );
     const takeOrderPolicyAddresses = [
       ...takeOrderPoliciesRes[0],
       ...takeOrderPoliciesRes[1]
@@ -260,7 +267,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
       const takerAsset = knc.options.address;
       const wethToTakerAssetRate = new BN(
-        (await priceSource.methods.getPrice(takerAsset).call())[0]
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
       );
       const takerQuantity = BNExpDiv(
         new BN(makerQuantity),
@@ -268,8 +275,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       ).toString();
 
       await expect(
-        trading.methods
-          .callOnExchange(
+        send(
+          trading,
+          'callOnExchange',
+          [
             oasisDexExchangeIndex,
             makeOrderFunctionSig,
             [
@@ -286,24 +295,28 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
-          )
-          .send(managerTxOpts)
-      ).rejects.toThrow(ruleFailureString + 'AssetBlacklist');
+          ],
+          managerTxOpts
+        )
+      ).rejects.toThrowFlexible(`${ruleFailureString}AssetBlacklist`);
     });
-    test('Good make order: non-blacklisted taker asset', async () => {
+
+    test('Good maker order: non-blacklisted taker asset', async () => {
       const { accounting, trading } = fund;
 
       const takerAsset = mln.options.address;
       const wethToTakerAssetRate = new BN(
-        (await priceSource.methods.getPrice(takerAsset).call())[0]
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
       );
       const takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         wethToTakerAssetRate
       ).toString();
 
-      const receipt = await trading.methods
-        .callOnExchange(
+      const receipt = await send(
+        trading,
+        'callOnExchange',
+        [
           oasisDexExchangeIndex,
           makeOrderFunctionSig,
           [
@@ -320,35 +333,36 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-
-      expect(receipt).toBeTruthy();
+        ],
+        managerTxOpts
+      );
 
       // Take order with EOA
-      const logMake = getEventFromReceipt(
-        receipt.events,
+      const logMake = getEventFromLogs(
+        receipt.logs,
         CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
         'LogMake'
       );
       const orderId = hexToNumber(logMake.id);
-      await mln.methods
-        .approve(oasisDex.options.address, takerQuantity)
-        .send(investorTxOpts);
-      await oasisDex.methods
-        .buy(orderId, makerQuantity)
-        .send(investorTxOpts);
+      await send(mln, 'transfer', [investor, takerQuantity], defaultTxOpts);
+      await send(
+        mln,
+        'approve',
+        [oasisDex.options.address, takerQuantity],
+        investorTxOpts
+      );
+      await send(oasisDex, 'buy', [orderId, makerQuantity], investorTxOpts);
 
       // Update accounting so maker asset is no longer marked as in an open order
-      await accounting.methods.updateOwnedAssets().send(managerTxOpts);
-      await trading.methods.returnAssetToVault(takerAsset).send(managerTxOpts);
-      await trading.methods.updateAndGetQuantityBeingTraded(makerAsset).send(managerTxOpts);
+      await send(accounting, 'updateOwnedAssets', [], managerTxOpts);
+      await send(trading, 'returnAssetToVault', [takerAsset], managerTxOpts);
+      await send(trading, 'updateAndGetQuantityBeingTraded', [makerAsset], managerTxOpts);
 
-      const isInOpenMakeOrder = await trading.methods.isInOpenMakeOrder(makerAsset).call();
+      const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [makerAsset]);
       expect(isInOpenMakeOrder).toEqual(false);
 
       // Increment next block time past the maker asset cooldown period
-      const cooldownTime = await trading.methods.MAKE_ORDER_COOLDOWN().call();
+      const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
       await increaseTime(cooldownTime*2);
       await mine();
     });
@@ -364,13 +378,12 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       makerQuantity = toWei('0.01', 'ether');
       takerAsset = mln.options.address;
 
-      const wethToTakerAssetRate = (await priceSource.methods
-        .getPrice(takerAsset)
-        .call())[0];
-
+      const wethToTakerAssetRate = new BN(
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      );
       expectedTakerQuantity = BNExpDiv(
         new BN(makerQuantity),
-        new BN(wethToTakerAssetRate)
+        wethToTakerAssetRate
       ).toString();
 
       takerQuantityPercentLimit =
@@ -387,8 +400,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       ).toString();
 
       await expect(
-        trading.methods
-          .callOnExchange(
+        send(
+          trading,
+          'callOnExchange',
+          [
             oasisDexExchangeIndex,
             makeOrderFunctionSig,
             [
@@ -405,9 +420,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
-          )
-          .send(managerTxOpts)
-      ).rejects.toThrow(ruleFailureString + 'PriceTolerance');
+          ],
+          managerTxOpts
+        )
+      ).rejects.toThrowFlexible(`${ruleFailureString}PriceTolerance`);
     });
     test('Good make order: slippage just within limit', async () => {
       const { accounting, trading } = fund;
@@ -417,8 +433,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerQuantityPercentLimit.add(takerQuantityPercentShift)
       ).toString();
 
-      const receipt = await trading.methods
-        .callOnExchange(
+      const receipt = await send(
+        trading,
+        'callOnExchange',
+        [
           oasisDexExchangeIndex,
           makeOrderFunctionSig,
           [
@@ -435,34 +453,36 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts);
-      expect(receipt).toBeTruthy();
+        ],
+        managerTxOpts
+      );
 
       // Take order with EOA
-      const logMake = getEventFromReceipt(
-        receipt.events,
+      const logMake = getEventFromLogs(
+        receipt.logs,
         CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
         'LogMake'
       );
       const orderId = hexToNumber(logMake.id);
-      await mln.methods
-        .approve(oasisDex.options.address, toleratedTakerQuantity)
-        .send(investorTxOpts);
-      await oasisDex.methods
-        .buy(orderId, makerQuantity)
-        .send(investorTxOpts);
+      await send(mln, 'transfer', [investor, toleratedTakerQuantity], defaultTxOpts);
+      await send(
+        mln,
+        'approve',
+        [oasisDex.options.address, toleratedTakerQuantity],
+        investorTxOpts
+      );
+      await send(oasisDex, 'buy', [orderId, makerQuantity], investorTxOpts);
 
       // Update accounting so maker asset is no longer marked as in an open order
-      await accounting.methods.updateOwnedAssets().send(managerTxOpts);
-      await trading.methods.returnAssetToVault(takerAsset).send(managerTxOpts);
-      await trading.methods.updateAndGetQuantityBeingTraded(makerAsset).send(managerTxOpts);
+      await send(accounting, 'updateOwnedAssets', [], managerTxOpts);
+      await send(trading, 'returnAssetToVault', [takerAsset], managerTxOpts);
+      await send(trading, 'updateAndGetQuantityBeingTraded', [makerAsset], managerTxOpts);
 
-      const isInOpenMakeOrder = await trading.methods.isInOpenMakeOrder(makerAsset).call();
+      const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [makerAsset]);
       expect(isInOpenMakeOrder).toEqual(false);
 
       // Increment next block time past the maker asset cooldown period
-      const cooldownTime = await trading.methods.MAKE_ORDER_COOLDOWN().call();
+      const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
       await increaseTime(cooldownTime*2);
       await mine();
     });
@@ -476,7 +496,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       makerAsset = weth.options.address;
       takerAsset = dai.options.address;
       wethToTakerAssetRate = new BN(
-        (await priceSource.methods.getPrice(takerAsset).call())[0]
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
       );
     });
 
@@ -484,9 +504,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       const { accounting, trading } = fund;
 
       const takerAssetGav = new BN(
-        await accounting.methods.calcAssetGAV(takerAsset).call()
+        await call(accounting, 'calcAssetGAV', [takerAsset])
       );
-      const fundGav = new BN(await accounting.methods.calcGav().call());
+      const fundGav = new BN(await call(accounting, 'calcGav'));
       const takerAssetGavPercent = BNExpDiv(takerAssetGav, fundGav);
       const allowedTakerAssetGavPercentage =
         new BN(maxConcentrationVal).sub(takerAssetGavPercent);
@@ -503,8 +523,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         new BN(wethToTakerAssetRate)
       ).toString();
 
-      const receipt = await trading.methods
-        .callOnExchange(
+      const receipt = await send(
+        trading,
+        'callOnExchange',
+        [
           oasisDexExchangeIndex,
           makeOrderFunctionSig,
           [
@@ -521,35 +543,36 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts)
-
-      expect(receipt).toBeTruthy();
+        ],
+        managerTxOpts
+      );
 
       // Take order with EOA
-      const logMake = getEventFromReceipt(
-        receipt.events,
+      const logMake = getEventFromLogs(
+        receipt.logs,
         CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
         'LogMake'
       );
       const orderId = hexToNumber(logMake.id);
-      await dai.methods
-        .approve(oasisDex.options.address, takerQuantity)
-        .send(investorTxOpts);
-      await oasisDex.methods
-        .buy(orderId, makerQuantity)
-        .send(investorTxOpts);
+      await send(dai, 'transfer', [investor, takerQuantity], defaultTxOpts);
+      await send(
+        dai,
+        'approve',
+        [oasisDex.options.address, takerQuantity],
+        investorTxOpts
+      );
+      await send(oasisDex, 'buy', [orderId, makerQuantity], investorTxOpts);
 
       // Update accounting so maker asset is no longer marked as in an open order
-      await accounting.methods.updateOwnedAssets().send(managerTxOpts);
-      await trading.methods.returnAssetToVault(takerAsset).send(managerTxOpts);
-      await trading.methods.updateAndGetQuantityBeingTraded(makerAsset).send(managerTxOpts);
+      await send(accounting, 'updateOwnedAssets', [], managerTxOpts);
+      await send(trading, 'returnAssetToVault', [takerAsset], managerTxOpts);
+      await send(trading, 'updateAndGetQuantityBeingTraded', [makerAsset], managerTxOpts);
 
-      const isInOpenMakeOrder = await trading.methods.isInOpenMakeOrder(makerAsset).call();
+      const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [makerAsset]);
       expect(isInOpenMakeOrder).toEqual(false);
 
       // Increment next block time past the maker asset cooldown period
-      const cooldownTime = await trading.methods.MAKE_ORDER_COOLDOWN().call();
+      const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
       await increaseTime(cooldownTime*2);
       await mine();
     });
@@ -564,8 +587,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       ).toString();
 
       await expect(
-        trading.methods
-          .callOnExchange(
+        send(
+          trading,
+          'callOnExchange',
+          [
             oasisDexExchangeIndex,
             makeOrderFunctionSig,
             [
@@ -582,9 +607,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
-          )
-          .send(managerTxOpts)
-      ).rejects.toThrow(ruleFailureString + 'MaxConcentration');
+          ],
+          managerTxOpts
+        )
+      ).rejects.toThrowFlexible(`${ruleFailureString}MaxConcentration`);
     });
   });
 });
@@ -603,11 +629,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
   beforeAll(async () => {
     manager = manager2;
     managerTxOpts = { ...defaultTxOpts, from: manager };
-
     fund = await setupInvestedTestFund(contracts, manager);
     const { accounting, policyManager, trading } = fund;
 
-    const exchangeInfo = await trading.methods.getExchangeInfo().call();
+    const exchangeInfo = await call(trading, 'getExchangeInfo');
     oasisDexExchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase(),
     );
@@ -616,52 +641,68 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       CONTRACT_NAMES.ASSET_WHITELIST,
       [[dai.options.address, mln.options.address, zrx.options.address]]
     );
-    const currentPositions = await accounting.methods.getOwnedAssetsLength().call();
+    const currentPositions = await call(accounting, 'getOwnedAssetsLength');
     const maxPositionsArg = Number(currentPositions) + 2;
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
       [maxPositionsArg]
     );
 
-    await policyManager.methods
-      .register(
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(makeOrderFunctionSig),
         assetWhitelist.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(takeOrderFunctionSig),
         assetWhitelist.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(makeOrderFunctionSig),
         maxPositions.options.address
-      )
-      .send(managerTxOpts);
-    await policyManager.methods
-      .register(
+      ],
+      managerTxOpts
+    );
+    await send(
+      policyManager,
+      'register',
+      [
         encodeFunctionSignature(takeOrderFunctionSig),
         maxPositions.options.address
-      )
-      .send(managerTxOpts);
+      ],
+      managerTxOpts
+    );
   });
 
   test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const makeOrderPoliciesRes = await policyManager.methods
-      .getPoliciesBySig(encodeFunctionSignature(makeOrderFunctionSig))
-      .call();
+    const makeOrderPoliciesRes = await call(
+      policyManager,
+      'getPoliciesBySig',
+      [encodeFunctionSignature(makeOrderFunctionSig)]
+    );
     const makeOrderPolicyAddresses = [
       ...makeOrderPoliciesRes[0],
       ...makeOrderPoliciesRes[1]
     ];
-    const takeOrderPoliciesRes = await policyManager.methods
-      .getPoliciesBySig(encodeFunctionSignature(takeOrderFunctionSig))
-      .call();
+    const takeOrderPoliciesRes = await call(
+      policyManager,
+      'getPoliciesBySig',
+      [encodeFunctionSignature(takeOrderFunctionSig)]
+    );
     const takeOrderPolicyAddresses = [
       ...takeOrderPoliciesRes[0],
       ...takeOrderPoliciesRes[1]
@@ -673,7 +714,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     expect(
       makeOrderPolicyAddresses.includes(assetWhitelist.options.address)
     ).toBe(true);
-
     expect(
       takeOrderPolicyAddresses.includes(maxPositions.options.address)
     ).toBe(true);
@@ -694,18 +734,19 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       const { trading } = fund;
 
       const takerAsset = knc.options.address;
-
-      const wethToTakerAssetRate = (await priceSource.methods
-        .getPrice(takerAsset)
-        .call())[0];
+      const wethToTakerAssetRate = new BN(
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      );
       const takerQuantity = BNExpDiv(
         new BN(makerQuantity),
-        new BN(wethToTakerAssetRate)
+        wethToTakerAssetRate
       ).toString();
 
       await expect(
-        trading.methods
-          .callOnExchange(
+        send(
+          trading,
+          'callOnExchange',
+          [
             oasisDexExchangeIndex,
             makeOrderFunctionSig,
             [
@@ -722,26 +763,28 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
-          )
-          .send(managerTxOpts)
-      ).rejects.toThrow(ruleFailureString + 'AssetWhitelist');
+          ],
+          managerTxOpts
+        )
+      ).rejects.toThrowFlexible(`${ruleFailureString}AssetWhitelist`);
     });
 
     test('Good make order: whitelisted taker asset', async () => {
       const { accounting, trading } = fund;
 
       const takerAsset = zrx.options.address;
-
-      const wethToTakerAssetRate = (await priceSource.methods
-        .getPrice(takerAsset)
-        .call())[0];
+      const wethToTakerAssetRate = new BN(
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      );
       const takerQuantity = BNExpDiv(
         new BN(makerQuantity),
-        new BN(wethToTakerAssetRate)
+        wethToTakerAssetRate
       ).toString();
 
-      const receipt = await trading.methods
-        .callOnExchange(
+      const receipt = await send(
+        trading,
+        'callOnExchange',
+        [
           oasisDexExchangeIndex,
           makeOrderFunctionSig,
           [
@@ -758,32 +801,36 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
-        )
-        .send(managerTxOpts);
+        ],
+        managerTxOpts
+      );
 
-      const logMake = getEventFromReceipt(
-        receipt.events,
+      // Take order with EOA
+      const logMake = getEventFromLogs(
+        receipt.logs,
         CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
         'LogMake'
       );
       const orderId = hexToNumber(logMake.id);
-      await zrx.methods
-        .approve(oasisDex.options.address, takerQuantity)
-        .send(investorTxOpts);
-      await oasisDex.methods
-        .buy(orderId, makerQuantity)
-        .send(investorTxOpts);
+      await send(zrx, 'transfer', [investor, takerQuantity], defaultTxOpts);
+      await send(
+        zrx,
+        'approve',
+        [oasisDex.options.address, takerQuantity],
+        investorTxOpts
+      );
+      await send(oasisDex, 'buy', [orderId, makerQuantity], investorTxOpts);
 
       // Update accounting so maker asset is no longer marked as in an open order
-      await accounting.methods.updateOwnedAssets().send(managerTxOpts);
-      await trading.methods.returnAssetToVault(takerAsset).send(managerTxOpts);
-      await trading.methods.updateAndGetQuantityBeingTraded(makerAsset).send(managerTxOpts);
+      await send(accounting, 'updateOwnedAssets', [], managerTxOpts);
+      await send(trading, 'returnAssetToVault', [takerAsset], managerTxOpts);
+      await send(trading, 'updateAndGetQuantityBeingTraded', [makerAsset], managerTxOpts);
 
-      const isInOpenMakeOrder = await trading.methods.isInOpenMakeOrder(makerAsset).call();
+      const isInOpenMakeOrder = await call(trading, 'isInOpenMakeOrder', [makerAsset]);
       expect(isInOpenMakeOrder).toEqual(false);
 
       // Increment next block time past the maker asset cooldown period
-      const cooldownTime = await trading.methods.MAKE_ORDER_COOLDOWN().call();
+      const cooldownTime = await call(trading, 'MAKE_ORDER_COOLDOWN');
       await increaseTime(cooldownTime*2);
       await mine();
     });
@@ -793,32 +840,41 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     test('Good take order: final allowed position', async () => {
       const { accounting, trading } = fund;
 
-      const maxPositionsVal = await maxPositions.methods.maxPositions().call();
+      const maxPositionsVal = await call(maxPositions, 'maxPositions');
 
-      const preOwnedAssetsLength = await accounting.methods.getOwnedAssetsLength().call();
+      const preOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 
       const takerAsset = weth.options.address;
       const takerQuantity = toWei('0.01', 'ether');
       const makerAsset = mln.options.address;
-      const wethToMakerAssetRate = (await priceSource.methods
-        .getPrice(makerAsset)
-        .call())[0];
+      const wethToMakerAssetRate = new BN(
+        (await call(priceSource, 'getPrice', [makerAsset]))[0]
+      );
       const makerQuantity = BNExpDiv(
         new BN(takerQuantity),
         new BN(wethToMakerAssetRate)
       ).toString();
 
-      await mln.methods
-        .approve(oasisDex.options.address, makerQuantity)
-        .send(investorTxOpts);
-      const res = await oasisDex.methods
-        .offer(makerQuantity, makerAsset, takerQuantity, takerAsset, 0)
-        .send(investorTxOpts);
-      const orderId = res.events.LogMake.returnValues.id;
+      await send(mln, 'transfer', [investor, makerQuantity], defaultTxOpts);
+      await send(mln, 'approve', [oasisDex.options.address, makerQuantity], investorTxOpts);
+      const receipt = await send(
+        oasisDex,
+        'offer',
+        [makerQuantity, makerAsset, takerQuantity, takerAsset, 0],
+        investorTxOpts
+      );
+      const logMake = getEventFromLogs(
+        receipt.logs,
+        CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
+        'LogMake'
+      );
+      const orderIdHex = logMake.id;
 
-      await trading.methods
-        .callOnExchange(
+      await send(
+        trading,
+        'callOnExchange',
+        [
           oasisDexExchangeIndex,
           takeOrderFunctionSig,
           [
@@ -833,12 +889,13 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           ],
           [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
           ['0x0', '0x0', '0x0', '0x0'],
-          orderId,
+          orderIdHex,
           '0x0',
-        )
-        .send(managerTxOpts)
+        ],
+        managerTxOpts
+      );
 
-      const postOwnedAssetsLength = await accounting.methods.getOwnedAssetsLength().call();
+      const postOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
       expect(postOwnedAssetsLength).toEqual(maxPositionsVal);
     });
 
@@ -848,17 +905,19 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       const makerAsset = weth.options.address;
       const makerQuantity = toWei('0.01', 'ether');
       const takerAsset = dai.options.address;
-      const wethToTakerAssetRate = (await priceSource.methods
-        .getPrice(takerAsset)
-        .call())[0];
+      const wethToTakerAssetRate = new BN(
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      );
       const takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(wethToTakerAssetRate)
       ).toString();
 
       await expect(
-        trading.methods
-          .callOnExchange(
+        send(
+          trading,
+          'callOnExchange',
+          [
             oasisDexExchangeIndex,
             makeOrderFunctionSig,
             [
@@ -875,9 +934,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
             '0x0',
-          )
-          .send(managerTxOpts)
-      ).rejects.toThrow(ruleFailureString + 'MaxPositions');
+          ],
+          managerTxOpts
+        )
+      ).rejects.toThrowFlexible(`${ruleFailureString}MaxPositions`);
     });
 
     test('Good make order: add to current position', async () => {
@@ -886,36 +946,39 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       const makerAsset = weth.options.address;
       const makerQuantity = toWei('0.01', 'ether');
       const takerAsset = zrx.options.address;
-      const wethToTakerAssetRate = (await priceSource.methods
-        .getPrice(takerAsset)
-        .call())[0];
+      const wethToTakerAssetRate = new BN(
+        (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      );
       const takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(wethToTakerAssetRate)
       ).toString();
 
-      const receipt = await trading.methods
-        .callOnExchange(
-          oasisDexExchangeIndex,
-          makeOrderFunctionSig,
+      await expect(
+        send(
+          trading,
+          'callOnExchange',
           [
-            trading.options.address,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
+            oasisDexExchangeIndex,
+            makeOrderFunctionSig,
+            [
+              trading.options.address,
+              EMPTY_ADDRESS,
+              makerAsset,
+              takerAsset,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS,
+              EMPTY_ADDRESS
+            ],
+            [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
+            ['0x0', '0x0', '0x0', '0x0'],
+            '0x0',
+            '0x0',
           ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
-          '0x0',
-          '0x0',
+          managerTxOpts
         )
-        .send(managerTxOpts)
-
-      expect(receipt).toBeTruthy();
+      ).resolves.not.toThrowFlexible();
     });
   });
 });

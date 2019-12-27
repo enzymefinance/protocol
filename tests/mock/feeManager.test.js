@@ -1,8 +1,6 @@
 import { BN, toWei } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 
@@ -43,11 +41,10 @@ describe('feeManager', () => {
       .send(defaultTxOpts);
   });
 
-  it('Fee Manager is properly initialized', async () => {
+  test('Fee Manager is properly initialized', async () => {
     for (const fee of feeArray) {
-      await expect(
-        mockSystem.feeManager.methods.feeIsRegistered(fee.feeAddress).call(),
-      ).toBeTruthy();
+      const feeRegistered = await mockSystem.feeManager.methods.feeIsRegistered(fee.feeAddress).call();
+      expect(feeRegistered).toBe(true);
     }
     for (const i in feeArray.length) {
       const feeAddress = await mockSystem.feeManager.methods.fees(i).call();
@@ -55,7 +52,7 @@ describe('feeManager', () => {
     }
   });
 
-  it('Total fee amount aggregates individual accumulated fee', async () => {
+  test('Total fee amount aggregates individual accumulated fee', async () => {
     const feeAmount = new BN(toWei('1', 'ether'));
     await feeA.methods
       .setFeeAmount(`${feeAmount}`)
@@ -68,7 +65,7 @@ describe('feeManager', () => {
     ).resolves.toEqual(feeAmount.mul(new BN(2)).toString());
   });
 
-  it('Reward all fee allocates shares to the manager', async () => {
+  test('Reward all fee allocates shares to the manager', async () => {
     const preManagerShares = new BN(
       await mockSystem.shares.methods.balanceOf(user).call(),
     );

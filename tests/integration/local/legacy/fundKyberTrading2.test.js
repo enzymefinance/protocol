@@ -17,7 +17,7 @@ import {
   KYBER_ETH_ADDRESS,
 } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
+import { setupInvestedTestFund } from '~/tests/utils/fund';
 
 describe('Happy Path', () => {
   let user, defaultTxOpts;

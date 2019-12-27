@@ -1,8 +1,6 @@
 import { BN, toWei } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 
@@ -31,7 +29,7 @@ describe('prices-unit-tests', () => {
     );
   });
 
-  it('price updates', async () => {
+  test('price updates', async () => {
     const mlnToWeth = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.34', 'ether'))

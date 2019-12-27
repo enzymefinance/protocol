@@ -4,36 +4,31 @@
  * @test addExchange()
  */
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
-import { randomHex, toWei } from 'web3-utils';
-
+import { randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import web3 from '~/deploy/utils/get-web3';
-
+import { call, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import getAccounts from '~/deploy/utils/getAccounts';
 import { setupFundWithParams } from '~/tests/utils/fund';
 
 let defaultTxOpts, managerTxOpts;
-let deployer, manager, investor, maliciousUser;
-let contracts, deployOut;
+let deployer, manager, maliciousUser;
+let contracts;
 let weth, mln, registry;
 let fund;
 
 beforeAll(async () => {
-  const accounts = await web3.eth.getAccounts();
-  [deployer, manager, investor, maliciousUser] = accounts;
+  [deployer, manager, maliciousUser] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 });
 
 describe('addExchange', () => {
   let newAdapter, newExchange;
-  let addExchangeRequest;
 
   beforeAll(async () => {
     const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
     contracts = deployed.contracts;
-    deployOut = deployed.deployOut;
 
     weth = contracts.WETH;
     mln = contracts.MLN;
@@ -54,28 +49,60 @@ describe('addExchange', () => {
 
     newExchange = randomHex(20);
     newAdapter = randomHex(20);
-    addExchangeRequest = fund.trading.methods.addExchange(newExchange, newAdapter);
   });
 
-  it('does not allow unauthorized user', async () => {
+  test('does not allow unauthorized user', async () => {
+    const { trading } = fund;
+
     await expect(
-      addExchangeRequest.send({ ...defaultTxOpts, from: maliciousUser })
-    ).rejects.toThrow("ds-auth-unauthorized");
+      send(
+        trading,
+        'addExchange',
+        [newExchange, newAdapter],
+        { ...defaultTxOpts, from: maliciousUser }
+      )
+    ).rejects.toThrowFlexible("ds-auth-unauthorized");
   });
 
-  it('does not allow un-registered adapter', async () => {
-    await expect(addExchangeRequest.send(managerTxOpts)).rejects.toThrow("Adapter is not registered");
+  test('does not allow un-registered adapter', async () => {
+    const { trading } = fund;
+
+    await expect(
+      send(trading, 'addExchange', [newExchange, newAdapter], managerTxOpts)
+    ).rejects.toThrowFlexible("Adapter is not registered");
   });
 
-  it('allows an authenticated user to add a registered exchange adapter', async () => {
-    await registry.methods
-      .registerExchangeAdapter(newExchange, newAdapter, false, [])
-      .send(defaultTxOpts);
+  test('allows an authenticated user to add a registered exchange adapter', async () => {
+    const { trading } = fund;
 
-    await addExchangeRequest.send(managerTxOpts);
+    const preAddExchangeCount = (await call(trading, 'getExchangeInfo'))[0].length;
+
+    await send(
+      registry,
+      'registerExchangeAdapter',
+      [newExchange, newAdapter, false, []],
+      defaultTxOpts
+    )
+    await expect(
+      send(trading, 'addExchange', [newExchange, newAdapter], managerTxOpts)
+    ).resolves.not.toThrowFlexible();
+
+    const postExchangeInfo = await call(trading, 'getExchangeInfo');
+    const newExchangeIndex = postExchangeInfo[0].findIndex(
+      e => e.toLowerCase() === newExchange.toLowerCase()
+    );
+
+    expect(newExchangeIndex).toEqual(preAddExchangeCount);
+    expect(
+      postExchangeInfo[1][newExchangeIndex].toLowerCase()
+    ).toEqual(newAdapter.toLowerCase());
   });
 
-  it('does not allow a previously-added exchange', async () => {
-    await expect(addExchangeRequest.send(managerTxOpts)).rejects.toThrow("Adapter already added");
+  test('does not allow a previously-added exchange', async () => {
+    const { trading } = fund;
+
+    await expect(
+      send(trading, 'addExchange', [newExchange, newAdapter], managerTxOpts)
+    ).rejects.toThrowFlexible("Adapter already added");
   });
-})
+});
