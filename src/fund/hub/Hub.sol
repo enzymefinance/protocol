@@ -109,6 +109,7 @@ contract Hub is DSGuard {
         permit(manager, routes.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[])')));
         permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
+        permit(manager, routes.trading, bytes4(keccak256('addExchange(address,address)')));
         permissionsSet = true;
     }
 
