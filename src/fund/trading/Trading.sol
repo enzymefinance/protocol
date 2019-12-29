@@ -86,6 +86,10 @@ contract Trading is DSMath, TokenUser, Spoke {
     /// @notice Fallback function to receive ETH from WETH
     function() external payable {}
 
+    function addExchange(address _exchange, address _adapter) external auth {
+        _addExchange(_exchange, _adapter);
+    }
+
     function _addExchange(
         address _exchange,
         address _adapter
