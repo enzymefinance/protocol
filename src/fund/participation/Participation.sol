@@ -311,7 +311,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
 
         uint owedPerformanceFees = 0;
         if (
-            IPriceSource(routes.priceSource).hasValidPrices(requestedAssets)
+            IPriceSource(routes.priceSource).hasValidPrices(requestedAssets) &&
+            msg.sender != hub.manager()
         ) {
             FeeManager(routes.feeManager).rewardManagementFee();
             owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
