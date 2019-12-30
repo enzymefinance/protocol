@@ -19,11 +19,10 @@ contract MockAccounting is Spoke {
     uint public DEFAULT_SHARE_PRICE;
     uint public SHARES_DECIMALS;
 
-    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] memory _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset)
         public
         Spoke(_hub)
     {
-        setOwnedAssets(_defaultAssets);
         DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
         SHARES_DECIMALS = 18;

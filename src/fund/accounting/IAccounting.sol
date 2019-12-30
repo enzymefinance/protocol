@@ -21,5 +21,5 @@ interface IAccounting {
 }
 
 interface IAccountingFactory {
-    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] calldata _defaultAssets) external returns (address);
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset) external returns (address);
 }
