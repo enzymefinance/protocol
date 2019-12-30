@@ -33,13 +33,10 @@ contract Accounting is AmguConsumer, Spoke {
     uint public DEFAULT_SHARE_PRICE;
     Calculations public atLastAllocation;
 
-    constructor(address _hub, address _denominationAsset, address _nativeAsset, address[] memory _defaultAssets)
+    constructor(address _hub, address _denominationAsset, address _nativeAsset)
         public
         Spoke(_hub)
     {
-        for (uint i = 0; i < _defaultAssets.length; i++) {
-            _addAssetToOwnedAssets(_defaultAssets[i]);
-        }
         DENOMINATION_ASSET = _denominationAsset;
         NATIVE_ASSET = _nativeAsset;
         DENOMINATION_ASSET_DECIMALS = ERC20WithFields(DENOMINATION_ASSET).decimals();
@@ -244,14 +241,13 @@ contract AccountingFactory is Factory {
         address indexed hub,
         address indexed instance,
         address denominationAsset,
-        address nativeAsset,
-        address[] defaultAssets
+        address nativeAsset
     );
 
-    function createInstance(address _hub, address _denominationAsset, address _nativeAsset, address[] calldata _defaultAssets) external returns (address) {
-        address accounting = address(new Accounting(_hub, _denominationAsset, _nativeAsset, _defaultAssets));
+    function createInstance(address _hub, address _denominationAsset, address _nativeAsset) external returns (address) {
+        address accounting = address(new Accounting(_hub, _denominationAsset, _nativeAsset));
         childExists[accounting] = true;
-        emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset, _defaultAssets);
+        emit NewInstance(_hub, accounting, _denominationAsset, _nativeAsset);
         return accounting;
     }
 }

@@ -96,8 +96,7 @@ const deployMockSystem = async (
     [
       hub.options.address,
       quoteToken.options.address,
-      weth.options.address,
-      [quoteToken.options.address, baseToken.options.address],
+      weth.options.address
     ]
   );
 

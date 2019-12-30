@@ -43,7 +43,7 @@ contract FundFactory is AmguConsumer, Factory {
         address[] exchanges;
         address[] adapters;
         address denominationAsset;
-        address[] defaultAssets;
+        address[] defaultInvestmentAssets;
         address[] fees;
         uint[] feeRates;
         uint[] feePeriods;
@@ -99,7 +99,7 @@ contract FundFactory is AmguConsumer, Factory {
         address[] memory _exchanges,
         address[] memory _adapters,
         address _denominationAsset,
-        address[] memory _defaultAssets
+        address[] memory _defaultInvestmentAssets
     )
         public
         componentNotSet(managersToHubs[msg.sender])
@@ -119,7 +119,7 @@ contract FundFactory is AmguConsumer, Factory {
             _exchanges,
             _adapters,
             _denominationAsset,
-            _defaultAssets,
+            _defaultInvestmentAssets,
             _fees,
             _feeRates,
             _feePeriods
@@ -141,8 +141,7 @@ contract FundFactory is AmguConsumer, Factory {
         managersToRoutes[msg.sender].accounting = accountingFactory.createInstance(
             managersToHubs[msg.sender],
             managersToSettings[msg.sender].denominationAsset,
-            associatedRegistry.nativeAsset(),
-            managersToSettings[msg.sender].defaultAssets
+            associatedRegistry.nativeAsset()
         );
     }
 
@@ -172,7 +171,7 @@ contract FundFactory is AmguConsumer, Factory {
     {
         managersToRoutes[msg.sender].participation = participationFactory.createInstance(
             managersToHubs[msg.sender],
-            managersToSettings[msg.sender].defaultAssets,
+            managersToSettings[msg.sender].defaultInvestmentAssets,
             managersToRoutes[msg.sender].registry
         );
     }
