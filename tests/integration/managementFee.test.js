@@ -304,4 +304,20 @@ describe('management-fee', () => {
     ).toBe(true);
     expect(new BN(postFundGav.toString()).eq(new BN(postWethFund.toString()))).toBe(true);
   });
+
+  test('Manager redeems his shares', async () => {
+    const {
+      participation,
+      shares
+    } = fund;
+
+    const preManagerShares = await shares.methods.balanceOf(manager).call();
+    expect(preManagerShares).not.toBe('0');
+
+    await increaseTime(1000);
+    await participation.methods.redeem().send(managerTxOpts);
+
+    const postManagerShares = await shares.methods.balanceOf(manager).call();
+    expect(postManagerShares).toBe('0');
+  });
 });
