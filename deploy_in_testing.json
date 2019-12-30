@@ -2,7 +2,8 @@
   "conf": {
     "deployer": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
     "provider": "http://localhost:8545",
-    "track": "TESTING"
+    "track": "TESTING",
+    "networkID": 4
   },
   "melon": {
     "addr": {
