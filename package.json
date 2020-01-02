@@ -24,10 +24,12 @@
     "deployments/"
   ],
   "scripts": {
-    "deploy": "GANACHE_KEYS=./keys.json CONF=./deploy_in_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
+    "deploy": "PRIVATE_KEYS=./keys.json CONF=./deploy_in_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
+    "deploy-kovan": "PRIVATE_KEYS=./kovan_keys.json CONF=./deploy_in_kovan.json node deploy/scripts/deploy-system.js ./deploy_in_kovan.json ./deploy_out_kovan.json",
     "devchain": "ganache-cli --gasLimit 0x989680 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis' --networkId=4 --acctKeys ./keys.json",
     "lint": "solhint src/**/*.sol",
-    "test": "GANACHE_KEYS=./keys.json CONF=./deploy_in_testing.json yarn jest --runInBand --detectOpenHandles"
+    "test": "PRIVATE_KEYS=./keys.json CONF=./deploy_in_testing.json yarn jest --runInBand --detectOpenHandles",
+    "test-kovan": "PRIVATE_KEYS=./kovan_keys.json CONF=./deploy_out_kovan.json yarn jest --testPathIgnorePatterns '/(local|tests\/mock|tests\/thirdparty)/' --runInBand"
   },
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
