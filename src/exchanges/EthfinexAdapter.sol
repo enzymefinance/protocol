@@ -102,7 +102,6 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     }
 
     /// @notice Unwrap (withdraw) tokens, uses orderAddresses for input list of tokens to be unwrapped
-
     /// @dev Call to "withdraw" fails if timestamp < `Wrapper.depositLock(tradingComponent)`
     function withdrawTokens(
         address targetExchange,
