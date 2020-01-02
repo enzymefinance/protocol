@@ -1,23 +1,13 @@
 language: node_js
 sudo: required
-compiler:
-  - gcc
-  - clang
 os:
   - linux
-env:
-  - CXX=g++-4.8
+services:
+  - docker
 node_js:
-  - '10.9'
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-4.8
-      - g++-4.8
-      - clang
+  - '10'
 cache:
+  yarn: true
   directories:
     - node_modules
 install:
@@ -29,4 +19,3 @@ script:
   - yarn test
 after_script:
   - cat ganache.log
-  - cat log/*
