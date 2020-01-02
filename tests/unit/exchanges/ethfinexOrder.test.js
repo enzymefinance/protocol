@@ -173,6 +173,7 @@ test('Withdraw (unwrap) maker asset of cancelled order', async () => {
     'withdrawTokens',
   );
 
+  const zrxBalance = await zrx.methods.balanceOf(trading.options.address).call();
   const result = await trading.methods
     .callOnExchange(
       exchangeIndex,
