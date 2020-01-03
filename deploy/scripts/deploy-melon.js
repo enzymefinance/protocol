@@ -41,27 +41,27 @@ const main = async input => {
     priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH, input.tokens.conf.WETH.decimals], melonAddrs);
   }
 
-  const previousRegisteredPriceSource = call(registry, 'priceSource');
+  const previousRegisteredPriceSource = await call(registry, 'priceSource');
   if (`${previousRegisteredPriceSource}`.toLowerCase() !== priceSource.options.address.toLowerCase()) {
     await send(registry, 'setPriceSource', [priceSource.options.address]);
   }
-  const previousRegisteredNativeAsset = call(registry, 'nativeAsset');
+  const previousRegisteredNativeAsset = await call(registry, 'nativeAsset');
   if (`${previousRegisteredNativeAsset}`.toLowerCase() !== tokenAddrs.WETH.toLowerCase()) {
     await send(registry, 'setNativeAsset', [tokenAddrs.WETH]);
   }
-  const previousRegisteredMlnToken = call(registry, 'mlnToken');
+  const previousRegisteredMlnToken = await call(registry, 'mlnToken');
   if (`${previousRegisteredMlnToken}`.toLowerCase() !== tokenAddrs.MLN.toLowerCase()) {
     await send(registry, 'setMlnToken', [tokenAddrs.MLN]);
   }
-  const previousRegisteredEngine = call(registry, 'engine');
+  const previousRegisteredEngine = await call(registry, 'engine');
   if (`${previousRegisteredEngine}`.toLowerCase() !== engine.options.address.toLowerCase()) {
     await send(registry, 'setEngine', [engine.options.address]);
   }
-  const previousRegisteredMGM = call(registry, 'MGM');
+  const previousRegisteredMGM = await call(registry, 'MGM');
   if (`${previousRegisteredMGM}`.toLowerCase() !== melonConf.initialMGM.toLowerCase()) {
     await send(registry, 'setMGM', [melonConf.initialMGM]);
   }
-  const previousRegisteredEthfinexWrapperRegistry = call(registry, 'MGM');
+  const previousRegisteredEthfinexWrapperRegistry = await call(registry, 'MGM');
   if (input.ethfinex) {
     if (`${previousRegisteredEthfinexWrapperRegistry}`.toLowerCase() !== input.ethfinex.addr.WrapperRegistryEFX.toLowerCase()) {
       await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
@@ -127,6 +127,7 @@ const main = async input => {
 
   for (const info of Object.values(exchanges)) {
     const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);
+    // TODO: check here if we actually need to update as well
     if (isRegistered) {
       await send(registry, 'updateExchangeAdapter', [info.exchange, info.adapter, info.takesCustody, sigs]);
     } else {

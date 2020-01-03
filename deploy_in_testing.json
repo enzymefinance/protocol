@@ -64,7 +64,9 @@
       "ExpectedRate": "",
       "FeeBurner": ""
     },
-    "conf": {}
+    "conf": {
+      "initialReserveAmount": "10000000000000000000000"
+    }
   },
   "oasis": {
     "addr": {
@@ -158,5 +160,9 @@
         "decimals": 18
       }
     }
+  },
+  "postDeployment": {
+    "deployerWethAmount": "1000000000000000000000000",
+    "kyberReserveAmount": "10000000000000000000000"
   }
 }

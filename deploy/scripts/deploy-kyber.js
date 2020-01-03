@@ -12,12 +12,12 @@ const main = async input => {
   const minimalRecordResolution = 2;
   const maxPerBlockImbalance = new BN(10).pow(new BN(29));
   const tokensToTransfer = new BN(10).pow(new BN(23));
-  const ethToSend = new BN(10).pow(new BN(22));
+  const ethToSend = input.kyber.conf.initialReserveAmount;
   const maxTotalImbalance = maxPerBlockImbalance.mul(new BN(12));
   const categoryCap = new BN(10).pow(new BN(28));
   const tokensPerEther = new BN(10).pow(new BN(18));
   const ethersPerToken = new BN(10).pow(new BN(18));
-  const blockNumber = (await web3.eth.getBlock()).number;
+  const blockNumber = (await web3.eth.getBlock('latest')).number;
 
   const mln = fetchContract('StandardToken', input.tokens.addr.MLN);
   const eur = fetchContract('StandardToken', input.tokens.addr.EUR);
