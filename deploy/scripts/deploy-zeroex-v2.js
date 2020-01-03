@@ -19,10 +19,11 @@ const main = async input => {
   if (currentProxy === zeroAddress || proxyId === null) {
     await send(exchange, 'registerAssetProxy', [erc20Proxy.options.address]);
   }
-  // TODO: is this necessary to send each time?
   const zrxAssetData = assetDataUtils.encodeERC20AssetData(input.tokens.addr.ZRX);
-
-  await send(exchange, 'changeZRXAssetData', [zrxAssetData]);
+  const currentZrxAssetData = await call(exchange, 'ZRX_ASSET_DATA');
+  if (currentZrxAssetData !== zrxAssetData) {
+    await send(exchange, 'changeZRXAssetData', [zrxAssetData]);
+  }
 
   return {
     "ZeroExV2Exchange": exchange,

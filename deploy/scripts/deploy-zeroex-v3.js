@@ -1,13 +1,13 @@
 const { call, fetchContract, nab, send } = require('../utils/deploy-contract');
 const { assetDataUtils } = require('@0x/order-utils');
 const web3 = require('../utils/get-web3');
+const getAccounts = require('../utils/getAccounts.js');
 
 const zeroAddress = '0x0000000000000000000000000000000000000000';
 
 const main = async input => {
-  const accounts = await web3.eth.getAccounts();
+  const accounts = await getAccounts();
   const deployer = accounts[0]
-  const protocolFeeCollector = accounts[4]
   const chainId = await web3.eth.net.getId();
 
   const exchange = await nab('ZeroExV3Exchange', [chainId], input.zeroExV3.addr);
@@ -43,7 +43,6 @@ const main = async input => {
   if (currentProxy === zeroAddress || proxyId === null) {
     await send(exchange, 'registerAssetProxy', [erc20Proxy.options.address]);
   }
-
   // Add Exchange to Staking Proxy contract
   const exchangeValid = await call(stakingProxy, 'validExchanges', [exchange.options.address]);
   if (!exchangeValid) {
@@ -52,7 +51,6 @@ const main = async input => {
     const stakingDel = fetchContract('ZeroExV3Staking', stakingProxy.options.address);
     await send(stakingDel, 'addExchangeAddress', [exchange.options.address]);
   }
-
   // Add ProtocolFee collector and multiplier in Exchange
   const protocolFeeCollectorAddress = await call(exchange, 'protocolFeeCollector');
   if (protocolFeeCollectorAddress === zeroAddress) {

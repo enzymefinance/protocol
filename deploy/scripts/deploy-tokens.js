@@ -1,4 +1,4 @@
-const {nab, send} = require('../utils/deploy-contract');
+const {nab, send, call} = require('../utils/deploy-contract');
 const web3 = require('../utils/get-web3');
 const BN = web3.utils.BN;
 
@@ -15,8 +15,10 @@ const main = async input => {
   const zrx = await nab('PreminedToken', ['ZRX', 18, ''], tokenAddrs, 'ZRX');
 
   const initialWeth = input.tokens.conf.WETH.initialDepositAmount;
-  if (new BN(initialWeth) > 0) {
-    await send(weth, 'deposit', [], {value: initialWeth});
+  const wethAlreadyOwned = await call(weth, 'balanceOf', [web3.eth.accounts.wallet[0].address]);
+  const wethToDeposit = new BN(initialWeth).sub(new BN(wethAlreadyOwned));
+  if (wethToDeposit.gt(new BN(0))) {
+    await send(weth, 'deposit', [], {value: wethToDeposit});
   }
 
   return {
