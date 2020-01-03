@@ -133,7 +133,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     const currentPositions = await accounting.methods.getOwnedAssetsLength().call();
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
-      [Number(currentPositions) + 1]
+      [Number(currentPositions) + 2]
     );
     maxConcentration = await deploy(
       CONTRACT_NAMES.MAX_CONCENTRATION,
@@ -467,10 +467,8 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
   });
 
   describe('Max concentration', () => {
-    let fundGav;
     let makerAsset, takerAsset;
     let wethToTakerAssetRate;
-    let allowedTakerAssetGavPercentage, percentageShift;
 
     beforeAll(async () => {
       makerAsset = weth.options.address;
@@ -480,7 +478,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       );
     });
 
-    test('Good maker order: just over max-concentration', async () => {
+    test('Good maker order: just under max-concentration', async () => {
       const { accounting, trading } = fund;
 
       const takerAssetGav = new BN(
@@ -617,7 +615,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       [[dai.options.address, mln.options.address, zrx.options.address]]
     );
     const currentPositions = await accounting.methods.getOwnedAssetsLength().call();
-    const maxPositionsArg = Number(currentPositions) + 1;
+    const maxPositionsArg = Number(currentPositions) + 2;
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
       [maxPositionsArg]
@@ -794,6 +792,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       const { accounting, trading } = fund;
 
       const maxPositionsVal = await maxPositions.methods.maxPositions().call();
+
       const preOwnedAssetsLength = await accounting.methods.getOwnedAssetsLength().call();
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 

@@ -44,6 +44,10 @@ describe('fund-malicious-token', () => {
       ['MLC', 18, 'Malicious']
     );
 
+    await contracts.TestingPriceFeed.methods.setDecimals(
+      maliciousToken.options.address, 18
+    ).send(defaultTxOpts);
+
     await registry.methods
       .registerAsset(
         maliciousToken.options.address.toLowerCase(),
@@ -86,8 +90,11 @@ describe('fund-malicious-token', () => {
     fund = await getFundComponents(hubAddress);
     await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
 
-    // Seed investor with weth
+    // Seed investor with weth and maliciousToken
     await weth.methods
+      .transfer(investor, toWei('10', 'ether'))
+      .send(defaultTxOpts);
+    await maliciousToken.methods
       .transfer(investor, toWei('10', 'ether'))
       .send(defaultTxOpts);
   });
@@ -124,20 +131,43 @@ describe('fund-malicious-token', () => {
   });
 
   test(`General redeem fails in presence of malicious token`, async () => {
-    const { vault, participation } = fund;
+    const { participation } = fund;
+
+    const amguAmount = toWei('.01', 'ether');
+    const dummyAmount = toWei('1', 'ether');
 
     await maliciousToken.methods
-      .transfer(vault.options.address, 1000000)
-      .send(defaultTxOpts);
+      .approve(fund.participation.options.address, dummyAmount)
+      .send(investorTxOpts);
+    await fund.participation.methods
+      .requestInvestment(dummyAmount, dummyAmount, maliciousToken.options.address)
+      .send({ ...investorTxOpts, value: amguAmount });
+
+    await contracts.TestingPriceFeed.methods
+      .update([weth.options.address, maliciousToken.options.address],
+      [toWei('1', 'ether'), toWei('1', 'ether')]
+    ).send(defaultTxOpts);
+
+    await fund.participation.methods
+      .executeRequestFor(investor)
+      .send(investorTxOpts);
+
+    await contracts.TestingPriceFeed.methods
+      .update([weth.options.address, maliciousToken.options.address],
+      [toWei('1', 'ether'), toWei('1', 'ether')]
+    ).send(defaultTxOpts);
+
     await maliciousToken.methods.startReverting().send(defaultTxOpts);
 
-    expect(
+    await expect(
       participation.methods.redeem().send(investorTxOpts),
     ).rejects.toThrow();
   });
 
   test(`Redeem with constraints works as expected`, async () => {
     const { accounting, participation, shares, vault } = fund;
+
+    const valueOfMaliciousToken = toWei('1', 'ether');
 
     const preMlnFund = await mln.methods
       .balanceOf(vault.options.address)
@@ -161,6 +191,9 @@ describe('fund-malicious-token', () => {
     const postWethFund = await weth.methods
       .balanceOf(vault.options.address)
       .call();
+    const postMaliciousTokenFund = await maliciousToken.methods
+      .balanceOf(vault.options.address)
+      .call();
     const postWethInvestor = await weth.methods.balanceOf(investor).call();
     const postTotalSupply = await shares.methods.totalSupply().call();
     const postFundGav = await accounting.methods.calcGav().call();
@@ -172,7 +205,6 @@ describe('fund-malicious-token', () => {
     expect(new BN(postWethFund.toString())).bigNumberEq(new BN(0));
     expect(postMlnFund).toEqual(preMlnFund);
     expect(postMlnInvestor).toEqual(preMlnInvestor);
-    expect(new BN(postFundGav.toString())).bigNumberEq(new BN(0));
+    expect(new BN(postFundGav.toString()).toString()).toBe(new BN(valueOfMaliciousToken.toString()).toString());
   });
 });
-

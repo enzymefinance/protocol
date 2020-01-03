@@ -1,7 +1,5 @@
 import { toWei, randomHex } from 'web3-utils';
-
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 import { increaseTime } from '~/tests/utils/rpc';
