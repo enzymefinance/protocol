@@ -68,6 +68,9 @@ describe('redemption', () => {
 
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
 
+    await mockSystem.accounting.methods.addAssetToOwnedAssets(
+      mockSystem.weth.options.address
+    ).send(defaultTxOpts);
     await expect(
       mockSystem.participation.methods
         .redeemWithConstraints('1', [

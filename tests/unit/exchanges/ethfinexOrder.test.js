@@ -1,10 +1,8 @@
 import { AssetProxyId } from '@0x/types-v2';
 import { orderHashUtils } from '@0x/order-utils-v2';
 import { toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { increaseTime } from '~/tests/utils/rpc';
