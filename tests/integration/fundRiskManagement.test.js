@@ -493,7 +493,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
       const makerQuantity = BNExpMul(
         fundGav,
-        allowedTakerAssetGavPercentage.add(percentageShift)
+        allowedTakerAssetGavPercentage.sub(percentageShift)
       ).toString();
 
       const takerQuantity = BNExpDiv(
