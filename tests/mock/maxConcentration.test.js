@@ -2,6 +2,7 @@ import { encodeFunctionSignature } from 'web3-eth-abi';
 
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
+import { toWei } from 'web3-utils';
 
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
@@ -28,7 +29,26 @@ describe('maxConcentration', () => {
     makeOrderSignatureBytes = encodeFunctionSignature(
       makeOrderSignature
     );
+
+    const wethRateConstant = toWei('1', 'ether');
+    const wethToMlnRate = toWei('0.5', 'ether');
+    await mockSystem.priceSource.methods
+      .update(
+        [
+          mockSystem.quote,
+          mockSystem.nonQuote,
+        ],
+        [
+          wethRateConstant,
+          wethToMlnRate,
+        ]
+      )
+      .send(defaultTxOpts);
   });
+
+  // choose takerTokenQuantityBeingTraded = makerTokenQuantityBeingTraded * 2
+  // so that takerTokenGavBeingTraded = makerTokenGavBeingTraded => the totalGav won't change
+  // which helps us write tests more easily
 
   it.each([
     [
@@ -36,7 +56,9 @@ describe('maxConcentration', () => {
       {
         max: '100000000000000000',
         asset: 'nonQuote',
-        asset_gav: '100010000000000000',
+        current_asset_gav: '10000000000000',
+        makerTokenQuantityBeingTraded: '100000000000000000',
+        takerTokenQuantityBeingTraded: '200000000000000000',
         total_gav: '1000000000000000000',
         expectPass: false,
       },
@@ -46,7 +68,9 @@ describe('maxConcentration', () => {
       {
         max: '100000000000000000',
         asset: 'nonQuote',
-        asset_gav: '100000000000000000',
+        current_asset_gav: '10000000000000000',
+        makerTokenQuantityBeingTraded: '90000000000000000',
+        takerTokenQuantityBeingTraded: '180000000000000000',
         total_gav: '1000000000000000000',
         expectPass: true,
       },
@@ -56,7 +80,9 @@ describe('maxConcentration', () => {
       {
         max: '100000000000000000',
         asset: 'nonQuote',
-        asset_gav: '90000000000000000',
+        current_asset_gav: '10000000000000000',
+        makerTokenQuantityBeingTraded: '80000000000000000',
+        takerTokenQuantityBeingTraded: '160000000000000000',
         total_gav: '1000000000000000000',
         expectPass: true,
       },
@@ -66,7 +92,9 @@ describe('maxConcentration', () => {
       {
         max: '100000000000000000',
         asset: 'quote',
-        asset_gav: '1000000000000000000',
+        current_asset_gav: '100000000000000000',
+        makerTokenQuantityBeingTraded: '900000000000000000',
+        takerTokenQuantityBeingTraded: '1800000000000000000',
         total_gav: '1000000000000000000',
         expectPass: true,
       },
@@ -83,7 +111,7 @@ describe('maxConcentration', () => {
       .register(makeOrderSignatureBytes, policy.options.address)
       .send(defaultTxOpts);
     await mockSystem.accounting.methods
-      .setAssetGAV(trialAsset, trial.asset_gav)
+      .setAssetGAV(trialAsset, trial.current_asset_gav)
       .send(defaultTxOpts);
     await mockSystem.accounting.methods
       .setGav(trial.total_gav)
@@ -91,8 +119,8 @@ describe('maxConcentration', () => {
 
     const evaluate = mockSystem.policyManager.methods.postValidate(
       makeOrderSignatureBytes,
-      [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, trialAsset, EMPTY_ADDRESS],
-      [0, 0, 0],
+      [EMPTY_ADDRESS, EMPTY_ADDRESS, mockSystem.quote, trialAsset, EMPTY_ADDRESS],
+      [trial.makerTokenQuantityBeingTraded, trial.takerTokenQuantityBeingTraded, 0],
       '0x0',
     );
     if (trial.expectPass) {
