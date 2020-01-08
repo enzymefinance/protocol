@@ -161,7 +161,12 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
 });
 
 test('Withdraw (unwrap) maker asset of cancelled order', async () => {
-  increaseTime(25*60*60);
+  // skip past order expiration
+  const depositLockEnd = await zrxWrapperLock.methods.depositLock(
+    trading.options.address
+  ).call();
+  const latestBlockTimestamp = (await web3.eth.getBlock()).timestamp;
+  await increaseTime(depositLockEnd - latestBlockTimestamp + 1);
 
   const withdrawTokensSignature = getFunctionSignature(
     CONTRACT_NAMES.ETHFINEX_ADAPTER,

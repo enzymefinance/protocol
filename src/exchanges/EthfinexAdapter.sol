@@ -102,6 +102,8 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     }
 
     /// @notice Unwrap (withdraw) tokens, uses orderAddresses for input list of tokens to be unwrapped
+
+    /// @dev Call to "withdraw" fails if timestamp < `Wrapper.depositLock(tradingComponent)`
     function withdrawTokens(
         address targetExchange,
         address[8] memory orderAddresses,
@@ -114,7 +116,6 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
         for (uint i = 0; i < orderAddresses.length; i++) {
-            // Check if the input token address is null address
             if (orderAddresses[i] == address(0)) continue;
             address wrappedToken = getWrapperToken(orderAddresses[i]);
             uint balance = IWrapperLock(wrappedToken).balanceOf(address(this));
