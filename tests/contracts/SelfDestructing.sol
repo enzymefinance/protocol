@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 /// @dev Useful for testing force-sending of funds
 contract SelfDestructing {
@@ -6,5 +6,5 @@ contract SelfDestructing {
         selfdestruct(_heir);
     }
 
-    function () external payable {}
+    receive() external payable {}
 }

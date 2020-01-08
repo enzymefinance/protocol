@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../fund/accounting/Accounting.sol";
@@ -38,7 +38,7 @@ contract ExchangeAdapter {
     }
 
     function getTrading() internal view returns (Trading) {
-        return Trading(address(uint160(address(this))));
+        return Trading(payable(address(this)));
     }
 
     function getHub() internal view returns (Hub) {
@@ -110,7 +110,7 @@ contract ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public { revert("Unimplemented"); }
+    ) public virtual { revert("Unimplemented"); }
 
     // Responsibilities of takeOrder are:
     // - check sender
@@ -130,7 +130,7 @@ contract ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public { revert("Unimplemented"); }
+    ) public virtual { revert("Unimplemented"); }
 
     // responsibilities of cancelOrder are:
     // - check sender is owner, or that order expired, or that fund shut down
@@ -143,7 +143,7 @@ contract ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public { revert("Unimplemented"); }
+    ) public virtual { revert("Unimplemented"); }
 
     // PUBLIC METHODS
     // PUBLIC VIEW METHODS
@@ -159,7 +159,7 @@ contract ExchangeAdapter {
         address onExchange,
         uint id,
         address makerAsset
-    ) public view returns (
+    ) public view virtual returns (
         address,
         address,
         uint,

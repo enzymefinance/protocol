@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../../hub/Hub.sol";
 import "../../../prices/IPriceSource.sol";
@@ -47,7 +47,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
 
         uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
 
-        IPriceSource pricefeed = IPriceSource(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
         uint referencePrice;
         (referencePrice,) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
@@ -72,7 +72,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
         uint fillTakerQuantity = values[2];
         uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
 
-        IPriceSource pricefeed = IPriceSource(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
         uint referencePrice;
         (referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
 
@@ -106,7 +106,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
         uint[3] memory values,
         bytes32 identifier
     ) public view returns (bool) {
-        IPriceSource pricefeed = IPriceSource(Hub(Trading(address(msg.sender)).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
 
         uint ratio;
         (ratio,) = IPriceSource(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);

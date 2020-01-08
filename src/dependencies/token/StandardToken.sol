@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "./IERC20.sol";
 import "../SafeMath.sol";
@@ -9,7 +9,7 @@ import "../SafeMath.sol";
  * @dev Implementation of the basic standard token.
  * https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
  * Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
- * Rearranged from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a466e76d26c394b1faa6e2797aefe34668566392/contracts/token/ERC20/StandardToken.sol
+ * Modified from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a466e76d26c394b1faa6e2797aefe34668566392/contracts/token/ERC20/StandardToken.sol
  */
 contract StandardToken is IERC20 {
     using SafeMath for uint256;
@@ -23,7 +23,7 @@ contract StandardToken is IERC20 {
     /**
      * @dev Total number of tokens in existence
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return totalSupply_;
     }
 
@@ -32,7 +32,7 @@ contract StandardToken is IERC20 {
      * @param _owner The address to query the the balance of.
      * @return An uint256 representing the amount owned by the passed address.
      */
-    function balanceOf(address _owner) public view returns (uint256) {
+    function balanceOf(address _owner) public view override returns (uint256) {
         return balances[_owner];
     }
 
@@ -48,6 +48,7 @@ contract StandardToken is IERC20 {
     )
         public
         view
+        override
         returns (uint256)
     {
         return allowed[_owner][_spender];
@@ -58,7 +59,7 @@ contract StandardToken is IERC20 {
     * @param _to The address to transfer to.
     * @param _value The amount to be transferred.
     */
-    function transfer(address _to, uint256 _value) public returns (bool) {
+    function transfer(address _to, uint256 _value) public virtual override returns (bool) {
         require(_value <= balances[msg.sender]);
         require(_to != address(0));
 
@@ -77,7 +78,7 @@ contract StandardToken is IERC20 {
     * @param _spender The address which will spend the funds.
         * @param _value The amount of tokens to be spent.
         */
-    function approve(address _spender, uint256 _value) public returns (bool) {
+    function approve(address _spender, uint256 _value) public virtual override returns (bool) {
         allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;
@@ -95,6 +96,8 @@ contract StandardToken is IERC20 {
         uint256 _value
     )
         public
+        virtual
+        override
         returns (bool)
     {
         require(_value <= balances[_from]);
@@ -123,6 +126,7 @@ contract StandardToken is IERC20 {
         uint256 _addedValue
     )
         public
+        virtual
         returns (bool)
     {
         allowed[msg.sender][_spender] = (allowed[msg.sender][_spender].add(_addedValue));
@@ -144,6 +148,7 @@ contract StandardToken is IERC20 {
         uint256 _subtractedValue
     )
         public
+        virtual
         returns (bool)
     {
         uint256 oldValue = allowed[msg.sender][_spender];

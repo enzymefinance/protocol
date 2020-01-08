@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../fund/hub/Hub.sol";
@@ -43,7 +43,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
@@ -70,7 +70,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(orderId),
             Trading.UpdateType.make,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [makerQuantity, takerQuantity, uint256(0)]
         );
         getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, orderId, orderValues[4]);
@@ -100,7 +100,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         Hub hub = getHub();
         uint256 fillTakerQuantity = orderValues[6];
         uint256 maxMakerQuantity;
@@ -143,7 +143,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.take,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
         );
     }
@@ -163,7 +163,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public override onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
         require(uint256(identifier) != 0, "ID cannot be zero");
 
@@ -195,6 +195,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
     function getOrder(address targetExchange, uint256 id, address makerAsset)
         public
         view
+        override
         returns (address, address, uint256, uint256)
     {
         uint256 sellQuantity;

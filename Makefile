@@ -1,5 +1,5 @@
 DIR = ./compile
-SOLC_COMMAND = docker run --rm -i ethereum/solc:0.5.15 solc --standard-json
+SOLC_COMMAND = docker run --rm -i ethereum/solc:0.6.1 solc --standard-json
 files =
 
 all: clean extract thirdparty_contracts

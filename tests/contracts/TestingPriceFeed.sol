@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "main/dependencies/token/IERC20.sol";
 import "main/dependencies/DSMath.sol";
@@ -184,7 +184,6 @@ contract TestingPriceFeed is DSMath {
     /// @dev Prices are only upated against QUOTE_ASSET
     /// @param sellAsset Asset for which check to be done if data exists
     /// @param buyAsset Asset for which check to be done if data exists
-    /// @return Whether assets exist for given asset pair
     function existsPriceOnAssetPair(address sellAsset, address buyAsset)
         public
         view

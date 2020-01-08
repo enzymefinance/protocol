@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../hub/Spoke.sol";
 import "../../dependencies/token/StandardToken.sol";
@@ -23,7 +23,7 @@ contract Shares is Spoke, StandardToken {
         _burn(who, amount);
     }
 
-    function transfer(address to, uint amount) public returns (bool) {
+    function transfer(address to, uint amount) public override returns (bool) {
         revert("Unimplemented");
     }
 
@@ -33,12 +33,13 @@ contract Shares is Spoke, StandardToken {
         uint amount
     )
         public
+        override
         returns (bool)
     {
         revert("Unimplemented");
     }
 
-    function approve(address spender, uint amount) public returns (bool) {
+    function approve(address spender, uint amount) public override returns (bool) {
         revert("Unimplemented");
     }
 
@@ -47,6 +48,7 @@ contract Shares is Spoke, StandardToken {
         uint amount
     )
         public
+        override
         returns (bool)
     {
         revert("Unimplemented");
@@ -57,6 +59,7 @@ contract Shares is Spoke, StandardToken {
         uint amount
     )
         public
+        override
         returns (bool)
     {
         revert("Unimplemented");

@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../vault/Vault.sol";
 import "../shares/Shares.sol";
@@ -67,7 +67,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         _enableInvestment(_defaultAssets);
     }
 
-    function() external payable {}
+    receive() external payable {}
 
     function _enableInvestment(address[] memory _assets) internal {
         for (uint i = 0; i < _assets.length; i++) {
@@ -370,6 +370,11 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     function getHistoricalInvestors() external view returns (address[] memory) {
         return historicalInvestors;
     }
+
+    function engine() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.engine(); }
+    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.mlnToken(); }
+    function priceSource() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.priceSource(); }
+    function registry() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.registry(); }
 }
 
 contract ParticipationFactory is Factory {

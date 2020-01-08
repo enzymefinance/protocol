@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/WETH.sol";
@@ -37,7 +37,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         Hub hub = getHub();
 
         require(
@@ -72,7 +72,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             bytes32(0),
             Trading.UpdateType.take,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [actualReceiveAmount, takerAssetAmount, takerAssetAmount]
         );
     }
@@ -126,7 +126,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(nativeAsset, srcAmount);
-        WETH(address(uint160(nativeAsset))).withdraw(srcAmount);
+        WETH(payable(nativeAsset)).withdraw(srcAmount);
         receivedAmount = IKyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(destToken, minRate);
     }
 
@@ -154,7 +154,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
 
         // Convert ETH to WETH
-        WETH(address(uint160(nativeAsset))).deposit.value(receivedAmount)();
+        WETH(payable(nativeAsset)).deposit.value(receivedAmount)();
     }
 
     /// @dev If minRate is not defined, uses expected rate from the network
@@ -181,11 +181,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
     }
 
-    /// @dev Calculate min rate to be supplied to the network based on provided order parameters
     /// @param srcToken Address of src token
     /// @param destToken Address of dest token
     /// @param srcAmount Amount of src token
-    /// @return destAmount Amount of dest token expected in return
+    /// @return minRate Minimum rate to be supplied to the network for some order params
     function calcMinRate(
         address srcToken,
         address destToken,

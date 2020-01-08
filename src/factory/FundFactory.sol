@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../fund/accounting/IAccounting.sol";
@@ -289,16 +289,16 @@ contract FundFactory is AmguConsumer, Factory {
     function getFundById(uint withId) external view returns (address) { return funds[withId]; }
     function getLastFundId() external view returns (uint) { return funds.length - 1; }
 
-    function mlnToken() public view returns (address) {
+    function mlnToken() public view override returns (address) {
         return address(associatedRegistry.mlnToken());
     }
-    function engine() public view returns (address) {
+    function engine() public view override returns (address) {
         return address(associatedRegistry.engine());
     }
-    function priceSource() public view returns (address) {
+    function priceSource() public view override returns (address) {
         return address(associatedRegistry.priceSource());
     }
-    function registry() public view returns (address) { return address(associatedRegistry); }
+    function registry() public view override returns (address) { return address(associatedRegistry); }
     function getExchangesInfo(address user) public view returns (address[] memory) {
         return (managersToSettings[user].exchanges);
     }
