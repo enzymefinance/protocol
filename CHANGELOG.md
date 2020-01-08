@@ -8,6 +8,47 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Uniswap adapter
+- 0xV3 adapter
+- interfaces to third-party contracts
+
+### Changed
+
+- upgrade all contracts to solidity 0.5.15
+- rename all interfaces to IInterfaceName
+- trading function parameters (added bytes value and 2 addresses)
+- move events from interfaces to contracts themselves
+- use interfaces to third-party contracts instead of the contracts themselves
+- do not track default investment assets as owned assets
+- allow manager to add exchanges after fund setup
+- allow anyone to execute a valid investment request on behalf of another
+- allow anyone to cancel an expired investment request on behalf of another
+- for 0xV3 fee assets, check that they are registered before trading
+- get mid-market price instead of just one side of bid/ask in KyberPriceFeed
+- move contracts only used in tests to tests directory
+
+### Fixed
+
+- prevent manager from triggering fee rewarding when redeeming their shares
+- bug in calculating maxConcentration on makeOrder
+- bug yielding price of 0 for WETH
+- bug yielding incorrect price in cross-market condition
+
+### Removed
+
+- third-party contracts
+- FundRanking.sol
+- CanonicalPriceFeed.sol
+- CanonicalRegistrar.sol
+- OperatorStaking.sol
+- SimplePriceFeed.sol
+- StakingPriceFeed.sol
+- UpdatableFeed.i.sol
+
+## 1.0.6
+
+### Added
+
 - Policy Manager
 - Policy MaxPositions
 - Policy Whitelist and Blacklist
