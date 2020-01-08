@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../AddressList.sol";
 import "../TradingSignatures.sol";
@@ -16,7 +16,7 @@ contract AssetWhitelist is TradingSignatures, AddressList {
         for (i; i < mirror.length-1; i++){
             mirror[i] = mirror[i+1];
         }
-        mirror.length--;
+        mirror.pop();
     }
 
     function getAssetIndex(address _asset) public view returns (uint) {

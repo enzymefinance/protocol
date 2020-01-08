@@ -1,6 +1,6 @@
 /// @notice Retrieved from DappHub (https://git.io/fpwMi)
 
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "./DSAuth.sol";
 
@@ -25,7 +25,7 @@ contract DSGuard is DSAuth, DSAuthority, DSGuardEvents {
 
     function canCall(
         address src_, address dst_, bytes4 sig
-    ) public view returns (bool) {
+    ) public view override returns (bool) {
         bytes32 src = bytes32(bytes20(src_));
         bytes32 dst = bytes32(bytes20(dst_));
 

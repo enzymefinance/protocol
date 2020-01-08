@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 /// @notice Token representing ownership of the Fund
 interface IShares {

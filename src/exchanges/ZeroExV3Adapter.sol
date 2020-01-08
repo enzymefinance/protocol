@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
@@ -70,6 +70,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         bytes memory _signature
     )
         public
+        override
         onlyManager
         notShutDown
         orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
@@ -114,6 +115,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         bytes memory _signature
     )
         public
+        override
         onlyManager
         notShutDown
         orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
@@ -147,6 +149,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         bytes memory _signature
     )
         public
+        override
         onlyCancelPermitted(_targetExchange, _orderAddresses[2])
     {
         Hub hub = getHub();
@@ -184,6 +187,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
     function getOrder(address _targetExchange, uint256 _id, address _makerAsset)
         public
         view
+        override
         returns (address, address, uint256, uint256)
     {
         uint orderId;
@@ -371,7 +375,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             _targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.make,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [_order.makerAssetAmount, _order.takerAssetAmount, uint(0)]
         );
         getTrading().addOpenMakeOrder(
@@ -402,7 +406,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             _targetExchange,
             IZeroExV3(_targetExchange).getOrderInfo(_order).orderHash,
             Trading.UpdateType.take,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [_order.makerAssetAmount, _order.takerAssetAmount, _fillTakerQuantity]
         );
     }

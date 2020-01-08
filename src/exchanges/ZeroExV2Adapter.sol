@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
@@ -27,7 +27,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
 
@@ -64,7 +64,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.make,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         getTrading().addOpenMakeOrder(
@@ -118,7 +118,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         Hub hub = getHub();
 
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
@@ -148,7 +148,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.take,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
         );
     }
@@ -161,7 +161,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public override onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
         address makerAsset = getAssetAddress(order.makerAssetData);
@@ -188,6 +188,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     function getOrder(address targetExchange, uint256 id, address makerAsset)
         public
         view
+        override
         returns (address, address, uint256, uint256)
     {
         uint orderId;

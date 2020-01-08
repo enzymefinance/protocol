@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
@@ -9,13 +9,13 @@ import "../version/Registry.sol";
 
 /// @notice Abstract contracts
 /// @notice inherit this to pay AMGU on a function call
-contract AmguConsumer is DSMath {
+abstract contract AmguConsumer is DSMath {
 
     /// @dev each of these must be implemented by the inheriting contract
-    function engine() public view returns (address);
-    function mlnToken() public view returns (address);
-    function priceSource() public view returns (address);
-    function registry() public view returns (address);
+    function engine() public view virtual returns (address);
+    function mlnToken() public view virtual returns (address);
+    function priceSource() public view virtual returns (address);
+    function registry() public view virtual returns (address);
 
     /// bool deductIncentive is used when sending extra eth beyond amgu
     modifier amguPayable(bool deductIncentive) {

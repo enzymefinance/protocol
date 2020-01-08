@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../engine/Engine.sol";
@@ -28,7 +28,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         Hub hub = getHub();
 
         address wethAddress = orderAddresses[2];
@@ -60,7 +60,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         );
 
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
-        WETH(address(uint160(wethAddress))).deposit.value(ethToReceive)();
+        WETH(payable(wethAddress)).deposit.value(ethToReceive)();
         safeTransfer(wethAddress, address(vault), ethToReceive);
 
         getAccounting().addAssetToOwnedAssets(wethAddress);
@@ -69,7 +69,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
             targetExchange,
             bytes32(0),
             Trading.UpdateType.take,
-            [address(uint160(wethAddress)), address(uint160(mlnAddress))],
+            [payable(wethAddress), payable(mlnAddress)],
             [ethToReceive, mlnQuantity, mlnQuantity]
         );
     }

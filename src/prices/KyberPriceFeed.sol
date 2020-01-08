@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../dependencies/token/IERC20.sol";
 import "../dependencies/DSMath.sol";
@@ -97,9 +97,8 @@ contract KyberPriceFeed is DSMath, DSAuth {
     @notice Gets price of an asset multiplied by ten to the power of assetDecimals
     @dev Asset has been registered
     @param _asset Asset for which price should be returned
-    @return {
-      "price": "Price formatting: mul(exchangePrice, 10 ** decimal), to avoid floating numbers",
-      "timestamp": "When the asset's price was updated"
+    @return price Price formatting: mul(exchangePrice, 10 ** decimal), to avoid floating numbers
+    @return timestamp When the asset's price was updated
     }
     */
     function getPrice(address _asset)
@@ -150,9 +149,8 @@ contract KyberPriceFeed is DSMath, DSAuth {
     /**
     @param _baseAsset Address of base asset
     @param _quoteAsset Address of quote asset
-    @return {
-        "referencePrice": "Quantity of quoteAsset per whole baseAsset",
-        "decimals": "Decimal places for quoteAsset"
+    @return referencePrice Quantity of quoteAsset per whole baseAsset
+    @return decimals Decimal places for quoteAsset
     }
     */
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
@@ -173,7 +171,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
     function getRawReferencePriceInfo(address _baseAsset, address _quoteAsset)
         public
         view
-        returns (bool isValid, uint referencePrice, uint decimals)
+        returns (bool isValid, uint256 referencePrice, uint256 decimals)
     {
         isValid = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
         uint256 quoteDecimals = ERC20WithFields(_quoteAsset).decimals();
@@ -193,7 +191,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
     function getPriceInfo(address _asset)
         public
         view
-        returns (uint price, uint assetDecimals)
+        returns (uint256 price, uint256 assetDecimals)
     {
         return getReferencePriceInfo(_asset, QUOTE_ASSET);
     }
@@ -202,16 +200,14 @@ contract KyberPriceFeed is DSMath, DSAuth {
     @notice Gets inverted price of an asset
     @dev Asset has been initialised and its price is non-zero
     @param _asset Asset for which inverted price should be return
-    @return {
-        "isValid": "Whether the price is fresh, given VALIDITY_INTERVAL",
-        "invertedPrice": "Price based (instead of quoted) against QUOTE_ASSET",
-        "assetDecimals": "Decimal places for this asset"
+    @return invertedPrice Price based (instead of quoted) against QUOTE_ASSET
+    @return assetDecimals Decimal places for this asset
     }
     */
     function getInvertedPriceInfo(address _asset)
         public
         view
-        returns (uint invertedPrice, uint assetDecimals)
+        returns (uint256 invertedPrice, uint256 assetDecimals)
     {
         return getReferencePriceInfo(QUOTE_ASSET, _asset);
     }
@@ -301,11 +297,10 @@ contract KyberPriceFeed is DSMath, DSAuth {
     /// @dev Prices are only upated against QUOTE_ASSET
     /// @param sellAsset Asset for which check to be done if data exists
     /// @param buyAsset Asset for which check to be done if data exists
-    /// @return Whether assets exist for given asset pair
     function existsPriceOnAssetPair(address sellAsset, address buyAsset)
         public
         view
-        returns (bool isExistent)
+        returns (bool)
     {
         return
             hasValidPrice(sellAsset) && // Is tradable asset (TODO cleaner) and datafeed delivering data

@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "main/fund/trading/Trading.sol";
@@ -20,7 +20,7 @@ contract MockAdapter is ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public {
+    ) public override {
         Hub hub = getHub();
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
@@ -31,7 +31,7 @@ contract MockAdapter is ExchangeAdapter {
             targetExchange,
             identifier,
             Trading.UpdateType.make,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
         getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, uint(identifier), 0);
@@ -45,7 +45,7 @@ contract MockAdapter is ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public {
+    ) public override {
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
@@ -56,7 +56,7 @@ contract MockAdapter is ExchangeAdapter {
             targetExchange,
             bytes32(identifier),
             Trading.UpdateType.take,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [makerQuantity, takerQuantity, fillTakerQuantity]
         );
     }
@@ -69,7 +69,7 @@ contract MockAdapter is ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public {
+    ) public override {
         Hub hub = getHub();
         address makerAsset = orderAddresses[2];
 

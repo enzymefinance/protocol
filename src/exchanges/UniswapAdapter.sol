@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
@@ -29,6 +29,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         bytes memory _signature
     )
         public
+        override
         onlyManager
         notShutDown
     {
@@ -158,7 +159,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
         vault.withdraw(_nativeAsset, _srcAmount);
-        WETH(address(uint160(_nativeAsset))).withdraw(_srcAmount);
+        WETH(payable(_nativeAsset)).withdraw(_srcAmount);
 
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_destToken);
         actualReceiveAmount_ = IUniswapExchange(tokenExchange).ethToTokenTransferInput.value(
@@ -200,7 +201,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         );
 
         // Convert ETH to WETH and move to Vault
-        WETH(address(uint160(_nativeAsset))).deposit.value(actualReceiveAmount_)();
+        WETH(payable(_nativeAsset)).deposit.value(actualReceiveAmount_)();
         getTrading().returnAssetToVault(_nativeAsset);
     }
 
@@ -251,7 +252,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
             _targetExchange,
             bytes32(0),
             Trading.UpdateType.take,
-            [address(uint160(_makerAsset)), address(uint160(_takerAsset))],
+            [payable(_makerAsset), payable(_takerAsset)],
             [_actualReceiveAmount, _takerAssetAmount, _takerAssetAmount]
         );
     }

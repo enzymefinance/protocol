@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../../dependencies/token/StandardToken.sol";
 import "../../factory/Factory.sol";
@@ -228,12 +228,17 @@ contract Accounting is AmguConsumer, Spoke {
         for (uint i; i < ownedAssets.length; i++) {
             if (ownedAssets[i] == _asset) {
                 ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
-                ownedAssets.length--;
+                ownedAssets.pop();
                 break;
             }
         }
         emit AssetRemoval(_asset);
     }
+
+    function engine() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.engine(); }
+    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.mlnToken(); }
+    function priceSource() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.priceSource(); }
+    function registry() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.registry(); }
 }
 
 contract AccountingFactory is Factory {

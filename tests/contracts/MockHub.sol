@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "main/dependencies/DSGuard.sol";
 import "main/fund/hub/Spoke.sol";

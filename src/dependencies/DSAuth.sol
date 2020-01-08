@@ -1,11 +1,11 @@
-/// @notice Retrieved from DappHub (https://git.io/fpwrq)
+/// @notice Modified from DappHub (https://git.io/fpwrq)
 
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
-contract DSAuthority {
+abstract contract DSAuthority {
     function canCall(
         address src, address dst, bytes4 sig
-    ) public view returns (bool);
+    ) public view virtual returns (bool);
 }
 
 contract DSAuthEvents {

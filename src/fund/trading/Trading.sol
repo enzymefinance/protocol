@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../hub/Spoke.sol";
@@ -85,8 +85,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         }
     }
 
-    /// @notice Fallback function to receive ETH from WETH
-    function() external payable {}
+    /// @notice Receive ether function (used to receive ETH from WETH)
+    receive() external payable {}
 
     function addExchange(address _exchange, address _adapter) external auth {
         _addExchange(_exchange, _adapter);

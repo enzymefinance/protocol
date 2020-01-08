@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 /**
  * @title ERC20 interface
@@ -33,7 +33,7 @@ interface IERC20 {
 }
 
 /// @dev Just adds extra functions that we use elsewhere
-contract ERC20WithFields is IERC20 {
+abstract contract ERC20WithFields is IERC20 {
     string public symbol;
     string public name;
     uint8 public decimals;

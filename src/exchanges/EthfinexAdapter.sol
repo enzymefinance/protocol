@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
@@ -30,7 +30,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyManager notShutDown {
+    ) public override onlyManager notShutDown {
         ensureCanMakeOrder(orderAddresses[2]);
         Hub hub = getHub();
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
@@ -63,7 +63,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             targetExchange,
             orderInfo.orderHash,
             Trading.UpdateType.make,
-            [address(uint160(makerAsset)), address(uint160(takerAsset))],
+            [payable(makerAsset), payable(takerAsset)],
             [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
         );
         getTrading().addOpenMakeOrder(
@@ -84,7 +84,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public onlyCancelPermitted(targetExchange, orderAddresses[2]) {
+    ) public override onlyCancelPermitted(targetExchange, orderAddresses[2]) {
         Hub hub = getHub();
 
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
@@ -121,7 +121,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             require(balance > 0, "Insufficient balance");
             IWrapperLock(wrappedToken).withdraw(balance, 0, bytes32(0), bytes32(0), 0);
             if (orderAddresses[i] == nativeAsset) {
-                WETH(address(uint160(nativeAsset))).deposit.value(balance)();
+                WETH(payable(nativeAsset)).deposit.value(balance)();
             }
             getTrading().removeOpenMakeOrder(targetExchange, orderAddresses[i]);
             getTrading().returnAssetToVault(orderAddresses[i]);
@@ -132,6 +132,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
     function getOrder(address targetExchange, uint256 id, address makerAsset)
         public
         view
+        override
         returns (address, address, uint256, uint256)
     {
         uint orderId;
@@ -179,7 +180,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         // Handle case for WETH
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
         if (makerAsset == nativeAsset) {
-            WETH(address(uint160(nativeAsset))).withdraw(makerQuantity);
+            WETH(payable(nativeAsset)).withdraw(makerQuantity);
             IWrapperLockEth(wrappedToken).deposit.value(makerQuantity)(makerQuantity, depositTime);
         } else {
             IERC20(makerAsset).approve(wrappedToken, makerQuantity);

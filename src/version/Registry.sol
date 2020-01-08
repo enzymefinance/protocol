@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "../dependencies/DSAuth.sol";
 import "../fund/hub/Hub.sol";
@@ -334,7 +334,7 @@ contract Registry is DSAuth {
         for (uint i = _assetIndex; i < registeredAssets.length-1; i++) {
             registeredAssets[i] = registeredAssets[i+1];
         }
-        registeredAssets.length--;
+        registeredAssets.pop();
         emit AssetRemoval(_asset);
     }
 
@@ -353,7 +353,7 @@ contract Registry is DSAuth {
         for (uint i = _adapterIndex; i < registeredExchangeAdapters.length-1; i++) {
             registeredExchangeAdapters[i] = registeredExchangeAdapters[i+1];
         }
-        registeredExchangeAdapters.length--;
+        registeredExchangeAdapters.pop();
         emit ExchangeAdapterRemoval(_adapter);
     }
 

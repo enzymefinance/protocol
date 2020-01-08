@@ -1,4 +1,4 @@
-pragma solidity 0.5.15;
+pragma solidity 0.6.1;
 
 import "main/dependencies/token/PreminedToken.sol";
 
@@ -15,7 +15,7 @@ contract MaliciousToken is PreminedToken {
         isReverting = true;
     }
 
-    function transfer(address _to, uint256 _value) public returns (bool) {
+    function transfer(address _to, uint256 _value) public override returns (bool) {
         require(!isReverting, "I'm afraid I can't do that, Dave");
         super.transfer(_to, _value);
     }
@@ -26,10 +26,10 @@ contract MaliciousToken is PreminedToken {
         uint256 _value
     )
         public
+        override
         returns (bool)
     {
         require(!isReverting, "I'm afraid I can't do that, Dave");
         super.transferFrom(_from, _to, _value);
     }
 }
-
