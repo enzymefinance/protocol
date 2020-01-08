@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "deployer": "0x0d580ae50B58fe08514dEAB4e38c0DFdB0D30adC",
+    "timestamp": "2020-01-08T12:52:10.132Z",
+    "track": "kyberPrice",
+    "version": "1.0.12",
+    "chain": 42,
+    "description": "Fix pricefeed bug"
+  },
+  "melonContracts": {
+    "priceSource": "0x196f70f71e11e1816f0f619f627194ECc7CDdaff",
+    "adapters": {
+      "ethfinexAdapter": "0x16aCf234eA519Ff001C9bD9e2f102e952c525630",
+      "kyberAdapter": "0x3a2E7f54C1418F4bf8c978d922e5d690A3535183",
+      "matchingMarketAdapter": "0x7868d0af5CF4d6C8f12BF67451d6C9FEBa7d635d",
+      "matchingMarketAccessor": "0xE9Bd86865A43624e45a91C347A04a4dCD84C70Bd",
+      "zeroExAdapter": "0xf239f8c77E2dc64152569c7F3bBB3F9260Fa8E04",
+      "engineAdapter": "0xB87dE3923067d6285d8226C8103C564B69403A48"
+    },
+    "policies": {
+      "priceTolerance": "0x6757feeDf0fAB9F4F051BAB9392aCD401436737D",
+      "userWhitelist": "0xa6d18a7B00D97e0338aD24b30be3882a5d380ca0"
+    },
+    "fees": {
+      "managementFee": "0xdfef5d9c21E7fB675c64d7E0a8d1E083AF7D93ad",
+      "performanceFee": "0x0aEAc508452E4d46F9d8B2CFAbf54B60125Fd099"
+    },
+    "factories": {
+      "accountingFactory": "0x39CAF5A8E387Da47c5d9d12cb9DF6087Fb97a1AD",
+      "feeManagerFactory": "0xdA792a19B041cDc31B3c6EB0BA318630dec8aDe5",
+      "participationFactory": "0xD52f767602e0C6D5D0cF9a2cEc113005aD394F77",
+      "policyManagerFactory": "0x3F62fDDF31529eE14F78Cf270B2034fC2a42E909",
+      "sharesFactory": "0x0FA69F92742E43063895a92107Ee70ae27F901E2",
+      "tradingFactory": "0x1268180eF487896cFd8736fF9e54EABEEC022cF3",
+      "vaultFactory": "0x6e78fCFa1cA7D088e500508E6ebD80c9824C1013"
+    },
+    "engine": "0xCc37B6923d785e3C4194d26Bf797D6E2eACd3fa5",
+    "registry": "0xe07feb6175a39cffB08477eE35a17bD49E63ddAe",
+    "version": "0x36c45211cE0cD179b375d5D1E3f5fAE9c1faf649"
+  },
+  "thirdPartyContracts": {
+    "exchanges": {
+      "matchingMarket": "0xDc4d222294d560c58A91fCDF465a0CE7C668b436",
+      "zeroEx": "0xFc16A701e385D8933f3dFED0101e62B58bB91eF4",
+      "ethfinex": {
+        "exchange": "0xFc16A701e385D8933f3dFED0101e62B58bB91eF4",
+        "wrapperRegistryEFX": "0x3B3fe62b1B2aA59B519D94c64AE75778C543663a",
+        "wrapperPairs": [],
+        "erc20proxy": ""
+      }
+    },
+    "tokens": [
+      {
+        "address": "0xcb813c60145De152f59c6643EdFa2D366035f52F",
+        "name": "Wrapped ether",
+        "symbol": "WETH",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0x1e986837922ee96fDdB929E4d3aA04B9da0a2976",
+        "name": "Melon Token",
+        "symbol": "MLN",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0x995B42028Dc4f5cCEece6f7f80b891E8983c96a7",
+        "name": "Basic Attention Token",
+        "symbol": "BAT",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0x136f9Fbbe385281ABb03016631009B2E743a5E3d",
+        "name": "DAI Stablecoin",
+        "symbol": "DAI",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0x3ADB27eCA1091529A199Cf7899E9Ab6F4D0bB4Dd",
+        "name": "Digix Gold Token",
+        "symbol": "DGX",
+        "decimals": 9,
+        "reserveMin": 0
+      }, {
+        "address": "0x74b9D3c91aDe69A27dC02CD3cdB168421AE5Ee74",
+        "name": "Euro token",
+        "symbol": "EUR",
+        "decimals": 9,
+        "reserveMin": 0
+      }, {
+        "address": "0x3BEA811d15cdd873B065abef450C7432947b7344",
+        "name": "Kyber Network",
+        "symbol": "KNC",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0xC86bE2E25a4fAC9d512d09A579f78f7695CC9bb3",
+        "name": "Maker token",
+        "symbol": "MKR",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0x3692C2979521a80cF8925233e97c8b537d3944fe",
+        "name": "Rep Token",
+        "symbol": "REP",
+        "decimals": 18,
+        "reserveMin": 0
+      }, {
+        "address": "0xF158c23A9De9fBb6147125C972edC5a39aE64f8E",
+        "name": "0x protocol token",
+        "symbol": "ZRX",
+        "decimals": 18,
+        "reserveMin": 0
+      }
+    ]
+  },
+  "exchangeConfigs": {
+    "MatchingMarket": {
+      "adapter": "0x7868d0af5CF4d6C8f12BF67451d6C9FEBa7d635d",
+      "exchange": "0xDc4d222294d560c58A91fCDF465a0CE7C668b436",
+      "takesCustody": true
+    },
+    "ZeroEx": {
+      "adapter": "0xf239f8c77E2dc64152569c7F3bBB3F9260Fa8E04",
+      "exchange": "0xFc16A701e385D8933f3dFED0101e62B58bB91eF4",
+      "takesCustody": false
+    },
+    "Ethfinex": {
+      "adapter": "0x16aCf234eA519Ff001C9bD9e2f102e952c525630",
+      "exchange": "0xFc16A701e385D8933f3dFED0101e62B58bB91eF4",
+      "takesCustody": true
+    },
+    "MelonEngine": {
+      "adapter": "0xB87dE3923067d6285d8226C8103C564B69403A48",
+      "exchange": "0xCc37B6923d785e3C4194d26Bf797D6E2eACd3fa5",
+      "takesCustody": false
+    }
+  }
+}
