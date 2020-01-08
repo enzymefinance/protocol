@@ -1,7 +1,7 @@
 import { BN } from 'web3-utils';
 import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
-// Default timeout interval for tests and before/after hooks as 2 mins
-jest.setTimeout(240000);
+// Default timeout interval for tests and before/after hooks
+jest.setTimeout(1200000); // 20 mins
 
 expect.extend({
   bigNumberEq(received, expected) {
