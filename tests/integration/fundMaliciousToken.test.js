@@ -7,11 +7,10 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
+import { increaseTime } from '~/tests/utils/rpc';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
@@ -142,6 +141,8 @@ describe('fund-malicious-token', () => {
     await fund.participation.methods
       .requestInvestment(dummyAmount, dummyAmount, maliciousToken.options.address)
       .send({ ...investorTxOpts, value: amguAmount });
+
+    await increaseTime(5); // to avoid executing in same block as update
 
     await contracts.TestingPriceFeed.methods
       .update([weth.options.address, maliciousToken.options.address],

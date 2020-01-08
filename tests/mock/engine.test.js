@@ -1,10 +1,9 @@
 import { BN, toWei } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { increaseTime } from '~/tests/utils/rpc';
 
 describe('sell-and-burn-mln', () => {
   let deployer, altUser;
@@ -156,16 +155,7 @@ describe('sell-and-burn-mln', () => {
       engine.methods.sellAndBurnMln(sendAmountMln).send(defaultTxOpts)
     ).rejects.toThrow('revert');
 
-    // Increment next block time and mine block
-    web3.eth.currentProvider.send(
-      {
-        id: 123,
-        jsonrpc: '2.0',
-        method: 'evm_increaseTime',
-        params: [delay], // 30 days
-      },
-      (err, res) => {},
-    );
+    await increaseTime(delay);
 
     await engine.methods.thaw().send(altUserTxOpts);
 
