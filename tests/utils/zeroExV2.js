@@ -4,7 +4,9 @@ import {
   orderHashUtils,
   signatureUtils
 } from '@0x/order-utils-v2';
+import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subproviders';
 import { SignatureType } from '@0x/types-v2';
+import { providerUtils } from '@0x/utils';
 
 import web3 from '~/deploy/utils/get-web3';
 
@@ -63,6 +65,7 @@ export const isValidZeroExSignatureOffChain = (
   makerAddress
 ) => {
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
+
   return signatureUtils.isValidSignatureAsync(
     web3.eth.currentProvider,
     orderHashHex,
@@ -71,10 +74,24 @@ export const isValidZeroExSignatureOffChain = (
   );
 };
 
+const getPrivateKeyProvider = (wallet, signer) => {
+  const providerEngine = new Web3ProviderEngine();
+
+  const key = wallet[signer].privateKey.replace(/^0x/, '');
+  const pkProvider = new PrivateKeyWalletSubprovider(key);
+  providerEngine.addProvider(pkProvider);
+  providerUtils.startProviderEngine(providerEngine);
+
+  return providerEngine;
+}
+
 export const signZeroExOrder = async (order, signer) => {
   const signerFormatted = signer.toLowerCase();
+
+  const pkProvider = getPrivateKeyProvider(web3.eth.accounts.wallet, signer);
+
   const signedOrder = await signatureUtils.ecSignOrderAsync(
-    web3.eth.currentProvider,
+    pkProvider,
     order,
     signerFormatted,
   );
