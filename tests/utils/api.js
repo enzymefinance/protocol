@@ -31,7 +31,7 @@ async function requestWithRetries(options, maxRetries) {
  */
 export async function getUpdatedTestPrices(fromSymbol = 'ETH') {
 
-  const toSymbols = ['MLN', 'EUR', 'ETH', 'DGX', 'DAI'];
+  const toSymbols = ['MLN', 'EUR', 'ETH', 'DAI'];
   const options = {
     json: true,
     uri: `${priceApiPath}?fsym=${fromSymbol}&tsyms=${toSymbols.join(',')}&sign=true`,
@@ -48,7 +48,6 @@ export async function getUpdatedTestPrices(fromSymbol = 'ETH') {
     eur: BNExpInverse(new BN(queryResult.EUR)).toString(),
     weth: BNExpInverse(new BN(queryResult.ETH)).toString(),
     mln: BNExpInverse(new BN(queryResult.MLN)).toString(),
-    dgx: BNExpInverse(new BN(queryResult.DGX)).toString(),
     dai: BNExpInverse(new BN(queryResult.DAI)).toString()
   };
 }

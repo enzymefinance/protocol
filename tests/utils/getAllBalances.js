@@ -20,19 +20,16 @@ const getAllBalances = async (instances, accounts, fund) => {
 
   return {
     custodian: {
-      dgx: new BN((await instances.DGX.methods.balanceOf(custodian).call()).toString()),
       ether: new BN((await web3.eth.getBalance(custodian)).toString()),
       mln: new BN((await instances.MLN.methods.balanceOf(custodian).call()).toString()),
       weth: new BN((await instances.WETH.methods.balanceOf(custodian).call()).toString()),
     },
     deployer: {
-      dgx: new BN((await instances.DGX.methods.balanceOf(deployer).call()).toString()),
       ether: new BN(await web3.eth.getBalance(deployer)),
       mln: new BN((await instances.MLN.methods.balanceOf(deployer).call()).toString()),
       weth: new BN((await instances.WETH.methods.balanceOf(deployer).call()).toString()),
     },
     exchangeOwner: {
-      dgx: new BN((await instances.DGX.methods.balanceOf(exchangeOwner).call()).toString()),
       ether: new BN(await web3.eth.getBalance(exchangeOwner)),
       mln: new BN((await instances.MLN.methods.balanceOf(exchangeOwner).call()).toString()),
       weth: new BN(
@@ -40,11 +37,6 @@ const getAllBalances = async (instances, accounts, fund) => {
       ),
     },
     fund: {
-      dgx: new BN(
-        (await fund.accounting.methods
-          .assetHoldings(instances.DGX.options.address)
-          .call()).toString(),
-      ),
       ether: new BN(await web3.eth.getBalance(fund.vault.options.address)),
       mln: new BN(
         (await fund.accounting.methods
@@ -58,19 +50,16 @@ const getAllBalances = async (instances, accounts, fund) => {
       ),
     },
     investor: {
-      dgx: new BN((await instances.DGX.methods.balanceOf(investor).call()).toString()),
       ether: new BN(await web3.eth.getBalance(investor)),
       mln: new BN((await instances.MLN.methods.balanceOf(investor).call()).toString()),
       weth: new BN((await instances.WETH.methods.balanceOf(investor).call()).toString()),
     },
     manager: {
-      dgx: new BN((await instances.DGX.methods.balanceOf(manager).call()).toString()),
       ether: new BN(await web3.eth.getBalance(manager)),
       mln: new BN((await instances.MLN.methods.balanceOf(manager).call()).toString()),
       weth: new BN((await instances.WETH.methods.balanceOf(manager).call()).toString()),
     },
     worker: {
-      dgx: new BN((await instances.DGX.methods.balanceOf(worker).call()).toString()),
       ether: new BN(await web3.eth.getBalance(worker)),
       mln: new BN((await instances.MLN.methods.balanceOf(worker).call()).toString()),
       weth: new BN((await instances.WETH.methods.balanceOf(worker).call()).toString()),

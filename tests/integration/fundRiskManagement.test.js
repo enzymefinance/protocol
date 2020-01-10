@@ -28,7 +28,7 @@ import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
 let deployer, manager1, manager2, investor;
 let defaultTxOpts, investorTxOpts;
 let makeOrderFunctionSig, takeOrderFunctionSig;
-let dai, dgx, mln, weth, zrx, oasisDex, oasisDexAdapter, priceSource, priceTolerance;
+let dai, knc, mln, weth, zrx, oasisDex, oasisDexAdapter, priceSource, priceTolerance;
 let contracts;
 
 const ruleFailureString = 'Rule evaluated to false: ';
@@ -51,7 +51,7 @@ beforeAll(async () => {
   );
 
   dai = contracts.DAI;
-  dgx = contracts.DGX;
+  knc = contracts.KNC;
   mln = contracts.MLN;
   weth = contracts.WETH;
   zrx = contracts.ZRX;
@@ -63,7 +63,7 @@ beforeAll(async () => {
 
   const wethRateConstant = toWei('1', 'ether');
   const wethToDaiRate = toWei('0.008', 'ether');
-  const wethToDgxRate = toWei('0.005', 'ether');
+  const wethToKncRate = toWei('0.005', 'ether');
   const wethToMlnRate = toWei('0.5', 'ether');
   const wethToZrxRate = toWei('0.25', 'ether');
   await priceSource.methods
@@ -71,14 +71,14 @@ beforeAll(async () => {
       [
         weth.options.address,
         mln.options.address,
-        dgx.options.address,
+        knc.options.address,
         dai.options.address,
         zrx.options.address
       ],
       [
         wethRateConstant,
         wethToMlnRate,
-        wethToDgxRate,
+        wethToKncRate,
         wethToDaiRate,
         wethToZrxRate
       ]
@@ -94,9 +94,9 @@ beforeAll(async () => {
   await dai.methods.transfer(manager1, toWei('2000', 'ether')).send(defaultTxOpts);
   await dai.methods.transfer(manager2, toWei('2000', 'ether')).send(defaultTxOpts);
   await dai.methods.transfer(investor, toWei('2000', 'ether')).send(defaultTxOpts);
-  await dgx.methods.transfer(manager1, toWei('2000', 'ether')).send(defaultTxOpts);
-  await dgx.methods.transfer(manager2, toWei('2000', 'ether')).send(defaultTxOpts);
-  await dgx.methods.transfer(investor, toWei('2000', 'ether')).send(defaultTxOpts);
+  await knc.methods.transfer(manager1, toWei('2000', 'ether')).send(defaultTxOpts);
+  await knc.methods.transfer(manager2, toWei('2000', 'ether')).send(defaultTxOpts);
+  await knc.methods.transfer(investor, toWei('2000', 'ether')).send(defaultTxOpts);
   await zrx.methods.transfer(manager1, toWei('50', 'ether')).send(defaultTxOpts);
   await zrx.methods.transfer(manager2, toWei('50', 'ether')).send(defaultTxOpts);
   await zrx.methods.transfer(investor, toWei('50', 'ether')).send(defaultTxOpts);
@@ -104,7 +104,7 @@ beforeAll(async () => {
 
 /*
  * Fund #1: Trading on Oasis Dex
- * Asset blacklist: DGX
+ * Asset blacklist: KNC
  * Max concentration: 10%
  * Max positions: current number of fund positions + 1
  * Price tolerance: deployment price tolerance contract
@@ -130,7 +130,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     assetBlacklist = await deploy(
       CONTRACT_NAMES.ASSET_BLACKLIST,
-      [[dgx.options.address]]
+      [[knc.options.address]]
     );
     const currentPositions = await accounting.methods.getOwnedAssetsLength().call();
     maxPositions = await deploy(
@@ -258,7 +258,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     test('Bad make order: blacklisted taker asset', async () => {
       const { trading } = fund;
 
-      const takerAsset = dgx.options.address;
+      const takerAsset = knc.options.address;
       const wethToTakerAssetRate = new BN(
         (await priceSource.methods.getPrice(takerAsset).call())[0]
       );
@@ -693,7 +693,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     test('Bad make order: non-whitelisted taker asset', async () => {
       const { trading } = fund;
 
-      const takerAsset = dgx.options.address;
+      const takerAsset = knc.options.address;
 
       const wethToTakerAssetRate = (await priceSource.methods
         .getPrice(takerAsset)

@@ -35,7 +35,7 @@ let unsignedOrder, signedOrder;
 let makeOrderSignature, cancelOrderSignature, withdrawTokensSignature;
 let contracts, deployOut;
 let fund;
-let ethfinex, ethfinexAdapter, mln, weth, dgx, zrx, registry, version;
+let ethfinex, ethfinexAdapter, mln, weth, knc, zrx, registry, version;
 let ethTokenWrapper, mlnWrapper
 
 beforeAll(async () => {
@@ -68,7 +68,7 @@ beforeAll(async () => {
   ethfinexAdapter = contracts.EthfinexAdapter;
   mln = contracts.MLN;
   weth = contracts.WETH;
-  dgx = contracts.DGX;
+  knc = contracts.KNC;
   zrx = contracts.ZRX;
   version = contracts.Version;
   registry = contracts.Registry;
@@ -245,8 +245,8 @@ test('Make order with native asset', async () => {
   const preCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const preIsDgxInAssetList = await fund.accounting.methods
-    .isInAssetList(dgx.options.address)
+  const preIsKncInAssetList = await fund.accounting.methods
+    .isInAssetList(knc.options.address)
     .call();
 
   const makerAddress = fund.trading.options.address.toLowerCase();
@@ -259,7 +259,7 @@ test('Make order with native asset', async () => {
       makerAddress,
       makerTokenAddress: ethTokenWrapper.options.address,
       makerAssetAmount,
-      takerTokenAddress: dgx.options.address,
+      takerTokenAddress: knc.options.address,
       takerAssetAmount,
     },
   );
@@ -272,7 +272,7 @@ test('Make order with native asset', async () => {
         makerAddress,
         EMPTY_ADDRESS,
         weth.options.address,
-        dgx.options.address,
+        knc.options.address,
         signedOrder.feeRecipientAddress,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
@@ -297,19 +297,19 @@ test('Make order with native asset', async () => {
   const postCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const postIsDgxInAssetList = await fund.accounting.methods
-    .isInAssetList(dgx.options.address)
+  const postIsKncInAssetList = await fund.accounting.methods
+    .isInAssetList(knc.options.address)
     .call();
-  const openOrdersAgainstDgx = await fund.trading.methods
-    .openMakeOrdersAgainstAsset(dgx.options.address)
+  const openOrdersAgainstKnc = await fund.trading.methods
+    .openMakeOrdersAgainstAsset(knc.options.address)
     .call();
 
   expect(postCalculations.gav).toBe(preCalculations.gav);
   expect(postCalculations.sharePrice).toBe(preCalculations.sharePrice);
   expect(post.fund.weth).bigNumberEq(pre.fund.weth);
-  expect(postIsDgxInAssetList).toBeTruthy();
-  expect(preIsDgxInAssetList).toBeFalsy();
-  expect(Number(openOrdersAgainstDgx)).toBe(1);
+  expect(postIsKncInAssetList).toBeTruthy();
+  expect(preIsKncInAssetList).toBeFalsy();
+  expect(Number(openOrdersAgainstKnc)).toBe(1);
 });
 
 test('Anticipated taker asset is not removed from owned assets', async () => {
@@ -320,11 +320,11 @@ test('Anticipated taker asset is not removed from owned assets', async () => {
     .updateOwnedAssets()
     .send(managerTxOpts);
 
-  const isDgxInAssetList = await fund.accounting.methods
-    .isInAssetList(dgx.options.address)
+  const isKncInAssetList = await fund.accounting.methods
+    .isInAssetList(knc.options.address)
     .call();
 
-  expect(isDgxInAssetList).toBeTruthy();
+  expect(isKncInAssetList).toBeTruthy();
 });
 
 test('Cancel the order and withdraw tokens', async () => {
@@ -399,11 +399,11 @@ test('Cancel the order and withdraw tokens', async () => {
   const postCalculations = await fund.accounting.methods
     .performCalculations()
     .call();
-  const isDgxInAssetList = await fund.accounting.methods
-    .isInAssetList(dgx.options.address)
+  const isKncInAssetList = await fund.accounting.methods
+    .isInAssetList(knc.options.address)
     .call();
-  const openOrdersAgainstDgx = await fund.trading.methods
-    .openMakeOrdersAgainstAsset(dgx.options.address)
+  const openOrdersAgainstKnc = await fund.trading.methods
+    .openMakeOrdersAgainstAsset(knc.options.address)
     .call();
 
   expect(post.fund.weth).bigNumberEq(preWithdraw.fund.weth);
@@ -416,6 +416,6 @@ test('Cancel the order and withdraw tokens', async () => {
   expect(preWithdrawCalculations.sharePrice).toBe(
     preCalculations.sharePrice,
   );
-  expect(isDgxInAssetList).toBeFalsy();
-  expect(Number(openOrdersAgainstDgx)).toBe(0);
+  expect(isKncInAssetList).toBeFalsy();
+  expect(Number(openOrdersAgainstKnc)).toBe(0);
 });

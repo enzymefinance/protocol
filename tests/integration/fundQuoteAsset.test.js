@@ -23,7 +23,7 @@ describe('fund-quote-asset', () => {
   let fundDenominationAsset;
   let trade1;
   let contracts, deployOut;
-  let dgx, mln, weth, oasisDex, version, priceSource;
+  let knc, mln, weth, oasisDex, version, priceSource;
   let accounting, vault, participation, trading, shares;
   let makeOrderSignature;
 
@@ -39,7 +39,7 @@ describe('fund-quote-asset', () => {
     contracts = deployed.contracts;
     deployOut = deployed.deployOut;
     version = contracts.Version;
-    dgx = contracts.DGX;
+    knc = contracts.KNC;
     mln = contracts.MLN;
     weth = contracts.WETH;
     oasisDex = contracts.OasisDexExchange;
@@ -49,9 +49,9 @@ describe('fund-quote-asset', () => {
       'makeOrder',
     );
 
-    const mlnDgxAlreadyWhitelisted = await oasisDex.methods.isTokenPairWhitelisted(mln.options.address, dgx.options.address).call();
-    if (!mlnDgxAlreadyWhitelisted) {
-      await oasisDex.methods.addTokenPairWhitelist(mln.options.address, dgx.options.address).send(defaultTxOpts);
+    const mlnKncAlreadyWhitelisted = await oasisDex.methods.isTokenPairWhitelisted(mln.options.address, knc.options.address).call();
+    if (!mlnKncAlreadyWhitelisted) {
+      await oasisDex.methods.addTokenPairWhitelist(mln.options.address, knc.options.address).send(defaultTxOpts);
     }
 
     await version.methods
@@ -62,11 +62,11 @@ describe('fund-quote-asset', () => {
         [],
         [oasisDex.options.address.toString()],
         [deployOut.melon.addr.OasisDexAdapter],
-        dgx.options.address.toString(),
+        knc.options.address.toString(),
         [
           mln.options.address.toString(),
           weth.options.address.toString(),
-          dgx.options.address.toString(),
+          knc.options.address.toString(),
         ],
       )
       .send(managerTxOpts);
@@ -95,11 +95,11 @@ describe('fund-quote-asset', () => {
       .send(defaultTxOpts);
   });
 
-  test('Quote asset is DGX', async () => {
+  test('Quote asset is KNC', async () => {
     fundDenominationAsset = await accounting.methods
       .DENOMINATION_ASSET()
       .call();
-    expect(fundDenominationAsset).toBe(dgx.options.address);
+    expect(fundDenominationAsset).toBe(knc.options.address);
   });
 
   test('Fund gets non-quote asset from investment', async () => {
@@ -107,13 +107,13 @@ describe('fund-quote-asset', () => {
     const wantedShares = toWei('100', 'ether');
     const amguAmount = toWei('.01', 'ether');
 
-    const dgxPriceInWeth = (await priceSource.methods
+    const kncPriceInWeth = (await priceSource.methods
       .getReferencePriceInfo(fundDenominationAsset, weth.options.address)
       .call())[0];
 
     const expectedCostOfShares = BNExpMul(
       new BN(wantedShares.toString()),
-      new BN(dgxPriceInWeth.toString()),
+      new BN(kncPriceInWeth.toString()),
     );
 
     const actualCostOfShares = new BN(
@@ -152,7 +152,7 @@ describe('fund-quote-asset', () => {
     const postTotalSupply = await shares.methods.totalSupply().call();
     const postFundGav = await accounting.methods.calcGav().call();
 
-    const wethPriceInDgx = (await priceSource.methods
+    const wethPriceInKnc = (await priceSource.methods
       .getReferencePriceInfo(weth.options.address, fundDenominationAsset)
       .call())[0];
 
@@ -172,7 +172,7 @@ describe('fund-quote-asset', () => {
     expect(
       new BN(postFundGav.toString()).eq(
         new BN(preWethFund.toString()).add(
-          BNExpMul(expectedCostOfShares, new BN(wethPriceInDgx.toString())),
+          BNExpMul(expectedCostOfShares, new BN(wethPriceInKnc.toString())),
         ),
       ),
     ).toBe(true);
@@ -215,12 +215,12 @@ describe('fund-quote-asset', () => {
     const wantedShares = toWei('1', 'ether');
     const amguAmount = toWei('.01', 'ether');
 
-    const dgxPriceInMln = (await priceSource.methods
+    const kncPriceInMln = (await priceSource.methods
       .getReferencePriceInfo(fundDenominationAsset, mln.options.address)
       .call())[0];
     const expectedCostOfShares = BNExpMul(
       new BN(wantedShares.toString()),
-      new BN(dgxPriceInMln.toString()),
+      new BN(kncPriceInMln.toString()),
     );
     const actualCostOfShares = new BN(
       (await accounting.methods
@@ -252,7 +252,7 @@ describe('fund-quote-asset', () => {
     const postMlnInvestor = await mln.methods.balanceOf(investor).call();
     const postFundGav = await accounting.methods.calcGav().call();
     const postTotalSupply = await shares.methods.totalSupply().call();
-    const mlnPriceInDgx = (await priceSource.methods
+    const mlnPriceInKnc = (await priceSource.methods
       .getReferencePriceInfo(mln.options.address, fundDenominationAsset)
       .call())[0];
 
@@ -272,7 +272,7 @@ describe('fund-quote-asset', () => {
     expect(
       new BN(postFundGav.toString()).eq(
         new BN(preFundGav.toString()).add(
-          BNExpMul(expectedCostOfShares, new BN(mlnPriceInDgx.toString())),
+          BNExpMul(expectedCostOfShares, new BN(mlnPriceInKnc.toString())),
         ),
       ),
     ).toBe(true);
@@ -284,23 +284,23 @@ describe('fund-quote-asset', () => {
       sellQuantity: toWei('0.1', 'gwei'),
     };
 
-    await dgx.methods
+    await knc.methods
       .transfer(vault.options.address, trade1.sellQuantity)
       .send(defaultTxOpts);
 
-    const dgxPriceInMln = (await priceSource.methods
+    const kncPriceInMln = (await priceSource.methods
       .getReferencePriceInfo(fundDenominationAsset, mln.options.address)
       .call())[0];
     trade1.buyQuantity = BNExpMul(
       new BN(trade1.sellQuantity.toString()),
-      new BN(dgxPriceInMln.toString()),
+      new BN(kncPriceInMln.toString()),
       9,
     ).toString();
 
-    const preDgxExchange = await dgx.methods
+    const preKncExchange = await knc.methods
       .balanceOf(oasisDex.options.address)
       .call();
-    const preDgxFund = await dgx.methods
+    const preKncFund = await knc.methods
       .balanceOf(vault.options.address)
       .call();
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
@@ -319,7 +319,7 @@ describe('fund-quote-asset', () => {
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
-          dgx.options.address,
+          knc.options.address,
           mln.options.address,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
@@ -333,10 +333,10 @@ describe('fund-quote-asset', () => {
       )
       .send(managerTxOpts);
 
-    const postDgxExchange = await dgx.methods
+    const postKncExchange = await knc.methods
       .balanceOf(oasisDex.options.address)
       .call();
-    const postDgxFund = await dgx.methods
+    const postKncFund = await knc.methods
       .balanceOf(vault.options.address)
       .call();
     const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
@@ -350,10 +350,10 @@ describe('fund-quote-asset', () => {
 
     expect(preMlnExchange).toEqual(postMlnExchange);
     expect(postMlnFund).toEqual(preMlnFund);
-    expect(new BN(postDgxExchange.toString()))
-      .bigNumberEq(new BN(preDgxExchange.toString()).add(new BN(trade1.sellQuantity.toString())));
-    expect(new BN(postDgxFund.toString()))
-      .bigNumberEq(new BN(preDgxFund.toString()).sub(new BN(trade1.sellQuantity.toString())));
+    expect(new BN(postKncExchange.toString()))
+      .bigNumberEq(new BN(preKncExchange.toString()).add(new BN(trade1.sellQuantity.toString())));
+    expect(new BN(postKncFund.toString()))
+      .bigNumberEq(new BN(preKncFund.toString()).sub(new BN(trade1.sellQuantity.toString())));
     expect(postFundCalcs.gav.toString()).toBe(preFundCalcs.gav.toString());
     expect(postFundCalcs.sharePrice.toString()).toBe(preFundCalcs.sharePrice.toString());
     expect(postMlnDeployer.toString()).toBe(preMlnDeployer.toString());
@@ -362,11 +362,11 @@ describe('fund-quote-asset', () => {
   test('Third party takes entire order', async () => {
     const orderId = await oasisDex.methods.last_offer_id().call();
 
-    const preDgxDeployer = await dgx.methods.balanceOf(deployer).call();
-    const preDgxExchange = await dgx.methods
+    const preKncDeployer = await knc.methods.balanceOf(deployer).call();
+    const preKncExchange = await knc.methods
       .balanceOf(oasisDex.options.address)
       .call();
-    const preDgxFund = await dgx.methods
+    const preKncFund = await knc.methods
       .balanceOf(vault.options.address)
       .call();
     const preMlnDeployer = await mln.methods.balanceOf(deployer).call();
@@ -387,11 +387,11 @@ describe('fund-quote-asset', () => {
       .returnBatchToVault([mln.options.address, weth.options.address])
       .send(managerTxOpts);
 
-    const postDgxDeployer = await dgx.methods.balanceOf(deployer).call();
-    const postDgxExchange = await dgx.methods
+    const postKncDeployer = await knc.methods.balanceOf(deployer).call();
+    const postKncExchange = await knc.methods
       .balanceOf(oasisDex.options.address)
       .call();
-    const postDgxFund = await dgx.methods
+    const postKncFund = await knc.methods
       .balanceOf(vault.options.address)
       .call();
     const postMlnDeployer = await mln.methods.balanceOf(deployer).call();
@@ -403,13 +403,13 @@ describe('fund-quote-asset', () => {
       .call();
 
     expect(preMlnExchange).toEqual(postMlnExchange);
-    expect(new BN(postDgxExchange.toString()))
-      .bigNumberEq(new BN(preDgxExchange.toString()).sub(new BN(trade1.sellQuantity.toString())));
-    expect(postDgxFund.toString()).toBe(preDgxFund.toString());
+    expect(new BN(postKncExchange.toString()))
+      .bigNumberEq(new BN(preKncExchange.toString()).sub(new BN(trade1.sellQuantity.toString())));
+    expect(postKncFund.toString()).toBe(preKncFund.toString());
     expect(new BN(postMlnFund.toString()))
       .bigNumberEq(new BN(preMlnFund.toString()).add(new BN(trade1.buyQuantity.toString())));
-    expect(new BN(postDgxDeployer.toString()))
-      .bigNumberEq(new BN(preDgxDeployer.toString()).add(new BN(trade1.sellQuantity.toString())));
+    expect(new BN(postKncDeployer.toString()))
+      .bigNumberEq(new BN(preKncDeployer.toString()).add(new BN(trade1.sellQuantity.toString())));
     expect(new BN(postMlnDeployer.toString()))
       .bigNumberEq(new BN(preMlnDeployer.toString()).sub(new BN(trade1.buyQuantity.toString())));
   });

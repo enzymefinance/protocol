@@ -8,7 +8,6 @@ const main = async input => {
   const mln = await nab('BurnableToken', ['MLN', 18, 'Melon Token'], tokenAddrs, 'MLN');
   const bat = await nab('PreminedToken', ['BAT', 18, ''], tokenAddrs, 'BAT');
   const dai = await nab('PreminedToken', ['DAI', 18, ''], tokenAddrs, 'DAI');
-  const dgx = await nab('PreminedToken', ['DGX', 18, ''], tokenAddrs, 'DGX');
   const eur = await nab('PreminedToken', ['EUR', 18, ''], tokenAddrs, 'EUR');
   const knc = await nab('PreminedToken', ['KNC', 18, ''], tokenAddrs, 'KNC');
   const mkr = await nab('PreminedToken', ['MKR', 18, ''], tokenAddrs, 'MKR');
@@ -25,7 +24,6 @@ const main = async input => {
     "MLN": mln,
     "BAT": bat,
     "DAI": dai,
-    "DGX": dgx,
     "EUR": eur,
     "KNC": knc,
     "MKR": mkr,
