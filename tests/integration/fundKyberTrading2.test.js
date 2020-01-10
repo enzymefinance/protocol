@@ -181,6 +181,6 @@ describe('Happy Path', () => {
           '0x0',
         )
         .send(defaultTxOpts),
-    ).rejects.toThrow();
+    ).rejects.toThrow('Rule evaluated to false: PriceTolerance');
   });
 });

@@ -49,7 +49,7 @@ describe('withdraw', () => {
     let amountInVault = Number(
       await token.methods.balanceOf(vault.options.address).call(),
     );
-    await expect(amountInVault).toBe(amount);
+    expect(amountInVault).toBe(amount);
 
     await vault.methods
       .withdraw(token.options.address, amount)

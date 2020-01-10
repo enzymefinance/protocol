@@ -73,7 +73,7 @@ describe('trading', () => {
     }
   });
 
-  it('Exchanges cannot be initialized without its adapter', async () => {
+  it('Exchanges cannot be initialized without their adapters', async () => {
     await expect(
       deploy(CONTRACT_NAMES.TRADING, [
         mockSystem.hub.options.address,
@@ -81,7 +81,7 @@ describe('trading', () => {
         [mockExchangeAdapters[0]],
         mockSystem.registry.options.address,
       ])
-    ).rejects.toThrow();
+    ).rejects.toThrow('Array lengths unequal');
   });
 
   it('returnBatchToVault sends back token balances to the vault', async () => {

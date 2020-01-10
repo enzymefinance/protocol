@@ -31,6 +31,8 @@ let makeOrderFunctionSig, takeOrderFunctionSig;
 let dai, dgx, mln, weth, zrx, oasisDex, oasisDexAdapter, priceSource, priceTolerance;
 let contracts;
 
+const ruleFailureString = 'Rule evaluated to false: ';
+
 beforeAll(async () => {
   [deployer, manager1, manager2, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
@@ -253,7 +255,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       makerQuantity = toWei('0.01', 'ether');
     });
 
-    test('Bad maker order: blacklisted taker asset', async () => {
+    test('Bad make order: blacklisted taker asset', async () => {
       const { trading } = fund;
 
       const takerAsset = dgx.options.address;
@@ -286,9 +288,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             '0x0',
           )
           .send(managerTxOpts)
-      ).rejects.toThrow();
+      ).rejects.toThrow(ruleFailureString + 'AssetBlacklist');
     });
-    test('Good maker order: non-blacklisted taker asset', async () => {
+    test('Good make order: non-blacklisted taker asset', async () => {
       const { accounting, trading } = fund;
 
       const takerAsset = mln.options.address;
@@ -376,7 +378,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       takerQuantityPercentShift = new BN(toWei('0.01', 'ether')); // 1%
     });
 
-    test('Bad maker order: slippage just above limit', async () => {
+    test('Bad make order: slippage just above limit', async () => {
       const { trading } = fund;
 
       const badTakerQuantity = BNExpMul(
@@ -405,9 +407,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             '0x0',
           )
           .send(managerTxOpts)
-      ).rejects.toThrow();
+      ).rejects.toThrow(ruleFailureString + 'PriceTolerance');
     });
-    test('Good maker order: slippage just within limit', async () => {
+    test('Good make order: slippage just within limit', async () => {
       const { accounting, trading } = fund;
 
       const toleratedTakerQuantity = BNExpMul(
@@ -478,7 +480,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       );
     });
 
-    test('Good maker order: just under max-concentration', async () => {
+    test('Good make order: just under max-concentration', async () => {
       const { accounting, trading } = fund;
 
       const takerAssetGav = new BN(
@@ -552,7 +554,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await mine();
     });
 
-    test('Bad maker order: max concentration exceeded', async () => {
+    test('Bad make order: max concentration exceeded', async () => {
       const { trading } = fund;
 
       const makerQuantity = toWei('0.01', 'ether');
@@ -582,7 +584,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
             '0x0',
           )
           .send(managerTxOpts)
-      ).rejects.toThrow();
+      ).rejects.toThrow(ruleFailureString + 'MaxConcentration');
     });
   });
 });
@@ -688,7 +690,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       makerQuantity = toWei('0.01', 'ether');
     });
 
-    test('Bad maker order: non-whitelisted taker asset', async () => {
+    test('Bad make order: non-whitelisted taker asset', async () => {
       const { trading } = fund;
 
       const takerAsset = dgx.options.address;
@@ -722,10 +724,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             '0x0',
           )
           .send(managerTxOpts)
-      ).rejects.toThrow();
+      ).rejects.toThrow(ruleFailureString + 'AssetWhitelist');
     });
 
-    test('Good maker order: whitelisted taker asset', async () => {
+    test('Good make order: whitelisted taker asset', async () => {
       const { accounting, trading } = fund;
 
       const takerAsset = zrx.options.address;
@@ -788,7 +790,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
   });
 
   describe('Max positions', () => {
-    test('Good taker order: final allowed position', async () => {
+    test('Good take order: final allowed position', async () => {
       const { accounting, trading } = fund;
 
       const maxPositionsVal = await maxPositions.methods.maxPositions().call();
@@ -840,8 +842,8 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       expect(postOwnedAssetsLength).toEqual(maxPositionsVal);
     });
 
-    test('Bad maker order: over limit for positions', async () => {
-      const { accounting, trading } = fund;
+    test('Bad make order: over limit for positions', async () => {
+      const { trading } = fund;
 
       const makerAsset = weth.options.address;
       const makerQuantity = toWei('0.01', 'ether');
@@ -875,10 +877,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
             '0x0',
           )
           .send(managerTxOpts)
-      ).rejects.toThrow();
+      ).rejects.toThrow(ruleFailureString + 'MaxPositions');
     });
 
-    test('Good maker order: add to current position', async () => {
+    test('Good make order: add to current position', async () => {
       const { trading } = fund;
 
       const makerAsset = weth.options.address;

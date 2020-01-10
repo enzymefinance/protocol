@@ -101,6 +101,6 @@ describe('assetWhitelist', () => {
     expect(await whitelist.methods.isMember(asset).call()).toBe(false);
     await expect(
       contracts.policyManager.methods.preValidate(...validateArgs).call(),
-    ).rejects.toThrow('Rule evaluated to false');
+    ).rejects.toThrow('Rule evaluated to false: AssetWhitelist');
   });
 });

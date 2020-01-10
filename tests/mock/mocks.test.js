@@ -57,7 +57,7 @@ describe('mocks', () => {
     );
     await expect(
       manager1.methods.preValidate(...dummyArgs).call(),
-    ).rejects.toThrow('Rule evaluated to false');
+    ).rejects.toThrow('FalsePolicy');
 
     const manager2 = await createManagerAndRegister(
       CONTRACT_NAMES.POLICY_MANAGER,
