@@ -10,13 +10,10 @@
  */
 
 import { orderHashUtils } from '@0x/order-utils-v2';
-import { BN, randomHex, toWei } from 'web3-utils';
-
+import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { increaseTime, mine } from '~/tests/utils/rpc';
@@ -30,7 +27,7 @@ import {
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let contracts, deployOut;
-let mln, zrx, weth, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
+let mln, zrx, weth, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
 let signedOrder1, signedOrder2, signedOrder3, signedOrder4;
 let makeOrderSignature, takeOrderSignature, cancelOrderSignature;
 
@@ -62,14 +59,13 @@ beforeAll(async () => {
   mln = contracts.MLN;
   zrx = contracts.ZRX;
   weth = contracts.WETH;
-  priceSource = contracts.TestingPriceFeed;
   version = contracts.Version;
   zeroExExchange = contracts.ZeroExV2Exchange;
   zeroExAdapter = contracts.ZeroExV2Adapter;
   erc20Proxy = contracts.ZeroExV2ERC20Proxy;
 
   // TODO: can we factor into setupInvestedTestFund?
-  const fundName = stringToBytes('Test fund', 32);
+  const fundName = 'Test fund';
   await version.methods
     .beginSetup(
       fundName,

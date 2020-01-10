@@ -11,7 +11,6 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS, KYBER_ETH_ADDRESS } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
@@ -50,7 +49,7 @@ beforeAll(async () => {
   // Setup fund
   await version.methods
     .beginSetup(
-      stringToBytes('Test fund', 32),
+      'Test fund',
       [],
       [],
       [],

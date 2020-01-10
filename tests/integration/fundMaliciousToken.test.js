@@ -12,7 +12,6 @@ import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
 import { increaseTime } from '~/tests/utils/rpc';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
@@ -61,7 +60,7 @@ describe('fund-malicious-token', () => {
 
     await version.methods
       .beginSetup(
-        stringToBytes('Test fund', 32),
+        'Test fund',
         [],
         [],
         [],
