@@ -32,6 +32,5 @@ contract TokenUser is DSMath {
             add(receiverPreBalance, _value) == receiverPostBalance,
             "Receiver did not receive tokens in transferFrom"
         );
- 
     }
 }

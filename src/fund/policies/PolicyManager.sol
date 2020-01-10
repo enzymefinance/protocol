@@ -76,7 +76,7 @@ contract PolicyManager is Spoke {
         for(uint i = 0; i < aux.length; i++) {
             require(
                 aux[i].rule(sig, addresses, values, identifier),
-                "Rule evaluated to false"
+                string(abi.encodePacked("Rule evaluated to false: ", aux[i].identifier()))
             );
         }
     }
@@ -90,4 +90,3 @@ contract PolicyManagerFactory is Factory {
         return policyManager;
     }
 }
-
