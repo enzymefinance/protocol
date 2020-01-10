@@ -4,12 +4,11 @@
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { numberToBytes, stringToBytes } from '~/tests/utils/formatting';
+import { numberToBytes } from '~/tests/utils/formatting';
 import getAllBalances from '~/tests/utils/getAllBalances';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
@@ -67,7 +66,7 @@ beforeAll(async () => {
 
   exchanges = [oasisDex];
 
-  const fundName = stringToBytes('Test fund', 32);
+  const fundName = 'Test fund';
   await version.methods
     .beginSetup(
       fundName,

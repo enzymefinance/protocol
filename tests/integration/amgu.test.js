@@ -2,7 +2,6 @@ import { toWei, BN } from 'web3-utils';
 import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 
 describe('amgu', () => {
@@ -86,7 +85,7 @@ describe('amgu', () => {
 
     await version.methods
       .beginSetup(
-        stringToBytes(fundName, 32),
+        fundName,
         [],
         [],
         [],
@@ -133,7 +132,7 @@ describe('amgu', () => {
 
     await version.methods
       .beginSetup(
-        stringToBytes(fundName, 32),
+        fundName,
         [],
         [],
         [],

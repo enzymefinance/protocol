@@ -10,20 +10,17 @@
  */
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, randomHex, toWei } from 'web3-utils';
-
+import { randomHex, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { deploy } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
-let contracts, deployOut;
+let contracts;
 let exchangeIndex, makeOrderSignature, takeOrderSignature;
 let weth, mln;
 let fund;
@@ -50,7 +47,6 @@ beforeEach(async () => {
 
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   contracts = deployed.contracts;
-  deployOut = deployed.deployOut;
 
   const registry = contracts.Registry;
   const version = contracts.Version;
@@ -77,7 +73,7 @@ beforeEach(async () => {
   // Startup a fund
   await version.methods
     .beginSetup(
-      stringToBytes('Test fund', 32),
+      'Test fund',
       [],
       [],
       [],

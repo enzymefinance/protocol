@@ -17,7 +17,6 @@ import {
   EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
 } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
@@ -49,7 +48,7 @@ describe('fund-kyber-trading', () => {
 
     await version.methods
       .beginSetup(
-        stringToBytes('Test fund', 32),
+        'Test fund',
         [],
         [],
         [],

@@ -165,13 +165,13 @@ const main = async input => {
   const versionInformation = await call(registry, 'versionInformation', [version.options.address]);
 
   if (!versionInformation.exists) {
-    await send(registry, 'registerVersion',
-      [
-        version.options.address,
-        // web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64) // TODO: change back to this one
-        web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64)
-      ]
-    );
+    let versionName;
+    if (conf.track === 'TESTING') {
+      versionName = web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64)
+    } else {
+      versionName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64)
+    }
+    await send(registry, 'registerVersion', [ version.options.address, versionName ]);
   }
 
   if (conf.track === 'KYBER_PRICE')
