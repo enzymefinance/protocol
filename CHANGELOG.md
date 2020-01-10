@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- upgrade all contracts to solidity 0.5.15
+- upgrade all contracts to solidity 0.6.1
 - rename all interfaces to IInterfaceName
 - trading function parameters (added bytes value and 2 addresses)
 - move events from interfaces to contracts themselves
@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - for 0xV3 fee assets, check that they are registered before trading
 - get mid-market price instead of just one side of bid/ask in KyberPriceFeed
 - move contracts only used in tests to tests directory
+- improve revert messages for policy failures
 
 ### Fixed
 
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - bug in calculating maxConcentration on makeOrder
 - bug yielding price of 0 for WETH
 - bug yielding incorrect price in cross-market condition
+- default investment assets are not tracked as owned assets unless actually owned
 
 ### Removed
 
