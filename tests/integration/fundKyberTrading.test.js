@@ -9,10 +9,8 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpMul } from '~/tests/utils/BNmath';
 import {
   CONTRACT_NAMES,
@@ -25,11 +23,11 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 describe('fund-kyber-trading', () => {
-  let environment, accounts, defaultTxOpts, managerTxOpts;
+  let accounts, defaultTxOpts, managerTxOpts;
   let deployer, manager, investor;
   let contracts, deployOut;
   let exchangeIndex, takeOrderSignature;
-  let version, kyberAdapter, kyberNetwork, kyberNetworkProxy, weth, mln, eur;
+  let version, kyberAdapter, kyberNetworkProxy, weth, mln, eur;
   let fund;
 
   beforeAll(async () => {
@@ -44,7 +42,6 @@ describe('fund-kyber-trading', () => {
 
     version = contracts.Version;
     kyberAdapter = contracts.KyberAdapter;
-    kyberNetwork = contracts.KyberNetwork;
     kyberNetworkProxy = contracts.KyberNetworkProxy;
     weth = contracts.WETH;
     mln = contracts.MLN;

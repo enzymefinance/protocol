@@ -109,7 +109,7 @@ describe('make-oasis-dex-order', () => {
           '0x0'
         )
         .send(defaultTxOpts)
-    ).rejects.toThrow();
+    ).rejects.toThrow('Cooldown for the maker asset not reached');
 
     const cancelOrderFunctionSig = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,

@@ -106,6 +106,6 @@ describe('assetBlacklist', () => {
 
     await expect(
       mockSystem.policyManager.methods.preValidate(...validateArgs).call(),
-    ).rejects.toThrow('Rule evaluated to false');
+    ).rejects.toThrow('Rule evaluated to false: AssetBlacklist');
   });
 });

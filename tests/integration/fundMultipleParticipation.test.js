@@ -163,7 +163,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       participation.methods
         .requestInvestment(wantedShares3, offerAssetMaxQuantity, offerAsset)
         .send({ ...investor3TxOpts, value: amguAmount })
-    ).rejects.toThrow();
+    ).rejects.toThrow('Investment not allowed in this asset');
 
     await participation.methods
       .enableInvestment([offerAsset])

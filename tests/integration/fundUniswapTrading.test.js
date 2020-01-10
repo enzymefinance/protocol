@@ -9,43 +9,34 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { fetchContract } from '~/deploy/utils/deploy-contract';
 import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import setupInvestedTestFund from '~/tests/utils/setupInvestedTestFund';
-import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
-let deployer, manager, investor;
-let defaultTxOpts, managerTxOpts, investorTxOpts;
-let contracts, deployOut;
-let eur, mln, weth, priceSource, fund, uniswapAdapter;
+let deployer, manager;
+let defaultTxOpts, managerTxOpts;
+let contracts;
+let eur, mln, weth, fund, uniswapAdapter;
 let mlnExchange, eurExchange;
-let makeOrderSignature, takeOrderSignature;
+let takeOrderSignature;
 let exchangeIndex;
 let takerAddress;
 
 beforeAll(async () => {
   const accounts = await web3.eth.getAccounts();
-  [deployer, manager, investor] = accounts;
+  [deployer, manager] = accounts;
 
   const deployed = await partialRedeploy(
     [CONTRACT_NAMES.VERSION, CONTRACT_NAMES.UNISWAP_EXCHANGE]
   );
   contracts = deployed.contracts;
-  deployOut = deployed.deployOut;
 
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  makeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
-    'makeOrder',
-  );
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
     'takeOrder',
@@ -54,7 +45,6 @@ beforeAll(async () => {
   eur = contracts.EUR;
   mln = contracts.MLN;
   weth = contracts.WETH;
-  priceSource = contracts.TestingPriceFeed;
   uniswapAdapter = contracts.UniswapAdapter;
 
   // Seed manager with funds
@@ -309,7 +299,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
 });
 
 test('Order fails if maker amount is not satisfied', async () => {
-  const { accounting, trading } = fund;
+  const { trading } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.1', 'ether');

@@ -6,11 +6,9 @@
  * @test TODO: multiple tests for make and take orders on multiple exchanges
  */
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS, KYBER_ETH_ADDRESS } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
@@ -19,9 +17,9 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
-let makeOrderFunctionSig, takeOrderFunctionSig;
+let takeOrderFunctionSig;
 let mln, weth;
-let oasisDex, oasisDexAdapter, oasisDexExchangeIndex;
+let oasisDex, oasisDexAdapter;
 let kyberNetworkProxy, kyberAdapter, kyberExchangeIndex;
 let version, fund;
 
@@ -34,10 +32,6 @@ beforeAll(async () => {
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   const contracts = deployed.contracts;
 
-  makeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
-    'makeOrder',
-  );
   takeOrderFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
     'takeOrder',
@@ -49,7 +43,6 @@ beforeAll(async () => {
 
   oasisDex = contracts.OasisDexExchange;
   oasisDexAdapter = contracts.OasisDexAdapter;
-  oasisDexExchangeIndex = 0;
 
   kyberNetworkProxy = contracts.KyberNetworkProxy;
   kyberAdapter = contracts.KyberAdapter;

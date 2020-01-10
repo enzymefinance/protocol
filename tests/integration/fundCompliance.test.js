@@ -96,7 +96,7 @@ describe('Fund 1: user whitelist', () => {
       participation.methods
         .requestInvestment(offeredValue, wantedShares, weth.options.address)
         .send({ ...badInvestorTxOpts, value: amguAmount }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('Rule evaluated to false: UserWhitelist');
   });
 
   test('Good request investment: user is whitelisted', async () => {

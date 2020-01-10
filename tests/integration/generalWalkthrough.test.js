@@ -11,15 +11,12 @@
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, hexToNumber, toWei } from 'web3-utils';
-
 import { deploy } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
-
 import {
   CONTRACT_NAMES,
   EMPTY_ADDRESS,
-  TRACKS,
 } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
 import getFundComponents from '~/tests/utils/getFundComponents';
@@ -169,7 +166,7 @@ describe('general-walkthrough', () => {
       participation.methods
         .requestInvestment(offeredValue, wantedShares, weth.options.address)
         .send({ ...investorTxOpts, value: amguAmount }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('Rule evaluated to false: UserWhitelist');
   });
 
   test('Request investment succeeds for whitelisted user with allowance', async () => {
@@ -350,6 +347,6 @@ describe('general-walkthrough', () => {
       participation.methods
         .requestInvestment(offeredValue, wantedShares, weth.options.address)
         .send({ ...investorTxOpts, value: amguAmount }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('Hub is shut down');
   });
 });

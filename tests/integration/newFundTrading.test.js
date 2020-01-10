@@ -518,6 +518,6 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
           '0x0',
         )
         .send(managerTxOpts),
-    ).rejects.toThrow();
+    ).rejects.toThrow('Rule evaluated to false: PriceTolerance');
   });
 });
