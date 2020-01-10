@@ -67,7 +67,7 @@ contract MaxConcentration is TradingSignatures, DSMath {
     }
 
     function position() external pure returns (Applied) { return Applied.post; }
-    function identifier() external pure returns (string memory) { return 'Max concentration'; }
+    function identifier() external pure returns (string memory) { return 'MaxConcentration'; }
 
     function _calcConcentration(uint assetGav, uint totalGav) internal returns (uint) {
         return mul(assetGav, ONE_HUNDRED_PERCENT) / totalGav;

@@ -27,5 +27,5 @@ contract MaxPositions is TradingSignatures {
     }
 
     function position() external pure returns (Applied) { return Applied.post; }
-    function identifier() external pure returns (string memory) { return 'Max positions'; }
+    function identifier() external pure returns (string memory) { return 'MaxPositions'; }
 }

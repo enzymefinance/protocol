@@ -135,5 +135,5 @@ contract PriceTolerance is TradingSignatures, DSMath {
     }
 
     function position() external pure returns (Applied) { return Applied.pre; }
-    function identifier() external pure returns (string memory) { return 'Price tolerance'; }
+    function identifier() external pure returns (string memory) { return 'PriceTolerance'; }
 }

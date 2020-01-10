@@ -24,5 +24,5 @@ contract AssetBlacklist is TradingSignatures, AddressList {
     }
 
     function position() external pure returns (Applied) { return Applied.pre; }
-    function identifier() external pure returns (string memory) { return 'Asset blacklist'; }
+    function identifier() external pure returns (string memory) { return 'AssetBlacklist'; }
 }
