@@ -2,6 +2,7 @@ pragma solidity 0.6.1;
 
 import "../../dependencies/DSGuard.sol";
 import "./Spoke.sol";
+import "../../version/Registry.sol";
 
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
@@ -17,7 +18,6 @@ contract Hub is DSGuard {
         address shares;
         address trading;
         address vault;
-        address priceSource;
         address registry;
         address version;
         address engine;
@@ -53,7 +53,7 @@ contract Hub is DSGuard {
         emit FundShutDown();
     }
 
-    function setSpokes(address[12] calldata _spokes) external onlyCreator {
+    function setSpokes(address[11] calldata _spokes) external onlyCreator {
         require(!spokesSet, "Spokes already set");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
@@ -65,21 +65,20 @@ contract Hub is DSGuard {
         routes.shares = _spokes[4];
         routes.trading = _spokes[5];
         routes.vault = _spokes[6];
-        routes.priceSource = _spokes[7];
-        routes.registry = _spokes[8];
-        routes.version = _spokes[9];
-        routes.engine = _spokes[10];
-        routes.mlnToken = _spokes[11];
+        routes.registry = _spokes[7];
+        routes.version = _spokes[8];
+        routes.engine = _spokes[9];
+        routes.mlnToken = _spokes[10];
         spokesSet = true;
     }
 
     function setRouting() external onlyCreator {
         require(spokesSet, "Spokes must be set");
         require(!routingSet, "Routing already set");
-        address[12] memory spokes = [
+        address[11] memory spokes = [
             routes.accounting, routes.feeManager, routes.participation,
             routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.priceSource, routes.registry,
+            routes.vault, routes.registry,
             routes.version, routes.engine, routes.mlnToken
         ];
         Spoke(routes.accounting).initialize(spokes);
@@ -115,7 +114,7 @@ contract Hub is DSGuard {
 
     function vault() external view returns (address) { return routes.vault; }
     function accounting() external view returns (address) { return routes.accounting; }
-    function priceSource() external view returns (address) { return routes.priceSource; }
+    function priceSource() external view returns (address) { return Registry(routes.registry).priceSource(); }
     function participation() external view returns (address) { return routes.participation; }
     function trading() external view returns (address) { return routes.trading; }
     function shares() external view returns (address) { return routes.shares; }

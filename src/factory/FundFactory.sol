@@ -19,7 +19,7 @@ contract FundFactory is AmguConsumer, Factory {
     event NewFund(
         address indexed manager,
         address indexed hub,
-        address[12] routes
+        address[11] routes
     );
 
     IVersion public version;
@@ -122,7 +122,6 @@ contract FundFactory is AmguConsumer, Factory {
             _feeRates,
             _feePeriods
         );
-        managersToRoutes[msg.sender].priceSource = priceSource();
         managersToRoutes[msg.sender].registry = address(associatedRegistry);
         managersToRoutes[msg.sender].version = address(version);
         managersToRoutes[msg.sender].engine = engine();
@@ -256,7 +255,6 @@ contract FundFactory is AmguConsumer, Factory {
             routes.shares,
             routes.trading,
             routes.vault,
-            routes.priceSource,
             routes.registry,
             routes.version,
             routes.engine,
@@ -282,7 +280,6 @@ contract FundFactory is AmguConsumer, Factory {
                 routes.shares,
                 routes.trading,
                 routes.vault,
-                routes.priceSource,
                 routes.registry,
                 routes.version,
                 routes.engine,

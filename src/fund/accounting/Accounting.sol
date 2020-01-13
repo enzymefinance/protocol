@@ -70,7 +70,7 @@ contract Accounting is AmguConsumer, Spoke {
 
     function calcAssetGAV(address _queryAsset) external returns (uint) {
         uint queryAssetQuantityHeld = assetHoldings(_queryAsset);
-        return IPriceSource(routes.priceSource).convertQuantity(
+        return IPriceSource(priceSource()).convertQuantity(
             queryAssetQuantityHeld, _queryAsset, DENOMINATION_ASSET
         );
     }
@@ -88,7 +88,7 @@ contract Accounting is AmguConsumer, Spoke {
             // gav as sum of mul(assetHoldings, assetPrice) with formatting: mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(
                 gav,
-                IPriceSource(routes.priceSource).convertQuantity(
+                IPriceSource(priceSource()).convertQuantity(
                     quantityHeld, asset, DENOMINATION_ASSET
                 )
             );
@@ -156,7 +156,7 @@ contract Accounting is AmguConsumer, Spoke {
             _numShares,
             calcGavPerShareNetManagementFee()
         ) / 10 ** uint(SHARES_DECIMALS);
-        return IPriceSource(routes.priceSource).convertQuantity(
+        return IPriceSource(priceSource()).convertQuantity(
             denominationAssetQuantity, DENOMINATION_ASSET, _altAsset
         );
     }
