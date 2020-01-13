@@ -45,10 +45,10 @@ contract Spoke is DSAuth {
         setOwner(address(0));
     }
 
-    function engine() public view returns (address) { return routes.engine; }
-    function mlnToken() public view returns (address) { return routes.mlnToken; }
-    function priceSource() public view returns (address) { return hub.priceSource(); }
-    function version() public view returns (address) { return routes.version; }
-    function registry() public view returns (address) { return routes.registry; }
+    function engine() public view virtual returns (address) { return routes.engine; }
+    function mlnToken() public view virtual returns (address) { return routes.mlnToken; }
+    function priceSource() public view virtual returns (address) { return hub.priceSource(); }
+    function version() public view virtual returns (address) { return routes.version; }
+    function registry() public view virtual returns (address) { return routes.registry; }
 }
 

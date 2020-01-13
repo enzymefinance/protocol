@@ -35,6 +35,6 @@ contract MockFeeManager is DSMath, Spoke, AmguConsumer {
     function totalFeeAmount() external returns (uint) { return totalFees; }
     function engine() public view override(AmguConsumer, Spoke) returns (address) { return routes.engine; }
     function mlnToken() public view override(AmguConsumer, Spoke) returns (address) { return routes.mlnToken; }
-    function priceSource() public view override(AmguConsumer, Spoke) returns (address) { return routes.priceSource; }
+    function priceSource() public view override(AmguConsumer, Spoke) returns (address) { return hub.priceSource(); }
     function registry() public view override(AmguConsumer, Spoke) returns (address) { return routes.registry; }
 }
