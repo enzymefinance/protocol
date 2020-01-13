@@ -169,7 +169,6 @@ const deployMockSystem = async (
       shares.options.address,
       trading.options.address,
       vault.options.address,
-      priceSource.options.address,
       registry.options.address,
       version.options.address,
       engine.options.address,
