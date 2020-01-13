@@ -103,7 +103,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     /// @dev Request valid if price update happened since request and not expired
     /// @dev If no shares exist and not expired, request can be executed immediately
     function hasValidRequest(address _who) public view returns (bool) {
-        IPriceSource priceSource = IPriceSource(routes.priceSource);
+        IPriceSource priceSource = IPriceSource(priceSource());
         bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.getLastUpdate() ||
             Shares(routes.shares).totalSupply() == 0;
 
@@ -165,7 +165,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
 
     function _cancelRequestFor(address requestOwner) internal {
         require(hasRequest(requestOwner), "No request to cancel");
-        IPriceSource priceSource = IPriceSource(routes.priceSource);
+        IPriceSource priceSource = IPriceSource(priceSource());
         Request memory request = requests[requestOwner];
         require(
             !priceSource.hasValidPrice(request.investmentAsset) ||
@@ -208,7 +208,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             "No valid request for this address"
         );
         require(
-            IPriceSource(routes.priceSource).hasValidPrice(request.investmentAsset),
+            IPriceSource(priceSource()).hasValidPrice(request.investmentAsset),
             "Price not valid"
         );
 
@@ -311,7 +311,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
 
         uint owedPerformanceFees = 0;
         if (
-            IPriceSource(routes.priceSource).hasValidPrices(requestedAssets) &&
+            IPriceSource(priceSource()).hasValidPrices(requestedAssets) &&
             msg.sender != hub.manager()
         ) {
             FeeManager(routes.feeManager).rewardManagementFee();

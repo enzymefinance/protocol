@@ -2,6 +2,7 @@ pragma solidity 0.6.1;
 
 import "main/dependencies/DSGuard.sol";
 import "main/fund/hub/Spoke.sol";
+import "main/version/Registry.sol";
 
 /// @notice Hub used for testing
 contract MockHub is DSGuard {
@@ -14,7 +15,6 @@ contract MockHub is DSGuard {
         address shares;
         address trading;
         address vault;
-        address priceSource;
         address registry;
         address version;
         address engine;
@@ -33,7 +33,7 @@ contract MockHub is DSGuard {
 
     function setShutDownState(bool _state) public { isShutDown = _state; }
 
-    function setSpokes(address[12] memory _spokes) public {
+    function setSpokes(address[11] memory _spokes) public {
         routes.accounting = _spokes[0];
         routes.feeManager = _spokes[1];
         routes.participation = _spokes[2];
@@ -41,19 +41,18 @@ contract MockHub is DSGuard {
         routes.shares = _spokes[4];
         routes.trading = _spokes[5];
         routes.vault = _spokes[6];
-        routes.priceSource = _spokes[7];
-        routes.registry = _spokes[8];
-        routes.version = _spokes[9];
-        routes.engine = _spokes[10];
-        routes.mlnAddress = _spokes[11];
+        routes.registry = _spokes[7];
+        routes.version = _spokes[8];
+        routes.engine = _spokes[9];
+        routes.mlnAddress = _spokes[10];
     }
 
     function setRouting() public {
-        address[12] memory spokes = [
+        address[11] memory spokes = [
             routes.accounting, routes.feeManager, routes.participation,
             routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.priceSource, routes.registry,
-            routes.version, routes.engine, routes.mlnAddress
+            routes.vault, routes.registry, routes.version,
+            routes.engine, routes.mlnAddress
         ];
         Spoke(routes.accounting).initialize(spokes);
         Spoke(routes.feeManager).initialize(spokes);
@@ -93,18 +92,18 @@ contract MockHub is DSGuard {
     }
 
     function initializeSpoke(address _spoke) public {
-        address[12] memory spokes = [
+        address[11] memory spokes = [
             routes.accounting, routes.feeManager, routes.participation,
             routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.priceSource, routes.registry,
-            routes.version, routes.engine, routes.mlnAddress
+            routes.vault, routes.registry, routes.version,
+            routes.engine, routes.mlnAddress
         ];
         Spoke(_spoke).initialize(spokes);
     }
 
     function vault() public view returns (address) { return routes.vault; }
     function accounting() public view returns (address) { return routes.accounting; }
-    function priceSource() public view returns (address) { return routes.priceSource; }
+    function priceSource() public view returns (address) { return Registry(routes.registry).priceSource(); }
     function participation() public view returns (address) { return routes.participation; }
     function trading() public view returns (address) { return routes.trading; }
     function shares() public view returns (address) { return routes.shares; }
