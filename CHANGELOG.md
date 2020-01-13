@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - get mid-market price instead of just one side of bid/ask in KyberPriceFeed
 - move contracts only used in tests to tests directory
 - improve revert messages for policy failures
+- get pricefeed from registry dynamically and at fund runtime
 
 ### Fixed
 
