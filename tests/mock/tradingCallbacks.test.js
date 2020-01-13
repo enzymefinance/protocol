@@ -49,7 +49,6 @@ describe('tradingCallbacks', () => {
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
         mockSystem.registry.options.address,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
