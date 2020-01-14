@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - use interfaces to third-party contracts instead of the contracts themselves
 - do not track default investment assets as owned assets
 - allow manager to add exchanges after fund setup
-- allow anyone to execute a valid investment request on behalf of another
 - allow anyone to cancel an expired investment request on behalf of another
 - for 0xV3 fee assets, check that they are registered before trading
 - get mid-market price instead of just one side of bid/ask in KyberPriceFeed
