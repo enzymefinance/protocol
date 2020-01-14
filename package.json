@@ -34,8 +34,10 @@
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
     "@0x/order-utils-v2": "npm:@0x/order-utils@8.4.0",
+    "@0x/subproviders": "^6.0.3",
     "@0x/types": "^2.5.0-beta.3",
     "@0x/types-v2": "npm:@0x/types@2.4.3",
+    "@0x/utils": "^5.1.2",
     "@babel/core": "^7.1.6",
     "@babel/preset-env": "^7.1.6",
     "babel-jest": "^24.9.0",
