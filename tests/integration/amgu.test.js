@@ -25,12 +25,18 @@ async function assertAmguTx(contract, method, args = []) {
     { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice }
   );
 
+  const { preGas, postGas } = getEventFromLogs(
+    result.logs,
+    CONTRACT_NAMES.AMGU_CONSUMER,
+    'Gas',
+  );
+
   // TODO: This method does not result in less than the estimate
   if (method === 'completeSetup') return result;
 
   const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
-  const gasUsedWithoutAmgu = new BN(result.gasUsed);
+  const gasUsedWithoutAmgu = new BN(preGas).sub(new BN(postGas));
 
   const wethAddress = await call(registry, 'nativeAsset');
   const mlnAddress = await call(version, 'mlnToken');
@@ -43,12 +49,12 @@ async function assertAmguTx(contract, method, args = []) {
     )
   );
 
-  const txCostInWei = new BN(gasPrice).mul(gasUsedWithoutAmgu);
+  const txCostInWei = new BN(gasPrice).mul(new BN(result.gasUsed));
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
   const totalUserCost = preUserBalance.sub(postUserBalance);
 
   expect(txCostInWei).bigNumberLt(totalUserCost);
-  expect(estimatedTotalUserCost).bigNumberGt(totalUserCost);
+  expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
 
   return result;
 }
@@ -191,9 +197,15 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     ],
     { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
   );
-  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
-  const gasUsedWithoutAmgu = new BN(requestInvestmentRes.gasUsed);
+  const { preGas, postGas } = getEventFromLogs(
+    requestInvestmentRes.logs,
+    CONTRACT_NAMES.PARTICIPATION,
+    'Gas',
+  );
+
+  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
+  const gasUsedWithoutAmgu = new BN(preGas).sub(new BN(postGas));
 
   const wethAddress = await call(registry, 'nativeAsset');
   const mlnAddress = await call(version, 'mlnToken');
@@ -206,10 +218,10 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     )
   );
 
-  const txCostInWei = new BN(gasPrice).mul(gasUsedWithoutAmgu);
+  const txCostInWei = new BN(gasPrice).mul(new BN(requestInvestmentRes.gasUsed));
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei).add(new BN(newIncentiveAmount));
   const totalUserCost = preUserBalance.sub(postUserBalance);
 
   expect(txCostInWei).bigNumberLt(totalUserCost);
-  expect(estimatedTotalUserCost).bigNumberGt(totalUserCost);
+  expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
 });

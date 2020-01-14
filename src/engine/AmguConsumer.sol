@@ -16,15 +16,19 @@ abstract contract AmguConsumer is DSMath {
     function mlnToken() public view virtual returns (address);
     function priceSource() public view virtual returns (address);
     function registry() public view virtual returns (address);
+    event Gas(uint preGas, uint postGas);
 
     /// bool deductIncentive is used when sending extra eth beyond amgu
     modifier amguPayable(bool deductIncentive) {
-        uint initialGas = gasleft();
+        uint preGas = gasleft();
         _;
+        uint postGas = gasleft();
+        emit Gas(preGas, postGas);
+
         uint mlnPerAmgu = IEngine(engine()).getAmguPrice();
         uint mlnQuantity = mul(
             mlnPerAmgu,
-            sub(initialGas, gasleft())
+            sub(preGas, postGas)
         );
         address nativeAsset = Registry(registry()).nativeAsset();
         uint ethToPay = IPriceSource(priceSource()).convertQuantity(
