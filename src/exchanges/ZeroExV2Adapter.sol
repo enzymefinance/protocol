@@ -14,6 +14,28 @@ import "./ExchangeAdapter.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to 0xV2 Exchange Contract
 contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
+    /// @param orderAddresses [2] Order maker asset
+    /// @param orderAddresses [3] Order taker asset
+    /// @param orderAddresses [6] Order maker fee asset
+    /// @param orderAddresses [7] Order taker fee asset
+    /// @param orderValues [2] Order maker fee amount
+    /// @param orderValues [3] Order taker fee amount
+    modifier orderAddressesMatchOrderData(
+        address[8] memory orderAddresses,
+        uint[8] memory orderValues,
+        bytes[4] memory orderData
+    )
+    {
+        require(
+            getAssetAddress(orderData[0]) == orderAddresses[2],
+            "Maker asset data does not match order address in array"
+        );
+        require(
+            getAssetAddress(orderData[1]) == orderAddresses[3],
+            "Taker asset data does not match order address in array"
+        );
+        _;
+    }
 
     //  METHODS
 
@@ -27,27 +49,25 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyManager notShutDown {
+    )
+        public
+        override
+        onlyManager
+        notShutDown
+        orderAddressesMatchOrderData(orderAddresses, orderValues, orderData)
+    {
         ensureCanMakeOrder(orderAddresses[2]);
-        Hub hub = getHub();
 
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
         address makerAsset = getAssetAddress(orderData[0]);
         address takerAsset = getAssetAddress(orderData[1]);
-        require(
-            makerAsset == orderAddresses[2],
-            "Maker asset data does not match order address in array"
-        );
-        require(
-            takerAsset == orderAddresses[3],
-            "Taker asset data does not match order address in array"
-        );
 
         // Order parameter checks
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
 
-        approveMakerAsset(targetExchange, makerAsset, orderData[0], order.makerAssetAmount);
+        approveAssetsMakeOrder(targetExchange, order);
+
         IZeroExV2.OrderInfo memory orderInfo = IZeroExV2(targetExchange).getOrderInfo(order);
         IZeroExV2(targetExchange).preSign(orderInfo.orderHash, address(this), signature);
 
@@ -59,22 +79,8 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             ),
             "INVALID_ORDER_SIGNATURE"
         );
-        getAccounting().addAssetToOwnedAssets(takerAsset);
-        getTrading().orderUpdateHook(
-            targetExchange,
-            orderInfo.orderHash,
-            Trading.UpdateType.make,
-            [payable(makerAsset), payable(takerAsset)],
-            [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
-        );
-        getTrading().addOpenMakeOrder(
-            targetExchange,
-            makerAsset,
-            takerAsset,
-            uint256(orderInfo.orderHash),
-            order.expirationTimeSeconds
-        );
-        getTrading().addZeroExV2OrderData(orderInfo.orderHash, order);
+
+        updateStateMakeOrder(targetExchange, order);
     }
 
     // Responsibilities of takeOrder are:
@@ -118,39 +124,26 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyManager notShutDown {
-        Hub hub = getHub();
-
+    )
+        public
+        override
+        onlyManager
+        notShutDown
+        orderAddressesMatchOrderData(orderAddresses, orderValues, orderData)
+    {
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
-        uint fillTakerQuantity = orderValues[6];
-        address makerAsset = getAssetAddress(orderData[0]);
-        address takerAsset = getAssetAddress(orderData[1]);
-        require(
-            makerAsset == orderAddresses[2],
-            "Maker asset data does not match order address in array"
-        );
-        require(
-            takerAsset == orderAddresses[3],
-            "Taker asset data does not match order address in array"
-        );
-        approveTakerAsset(targetExchange, takerAsset, orderData[1], fillTakerQuantity);
-        IZeroExV2.OrderInfo memory orderInfo = IZeroExV2(targetExchange).getOrderInfo(order);
-        uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
 
+        uint fillTakerQuantity = orderValues[6];
+
+        approveAssetsTakeOrder(targetExchange, order);
+
+        uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
         require(
             takerAssetFilledAmount == fillTakerQuantity,
             "Filled amount does not match desired fill amount"
         );
-        getAccounting().addAssetToOwnedAssets(makerAsset);
-        getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(makerAsset);
-        getTrading().orderUpdateHook(
-            targetExchange,
-            orderInfo.orderHash,
-            Trading.UpdateType.take,
-            [payable(makerAsset), payable(takerAsset)],
-            [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
-        );
+
+        updateStateTakeOrder(targetExchange, order, fillTakerQuantity);
     }
 
     /// @notice Cancel the 0x make order
@@ -161,27 +154,21 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyCancelPermitted(targetExchange, orderAddresses[2]) {
-        Hub hub = getHub();
+    )
+        public
+        override
+        orderAddressesMatchOrderData(orderAddresses, orderValues, orderData)
+        onlyCancelPermitted(targetExchange, orderAddresses[2])
+    {
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
-        address makerAsset = getAssetAddress(order.makerAssetData);
 
         if (order.expirationTimeSeconds > block.timestamp) {
             IZeroExV2(targetExchange).cancelOrder(order);
         }
 
-        // Set the approval back to 0
-        approveMakerAsset(targetExchange, makerAsset, order.makerAssetData, 0);
-        getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
-        getTrading().returnAssetToVault(makerAsset);
-        getAccounting().updateOwnedAssets();
-        getTrading().orderUpdateHook(
-            targetExchange,
-            identifier,
-            Trading.UpdateType.cancel,
-            [address(0), address(0)],
-            [uint(0), uint(0), uint(0)]
-        );
+        revokeApproveAssetsCancelOrder(targetExchange, order);
+
+        updateStateCancelOrder(targetExchange, order);
     }
 
     /// @dev Get order details
@@ -212,34 +199,70 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     }
 
     // INTERNAL METHODS
-
-
-    /// @notice needed to avoid stack too deep error
-    function approveTakerAsset(address targetExchange, address takerAsset, bytes memory takerAssetData, uint256 fillTakerQuantity)
+    function approveAsset(
+        address _asset,
+        address _target,
+        uint256 _amount,
+        string memory _assetType
+    )
         internal
     {
         Hub hub = getHub();
         Vault vault = Vault(hub.vault());
-        vault.withdraw(takerAsset, fillTakerQuantity);
-        address assetProxy = getAssetProxy(targetExchange, takerAssetData);
+
         require(
-            IERC20(takerAsset).approve(assetProxy, fillTakerQuantity),
-            "Taker asset could not be approved"
+            IERC20(_asset).balanceOf(address(vault)) >= _amount,
+            string(abi.encodePacked("Insufficient balance: ", _assetType))
+        );
+
+        vault.withdraw(_asset, _amount);
+        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
+        require(
+            IERC20(_asset).approve(_target, add(allowance, _amount)),
+            string(abi.encodePacked("Approval failed: ", _assetType))
         );
     }
 
-    /// @notice needed to avoid stack too deep error
-    function approveMakerAsset(address targetExchange, address makerAsset, bytes memory makerAssetData, uint256 makerQuantity)
+    // @notice Approves makerAsset, makerFee
+    function approveAssetsMakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
         internal
     {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(makerAsset, makerQuantity);
-        address assetProxy = getAssetProxy(targetExchange, makerAssetData);
-        require(
-            IERC20(makerAsset).approve(assetProxy, makerQuantity),
-            "Maker asset could not be approved"
+        approveAsset(
+            getAssetAddress(_order.makerAssetData),
+            getAssetProxy(_targetExchange, _order.makerAssetData),
+            _order.makerAssetAmount,
+            "makerAsset"
         );
+        if (_order.makerFee > 0) {
+            bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
+            approveAsset(
+                getAssetAddress(zrxAssetData),
+                getAssetProxy(_targetExchange, zrxAssetData),
+                _order.makerFee,
+                "makerFeeAsset"
+            );
+        }
+    }
+
+    // @notice Approves takerAsset, takerFee
+    function approveAssetsTakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
+        internal
+    {
+        approveAsset(
+            getAssetAddress(_order.takerAssetData),
+            getAssetProxy(_targetExchange, _order.takerAssetData),
+            _order.takerAssetAmount,
+            "takerAsset"
+        );
+        if (_order.takerFee > 0) {
+            bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
+            approveAsset(
+                getAssetAddress(zrxAssetData),
+                getAssetProxy(_targetExchange, zrxAssetData),
+                _order.takerFee,
+                "takerFeeAsset"
+            );
+        }
     }
 
     /// @dev needed to avoid stack too deep error
@@ -252,19 +275,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         internal
         returns (uint256)
     {
-        uint takerFee = order.takerFee;
-        if (takerFee > 0) {
-            bytes memory assetData = IZeroExV2(targetExchange).ZRX_ASSET_DATA();
-            address zrxProxy = getAssetProxy(targetExchange, assetData);
-            Hub hub = getHub();
-            Vault vault = Vault(hub.vault());
-            vault.withdraw(getAssetAddress(assetData), takerFee);
-            require(
-                IERC20(getAssetAddress(assetData)).approve(zrxProxy, takerFee),
-                "Fee asset could not be approved"
-            );
-        }
-
         address makerAsset = getAssetAddress(order.makerAssetData);
         uint preMakerAssetBalance = IERC20(makerAsset).balanceOf(address(this));
 
@@ -275,12 +285,132 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
 
         uint256 postMakerAssetBalance = IERC20(makerAsset).balanceOf(address(this));
+
+        // Account for case where makerAsset is ZRX (same as takerFee)
+        uint256 makerAssetFeesTotal;
+        if (makerAsset == getAssetAddress(IZeroExV2(targetExchange).ZRX_ASSET_DATA())) {
+            makerAssetFeesTotal = add(makerAssetFeesTotal, order.takerFee);
+        }
+
         require(
-            postMakerAssetBalance == add(preMakerAssetBalance, fillResults.makerAssetFilledAmount),
+            postMakerAssetBalance == sub(
+                add(preMakerAssetBalance, fillResults.makerAssetFilledAmount),
+                makerAssetFeesTotal
+            ),
             "Maker asset balance different than expected"
         );
 
         return fillResults.takerAssetFilledAmount;
+    }
+
+    function revokeApproveAsset(
+        address _asset,
+        address _target,
+        uint256 _amount,
+        string memory _assetType
+    )
+        internal
+    {
+        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
+        require(
+            IERC20(_asset).approve(_target, sub(allowance, _amount)),
+            string(abi.encodePacked("Revoke approval failed: ", _assetType))
+        );
+    }
+
+    // @notice Revoke asset approvals and return assets to vault
+    function revokeApproveAssetsCancelOrder(
+        address _targetExchange,
+        IZeroExV2.Order memory _order
+    )
+        internal
+    {
+        address makerAsset = getAssetAddress(_order.makerAssetData);
+        bytes memory makerFeeAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
+        address makerFeeAsset = getAssetAddress(makerFeeAssetData);
+
+        revokeApproveAsset(
+            makerAsset,
+            getAssetProxy(_targetExchange, _order.makerAssetData),
+            _order.makerAssetAmount,
+            "makerAsset"
+        );
+        getTrading().returnAssetToVault(makerAsset);
+
+        if (_order.makerFee > 0) {
+            revokeApproveAsset(
+                makerFeeAsset,
+                getAssetProxy(_targetExchange, makerFeeAssetData),
+                _order.makerFee,
+                "makerFeeAsset"
+            );
+            if (makerFeeAsset != makerAsset) getTrading().returnAssetToVault(makerFeeAsset);
+        }
+    }
+
+    function updateStateCancelOrder(address targetExchange, IZeroExV2.Order memory order)
+        internal
+    {
+        address makerAsset = getAssetAddress(order.makerAssetData);
+
+        getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
+        getAccounting().updateOwnedAssets();
+        getTrading().orderUpdateHook(
+            targetExchange,
+            IZeroExV2(targetExchange).getOrderInfo(order).orderHash,
+            Trading.UpdateType.cancel,
+            [address(0), address(0)],
+            [uint(0), uint(0), uint(0)]
+        );
+    }
+
+    // @dev avoids stack too deep error
+    function updateStateMakeOrder(address targetExchange, IZeroExV2.Order memory order)
+        internal
+    {
+        address makerAsset = getAssetAddress(order.makerAssetData);
+        address takerAsset = getAssetAddress(order.takerAssetData);
+        IZeroExV2.OrderInfo memory orderInfo = IZeroExV2(targetExchange).getOrderInfo(order);
+
+        getAccounting().addAssetToOwnedAssets(takerAsset);
+        getTrading().orderUpdateHook(
+            targetExchange,
+            orderInfo.orderHash,
+            Trading.UpdateType.make,
+            [payable(makerAsset), payable(takerAsset)],
+            [order.makerAssetAmount, order.takerAssetAmount, uint(0)]
+        );
+        getTrading().addOpenMakeOrder(
+            targetExchange,
+            makerAsset,
+            takerAsset,
+            uint256(orderInfo.orderHash),
+            order.expirationTimeSeconds
+        );
+        getTrading().addZeroExV2OrderData(orderInfo.orderHash, order);
+    }
+
+    // @dev avoids stack too deep error
+    function updateStateTakeOrder(
+        address targetExchange,
+        IZeroExV2.Order memory order,
+        uint256 fillTakerQuantity
+    )
+        internal
+    {
+        address makerAsset = getAssetAddress(order.makerAssetData);
+        address takerAsset = getAssetAddress(order.takerAssetData);
+
+        getAccounting().addAssetToOwnedAssets(makerAsset);
+        getAccounting().updateOwnedAssets();
+        getTrading().returnAssetToVault(makerAsset);
+        getTrading().orderUpdateHook(
+            targetExchange,
+            IZeroExV2(targetExchange).getOrderInfo(order).orderHash,
+            Trading.UpdateType.take,
+            [payable(makerAsset), payable(takerAsset)],
+            [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
+        );
     }
 
     // VIEW METHODS
