@@ -150,35 +150,17 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
     )
         public
         override
+        orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
         onlyCancelPermitted(_targetExchange, _orderAddresses[2])
     {
         Hub hub = getHub();
         IZeroExV3.Order memory order = getTrading().getZeroExV3OrderDetails(_identifier);
-        address makerAsset = getAssetAddress(order.makerAssetData);
-        address makerFeeAsset = getAssetAddress(order.makerFeeAssetData);
 
         if (order.expirationTimeSeconds > block.timestamp) {
             IZeroExV3(_targetExchange).cancelOrder(order);
         }
 
-        // Revoke asset approvals and return assets to vault
-        revokeApproveAsset(
-            makerAsset,
-            getAssetProxy(_targetExchange, order.takerAssetData),
-            order.makerAssetAmount,
-            "makerAsset"
-        );
-        getTrading().returnAssetToVault(makerAsset);
-
-        if (order.makerFee > 0) {
-            revokeApproveAsset(
-                makerFeeAsset,
-                getAssetProxy(_targetExchange, order.makerFeeAssetData),
-                order.makerFee,
-                "makerFeeAsset"
-            );
-            if (makerFeeAsset != makerAsset) getTrading().returnAssetToVault(makerFeeAsset);
-        }
+        revokeApproveAssetsCancelOrder(_targetExchange, order);
 
         updateStateCancelOrder(_targetExchange, order);
     }
@@ -345,6 +327,35 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             IERC20(_asset).approve(_target, sub(allowance, _amount)),
             string(abi.encodePacked("Revoke approval failed: ", _assetType))
         );
+    }
+
+    // @notice Revoke asset approvals and return assets to vault
+    function revokeApproveAssetsCancelOrder(
+        address _targetExchange,
+        IZeroExV3.Order memory _order
+    )
+        internal
+    {
+        address makerAsset = getAssetAddress(_order.makerAssetData);
+        address makerFeeAsset = getAssetAddress(_order.makerFeeAssetData);
+
+        revokeApproveAsset(
+            makerAsset,
+            getAssetProxy(_targetExchange, _order.makerAssetData),
+            _order.makerAssetAmount,
+            "makerAsset"
+        );
+        getTrading().returnAssetToVault(makerAsset);
+
+        if (_order.makerFee > 0) {
+            revokeApproveAsset(
+                makerFeeAsset,
+                getAssetProxy(_targetExchange, _order.makerFeeAssetData),
+                _order.makerFee,
+                "makerFeeAsset"
+            );
+            if (makerFeeAsset != makerAsset) getTrading().returnAssetToVault(makerFeeAsset);
+        }
     }
 
     function updateStateCancelOrder(address _targetExchange, IZeroExV3.Order memory _order)
