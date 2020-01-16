@@ -217,7 +217,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         );
     }
 
-    // @notice Approves makerAsset, makerFeeAsset
+    /// @notice Approves makerAsset, makerFeeAsset
     function approveAssetsMakeOrder(address _targetExchange, IZeroExV3.Order memory _order)
         internal
     {
@@ -237,7 +237,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         }
     }
 
-    // @notice Approves takerAsset, takerFeeAsset, protocolFee
+    /// @notice Approves takerAsset, takerFeeAsset, protocolFee
     function approveAssetsTakeOrder(address _targetExchange, IZeroExV3.Order memory _order)
         internal
     {
@@ -269,6 +269,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         approveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
     }
 
+    /// @dev Needed to avoid stack too deep error
     function executeFill(
         address _targetExchange,
         IZeroExV3.Order memory _order,
@@ -314,6 +315,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         return fillResults.takerAssetFilledAmount;
     }
 
+    /// @notice Reduce allowance of an asset for some target
     function revokeApproveAsset(
         address _asset,
         address _target,
@@ -329,7 +331,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         );
     }
 
-    // @notice Revoke asset approvals and return assets to vault
+    /// @notice Revoke asset approvals and return assets to vault
     function revokeApproveAssetsCancelOrder(
         address _targetExchange,
         IZeroExV3.Order memory _order
@@ -399,7 +401,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         getTrading().addZeroExV3OrderData(orderInfo.orderHash, _order);
     }
 
-    // @dev avoids stack too deep error
+    /// @dev Avoids stack too deep error
     function updateStateTakeOrder(
         address _targetExchange,
         IZeroExV3.Order memory _order,

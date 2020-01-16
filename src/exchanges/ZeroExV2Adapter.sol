@@ -223,7 +223,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
     }
 
-    // @notice Approves makerAsset, makerFee
+    /// @notice Approves makerAsset, makerFee
     function approveAssetsMakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
         internal
     {
@@ -244,7 +244,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         }
     }
 
-    // @notice Approves takerAsset, takerFee
+    /// @notice Approves takerAsset, takerFee
     function approveAssetsTakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
         internal
     {
@@ -265,7 +265,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         }
     }
 
-    /// @dev needed to avoid stack too deep error
+    /// @dev Needed to avoid stack too deep error
     function executeFill(
         address targetExchange,
         IZeroExV2.Order memory order,
@@ -303,6 +303,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         return fillResults.takerAssetFilledAmount;
     }
 
+    /// @notice Reduce allowance of an asset for some target
     function revokeApproveAsset(
         address _asset,
         address _target,
@@ -318,7 +319,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
     }
 
-    // @notice Revoke asset approvals and return assets to vault
+    /// @notice Revoke asset approvals and return assets to vault
     function revokeApproveAssetsCancelOrder(
         address _targetExchange,
         IZeroExV2.Order memory _order
@@ -348,6 +349,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         }
     }
 
+    /// @dev Avoids stack too deep error
     function updateStateCancelOrder(address targetExchange, IZeroExV2.Order memory order)
         internal
     {
@@ -364,7 +366,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
     }
 
-    // @dev avoids stack too deep error
+    /// @dev Avoids stack too deep error
     function updateStateMakeOrder(address targetExchange, IZeroExV2.Order memory order)
         internal
     {
@@ -390,7 +392,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         getTrading().addZeroExV2OrderData(orderInfo.orderHash, order);
     }
 
-    // @dev avoids stack too deep error
+    /// @dev avoids stack too deep error
     function updateStateTakeOrder(
         address targetExchange,
         IZeroExV2.Order memory order,
