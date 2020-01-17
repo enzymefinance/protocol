@@ -14,9 +14,8 @@ let engine, version, priceSource, registry;
 let amguPrice;
 
 async function assertAmguTx(contract, method, args = []) {
-  const preUserBalance = new BN(await web3.eth.getBalance(deployer));
-
   const arbitraryEthAmount = toWei('1', 'ether');
+  const preUserBalance = new BN(await web3.eth.getBalance(deployer));
   const gasPrice = await web3.eth.getGasPrice();
   const result = await send(
     contract,
@@ -25,10 +24,10 @@ async function assertAmguTx(contract, method, args = []) {
     { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice }
   );
 
-  const { preGas, postGas } = getEventFromLogs(
+  const {payer, amguChargableGas, incentivePaid} = getEventFromLogs(
     result.logs,
     CONTRACT_NAMES.AMGU_CONSUMER,
-    'Gas',
+    'AmguPaid',
   );
 
   // TODO: This method does not result in less than the estimate
@@ -36,11 +35,9 @@ async function assertAmguTx(contract, method, args = []) {
 
   const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
-  const gasUsedWithoutAmgu = new BN(preGas).sub(new BN(postGas));
-
   const wethAddress = await call(registry, 'nativeAsset');
   const mlnAddress = await call(version, 'mlnToken');
-  const mlnAmguAmount = new BN(amguPrice).mul(gasUsedWithoutAmgu);
+  const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
     await call(
       priceSource,
@@ -48,13 +45,14 @@ async function assertAmguTx(contract, method, args = []) {
       [mlnAmguAmount.toString(), mlnAddress, wethAddress]
     )
   );
-
   const txCostInWei = new BN(gasPrice).mul(new BN(result.gasUsed));
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
   const totalUserCost = preUserBalance.sub(postUserBalance);
 
   expect(txCostInWei).bigNumberLt(totalUserCost);
   expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
+  expect(new BN(incentivePaid)).bigNumberEq(new BN(0));
+  expect(payer.toLowerCase()).toBe(deployer.toLowerCase());
 
   return result;
 }
@@ -198,18 +196,21 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
   );
 
-  const { preGas, postGas } = getEventFromLogs(
+  const {
+    payer,
+    amguChargableGas,
+    incentivePaid
+  } = getEventFromLogs(
     requestInvestmentRes.logs,
     CONTRACT_NAMES.PARTICIPATION,
-    'Gas',
+    'AmguPaid',
   );
 
   const postUserBalance = new BN(await web3.eth.getBalance(deployer));
-  const gasUsedWithoutAmgu = new BN(preGas).sub(new BN(postGas));
 
   const wethAddress = await call(registry, 'nativeAsset');
   const mlnAddress = await call(version, 'mlnToken');
-  const mlnAmguAmount = new BN(amguPrice).mul(gasUsedWithoutAmgu);
+  const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
     await call(
       priceSource,
@@ -224,4 +225,6 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
 
   expect(txCostInWei).bigNumberLt(totalUserCost);
   expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
+  expect(payer.toLowerCase()).toBe(deployer.toLowerCase());
+  expect(new BN(incentivePaid)).bigNumberEq(new BN(newIncentiveAmount));
 });
