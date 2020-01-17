@@ -16,13 +16,10 @@ import "./ExchangeAdapter.sol";
 contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     /// @param orderAddresses [2] Order maker asset
     /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [6] Order maker fee asset
-    /// @param orderAddresses [7] Order taker fee asset
-    /// @param orderValues [2] Order maker fee amount
-    /// @param orderValues [3] Order taker fee amount
+    /// @param orderData [0] Order maker asset data
+    /// @param orderData [1] Order taker asset data
     modifier orderAddressesMatchOrderData(
         address[8] memory orderAddresses,
-        uint[8] memory orderValues,
         bytes[4] memory orderData
     )
     {
@@ -54,7 +51,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         override
         onlyManager
         notShutDown
-        orderAddressesMatchOrderData(orderAddresses, orderValues, orderData)
+        orderAddressesMatchOrderData(orderAddresses, orderData)
     {
         ensureCanMakeOrder(orderAddresses[2]);
 
@@ -129,7 +126,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         override
         onlyManager
         notShutDown
-        orderAddressesMatchOrderData(orderAddresses, orderValues, orderData)
+        orderAddressesMatchOrderData(orderAddresses, orderData)
     {
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
 
@@ -157,7 +154,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     )
         public
         override
-        orderAddressesMatchOrderData(orderAddresses, orderValues, orderData)
+        orderAddressesMatchOrderData(orderAddresses, orderData)
         onlyCancelPermitted(targetExchange, orderAddresses[2])
     {
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
