@@ -51,7 +51,7 @@ We will soon be implementing [ESLint](https://eslint.org/) for the javascript (e
 
 ### Solidity
 
-Please adhere to the recommended [official Solidity style guide for v0.5.13](https://solidity.readthedocs.io/en/v0.5.13/style-guide.html), in addition to the following styling choices:
+Please adhere to the recommended [official Solidity style guide for v0.6.1](https://solidity.readthedocs.io/en/v0.6.1/style-guide.html), in addition to the following styling choices:
 
 #### Namespacing
 
