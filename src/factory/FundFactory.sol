@@ -265,7 +265,7 @@ contract FundFactory is AmguConsumer, Factory {
         funds.push(address(hub));
         associatedRegistry.registerFund(
             address(hub),
-            msg.sender,
+            _manager,
             managersToSettings[_manager].name
         );
 
