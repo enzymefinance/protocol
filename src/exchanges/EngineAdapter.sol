@@ -45,12 +45,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
             "fillTakerQuantity must equal takerAssetQuantity"
         );
 
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(mlnAddress, mlnQuantity);
-        require(
-            IERC20(mlnAddress).approve(targetExchange, mlnQuantity),
-            "MLN could not be approved"
-        );
+        approveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
 
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
 
@@ -61,7 +56,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
 
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(payable(wethAddress)).deposit.value(ethToReceive)();
-        safeTransfer(wethAddress, address(vault), ethToReceive);
+        safeTransfer(wethAddress, address(Vault(hub.vault())), ethToReceive);
 
         getAccounting().addAssetToOwnedAssets(wethAddress);
         getAccounting().updateOwnedAssets();
