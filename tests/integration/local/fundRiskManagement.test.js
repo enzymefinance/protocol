@@ -24,17 +24,19 @@ import {
 } from '~/tests/utils/metadata';
 import { increaseTime, mine } from '~/tests/utils/rpc';
 
-let deployer, manager1, manager2, investor;
-let defaultTxOpts, investorTxOpts;
+let deployer, manager, investor;
+let defaultTxOpts, managerTxOpts, investorTxOpts;
 let makeOrderFunctionSig, takeOrderFunctionSig;
 let dai, knc, mln, weth, zrx, oasisDex, oasisDexAdapter, priceSource, priceTolerance;
 let contracts;
+let wethRateConstant, wethToDaiRate, wethToKncRate, wethToMlnRate, wethToZrxRate;
 
 const ruleFailureString = 'Rule evaluated to false: ';
 
 beforeAll(async () => {
-  [deployer, manager1, manager2, investor] = await getAccounts();
+  [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
@@ -49,43 +51,11 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  dai = contracts.DAI;
-  knc = contracts.KNC;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  zrx = contracts.ZRX;
-
-  oasisDex = contracts.OasisDexExchange;
-  oasisDexAdapter = contracts.OasisDexAdapter;
-  priceSource = contracts.TestingPriceFeed;
-  priceTolerance = contracts.PriceTolerance;
-
-  const wethRateConstant = toWei('1', 'ether');
-  const wethToDaiRate = toWei('0.008', 'ether');
-  const wethToKncRate = toWei('0.005', 'ether');
-  const wethToMlnRate = toWei('0.5', 'ether');
-  const wethToZrxRate = toWei('0.25', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [
-      [
-        weth.options.address,
-        mln.options.address,
-        knc.options.address,
-        dai.options.address,
-        zrx.options.address
-      ],
-      [
-        wethRateConstant,
-        wethToMlnRate,
-        wethToKncRate,
-        wethToDaiRate,
-        wethToZrxRate
-      ]
-    ],
-    defaultTxOpts
-  );
+  wethRateConstant = toWei('1', 'ether');
+  wethToDaiRate = toWei('0.008', 'ether');
+  wethToKncRate = toWei('0.005', 'ether');
+  wethToMlnRate = toWei('0.5', 'ether');
+  wethToZrxRate = toWei('0.25', 'ether');
 });
 
 /*
@@ -97,14 +67,42 @@ beforeAll(async () => {
  */
 describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentration', () => {
   let fund;
-  let manager, managerTxOpts;
   let assetBlacklist, maxConcentration, maxPositions;
   let priceToleranceVal, maxConcentrationVal;
   let oasisDexExchangeIndex;
 
   beforeAll(async () => {
-    manager = manager1;
-    managerTxOpts = { ...defaultTxOpts, from: manager };
+    dai = contracts.DAI;
+    knc = contracts.KNC;
+    mln = contracts.MLN;
+    weth = contracts.WETH;
+    zrx = contracts.ZRX;
+
+    oasisDex = contracts.OasisDexExchange;
+    oasisDexAdapter = contracts.OasisDexAdapter;
+    priceSource = contracts.TestingPriceFeed;
+    priceTolerance = contracts.PriceTolerance;
+    await send(
+      priceSource,
+      'update',
+      [
+        [
+          weth.options.address,
+          mln.options.address,
+          knc.options.address,
+          dai.options.address,
+          zrx.options.address
+        ],
+        [
+          wethRateConstant,
+          wethToMlnRate,
+          wethToKncRate,
+          wethToDaiRate,
+          wethToZrxRate
+        ]
+      ],
+      defaultTxOpts
+    );
 
     fund = await setupInvestedTestFund(contracts, manager);
     const { accounting, policyManager, trading } = fund;
@@ -622,13 +620,45 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
  */
 describe('Fund 2: Asset whitelist, max positions', () => {
   let fund;
-  let manager, managerTxOpts;
   let assetWhitelist, maxPositions;
   let oasisDexExchangeIndex;
 
   beforeAll(async () => {
-    manager = manager2;
-    managerTxOpts = { ...defaultTxOpts, from: manager };
+    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+    contracts = deployed.contracts;
+
+    dai = contracts.DAI;
+    knc = contracts.KNC;
+    mln = contracts.MLN;
+    weth = contracts.WETH;
+    zrx = contracts.ZRX;
+
+    oasisDex = contracts.OasisDexExchange;
+    oasisDexAdapter = contracts.OasisDexAdapter;
+    priceSource = contracts.TestingPriceFeed;
+    priceTolerance = contracts.PriceTolerance;
+    await send(
+      priceSource,
+      'update',
+      [
+        [
+          weth.options.address,
+          mln.options.address,
+          knc.options.address,
+          dai.options.address,
+          zrx.options.address
+        ],
+        [
+          wethRateConstant,
+          wethToMlnRate,
+          wethToKncRate,
+          wethToDaiRate,
+          wethToZrxRate
+        ]
+      ],
+      defaultTxOpts
+    );
+
     fund = await setupInvestedTestFund(contracts, manager);
     const { accounting, policyManager, trading } = fund;
 
