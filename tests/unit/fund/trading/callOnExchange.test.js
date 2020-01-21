@@ -280,8 +280,8 @@ describe('Asset in Registry', () => {
           [
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
-            weth.options.address,
             mln.options.address,
+            weth.options.address,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
@@ -314,8 +314,8 @@ describe('Asset in Registry', () => {
           [
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
-            weth.options.address,
             mln.options.address,
+            weth.options.address,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
             randomHex(20),
