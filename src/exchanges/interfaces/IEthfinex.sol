@@ -17,4 +17,5 @@ interface IWrapperLockEth {
 /// @dev Minimal interface for our interactions with EthFinex WrapperRegistryEFX
 interface IWrapperRegistryEFX {
     function token2WrapperLookup(address) external view returns (address);
+    function wrapper2TokenLookup(address) external view returns (address);
 }
