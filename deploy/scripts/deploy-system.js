@@ -20,8 +20,15 @@ const getAllAddrs = obj => {
 
 // TODO: a more elegant way to do this?
 // pass in names of contracts that should be force redeployed
-const partialRedeploy = async (contractsToRedeploy=[]) => {
-  const deployInput = JSON.parse(fs.readFileSync(process.env.CONF));
+const partialRedeploy = async (contractsToRedeploy=[], forcePartial=false) => {
+  let deploySrcPath;
+  if (process.env.REDEPLOY_ALL === "true" && !forcePartial) {
+    deploySrcPath = process.env.DEPLOY_IN;
+  }
+  else {
+    deploySrcPath = process.env.DEPLOY_OUT;
+  }
+  const deployInput = JSON.parse(fs.readFileSync(deploySrcPath));
   Object.keys(deployInput).forEach(category => {
     if (!deployInput[category].addr) {
       return;
