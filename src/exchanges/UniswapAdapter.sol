@@ -63,29 +63,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     }
 
     // INTERNAL FUNCTIONS
-    function approveAsset(
-        address _asset,
-        address _target,
-        uint256 _amount,
-        string memory _assetType
-    )
-        internal
-    {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-
-        require(
-            IERC20(_asset).balanceOf(address(vault)) >= _amount,
-            string(abi.encodePacked("Insufficient balance: ", _assetType))
-        );
-
-        vault.withdraw(_asset, _amount);
-        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
-        require(
-            IERC20(_asset).approve(_target, add(allowance, _amount)),
-            string(abi.encodePacked("Approval failed: ", _assetType))
-        );
-    }
 
     /// @notice Call different functions based on type of assets supplied
     /// @param _targetExchange Address of Uniswap factory contract
