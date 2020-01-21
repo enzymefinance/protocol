@@ -361,7 +361,10 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     }
 
     function isOrderExpired(address exchange, address asset) public view returns(bool) {
-        return exchangesToOpenMakeOrders[exchange][asset].expiresAt <= block.timestamp;
+        return (
+            exchangesToOpenMakeOrders[exchange][asset].expiresAt <= block.timestamp &&
+            exchangesToOpenMakeOrders[exchange][asset].expiresAt > 0
+        );
     }
 
     function getOrderDetails(uint orderIndex) public view returns (address, address, uint, uint) {

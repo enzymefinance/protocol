@@ -151,10 +151,9 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         public
         override
         orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
-        onlyCancelPermitted(_targetExchange, _orderAddresses[2])
     {
-        Hub hub = getHub();
         IZeroExV3.Order memory order = getTrading().getZeroExV3OrderDetails(_identifier);
+        ensureCancelPermitted(_targetExchange, getAssetAddress(order.makerAssetData));
 
         if (order.expirationTimeSeconds > block.timestamp) {
             IZeroExV3(_targetExchange).cancelOrder(order);

@@ -27,14 +27,13 @@ contract ExchangeAdapter {
     }
 
     /// @dev Either manager sends, fund shut down, or order expired
-    modifier onlyCancelPermitted(address exchange, address asset) {
+    function ensureCancelPermitted(address exchange, address asset) internal {
         require(
             getManager() == msg.sender ||
             hubShutDown() ||
             getTrading().isOrderExpired(exchange, asset),
             "No cancellation condition met"
         );
-        _;
     }
 
     function getTrading() internal view returns (Trading) {

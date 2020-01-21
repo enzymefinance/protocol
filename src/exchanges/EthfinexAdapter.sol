@@ -84,10 +84,10 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyCancelPermitted(targetExchange, orderAddresses[2]) {
-        Hub hub = getHub();
+    ) public override {
 
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
+        ensureCancelPermitted(targetExchange, getAssetAddress(order.makerAssetData));
         IZeroExV2(targetExchange).cancelOrder(order);
 
         getAccounting().updateOwnedAssets();

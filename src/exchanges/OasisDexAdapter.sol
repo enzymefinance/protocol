@@ -163,12 +163,12 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyCancelPermitted(targetExchange, orderAddresses[2]) {
-        Hub hub = getHub();
+    ) public override {
         require(uint256(identifier) != 0, "ID cannot be zero");
 
         address makerAsset;
         (, makerAsset, ,) = IOasisDex(targetExchange).getOffer(uint256(identifier));
+        ensureCancelPermitted(targetExchange, makerAsset);
 
         require(
             address(makerAsset) == orderAddresses[2],
