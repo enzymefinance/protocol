@@ -54,11 +54,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
 
-        Vault(Hub(getHub()).vault()).withdraw(makerAsset, makerQuantity);
-        require(
-            IERC20(makerAsset).approve(targetExchange, makerQuantity),
-            "Could not approve maker asset"
-        );
+        approveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
 
         uint256 orderId = IOasisDex(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
 
@@ -126,11 +122,8 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
-        Vault(hub.vault()).withdraw(takerAsset, fillTakerQuantity);
-        require(
-            IERC20(takerAsset).approve(targetExchange, fillTakerQuantity),
-            "Taker asset could not be approved"
-        );
+        approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
+
         require(
             IOasisDex(targetExchange).buy(uint256(identifier), fillMakerQuantity),
             "Buy on matching market failed"

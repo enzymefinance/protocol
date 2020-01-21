@@ -2,7 +2,6 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "main/fund/trading/Trading.sol";
-import "main/fund/hub/Hub.sol";
 import "main/fund/accounting/Accounting.sol";
 import "main/exchanges/ExchangeAdapter.sol";
 
@@ -21,11 +20,12 @@ contract MockAdapter is ExchangeAdapter {
         bytes32 identifier,
         bytes memory signature
     ) public override {
-        Hub hub = getHub();
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
+
+        approveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
 
         getTrading().orderUpdateHook(
             targetExchange,
@@ -52,6 +52,8 @@ contract MockAdapter is ExchangeAdapter {
         uint takerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
 
+        approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
+
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
@@ -70,8 +72,10 @@ contract MockAdapter is ExchangeAdapter {
         bytes32 identifier,
         bytes memory signature
     ) public override {
-        Hub hub = getHub();
         address makerAsset = orderAddresses[2];
+        uint makerQuantity = orderValues[0];
+
+        revokeApproveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
 
         getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
         getTrading().orderUpdateHook(

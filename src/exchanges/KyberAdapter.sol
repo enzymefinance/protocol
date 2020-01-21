@@ -147,10 +147,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(srcToken, srcAmount);
-        IERC20(srcToken).approve(targetExchange, srcAmount);
+        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
 
         // Convert ETH to WETH
@@ -174,10 +171,8 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(srcToken, srcAmount);
-        IERC20(srcToken).approve(targetExchange, srcAmount);
+        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
+
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
     }
 
