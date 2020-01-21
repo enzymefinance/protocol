@@ -1,14 +1,17 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
+import "../dependencies/DSMath.sol";
+import "../dependencies/token/IERC20.sol";
 import "../fund/accounting/Accounting.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
+import "../fund/vault/Vault.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Override the public methods to implement an adapter
-contract ExchangeAdapter {
+contract ExchangeAdapter is DSMath {
 
     modifier onlyManager() {
         require(
@@ -67,6 +70,47 @@ contract ExchangeAdapter {
         require(
             block.timestamp >= getTrading().makerAssetCooldown(_asset),
             "Cooldown for the maker asset not reached"
+        );
+    }
+
+    /// @notice Increment allowance of an asset for some target
+    function approveAsset(
+        address _asset,
+        address _target,
+        uint256 _amount,
+        string memory _assetType
+    )
+        internal
+    {
+        Hub hub = getHub();
+        Vault vault = Vault(hub.vault());
+
+        require(
+            IERC20(_asset).balanceOf(address(vault)) >= _amount,
+            string(abi.encodePacked("Insufficient balance: ", _assetType))
+        );
+
+        vault.withdraw(_asset, _amount);
+        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
+        require(
+            IERC20(_asset).approve(_target, add(allowance, _amount)),
+            string(abi.encodePacked("Approval failed: ", _assetType))
+        );
+    }
+
+    /// @notice Reduce allowance of an asset for some target
+    function revokeApproveAsset(
+        address _asset,
+        address _target,
+        uint256 _amount,
+        string memory _assetType
+    )
+        internal
+    {
+        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
+        require(
+            IERC20(_asset).approve(_target, sub(allowance, _amount)),
+            string(abi.encodePacked("Revoke approval failed: ", _assetType))
         );
     }
 

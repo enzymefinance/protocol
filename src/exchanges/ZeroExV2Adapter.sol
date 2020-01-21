@@ -196,29 +196,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     }
 
     // INTERNAL METHODS
-    function approveAsset(
-        address _asset,
-        address _target,
-        uint256 _amount,
-        string memory _assetType
-    )
-        internal
-    {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-
-        require(
-            IERC20(_asset).balanceOf(address(vault)) >= _amount,
-            string(abi.encodePacked("Insufficient balance: ", _assetType))
-        );
-
-        vault.withdraw(_asset, _amount);
-        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
-        require(
-            IERC20(_asset).approve(_target, add(allowance, _amount)),
-            string(abi.encodePacked("Approval failed: ", _assetType))
-        );
-    }
 
     /// @notice Approves makerAsset, makerFee
     function approveAssetsMakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
@@ -298,22 +275,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
 
         return fillResults.takerAssetFilledAmount;
-    }
-
-    /// @notice Reduce allowance of an asset for some target
-    function revokeApproveAsset(
-        address _asset,
-        address _target,
-        uint256 _amount,
-        string memory _assetType
-    )
-        internal
-    {
-        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
-        require(
-            IERC20(_asset).approve(_target, sub(allowance, _amount)),
-            string(abi.encodePacked("Revoke approval failed: ", _assetType))
-        );
     }
 
     /// @notice Revoke asset approvals and return assets to vault
