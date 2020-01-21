@@ -20,7 +20,8 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
-let exchangeIndex, makeOrderSignature, takeOrderSignature;
+let exchangeIndex, makeOrderSignature, takeOrderSignature, cancelOrderSignature;
+let mockExchangeAddress;
 let weth, mln;
 let fund;
 
@@ -39,6 +40,10 @@ beforeAll(async () => {
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
     'takeOrder'
   );
+  cancelOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'cancelOrder'
+  );
 });
 
 beforeEach(async () => {
@@ -51,7 +56,7 @@ beforeEach(async () => {
   mln = contracts.MLN;
 
   // Register a mock exchange and adapter
-  const mockExchangeAddress = randomHex(20);
+  mockExchangeAddress = randomHex(20);
   const mockAdapter = await deploy(CONTRACT_NAMES.MOCK_ADAPTER);
   await send(
     registry,
@@ -62,7 +67,8 @@ beforeEach(async () => {
       false,
       [
         encodeFunctionSignature(makeOrderSignature),
-        encodeFunctionSignature(takeOrderSignature)
+        encodeFunctionSignature(takeOrderSignature),
+        encodeFunctionSignature(cancelOrderSignature)
       ]
     ],
     defaultTxOpts
@@ -329,5 +335,72 @@ describe('Asset in Registry', () => {
         managerTxOpts
       )
     ).resolves.not.toThrowFlexible();
+  });
+
+  test('MAKE and CANCEL order increment and decrement asset approval', async () => {
+    const { trading } = fund;
+
+    const makerQuantity = 100;
+    const takerQuantity = 200;
+
+    // Make order
+    await expect(
+      send(
+        trading,
+        'callOnExchange',
+        [
+          exchangeIndex,
+          makeOrderSignature,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            weth.options.address,
+            mln.options.address,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            mln.options.address,
+            randomHex(20)
+          ],
+          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+          ['0x0', '0x0', '0x0', '0x0'],
+          '0x0',
+          '0x0',
+        ],
+        managerTxOpts
+      )
+    ).resolves.not.toThrowFlexible();
+
+    let approvedWeth = await weth.methods.allowance(fund.trading.options.address, mockExchangeAddress).call();
+    expect(Number(approvedWeth)).toBe(makerQuantity);
+
+    // Cancel order
+    await expect(
+      send(
+        trading,
+        'callOnExchange',
+        [
+          exchangeIndex,
+          cancelOrderSignature,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            weth.options.address,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            randomHex(20)
+          ],
+          [100, 0, 0, 0, 0, 0, 0, 0],
+          ['0x0', '0x0', '0x0', '0x0'],
+          '0x0',
+          '0x0',
+        ],
+        managerTxOpts
+      )
+    ).resolves.not.toThrowFlexible();
+
+    approvedWeth = await weth.methods.allowance(fund.trading.options.address, mockExchangeAddress).call();
+    expect(Number(approvedWeth)).toBe(0);
   });
 });
