@@ -12,7 +12,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { randomHex, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { deploy, send } from '~/deploy/utils/deploy-contract';
+import { deploy, send, call } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
@@ -358,10 +358,10 @@ describe('Asset in Registry', () => {
             mln.options.address,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
-            mln.options.address,
-            randomHex(20)
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
           ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+          [makerQuantity, takerQuantity, 0, 0, 0, 0, 0, 0],
           ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
           '0x0',
@@ -370,7 +370,7 @@ describe('Asset in Registry', () => {
       )
     ).resolves.not.toThrowFlexible();
 
-    let approvedWeth = await weth.methods.allowance(fund.trading.options.address, mockExchangeAddress).call();
+    let approvedWeth = await call(weth, 'allowance', [fund.trading.options.address, mockExchangeAddress]);
     expect(Number(approvedWeth)).toBe(makerQuantity);
 
     // Cancel order
@@ -389,7 +389,7 @@ describe('Asset in Registry', () => {
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
-            randomHex(20)
+            EMPTY_ADDRESS
           ],
           [100, 0, 0, 0, 0, 0, 0, 0],
           ['0x0', '0x0', '0x0', '0x0'],
@@ -400,7 +400,7 @@ describe('Asset in Registry', () => {
       )
     ).resolves.not.toThrowFlexible();
 
-    approvedWeth = await weth.methods.allowance(fund.trading.options.address, mockExchangeAddress).call();
+    approvedWeth = await call(weth, 'allowance', [fund.trading.options.address, mockExchangeAddress]);
     expect(Number(approvedWeth)).toBe(0);
   });
 });
