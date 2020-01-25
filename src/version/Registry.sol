@@ -34,6 +34,7 @@ contract Registry is DSAuth {
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
     event PriceSourceChange(address indexed priceSource);
+    event RequestExecutorChange(address indexed who, bool isExecutor);
     event VersionRegistration(address indexed version);
 
     // TYPES
@@ -80,6 +81,7 @@ contract Registry is DSAuth {
     mapping (address => address) public fundsToVersions;
     mapping (bytes32 => bool) public versionNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
+    mapping (address => bool) public canExecuteRequests;
 
 
     uint public incentive = 10 finney;
@@ -367,6 +369,16 @@ contract Registry is DSAuth {
         for (uint i; i < _fees.length; i++) {
             delete isFeeRegistered[_fees[i]];
         }
+    }
+
+    function addRequestExecutor(address _executor) external auth {
+        canExecuteRequests[_executor] = true;
+        emit RequestExecutorChange(_executor, false);
+    }
+
+    function removeRequestExecutor(address _executor) external auth {
+        canExecuteRequests[_executor] = false;
+        emit RequestExecutorChange(_executor, false);
     }
 
     // PUBLIC VIEW METHODS

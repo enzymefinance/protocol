@@ -28,7 +28,7 @@ let mln, weth, version, oasisDex, oasisDexAdapter, priceSource;
 let makeOrderFunctionSig, takeOrderFunctionSig;
 let priceTolerance, userWhitelist;
 let managementFee, performanceFee;
-let fund;
+let fund, registry;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -50,6 +50,7 @@ beforeAll(async () => {
   priceTolerance = contracts.PriceTolerance;
   managementFee = contracts.ManagementFee;
   performanceFee = contracts.PerformanceFee;
+  registry = contracts.Registry;
 
   offeredValue = toWei('1', 'ether');
   wantedShares = toWei('1', 'ether');
@@ -157,13 +158,34 @@ test('Request investment fails for user not on whitelist', async () => {
 });
 
 test('Request investment succeeds for whitelisted user with allowance', async () => {
-  const { participation, shares } = fund;
+  const { participation } = fund;
 
   await send(userWhitelist, 'addToWhitelist', [investor], defaultTxOpts);
   await send(participation, 'requestInvestment', [
     offeredValue, wantedShares, weth.options.address
   ], { ...investorTxOpts, value: amguAmount });
-  await send(participation, 'executeRequestFor', [investor], investorTxOpts);
+
+  expect(await call(participation, 'hasRequest', [investor])).toBe(true);
+});
+
+test('Request execution fails for an unpermissioned third party', async () => {
+  const { participation, shares } = fund;
+  // manager is not permissioned to execute investor's request
+  await expect(
+    send(participation, 'executeRequestFor', [investor], managerTxOpts),
+  ).rejects.toThrowFlexible("Executor does not have permission");
+
+  const investorShares = await call(shares, 'balanceOf', [investor]);
+
+  expect(investorShares.toString()).toEqual('0');
+});
+
+test('Request execution succeeds for an address permissioned by registry', async () => {
+  const { participation, shares } = fund;
+
+  // permission manager to execute requests on behalf of network
+  await send(registry, 'addRequestExecutor', [manager], defaultTxOpts);
+  await send(participation, 'executeRequestFor', [investor], managerTxOpts);
   const investorShares = await call(shares, 'balanceOf', [investor]);
 
   expect(investorShares.toString()).toEqual(wantedShares.toString());

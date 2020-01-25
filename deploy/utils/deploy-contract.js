@@ -78,7 +78,7 @@ const send = async (contract, method=undefined, args=[], opts={}) => {
       let boostedGasEstimation;
       try {
         const estimatedGas = await txFunction.estimateGas({from: tx.from});
-        boostedGasEstimation = web3.utils.toHex(Math.floor(estimatedGas * 2));
+        boostedGasEstimation = web3.utils.toHex(Math.floor(estimatedGas * 2)); // TODO: improve gas boosting
       } catch (e) {
         console.error(`Failed during gas estimation:\n ${JSON.stringify(tx, null, '  ')}`);
         throw(e);
@@ -114,7 +114,7 @@ const deploy = async (name, args=[], overrideOpts={}) => {
   let gas;
   if (!overrideOpts.gas) {
      gas = web3.utils.toHex(
-      Math.floor(await txFunction.estimateGas({ from: account.address }) * 1.5)
+       Math.floor(await txFunction.estimateGas({ from: account.address }) * 1.5) // TODO: improve gas boosting
     );
   } else {
     gas = overrideOpts.gas;

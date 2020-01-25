@@ -196,6 +196,17 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         _cancelRequestFor(requestOwner);
     }
 
+    /// @dev can _executor execute the request of _requestOwner
+    function executorPermissioned(address _executor, address _requestOwner)
+        public
+        returns (bool)
+    {
+        return (
+            _executor == _requestOwner ||
+            Registry(registry()).canExecuteRequests(_executor)
+        );
+    }
+
     function executeRequestFor(address requestOwner)
         external
         notShutDown
@@ -203,6 +214,10 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         payable
     {
         Request memory request = requests[requestOwner];
+        require(
+            executorPermissioned(msg.sender, requestOwner),
+            "Executor does not have permission"
+        );
         require(
             hasValidRequest(requestOwner),
             "No valid request for this address"
