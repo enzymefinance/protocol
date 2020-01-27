@@ -99,6 +99,17 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         return block.timestamp > add(requests[_who].timestamp, REQUEST_LIFESPAN);
     }
 
+    /// @dev can _executor execute the request of _requestOwner
+    function executorPermissioned(address _executor, address _requestOwner)
+        public
+        returns (bool)
+    {
+        return (
+            _executor == _requestOwner ||
+            Registry(registry()).isNetworkLevelRequestExecutor(_executor)
+        );
+    }
+
     /// @notice Whether request is OK and invest delay is being respected
     /// @dev Request valid if price update happened since request and not expired
     /// @dev If no shares exist and not expired, request can be executed immediately
@@ -196,17 +207,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         _cancelRequestFor(requestOwner);
     }
 
-    /// @dev can _executor execute the request of _requestOwner
-    function executorPermissioned(address _executor, address _requestOwner)
-        public
-        returns (bool)
-    {
-        return (
-            _executor == _requestOwner ||
-            Registry(registry()).canExecuteRequests(_executor)
-        );
-    }
-
+    /// @notice only request owner or network-level executor can call
+    /// @dev if network-level executor calls, then incentive goes to engine
     function executeRequestFor(address requestOwner)
         external
         notShutDown
@@ -260,7 +262,14 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             );
         }
 
-        msg.sender.transfer(Registry(routes.registry).incentive());
+        // pay out incentive
+        if (Registry(registry()).isNetworkLevelRequestExecutor(msg.sender)) {
+            IEngine(engine()).payIncentiveInEther.value(Registry(routes.registry).incentive())();
+        } else {
+            msg.sender.transfer(Registry(routes.registry).incentive());
+        }
+
+        // TODO: must target a payable function if going to engine
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);

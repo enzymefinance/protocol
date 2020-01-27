@@ -11,6 +11,7 @@ contract Engine is DSMath {
     event RegistryChange(address registry);
     event SetAmguPrice(uint amguPrice);
     event AmguPaid(uint amount);
+    event IncentivePaid(uint amount);
     event Thaw(uint amount);
     event Burn(uint amount);
 
@@ -84,6 +85,18 @@ contract Engine is DSMath {
         } else if (liquidEther >= 10 ether) {
             return 15;
         }
+    }
+
+    function payIncentiveInEther() external payable {
+        require(
+            registry.isFund(msg.sender),
+            "Sender must be a fund or the factory"
+        );
+        // TODO: does this mess up AMGU accounting/monitoring?
+        totalEtherConsumed = add(totalEtherConsumed, msg.value);
+        frozenEther = add(frozenEther, msg.value);
+        // TODO: this is not going to fire when a request owner executes their own request
+        emit IncentivePaid(msg.value);
     }
 
     function payAmguInEther() external payable {

@@ -81,8 +81,7 @@ contract Registry is DSAuth {
     mapping (address => address) public fundsToVersions;
     mapping (bytes32 => bool) public versionNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
-    mapping (address => bool) public canExecuteRequests;
-
+    mapping (address => bool) public isNetworkLevelRequestExecutor;
 
     uint public incentive = 10 finney;
     address public priceSource;
@@ -372,12 +371,12 @@ contract Registry is DSAuth {
     }
 
     function addRequestExecutor(address _executor) external auth {
-        canExecuteRequests[_executor] = true;
-        emit RequestExecutorChange(_executor, false);
+        isNetworkLevelRequestExecutor[_executor] = true;
+        emit RequestExecutorChange(_executor, true);
     }
 
     function removeRequestExecutor(address _executor) external auth {
-        canExecuteRequests[_executor] = false;
+        isNetworkLevelRequestExecutor[_executor] = false;
         emit RequestExecutorChange(_executor, false);
     }
 
