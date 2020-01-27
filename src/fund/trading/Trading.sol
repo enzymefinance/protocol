@@ -115,6 +115,42 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         exchanges.push(Exchange(_exchange, _adapter, takesCustody));
     }
 
+    function multiCallOnExchange(
+        uint[] memory exchangeIndex,
+        string[] memory methodSignature,
+        address[8][] memory orderAddresses,
+        uint[8][] memory orderValues,
+        bytes[4][] memory orderData,
+        bytes32[] memory identifier,
+        bytes[] memory signature
+    )
+        public
+        onlyInitialized
+    {
+        uint256 callsLength = exchangeIndex.length;
+        require(
+            methodSignature.length == callsLength &&
+            orderAddresses.length == callsLength &&
+            orderValues.length == callsLength &&
+            orderData.length == callsLength &&
+            identifier.length == callsLength &&
+            signature.length == callsLength,
+            "multiCallOnExchange: params must be equal length arrays"
+        );
+        require(callsLength > 0, "multiCallOnExchange: no params detected");
+        for (uint i = 0; i < exchangeIndex.length; i++) {
+            callOnExchange(
+                exchangeIndex[i],
+                methodSignature[i],
+                orderAddresses[i],
+                orderValues[i],
+                orderData[i],
+                identifier[i],
+                signature[i]
+            );
+        }
+    }
+
     /// @notice Universal method for calling exchange functions through adapters
     /// @notice See adapter contracts for parameters needed for each exchange
     /// @param exchangeIndex Index of the exchange in the "exchanges" array
