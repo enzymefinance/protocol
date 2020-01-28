@@ -201,7 +201,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     function approveAssetsMakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
         internal
     {
-        approveAsset(
+        withdrawAndApproveAsset(
             getAssetAddress(_order.makerAssetData),
             getAssetProxy(_targetExchange, _order.makerAssetData),
             _order.makerAssetAmount,
@@ -209,7 +209,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
         if (_order.makerFee > 0) {
             bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
-            approveAsset(
+            withdrawAndApproveAsset(
                 getAssetAddress(zrxAssetData),
                 getAssetProxy(_targetExchange, zrxAssetData),
                 _order.makerFee,
@@ -226,7 +226,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     )
         internal
     {
-        approveAsset(
+        withdrawAndApproveAsset(
             getAssetAddress(_order.takerAssetData),
             getAssetProxy(_targetExchange, _order.takerAssetData),
             _fillTakerAmount,
@@ -235,7 +235,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         uint256 takerFeeAmount = mul(_order.takerFee, _fillTakerAmount) / _order.takerAssetAmount;
         if (takerFeeAmount > 0) {
             bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
-            approveAsset(
+            withdrawAndApproveAsset(
                 getAssetAddress(zrxAssetData),
                 getAssetProxy(_targetExchange, zrxAssetData),
                 takerFeeAmount,
