@@ -43,9 +43,11 @@
       "exchangeTakesCustody": {
         "oasis": true,
         "kyber": false,
-        "zeroex": false,
+        "zeroExV2": false,
+        "zeroExV3": false,
         "ethfinex": true,
-        "engine": false
+        "engine": false,
+        "uniswap": false
       }
     }
   },
@@ -119,7 +121,7 @@
     },
     "conf": {
       "WETH": {
-        "name": "Eth Token",
+        "name": "Wrapped ether",
         "decimals": 18,
         "initialDepositAmount": "1000000000000000000"
       },
@@ -144,7 +146,7 @@
         "decimals": 18
       },
       "MKR": {
-        "name": "MakerDao",
+        "name": "Maker token",
         "decimals": 18
       },
       "REP": {
@@ -152,7 +154,7 @@
         "decimals": 18
       },
       "ZRX": {
-        "name": "ZeroX Protocol Token",
+        "name": "0x protocol token",
         "decimals": 18
       }
     }
