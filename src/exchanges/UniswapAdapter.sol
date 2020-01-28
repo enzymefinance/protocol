@@ -33,8 +33,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         onlyManager
         notShutDown
     {
-        Hub hub = getHub();
-
         require(
             _orderValues[1] == _orderValues[6],
             "Taker asset amount must equal taker asset fill amount"
@@ -165,10 +163,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint actualReceiveAmount_)
     {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(_srcToken, _srcAmount);
-
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
         approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
         actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToEthSwapInput(
@@ -205,9 +199,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         returns (uint actualReceiveAmount_)
     {
         Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(_srcToken, _srcAmount);
-
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
         approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
         actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToTokenTransferInput(
@@ -215,7 +206,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
             _minDestAmount,
             1,
             add(block.timestamp, 1),
-            address(vault),
+            address(Vault(hub.vault())),
             _destToken
         );
     }
