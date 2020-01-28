@@ -197,14 +197,14 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
     function approveAssetsMakeOrder(address _targetExchange, IZeroExV3.Order memory _order)
         internal
     {
-        approveAsset(
+        withdrawAndApproveAsset(
             getAssetAddress(_order.makerAssetData),
             getAssetProxy(_targetExchange, _order.makerAssetData),
             _order.makerAssetAmount,
             "makerAsset"
         );
         if (_order.makerFee > 0) {
-            approveAsset(
+            withdrawAndApproveAsset(
                 getAssetAddress(_order.makerFeeAssetData),
                 getAssetProxy(_targetExchange, _order.makerFeeAssetData),
                 _order.makerFee,
@@ -218,14 +218,14 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         internal
     {
         approveProtocolFeeAsset(_targetExchange);
-        approveAsset(
+        withdrawAndApproveAsset(
             getAssetAddress(_order.takerAssetData),
             getAssetProxy(_targetExchange, _order.takerAssetData),
             _order.takerAssetAmount,
             "takerAsset"
         );
         if (_order.takerFee > 0) {
-            approveAsset(
+            withdrawAndApproveAsset(
                 getAssetAddress(_order.takerFeeAssetData),
                 getAssetProxy(_targetExchange, _order.takerFeeAssetData),
                 _order.takerFee,
@@ -242,7 +242,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         Hub hub = getHub();
         address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
 
-        approveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
+        withdrawAndApproveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
     }
 
     /// @dev Needed to avoid stack too deep error
