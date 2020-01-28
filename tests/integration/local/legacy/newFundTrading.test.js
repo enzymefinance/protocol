@@ -157,7 +157,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
     await updateTestingPriceFeed(contracts.TestingPriceFeed, Object.values(deployOut.tokens.addr));
 
     await fund.participation.methods
-      .executeRequestFor(investor)
+      .executeRequest()
       .send(investorTxOpts);
 
     const postTotalSupply = await fund.shares.methods.totalSupply().call();

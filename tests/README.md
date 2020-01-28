@@ -12,7 +12,7 @@ This subdirectory contains the files used for testing a deployment of the Melon 
 
 ### Test folders
 
-`integration/` - contains files that test particular user or feature journies
+`integration/` - contains files that test particular user or feature journeys
 
 `mock/` - contains files that use mock contracts for convenience to test smart contract functions in isolation [deprecated]
 

@@ -74,6 +74,7 @@ const main = async input => {
     'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
     'cancelOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
     'withdrawTokens(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
+    'executeRequestAndBurnMln(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
   ].map(s => web3.utils.keccak256(s).slice(0,10));
 
   const exchanges = {};

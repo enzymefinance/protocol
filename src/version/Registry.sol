@@ -375,21 +375,27 @@ contract Registry is DSAuth {
     function getName(address _asset) external view returns (string memory) {
         return assetInformation[_asset].name;
     }
+
     function getSymbol(address _asset) external view returns (string memory) {
         return assetInformation[_asset].symbol;
     }
+
     function getDecimals(address _asset) external view returns (uint) {
         return assetInformation[_asset].decimals;
     }
+
     function getReserveMin(address _asset) external view returns (uint) {
         return assetInformation[_asset].reserveMin;
     }
+
     function assetIsRegistered(address _asset) external view returns (bool) {
         return assetInformation[_asset].exists;
     }
+
     function getRegisteredAssets() external view returns (address[] memory) {
         return registeredAssets;
     }
+
     function assetMethodIsAllowed(address _asset, bytes4 _sig)
         external
         view
@@ -408,9 +414,11 @@ contract Registry is DSAuth {
     function exchangeAdapterIsRegistered(address _adapter) external view returns (bool) {
         return exchangeInformation[_adapter].exists;
     }
+
     function getRegisteredExchangeAdapters() external view returns (address[] memory) {
         return registeredExchangeAdapters;
     }
+
     function getExchangeInformation(address _adapter)
         public
         view
@@ -422,10 +430,12 @@ contract Registry is DSAuth {
             exchange.takesCustody
         );
     }
+
     function exchangeForAdapter(address _adapter) external view returns (address) {
         Exchange memory exchange = exchangeInformation[_adapter];
         return exchange.exchangeAddress;
     }
+
     function getAdapterFunctionSignatures(address _adapter)
         public
         view
@@ -433,6 +443,7 @@ contract Registry is DSAuth {
     {
         return exchangeInformation[_adapter].sigs;
     }
+
     function adapterMethodIsAllowed(
         address _adapter, bytes4 _sig
     )
@@ -454,6 +465,7 @@ contract Registry is DSAuth {
         return registeredVersions;
     }
 
+    /// @return whether an address is a Fund component
     function isFund(address _who) external view returns (bool) {
         if (fundsToVersions[_who] != address(0)) {
             return true; // directly from a hub
@@ -471,4 +483,3 @@ contract Registry is DSAuth {
         return versionInformation[_who].exists;
     }
 }
-

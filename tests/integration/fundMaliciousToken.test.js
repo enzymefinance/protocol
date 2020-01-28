@@ -99,8 +99,8 @@ test(`General redeem fails in presence of malicious token`, async () => {
   );
   await send(
     participation,
-    'executeRequestFor',
-    [investor],
+    'executeRequest',
+    [],
     investorTxOpts
   );
 

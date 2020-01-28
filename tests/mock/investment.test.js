@@ -58,7 +58,7 @@ describe('investment', () => {
 
     await expect(
       mockSystem.participation.methods
-        .executeRequestFor(user)
+        .executeRequest()
         .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
@@ -80,7 +80,7 @@ describe('investment', () => {
     expect(requestExists).toBe(false);
     await expect(
       mockSystem.participation.methods
-        .executeRequestFor(user)
+        .executeRequest()
         .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
@@ -90,7 +90,7 @@ describe('investment', () => {
 
     await expect(
       mockSystem.participation.methods
-        .executeRequestFor(user)
+        .executeRequest()
         .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
@@ -123,7 +123,7 @@ describe('investment', () => {
     expect(requestExists).toBe(true);
     await expect(
       mockSystem.participation.methods
-        .executeRequestFor(user)
+        .executeRequest()
         .send(defaultTxOpts)
     ).rejects.toThrow(errorMessage);
 
@@ -174,7 +174,7 @@ describe('investment', () => {
 
     await expect(
       mockSystem.participation.methods
-        .executeRequestFor(user)
+        .executeRequest()
         .send({ ...defaultTxOpts, value: defaultAmgu })
     ).rejects.toThrow(errorMessage);
 
@@ -203,7 +203,7 @@ describe('investment', () => {
       )
       .send({ ...defaultTxOpts, value: defaultAmgu });
     await mockSystem.participation.methods
-      .executeRequestFor(user)
+      .executeRequest()
       .send({ ...defaultTxOpts, value: defaultAmgu });
     const postVaultWeth = await mockSystem.weth.methods
       .balanceOf(mockSystem.vault.options.address)

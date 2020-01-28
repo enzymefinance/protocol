@@ -84,7 +84,7 @@ describe('updateOwnedAssets', () => {
       { ...defaultTxOpts, value: amguAmount }
     );
 
-    await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
+    await send(participation, 'executeRequest', [], defaultTxOpts);
 
     const fundHoldingsPreUpdate = await call(accounting, 'getFundHoldings');
 
@@ -129,7 +129,7 @@ describe('updateOwnedAssets', () => {
       defaultTxOpts
     );
 
-    await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
+    await send(participation, 'executeRequest', [], defaultTxOpts);
 
     const fundHoldingsPreUpdate = await call(accounting, 'getFundHoldings');
 

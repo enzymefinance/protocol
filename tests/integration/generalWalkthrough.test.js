@@ -163,7 +163,7 @@ test('Request investment succeeds for whitelisted user with allowance', async ()
   await send(participation, 'requestInvestment', [
     offeredValue, wantedShares, weth.options.address
   ], { ...investorTxOpts, value: amguAmount });
-  await send(participation, 'executeRequestFor', [investor], investorTxOpts);
+  await send(participation, 'executeRequest', [], investorTxOpts);
   const investorShares = await call(shares, 'balanceOf', [investor]);
 
   expect(investorShares.toString()).toEqual(wantedShares.toString());

@@ -3,6 +3,8 @@ pragma solidity 0.6.1;
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
 import "../prices/IPriceSource.sol";
+import "../fund/participation/IParticipation.sol";
+import "../fund/trading/Trading.sol";
 import "../version/Registry.sol";
 
 /// @notice Liquidity contract and token sink
@@ -13,6 +15,11 @@ contract Engine is DSMath {
     event AmguPaid(uint amount);
     event Thaw(uint amount);
     event Burn(uint amount);
+    event RequestExecutedForIncentive(
+        address indexed participationContract,
+        address indexed requestOwner,
+        uint256 incentiveAmount
+    );
 
     uint public constant MLN_DECIMALS = 18;
 
@@ -30,6 +37,14 @@ contract Engine is DSMath {
         lastThaw = block.timestamp;
         thawingDelay = _delay;
         _setRegistry(_registry);
+    }
+
+    modifier onlyFund() {
+        require(
+            registry.isFund(msg.sender),
+            "Only funds can use the engine"
+        );
+        _;
     }
 
     modifier onlyMGM() {
@@ -86,6 +101,10 @@ contract Engine is DSMath {
         }
     }
 
+    /// @dev only Funds can transfer ETH to the Engine
+    /// @dev not adding to liquidEther, since it is immediately sent away again
+    function receiveIncentiveInEth() external payable onlyFund {}
+
     function payAmguInEther() external payable {
         require(
             registry.isFundFactory(msg.sender) ||
@@ -129,13 +148,21 @@ contract Engine is DSMath {
         return add(ethPerMln, premium);
     }
 
+    /// @return Amount of liquid ETH to give for some amount of MLN
     function ethPayoutForMlnAmount(uint mlnAmount) public view returns (uint) {
         return mul(mlnAmount, enginePrice()) / 10 ** uint(MLN_DECIMALS);
     }
 
-    /// @notice MLN must be approved first
-    function sellAndBurnMln(uint mlnAmount) external {
-        require(registry.isFund(msg.sender), "Only funds can use the engine");
+    /// @return Amount of MLN needed to receive some _incentive amount of ETH
+    function mlnRequiredForIncentiveAmount(uint256 _incentive) public view returns (uint256) {
+        return mul(_incentive, 1 ether) / enginePrice();
+    }
+
+    /// @dev MLN must be approved first
+    function sellAndBurnMln(uint mlnAmount)
+        external
+        onlyFund
+    {
         require(
             mlnToken().transferFrom(msg.sender, address(this), mlnAmount),
             "MLN transferFrom failed"
@@ -147,6 +174,28 @@ contract Engine is DSMath {
         totalMlnBurned = add(totalMlnBurned, mlnAmount);
         msg.sender.transfer(ethToSend);
         mlnToken().burn(mlnAmount);
+        emit Burn(mlnAmount);
+    }
+
+    /// @dev MLN must be approved first
+    function executeRequestAndBurnMln(
+        address _participation,
+        address _requestOwner
+    )
+        external
+        onlyFund
+    {
+        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
+        uint256 incentiveAmount = registry.incentive();
+        uint256 mlnAmount = mlnRequiredForIncentiveAmount(incentiveAmount);
+        require(
+            mlnToken().transferFrom(msg.sender, address(this), mlnAmount),
+            "MLN transferFrom failed"
+        );
+        mlnToken().burn(mlnAmount);
+        IParticipation(_participation).executeRequestFor(_requestOwner);
+        require(msg.sender.send(incentiveAmount), "Incentive transfer failed");
+        emit RequestExecutedForIncentive(_participation, _requestOwner, incentiveAmount);
         emit Burn(mlnAmount);
     }
 
@@ -168,4 +217,3 @@ contract Engine is DSMath {
         return IPriceSource(registry.priceSource());
     }
 }
-

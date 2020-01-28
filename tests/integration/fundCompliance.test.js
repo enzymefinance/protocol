@@ -135,8 +135,8 @@ describe('Fund 1: user whitelist', () => {
 
     await send(
       participation,
-      'executeRequestFor',
-      [investor],
+      'executeRequest',
+      [],
       investorTxOpts
     );
 

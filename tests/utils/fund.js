@@ -127,8 +127,8 @@ export const setupFundWithParams = async ({
     )
     await send(
       fund.participation,
-      'executeRequestFor',
-      [initialInvestment.investor],
+      'executeRequest',
+      [],
       { ...investorTxOpts, value: amguTxValue }
     )
   }

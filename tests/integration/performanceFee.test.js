@@ -112,8 +112,8 @@ test(`fund gets weth from (non-initial) investor`, async () => {
 
   await send(
     participation,
-    'executeRequestFor',
-    [investor],
+    'executeRequest',
+    [],
     investorTxOpts
   );
 

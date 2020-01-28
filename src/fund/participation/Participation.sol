@@ -5,6 +5,7 @@ import "../shares/Shares.sol";
 import "../policies/PolicyManager.sol";
 import "../hub/Spoke.sol";
 import "../accounting/Accounting.sol";
+import "../../engine/IEngine.sol";
 import "../../prices/IPriceSource.sol";
 import "../../factory/Factory.sol";
 import "../../engine/AmguConsumer.sol";
@@ -196,15 +197,13 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         _cancelRequestFor(requestOwner);
     }
 
-    function executeRequestFor(address requestOwner)
-        external
-        notShutDown
-        amguPayable(false)
-        payable
+    /// @dev request execution business logic
+    function _executeRequestFor(address _requestOwner)
+        internal
     {
-        Request memory request = requests[requestOwner];
+        Request memory request = requests[_requestOwner];
         require(
-            hasValidRequest(requestOwner),
+            hasValidRequest(_requestOwner),
             "No valid request for this address"
         );
         require(
@@ -240,29 +239,58 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         if (investmentAssetChange > 0) {
             safeTransfer(
                 request.investmentAsset,
-                requestOwner,
+                _requestOwner,
                 investmentAssetChange
             );
         }
 
-        msg.sender.transfer(Registry(routes.registry).incentive());
-
-        Shares(routes.shares).createFor(requestOwner, request.requestedShares);
+        Shares(routes.shares).createFor(_requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
 
-        if (!hasInvested[requestOwner]) {
-            hasInvested[requestOwner] = true;
-            historicalInvestors.push(requestOwner);
+        if (!hasInvested[_requestOwner]) {
+            hasInvested[_requestOwner] = true;
+            historicalInvestors.push(_requestOwner);
         }
 
         emit RequestExecution(
-            requestOwner,
+            _requestOwner,
             msg.sender,
             request.investmentAsset,
             request.investmentAmount,
             request.requestedShares
         );
-        delete requests[requestOwner];
+        delete requests[_requestOwner];
+    }
+
+    /// @notice execute request of _requestOwner, if one exists
+    /// @notice only callable through the Engine
+    function executeRequestFor(address _requestOwner)
+        external
+        notShutDown
+    {
+        require(
+            msg.sender == engine(),
+            "This can only be called through the Engine"
+        );
+        _executeRequestFor(_requestOwner);
+        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
+        uint256 incentiveAmount = Registry(routes.registry).incentive();
+        IEngine(engine()).receiveIncentiveInEth.value(incentiveAmount)();
+    }
+
+    /// @notice executes msg.sender's investment request, if one exists
+    function executeRequest()
+        external
+        notShutDown
+        amguPayable(false)
+        payable
+    {
+        _executeRequestFor(msg.sender);
+        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
+        require(
+            msg.sender.send(Registry(routes.registry).incentive()),
+            "ETH transfer failed"
+        );
     }
 
     function getOwedPerformanceFees(uint shareQuantity)
@@ -397,4 +425,3 @@ contract ParticipationFactory is Factory {
         return participation;
     }
 }
-
