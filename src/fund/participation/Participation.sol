@@ -99,17 +99,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         return block.timestamp > add(requests[_who].timestamp, REQUEST_LIFESPAN);
     }
 
-    /// @dev can _executor execute the request of _requestOwner
-    function executorPermissioned(address _executor, address _requestOwner)
-        public
-        returns (bool)
-    {
-        return (
-            _executor == _requestOwner ||
-            Registry(registry()).isNetworkLevelRequestExecutor(_executor)
-        );
-    }
-
     /// @notice Whether request is OK and invest delay is being respected
     /// @dev Request valid if price update happened since request and not expired
     /// @dev If no shares exist and not expired, request can be executed immediately
@@ -207,29 +196,19 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         _cancelRequestFor(requestOwner);
     }
 
-    /// @notice only request owner or network-level executor can call
-    /// @dev if network-level executor calls, then incentive goes to engine
-    function executeRequestFor(address requestOwner)
-        external
-        notShutDown
-        amguPayable(false)
-        payable
+    /// @dev business logic for request execution
+    function _executeRequestFor(address _requestOwner)
+        internal
     {
-        Request memory request = requests[requestOwner];
         require(
-            executorPermissioned(msg.sender, requestOwner),
-            "Executor does not have permission"
-        );
-        require(
-            hasValidRequest(requestOwner),
+            hasValidRequest(_requestOwner),
             "No valid request for this address"
         );
+        Request memory request = requests[_requestOwner];
         require(
             IPriceSource(priceSource()).hasValidPrice(request.investmentAsset),
             "Price not valid"
         );
-
-        FeeManager(routes.feeManager).rewardManagementFee();
 
         uint totalShareCostInInvestmentAsset = Accounting(routes.accounting)
             .getShareCostInAsset(
@@ -241,6 +220,9 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
+
+        FeeManager(routes.feeManager).rewardManagementFee();
+
         // send necessary amount of investmentAsset to vault
         safeTransfer(
             request.investmentAsset,
@@ -257,36 +239,59 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         if (investmentAssetChange > 0) {
             safeTransfer(
                 request.investmentAsset,
-                requestOwner,
+                _requestOwner,
                 investmentAssetChange
             );
         }
 
-        // pay out incentive
-        if (Registry(registry()).isNetworkLevelRequestExecutor(msg.sender)) {
-            IEngine(engine()).payIncentiveInEther.value(Registry(routes.registry).incentive())();
-        } else {
-            msg.sender.transfer(Registry(routes.registry).incentive());
-        }
-
-        // TODO: must target a payable function if going to engine
-
-        Shares(routes.shares).createFor(requestOwner, request.requestedShares);
+        Shares(routes.shares).createFor(_requestOwner, request.requestedShares);
         Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
 
-        if (!hasInvested[requestOwner]) {
-            hasInvested[requestOwner] = true;
-            historicalInvestors.push(requestOwner);
+        if (!hasInvested[_requestOwner]) {
+            hasInvested[_requestOwner] = true;
+            historicalInvestors.push(_requestOwner);
         }
 
         emit RequestExecution(
-            requestOwner,
+            _requestOwner,
             msg.sender,
             request.investmentAsset,
             request.investmentAmount,
             request.requestedShares
         );
-        delete requests[requestOwner];
+        delete requests[_requestOwner];
+    }
+
+    /// @notice only callable by network-level executor, and incentive - approximateTxCost goes to engine
+    function executeRequestFor(address _requestOwner)
+        external
+        notShutDown
+        amguPayable(false)
+        payable
+    {
+        uint256 initialGas = gasleft();
+        require(
+            Registry(registry()).isNetworkLevelRequestExecutor(msg.sender),
+            "Only callable by network-level executor"
+        );
+        // refund sender the amount of eth used in this tx
+        _executeRequestFor(_requestOwner);
+        uint256 incentiveAmount = Registry(routes.registry).incentive();
+        uint256 gasUsed = gasleft();
+        uint256 approximateTxCost = mul(tx.gasprice, gasUsed);
+        // msg.sender.transfer(approximateTxCost);
+        // IEngine(engine()).payIncentiveInEther.value(sub(incentiveAmount, approximateTxCost))();
+    }
+
+    /// @notice callable by a request owner, to execute their own request
+    function executeRequest()
+        external
+        notShutDown
+        amguPayable(false)
+        payable
+    {
+        _executeRequestFor(msg.sender);
+        msg.sender.transfer(Registry(routes.registry).incentive());
     }
 
     function getOwedPerformanceFees(uint shareQuantity)

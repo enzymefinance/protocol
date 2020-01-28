@@ -173,7 +173,7 @@ test('Request execution fails for an unpermissioned third party', async () => {
   // manager is not permissioned to execute investor's request
   await expect(
     send(participation, 'executeRequestFor', [investor], managerTxOpts),
-  ).rejects.toThrowFlexible("Executor does not have permission");
+  ).rejects.toThrowFlexible("Only callable by network-level executor");
 
   const investorShares = await call(shares, 'balanceOf', [investor]);
 
