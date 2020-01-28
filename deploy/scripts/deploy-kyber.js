@@ -23,11 +23,11 @@ const main = async input => {
   const eur = fetchContract('StandardToken', input.tokens.addr.EUR);
   const knc = fetchContract('StandardToken', input.tokens.addr.KNC);
 
-  const kgtToken = await nab('BurnableToken', ['KGT', 18, 'Kyber Token'], kyberAddrs, 'KgtToken');
+  const kgtToken = await nab('BurnableToken', ['KGT', 18, 'Kyber Token'], kyberAddrs, 'KGT');
   const conversionRates = await nab('ConversionRates', [conversionRateAdmin], kyberAddrs);
   const kyberNetwork = await nab('KyberNetwork', [kyberNetworkAdmin], kyberAddrs);
   const kyberReserve = await nab('KyberReserve', [kyberNetwork.options.address, conversionRates.options.address, conf.deployer], kyberAddrs);
-  const kyberWhiteList = await nab('WhiteList', [conf.deployer, kgtToken.options.address], kyberAddrs);
+  const kyberWhiteList = await nab('WhiteList', [conf.deployer, kgtToken.options.address], kyberAddrs, 'KyberWhiteList');
   const feeBurner = await nab('FeeBurner', [conf.deployer, knc.options.address, kyberNetwork.options.address, 18], kyberAddrs);
   const expectedRate = await nab('ExpectedRate', [kyberNetwork.options.address, knc.options.address, conf.deployer], kyberAddrs);
   const kyberNetworkProxy = await nab('KyberNetworkProxy', [conf.deployer], kyberAddrs);

@@ -169,9 +169,9 @@ const main = async input => {
   if (!versionInformation.exists) {
     let versionName;
     if (conf.track === 'TESTING') {
-      versionName = web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64)
+      versionName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64);
     } else {
-      versionName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64)
+      versionName = web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64);
     }
     await send(registry, 'registerVersion', [ version.options.address, versionName ]);
   }
