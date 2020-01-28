@@ -54,7 +54,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         getTrading().updateAndGetQuantityBeingTraded(makerAsset);
         ensureNotInOpenMakeOrder(makerAsset);
 
-        approveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
+        withdrawAndApproveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
 
         uint256 orderId = IOasisDex(targetExchange).offer(makerQuantity, makerAsset, takerQuantity, takerAsset);
 
@@ -122,7 +122,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
-        approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
+        withdrawAndApproveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
 
         require(
             IOasisDex(targetExchange).buy(uint256(identifier), fillMakerQuantity),

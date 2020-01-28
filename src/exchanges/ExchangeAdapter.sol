@@ -74,7 +74,7 @@ contract ExchangeAdapter is DSMath {
     }
 
     /// @notice Increment allowance of an asset for some target
-    function approveAsset(
+    function withdrawAndApproveAsset(
         address _asset,
         address _target,
         uint256 _amount,

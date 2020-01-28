@@ -25,7 +25,7 @@ contract MockAdapter is ExchangeAdapter {
         uint makerQuantity = orderValues[0];
         uint takerQuantity = orderValues[1];
 
-        approveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
+        withdrawAndApproveAsset(makerAsset, targetExchange, makerQuantity, "makerAsset");
 
         getTrading().orderUpdateHook(
             targetExchange,
@@ -52,7 +52,7 @@ contract MockAdapter is ExchangeAdapter {
         uint takerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
 
-        approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
+        withdrawAndApproveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
 
         getTrading().orderUpdateHook(
             targetExchange,
