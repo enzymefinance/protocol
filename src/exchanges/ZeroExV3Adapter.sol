@@ -54,51 +54,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
 
     //  PUBLIC METHODS
 
-    /// @notice Make order by pre-approving signatures
-    /// @param _targetExchange Address of the exchange
-    /// @param _orderAddresses [2] Maker asset (Dest token)
-    /// @param _orderAddresses [3] Taker asset (Src token)
-    /// @param _orderData [0] Encoded data specific to maker asset
-    /// @param _orderData [1] Encoded data specific to taker asset
-    /// @param _signature _signature of the order.
-    function makeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        override
-        onlyManager
-        notShutDown
-        orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
-    {
-        ensureCanMakeOrder(_orderAddresses[2]);
-        Hub hub = getHub();
-
-        IZeroExV3.Order memory order = constructOrderStruct(_orderAddresses, _orderValues, _orderData);
-        address makerAsset = getAssetAddress(_orderData[0]);
-        address takerAsset = getAssetAddress(_orderData[1]);
-
-        // Order parameter checks
-        getTrading().updateAndGetQuantityBeingTraded(makerAsset);
-        ensureNotInOpenMakeOrder(makerAsset);
-
-        approveAssetsMakeOrder(_targetExchange, order);
-
-        IZeroExV3.OrderInfo memory orderInfo = IZeroExV3(_targetExchange).getOrderInfo(order);
-        IZeroExV3(_targetExchange).preSign(orderInfo.orderHash);
-
-        require(
-            IZeroExV3(_targetExchange).isValidOrderSignature(order, _signature),
-            "INVALID_ORDER_SIGNATURE"
-        );
-
-        updateStateMakeOrder(_targetExchange, order);
-    }
-
     /// @notice Takes an active order on the selected exchange
     /// @dev These orders are expected to settle immediately
     /// @param _targetExchange Address of the exchange
@@ -124,6 +79,8 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         require(IZeroExV3(_targetExchange).isValidOrderSignature(order, _signature), "Order _signature is invalid");
 
         uint256 fillTakerQuantity = _orderValues[6];
+        address makerAsset = _orderAddresses[2];
+        address takerAsset = _orderAddresses[3];
 
         approveAssetsTakeOrder(_targetExchange, order);
 
@@ -133,85 +90,13 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             "Filled amount does not match desired fill amount"
         );
 
+        getAccounting().decreaseAssetBalance(takerAsset, takerAssetFilledAmount);
+        getAccounting().increaseAssetBalance(makerAsset, _orderValues[0]);
+
         updateStateTakeOrder(_targetExchange, order, fillTakerQuantity);
     }
 
-    /// @notice Cancel the 0x make order
-    /// @param _targetExchange Address of the exchange
-    /// @param _orderAddresses [2] Order maker asset
-    /// @param _identifier Order _identifier
-    function cancelOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        override
-        orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
-    {
-        IZeroExV3.Order memory order = getTrading().getZeroExV3OrderDetails(_identifier);
-        ensureCancelPermitted(_targetExchange, getAssetAddress(order.makerAssetData));
-
-        if (order.expirationTimeSeconds > block.timestamp) {
-            IZeroExV3(_targetExchange).cancelOrder(order);
-        }
-
-        revokeApproveAssetsCancelOrder(_targetExchange, order);
-
-        updateStateCancelOrder(_targetExchange, order);
-    }
-
-    /// @dev Get order details
-    function getOrder(address _targetExchange, uint256 _id, address _makerAsset)
-        public
-        view
-        override
-        returns (address, address, uint256, uint256)
-    {
-        uint orderId;
-        uint orderIndex;
-        address takerAsset;
-        uint makerQuantity;
-        uint takerQuantity;
-        (orderId, , orderIndex) = Trading(msg.sender).getOpenOrderInfo(_targetExchange, _makerAsset);
-        (, takerAsset, makerQuantity, takerQuantity) = Trading(msg.sender).getOrderDetails(orderIndex);
-        uint takerAssetFilledAmount = IZeroExV3(_targetExchange).filled(bytes32(orderId));
-        uint makerAssetFilledAmount = mul(takerAssetFilledAmount, makerQuantity) / takerQuantity;
-        if (IZeroExV3(_targetExchange).cancelled(bytes32(orderId)) || sub(takerQuantity, takerAssetFilledAmount) == 0) {
-            return (_makerAsset, takerAsset, 0, 0);
-        }
-        return (
-            _makerAsset,
-            takerAsset,
-            sub(makerQuantity, makerAssetFilledAmount),
-            sub(takerQuantity, takerAssetFilledAmount)
-        );
-    }
-
     // INTERNAL METHODS
-
-    /// @notice Approves makerAsset, makerFeeAsset
-    function approveAssetsMakeOrder(address _targetExchange, IZeroExV3.Order memory _order)
-        internal
-    {
-        withdrawAndApproveAsset(
-            getAssetAddress(_order.makerAssetData),
-            getAssetProxy(_targetExchange, _order.makerAssetData),
-            _order.makerAssetAmount,
-            "makerAsset"
-        );
-        if (_order.makerFee > 0) {
-            withdrawAndApproveAsset(
-                getAssetAddress(_order.makerFeeAssetData),
-                getAssetProxy(_targetExchange, _order.makerFeeAssetData),
-                _order.makerFee,
-                "makerFeeAsset"
-            );
-        }
-    }
 
     /// @notice Approves takerAsset, takerFeeAsset, protocolFee
     function approveAssetsTakeOrder(address _targetExchange, IZeroExV3.Order memory _order)
@@ -291,76 +176,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         return fillResults.takerAssetFilledAmount;
     }
 
-    /// @notice Revoke asset approvals and return assets to vault
-    function revokeApproveAssetsCancelOrder(
-        address _targetExchange,
-        IZeroExV3.Order memory _order
-    )
-        internal
-    {
-        address makerAsset = getAssetAddress(_order.makerAssetData);
-        address makerFeeAsset = getAssetAddress(_order.makerFeeAssetData);
-
-        revokeApproveAsset(
-            makerAsset,
-            getAssetProxy(_targetExchange, _order.makerAssetData),
-            _order.makerAssetAmount,
-            "makerAsset"
-        );
-        getTrading().returnAssetToVault(makerAsset);
-
-        if (_order.makerFee > 0) {
-            revokeApproveAsset(
-                makerFeeAsset,
-                getAssetProxy(_targetExchange, _order.makerFeeAssetData),
-                _order.makerFee,
-                "makerFeeAsset"
-            );
-            if (makerFeeAsset != makerAsset) getTrading().returnAssetToVault(makerFeeAsset);
-        }
-    }
-
-    function updateStateCancelOrder(address _targetExchange, IZeroExV3.Order memory _order)
-        internal
-    {
-        address makerAsset = getAssetAddress(_order.makerAssetData);
-
-        getTrading().removeOpenMakeOrder(_targetExchange, makerAsset);
-        getAccounting().updateOwnedAssets();
-        getTrading().orderUpdateHook(
-            _targetExchange,
-            IZeroExV3(_targetExchange).getOrderInfo(_order).orderHash,
-            Trading.UpdateType.cancel,
-            [address(0), address(0)],
-            [uint(0), uint(0), uint(0)]
-        );
-    }
-
-    function updateStateMakeOrder(address _targetExchange, IZeroExV3.Order memory _order)
-        internal
-    {
-        address makerAsset = getAssetAddress(_order.makerAssetData);
-        address takerAsset = getAssetAddress(_order.takerAssetData);
-        IZeroExV3.OrderInfo memory orderInfo = IZeroExV3(_targetExchange).getOrderInfo(_order);
-
-        getAccounting().addAssetToOwnedAssets(takerAsset);
-        getTrading().orderUpdateHook(
-            _targetExchange,
-            orderInfo.orderHash,
-            Trading.UpdateType.make,
-            [payable(makerAsset), payable(takerAsset)],
-            [_order.makerAssetAmount, _order.takerAssetAmount, uint(0)]
-        );
-        getTrading().addOpenMakeOrder(
-            _targetExchange,
-            makerAsset,
-            takerAsset,
-            uint256(orderInfo.orderHash),
-            _order.expirationTimeSeconds
-        );
-        getTrading().addZeroExV3OrderData(orderInfo.orderHash, _order);
-    }
-
     /// @dev Avoids stack too deep error
     function updateStateTakeOrder(
         address _targetExchange,
@@ -372,8 +187,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         address makerAsset = getAssetAddress(_order.makerAssetData);
         address takerAsset = getAssetAddress(_order.takerAssetData);
 
-        getAccounting().addAssetToOwnedAssets(makerAsset);
-        getAccounting().updateOwnedAssets();
         getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             _targetExchange,

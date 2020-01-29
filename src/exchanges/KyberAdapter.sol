@@ -65,8 +65,9 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
             "Received less than expected from Kyber swap"
         );
 
-        getAccounting().addAssetToOwnedAssets(makerAsset);
-        getAccounting().updateOwnedAssets();
+        getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
+        getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
+
         getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,

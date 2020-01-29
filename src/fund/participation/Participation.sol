@@ -248,7 +248,10 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         msg.sender.transfer(Registry(routes.registry).incentive());
 
         Shares(routes.shares).createFor(requestOwner, request.requestedShares);
-        Accounting(routes.accounting).addAssetToOwnedAssets(request.investmentAsset);
+        Accounting(routes.accounting).increaseAssetBalance(
+            request.investmentAsset,
+            totalShareCostInInvestmentAsset
+        );
 
         if (!hasInvested[requestOwner]) {
             hasInvested[requestOwner] = true;
@@ -329,10 +332,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
             if (ofAsset == address(0)) continue;
-            require(
-                accounting.isInAssetList(ofAsset),
-                "Requested asset not in asset list"
-            );
+            uint quantityHeld = accounting.assetHoldings(ofAsset);
+            require(quantityHeld > 0, "Requested asset holdings is 0");
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 require(
                     ofAsset != redeemedAssets[j],
@@ -340,7 +341,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
                 );
             }
             redeemedAssets[i] = ofAsset;
-            uint quantityHeld = accounting.assetHoldings(ofAsset);
             if (quantityHeld == 0) continue;
 
             // participant's ownership percentage of asset holdings
@@ -357,6 +357,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             } else {
                 Vault(routes.vault).withdraw(ofAsset, ownershipQuantities[k]);
                 safeTransfer(ofAsset, msg.sender, ownershipQuantities[k]);
+                Accounting(routes.accounting).decreaseAssetBalance(ofAsset, ownershipQuantities[k]);
             }
         }
         emit Redemption(
