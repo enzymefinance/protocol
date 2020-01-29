@@ -7,9 +7,6 @@ import "../TradingSignatures.sol";
 contract AssetBlacklist is TradingSignatures, AddressList {
     enum Applied { pre, post }
 
-    // bytes4 constant public MAKE_ORDER = 0x79705be7; // makeOrderSignature
-    // bytes4 constant public TAKE_ORDER = 0xe51be6e8; // takeOrderSignature
-
     constructor(address[] memory _assets) AddressList(_assets) public {}
 
     function addToBlacklist(address _asset) external auth {
@@ -19,7 +16,8 @@ contract AssetBlacklist is TradingSignatures, AddressList {
     }
 
     function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {
-        address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
+        if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
+        address incomingToken = addresses[2];
         return !isMember(incomingToken);
     }
 

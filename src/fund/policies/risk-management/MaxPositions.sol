@@ -17,10 +17,11 @@ contract MaxPositions is TradingSignatures {
         external
         returns (bool)
     {
+        if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
         Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
         address denominationAsset = accounting.DENOMINATION_ASSET();
         // Always allow a trade INTO the quote asset
-        address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
+        address incomingToken = addresses[2];
         if (denominationAsset == incomingToken) { return true; }
         return accounting.getOwnedAssetsLength() <= maxPositions;
     }
