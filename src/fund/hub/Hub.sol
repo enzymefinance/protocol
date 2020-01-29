@@ -94,6 +94,16 @@ contract Hub is DSGuard {
         );
         permit(
             routes.participation,
+            routes.accounting,
+            bytes4(keccak256('decreaseAssetBalance(address,uint256)'))
+        );
+        permit(
+            routes.participation,
+            routes.accounting,
+            bytes4(keccak256('increaseAssetBalance(address,uint256)'))
+        );
+        permit(
+            routes.participation,
             routes.shares,
             bytes4(keccak256('createFor(address,uint256)'))
         );
@@ -107,6 +117,16 @@ contract Hub is DSGuard {
             routes.trading,
             routes.accounting,
             bytes4(keccak256('addAssetToOwnedAssets(address)'))
+        );
+        permit(
+            routes.trading,
+            routes.accounting,
+            bytes4(keccak256('decreaseAssetBalance(address,uint256)'))
+        );
+        permit(
+            routes.trading,
+            routes.accounting,
+            bytes4(keccak256('increaseAssetBalance(address,uint256)'))
         );
         permit(
             routes.trading,

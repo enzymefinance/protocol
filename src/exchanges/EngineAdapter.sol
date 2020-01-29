@@ -56,10 +56,12 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
 
         Engine(targetExchange).sellAndBurnMln(mlnQuantity);
         WETH(payable(wethAddress)).deposit.value(ethToReceive)();
+
+        getAccounting().decreaseAssetBalance(mlnAddress, mlnQuantity);
+        getAccounting().increaseAssetBalance(wethAddress, ethToReceive);
+
         safeTransfer(wethAddress, address(Vault(hub.vault())), ethToReceive);
 
-        getAccounting().addAssetToOwnedAssets(wethAddress);
-        getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),

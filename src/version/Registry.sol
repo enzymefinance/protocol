@@ -26,7 +26,6 @@ contract Registry is DSAuth {
     );
 
     event AssetRemoval (address indexed asset);
-    event EfxWrapperRegistryChange(address indexed registry);
     event EngineChange(address indexed engine);
     event ExchangeAdapterRemoval (address indexed exchange);
     event IncentiveChange(uint incentiveAmount);
@@ -87,7 +86,6 @@ contract Registry is DSAuth {
     address public mlnToken;
     address public nativeAsset;
     address public engine;
-    address public ethfinexWrapperRegistry;
     address public MGM;
 
     modifier onlyVersion() {
@@ -257,11 +255,6 @@ contract Registry is DSAuth {
     function setMGM(address _MGM) external auth {
         MGM = _MGM;
         emit MGMChange(_MGM);
-    }
-
-    function setEthfinexWrapperRegistry(address _registry) external auth {
-        ethfinexWrapperRegistry = _registry;
-        emit EfxWrapperRegistryChange(_registry);
     }
 
     /// @notice Updates description information of a registered Asset

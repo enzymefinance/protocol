@@ -101,37 +101,14 @@ contract PriceTolerance is TradingSignatures, DSMath {
         }
     }
 
-    function makeOrder(
-        address[5] memory _addresses,
-        uint256[3] memory _values,
-        bytes32 _identifier
-    ) public view returns (bool) {
-        IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
-
-        uint256 ratio;
-        (ratio,) = IPriceSource(pricefeed).getReferencePriceInfo(_addresses[2], _addresses[3]);
-        uint256 value = IPriceSource(pricefeed).getOrderPriceInfo(_addresses[2], _values[0], _values[1]);
-
-        int res = signedSafeSub(int(ratio), int(value));
-        if (res < 0) {
-            return true;
-        } else {
-            return wdiv(uint256(res), ratio) <= tolerance;
-        }
-    }
-
     function rule(
         bytes4 _sig,
         address[5] calldata _addresses,
         uint256[3] calldata _values,
         bytes32 _identifier
     ) external returns (bool) {
-        if (_sig == MAKE_ORDER) {
-            return makeOrder(_addresses, _values, _identifier);
-        } else if (_sig == TAKE_ORDER) {
-            return takeOrder(_addresses, _values, _identifier);
-        }
-        revert("Signature was neither MakeOrder nor TakeOrder");
+        if (_sig != TAKE_ORDER) revert("Signature was not TakeOrder");
+        return takeOrder(_addresses, _values, _identifier);
     }
 
     function position() external pure returns (Applied) { return Applied.pre; }

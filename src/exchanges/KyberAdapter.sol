@@ -65,15 +65,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
             "Received less than expected from Kyber swap"
         );
 
-        getAccounting().addAssetToOwnedAssets(makerAsset);
-        getAccounting().updateOwnedAssets();
-        uint256 timesMakerAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
-        if (
-            !getTrading().isInOpenMakeOrder(makerAsset) &&
-            timesMakerAssetUsedAsFee == 0
-        ) {
-            getTrading().returnAssetToVault(makerAsset);
-        }
+        getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
+        getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
+
+        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),
