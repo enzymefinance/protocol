@@ -13,6 +13,13 @@ contract Accounting is AmguConsumer, Spoke {
     event AssetAddition(address indexed asset);
     event AssetRemoval(address indexed asset);
 
+    event AssetBalanceUpdated(
+        address indexed asset,
+        address hub,
+        uint256 oldBalance,
+        uint256 newBalance
+    );
+
     struct Calculations {
         uint256 gav;
         uint256 nav;
@@ -30,7 +37,7 @@ contract Accounting is AmguConsumer, Spoke {
     address[] public ownedAssets;
     Calculations public atLastAllocation;
 
-    mapping (address => bool) public isInAssetList;
+    mapping(address => uint256) public assetBalances;
 
     constructor(address _hub, address _denominationAsset, address _nativeAsset)
         public
@@ -42,49 +49,47 @@ contract Accounting is AmguConsumer, Spoke {
         DEFAULT_SHARE_PRICE = 10 ** uint256(DENOMINATION_ASSET_DECIMALS);
     }
 
+    // EXTERNAL FUNCTIONS
+    function calcAssetGAV(address _asset) external returns (uint256) {
+        uint256 quantityHeld = assetBalances[_asset];
+        return IPriceSource(priceSource()).convertQuantity(
+            quantityHeld, _asset, DENOMINATION_ASSET
+        );
+    }
+
+    function getFundHoldings()
+        external
+        view
+        returns (uint256[] memory balances_, address[] memory assets_)
+    {
+        (assets_, balances_) = getAllAssetBalances();
+    }
+
     function getOwnedAssetsLength() external view returns (uint256) {
         return ownedAssets.length;
     }
 
-    function getOwnedAssets() external view returns (address[] memory) {
-        return ownedAssets;
-    }
-
-    function assetHoldings(address _asset) public returns (uint256) {
-        return add(
-            uint256(ERC20WithFields(_asset).balanceOf(routes.vault)),
-            ITrading(routes.trading).updateAndGetQuantityBeingTraded(_asset)
-        );
-    }
-
-    /// @dev Returns sparse array
-    function getFundHoldings() external returns (uint256[] memory, address[] memory) {
-        uint256[] memory _quantities = new uint256[](ownedAssets.length);
-        address[] memory _assets = new address[](ownedAssets.length);
-        for (uint256 i = 0; i < ownedAssets.length; i++) {
-            address ofAsset = ownedAssets[i];
-            // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimal)
-            uint256 quantityHeld = assetHoldings(ofAsset);
-            _assets[i] = ofAsset;
-            _quantities[i] = quantityHeld;
-        }
-        return (_quantities, _assets);
-    }
-
-    function calcAssetGAV(address _queryAsset) external returns (uint256) {
-        uint256 queryAssetQuantityHeld = assetHoldings(_queryAsset);
+    function getShareCostInAsset(uint256 _numShares, address _altAsset)
+        external
+        returns (uint256)
+    {
+        uint256 denominationAssetQuantity = mul(
+            _numShares,
+            calcGavPerShareNetManagementFee()
+        ) / 10 ** uint256(SHARES_DECIMALS);
         return IPriceSource(priceSource()).convertQuantity(
-            queryAssetQuantityHeld, _queryAsset, DENOMINATION_ASSET
+            denominationAssetQuantity, DENOMINATION_ASSET, _altAsset
         );
     }
+
+    // PUBLIC FUNCTIONS
 
     // prices are quoted in DENOMINATION_ASSET so they use denominationDecimals
     function calcGav() public returns (uint256) {
         uint256 gav;
         for (uint256 i = 0; i < ownedAssets.length; ++i) {
             address asset = ownedAssets[i];
-            // assetHoldings formatting: mul(exchangeHoldings, 10 ** assetDecimals)
-            uint256 quantityHeld = assetHoldings(asset);
+            uint256 quantityHeld = assetBalances[asset];
             // Dont bother with the calculations if the balance of the asset is 0
             if (quantityHeld == 0) {
                 continue;
@@ -103,6 +108,13 @@ contract Accounting is AmguConsumer, Spoke {
         return gav;
     }
 
+    function calcGavPerShareNetManagementFee()
+        public
+        returns (uint256 gavPerShareNetManagementFee_)
+    {
+        (,,,,,gavPerShareNetManagementFee_) = performCalculations();
+    }
+
     function calcNav(uint256 _gav, uint256 _unclaimedFeesInDenominationAsset)
         public
         pure
@@ -111,9 +123,67 @@ contract Accounting is AmguConsumer, Spoke {
         return sub(_gav, _unclaimedFeesInDenominationAsset);
     }
 
-    function valuePerShare(uint256 _totalValue, uint256 _numShares) public pure returns (uint256) {
-        require(_numShares > 0, "No shares to calculate value for");
-        return (_totalValue * 10 ** uint256(SHARES_DECIMALS)) / _numShares;
+    function calcSharePrice() external returns (uint256 sharePrice_) {
+        (,,,,sharePrice_,) = performCalculations();
+    }
+
+    function decreaseAssetBalance(address _asset, uint256 _amount) public auth {
+        uint256 oldBalance = assetBalances[_asset];
+        require(
+            oldBalance >= _amount,
+            "decreaseAssetBalance: new balance cannot be less than 0"
+        );
+
+        uint256 newBalance = sub(oldBalance, _amount);
+        if (newBalance == 0) removeFromOwnedAssets(_asset);
+        assetBalances[_asset] = newBalance;
+
+        emit AssetBalanceUpdated(_asset, address(hub), oldBalance, newBalance);
+    }
+
+    function engine() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.engine();
+    }
+
+    function increaseAssetBalance(address _asset, uint256 _amount) public auth {
+        uint256 oldBalance = assetBalances[_asset];
+        if (oldBalance == 0) addAssetToOwnedAssets(_asset);
+        uint256 newBalance = add(oldBalance, _amount);
+        assetBalances[_asset] = newBalance;
+
+        emit AssetBalanceUpdated(_asset, address(hub), oldBalance, newBalance);
+    }
+
+    function getAllAssetBalances()
+        view
+        public
+        returns(address[] memory assets_, uint256[] memory balances_)
+    {
+        assets_ = ownedAssets;
+        balances_ = getAssetBalances(ownedAssets);
+    }
+
+    function getAssetBalances(address[] memory _assets)
+        view
+        public
+        returns(uint256[] memory)
+    {
+        uint256[] memory balances = new uint256[](_assets.length);
+        for (uint256 i = 0; i < _assets.length; i++) {
+            balances[i] = assetBalances[_assets[i]];
+        }
+        assert(balances.length == _assets.length);
+        return balances;
+    }
+
+    // @dev Access assetBalances via assetHoldings, because eventually there could be other
+    // types of balances added in; e.g., balances of collateral in loans or non-atomic settlements
+    function assetHoldings(address _asset) public view returns (uint256) {
+        return assetBalances[_asset];
+    }
+
+    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.mlnToken();
     }
 
     function performCalculations()
@@ -149,24 +219,12 @@ contract Accounting is AmguConsumer, Spoke {
             DEFAULT_SHARE_PRICE;
     }
 
-    function calcGavPerShareNetManagementFee()
-        public
-        returns (uint256 gavPerShareNetManagementFee_)
-    {
-        (,,,,,gavPerShareNetManagementFee_) = performCalculations();
+    function priceSource() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.priceSource();
     }
 
-    function getShareCostInAsset(uint256 _numShares, address _altAsset)
-        external
-        returns (uint256)
-    {
-        uint256 denominationAssetQuantity = mul(
-            _numShares,
-            calcGavPerShareNetManagementFee()
-        ) / 10 ** uint256(SHARES_DECIMALS);
-        return IPriceSource(priceSource()).convertQuantity(
-            denominationAssetQuantity, DENOMINATION_ASSET, _altAsset
-        );
+    function registry() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.registry();
     }
 
     /// @notice Reward all fees and perform some updates
@@ -176,7 +234,6 @@ contract Accounting is AmguConsumer, Spoke {
         amguPayable(false)
         payable
     {
-        updateOwnedAssets();
         uint256 gav;
         uint256 feesInDenomination;
         uint256 feesInShares;
@@ -193,46 +250,22 @@ contract Accounting is AmguConsumer, Spoke {
         });
     }
 
-    /// @dev Check holdings for all assets, and adjust list
-    function updateOwnedAssets() public {
-        for (uint256 i = 0; i < ownedAssets.length; i++) {
-            address asset = ownedAssets[i];
-            if (
-                assetHoldings(asset) == 0 &&
-                !(asset == address(DENOMINATION_ASSET)) &&
-                ITrading(routes.trading).getOpenMakeOrdersAgainstAsset(asset) == 0
-            ) {
-                _removeFromOwnedAssets(asset);
-            }
-        }
+    function valuePerShare(uint256 _totalValue, uint256 _numShares) public pure returns (uint256) {
+        require(_numShares > 0, "No shares to calculate value for");
+        return (_totalValue * 10 ** uint256(SHARES_DECIMALS)) / _numShares;
     }
 
-    function addAssetToOwnedAssets(address _asset) external auth {
-        _addAssetToOwnedAssets(_asset);
-    }
-
-    function removeFromOwnedAssets(address _asset) external auth {
-        _removeFromOwnedAssets(_asset);
-    }
-
-    /// @dev Just pass if asset already in list
-    function _addAssetToOwnedAssets(address _asset) internal {
-        if (isInAssetList[_asset]) { return; }
-
+    // INTERNAL FUNCTIONS
+    function addAssetToOwnedAssets(address _asset) internal {
         require(
             ownedAssets.length < MAX_OWNED_ASSETS,
             "Max owned asset limit reached"
         );
-        isInAssetList[_asset] = true;
         ownedAssets.push(_asset);
         emit AssetAddition(_asset);
     }
 
-    /// @dev Just pass if asset not in list
-    function _removeFromOwnedAssets(address _asset) internal {
-        if (!isInAssetList[_asset]) { return; }
-
-        isInAssetList[_asset] = false;
+    function removeFromOwnedAssets(address _asset) internal {
         for (uint256 i; i < ownedAssets.length; i++) {
             if (ownedAssets[i] == _asset) {
                 ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
@@ -241,19 +274,6 @@ contract Accounting is AmguConsumer, Spoke {
             }
         }
         emit AssetRemoval(_asset);
-    }
-
-    function engine() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.engine();
-    }
-    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.mlnToken();
-    }
-    function priceSource() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.priceSource();
-    }
-    function registry() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.registry();
     }
 }
 

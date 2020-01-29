@@ -51,6 +51,9 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
             "Received less than expected from Uniswap exchange"
         );
 
+        getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
+        getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
+
         updateStateTakeOrder(
             _targetExchange,
             makerAsset,
@@ -220,8 +223,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     )
         internal
     {
-        getAccounting().addAssetToOwnedAssets(_makerAsset);
-        getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(
             _targetExchange,
             bytes32(0),

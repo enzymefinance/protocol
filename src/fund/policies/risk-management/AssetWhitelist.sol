@@ -26,7 +26,8 @@ contract AssetWhitelist is TradingSignatures, AddressList {
     }
 
     function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {
-        address incomingToken = (sig == TAKE_ORDER) ? addresses[2] : addresses[3];
+        if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
+        address incomingToken = addresses[2];
         return isMember(incomingToken);
     }
 

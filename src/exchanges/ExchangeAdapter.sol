@@ -12,7 +12,6 @@ import "../fund/vault/Vault.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Override the public methods to implement an adapter
 contract ExchangeAdapter is DSMath {
-
     modifier onlyManager() {
         require(
             getManager() == msg.sender,
@@ -27,22 +26,6 @@ contract ExchangeAdapter is DSMath {
             "Hub must not be shut down"
         );
         _;
-    }
-
-    /// @dev Either manager sends, fund shut down, or order expired
-    function ensureCancelPermitted(address _exchange, address _asset, bytes32 _id) internal {
-        require(
-            getManager() == msg.sender ||
-            hubShutDown() ||
-            getTrading().isOrderExpired(_exchange, _asset),
-            "No cancellation condition met"
-        );
-        uint256 storedId;
-        (storedId,,,,) = getTrading().exchangesToOpenMakeOrders(_exchange, _asset);
-        require(
-            uint256(_id) == storedId,
-            "Passed identifier does not match that stored in Trading"
-        );
     }
 
     function getTrading() internal view returns (Trading) {
@@ -63,20 +46,6 @@ contract ExchangeAdapter is DSMath {
 
     function getManager() internal view returns (address) {
         return getHub().manager();
-    }
-
-    function ensureNotInOpenMakeOrder(address _asset) internal view {
-        require(
-            !getTrading().isInOpenMakeOrder(_asset),
-            "This asset is already in an open make order"
-        );
-    }
-
-    function ensureCanMakeOrder(address _asset) internal view {
-        require(
-            block.timestamp >= getTrading().makerAssetCooldown(_asset),
-            "Cooldown for the maker asset not reached"
-        );
     }
 
     /// @notice Increment allowance of an asset for some target
@@ -104,23 +73,6 @@ contract ExchangeAdapter is DSMath {
         );
     }
 
-    /// @notice Reduce allowance of an asset for some target
-    function revokeApproveAsset(
-        address _asset,
-        address _target,
-        uint256 _amount,
-        string memory _assetType
-    )
-        internal
-    {
-        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
-        uint256 newAllowance = (_amount > allowance) ? allowance : sub(allowance, _amount);
-        require(
-            IERC20(_asset).approve(_target, newAllowance),
-            string(abi.encodePacked("Revoke approval failed: ", _assetType))
-        );
-    }
-
     /// @param orderAddresses [0] Order maker
     /// @param orderAddresses [1] Order taker
     /// @param orderAddresses [2] Order maker asset
@@ -144,24 +96,6 @@ contract ExchangeAdapter is DSMath {
     /// @param identifier Order identifier
     /// @param signature Signature of order maker
 
-    // Responsibilities of makeOrder are:
-    // - check sender
-    // - check fund not shut down
-    // - check price recent
-    // - check risk management passes
-    // - approve funds to be traded (if necessary)
-    // - make order on the exchange
-    // - check order was made (if possible)
-    // - place asset in ownedAssets if not already tracked
-    function makeOrder(
-        address targetExchange,
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData,
-        bytes32 identifier,
-        bytes memory signature
-    ) public virtual { revert("Unimplemented"); }
-
     // Responsibilities of takeOrder are:
     // - check sender
     // - check fund not shut down
@@ -172,7 +106,6 @@ contract ExchangeAdapter is DSMath {
     // - approve funds to be traded (if necessary)
     // - take order from the exchange
     // - check order was taken (if possible)
-    // - place asset in ownedAssets if not already tracked
     function takeOrder(
         address targetExchange,
         address[8] memory orderAddresses,
@@ -181,38 +114,4 @@ contract ExchangeAdapter is DSMath {
         bytes32 identifier,
         bytes memory signature
     ) public virtual { revert("Unimplemented"); }
-
-    // responsibilities of cancelOrder are:
-    // - check sender is owner, or that order expired, or that fund shut down
-    // - remove order from tracking array
-    // - cancel order on exchange
-    function cancelOrder(
-        address targetExchange,
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData,
-        bytes32 identifier,
-        bytes memory signature
-    ) public virtual { revert("Unimplemented"); }
-
-    // PUBLIC METHODS
-    // PUBLIC VIEW METHODS
-    /*
-    @return {
-        "makerAsset": "Maker asset",
-        "takerAsset": "Taker asset",
-        "makerQuantity": "Amount of maker asset"
-        "takerQuantity": "Amount of taker asset"
-    }
-    */
-    function getOrder(
-        address onExchange,
-        uint id,
-        address makerAsset
-    ) public view virtual returns (
-        address,
-        address,
-        uint,
-        uint
-    ) { revert("Unimplemented"); }
 }
