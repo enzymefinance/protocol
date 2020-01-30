@@ -1,4 +1,4 @@
-import { toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
@@ -38,7 +38,7 @@ beforeAll(async () => {
   });
 });
 
-test('(contract) has proper values after initialization', async () => {
+it('(contract) has correct values after initialization', async () => {
   const { accounting } = fund;
 
   await expect(
@@ -53,100 +53,47 @@ test('(contract) has proper values after initialization', async () => {
   await expect(
     call(accounting, 'calcSharePrice')
   ).resolves.toBe(exaUnit);
-
-  const initialCalculations = await call(accounting, 'performCalculations');
-
-  expect(initialCalculations.gav).toBe('0');
-  expect(initialCalculations.feesInDenominationAsset).toBe('0');
-  expect(initialCalculations.feesInShares).toBe('0');
-  expect(initialCalculations.nav).toBe('0');
-  expect(initialCalculations.sharePrice).toBe(exaUnit);
 });
 
-describe('updateOwnedAssets', () => {
-  test('removes zero balance asset', async () => {
-    const { accounting, participation } = fund;
+describe('performCalculations', () => {
+  it('correctly calculates values after initialization', async () => {
+    const { accounting } = fund;
 
-    const mlnInvestAmt = '10000000';
-    const wantedShares = mlnInvestAmt;
-    const amguAmount = toWei('0.01', 'ether');
+    const fundCalcs = await call(accounting, 'performCalculations');
 
-    await send(
-      mln,
-      'approve',
-      [participation.options.address, mlnInvestAmt],
-      defaultTxOpts
-    );
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, mlnInvestAmt, mln.options.address],
-      { ...defaultTxOpts, value: amguAmount }
-    );
-
-    await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
-
-    const fundHoldingsPreUpdate = await call(accounting, 'getFundHoldings');
-
-    expect(fundHoldingsPreUpdate[0].length).toEqual(1);
-    expect(fundHoldingsPreUpdate[1].length).toEqual(1);
-
-    await send(participation, 'redeem', [], defaultTxOpts);
-
-    await send(accounting, 'updateOwnedAssets', [], defaultTxOpts);
-
-    const fundHoldingsPostUpdate = await call(accounting, 'getFundHoldings');
-
-    expect(fundHoldingsPostUpdate[0].length).toEqual(0);
-    expect(fundHoldingsPostUpdate[1].length).toEqual(0);
+    expect(fundCalcs.gav_).toBe('0');
+    expect(fundCalcs.feesInDenominationAsset_).toBe('0');
+    expect(fundCalcs.feesInShares_).toBe('0');
+    expect(fundCalcs.nav_).toBe('0');
+    expect(fundCalcs.sharePrice_).toBe(exaUnit);
   });
 
-  test('updateOwnedAssets does not remove denomination asset at zero balance', async () => {
+  it('correctly calculates values after investment', async() => {
     const { accounting, participation } = fund;
 
-    const wethInvestAmt = '10000000';
-    const wantedShares = wethInvestAmt;
-    const amguAmount = toWei('0.01', 'ether');
+    const investmentAmount = toWei('1', 'ether');
+    const wantedShares = toWei('1', 'ether');
+    const amguAmount = toWei('.01', 'ether');
 
     await send(
       weth,
       'approve',
-      [participation.options.address, wethInvestAmt],
+      [participation.options.address, investmentAmount],
       defaultTxOpts
     );
     await send(
       participation,
       'requestInvestment',
-      [wantedShares, wethInvestAmt, weth.options.address],
+      [wantedShares, investmentAmount, weth.options.address],
       { ...defaultTxOpts, value: amguAmount }
     );
-
-    await delay(1000); // Need price update before participation executed
-    await send(
-      testingPriceFeed,
-      'update',
-      [[weth.options.address, mln.options.address], [exaUnit, exaUnit]],
-      defaultTxOpts
-    );
-
     await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
 
-    const fundHoldingsPreUpdate = await call(accounting, 'getFundHoldings');
-
-    expect(fundHoldingsPreUpdate[0].length).toEqual(1);
-    expect(fundHoldingsPreUpdate[1].length).toEqual(1);
-
-    await send(participation, 'redeem', [], defaultTxOpts);
-
-    await send(accounting, 'updateOwnedAssets', [], defaultTxOpts);
-
-    const fundHoldingsPostUpdate = await call(accounting, 'getFundHoldings');
-
-    expect(fundHoldingsPostUpdate[0].length).toEqual(1);
-    expect(fundHoldingsPostUpdate[1].length).toEqual(1);
-
-    await expect(
-      call(accounting, 'isInAssetList', [weth.options.address])
-    ).resolves.toBe(true);
+    const fundCalcs = await call(accounting, 'performCalculations');
+    expect(new BN(fundCalcs.gav_)).bigNumberEq(new BN(investmentAmount));
+    expect(fundCalcs.feesInDenominationAsset_).toBe('0');
+    expect(fundCalcs.feesInShares_).toBe('0');
+    expect(fundCalcs.nav_).toBe(fundCalcs.gav_);
+    expect(fundCalcs.sharePrice_).toBe(exaUnit);
   });
 });

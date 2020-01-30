@@ -22,7 +22,6 @@ const deployMockSystem = async (
     registryContract = CONTRACT_NAMES.MOCK_REGISTRY,
     sharesContract = CONTRACT_NAMES.MOCK_SHARES,
     tradingContract = CONTRACT_NAMES.TRADING,
-    vaultContract = CONTRACT_NAMES.VAULT,
     versionContract = CONTRACT_NAMES.MOCK_VERSION
   } = {},
 ) => {
@@ -141,11 +140,6 @@ const deployMockSystem = async (
     ]
   );
 
-  const vault = await deploy(
-    vaultContract,
-    [hub.options.address]
-  );
-
   // TODO: replace with raw function when MockEngine is available
   const thawTime = 30 * 24 * 60 * 60;
   const engine = await deploy(
@@ -168,7 +162,6 @@ const deployMockSystem = async (
       policyManager.options.address,
       shares.options.address,
       trading.options.address,
-      vault.options.address,
       registry.options.address,
       version.options.address,
       engine.options.address,
@@ -181,7 +174,6 @@ const deployMockSystem = async (
     participation,
     shares,
     trading,
-    vault,
     feeManager,
   ];
   for (const contract of toInit) {
@@ -205,7 +197,6 @@ const deployMockSystem = async (
     registry,
     shares,
     trading,
-    vault,
     version,
     weth,
   };

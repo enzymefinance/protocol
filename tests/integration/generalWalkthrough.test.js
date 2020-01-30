@@ -3,7 +3,6 @@
  *
  * @test A user can only invest in a fund if they are whitelisted and have set a token allowance for the fund
  * @test A fund can take an order (on OasisDex)
- * @test A fund can make an order (on OasisDex)
  * @test A user cannot invest in a fund that has been shutdown
  * @test TODO: Calculate fees?
  * @test TODO: Redeem shares?
@@ -25,7 +24,7 @@ let contracts;
 let exchangeIndex;
 let offeredValue, wantedShares, amguAmount;
 let mln, weth, version, oasisDex, oasisDexAdapter, priceSource;
-let makeOrderFunctionSig, takeOrderFunctionSig;
+let takeOrderFunctionSig;
 let priceTolerance, userWhitelist;
 let managementFee, performanceFee;
 let fund;
@@ -93,22 +92,12 @@ beforeAll(async () => {
   await send(version, 'createPolicyManager', [], managerTxOpts);
   await send(version, 'createShares', [], managerTxOpts);
   await send(version, 'createTrading', [], managerTxOpts);
-  await send(version, 'createVault', [], managerTxOpts);
   const res = await send(version, 'completeSetup', [], managerTxOpts);
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
 
   fund = await getFundComponents(hubAddress);
 
   exchangeIndex = 0;
-
-  makeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
-    'makeOrder',
-  );
-  await send(fund.policyManager, 'register', [
-    encodeFunctionSignature(makeOrderFunctionSig),
-    priceTolerance.options.address,
-  ], managerTxOpts);
 
   takeOrderFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
@@ -185,8 +174,8 @@ test('Fund can take an order on Oasis DEX', async () => {
   const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
   const orderId = logMake.id;
 
-  const preMlnFundHoldings = await call(accounting, 'assetHoldings', [mln.options.address]);
-  const preWethFundHoldings = await call(accounting, 'assetHoldings', [weth.options.address]);
+  const preMlnFundHoldings = await call(accounting, 'getFundAssetHoldings', [mln.options.address]);
+  const preWethFundHoldings = await call(accounting, 'getFundAssetHoldings', [weth.options.address]);
 
   await send(
     trading,
@@ -212,8 +201,8 @@ test('Fund can take an order on Oasis DEX', async () => {
     managerTxOpts
   );
 
-  const postMlnFundHoldings = await call(accounting, 'assetHoldings', [mln.options.address]);
-  const postWethFundHoldings = await call(accounting, 'assetHoldings', [weth.options.address]);
+  const postMlnFundHoldings = await call(accounting, 'getFundAssetHoldings', [mln.options.address]);
+  const postWethFundHoldings = await call(accounting, 'getFundAssetHoldings', [weth.options.address]);
 
   expect(
     new BN(postMlnFundHoldings.toString()).eq(
@@ -224,62 +213,6 @@ test('Fund can take an order on Oasis DEX', async () => {
     new BN(postWethFundHoldings.toString()).eq(
       new BN(preWethFundHoldings.toString()).sub(new BN(takerQuantity.toString())),
     ),
-  ).toBe(true);
-});
-
-test('Fund can make an order on Oasis DEX', async () => {
-  const { accounting, trading } = fund;
-
-  const makerQuantity = toWei('0.2', 'ether');
-  const makerAsset = weth.options.address;
-  const takerQuantity = toWei('4', 'ether');
-  const takerAsset = mln.options.address;
-
-  const preMlnFundHoldings = await call(accounting, 'assetHoldings', [mln.options.address]);
-  const preWethFundHoldings = await call(accounting, 'assetHoldings', [weth.options.address]);
-  const res = await send(
-    trading,
-    'callOnExchange',
-    [
-      exchangeIndex,
-      makeOrderFunctionSig,
-      [
-        fund.trading.options.address,
-        EMPTY_ADDRESS,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
-      '0x0',
-      '0x0',
-    ],
-    managerTxOpts
-  );
-
-  // Third party takes order
-  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-  const orderId = hexToNumber(logMake.id);
-
-  await send(mln, 'approve', [oasisDex.options.address, takerQuantity], defaultTxOpts);
-  await send(oasisDex, 'buy', [orderId, makerQuantity], defaultTxOpts);
-
-  const postMlnFundHoldings = await call(accounting, 'assetHoldings', [mln.options.address]);
-  const postWethFundHoldings = await call(accounting, 'assetHoldings', [weth.options.address]);
-
-  expect(
-    new BN(postMlnFundHoldings.toString()).eq(
-      new BN(preMlnFundHoldings.toString()).add(new BN(takerQuantity.toString()))
-    )
-  ).toBe(true);
-  expect(
-    new BN(postWethFundHoldings.toString()).eq(
-      new BN(preWethFundHoldings.toString()).sub(new BN(makerQuantity.toString()))
-    )
   ).toBe(true);
 });
 

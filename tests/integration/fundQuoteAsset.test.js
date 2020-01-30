@@ -4,27 +4,23 @@
  * @test A fund receives an investment that is not its quote token
  * @test An investor redeems shares made up of only the quote token
  * @test A fund receives an investment that does not have a direct pair in the pricefeed
- * @test A fund places a make order with a quote token that is not 18 decimals
+ * @test TODO: A fund places a take order with a quote token that is not 18 decimals
  */
 
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
-import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let fundDenominationAsset;
-let trade1;
 let contracts, deployOut;
 let knc, mln, weth, oasisDexExchange, version, priceSource;
 let fund;
-let exchangeIndex;
-let makeOrderSignature;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -41,11 +37,6 @@ beforeAll(async () => {
   mln = contracts.MLN;
   weth = contracts.WETH;
   priceSource = contracts.TestingPriceFeed;
-
-  makeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
-    'makeOrder',
-  );
 
   const oasisDexAdapter = contracts.OasisDexAdapter;
   oasisDexExchange = contracts.OasisDexExchange;
@@ -72,7 +63,6 @@ beforeAll(async () => {
     quoteToken: knc.options.address,
     version
   });
-  exchangeIndex = 0;
 
   // Seed investor with MLN and WETH
   await send(mln, 'transfer', [investor, toWei('1', 'ether')], defaultTxOpts);
@@ -85,7 +75,7 @@ test('Quote asset is KNC', async () => {
 });
 
 test('Fund gets non-quote asset from investment', async () => {
-  const { accounting, participation, shares, vault } = fund;
+  const { accounting, participation, shares, trading } = fund;
 
   const offeredValue = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
@@ -121,9 +111,12 @@ test('Fund gets non-quote asset from investment', async () => {
     defaultTxOpts
   );
 
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
 
   await send(weth, 'approve', [participation.options.address, wantedShares], investorTxOpts);
 
@@ -141,9 +134,12 @@ test('Fund gets non-quote asset from investment', async () => {
     investorTxOpts
   );
 
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const postFundGav = new BN(await call(accounting, 'calcGav'));
 
   const wethPriceInKnc = (await call(
@@ -152,38 +148,54 @@ test('Fund gets non-quote asset from investment', async () => {
     [weth.options.address, fundDenominationAsset]
   ))[0];
 
+  const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
+  
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(new BN(wantedShares)));
   expect(postWethInvestor).bigNumberEq(preWethInvestor.sub(expectedCostOfShares));
-  expect(postWethVault).bigNumberEq(preWethVault.add(expectedCostOfShares));
+  expect(fundHoldingsWethDiff).bigNumberEq(expectedCostOfShares);
   expect(postFundGav).bigNumberEq(
-    preWethVault.add(BNExpMul(expectedCostOfShares, new BN(wethPriceInKnc)))
+    preFundHoldingsWeth.add(BNExpMul(expectedCostOfShares, new BN(wethPriceInKnc)))
   );
 });
 
 test('investor redeems his shares', async () => {
-  const { accounting, participation, shares, vault } = fund;
+  const { accounting, participation, shares, trading } = fund;
 
   const investorShares =  new BN(await call(shares, 'balanceOf', [investor]));
 
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
   await send(participation, 'redeem', [], investorTxOpts);
 
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(accounting, 'calcGav'));
 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(postFundHoldingsWeth.sub(preFundHoldingsWeth)).bigNumberEq(
+    postFundBalanceOfWeth.sub(preFundBalanceOfWeth)
+  );
+
   expect(postTotalSupply).bigNumberEq(preTotalSupply.sub(investorShares));
-  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preWethVault));
-  expect(postWethVault).bigNumberEq(new BN(0));
+  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preFundHoldingsWeth));
+  expect(postFundHoldingsWeth).bigNumberEq(new BN(0));
   expect(postFundGav).bigNumberEq(new BN(0));
 });
 
 test('Fund gets asset from investment that has no pair with the quote asset in the pricefeed', async () => {
-  const { accounting, participation, shares, vault } = fund;
+  const { accounting, participation, shares, trading } = fund;
 
   const offeredValue = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
@@ -206,7 +218,10 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
   );
   expect(expectedCostOfShares).bigNumberEq(actualCostOfShares);
 
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundGav = new BN(await call(accounting, 'calcGav'));
@@ -225,7 +240,10 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
     investorTxOpts
   );
 
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(accounting, 'calcGav'));
@@ -238,116 +256,15 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
     ))[0]
   );
 
+  const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(new BN(wantedShares)));
   expect(postMlnInvestor).bigNumberEq(preMlnInvestor.sub(expectedCostOfShares));
-  expect(postMlnVault).bigNumberEq(preMlnVault.add(expectedCostOfShares));
+  expect(fundHoldingsMlnDiff).bigNumberEq(expectedCostOfShares);
   expect(postFundGav).bigNumberEq(
     preFundGav.add(BNExpMul(expectedCostOfShares, mlnPriceInKnc))
   );
-});
-
-test('Fund places a make order with a non-18 decimal quote token', async () => {
-  const { accounting, trading, vault } = fund;
-
-  trade1 = {
-    makerAsset: knc.options.address,
-    takerAsset: mln.options.address,
-    sellQuantity: toWei('0.1', 'gwei'),
-  };
-
-  await send(knc, 'transfer', [vault.options.address, trade1.sellQuantity], defaultTxOpts);
-
-  const kncPriceInMln = new BN(
-    (await call(
-      priceSource,
-      'getReferencePriceInfo',
-      [fundDenominationAsset, mln.options.address]
-    ))[0]
-  );
-  trade1.buyQuantity = BNExpMul(
-    new BN(trade1.sellQuantity),
-    kncPriceInMln,
-    9,
-  ).toString();
-
-  const preKncExchange = new BN(
-    await call(knc, 'balanceOf', [oasisDexExchange.options.address])
-  );
-  const preKncVault = new BN(await call(knc, 'balanceOf', [vault.options.address]));
-  const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
-  const preMlnExchange = new BN(await call(mln, 'balanceOf', [oasisDexExchange.options.address]));
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preFundCalcs = await call(accounting, 'performCalculations');
-
-  await send(
-    trading,
-    'callOnExchange',
-    [
-      exchangeIndex,
-      makeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        trade1.makerAsset,
-        trade1.takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [trade1.sellQuantity, trade1.buyQuantity, 0, 0, 0, 0, 0, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
-      '0x0',
-      '0x0',
-    ],
-    managerTxOpts
-  );
-
-  const postKncExchange = new BN(
-    await call(knc, 'balanceOf', [oasisDexExchange.options.address])
-  );
-  const postKncVault = new BN(await call(knc, 'balanceOf', [vault.options.address]));
-  const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
-  const postMlnExchange = new BN(await call(mln, 'balanceOf', [oasisDexExchange.options.address]));
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postFundCalcs = await call(accounting, 'performCalculations');
-
-  expect(preMlnExchange).bigNumberEq(postMlnExchange);
-  expect(postMlnVault).bigNumberEq(preMlnVault);
-  expect(postKncExchange).bigNumberEq(preKncExchange.add(new BN(trade1.sellQuantity)));
-  expect(postKncVault).bigNumberEq(preKncVault.sub(new BN(trade1.sellQuantity)));
-  expect(postFundCalcs.gav).toEqual(preFundCalcs.gav);
-  expect(postFundCalcs.sharePrice).toEqual(preFundCalcs.sharePrice);
-  expect(postMlnDeployer).bigNumberEq(preMlnDeployer);
-});
-
-test('Third party takes entire order', async () => {
-  const { trading, vault } = fund;
-
-  const orderId = await call(oasisDexExchange, 'last_offer_id');
-
-  const preKncDeployer = new BN(await call(knc, 'balanceOf', [deployer]));
-  const preKncExchange = new BN(await call(knc, 'balanceOf', [oasisDexExchange.options.address]));
-  const preKncVault = new BN(await call(knc, 'balanceOf', [vault.options.address]));
-  const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
-  const preMlnExchange = new BN(await call(mln, 'balanceOf', [oasisDexExchange.options.address]));
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-
-  await send(mln, 'approve', [oasisDexExchange.options.address, trade1.buyQuantity], defaultTxOpts);
-  await send(oasisDexExchange, 'buy', [orderId, trade1.sellQuantity], defaultTxOpts);
-  await send(trading, 'returnBatchToVault', [[mln.options.address, weth.options.address]], managerTxOpts);
-
-  const postKncDeployer = new BN(await call(knc, 'balanceOf', [deployer]));
-  const postKncExchange = new BN(await call(knc, 'balanceOf', [oasisDexExchange.options.address]));
-  const postKncVault = new BN(await call(knc, 'balanceOf', [vault.options.address]));
-  const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
-  const postMlnExchange = new BN(await call(mln, 'balanceOf', [oasisDexExchange.options.address]));
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-
-  expect(preMlnExchange).bigNumberEq(postMlnExchange);
-  expect(postKncExchange).bigNumberEq(preKncExchange.sub(new BN(trade1.sellQuantity)));
-  expect(postKncVault).bigNumberEq(preKncVault);
-  expect(postMlnVault).bigNumberEq(preMlnVault.add(new BN(trade1.buyQuantity)));
-  expect(postKncDeployer).bigNumberEq(preKncDeployer.add(new BN(trade1.sellQuantity)));
-  expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(trade1.buyQuantity)));
 });

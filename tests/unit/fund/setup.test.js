@@ -47,7 +47,6 @@ test('continue setup of a fund', async () => {
   await send(version, 'createPolicyManagerFor', [manager], userTxOptsWithAmgu);
   await send(version, 'createSharesFor', [manager], userTxOptsWithAmgu);
   await send(version, 'createTradingFor', [manager], userTxOptsWithAmgu);
-  await send(version, 'createVaultFor', [manager], userTxOptsWithAmgu);
   const res = await send(version, 'completeSetupFor', [manager], userTxOptsWithAmgu);
   expect(res).toBeTruthy();
 });

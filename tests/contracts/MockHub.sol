@@ -14,7 +14,6 @@ contract MockHub is DSGuard {
         address policyManager;
         address shares;
         address trading;
-        address vault;
         address registry;
         address version;
         address engine;
@@ -33,26 +32,31 @@ contract MockHub is DSGuard {
 
     function setShutDownState(bool _state) public { isShutDown = _state; }
 
-    function setSpokes(address[11] memory _spokes) public {
+    function setSpokes(address[10] memory _spokes) public {
         routes.accounting = _spokes[0];
         routes.feeManager = _spokes[1];
         routes.participation = _spokes[2];
         routes.policyManager = _spokes[3];
         routes.shares = _spokes[4];
         routes.trading = _spokes[5];
-        routes.vault = _spokes[6];
-        routes.registry = _spokes[7];
-        routes.version = _spokes[8];
-        routes.engine = _spokes[9];
-        routes.mlnAddress = _spokes[10];
+        routes.registry = _spokes[6];
+        routes.version = _spokes[7];
+        routes.engine = _spokes[8];
+        routes.mlnAddress = _spokes[9];
     }
 
     function setRouting() public {
-        address[11] memory spokes = [
-            routes.accounting, routes.feeManager, routes.participation,
-            routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.registry, routes.version,
-            routes.engine, routes.mlnAddress
+        address[10] memory spokes = [
+            routes.accounting,
+            routes.feeManager,
+            routes.participation,
+            routes.policyManager,
+            routes.shares,
+            routes.trading,
+            routes.registry,
+            routes.version,
+            routes.engine,
+            routes.mlnAddress
         ];
         Spoke(routes.accounting).initialize(spokes);
         Spoke(routes.feeManager).initialize(spokes);
@@ -60,12 +64,10 @@ contract MockHub is DSGuard {
         Spoke(routes.policyManager).initialize(spokes);
         Spoke(routes.shares).initialize(spokes);
         Spoke(routes.trading).initialize(spokes);
-        Spoke(routes.vault).initialize(spokes);
     }
 
     function setPermissions() public {
-        permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
-        permit(routes.trading, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(routes.participation, routes.trading, bytes4(keccak256('withdraw(address,uint256)')));
         permit(routes.participation, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(routes.participation, routes.shares, bytes4(keccak256('destroyFor(address,uint256)')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
@@ -92,16 +94,21 @@ contract MockHub is DSGuard {
     }
 
     function initializeSpoke(address _spoke) public {
-        address[11] memory spokes = [
-            routes.accounting, routes.feeManager, routes.participation,
-            routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.registry, routes.version,
-            routes.engine, routes.mlnAddress
+        address[10] memory spokes = [
+            routes.accounting,
+            routes.feeManager,
+            routes.participation,
+            routes.policyManager,
+            routes.shares,
+            routes.trading,
+            routes.registry,
+            routes.version,
+            routes.engine,
+            routes.mlnAddress
         ];
         Spoke(_spoke).initialize(spokes);
     }
 
-    function vault() public view returns (address) { return routes.vault; }
     function accounting() public view returns (address) { return routes.accounting; }
     function priceSource() public view returns (address) { return Registry(routes.registry).priceSource(); }
     function participation() public view returns (address) { return routes.participation; }
