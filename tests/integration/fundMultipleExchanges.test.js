@@ -3,7 +3,7 @@
  *
  * @test A fund can add an exchange adapter after it is created
  * @test A fund can take an order with the newly-added exchange
- * @test TODO: multiple tests for make and take orders on multiple exchanges
+ * @test TODO: multiple tests for take orders on multiple exchanges
  */
 
 import { BN, toWei } from 'web3-utils';
@@ -82,7 +82,7 @@ test("add Kyber to fund's allowed exchanges", async () => {
 });
 
 test('fund takes an order on Kyber', async () => {
-  const { trading, vault } = fund;
+  const { accounting, trading } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -100,8 +100,14 @@ test('fund takes an order on Kyber', async () => {
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
 
   await send(
     trading,
@@ -127,9 +133,23 @@ test('fund takes an order on Kyber', async () => {
     managerTxOpts
   );
 
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
 
-  expect(postWethVault).bigNumberEq(preWethVault.sub(new BN(takerQuantity)));
-  expect(postMlnVault).bigNumberEq(preMlnVault.add(new BN(makerQuantity)));
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+  const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerQuantity));
 });

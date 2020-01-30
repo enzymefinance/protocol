@@ -1,10 +1,8 @@
 /*
  * @file Tests fund accounting calculations in a real fund
- * @dev This is largely a placeholder for when we start to do accounting internally,
- * rather than relying on what is in the vault
  *
  * @test initial investment (with quote token)
- * @test send quote token directly to a vault
+ * @test sending quote token directly to Trading does not affect fund calcs
  */
 
 import { BN, toWei } from 'web3-utils';
@@ -61,43 +59,33 @@ test('initial investment (with quote token)', async () => {
   );
   await send(participation, 'executeRequestFor', [investor], investorTxOpts);
 
-  const fundWethHoldings = await call(accounting, 'assetHoldings', [weth.options.address])
+  const fundWethHoldings = await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   const fundCalculations = await call(accounting, 'performCalculations');
 
   expect(fundWethHoldings).toBe(offeredValue);
-  expect(fundCalculations.gav).toBe(offeredValue);
-  expect(fundCalculations.feesInDenominationAsset).toBe('0');
-  expect(fundCalculations.feesInShares).toBe('0');
-  expect(fundCalculations.nav).toBe(offeredValue);
-  expect(fundCalculations.sharePrice).toBe(offeredValue);
+  expect(fundCalculations.gav_).toBe(offeredValue);
+  expect(fundCalculations.feesInDenominationAsset_).toBe('0');
+  expect(fundCalculations.feesInShares_).toBe('0');
+  expect(fundCalculations.nav_).toBe(offeredValue);
+  expect(fundCalculations.sharePrice_).toBe(offeredValue);
 });
 
-test('send quote token directly to a vault', async () => {
-  const { accounting, vault } = fund;
+test('sending quote token directly to Trading does NOT affect fund calculations', async () => {
+  const { accounting, trading } = fund;
   const tokenQuantity = toWei('1', 'ether');
 
   const preFundCalculations = await call(accounting, 'performCalculations');
   const preFundWethHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
 
-  await send(weth, 'transfer', [vault.options.address, tokenQuantity], defaultTxOpts);
+  await send(weth, 'transfer', [trading.options.address, tokenQuantity], defaultTxOpts);
 
   const postFundCalculations = await call(accounting, 'performCalculations');
   const postFundWethHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-
-  expect(postFundWethHoldings).bigNumberEq(preFundWethHoldings.add(new BN(tokenQuantity)));
-  expect(new BN(postFundCalculations.gav)).bigNumberEq(
-    new BN(preFundCalculations.gav).add(new BN(tokenQuantity))
-  );
-  expect(postFundCalculations.feesInDenominationAsset).toBe('0');
-  expect(postFundCalculations.feesInShares).toBe('0');
-  expect(new BN(postFundCalculations.nav)).bigNumberEq(
-    new BN(preFundCalculations.gav).add(new BN(tokenQuantity))
-  );
-  expect(new BN(postFundCalculations.sharePrice)).bigNumberEq(
-    new BN(preFundCalculations.sharePrice).add(new BN(tokenQuantity))
-  );
+  
+  expect(postFundWethHoldings).bigNumberEq(preFundWethHoldings);
+  expect(postFundCalculations).toEqual(preFundCalculations);
 });
