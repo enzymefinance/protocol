@@ -65,7 +65,7 @@ beforeAll(async () => {
 });
 
 test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => {
-  const { trading, vault } = fund;
+  const { accounting, trading } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -82,8 +82,14 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
 
   await send(
     trading,
@@ -109,15 +115,29 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     managerTxOpts
   );
 
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
 
-  expect(postWethVault).bigNumberEq(preWethVault.sub(new BN(takerQuantity)));
-  expect(postMlnVault).bigNumberEq(preMlnVault.add(new BN(makerQuantity)));
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+  const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerQuantity));
 });
 
 test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => {
-  const { trading, vault } = fund;
+  const { accounting, trading } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -134,8 +154,14 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
 
   await send(
     trading,
@@ -161,15 +187,29 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     managerTxOpts
   );
 
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
 
-  expect(postMlnVault).bigNumberEq(preMlnVault.sub(new BN(takerQuantity)));
-  expect(postWethVault).bigNumberEq(preWethVault.add(new BN(makerQuantity)));
+  const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
+  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
 });
 
 test('swap MLN directly to EUR without intermediary', async () => {
-  const { trading, vault } = fund;
+  const { accounting, trading } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -186,9 +226,18 @@ test('swap MLN directly to EUR without intermediary', async () => {
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preEurVault = new BN(await call(eur, 'balanceOf', [vault.options.address]));
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
+  const preFundHoldingsEur = new BN(
+    await call(accounting, 'getFundAssetHoldings', [eur.options.address])
+  );
 
   await send(
     trading,
@@ -214,20 +263,39 @@ test('swap MLN directly to EUR without intermediary', async () => {
     managerTxOpts
   );
 
-  const postEurVault = new BN(await call(eur, 'balanceOf', [vault.options.address]));
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
+  const postFundHoldingsEur = new BN(
+    await call(accounting, 'getFundAssetHoldings', [eur.options.address])
+  );
 
-  expect(postWethVault).bigNumberEq(preWethVault);
-  expect(postMlnVault).bigNumberEq(preMlnVault.sub(new BN(takerQuantity)));
-  expect(postEurVault).bigNumberEq(preEurVault.add(new BN(makerQuantity)));
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
+  const fundHoldingsEurDiff = postFundHoldingsEur.sub(preFundHoldingsEur);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
+  expect(fundHoldingsEurDiff).bigNumberEq(postFundBalanceOfEur.sub(preFundBalanceOfEur));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsEurDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(0));
 });
 
 test('swap fails if make quantity is too high', async () => {
   const { trading } = fund;
 
   const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.1', 'ether');
+  const takerQuantity = toWei('0.01', 'ether');
   const makerAsset = eur.options.address;
 
   const { 0: expectedRate } = await call(
@@ -265,5 +333,5 @@ test('swap fails if make quantity is too high', async () => {
       ],
       managerTxOpts
     )
-  ).rejects.toThrowFlexible();
+  ).rejects.toThrowFlexible("received less buy asset than expected");
 });

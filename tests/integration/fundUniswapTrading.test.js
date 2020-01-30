@@ -119,7 +119,7 @@ beforeAll(async () => {
 });
 
 test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
-  const { accounting, trading, vault } = fund;
+  const { accounting, trading } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -131,13 +131,14 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     [takerQuantity]
   );
 
-  const preMlnFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [mln.options.address])
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-  const preWethFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
   );
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
   await send(
     trading,
@@ -163,25 +164,29 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     managerTxOpts
   );
 
-  const postMlnFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [mln.options.address])
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-  const postWethFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
   );
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  expect(postWethFundHoldings).bigNumberEq(
-    preWethFundHoldings.sub(new BN(takerQuantity))
-  );
-  expect(postMlnFundHoldings).bigNumberEq(
-    preMlnFundHoldings.add(new BN(makerQuantity))
-  );
-  expect(postMlnVault).bigNumberEq(preMlnVault.add(new BN(makerQuantity)));
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+  const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerQuantity));
 });
 
 test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
-  const { accounting, trading, vault } = fund;
+  const { accounting, trading } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -193,13 +198,14 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     [takerQuantity]
   );
 
-  const preMlnFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [mln.options.address])
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-  const preWethFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
   );
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
 
   await send(
     trading,
@@ -225,21 +231,25 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     managerTxOpts
   );
 
-  const postMlnFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [mln.options.address])
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-  const postWethFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
   );
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
 
-  expect(postWethFundHoldings).bigNumberEq(
-    preWethFundHoldings.add(new BN(makerQuantity))
-  );
-  expect(postMlnFundHoldings).bigNumberEq(
-    preMlnFundHoldings.sub(new BN(takerQuantity))
-  );
-  expect(postWethVault).bigNumberEq(preWethVault.add(new BN(makerQuantity)));
+  const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
+  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
 });
 
 test('Swap MLN directly to EUR without specifying a minimum maker quantity', async () => {
@@ -261,16 +271,18 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     [intermediateEth]
   );
 
-  const preEurFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [eur.options.address])
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-  const preMlnFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [mln.options.address])
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
   );
-  const preWethFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+  const preFundHoldingsEur = new BN(
+    await call(accounting, 'getFundAssetHoldings', [eur.options.address])
   );
-  const preEurVault = new BN(await call(eur, 'balanceOf', [vault.options.address]));
 
   await send(
     trading,
@@ -296,32 +308,39 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     managerTxOpts
   );
 
-  const postEurFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [eur.options.address])
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
   );
-  const postMlnFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [mln.options.address])
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
   );
-  const postWethFundHoldings = new BN(
-    await call(accounting, 'assetHoldings', [weth.options.address])
+  const postFundHoldingsEur = new BN(
+    await call(accounting, 'getFundAssetHoldings', [eur.options.address])
   );
-  const postEurVault = new BN(await call(eur, 'balanceOf', [vault.options.address]));
 
-  expect(postWethFundHoldings).bigNumberEq(preWethFundHoldings);
-  expect(postMlnFundHoldings).bigNumberEq(
-    preMlnFundHoldings.sub(new BN(takerQuantity))
-  );
-  expect(postEurFundHoldings).bigNumberEq(
-    preEurFundHoldings.add(new BN(expectedMakerQuantity))
-  );
-  expect(postEurVault).bigNumberEq(preEurVault.add(new BN(expectedMakerQuantity)));
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
+  const fundHoldingsEurDiff = postFundHoldingsEur.sub(preFundHoldingsEur);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
+  expect(fundHoldingsEurDiff).bigNumberEq(postFundBalanceOfEur.sub(preFundBalanceOfEur));
+
+  // Confirm that expected asset amounts were filled
+  expect(fundHoldingsEurDiff).bigNumberEq(new BN(expectedMakerQuantity));
+  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(0));
 });
 
 test('Order fails if maker amount is not satisfied', async () => {
   const { trading } = fund;
 
   const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.1', 'ether');
+  const takerQuantity = toWei('0.01', 'ether');
   const makerAsset = weth.options.address;
 
   const makerQuantity = await call(
@@ -355,5 +374,5 @@ test('Order fails if maker amount is not satisfied', async () => {
       ],
       managerTxOpts
     )
-  ).rejects.toThrowFlexible();
+  ).rejects.toThrow(); // No specific message, fails at Uniswap level
 });

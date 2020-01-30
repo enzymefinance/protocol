@@ -61,7 +61,7 @@ beforeAll(async () => {
 });
 
 test('executing rewardManagementFee distributes management fee shares to manager', async () => {
-  const { accounting, feeManager, shares, vault } = fund;
+  const { accounting, feeManager, shares, trading } = fund;
 
   const fundCreationTime = new BN(
     await call(
@@ -71,7 +71,10 @@ test('executing rewardManagementFee distributes management fee shares to manager
     )
   );
 
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const preWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -82,7 +85,10 @@ test('executing rewardManagementFee distributes management fee shares to manager
 
   await send(feeManager, 'rewardManagementFee', [], managerTxOpts);
 
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  ); 
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -98,21 +104,29 @@ test('executing rewardManagementFee distributes management fee shares to manager
   const expectedFeeShares = preTotalSupply.mul(expectedPreDilutionFeeShares)
     .div(preTotalSupply.sub(expectedPreDilutionFeeShares));
 
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+  
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(0));
   expect(postManagerShares).not.bigNumberEq(preManagerShares);
   expect(postManagerShares).bigNumberEq(preManagerShares.add(expectedFeeShares));
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(expectedFeeShares));
   expect(postFundGav).bigNumberEq(preFundGav);
-  expect(postWethVault).bigNumberEq(preWethVault);
   expect(postWethManager).bigNumberEq(preWethManager);
 });
 
 test('executing triggerRewardAllFees distributes fee shares to manager', async () => {
-  const { accounting, feeManager, shares, vault } = fund;
+  const { accounting, feeManager, shares, trading } = fund;
 
   const lastFeeConversion = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
   );
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const preWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -123,7 +137,10 @@ test('executing triggerRewardAllFees distributes fee shares to manager', async (
 
   await send(accounting, 'triggerRewardAllFees', [], managerTxOpts);
 
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -142,6 +159,12 @@ test('executing triggerRewardAllFees distributes fee shares to manager', async (
   const expectedFeeInDenominationAsset = expectedFeeShares.mul(new BN(preFundCalcs.gav))
     .div(preTotalSupply.add(expectedFeeShares));
 
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+
+  expect(fundHoldingsWethDiff).bigNumberEq(new BN(0));
   expect(postManagerShares).bigNumberEq(preManagerShares.add(expectedFeeShares));
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(expectedFeeShares));
   expect(new BN(postFundCalcs.gav)).bigNumberEq(new BN(preFundCalcs.gav));
@@ -151,27 +174,23 @@ test('executing triggerRewardAllFees distributes fee shares to manager', async (
   expect(BNExpDiv(new BN(postFundCalcs.nav), postTotalSupply)).bigNumberCloseTo(
     new BN(postFundCalcs.sharePrice)
   );
-  expect(postWethVault).bigNumberEq(preWethVault);
   expect(postWethManager).bigNumberEq(preWethManager);
-  expect(new BN(lastConversionCalculations.allocatedFees)).bigNumberEq(
+  expect(new BN(lastConversionCalculations.allocatedFees_)).bigNumberEq(
     expectedFeeInDenominationAsset
   );
 });
 
 test('Investor redeems his shares', async () => {
-  const {
-    accounting,
-    feeManager,
-    participation,
-    shares,
-    vault
-  } = fund;
+  const { accounting, feeManager, participation, shares, trading } = fund;
 
   const lastFeeConversion = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
   );
 
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
@@ -181,7 +200,10 @@ test('Investor redeems his shares', async () => {
 
   await send(participation, 'redeem', [], investorTxOpts);
 
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(accounting, 'calcGav'));
@@ -196,18 +218,21 @@ test('Investor redeems his shares', async () => {
   const expectedFeeShares = preTotalSupply.mul(expectedPreDilutionFeeShares)
     .div(preTotalSupply.sub(expectedPreDilutionFeeShares));
 
+  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
+
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+
+  expect(fundHoldingsWethDiff).bigNumberEq(postWethInvestor.sub(preWethInvestor));
   expect(postTotalSupply).bigNumberEq(
     preTotalSupply.sub(preInvestorShares).add(expectedFeeShares)
   );
   expect(postWethInvestor).bigNumberEq(
-    preWethVault.mul(preInvestorShares)
+    preFundHoldingsWeth.mul(preInvestorShares)
       .div(preTotalSupply.add(expectedFeeShares))
       .add(preWethInvestor)
   );
-  expect(postWethVault).bigNumberEq(
-    preWethVault.sub(postWethInvestor.sub(preWethInvestor))
-  );
-  expect(postFundGav).bigNumberEq(postWethVault);
+  expect(postFundGav).bigNumberEq(postFundHoldingsWeth);
 });
 
 test('Manager redeems his shares', async () => {

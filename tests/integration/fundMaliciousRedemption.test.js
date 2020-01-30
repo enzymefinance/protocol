@@ -71,7 +71,7 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
   const { accounting, participation, shares } = fund;
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const holdings = await call(accounting, 'getFundHoldings');
-  const errorMessage = 'Requested asset not in asset list';
+  const errorMessage = 'Requested asset holdings is 0';
 
   // TODO: convert to iterated tests
   await expect(
@@ -168,18 +168,25 @@ test('General redeem fails in presence of malicious token', async () => {
   ).rejects.toThrowFlexible();
 });
 
-test('Redeem with constraints works as expected', async () => {
-  const { accounting, participation, shares, vault } = fund;
+test(`Redeem with constraints works as expected`, async () => {
+  const { accounting, participation, shares } = fund;
 
-  const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
-  const preWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
+
+  const preFundHoldingsMaliciousToken = new BN(
+    await call(accounting, 'getFundAssetHoldings', [maliciousToken.options.address])
+  );
+  const preFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
+  const preFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+
   const investorShares = await call(shares, 'balanceOf', [investor]);
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const preMaliciousTokenVault = new BN(
-    await call(maliciousToken, 'balanceOf', [vault.options.address])
-  );
+
 
   await send(
     participation,
@@ -188,22 +195,28 @@ test('Redeem with constraints works as expected', async () => {
     investorTxOpts
   );
 
-  const postMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
-  const postWethVault = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
+
+  const postFundHoldingsMln = new BN(
+    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+  );
+  const postFundHoldingsWeth = new BN(
+    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+  );
+
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(accounting, 'calcGav'));
 
   const maliciousTokenPrice = new BN(
     (await call(priceSource, 'getPrice', [maliciousToken.options.address]))[0]
   );
-  const fundMaliciousTokenValue = BNExpMul(preMaliciousTokenVault, maliciousTokenPrice);
+  const fundMaliciousTokenValue = BNExpMul(preFundHoldingsMaliciousToken, maliciousTokenPrice);
 
   expect(postTotalSupply).bigNumberEq(preTotalSupply.sub(new BN(investorShares)));
-  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preWethVault));
-  expect(postWethVault).bigNumberEq(new BN(0));
-  expect(postMlnVault).toEqual(preMlnVault);
+  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preFundHoldingsWeth));
+  expect(postFundHoldingsWeth).bigNumberEq(new BN(0));
+  expect(postFundHoldingsMln).toEqual(preFundHoldingsMln);
   expect(postMlnInvestor).toEqual(preMlnInvestor);
   expect(postFundGav).bigNumberEq(fundMaliciousTokenValue);
 });
