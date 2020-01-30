@@ -19,7 +19,6 @@ export const getFundComponents = async hubAddress => {
   components.policyManager = fetchContract('PolicyManager', routes.policyManager);
   components.shares = fetchContract('Shares', routes.shares);
   components.trading = fetchContract('Trading', routes.trading);
-  components.vault = fetchContract('Vault', routes.vault);
 
   return components;
 }
@@ -74,7 +73,6 @@ export const setupFundWithParams = async ({
   await send(version, 'createPolicyManager', [], managerTxOptsWithAmgu);
   await send(version, 'createShares', [], managerTxOptsWithAmgu);
   await send(version, 'createTrading', [], managerTxOptsWithAmgu);
-  await send(version, 'createVault', [], managerTxOptsWithAmgu);
   const res = await send(version, 'completeSetup', [], managerTxOptsWithAmgu);
 
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
@@ -163,13 +161,6 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
   if (engineRegistered) {
     exchangeAddresses.push(contracts.Engine.options.address);
     adapterAddresses.push(contracts.EngineAdapter.options.address);
-  }
-  const ethfinexRegistered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.EthfinexAdapter.options.address]
-  );
-  if (ethfinexRegistered) {
-    exchangeAddresses.push(contracts.ZeroExV2Exchange.options.address);
-    adapterAddresses.push(contracts.EthfinexAdapter.options.address);
   }
   const kyberRegistered = await call(
     contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.KyberAdapter.options.address]

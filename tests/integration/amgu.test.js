@@ -162,7 +162,6 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   await assertAmguTx(version, 'createPolicyManager');
   await assertAmguTx(version, 'createShares');
   await assertAmguTx(version, 'createTrading');
-  await assertAmguTx(version, 'createVault');
   const res = await assertAmguTx(version, 'completeSetup');
 
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
