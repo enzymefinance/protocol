@@ -39,7 +39,15 @@ const partialRedeploy = async (contractsToRedeploy=[], forcePartial=false) => {
       }
     });
   });
-  return deploySystem(deployInput);
+
+  const deploymentResult = await deploySystem(deployInput);
+
+  fs.writeFileSync(
+    process.env.DEPLOY_OUT,
+    JSON.stringify(deploymentResult.deployOut, null, '  ')
+  );
+
+  return deploymentResult;
 }
 
 const deploySystem = async input => {
