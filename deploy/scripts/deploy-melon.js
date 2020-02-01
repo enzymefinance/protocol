@@ -9,7 +9,6 @@ const main = async input => {
   const melonAddrs = input.melon.addr;
   const tokenAddrs = input.tokens.addr;
 
-  const ethfinexAdapter = await nab('EthfinexAdapter', [], melonAddrs);
   const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
   const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
   const oasisDexAccessor = await nab('OasisDexAccessor', [], melonAddrs);
@@ -61,12 +60,6 @@ const main = async input => {
   if (`${previousRegisteredMGM}`.toLowerCase() !== melonConf.initialMGM.toLowerCase()) {
     await send(registry, 'setMGM', [melonConf.initialMGM]);
   }
-  const previousRegisteredEthfinexWrapperRegistry = await call(registry, 'MGM');
-  if (input.ethfinex) {
-    if (`${previousRegisteredEthfinexWrapperRegistry}`.toLowerCase() !== input.ethfinex.addr.WrapperRegistryEFX.toLowerCase()) {
-      await send(registry, 'setEthfinexWrapperRegistry', [input.ethfinex.addr.WrapperRegistryEFX]);
-    }
-  }
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
   const sigs = [
@@ -82,13 +75,6 @@ const main = async input => {
     adapter: engineAdapter.options.address,
     takesCustody: melonConf.exchangeTakesCustody.engine
   };
-  if (input.ethfinex) {
-    exchanges.ethfinex = {
-      exchange: input.ethfinex.addr.ZeroExV2Exchange,
-      adapter: ethfinexAdapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.ethfinex
-    };
-  }
   if (input.kyber) {
     exchanges.kyber = {
       exchange: input.kyber.addr.KyberNetworkProxy,
@@ -184,7 +170,6 @@ const main = async input => {
   }
 
   const contracts = {
-    "EthfinexAdapter": ethfinexAdapter,
     "KyberAdapter": kyberAdapter,
     "OasisDexAdapter": oasisDexAdapter,
     "OasisDexAccessor": oasisDexAccessor,
