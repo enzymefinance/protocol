@@ -1,5 +1,4 @@
 const fs = require('fs');
-const deployEthfinex = require('./deploy-ethfinex');
 const deployKyber = require('./deploy-kyber');
 const deployMelon = require('./deploy-melon');
 const deployOasis = require('./deploy-oasis');
@@ -72,11 +71,6 @@ const deploySystem = async input => {
     const zeroExV3 = await deployZeroExV3(input);
     deployOut.zeroExV3.addr = getAllAddrs(zeroExV3);
     contracts = Object.assign(contracts, zeroExV3);
-  }
-  if (input.ethfinex) {
-    const ethfinex = await deployEthfinex(input);
-    deployOut.ethfinex.addr = getAllAddrs(ethfinex);
-    contracts = Object.assign(contracts, ethfinex);
   }
   if (input.uniswap) {
     const uniswap = await deployUniswap(input);
