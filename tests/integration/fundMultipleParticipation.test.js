@@ -278,7 +278,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       await call(
         accounting,
         'getShareCostInAsset',
-        [wantedShares1, offerAsset]
+        [wantedShares4, offerAsset]
       )
     );
     const offerAssetMaxQuantity = BNExpMul(
@@ -330,7 +330,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
         'executeRequestFor',
         [investor1],
         investor2TxOpts
-    )).rejects.toThrowFlexible("This can only be called through the Engine");
+    )).rejects.toThrowFlexible('This can only be called through the Engine');
 
     await expect(
       send(
@@ -351,7 +351,91 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       e => e.toLowerCase() === engineAdapter.options.address.toLowerCase(),
     );
 
-    // TODO: test request execution with incorrect params (too little/ too much MLN and ETH)
+    const lowMlnAmount = mlnAmount.sub(new BN(1));
+    await expect(
+      send(
+        trading,
+        'callOnExchange',
+        [
+          exchangeIndex,
+          executeRequestAndBurnMlnSig,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            weth.options.address,
+            mln.options.address,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            participation.options.address,
+            investor1
+          ],
+          [incentiveAmount.toString(), lowMlnAmount.toString(), 0, 0, 0, 0, lowMlnAmount.toString(), 0],
+          ['0x0', '0x0', '0x0', '0x0'],
+          '0x0',
+          '0x0',
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible('MLN needed to pay for ETH incentive is different than expected');
+
+    const highMlnAmount = mlnAmount.add(new BN(1));
+    await expect(
+      send(
+        trading,
+        'callOnExchange',
+        [
+          exchangeIndex,
+          executeRequestAndBurnMlnSig,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            weth.options.address,
+            mln.options.address,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            participation.options.address,
+            investor1
+          ],
+          [incentiveAmount.toString(), highMlnAmount.toString(), 0, 0, 0, 0, highMlnAmount.toString(), 0],
+          ['0x0', '0x0', '0x0', '0x0'],
+          '0x0',
+          '0x0',
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible('MLN needed to pay for ETH incentive is different than expected');
+
+    const highIncentiveAmount = incentiveAmount.add(new BN(1));
+    await expect(
+      send(
+        trading,
+        'callOnExchange',
+        [
+          exchangeIndex,
+          executeRequestAndBurnMlnSig,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            weth.options.address,
+            mln.options.address,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            participation.options.address,
+            investor1
+          ],
+          [highIncentiveAmount.toString(), mlnAmount.toString(), 0, 0, 0, 0, mlnAmount.toString(), 0],
+          ['0x0', '0x0', '0x0', '0x0'],
+          '0x0',
+          '0x0',
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowFlexible('Not enough incentive will be transferred');
+
+    // change incentive while there is an open investment request
+    const newIncentive = incentiveAmount.mul(new BN(10));
+    await send(registry, 'setIncentive', [newIncentive.toString()], defaultTxOpts);
+
     const receipt = await send(
       trading,
       'callOnExchange',

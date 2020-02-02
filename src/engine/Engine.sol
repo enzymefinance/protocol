@@ -185,8 +185,7 @@ contract Engine is DSMath {
         external
         onlyFund
     {
-        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
-        uint256 incentiveAmount = registry.incentive();
+        uint256 incentiveAmount = IParticipation(_participation).getRequestIncentive(_requestOwner);
         uint256 mlnAmount = mlnRequiredForIncentiveAmount(incentiveAmount);
         require(
             mlnToken().transferFrom(msg.sender, address(this), mlnAmount),

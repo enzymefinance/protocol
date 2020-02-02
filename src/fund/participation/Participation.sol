@@ -29,8 +29,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         address indexed requestOwner,
         address indexed executor,
         address indexed investmentAsset,
-        uint investmentAmount,
-        uint requestedShares
+        uint256 investmentAmount,
+        uint256 requestedShares
     );
 
     event CancelRequest (
@@ -40,15 +40,16 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     event Redemption (
         address indexed redeemer,
         address[] assets,
-        uint[] assetQuantities,
-        uint redeemedShares
+        uint256[] assetQuantities,
+        uint256 redeemedShares
     );
 
     struct Request {
         address investmentAsset;
-        uint investmentAmount;
-        uint requestedShares;
-        uint timestamp;
+        uint256 investmentAmount;
+        uint256 requestedShares;
+        uint256 timestamp;
+        uint256 incentive;
     }
 
     uint constant public SHARES_DECIMALS = 18;
@@ -90,6 +91,10 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             investAllowed[_assets[i]] = false;
         }
         emit DisableInvestment(_assets);
+    }
+
+    function getRequestIncentive(address _requestOwner) external view returns (uint256) {
+        return requests[_requestOwner].incentive;
     }
 
     function hasRequest(address _who) public view returns (bool) {
@@ -147,7 +152,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             investmentAsset: investmentAsset,
             investmentAmount: investmentAmount,
             requestedShares: requestedShares,
-            timestamp: block.timestamp
+            timestamp: block.timestamp,
+            incentive: Registry(routes.registry).incentive()
         });
         PolicyManager(routes.policyManager).postValidate(
             bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
@@ -176,8 +182,9 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         );
         IERC20 investmentAsset = IERC20(request.investmentAsset);
         uint investmentAmount = request.investmentAmount;
+        uint incentiveAmount = request.incentive;
         delete requests[requestOwner];
-        msg.sender.transfer(Registry(routes.registry).incentive());
+        msg.sender.transfer(incentiveAmount);
         safeTransfer(address(investmentAsset), requestOwner, investmentAmount);
 
         emit CancelRequest(requestOwner);
@@ -272,9 +279,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             msg.sender == engine(),
             "This can only be called through the Engine"
         );
+        uint256 incentiveAmount = requests[_requestOwner].incentive;
         _executeRequestFor(_requestOwner);
-        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
-        uint256 incentiveAmount = Registry(routes.registry).incentive();
         IEngine(engine()).receiveIncentiveInEth.value(incentiveAmount)();
     }
 
@@ -285,10 +291,10 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         amguPayable(false)
         payable
     {
+        uint256 incentiveAmount = requests[msg.sender].incentive;
         _executeRequestFor(msg.sender);
-        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
         require(
-            msg.sender.send(Registry(routes.registry).incentive()),
+            msg.sender.send(incentiveAmount),
             "ETH transfer failed"
         );
     }

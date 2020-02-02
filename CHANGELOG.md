@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Uniswap adapter
 - 0xV3 adapter
 - interfaces to third-party contracts
+- incentivize execution of other users' investment requests via Engine
 
 ### Changed
 
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - bug yielding price of 0 for WETH
 - bug yielding incorrect price in cross-market condition
 - default investment assets are not tracked as owned assets unless actually owned
+- track incentive per request inside Participation
 
 ### Removed
 

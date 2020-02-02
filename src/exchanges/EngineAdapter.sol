@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../engine/Engine.sol";
 import "../fund/hub/Hub.sol";
+import "../fund/participation/IParticipation.sol";
 import "../fund/trading/Trading.sol";
 import "../fund/vault/Vault.sol";
 import "../dependencies/DSMath.sol";
@@ -101,8 +102,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
             "fillTakerQuantity must equal takerAssetQuantity"
         );
 
-        // TODO: fix incentive issue (getting it dynamically may lead to unexpected results)
-        uint256 incentiveAmount = Registry(hub.registry()).incentive();
+        uint256 incentiveAmount = IParticipation(payable(orderAddresses[6])).getRequestIncentive(orderAddresses[7]);
         require(
             incentiveAmount >= minEthToReceive,
             "Not enough incentive will be transferred"
@@ -110,9 +110,9 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         require(
             mlnQuantity ==
             Engine(targetExchange).mlnRequiredForIncentiveAmount(incentiveAmount),
-            "MLN needed to pay for ETH incentive is higher than expected"
+            "MLN needed to pay for ETH incentive is different than expected"
         );
-        approveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
+        withdrawAndApproveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
         uint256 preEthBalance = address(getTrading()).balance;
         Engine(payable(targetExchange)).executeRequestAndBurnMln(orderAddresses[6], orderAddresses[7]);
         uint256 ethReceived = sub(address(getTrading()).balance, preEthBalance);

@@ -13,6 +13,7 @@ interface IParticipation {
     function executeRequestFor(address requestOwner) external payable;
     function redeem() external;
     function redeemWithConstraints(uint shareQuantity, address[] calldata requestedAssets) external;
+    function getRequestIncentive(address _requestOwner) external view returns (uint256);
 }
 
 interface IParticipationFactory {
