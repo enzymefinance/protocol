@@ -11,10 +11,15 @@ import "../version/Registry.sol";
 contract Engine is DSMath {
 
     event RegistryChange(address registry);
-    event SetAmguPrice(uint amguPrice);
-    event AmguPaid(uint amount);
-    event Thaw(uint amount);
-    event Burn(uint amount);
+    event SetAmguPrice(uint256 amguPrice);
+    event AmguPaid(
+        uint256 amguPaid,
+        uint256 etherPaid,
+        uint256 totalAmguPaid,
+        uint256 totalEtherPaid
+    );
+    event Thaw(uint256 amount);
+    event Burn(uint256 amount);
     event RequestExecutedForIncentive(
         address indexed participationContract,
         address indexed requestOwner,
@@ -123,7 +128,12 @@ contract Engine is DSMath {
         totalEtherConsumed = add(totalEtherConsumed, msg.value);
         totalAmguConsumed = add(totalAmguConsumed, amguConsumed);
         frozenEther = add(frozenEther, msg.value);
-        emit AmguPaid(amguConsumed);
+        emit AmguPaid(
+            amguConsumed,
+            msg.value,
+            totalAmguConsumed,
+            totalEtherConsumed
+        );
     }
 
     /// @notice Move frozen ether to liquid pool after delay

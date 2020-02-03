@@ -16,7 +16,12 @@ abstract contract AmguConsumer is DSMath {
     function mlnToken() public view virtual returns (address);
     function priceSource() public view virtual returns (address);
     function registry() public view virtual returns (address);
-    event AmguPaid(address indexed payer, uint256 totalAmguPaidInEth, uint256 amguChargableGas, uint256 incentivePaid);
+    event AmguInfo(
+        address indexed payer,
+        uint256 totalAmguPaidInEth,
+        uint256 amguChargableGas,
+        uint256 incentivePaid
+    );
 
     /// bool deductIncentive is used when sending extra eth beyond amgu
     modifier amguPayable(bool deductIncentive) {
@@ -56,6 +61,6 @@ abstract contract AmguConsumer is DSMath {
             ),
             "Refund failed"
         );
-        emit AmguPaid(msg.sender, ethToPay, sub(preGas, postGas), incentiveAmount);
+        emit AmguInfo(msg.sender, ethToPay, sub(preGas, postGas), incentiveAmount);
     }
 }

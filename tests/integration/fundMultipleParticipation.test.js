@@ -351,6 +351,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       e => e.toLowerCase() === engineAdapter.options.address.toLowerCase(),
     );
 
+    // Try to send too little MLN
     const lowMlnAmount = mlnAmount.sub(new BN(1));
     await expect(
       send(
@@ -378,6 +379,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       )
     ).rejects.toThrowFlexible('MLN needed to pay for ETH incentive is different than expected');
 
+    // Try to send too much MLN
     const highMlnAmount = mlnAmount.add(new BN(1));
     await expect(
       send(
@@ -405,6 +407,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       )
     ).rejects.toThrowFlexible('MLN needed to pay for ETH incentive is different than expected');
 
+    // Try to receive too much WETH incentive
     const highIncentiveAmount = incentiveAmount.add(new BN(1));
     await expect(
       send(
@@ -432,7 +435,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       )
     ).rejects.toThrowFlexible('Not enough incentive will be transferred');
 
-    // change incentive while there is an open investment request
+    // Changing incentive while there is an open investment request has no effect
     const newIncentive = incentiveAmount.mul(new BN(10));
     await send(registry, 'setIncentive', [newIncentive.toString()], defaultTxOpts);
 
