@@ -195,16 +195,16 @@ test(`performance fee is calculated correctly`, async () => {
     .bigNumberCloseTo(expectedPerformanceFee);
 });
 
-test(`investor redeems half his shares, performance fee deducted`, async () => {
+test('investor redeems half his shares, performance fee deducted', async () => {
   const { accounting, participation, shares } = fund;
 
-  const preinvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
+  const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preFundCalcs = await call(accounting, 'performCalculations');
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preWethManager = new BN(await call(weth, 'balanceOf', [manager]));
 
-  const redeemQuantity = preinvestorShares.div(new BN(2));
+  const redeemQuantity = preInvestorShares.div(new BN(2));
 
   await send(participation, 'redeemQuantity', [redeemQuantity.toString()], investorTxOpts);
 

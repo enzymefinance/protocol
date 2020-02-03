@@ -1,15 +1,16 @@
 /*
- * @file Tests fund's ability to handle a malicious ERC20 token that attempts denial of service
+ * @file Tests fund's ability to handle a malicious redemption attempts
  *
  * @test Redeem fails when malicious token is present
+ * @test Redemption with non-registered assets does not succeed
  * @test redeemWithConstraints succeeds to withdraw specific assets only
  */
 
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { delay } from '~/tests/utils/time';
@@ -24,8 +25,7 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
-  contracts = deployed.contracts;
+  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]); contracts = deployed.contracts;
   weth = contracts.WETH;
   mln = contracts.MLN;
   priceSource = contracts.TestingPriceFeed;
@@ -67,7 +67,63 @@ beforeAll(async () => {
   });
 });
 
-test(`General redeem fails in presence of malicious token`, async () => {
+test('Trying to avoid performance fee with invalid asset addresses fails', async () => {
+  const { accounting, participation, shares } = fund;
+  const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
+  const holdings = await call(accounting, 'getFundHoldings');
+  const errorMessage = 'Requested asset not in asset list';
+
+  // TODO: convert to iterated tests
+  await expect(
+    send(
+      participation,
+      'redeemWithConstraints',
+      [
+        preInvestorShares.toString(),
+        [randomHex(20), EMPTY_ADDRESS],
+      ],
+      investorTxOpts
+    )
+  ).rejects.toThrowFlexible(errorMessage);
+
+  await expect(
+    send(
+      participation,
+      'redeemWithConstraints',
+      [
+        preInvestorShares.toString(),
+        [EMPTY_ADDRESS],
+      ],
+      investorTxOpts
+    )
+  ).rejects.toThrowFlexible(errorMessage);
+
+  await expect(
+    send(
+      participation,
+      'redeemWithConstraints',
+      [
+        preInvestorShares.toString(),
+        [randomHex(20)],
+      ],
+      investorTxOpts
+    )
+  ).rejects.toThrowFlexible(errorMessage);
+
+  await expect(
+    send(
+      participation,
+      'redeemWithConstraints',
+      [
+        preInvestorShares.toString(),
+        [...holdings[1], EMPTY_ADDRESS],
+      ],
+      investorTxOpts
+    )
+  ).rejects.toThrowFlexible(errorMessage);
+});
+
+test('General redeem fails in presence of malicious token', async () => {
   const { participation } = fund;
   const maliciousTokenAmount = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
@@ -112,7 +168,7 @@ test(`General redeem fails in presence of malicious token`, async () => {
   ).rejects.toThrowFlexible();
 });
 
-test(`Redeem with constraints works as expected`, async () => {
+test('Redeem with constraints works as expected', async () => {
   const { accounting, participation, shares, vault } = fund;
 
   const preMlnVault = new BN(await call(mln, 'balanceOf', [vault.options.address]));

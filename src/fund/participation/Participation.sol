@@ -328,7 +328,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         Accounting accounting = Accounting(routes.accounting);
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
-            if (ofAsset == address(0)) continue;
             require(
                 accounting.isInAssetList(ofAsset),
                 "Requested asset not in asset list"
