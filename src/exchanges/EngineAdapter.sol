@@ -56,12 +56,15 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         getAccounting().decreaseAssetBalance(mlnAddress, mlnQuantity);
         getAccounting().increaseAssetBalance(wethAddress, ethToReceive);
 
-        getTrading().orderUpdateHook(
+        emit OrderFilled(
             targetExchange,
-            bytes32(0),
-            Trading.UpdateType.take,
-            [payable(wethAddress), payable(mlnAddress)],
-            [ethToReceive, mlnQuantity, mlnQuantity]
+            OrderType.Take,
+            wethAddress,
+            ethToReceive,
+            mlnAddress,
+            mlnQuantity,
+            address(0),
+            0
         );
     }
 }

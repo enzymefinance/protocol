@@ -29,23 +29,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         bool takesCustody;
     }
 
-    // TODO: Change to take only?
-    enum UpdateType { make, take, cancel }
-
-    struct Order {
-        address exchangeAddress;
-        bytes32 orderId;
-        UpdateType updateType;
-        address makerAsset;
-        address takerAsset;
-        uint makerQuantity;
-        uint takerQuantity;
-        uint timestamp;
-        uint fillTakerQuantity;
-    }
-
     Exchange[] public exchanges;
-    Order[] public orders;
     mapping (address => bool) public adapterIsAdded;
 
     modifier delegateInternal() {
@@ -187,29 +171,6 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         );
     }
 
-    function orderUpdateHook(
-        address ofExchange,
-        bytes32 orderId,
-        UpdateType updateType,
-        address payable[2] memory orderAddresses,
-        uint[3] memory orderValues
-    ) public delegateInternal {
-        // only save make/take
-        if (updateType == UpdateType.take) {
-            orders.push(Order({
-                exchangeAddress: ofExchange,
-                orderId: orderId,
-                updateType: updateType,
-                makerAsset: orderAddresses[0],
-                takerAsset: orderAddresses[1],
-                makerQuantity: orderValues[0],
-                takerQuantity: orderValues[1],
-                timestamp: block.timestamp,
-                fillTakerQuantity: orderValues[2]
-            }));
-        }
-    }
-
     function getExchangeInfo() public view returns (address[] memory, address[] memory, bool[] memory) {
         address[] memory ofExchanges = new address[](exchanges.length);
         address[] memory ofAdapters = new address[](exchanges.length);
@@ -220,11 +181,6 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
             takesCustody[i] = exchanges[i].takesCustody;
         }
         return (ofExchanges, ofAdapters, takesCustody);
-    }
-
-    function getOrderDetails(uint orderIndex) public view returns (address, address, uint, uint) {
-        Order memory order = orders[orderIndex];
-        return (order.makerAsset, order.takerAsset, order.makerQuantity, order.takerQuantity);
     }
 }
 

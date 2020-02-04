@@ -87,8 +87,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
 
         uint fillTakerQuantity = orderValues[6];
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
 
         approveAssetsTakeOrder(targetExchange, order);
 
@@ -98,10 +96,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             "Filled amount does not match desired fill amount"
         );
 
-        getAccounting().decreaseAssetBalance(takerAsset, takerAssetFilledAmount);
-        getAccounting().increaseAssetBalance(makerAsset, orderValues[0]);
-
-        updateStateTakeOrder(targetExchange, order, fillTakerQuantity);
+        completeTakeOrder(targetExchange, order, orderValues[0], takerAssetFilledAmount);
     }
 
     // INTERNAL METHODS
@@ -125,6 +120,33 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
                 "takerFeeAsset"
             );
         }
+    }
+
+    /// @dev Needed to avoid stack too deep error
+    function completeTakeOrder(
+        address _targetExchange,
+        IZeroExV2.Order memory _order,
+        uint256 _makerAssetFilledAmount,
+        uint256 _takerAssetFilledAmount
+    )
+        internal
+    {
+        address makerAsset = getAssetAddress(_order.makerAssetData);
+        address takerAsset = getAssetAddress(_order.takerAssetData);
+
+        getAccounting().decreaseAssetBalance(takerAsset, _takerAssetFilledAmount);
+        getAccounting().increaseAssetBalance(makerAsset, _makerAssetFilledAmount);
+
+        emit OrderFilled(
+            _targetExchange,
+            OrderType.Take,
+            makerAsset,
+            _makerAssetFilledAmount,
+            takerAsset,
+            _takerAssetFilledAmount,
+            getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA()),
+            _order.takerFee
+        );
     }
 
     /// @dev Needed to avoid stack too deep error
@@ -163,26 +185,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         );
 
         return fillResults.takerAssetFilledAmount;
-    }
-
-    /// @dev avoids stack too deep error
-    function updateStateTakeOrder(
-        address targetExchange,
-        IZeroExV2.Order memory order,
-        uint256 fillTakerQuantity
-    )
-        internal
-    {
-        address makerAsset = getAssetAddress(order.makerAssetData);
-        address takerAsset = getAssetAddress(order.takerAssetData);
-
-        getTrading().orderUpdateHook(
-            targetExchange,
-            IZeroExV2(targetExchange).getOrderInfo(order).orderHash,
-            Trading.UpdateType.take,
-            [payable(makerAsset), payable(takerAsset)],
-            [order.makerAssetAmount, order.takerAssetAmount, fillTakerQuantity]
-        );
     }
 
     // VIEW METHODS
