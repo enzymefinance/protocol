@@ -13,7 +13,6 @@ contract Version is FundFactory, DSAuth {
         address _participationFactory,
         address _sharesFactory,
         address _tradingFactory,
-        address _vaultFactory,
         address _policyManagerFactory,
         address _registry,
         address _postDeployOwner
@@ -25,7 +24,6 @@ contract Version is FundFactory, DSAuth {
             _participationFactory,
             _sharesFactory,
             _tradingFactory,
-            _vaultFactory,
             _policyManagerFactory,
             address(this)
         )

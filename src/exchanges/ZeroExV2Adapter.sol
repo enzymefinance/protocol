@@ -3,8 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/vault/Vault.sol";
 import "../fund/accounting/Accounting.sol";
 import "../dependencies/DSMath.sol";
 import "./interfaces/IZeroExV2.sol";
@@ -116,7 +114,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     )
         internal
     {
-        withdrawAndApproveAsset(
+        approveAsset(
             getAssetAddress(_order.takerAssetData),
             getAssetProxy(_targetExchange, _order.takerAssetData),
             _fillTakerAmount,
@@ -125,7 +123,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         uint256 takerFeeAmount = mul(_order.takerFee, _fillTakerAmount) / _order.takerAssetAmount;
         if (takerFeeAmount > 0) {
             bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
-            withdrawAndApproveAsset(
+            approveAsset(
                 getAssetAddress(zrxAssetData),
                 getAssetProxy(_targetExchange, zrxAssetData),
                 takerFeeAmount,
@@ -183,7 +181,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         address makerAsset = getAssetAddress(order.makerAssetData);
         address takerAsset = getAssetAddress(order.takerAssetData);
 
-        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             IZeroExV2(targetExchange).getOrderInfo(order).orderHash,

@@ -6,7 +6,6 @@ import "../dependencies/token/IERC20.sol";
 import "../fund/accounting/Accounting.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
@@ -49,7 +48,7 @@ contract ExchangeAdapter is DSMath {
     }
 
     /// @notice Increment allowance of an asset for some target
-    function withdrawAndApproveAsset(
+    function approveAsset(
         address _asset,
         address _target,
         uint256 _amount,
@@ -57,15 +56,11 @@ contract ExchangeAdapter is DSMath {
     )
         internal
     {
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-
         require(
-            IERC20(_asset).balanceOf(address(vault)) >= _amount,
-            string(abi.encodePacked("Insufficient balance: ", _assetType))
+            getAccounting().assetBalances(_asset) >= _amount,
+            string(abi.encodePacked("Insufficient available assetBalance: ", _assetType))
         );
 
-        vault.withdraw(_asset, _amount);
         uint256 allowance = IERC20(_asset).allowance(address(this), _target);
         require(
             IERC20(_asset).approve(_target, add(allowance, _amount)),

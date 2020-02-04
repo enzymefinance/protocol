@@ -1,10 +1,7 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
-import "../fund/accounting/Accounting.sol";
 import "../dependencies/DSMath.sol";
 import "./interfaces/IOasisDex.sol";
 import "./ExchangeAdapter.sol";
@@ -44,7 +41,6 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes32 identifier,
         bytes memory signature
     ) public override onlyManager notShutDown {
-        Hub hub = getHub();
         uint256 fillTakerQuantity = orderValues[6];
         uint256 maxMakerQuantity;
         address makerAsset;
@@ -69,17 +65,15 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
         require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
 
-        withdrawAndApproveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
-
+        approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
         require(
             IOasisDex(targetExchange).buy(uint256(identifier), fillMakerQuantity),
-            "Buy on matching market failed"
+            "Oasis Dex: buy failed"
         );
 
         getAccounting().decreaseAssetBalance(takerAsset, fillTakerQuantity);
         getAccounting().increaseAssetBalance(makerAsset, fillMakerQuantity);
 
-        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
