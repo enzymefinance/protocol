@@ -74,12 +74,15 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         getAccounting().decreaseAssetBalance(takerAsset, fillTakerQuantity);
         getAccounting().increaseAssetBalance(makerAsset, fillMakerQuantity);
 
-        getTrading().orderUpdateHook(
+        emit OrderFilled(
             targetExchange,
-            bytes32(identifier),
-            Trading.UpdateType.take,
-            [payable(makerAsset), payable(takerAsset)],
-            [maxMakerQuantity, maxTakerQuantity, fillTakerQuantity]
+            OrderType.Take,
+            makerAsset,
+            fillMakerQuantity,
+            takerAsset,
+            fillTakerQuantity,
+            new address[](0),
+            new uint256[](0)
         );
     }
 }

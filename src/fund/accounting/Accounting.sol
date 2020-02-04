@@ -15,7 +15,6 @@ contract Accounting is AmguConsumer, Spoke {
 
     event AssetBalanceUpdated(
         address indexed asset,
-        address hub,
         uint256 oldBalance,
         uint256 newBalance
     );
@@ -138,7 +137,7 @@ contract Accounting is AmguConsumer, Spoke {
         if (newBalance == 0) removeFromOwnedAssets(_asset);
         assetBalances[_asset] = newBalance;
 
-        emit AssetBalanceUpdated(_asset, address(hub), oldBalance, newBalance);
+        emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
     }
 
     function engine() public view override(AmguConsumer, Spoke) returns (address) {
@@ -151,7 +150,7 @@ contract Accounting is AmguConsumer, Spoke {
         uint256 newBalance = add(oldBalance, _amount);
         assetBalances[_asset] = newBalance;
 
-        emit AssetBalanceUpdated(_asset, address(hub), oldBalance, newBalance);
+        emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
     }
 
     function getAllAssetBalances()
