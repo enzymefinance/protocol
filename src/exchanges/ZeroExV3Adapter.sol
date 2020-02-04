@@ -76,8 +76,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         require(IZeroExV3(_targetExchange).isValidOrderSignature(order, _signature), "Order _signature is invalid");
 
         uint256 fillTakerQuantity = _orderValues[6];
-        address makerAsset = _orderAddresses[2];
-        address takerAsset = _orderAddresses[3];
 
         approveAssetsTakeOrder(_targetExchange, order, fillTakerQuantity);
 
@@ -87,10 +85,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             "Filled amount does not match desired fill amount"
         );
 
-        getAccounting().decreaseAssetBalance(takerAsset, takerAssetFilledAmount);
-        getAccounting().increaseAssetBalance(makerAsset, _orderValues[0]);
-
-        updateStateTakeOrder(_targetExchange, order, fillTakerQuantity);
+        completeTakeOrder(_targetExchange, order, _orderValues[0], takerAssetFilledAmount);
     }
 
     // INTERNAL METHODS
@@ -130,6 +125,40 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         address nativeAsset = getAccounting().NATIVE_ASSET();
 
         approveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
+    }
+
+    /// @dev Needed to avoid stack too deep error
+    function completeTakeOrder(
+        address _targetExchange,
+        IZeroExV3.Order memory _order,
+        uint256 _makerAssetFilledAmount,
+        uint256 _takerAssetFilledAmount
+    )
+        internal
+    {
+        address makerAsset = getAssetAddress(_order.makerAssetData);
+        address takerAsset = getAssetAddress(_order.takerAssetData);
+
+        getAccounting().decreaseAssetBalance(takerAsset, _takerAssetFilledAmount);
+        getAccounting().increaseAssetBalance(makerAsset, _makerAssetFilledAmount);
+
+        address[] memory takerFeeAssets = new address[](2);
+        takerFeeAssets[0] = getAccounting().NATIVE_ASSET();
+        takerFeeAssets[1] = getAssetAddress(_order.takerFeeAssetData);
+        uint256[] memory takerFeeAmounts = new uint256[](2);
+        takerFeeAmounts[0] = calcProtocolFeeAmount(_targetExchange);
+        takerFeeAmounts[1] = _order.takerFee;
+
+        emit OrderFilled(
+            _targetExchange,
+            OrderType.Take,
+            makerAsset,
+            _makerAssetFilledAmount,
+            takerAsset,
+            _takerAssetFilledAmount,
+            takerFeeAssets,
+            takerFeeAmounts
+        );
     }
 
     /// @dev Needed to avoid stack too deep error
@@ -176,26 +205,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         );
 
         return fillResults.takerAssetFilledAmount;
-    }
-
-    /// @dev Avoids stack too deep error
-    function updateStateTakeOrder(
-        address _targetExchange,
-        IZeroExV3.Order memory _order,
-        uint256 _fillTakerQuantity
-    )
-        internal
-    {
-        address makerAsset = getAssetAddress(_order.makerAssetData);
-        address takerAsset = getAssetAddress(_order.takerAssetData);
-
-        getTrading().orderUpdateHook(
-            _targetExchange,
-            IZeroExV3(_targetExchange).getOrderInfo(_order).orderHash,
-            Trading.UpdateType.take,
-            [payable(makerAsset), payable(takerAsset)],
-            [_order.makerAssetAmount, _order.takerAssetAmount, _fillTakerQuantity]
-        );
     }
 
     // VIEW METHODS
