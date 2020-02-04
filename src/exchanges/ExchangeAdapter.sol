@@ -114,8 +114,9 @@ contract ExchangeAdapter is DSMath {
         internal
     {
         uint256 allowance = IERC20(_asset).allowance(address(this), _target);
+        uint256 newAllowance = (_amount > allowance) ? allowance : sub(allowance, _amount);
         require(
-            IERC20(_asset).approve(_target, sub(allowance, _amount)),
+            IERC20(_asset).approve(_target, newAllowance),
             string(abi.encodePacked("Revoke approval failed: ", _assetType))
         );
     }

@@ -6,6 +6,7 @@
  */
 
 import { BN, toWei } from 'web3-utils';
+import { orderHashUtils } from '@0x/order-utils-v2';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
@@ -24,7 +25,7 @@ let contracts;
 let mln, weth, erc20Proxy, zeroExExchange;
 let fund;
 let exchangeIndex;
-let makeOrderSignature;
+let makeOrderSignature, cancelOrderSignature;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -60,6 +61,10 @@ beforeAll(async () => {
   makeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
     'makeOrder',
+  );
+  cancelOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'cancelOrder',
   );
 });
 
@@ -255,5 +260,127 @@ describe('Fund makes 2nd order with same maker asset as 1st order', () => {
       await call(weth, 'allowance', [makerAddress, erc20Proxy.options.address])
     );
     expect(makerAssetAllowance).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+  });
+
+  test('Third party partially takes the second order', async () => {
+    const { accounting, trading } = fund;
+
+    const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
+    const preMlnFundHoldings = new BN(
+      await call(accounting, 'assetHoldings', [mln.options.address])
+    );
+    const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
+    const preWethFundHoldings = new BN(
+      await call(accounting, 'assetHoldings', [weth.options.address])
+    );
+
+    const partialFillMakerAmount = new BN(signedOrder.makerAssetAmount).div(new BN(2));
+    const partialFillTakerAmount = new BN(signedOrder.takerAssetAmount).div(new BN(2));
+
+    await send(
+      mln,
+      'approve',
+      [erc20Proxy.options.address, partialFillTakerAmount.toString()],
+      defaultTxOpts
+    );
+    await send(
+      zeroExExchange,
+      'fillOrder',
+      [
+        signedOrder,
+        partialFillTakerAmount.toString(),
+        signedOrder.signature
+      ],
+      defaultTxOpts
+    );
+
+    const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
+    const postMlnFundHoldings = new BN(
+      await call(accounting, 'assetHoldings', [mln.options.address])
+    );
+    const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
+    const postWethFundHoldings = new BN(
+      await call(accounting, 'assetHoldings', [weth.options.address])
+    );
+
+    await send(
+      trading,
+      'updateAndGetQuantityBeingTraded',
+      [weth.options.address],
+      managerTxOpts
+    );
+
+    const isInOpenMakeOrder = await call(
+      trading,
+      'isInOpenMakeOrder',
+      [weth.options.address]
+    );
+    expect(isInOpenMakeOrder).toEqual(true);
+
+    expect(postMlnFundHoldings).bigNumberEq(
+      preMlnFundHoldings.add(partialFillTakerAmount)
+    );
+    expect(postWethFundHoldings).bigNumberEq(
+      preWethFundHoldings.sub(partialFillMakerAmount)
+    );
+    expect(postMlnDeployer).bigNumberEq(
+      preMlnDeployer.sub(partialFillTakerAmount)
+    );
+    expect(postWethDeployer).bigNumberEq(
+      preWethDeployer.add(partialFillMakerAmount)
+    );
+  });
+  
+  test('Fund can cancel the partially-filled order', async () => {
+    const { trading } = fund;
+
+    const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
+
+    await send(
+      trading,
+      'callOnExchange',
+      [
+        exchangeIndex,
+        cancelOrderSignature,
+        [
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          weth.options.address,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS,
+          EMPTY_ADDRESS
+        ],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [signedOrder.makerAssetData, '0x0', '0x0', '0x0'],
+        orderHashHex,
+        '0x0',
+      ],
+      managerTxOpts
+    );
+
+    const isOrderCancelled = await call(zeroExExchange, 'cancelled', [orderHashHex]);
+    const makerAssetAllowance = new BN(
+      await call(mln, 'allowance', [trading.options.address, erc20Proxy.options.address])
+    );
+
+    expect(makerAssetAllowance).bigNumberEq(new BN(0));
+    expect(isOrderCancelled).toEqual(true);
+
+    // Confirm open make order has been removed
+    await send(
+      trading,
+      'updateAndGetQuantityBeingTraded',
+      [mln.options.address],
+      managerTxOpts
+    );
+
+    const isInOpenMakeOrder = await call(
+      trading,
+      'isInOpenMakeOrder',
+      [mln.options.address]
+    );
+    expect(isInOpenMakeOrder).toEqual(false);
   });
 });
