@@ -3,10 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
 import "../dependencies/WETH.sol";
-import "../fund/accounting/Accounting.sol";
-import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
 import "./interfaces/IUniswapFactory.sol";
 import "./interfaces/IUniswapExchange.sol";
 import "./ExchangeAdapter.sol";
@@ -87,8 +84,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
             "Src token cannot be the same as dest token"
         );
 
-        Hub hub = getHub();
-        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
+        address nativeAsset = getAccounting().NATIVE_ASSET();
 
         if (_srcToken == nativeAsset) {
             actualReceiveAmount_ = swapNativeAssetToToken(
@@ -134,19 +130,19 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         returns (uint actualReceiveAmount_)
     {
         // Convert WETH to ETH
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(_nativeAsset, _srcAmount);
+        require(
+            getAccounting().assetBalances(_nativeAsset) >= _srcAmount,
+            "swapNativeAssetToToken: insufficient native token assetBalance"
+        );
         WETH(payable(_nativeAsset)).withdraw(_srcAmount);
 
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_destToken);
-        actualReceiveAmount_ = IUniswapExchange(tokenExchange).ethToTokenTransferInput.value(
+        actualReceiveAmount_ = IUniswapExchange(tokenExchange).ethToTokenSwapInput.value(
             _srcAmount
         )
         (
             _minDestAmount,
-            add(block.timestamp, 1),
-            address(vault)
+            add(block.timestamp, 1)
         );
     }
 
@@ -167,16 +163,15 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         returns (uint actualReceiveAmount_)
     {
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
-        withdrawAndApproveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
+        approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
         actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToEthSwapInput(
             _srcAmount,
             _minDestAmount,
             add(block.timestamp, 1)
         );
 
-        // Convert ETH to WETH and move to Vault
+        // Convert ETH to WETH
         WETH(payable(_nativeAsset)).deposit.value(actualReceiveAmount_)();
-        getTrading().returnAssetToVault(_nativeAsset);
     }
 
     /// @param _targetExchange Address of Uniswap factory contract
@@ -195,15 +190,13 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint actualReceiveAmount_)
     {
-        Hub hub = getHub();
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
-        withdrawAndApproveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
-        actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToTokenTransferInput(
+        approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
+        actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
             _srcAmount,
             _minDestAmount,
             1,
             add(block.timestamp, 1),
-            address(Vault(hub.vault())),
             _destToken
         );
     }

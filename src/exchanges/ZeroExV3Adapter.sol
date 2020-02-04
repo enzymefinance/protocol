@@ -3,9 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/token/IERC20.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/vault/Vault.sol";
-import "../fund/accounting/Accounting.sol";
 import "../dependencies/DSMath.sol";
 import "./interfaces/IZeroExV3.sol";
 import "./ExchangeAdapter.sol";
@@ -103,14 +100,14 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         internal
     {
         approveProtocolFeeAsset(_targetExchange);
-        withdrawAndApproveAsset(
+        approveAsset(
             getAssetAddress(_order.takerAssetData),
             getAssetProxy(_targetExchange, _order.takerAssetData),
             _order.takerAssetAmount,
             "takerAsset"
         );
         if (_order.takerFee > 0) {
-            withdrawAndApproveAsset(
+            approveAsset(
                 getAssetAddress(_order.takerFeeAssetData),
                 getAssetProxy(_targetExchange, _order.takerFeeAssetData),
                 _order.takerFee,
@@ -125,9 +122,9 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         if (protocolFeeCollector == address(0) || protocolFeeAmount == 0) return;
 
         Hub hub = getHub();
-        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
+        address nativeAsset = getAccounting().NATIVE_ASSET();
 
-        withdrawAndApproveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
+        approveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
     }
 
     /// @dev Needed to avoid stack too deep error
@@ -155,7 +152,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         // Account for case where makerAsset, takerFee, protocolFee are the same
         uint256 makerAssetFeesTotal;
         if (
-            makerAsset == Accounting(hub.accounting()).NATIVE_ASSET() &&
+            makerAsset == getAccounting().NATIVE_ASSET() &&
             IZeroExV3(_targetExchange).protocolFeeCollector() != address(0)
         )
         {
@@ -187,7 +184,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         address makerAsset = getAssetAddress(_order.makerAssetData);
         address takerAsset = getAssetAddress(_order.takerAssetData);
 
-        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             _targetExchange,
             IZeroExV3(_targetExchange).getOrderInfo(_order).orderHash,

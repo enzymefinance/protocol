@@ -2,7 +2,6 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../hub/Spoke.sol";
-import "../vault/Vault.sol";
 import "../policies/PolicyManager.sol";
 import "../policies/TradingSignatures.sol";
 import "../../factory/Factory.sol";
@@ -75,6 +74,10 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
 
     function addExchange(address _exchange, address _adapter) external auth {
         _addExchange(_exchange, _adapter);
+    }
+
+    function withdraw(address _token, uint _amount) external auth {
+        safeTransfer(_token, msg.sender, _amount);
     }
 
     function _addExchange(
@@ -205,20 +208,6 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
                 fillTakerQuantity: orderValues[2]
             }));
         }
-    }
-
-    function returnBatchToVault(address[] memory _tokens) public {
-        for (uint i = 0; i < _tokens.length; i++) {
-            returnAssetToVault(_tokens[i]);
-        }
-    }
-
-    function returnAssetToVault(address _token) public {
-        require(
-            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
-            "Sender is not this contract or manager"
-        );
-        safeTransfer(_token, routes.vault, IERC20(_token).balanceOf(address(this)));
     }
 
     function getExchangeInfo() public view returns (address[] memory, address[] memory, bool[] memory) {

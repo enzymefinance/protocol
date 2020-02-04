@@ -31,6 +31,8 @@ interface ITrading {
 
     function updateAndGetQuantityBeingTraded(address _asset) external returns (uint256);
     function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256);
+
+    function withdraw(address _token, uint _amount) external;
 }
 
 interface ITradingFactory {
