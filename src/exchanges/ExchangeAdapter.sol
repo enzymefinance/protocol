@@ -25,7 +25,7 @@ contract ExchangeAdapter is DSMath {
 
     modifier onlyManager() {
         require(
-            getManager() == msg.sender,
+            getHub().manager() == msg.sender,
             "Manager must be sender"
         );
         _;
@@ -33,31 +33,57 @@ contract ExchangeAdapter is DSMath {
 
     modifier notShutDown() {
         require(
-            !hubShutDown(),
+            !getHub().isShutDown(),
             "Hub must not be shut down"
         );
         _;
     }
 
-    function getTrading() internal view returns (Trading) {
-        return Trading(payable(address(this)));
-    }
+    // PUBLIC FUNCTIONS
 
-    function getHub() internal view returns (Hub) {
-        return Hub(getTrading().hub());
-    }
+    /// @param _orderAddresses [0] Order maker
+    /// @param _orderAddresses [1] Order taker
+    /// @param _orderAddresses [2] Order maker asset
+    /// @param _orderAddresses [3] Order taker asset
+    /// @param _orderAddresses [4] feeRecipientAddress
+    /// @param _orderAddresses [5] senderAddress
+    /// @param _orderAddresses [6] maker fee asset
+    /// @param _orderAddresses [7] taker fee asset
+    /// @param _orderValues [0] makerAssetAmount
+    /// @param _orderValues [1] takerAssetAmount
+    /// @param _orderValues [2] Maker fee
+    /// @param _orderValues [3] Taker fee
+    /// @param _orderValues [4] expirationTimeSeconds
+    /// @param _orderValues [5] Salt/nonce
+    /// @param _orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param _orderValues [7] Dexy signature mode
+    /// @param _orderData [0] Encoded data specific to maker asset
+    /// @param _orderData [1] Encoded data specific to taker asset
+    /// @param _orderData [2] Encoded data specific to maker asset fee
+    /// @param _orderData [3] Encoded data specific to taker asset fee
+    /// @param _identifier Order identifier
+    /// @param _signature Signature of order maker
 
-    function getAccounting() internal view returns (Accounting) {
-        return Accounting(getHub().accounting());
-    }
+    // Responsibilities of takeOrder are:
+    // - check sender
+    // - check fund not shut down
+    // - check not buying own fund tokens
+    // - check price exists for asset pair
+    // - check price is recent
+    // - check price passes risk management
+    // - approve funds to be traded (if necessary)
+    // - take order from the exchange
+    // - check order was taken (if possible)
+    function takeOrder(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    ) public virtual { revert("Unimplemented"); }
 
-    function hubShutDown() internal view returns (bool) {
-        return getHub().isShutDown();
-    }
-
-    function getManager() internal view returns (address) {
-        return getHub().manager();
-    }
+    // INTERNAL FUNCTIONS
 
     /// @notice Increment allowance of an asset for some target
     function approveAsset(
@@ -80,45 +106,15 @@ contract ExchangeAdapter is DSMath {
         );
     }
 
-    /// @param orderAddresses [0] Order maker
-    /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [4] feeRecipientAddress
-    /// @param orderAddresses [5] senderAddress
-    /// @param orderAddresses [6] maker fee asset
-    /// @param orderAddresses [7] taker fee asset
-    /// @param orderValues [0] makerAssetAmount
-    /// @param orderValues [1] takerAssetAmount
-    /// @param orderValues [2] Maker fee
-    /// @param orderValues [3] Taker fee
-    /// @param orderValues [4] expirationTimeSeconds
-    /// @param orderValues [5] Salt/nonce
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param orderValues [7] Dexy signature mode
-    /// @param orderData [0] Encoded data specific to maker asset
-    /// @param orderData [1] Encoded data specific to taker asset
-    /// @param orderData [2] Encoded data specific to maker asset fee
-    /// @param orderData [3] Encoded data specific to taker asset fee
-    /// @param identifier Order identifier
-    /// @param signature Signature of order maker
+    function getAccounting() internal view returns (Accounting) {
+        return Accounting(getHub().accounting());
+    }
 
-    // Responsibilities of takeOrder are:
-    // - check sender
-    // - check fund not shut down
-    // - check not buying own fund tokens
-    // - check price exists for asset pair
-    // - check price is recent
-    // - check price passes risk management
-    // - approve funds to be traded (if necessary)
-    // - take order from the exchange
-    // - check order was taken (if possible)
-    function takeOrder(
-        address targetExchange,
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData,
-        bytes32 identifier,
-        bytes memory signature
-    ) public virtual { revert("Unimplemented"); }
+    function getHub() internal view returns (Hub) {
+        return Hub(getTrading().hub());
+    }
+
+    function getTrading() internal view returns (Trading) {
+        return Trading(payable(address(this)));
+    }
 }
