@@ -2,9 +2,7 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../engine/Engine.sol";
-import "../fund/hub/Hub.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/vault/Vault.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/WETH.sol";
 import "../dependencies/token/IERC20.sol";
@@ -29,15 +27,13 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         bytes32 identifier,
         bytes memory signature
     ) public override onlyManager notShutDown {
-        Hub hub = getHub();
-
         address wethAddress = orderAddresses[2];
         address mlnAddress = orderAddresses[3];
         uint minEthToReceive = orderValues[0];
         uint mlnQuantity = orderValues[1];
 
         require(
-            wethAddress == Registry(hub.registry()).nativeAsset(),
+            wethAddress == Registry(getHub().registry()).nativeAsset(),
             "maker asset doesnt match nativeAsset on registry"
         );
         require(
@@ -45,7 +41,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
             "fillTakerQuantity must equal takerAssetQuantity"
         );
 
-        withdrawAndApproveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
+        approveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
 
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
 
@@ -59,8 +55,6 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
 
         getAccounting().decreaseAssetBalance(mlnAddress, mlnQuantity);
         getAccounting().increaseAssetBalance(wethAddress, ethToReceive);
-
-        safeTransfer(wethAddress, address(Vault(hub.vault())), ethToReceive);
 
         getTrading().orderUpdateHook(
             targetExchange,

@@ -4,9 +4,6 @@ pragma experimental ABIEncoderV2;
 import "../dependencies/WETH.sol";
 import "../dependencies/token/IERC20.sol";
 import "../fund/trading/Trading.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/vault/Vault.sol";
-import "../fund/accounting/Accounting.sol";
 import "../prices/IPriceSource.sol";
 import "./interfaces/IKyberNetworkProxy.sol";
 import "./ExchangeAdapter.sol";
@@ -38,8 +35,6 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         bytes32 identifier,
         bytes memory signature
     ) public override onlyManager notShutDown {
-        Hub hub = getHub();
-
         require(
             orderValues[1] == orderValues[6],
             "fillTakerQuantity must equal takerAssetQuantity"
@@ -68,7 +63,6 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
         getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
 
-        getTrading().returnAssetToVault(makerAsset);
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),
@@ -91,9 +85,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint actualReceiveAmount)
     {
-
-        Hub hub = getHub();
-        address nativeAsset = Accounting(hub.accounting()).NATIVE_ASSET();
+        address nativeAsset = getAccounting().NATIVE_ASSET();
 
         if (srcToken == nativeAsset) {
             actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
@@ -124,9 +116,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         returns (uint receivedAmount)
     {
         // Convert WETH to ETH
-        Hub hub = getHub();
-        Vault vault = Vault(hub.vault());
-        vault.withdraw(nativeAsset, srcAmount);
+        require(
+            getAccounting().assetBalances(nativeAsset) >= srcAmount,
+            "swapNativeAssetToToken: insufficient native token assetBalance"
+        );
         WETH(payable(nativeAsset)).withdraw(srcAmount);
         receivedAmount = IKyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(destToken, minRate);
     }
@@ -148,7 +141,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        withdrawAndApproveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
+        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
 
         // Convert ETH to WETH
@@ -172,7 +165,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        withdrawAndApproveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
+        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
 
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
     }

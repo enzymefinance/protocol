@@ -1,10 +1,10 @@
 pragma solidity 0.6.1;
 
-import "../vault/Vault.sol";
 import "../shares/Shares.sol";
 import "../policies/PolicyManager.sol";
 import "../hub/Spoke.sol";
 import "../accounting/Accounting.sol";
+import "../trading/ITrading.sol";
 import "../../prices/IPriceSource.sol";
 import "../../factory/Factory.sol";
 import "../../engine/AmguConsumer.sol";
@@ -220,10 +220,10 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
-        // send necessary amount of investmentAsset to vault
+        // send necessary amount of investmentAsset to Trading
         safeTransfer(
             request.investmentAsset,
-            routes.vault,
+            routes.trading,
             totalShareCostInInvestmentAsset
         );
 
@@ -347,7 +347,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             if (ownershipQuantities[k] == 0) {
                 continue;
             } else {
-                Vault(routes.vault).withdraw(ofAsset, ownershipQuantities[k]);
+                ITrading(routes.trading).withdraw(ofAsset, ownershipQuantities[k]);
                 safeTransfer(ofAsset, msg.sender, ownershipQuantities[k]);
                 Accounting(routes.accounting).decreaseAssetBalance(ofAsset, ownershipQuantities[k]);
             }
