@@ -17,7 +17,6 @@ contract Hub is DSGuard {
         address policyManager;
         address shares;
         address trading;
-        address vault;
         address registry;
         address version;
         address engine;
@@ -51,7 +50,7 @@ contract Hub is DSGuard {
         emit FundShutDown();
     }
 
-    function initializeAndSetPermissions(address[11] calldata _spokes) external onlyCreator {
+    function initializeAndSetPermissions(address[10] calldata _spokes) external onlyCreator {
         require(!fundInitialized, "Fund is already initialized");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
@@ -62,11 +61,10 @@ contract Hub is DSGuard {
         routes.policyManager = _spokes[3];
         routes.shares = _spokes[4];
         routes.trading = _spokes[5];
-        routes.vault = _spokes[6];
-        routes.registry = _spokes[7];
-        routes.version = _spokes[8];
-        routes.engine = _spokes[9];
-        routes.mlnToken = _spokes[10];
+        routes.registry = _spokes[6];
+        routes.version = _spokes[7];
+        routes.engine = _spokes[8];
+        routes.mlnToken = _spokes[9];
 
         Spoke(routes.accounting).initialize(_spokes);
         Spoke(routes.feeManager).initialize(_spokes);
@@ -74,7 +72,6 @@ contract Hub is DSGuard {
         Spoke(routes.policyManager).initialize(_spokes);
         Spoke(routes.shares).initialize(_spokes);
         Spoke(routes.trading).initialize(_spokes);
-        Spoke(routes.vault).initialize(_spokes);
 
         permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
@@ -112,7 +109,7 @@ contract Hub is DSGuard {
             routes.shares,
             bytes4(keccak256('destroyFor(address,uint256)'))
         );
-        permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(routes.participation, routes.trading, bytes4(keccak256('withdraw(address,uint256)')));
         permit(
             routes.trading,
             routes.accounting,
@@ -133,11 +130,9 @@ contract Hub is DSGuard {
             routes.accounting,
             bytes4(keccak256('removeFromOwnedAssets(address)'))
         );
-        permit(routes.trading, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
         fundInitialized = true;
     }
 
-    function vault() external view returns (address) { return routes.vault; }
     function accounting() external view returns (address) { return routes.accounting; }
     function priceSource() external view returns (address) {
         return Registry(routes.registry).priceSource();
