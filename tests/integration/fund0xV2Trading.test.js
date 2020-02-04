@@ -398,12 +398,13 @@ describe('Fund makes an order', () => {
 
 describe('Fund cancels an order', () => {
   let signedOrder;
+  let makerTokenAddress;
 
-  test("Make order through the fund with different maker asset", async () => {
+  test('Make order through the fund with different maker asset', async () => {
     const { trading } = fund;
 
     const makerAddress = trading.options.address;
-    const makerTokenAddress = mln.options.address;
+    makerTokenAddress = mln.options.address;
     const makerAssetAmount = toWei('0.25', 'Ether');
     const takerTokenAddress = weth.options.address;
     const takerAssetAmount = toWei('0.025', 'Ether');
@@ -459,7 +460,7 @@ describe('Fund cancels an order', () => {
     expect(makerAssetAllowance).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 
-  test('Fund can cancel the order using just the orderId', async () => {
+  test('Fund can cancel the order', async () => {
     const { trading } = fund;
 
     const orderHashHex = orderHashUtils.getOrderHashHex(signedOrder);
@@ -473,7 +474,7 @@ describe('Fund cancels an order', () => {
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
+          makerTokenAddress,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
@@ -481,7 +482,7 @@ describe('Fund cancels an order', () => {
           EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        ['0x0', '0x0', '0x0', '0x0'],
+        [signedOrder.makerAssetData, '0x0', '0x0', '0x0'],
         orderHashHex,
         '0x0',
       ],
@@ -512,5 +513,4 @@ describe('Fund cancels an order', () => {
     expect(isInOpenMakeOrder).toEqual(false);
   });
 });
-
 // TODO - Expired order

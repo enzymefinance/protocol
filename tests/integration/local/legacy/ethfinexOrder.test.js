@@ -19,6 +19,7 @@ let signedOrder, unsignedOrder;
 let exchangeIndex;
 let trading;
 let mln, zrx;
+let makerTokenAddress;
 
 beforeEach(async () => {
   const accounts = await web3.eth.getAccounts();
@@ -60,7 +61,7 @@ beforeEach(async () => {
     user,
   );
 
-  const makerTokenAddress = await zrxWrapperLock.methods
+  makerTokenAddress = await zrxWrapperLock.methods
     .originalToken().call();
 
   const exchanges = await trading.methods.getExchangeInfo().call();
@@ -137,7 +138,7 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
     [
       EMPTY_ADDRESS,
       EMPTY_ADDRESS,
-      EMPTY_ADDRESS,
+      makerTokenAddress,
       EMPTY_ADDRESS,
       EMPTY_ADDRESS,
       EMPTY_ADDRESS,
@@ -145,7 +146,7 @@ test('Previously made ethfinex order cancelled and not takeable anymore', async 
       EMPTY_ADDRESS
     ],
     [0, 0, 0, 0, 0, 0, 0, 0],
-    ['0x0', '0x0', '0x0', '0x0'],
+    [signedOrder.makerAssetData, '0x0', '0x0', '0x0'],
     orderHashHex,
     '0x0',
   ).send(defaultTxOpts);

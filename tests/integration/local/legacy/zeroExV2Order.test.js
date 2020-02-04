@@ -180,7 +180,7 @@ describe('make0xOrder', () => {
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
+          makerToken.options.address,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
@@ -188,7 +188,7 @@ describe('make0xOrder', () => {
           EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        ['0x0', '0x0', '0x0', '0x0'],
+        [signedOrder.makerAssetData, '0x0', '0x0', '0x0'],
         orderHashHex,
         '0x0',
       ).send(defaultTxOpts);

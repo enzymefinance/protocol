@@ -14,7 +14,7 @@
  */
 
 import { assetDataUtils, orderHashUtils } from '@0x/order-utils';
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
@@ -979,6 +979,34 @@ describe('Fund can cancel an order with only the orderId', () => {
     const { trading } = fund;
 
     const orderHashHex = await orderHashUtils.getOrderHashAsync(signedOrder);
+
+    // Passing order hash which does not match exchange/asset pair causes error
+    await expect(
+      send(
+        trading,
+        'callOnExchange',
+        [
+          exchangeIndex,
+          cancelOrderSignature,
+          [
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            dai.options.address,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS,
+            EMPTY_ADDRESS
+          ],
+          [0, 0, 0, 0, 0, 0, 0, 0],
+          [signedOrder.makerAssetData, '0x', '0x', '0x'],
+          randomHex(16),
+          '0x0',
+        ],
+        managerTxOpts
+      )
+    ).rejects.toThrowError('Passed identifier does not match that stored in Trading');
+
     await send(
       trading,
       'callOnExchange',
@@ -988,7 +1016,7 @@ describe('Fund can cancel an order with only the orderId', () => {
         [
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
+          dai.options.address,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
           EMPTY_ADDRESS,
@@ -996,7 +1024,7 @@ describe('Fund can cancel an order with only the orderId', () => {
           EMPTY_ADDRESS
         ],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        ['0x', '0x', '0x', '0x'],
+        [signedOrder.makerAssetData, '0x', '0x', '0x'],
         orderHashHex,
         '0x0',
       ],

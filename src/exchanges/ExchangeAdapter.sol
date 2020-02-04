@@ -30,12 +30,18 @@ contract ExchangeAdapter is DSMath {
     }
 
     /// @dev Either manager sends, fund shut down, or order expired
-    function ensureCancelPermitted(address exchange, address asset) internal {
+    function ensureCancelPermitted(address _exchange, address _asset, bytes32 _id) internal {
         require(
             getManager() == msg.sender ||
             hubShutDown() ||
-            getTrading().isOrderExpired(exchange, asset),
+            getTrading().isOrderExpired(_exchange, _asset),
             "No cancellation condition met"
+        );
+        uint256 storedId;
+        (storedId,,,) = getTrading().exchangesToOpenMakeOrders(_exchange, _asset);
+        require(
+            uint256(_id) == storedId,
+            "Passed identifier does not match that stored in Trading"
         );
     }
 

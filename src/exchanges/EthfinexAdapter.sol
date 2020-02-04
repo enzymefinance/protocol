@@ -99,7 +99,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
         orderAddressesMatchOrderData(_orderAddresses, _orderData)
     {
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(_identifier);
-        ensureCancelPermitted(_targetExchange, getAssetAddress(order.makerAssetData));
+        ensureCancelPermitted(_targetExchange, _orderAddresses[2], _identifier);
         IZeroExV2(_targetExchange).cancelOrder(order);
 
         updateStateCancelOrder(_targetExchange, order);

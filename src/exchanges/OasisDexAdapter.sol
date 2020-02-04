@@ -158,10 +158,9 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes memory signature
     ) public override {
         require(uint256(identifier) != 0, "ID cannot be zero");
-
         address makerAsset;
         (, makerAsset, ,) = IOasisDex(targetExchange).getOffer(uint256(identifier));
-        ensureCancelPermitted(targetExchange, makerAsset);
+        ensureCancelPermitted(targetExchange, makerAsset, identifier);
 
         require(
             address(makerAsset) == orderAddresses[2],
@@ -169,9 +168,7 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         );
 
         getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
-        IOasisDex(targetExchange).cancel(
-            uint256(identifier)
-        );
+        IOasisDex(targetExchange).cancel(uint256(identifier));
         getTrading().returnAssetToVault(makerAsset);
         getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(

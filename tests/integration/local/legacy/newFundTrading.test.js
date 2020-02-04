@@ -482,8 +482,7 @@ Array.from(Array(numberOfExchanges).keys()).forEach(i => {
         ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
         '0x0',
-      )
-      .send(managerTxOpts);
+      ).send(managerTxOpts);
     const orderId = await exchanges[i].methods.last_offer_id().call();
     await fund.trading.methods
       .callOnExchange(

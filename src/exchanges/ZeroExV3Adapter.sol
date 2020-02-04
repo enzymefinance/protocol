@@ -153,8 +153,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
     {
         IZeroExV3.Order memory order = getTrading().getZeroExV3OrderDetails(_identifier);
-        ensureCancelPermitted(_targetExchange, getAssetAddress(order.makerAssetData));
-
+        ensureCancelPermitted(_targetExchange, getAssetAddress(order.makerAssetData), _identifier);
         if (order.expirationTimeSeconds > block.timestamp) {
             IZeroExV3(_targetExchange).cancelOrder(order);
         }

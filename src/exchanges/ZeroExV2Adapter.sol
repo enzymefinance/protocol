@@ -157,7 +157,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         orderAddressesMatchOrderData(orderAddresses, orderData)
     {
         IZeroExV2.Order memory order = getTrading().getZeroExV2OrderDetails(identifier);
-        ensureCancelPermitted(targetExchange, getAssetAddress(order.makerAssetData));
+        ensureCancelPermitted(targetExchange, orderAddresses[2], identifier);
 
         if (order.expirationTimeSeconds > block.timestamp) {
             IZeroExV2(targetExchange).cancelOrder(order);

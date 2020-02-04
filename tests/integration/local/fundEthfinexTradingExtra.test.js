@@ -182,7 +182,7 @@ test('Cancel the order and withdraw tokens', async () => {
       [
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
+        weth.options.address,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
@@ -190,7 +190,7 @@ test('Cancel the order and withdraw tokens', async () => {
         EMPTY_ADDRESS
       ],
       [0, 0, 0, 0, 0, 0, 0, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
+      [signedOrder.makerAssetData, '0x0', '0x0', '0x0'],
       orderHashHex,
       '0x0',
     ],
