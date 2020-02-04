@@ -49,17 +49,19 @@ contract MockAdapter is ExchangeAdapter {
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
-        uint takerQuantity = orderValues[1];
         uint fillTakerQuantity = orderValues[6];
 
         withdrawAndApproveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
 
-        getTrading().orderUpdateHook(
+        emit OrderFilled(
             targetExchange,
-            bytes32(identifier),
-            Trading.UpdateType.take,
-            [payable(makerAsset), payable(takerAsset)],
-            [makerQuantity, takerQuantity, fillTakerQuantity]
+            OrderType.Take,
+            makerAsset,
+            makerQuantity,
+            takerAsset,
+            fillTakerQuantity,
+            new address[](0),
+            new uint256[](0)
         );
     }
 

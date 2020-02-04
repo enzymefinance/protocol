@@ -63,12 +63,15 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
         getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
 
-        getTrading().orderUpdateHook(
+        emit OrderFilled(
             targetExchange,
-            bytes32(0),
-            Trading.UpdateType.take,
-            [payable(makerAsset), payable(takerAsset)],
-            [actualReceiveAmount, takerAssetAmount, takerAssetAmount]
+            OrderType.Take,
+            makerAsset,
+            actualReceiveAmount,
+            takerAsset,
+            takerAssetAmount,
+            new address[](0),
+            new uint256[](0)
         );
     }
 

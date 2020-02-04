@@ -51,12 +51,15 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
         getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
 
-        updateStateTakeOrder(
+        emit OrderFilled(
             _targetExchange,
+            OrderType.Take,
             makerAsset,
+            actualReceiveAmount,
             takerAsset,
             takerAssetAmount,
-            actualReceiveAmount
+            new address[](0),
+            new uint256[](0)
         );
     }
 
@@ -198,24 +201,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
             1,
             add(block.timestamp, 1),
             _destToken
-        );
-    }
-
-    function updateStateTakeOrder(
-        address _targetExchange,
-        address _makerAsset,
-        address _takerAsset,
-        uint256 _takerAssetAmount,
-        uint256 _actualReceiveAmount
-    )
-        internal
-    {
-        getTrading().orderUpdateHook(
-            _targetExchange,
-            bytes32(0),
-            Trading.UpdateType.take,
-            [payable(_makerAsset), payable(_takerAsset)],
-            [_actualReceiveAmount, _takerAssetAmount, _takerAssetAmount]
         );
     }
 }
