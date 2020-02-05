@@ -247,7 +247,7 @@ contract FundFactory is AmguConsumer, Factory {
             "Components must be set before completing setup"
         );
         childExists[address(hub)] = true;
-        hub.setSpokes([
+        hub.initializeAndSetPermissions([
             routes.accounting,
             routes.feeManager,
             routes.participation,
@@ -260,8 +260,6 @@ contract FundFactory is AmguConsumer, Factory {
             routes.engine,
             routes.mlnToken
         ]);
-        hub.setRouting();
-        hub.setPermissions();
         funds.push(address(hub));
         associatedRegistry.registerFund(
             address(hub),

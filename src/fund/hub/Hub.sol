@@ -29,9 +29,7 @@ contract Hub is DSGuard {
     address public creator;
     string public name;
     bool public isShutDown;
-    bool public spokesSet;
-    bool public routingSet;
-    bool public permissionsSet;
+    bool public fundInitialized;
     uint public creationTime;
     mapping (address => bool) public isSpoke;
 
@@ -53,8 +51,8 @@ contract Hub is DSGuard {
         emit FundShutDown();
     }
 
-    function setSpokes(address[11] calldata _spokes) external onlyCreator {
-        require(!spokesSet, "Spokes already set");
+    function initializeAndSetPermissions(address[11] calldata _spokes) external onlyCreator {
+        require(!fundInitialized, "Fund is already initialized");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
         }
@@ -69,32 +67,15 @@ contract Hub is DSGuard {
         routes.version = _spokes[8];
         routes.engine = _spokes[9];
         routes.mlnToken = _spokes[10];
-        spokesSet = true;
-    }
 
-    function setRouting() external onlyCreator {
-        require(spokesSet, "Spokes must be set");
-        require(!routingSet, "Routing already set");
-        address[11] memory spokes = [
-            routes.accounting, routes.feeManager, routes.participation,
-            routes.policyManager, routes.shares, routes.trading,
-            routes.vault, routes.registry,
-            routes.version, routes.engine, routes.mlnToken
-        ];
-        Spoke(routes.accounting).initialize(spokes);
-        Spoke(routes.feeManager).initialize(spokes);
-        Spoke(routes.participation).initialize(spokes);
-        Spoke(routes.policyManager).initialize(spokes);
-        Spoke(routes.shares).initialize(spokes);
-        Spoke(routes.trading).initialize(spokes);
-        Spoke(routes.vault).initialize(spokes);
-        routingSet = true;
-    }
+        Spoke(routes.accounting).initialize(_spokes);
+        Spoke(routes.feeManager).initialize(_spokes);
+        Spoke(routes.participation).initialize(_spokes);
+        Spoke(routes.policyManager).initialize(_spokes);
+        Spoke(routes.shares).initialize(_spokes);
+        Spoke(routes.trading).initialize(_spokes);
+        Spoke(routes.vault).initialize(_spokes);
 
-    function setPermissions() external onlyCreator {
-        require(spokesSet, "Spokes must be set");
-        require(routingSet, "Routing must be set");
-        require(!permissionsSet, "Permissioning already set");
         permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(routes.trading, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(routes.participation, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
@@ -109,7 +90,7 @@ contract Hub is DSGuard {
         permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
         permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
         permit(manager, routes.trading, bytes4(keccak256('addExchange(address,address)')));
-        permissionsSet = true;
+        fundInitialized = true;
     }
 
     function vault() external view returns (address) { return routes.vault; }

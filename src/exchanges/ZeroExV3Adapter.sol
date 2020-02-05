@@ -76,7 +76,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
     {
         ensureCanMakeOrder(_orderAddresses[2]);
-        Hub hub = getHub();
 
         IZeroExV3.Order memory order = constructOrderStruct(_orderAddresses, _orderValues, _orderData);
         address makerAsset = getAssetAddress(_orderData[0]);
