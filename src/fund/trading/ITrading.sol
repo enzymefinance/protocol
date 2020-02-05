@@ -1,38 +1,50 @@
 pragma solidity 0.6.1;
-
 pragma experimental ABIEncoderV2;
 
-// TODO: Restore indexed params
+import "../hub/IHub.sol";
 
-/// @notice Mediation between a Fund and exchanges
 interface ITrading {
+    struct Exchange {
+        address exchange;
+        address adapter;
+        bool takesCustody;
+    }
+
+    // STORAGE
+    function adapterIsAdded(address) external view returns (bool);
+    function exchanges(uint256 _index) external view returns (Exchange memory);
+
+    // FUNCTIONS
     function callOnExchange(
-        uint exchangeIndex,
-        string calldata methodSignature,
-        address[8] calldata orderAddresses,
-        uint[8] calldata orderValues,
-        bytes[4] calldata orderData,
-        bytes32 identifier,
-        bytes calldata signature
+        uint _exchangeIndex,
+        string calldata _methodSignature,
+        address[8] calldata _orderAddresses,
+        uint[8] calldata _orderValues,
+        bytes[4] calldata _orderData,
+        bytes32 _identifier,
+        bytes calldata _signature
     ) external;
+    function getExchangeInfo()
+        external
+        view
+        returns (address[] memory, address[] memory, bool[] memory);
 
-    function addOpenMakeOrder(
-        address ofExchange,
-        address ofSellAsset,
-        address ofBuyAsset,
-        uint orderId,
-        uint expiryTime
-    ) external;
-
-    function removeOpenMakeOrder(
-        address ofExchange,
-        address ofSellAsset
-    ) external;
-
-    function updateAndGetQuantityBeingTraded(address _asset) external returns (uint256);
-    function getOpenMakeOrdersAgainstAsset(address _asset) external view returns (uint256);
-
+    // Caller: Auth only
+    function addExchange(address _exchange, address _adapter) external;
     function withdraw(address _token, uint _amount) external;
+
+    // INHERITED: ISpoke
+    // STORAGE
+    function hub() external view returns (IHub);
+    function initialized() external view returns (bool);
+    function routes() external view returns (IHub.Routes memory);
+
+    // FUNCTIONS
+    function engine() external view returns (address);
+    function mlnToken() external view returns (address);
+    function priceSource() external view returns (address);
+    function version() external view returns (address);
+    function registry() external view returns (address);
 }
 
 interface ITradingFactory {
