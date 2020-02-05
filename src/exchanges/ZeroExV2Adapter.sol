@@ -80,8 +80,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     )
         public
         override
-        onlyManager
-        notShutDown
         orderAddressesMatchOrderData(orderAddresses, orderData)
     {
         IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);

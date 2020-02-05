@@ -27,8 +27,6 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     )
         public
         override
-        onlyManager
-        notShutDown
     {
         require(
             _orderValues[1] == _orderValues[6],

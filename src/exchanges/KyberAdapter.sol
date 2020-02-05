@@ -34,7 +34,10 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyManager notShutDown {
+    )
+        public
+        override
+    {
         require(
             orderValues[1] == orderValues[6],
             "fillTakerQuantity must equal takerAssetQuantity"
