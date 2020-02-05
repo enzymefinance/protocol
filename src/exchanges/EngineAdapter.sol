@@ -26,7 +26,10 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyManager notShutDown {
+    )
+        public
+        override
+    {
         address wethAddress = orderAddresses[2];
         address mlnAddress = orderAddresses[3];
         uint minEthToReceive = orderValues[0];
