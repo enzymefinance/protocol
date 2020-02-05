@@ -125,28 +125,9 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         onlyInitialized
     {
         bytes4 methodSelector = bytes4(keccak256(bytes(methodSignature)));
-        require(
-            Registry(routes.registry).adapterMethodIsAllowed(
-                exchanges[exchangeIndex].adapter,
-                methodSelector
-            ),
-            "Adapter method not allowed"
-        );
+        validateCallOnExchange(exchangeIndex, methodSelector, orderAddresses);
+
         PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        if (methodSelector == TAKE_ORDER) {
-            require(Registry(routes.registry).assetIsRegistered(
-                orderAddresses[2]), 'Maker asset not registered'
-            );
-            require(Registry(routes.registry).assetIsRegistered(
-                orderAddresses[3]), 'Taker asset not registered'
-            );
-            if (orderAddresses[7] != address(0)) {
-                require(
-                    Registry(routes.registry).assetIsRegistered(orderAddresses[7]),
-                    'Taker fee asset not registered'
-                );
-            }
-        }
         (bool success, bytes memory returnData) = exchanges[exchangeIndex].adapter.delegatecall(
             abi.encodeWithSignature(
                 methodSignature,
@@ -181,6 +162,47 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
             takesCustody[i] = exchanges[i].takesCustody;
         }
         return (ofExchanges, ofAdapters, takesCustody);
+    }
+
+    function validateCallOnExchange(
+        uint256 _exchangeIndex,
+        bytes4 _methodSelector,
+        address[8] memory _orderAddresses
+    )
+        internal
+        view
+    {
+        require(
+            hub.manager() == msg.sender,
+            "Manager must be sender"
+        );
+        require(
+            !hub.isShutDown(),
+            "Hub must not be shut down"
+        );
+        Registry registry = Registry(routes.registry);
+        require(
+            registry.adapterMethodIsAllowed(
+                exchanges[_exchangeIndex].adapter,
+                _methodSelector
+            ),
+            "Adapter method not allowed"
+        );
+
+        if (_methodSelector == TAKE_ORDER) {
+            require(registry.assetIsRegistered(
+                _orderAddresses[2]), 'Maker asset not registered'
+            );
+            require(registry.assetIsRegistered(
+                _orderAddresses[3]), 'Taker asset not registered'
+            );
+            if (_orderAddresses[7] != address(0)) {
+                require(
+                    registry.assetIsRegistered(_orderAddresses[7]),
+                    'Taker fee asset not registered'
+                );
+            }
+        }
     }
 }
 
