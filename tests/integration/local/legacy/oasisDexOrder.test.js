@@ -113,6 +113,7 @@ describe('make-oasis-dex-order', () => {
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
       'cancelOrder',
     );
+    console.log(order1Vals.id)
     await trading.methods
       .callOnExchange(
         exchangeIndex,

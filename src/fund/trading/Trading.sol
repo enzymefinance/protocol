@@ -242,7 +242,6 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         address sellAsset
     ) internal {
         if (isInOpenMakeOrder[sellAsset]) {
-
             makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN);
             address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
             delete exchangesToOpenMakeOrders[exchange][sellAsset];
@@ -329,7 +328,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         return sub(totalSellQuantity, totalSellQuantityInApprove); // Since quantity in approve is not actually in custody
     }
 
-    function returnBatchToVault(address[] memory _tokens) public {
+    function returnBatchToVault(address[] calldata _tokens) external {
         for (uint i = 0; i < _tokens.length; i++) {
             returnAssetToVault(_tokens[i]);
         }
@@ -337,8 +336,11 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
 
     function returnAssetToVault(address _token) public {
         require(
-            msg.sender == address(this) || msg.sender == hub.manager() || hub.isShutDown(),
-            "Sender is not this contract or manager"
+            msg.sender == address(this) ||
+            msg.sender == hub.manager() ||
+            !isInOpenMakeOrder[_token]  ||
+            hub.isShutDown(),
+            "returnAssetToVault: No return condition was met"
         );
         safeTransfer(_token, routes.vault, IERC20(_token).balanceOf(address(this)));
     }
