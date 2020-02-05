@@ -40,7 +40,10 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
         bytes[4] memory orderData,
         bytes32 identifier,
         bytes memory signature
-    ) public override onlyManager notShutDown {
+    )
+        public
+        override
+    {
         uint256 fillTakerQuantity = orderValues[6];
         uint256 maxMakerQuantity;
         address makerAsset;

@@ -23,22 +23,6 @@ contract ExchangeAdapter is DSMath {
     );
     enum OrderType { Take }
 
-    modifier onlyManager() {
-        require(
-            getHub().manager() == msg.sender,
-            "Manager must be sender"
-        );
-        _;
-    }
-
-    modifier notShutDown() {
-        require(
-            !getHub().isShutDown(),
-            "Hub must not be shut down"
-        );
-        _;
-    }
-
     // PUBLIC FUNCTIONS
 
     /// @param _orderAddresses [0] Order maker
