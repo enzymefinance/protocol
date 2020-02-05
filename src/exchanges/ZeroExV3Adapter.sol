@@ -68,8 +68,6 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
     )
         public
         override
-        onlyManager
-        notShutDown
         orderAddressesMatchOrderData(_orderAddresses, _orderValues, _orderData)
     {
         IZeroExV3.Order memory order = constructOrderStruct(_orderAddresses, _orderValues, _orderData);
