@@ -10,52 +10,44 @@ import "../../../exchanges/interfaces/IOasisDex.sol";
 contract PriceTolerance is TradingSignatures, DSMath {
     enum Applied { pre, post }
 
-    uint public tolerance;
+    uint256 public tolerance;
 
-    uint constant MULTIPLIER = 10 ** 16; // to give effect of a percentage
-    uint constant DIVISOR = 10 ** 18;
+    uint256 constant MULTIPLIER = 10 ** 16; // to give effect of a percentage
+    uint256 constant DIVISOR = 10 ** 18;
 
     // _tolerance: 10 equals to 10% of tolerance
-    constructor(uint _tolerancePercent) public {
+    constructor(uint256 _tolerancePercent) public {
         require(_tolerancePercent <= 100, "Tolerance range is 0% - 100%");
         tolerance = mul(_tolerancePercent, MULTIPLIER);
     }
 
     /// @notice Taken from OpenZeppelin (https://git.io/fhQqo)
-   function signedSafeSub(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a - b;
-        require((b >= 0 && c <= a) || (b < 0 && c > a));
+   function signedSafeSub(int256 _a, int256 _b) internal pure returns (int256) {
+        int256 c = _a - _b;
+        require((_b >= 0 && c <= _a) || (_b < 0 && c > _a));
 
         return c;
     }
 
-    function takeOasisDex(
-        address ofExchange,
-        bytes32 identifier,
-        uint fillTakerQuantity
-    ) public view returns (bool) {
-        uint maxMakerQuantity;
-        address makerAsset;
-        uint maxTakerQuantity;
-        address takerAsset;
-        (
-            maxMakerQuantity,
-            makerAsset,
-            maxTakerQuantity,
-            takerAsset
-        ) = IOasisDex(ofExchange).getOffer(uint(identifier));
-
-        uint fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
-
+    function checkPriceToleranceTakeOrder(
+        address _makerAsset,
+        address _takerAsset,
+        uint256 _fillMakerQuantity,
+        uint256 _fillTakerQuantity
+    )
+        internal
+        view
+        returns (bool)
+    {
         IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
-        uint referencePrice;
-        (referencePrice,) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
+        uint256 referencePrice;
+        (referencePrice,) = pricefeed.getReferencePriceInfo(_takerAsset, _makerAsset);
 
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            fillTakerQuantity,
-            fillMakerQuantity
+        uint256 orderPrice = pricefeed.getOrderPriceInfo(
+            _takerAsset,
+            _makerAsset,
+            _fillTakerQuantity,
+            _fillMakerQuantity
         );
 
         return orderPrice >= sub(
@@ -65,71 +57,80 @@ contract PriceTolerance is TradingSignatures, DSMath {
     }
 
     function takeGenericOrder(
-        address makerAsset,
-        address takerAsset,
-        uint[3] memory values
+        address _makerAsset,
+        address _takerAsset,
+        uint256[3] memory _values
     ) public view returns (bool) {
-        uint fillTakerQuantity = values[2];
-        uint fillMakerQuantity = mul(fillTakerQuantity, values[0]) / values[1];
-
-        IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
-        uint referencePrice;
-        (referencePrice, ) = pricefeed.getReferencePriceInfo(takerAsset, makerAsset);
-
-        uint orderPrice = pricefeed.getOrderPriceInfo(
-            takerAsset,
-            makerAsset,
-            fillTakerQuantity,
-            fillMakerQuantity
+        uint256 fillTakerQuantity = _values[2];
+        uint256 fillMakerQuantity = mul(fillTakerQuantity, _values[0]) / _values[1];
+        return checkPriceToleranceTakeOrder(
+            _makerAsset, _takerAsset, fillMakerQuantity, fillTakerQuantity
         );
+    }
 
-        return orderPrice >= sub(
-            referencePrice,
-            mul(tolerance, referencePrice) / DIVISOR
+    function takeOasisDex(
+        address _exchange,
+        bytes32 _identifier,
+        uint256 _fillTakerQuantity
+    ) public view returns (bool) {
+        uint256 maxMakerQuantity;
+        address makerAsset;
+        uint256 maxTakerQuantity;
+        address takerAsset;
+        (
+            maxMakerQuantity,
+            makerAsset,
+            maxTakerQuantity,
+            takerAsset
+        ) = IOasisDex(_exchange).getOffer(uint256(_identifier));
+
+        uint256 fillMakerQuantity = mul(_fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
+        return checkPriceToleranceTakeOrder(
+            makerAsset, takerAsset, fillMakerQuantity, _fillTakerQuantity
         );
     }
 
     function takeOrder(
-        address[5] memory addresses,
-        uint[3] memory values,
-        bytes32 identifier
+        address[5] memory _addresses,
+        uint256[3] memory _values,
+        bytes32 _identifier
     ) public view returns (bool) {
-        if (identifier == 0x0) {
-            return takeGenericOrder(addresses[2], addresses[3], values);
+        if (_identifier == 0x0) {
+            return takeGenericOrder(_addresses[2], _addresses[3], _values);
         } else {
-            return takeOasisDex(addresses[4], identifier, values[2]);
+            return takeOasisDex(_addresses[4], _identifier, _values[2]);
         }
     }
 
     function makeOrder(
-        address[5] memory addresses,
-        uint[3] memory values,
-        bytes32 identifier
+        address[5] memory _addresses,
+        uint256[3] memory _values,
+        bytes32 _identifier
     ) public view returns (bool) {
         IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
 
-        uint ratio;
-        (ratio,) = IPriceSource(pricefeed).getReferencePriceInfo(addresses[2], addresses[3]);
-        uint _value = IPriceSource(pricefeed).getOrderPriceInfo(addresses[2], addresses[3], values[0], values[1]);
+        uint256 ratio;
+        (ratio,) = IPriceSource(pricefeed).getReferencePriceInfo(_addresses[2], _addresses[3]);
+        uint256 value = IPriceSource(pricefeed).getOrderPriceInfo(_addresses[2], _addresses[3], _values[0], _values[1]);
 
-        int res = signedSafeSub(int(ratio), int(_value));
+        int res = signedSafeSub(int(ratio), int(value));
         if (res < 0) {
             return true;
         } else {
-            return wdiv(uint(res), ratio) <= tolerance;
+            return wdiv(uint256(res), ratio) <= tolerance;
         }
     }
 
     function rule(
-        bytes4 sig,
-        address[5] calldata addresses,
-        uint[3] calldata values,
-        bytes32 identifier
+        bytes4 _sig,
+        address[5] calldata _addresses,
+        uint256[3] calldata _values,
+        bytes32 _identifier
     ) external returns (bool) {
-        if (sig == MAKE_ORDER) {
-            return makeOrder(addresses, values, identifier);
-        } else if (sig == TAKE_ORDER) {
-            return takeOrder(addresses, values, identifier);
+        if (_sig == MAKE_ORDER) {
+            return makeOrder(_addresses, _values, _identifier);
+        } else if (_sig == TAKE_ORDER) {
+            return takeOrder(_addresses, _values, _identifier);
         }
         revert("Signature was neither MakeOrder nor TakeOrder");
     }
