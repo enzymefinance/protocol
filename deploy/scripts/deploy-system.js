@@ -6,6 +6,7 @@ const deployTokens = require('./deploy-tokens');
 const deployUniswap = require('./deploy-uniswap');
 const deployZeroExV2 = require('./deploy-zeroex-v2');
 const deployZeroExV3 = require('./deploy-zeroex-v3');
+const deployAirSwap = require('./deploy-airswap');
 const postDeployment = require('./post-deploy');
 
 // strip addresses from contract objects in a deployment
@@ -81,6 +82,11 @@ const deploySystem = async input => {
     const kyber = await deployKyber(input);
     deployOut.kyber.addr = getAllAddrs(kyber);
     contracts = Object.assign(contracts, kyber);
+  }
+  if (input.airSwap) {
+    const airSwap = await deployAirSwap(input);
+    deployOut.airSwap.addr = getAllAddrs(airSwap);
+    contracts = Object.assign(contracts, airSwap);
   }
   if (input.melon) {
     const melon = await deployMelon(input);
