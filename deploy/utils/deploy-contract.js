@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const web3 = require('./get-web3');
+const web3Utils = require('web3-utils');
 
 const outdir = path.resolve(`${__dirname}/../../out`);
 
@@ -34,6 +35,14 @@ const linkLibs = (name, libs) => {
   let bin = fs.readFileSync(`${outdir}/${name}.bin`, 'utf8').trim();
   for (const lib of libs) {
     const reg = new RegExp(`_+${lib.name}_+`, "g");
+    if (!web3Utils.isAddress(lib.addr)) {
+      console.error(`Invalid library address! Please check the address of the deployed ${lib.name} library`)
+      process.exit(1);
+    }
+    if (!bin.match(reg)) {
+      console.error(`Wrong library name! "${lib.name}" library is not included in "${name}" contract.`)
+      process.exit(1);
+    }
     bin = bin.replace(reg, lib.addr.replace("0x",""));
   }
   return bin;
