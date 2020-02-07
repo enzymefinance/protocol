@@ -106,16 +106,16 @@ describe('investment', () => {
     const errorMessage = 'Price not valid';
     const amount = toWei('1', 'ether');
 
-    await mockSystem.priceSource.methods
-      .setNeverValid(true)
-      .send(defaultTxOpts);
-
     await mockSystem.weth.methods
       .approve(mockSystem.participation.options.address, amount)
       .send(defaultTxOpts);
     await mockSystem.participation.methods
       .requestInvestment(amount, amount, mockSystem.weth.options.address)
       .send({ ...defaultTxOpts, value: defaultAmgu });
+    await mockSystem.priceSource.methods
+      .setNeverValid(true)
+      .send(defaultTxOpts);
+
     const requestExists = await mockSystem.participation.methods
       .hasRequest(user)
       .call();

@@ -127,6 +127,8 @@ contract TestingPriceFeed is DSMath {
     {
         uint quoteDecimals = assetsToDecimals[ofQuote];
 
+        bool bothValid = hasValidPrice(ofBase) && hasValidPrice(ofQuote);
+        require(bothValid, "Price not valid");
         // Price of 1 unit for the pair of same asset
         if (ofBase == ofQuote) {
             return (10 ** uint(quoteDecimals), quoteDecimals);

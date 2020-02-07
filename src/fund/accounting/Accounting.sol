@@ -43,8 +43,12 @@ contract Accounting is AmguConsumer, Spoke {
         DEFAULT_SHARE_PRICE = 10 ** uint(DENOMINATION_ASSET_DECIMALS);
     }
 
-    function getOwnedAssetsLength() external view returns (uint) {
+    function getOwnedAssetsLength() external view returns (uint256) {
         return ownedAssets.length;
+    }
+
+    function getOwnedAssets() external view returns (address[] memory) {
+        return ownedAssets;
     }
 
     function assetHoldings(address _asset) public returns (uint256) {

@@ -126,7 +126,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         onlyInitialized
     {
         PolicyManager(routes.policyManager).preValidate(
-            bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
+            msg.sig,
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
@@ -149,7 +149,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             timestamp: block.timestamp
         });
         PolicyManager(routes.policyManager).postValidate(
-            bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
+            msg.sig,
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
             bytes32(0)
@@ -206,10 +206,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         require(
             hasValidRequest(requestOwner),
             "No valid request for this address"
-        );
-        require(
-            IPriceSource(priceSource()).hasValidPrice(request.investmentAsset),
-            "Price not valid"
         );
 
         FeeManager(routes.feeManager).rewardManagementFee();
@@ -271,10 +267,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     {
         Shares shares = Shares(routes.shares);
 
-        if (msg.sender == hub.manager()) {
-            return 0;
-        }
-
         uint totalPerformanceFee = FeeManager(routes.feeManager).performanceFeeAmount();
         // The denominator is augmented because performanceFeeAmount() accounts for inflation
         // Since shares are directly transferred, we don't need to account for inflation in this case
@@ -295,7 +287,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     /// @notice Redeem shareQuantity across all assets
     function redeemQuantity(uint shareQuantity) public {
         address[] memory assetList;
-        (, assetList) = Accounting(routes.accounting).getFundHoldings();
+        assetList = Accounting(routes.accounting).getOwnedAssets();
         redeemWithConstraints(shareQuantity, assetList);
     }
 
@@ -396,4 +388,3 @@ contract ParticipationFactory is Factory {
         return participation;
     }
 }
-
