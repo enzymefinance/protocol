@@ -254,4 +254,60 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     const investor3Shares = await call(shares, 'balanceOf', [investor3]);
     expect(investor3Shares).toEqual(wantedShares3);
   });
+
+  test('Investor 1 buys more shares, with a different asset', async () => {
+    const { accounting, participation, shares } = fund;
+
+    const wantedShares = toWei('1', 'ether');
+
+    const offerAsset = dai.options.address;
+    const expectedOfferAssetCost = new BN(
+      await call(
+        accounting,
+        'getShareCostInAsset',
+        [wantedShares, offerAsset]
+      )
+    );
+    const offerAssetMaxQuantity = BNExpMul(
+      expectedOfferAssetCost,
+      new BN(toWei('1', 'ether')).add(shareSlippageTolerance)
+    ).toString();
+
+    // Investor 1 - dai
+    await send(dai, 'transfer', [investor1, offerAssetMaxQuantity], defaultTxOpts);
+    await send(
+      dai,
+      'approve',
+      [participation.options.address, offerAssetMaxQuantity],
+      investor1TxOpts
+    );
+    await send(
+      participation,
+      'requestInvestment',
+      [wantedShares, offerAssetMaxQuantity, offerAsset],
+      { ...investor1TxOpts, value: amguAmount }
+    );
+    // Need price update before participation executed
+    await delay(1000);
+
+    await send(
+      priceSource,
+      'update',
+      [
+        [weth.options.address, mln.options.address, dai.options.address],
+        [wethToEthRate, mlnToEthRate, daiToEthRate],
+      ],
+      defaultTxOpts
+    );
+
+    const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));
+    await send(
+      participation,
+      'executeRequestFor',
+      [investor1],
+      investor1TxOpts
+    );
+    const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));
+    expect(postInvestorShares).toEqual(preInvestorShares.add(new BN(wantedShares)));
+  });
 });
