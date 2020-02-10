@@ -45,7 +45,6 @@ contract PriceTolerance is TradingSignatures, DSMath {
 
         uint256 orderPrice = pricefeed.getOrderPriceInfo(
             _takerAsset,
-            _makerAsset,
             _fillTakerQuantity,
             _fillMakerQuantity
         );
@@ -111,7 +110,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
 
         uint256 ratio;
         (ratio,) = IPriceSource(pricefeed).getReferencePriceInfo(_addresses[2], _addresses[3]);
-        uint256 value = IPriceSource(pricefeed).getOrderPriceInfo(_addresses[2], _addresses[3], _values[0], _values[1]);
+        uint256 value = IPriceSource(pricefeed).getOrderPriceInfo(_addresses[2], _values[0], _values[1]);
 
         int res = signedSafeSub(int(ratio), int(value));
         if (res < 0) {

@@ -139,11 +139,6 @@ contract Accounting is AmguConsumer, Spoke {
         return (gav, feesInDenominationAsset, feesInShares, nav, sharePrice, gavPerShareNetManagementFee);
     }
 
-    function calcSharePrice() external returns (uint sharePrice) {
-        (,,,,sharePrice,) = performCalculations();
-        return sharePrice;
-    }
-
     function calcGavPerShareNetManagementFee()
         public
         returns (uint gavPerShareNetManagementFee)

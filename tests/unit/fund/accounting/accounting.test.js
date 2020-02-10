@@ -50,9 +50,6 @@ test('(contract) has proper values after initialization', async () => {
   await expect(
     call(accounting, 'NATIVE_ASSET')
   ).resolves.toBe(weth.options.address);
-  await expect(
-    call(accounting, 'calcSharePrice')
-  ).resolves.toBe(exaUnit);
 
   const initialCalculations = await call(accounting, 'performCalculations');
 

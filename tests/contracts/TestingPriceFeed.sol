@@ -144,7 +144,6 @@ contract TestingPriceFeed is DSMath {
 
     function getOrderPriceInfo(
         address sellAsset,
-        address buyAsset,
         uint sellQuantity,
         uint buyQuantity
     )

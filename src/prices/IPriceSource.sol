@@ -18,7 +18,7 @@ interface IPriceSource {
     function getInvertedPriceInfo(address ofAsset) external view returns (uint price, uint decimals);
 
     function getReferencePriceInfo(address _base, address _quote) external view returns (uint referencePrice, uint decimal);
-    function getOrderPriceInfo(address sellAsset, address buyAsset, uint sellQuantity, uint buyQuantity) external view returns (uint orderPrice);
+    function getOrderPriceInfo(address sellAsset, uint sellQuantity, uint buyQuantity) external view returns (uint orderPrice);
     function existsPriceOnAssetPair(address sellAsset, address buyAsset) external view returns (bool isExistent);
     function convertQuantity(
         uint fromAssetQuantity,

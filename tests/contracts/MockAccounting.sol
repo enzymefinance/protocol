@@ -68,9 +68,4 @@ contract MockAccounting is Spoke {
     function performCalculations() public view returns (uint, uint, uint, uint, uint) {
         return (gav, unclaimedFees, 0, nav, mockValuePerShare);
     }
-
-    function calcSharePrice() public view returns (uint sharePrice) {
-        (,,,,sharePrice) = performCalculations();
-        return sharePrice;
-    }
 }

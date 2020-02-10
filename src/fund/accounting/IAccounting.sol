@@ -16,7 +16,6 @@ interface IAccounting {
         uint sharePrice,
         uint gavPerShareNetManagementFee
     );
-    function calcSharePrice() external returns (uint);
     function calcGavPerShareNetManagementFee() external returns (uint);
 }
 
