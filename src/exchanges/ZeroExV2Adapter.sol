@@ -303,7 +303,10 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
                 _order.makerFee,
                 "makerFeeAsset"
             );
-            if (makerFeeAsset != makerAsset) getTrading().returnAssetToVault(makerFeeAsset);
+            if (
+                makerFeeAsset != makerAsset &&
+                !getTrading().isInOpenMakeOrder(makerFeeAsset)
+            ) getTrading().returnAssetToVault(makerFeeAsset);
         }
     }
 
