@@ -54,13 +54,6 @@ const deployMockSystem = async (
     CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
     [closeTime]
   );
-  await oasisDex.methods
-    .addTokenPairWhitelist(
-      quoteToken.options.address,
-      baseToken.options.address
-    )
-    .send(defaultTxOpts)
-
   const oasisDexAdapter = await deploy(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
 
   const version = await deploy(versionContract);
