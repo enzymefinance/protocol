@@ -67,7 +67,7 @@ const main = async input => {
   const exchanges = {};
   exchanges.engine = {
     exchange: engine.options.address,
-    adapter: engineAdapter.options.address 
+    adapter: engineAdapter.options.address
   };
   if (input.kyber) {
     exchanges.kyber = {
