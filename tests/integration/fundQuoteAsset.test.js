@@ -50,20 +50,6 @@ beforeAll(async () => {
   const oasisDexAdapter = contracts.OasisDexAdapter;
   oasisDexExchange = contracts.OasisDexExchange;
 
-  const mlnKncAlreadyWhitelisted = await call(
-    oasisDexExchange,
-    'isTokenPairWhitelisted',
-    [mln.options.address, knc.options.address]
-  );
-  if (!mlnKncAlreadyWhitelisted) {
-    await send(
-      oasisDexExchange,
-      'addTokenPairWhitelist',
-      [mln.options.address, knc.options.address],
-      defaultTxOpts
-    );
-  }
-
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address, knc.options.address],
     exchanges: [oasisDexExchange.options.address],
