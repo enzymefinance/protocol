@@ -22,7 +22,7 @@ let defaultTxOpts, managerTxOpts;
 let contracts;
 let eur, mln, weth, fund;
 let mlnExchange, eurExchange;
-let takeOrderSignature;
+let takeOrderSignature, testTakeOrderSignature;
 let exchangeIndex;
 let takerAddress;
 
@@ -39,6 +39,11 @@ beforeAll(async () => {
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
     'takeOrder',
+  );
+
+  testTakeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    'testTakeOrder',
   );
 
   eur = contracts.EUR;
@@ -176,7 +181,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
   const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
 
@@ -188,14 +193,13 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
 test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const { accounting, trading } = fund;
 
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = weth.options.address;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+  orderValues[2] = takerQuantity;
 
-  const makerQuantity = await call(
-    mlnExchange,
-    'getTokenToEthInputPrice',
-    [takerQuantity]
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[3]', 'uint[3]'],
+    [orderAddresses, orderValues],
   );
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
@@ -212,21 +216,22 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     'callOnExchange',
     [
       exchangeIndex,
-      takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        takerAddress,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
+      testTakeOrderSignature,
+      // [
+        // EMPTY_ADDRESS,
+        // takerAddress,
+        // makerAsset,
+        // takerAsset,
+        // EMPTY_ADDRESS,
+        // EMPTY_ADDRESS,
+        // EMPTY_ADDRESS,
+        // EMPTY_ADDRESS
+      // ],
+      // [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
+      // ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      // '0x0',
+      encodedParameters,
     ],
     managerTxOpts
   );
@@ -243,7 +248,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
   const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
 
@@ -325,7 +330,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
   const fundHoldingsEurDiff = postFundHoldingsEur.sub(preFundHoldingsEur);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
   expect(fundHoldingsEurDiff).bigNumberEq(postFundBalanceOfEur.sub(preFundBalanceOfEur));
