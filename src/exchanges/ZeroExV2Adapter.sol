@@ -287,11 +287,16 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         address makerAsset = getAssetAddress(_order.makerAssetData);
         bytes memory makerFeeAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
         address makerFeeAsset = getAssetAddress(makerFeeAssetData);
+        bytes32 orderHash = IZeroExV2(_targetExchange).getOrderInfo(_order).orderHash;
+        uint takerAssetFilledAmount = IZeroExV2(_targetExchange).filled(orderHash);
+        uint makerAssetFilledAmount = mul(takerAssetFilledAmount, _order.makerAssetAmount) / _order.takerAssetAmount;
+        uint256 makerAssetRemainingInOrder = sub(_order.makerAssetAmount, makerAssetFilledAmount);
+        uint256 makerFeeRemainingInOrder = mul(_order.makerFee, makerAssetRemainingInOrder) / _order.makerAssetAmount;
 
         revokeApproveAsset(
             makerAsset,
             getAssetProxy(_targetExchange, _order.makerAssetData),
-            _order.makerAssetAmount,
+            makerAssetRemainingInOrder,
             "makerAsset"
         );
         getTrading().returnAssetToVault(makerAsset);
@@ -300,7 +305,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             revokeApproveAsset(
                 makerFeeAsset,
                 getAssetProxy(_targetExchange, makerFeeAssetData),
-                _order.makerFee,
+                makerFeeRemainingInOrder,
                 "makerFeeAsset"
             );
             if (
