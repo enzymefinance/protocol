@@ -241,6 +241,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             _targetExchange,
             makerAsset,
             takerAsset,
+            address(0),
             uint256(orderInfo.orderHash),
             _order.expirationTimeSeconds
         );

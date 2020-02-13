@@ -49,6 +49,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         uint expiresAt; // Timestamp when the order expires
         uint orderIndex; // Index of the order in the orders array
         address buyAsset; // Address of the buy asset in the order
+        address feeAsset;
     }
 
     Exchange[] public exchanges;
@@ -56,6 +57,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     mapping (address => bool) public adapterIsAdded;
     mapping (address => mapping(address => OpenMakeOrder)) public exchangesToOpenMakeOrders;
     mapping (address => uint) public openMakeOrdersAgainstAsset;
+    mapping (address => uint) public openMakeOrdersUsingAssetAsFee;
     mapping (address => bool) public isInOpenMakeOrder;
     mapping (address => uint) public makerAssetCooldown;
     mapping (bytes32 => IZeroExV2.Order) internal orderIdToZeroExV2Order;
@@ -213,6 +215,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         address ofExchange,
         address sellAsset,
         address buyAsset,
+        address feeAsset,
         uint orderId,
         uint expirationTime
     ) public delegateInternal {
@@ -230,11 +233,13 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         isInOpenMakeOrder[sellAsset] = true;
         makerAssetCooldown[sellAsset] = add(actualExpirationTime, MAKE_ORDER_COOLDOWN);
         openMakeOrdersAgainstAsset[buyAsset] = add(openMakeOrdersAgainstAsset[buyAsset], 1);
+        if (feeAsset != address(0)) {
+            openMakeOrdersUsingAssetAsFee[feeAsset] = add(openMakeOrdersUsingAssetAsFee[feeAsset], 1);
+        }
         exchangesToOpenMakeOrders[ofExchange][sellAsset].id = orderId;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].expiresAt = actualExpirationTime;
         exchangesToOpenMakeOrders[ofExchange][sellAsset].orderIndex = sub(orders.length, 1);
         exchangesToOpenMakeOrders[ofExchange][sellAsset].buyAsset = buyAsset;
-
     }
 
     function _removeOpenMakeOrder(
@@ -244,8 +249,12 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         if (isInOpenMakeOrder[sellAsset]) {
             makerAssetCooldown[sellAsset] = add(block.timestamp, MAKE_ORDER_COOLDOWN);
             address buyAsset = exchangesToOpenMakeOrders[exchange][sellAsset].buyAsset;
+            address feeAsset = exchangesToOpenMakeOrders[exchange][sellAsset].feeAsset;
             delete exchangesToOpenMakeOrders[exchange][sellAsset];
             openMakeOrdersAgainstAsset[buyAsset] = sub(openMakeOrdersAgainstAsset[buyAsset], 1);
+            if (feeAsset != address(0)) {
+                openMakeOrdersUsingAssetAsFee[feeAsset] = sub(openMakeOrdersUsingAssetAsFee[feeAsset], 1);
+            }
         }
     }
 
@@ -302,7 +311,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         uint totalSellQuantity; // quantity in custody across exchanges
         uint totalSellQuantityInApprove; // quantity of asset in approve (allowance) but not custody of exchange
         for (uint i; i < exchanges.length; i++) {
-            if (exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id == 0) {
+            uint256 orderId = exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id;
+            if (orderId == 0) {
                 continue;
             }
             address sellAsset;
@@ -311,7 +321,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
                 ExchangeAdapter(exchanges[i].adapter)
                 .getOrder(
                     exchanges[i].exchange,
-                    exchangesToOpenMakeOrders[exchanges[i].exchange][ofAsset].id,
+                    orderId,
                     ofAsset
                 );
             if (remainingSellQuantity == 0) {    // remove id if remaining sell quantity zero (closed)
@@ -338,8 +348,8 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         require(
             msg.sender == address(this) ||
             msg.sender == hub.manager() ||
-            !isInOpenMakeOrder[_token]  ||
-            hub.isShutDown(),
+            hub.isShutDown()            ||
+            (!isInOpenMakeOrder[_token] && openMakeOrdersUsingAssetAsFee[_token] == 0),
             "returnAssetToVault: No return condition was met"
         );
         safeTransfer(_token, routes.vault, IERC20(_token).balanceOf(address(this)));

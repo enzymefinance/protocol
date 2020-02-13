@@ -69,7 +69,14 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
             [payable(makerAsset), payable(takerAsset)],
             [makerQuantity, takerQuantity, uint256(0)]
         );
-        getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, orderId, orderValues[4]);
+        getTrading().addOpenMakeOrder(
+            targetExchange,
+            makerAsset,
+            takerAsset,
+            address(0),
+            orderId,
+            orderValues[4]
+        );
         emit OrderCreated(orderId);
     }
 

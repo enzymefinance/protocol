@@ -38,7 +38,7 @@ contract ExchangeAdapter is DSMath {
             "No cancellation condition met"
         );
         uint256 storedId;
-        (storedId,,,) = getTrading().exchangesToOpenMakeOrders(_exchange, _asset);
+        (storedId,,,,) = getTrading().exchangesToOpenMakeOrders(_exchange, _asset);
         require(
             uint256(_id) == storedId,
             "Passed identifier does not match that stored in Trading"

@@ -352,6 +352,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             targetExchange,
             makerAsset,
             takerAsset,
+            getAssetAddress(IZeroExV2(targetExchange).ZRX_ASSET_DATA()),
             uint256(orderInfo.orderHash),
             order.expirationTimeSeconds
         );

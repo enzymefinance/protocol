@@ -34,7 +34,7 @@ contract MockAdapter is ExchangeAdapter {
             [payable(makerAsset), payable(takerAsset)],
             [makerQuantity, takerQuantity, uint(0)]
         );
-        getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, uint(identifier), 0);
+        getTrading().addOpenMakeOrder(targetExchange, makerAsset, takerAsset, address(0), uint(identifier), 0);
     }
 
     /// @notice Mock take order

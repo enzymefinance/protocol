@@ -20,6 +20,7 @@ interface ITrading {
         address ofExchange,
         address ofSellAsset,
         address ofBuyAsset,
+        address ofFeeAsset,
         uint orderId,
         uint expiryTime
     ) external;

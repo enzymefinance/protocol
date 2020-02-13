@@ -363,6 +363,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             _targetExchange,
             makerAsset,
             takerAsset,
+            getAssetAddress(_order.makerFeeAssetData),
             uint256(orderInfo.orderHash),
             _order.expirationTimeSeconds
         );
