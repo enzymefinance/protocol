@@ -5,7 +5,63 @@ import "./ExchangeAdapter.sol";
 import "./interfaces/ISwap.sol";
 
 contract AirSwapAdapter is ExchangeAdapter {
-    function decoderId() external pure override returns (uint) { return 2; }
+
+    function getRiskManagementArgs(
+        bytes calldata _encodedArgs
+    )
+        external
+        pure
+        override
+        returns (address[6] memory, uint[3] memory)
+    {
+        (
+            address[9] memory orderAddresses,
+            uint[8] memory orderValues, , , ,
+        ) = _decodeArgs(_encodedArgs);
+
+        return (
+            [
+                orderAddresses[0],
+                orderAddresses[2],
+                orderAddresses[1],
+                orderAddresses[3],
+                address(0),
+                address(0)
+            ],
+            [
+                orderValues[2],
+                orderValues[4],
+                orderValues[4]
+            ]
+        );
+    }
+
+    function _decodeArgs(
+        bytes memory _encodedArgs
+    )
+        internal
+        pure
+        returns (
+            address[9] memory orderAddresses,
+            uint[8] memory orderValues,
+            bytes4[3] memory tokenKinds,
+            bytes32[2] memory sigBytesComponents,
+            uint8 sigUintComponent,
+            bytes1 version
+        )
+    {
+        return abi.decode(
+            _encodedArgs,
+            (
+                address[9],
+                uint[8],
+                bytes4[3],
+                bytes32[2],
+                uint8,
+                bytes1
+            )
+        );
+    }
 
     function testTakeOrder(
         bytes memory _encodedArgs
@@ -22,7 +78,7 @@ contract AirSwapAdapter is ExchangeAdapter {
             bytes32[2] memory sigBytesComponents,
             uint8 sigUintComponent,
             bytes1 version
-        ) = abi.decode(_encodedArgs, (address[9], uint[8], bytes4[3], bytes32[2], uint8, bytes1));
+        ) = _decodeArgs(_encodedArgs);
 
         ISwap.Order memory order = _constructOrder(
             orderAddresses,
