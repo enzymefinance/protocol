@@ -299,7 +299,11 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             makerAssetRemainingInOrder,
             "makerAsset"
         );
-        getTrading().returnAssetToVault(makerAsset);
+        uint256 timesFeeAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
+        // only return makerAsset early when it is not being used as a fee anywhere
+        if (timesFeeAssetUsedAsFee == 0) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
 
         if (_order.makerFee > 0) {
             revokeApproveAsset(
@@ -308,10 +312,14 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
                 makerFeeRemainingInOrder,
                 "makerFeeAsset"
             );
+            // only return feeAsset when not used in another makeOrder AND
+            //  when it is only used as a fee in this order that we are cancelling
             if (
-                makerFeeAsset != makerAsset &&
-                !getTrading().isInOpenMakeOrder(makerFeeAsset)
-            ) getTrading().returnAssetToVault(makerFeeAsset);
+                !getTrading().isInOpenMakeOrder(makerFeeAsset) &&
+                timesFeeAssetUsedAsFee == 1
+            ) {
+                getTrading().returnAssetToVault(makerFeeAsset);
+            }
         }
     }
 
@@ -372,7 +380,12 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
         getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(makerAsset);
+        if (
+            !getTrading().isInOpenMakeOrder(makerAsset) &&
+            getTrading().openMakeOrdersUsingAssetAsFee(makerAsset) == 0
+        ) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
         getTrading().orderUpdateHook(
             targetExchange,
             IZeroExV2(targetExchange).getOrderInfo(order).orderHash,

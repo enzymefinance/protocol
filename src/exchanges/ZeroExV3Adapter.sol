@@ -304,15 +304,17 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
         uint256 makerAssetRemainingInOrder = sub(_order.makerAssetAmount, makerAssetFilledAmount);
         uint256 makerFeeRemainingInOrder = mul(_order.makerFee, makerAssetRemainingInOrder) / _order.makerAssetAmount;
 
-
-
         revokeApproveAsset(
             makerAsset,
             getAssetProxy(_targetExchange, _order.makerAssetData),
             makerAssetRemainingInOrder,
             "makerAsset"
         );
-        getTrading().returnAssetToVault(makerAsset);
+        uint256 timesFeeAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
+        // only return makerAsset early when it is not being used as a fee anywhere
+        if (timesFeeAssetUsedAsFee == 0) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
 
         if (_order.makerFee > 0) {
             revokeApproveAsset(
@@ -321,9 +323,11 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
                 makerFeeRemainingInOrder,
                 "makerFeeAsset"
             );
+            // only return feeAsset when not used in another makeOrder AND
+            //  when it is only used as a fee in this order that we are cancelling
             if (
-                makerFeeAsset != makerAsset &&
-                !getTrading().isInOpenMakeOrder(makerFeeAsset)
+                !getTrading().isInOpenMakeOrder(makerFeeAsset) &&
+                timesFeeAssetUsedAsFee == 1
             ) getTrading().returnAssetToVault(makerFeeAsset);
         }
     }
@@ -383,7 +387,12 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
         getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(makerAsset);
+        if (
+            !getTrading().isInOpenMakeOrder(makerAsset) &&
+            getTrading().openMakeOrdersUsingAssetAsFee(makerAsset) == 0
+        ) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
         getTrading().orderUpdateHook(
             _targetExchange,
             IZeroExV3(_targetExchange).getOrderInfo(_order).orderHash,
