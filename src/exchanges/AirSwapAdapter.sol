@@ -38,9 +38,9 @@ contract AirSwapAdapter is ExchangeAdapter {
 
     function swapToken(
         address _targetExchange,
-        bytes memory _encodedArgs
+        bytes calldata _encodedArgs
     )
-        public
+        external
         override
         onlyManager
         notShutDown

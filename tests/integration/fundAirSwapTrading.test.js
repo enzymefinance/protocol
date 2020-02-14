@@ -11,11 +11,10 @@ import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let contracts;
-let mln, weth, swapContract, erc20TransferHandler;
-let fund;
+let mln, weth, airSwapExchange, erc20TransferHandler;
 let swapTokenSignature;
 let exchangeIndex;
+let fund, contracts;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -32,16 +31,16 @@ beforeAll(async () => {
 
   mln = contracts.MLN;
   weth = contracts.WETH;
-  swapContract = contracts.Swap;
+  airSwapExchange = contracts.Swap;
   erc20TransferHandler = contracts.ERC20TransferHandler;
-  orders.setVerifyingContract(swapContract.options.address);
+  orders.setVerifyingContract(airSwapExchange.options.address);
 
   const version = contracts.Version;
   const airSwapAdapter = contracts.AirSwapAdapter;
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [swapContract.options.address],
+    exchanges: [airSwapExchange.options.address],
     exchangeAdapters: [airSwapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
@@ -57,12 +56,13 @@ beforeAll(async () => {
 });
 
 describe('Fund takes an order', () => {
-  let order;
 
   test('manager takes order through adapter', async () => {
+    const { trading, vault } = fund;
     const makerAssetAmount = toWei('1', 'ether');
+    const fillQuantity = toWei('0.05', 'ether');
 
-    order = await orders.getOrder({
+    const order = await orders.getOrder({
       signer: {
         wallet: deployer,
         token: mln.options.address,
@@ -71,10 +71,6 @@ describe('Fund takes an order', () => {
     });
 
     order.expiry = parseInt(order.expiry);
-
-    const { trading, vault } = fund;
-    const fillQuantity = toWei('0.05', 'ether');
-
     order.sender.wallet = trading.options.address;
     order.sender.token = weth.options.address;
     order.sender.amount = fillQuantity;
@@ -82,7 +78,7 @@ describe('Fund takes an order', () => {
     order.signature = await signatures.getWeb3Signature(
       order,
       deployer,
-      swapContract.options.address,
+      airSwapExchange.options.address,
       GANACHE_PROVIDER,
     );
 
@@ -124,12 +120,12 @@ describe('Fund takes an order', () => {
       [orderAddresses, orderValues, tokenKinds, sigBytesComponents, sigUintComponent, version],
     );
 
-    const encodedParameters = web3.utils.hexToBytes(hex);
+    const encodedArgs = web3.utils.hexToBytes(hex);
 
     await send(
       mln,
       'approve',
-      [swapContract.options.address, makerAssetAmount],
+      [airSwapExchange.options.address, makerAssetAmount],
       defaultTxOpts,
     );
 
@@ -140,11 +136,10 @@ describe('Fund takes an order', () => {
         exchangeIndex,
         swapTokenSignature,
         '0x0',
-        encodedParameters,
+        encodedArgs,
       ],
       managerTxOpts,
     );
-
   });
 
 });
