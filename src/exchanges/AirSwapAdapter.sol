@@ -6,7 +6,7 @@ import "./interfaces/ISwap.sol";
 
 contract AirSwapAdapter is ExchangeAdapter {
 
-    function getRiskManagementArgs(
+    function extractRiskManagementArgs(
         bytes calldata _encodedArgs
     )
         external
@@ -33,33 +33,6 @@ contract AirSwapAdapter is ExchangeAdapter {
                 orderValues[4],
                 orderValues[4]
             ]
-        );
-    }
-
-    function _decodeArgs(
-        bytes memory _encodedArgs
-    )
-        internal
-        pure
-        returns (
-            address[9] memory orderAddresses,
-            uint[8] memory orderValues,
-            bytes4[3] memory tokenKinds,
-            bytes32[2] memory sigBytesComponents,
-            uint8 sigUintComponent,
-            bytes1 version
-        )
-    {
-        return abi.decode(
-            _encodedArgs,
-            (
-                address[9],
-                uint[8],
-                bytes4[3],
-                bytes32[2],
-                uint8,
-                bytes1
-            )
         );
     }
 
@@ -99,6 +72,33 @@ contract AirSwapAdapter is ExchangeAdapter {
         );
 
         ISwap(targetExchange).swap(order);
+    }
+
+    function _decodeArgs(
+        bytes memory _encodedArgs
+    )
+        internal
+        pure
+        returns (
+            address[9] memory orderAddresses,
+            uint[8] memory orderValues,
+            bytes4[3] memory tokenKinds,
+            bytes32[2] memory sigBytesComponents,
+            uint8 sigUintComponent,
+            bytes1 version
+        )
+    {
+        return abi.decode(
+            _encodedArgs,
+            (
+                address[9],
+                uint[8],
+                bytes4[3],
+                bytes32[2],
+                uint8,
+                bytes1
+            )
+        );
     }
 
     function _constructOrder(
