@@ -2,11 +2,14 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "./ExchangeAdapter.sol";
+import "./interfaces/IKyberNetworkProxy.sol";
 import "./OrderFiller.sol";
 import "../dependencies/WETH.sol";
-import "./interfaces/IKyberNetworkProxy.sol";
 
-contract KyberAdapter is DSMath, ExchangeAdapter, OrderFiller {
+/// @title KyberAdapter Contract
+/// @author Melonport AG <team@melonport.com>
+/// @notice Adapter between Melon and Kyber Network
+contract KyberAdapter is ExchangeAdapter, OrderFiller {
     /// @notice Take a market order on Kyber Swap
     /// @param _targetExchange Address of the exchange
     /// @param _orderAddresses [2] Maker asset
@@ -25,10 +28,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter, OrderFiller {
         public
         override
     {
-        require(
-            _orderValues[1] == _orderValues[6],
-            "taker order amount must equal taker fill amount"
-        );
+        validateTakeOrderParams(_orderValues);
 
         (
             address[] memory fillAssets,
@@ -172,6 +172,18 @@ contract KyberAdapter is DSMath, ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts[1],
             _fillAssets[0],
             calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+        );
+    }
+
+    function validateTakeOrderParams(
+        uint256[8] memory _orderValues
+    )
+        internal
+        pure
+    {
+        require(
+            _orderValues[1] == _orderValues[6],
+            "validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }
