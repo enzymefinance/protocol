@@ -49,7 +49,7 @@ contract Accounting is AmguConsumer, Spoke {
     }
 
     // EXTERNAL FUNCTIONS
-    function calcAssetGAV(address _asset) external returns (uint256) {
+    function calcAssetGav(address _asset) external view returns (uint256) {
         uint256 quantityHeld = assetBalances[_asset];
         return IPriceSource(priceSource()).convertQuantity(
             quantityHeld, _asset, DENOMINATION_ASSET
@@ -59,7 +59,7 @@ contract Accounting is AmguConsumer, Spoke {
     function getFundHoldings()
         external
         view
-        returns (uint256[] memory balances_, address[] memory assets_)
+        returns (address[] memory assets_, uint256[] memory balances_)
     {
         (assets_, balances_) = getAllAssetBalances();
     }
@@ -84,7 +84,7 @@ contract Accounting is AmguConsumer, Spoke {
     // PUBLIC FUNCTIONS
 
     // prices are quoted in DENOMINATION_ASSET so they use denominationDecimals
-    function calcGav() public returns (uint256) {
+    function calcGav() public view returns (uint256) {
         uint256 gav;
         for (uint256 i = 0; i < ownedAssets.length; ++i) {
             address asset = ownedAssets[i];
@@ -93,7 +93,7 @@ contract Accounting is AmguConsumer, Spoke {
             if (quantityHeld == 0) {
                 continue;
             }
-            // gav as sum of mul(assetHoldings, assetPrice) with formatting:
+            // gav as sum of mul(getFundAssetHoldings, assetPrice) with formatting:
             // mul(mul(exchangeHoldings, exchangePrice), 10 ** shareDecimals)
             gav = add(
                 gav,
@@ -154,8 +154,8 @@ contract Accounting is AmguConsumer, Spoke {
     }
 
     function getAllAssetBalances()
-        view
         public
+        view
         returns(address[] memory assets_, uint256[] memory balances_)
     {
         assets_ = ownedAssets;
@@ -163,8 +163,8 @@ contract Accounting is AmguConsumer, Spoke {
     }
 
     function getAssetBalances(address[] memory _assets)
-        view
         public
+        view
         returns(uint256[] memory)
     {
         uint256[] memory balances = new uint256[](_assets.length);
@@ -175,9 +175,9 @@ contract Accounting is AmguConsumer, Spoke {
         return balances;
     }
 
-    // @dev Access assetBalances via assetHoldings, because eventually there could be other
+    // @dev Access assetBalances via getFundAssetHoldings, because eventually there could be other
     // types of balances added in; e.g., balances of collateral in loans or non-atomic settlements
-    function assetHoldings(address _asset) public view returns (uint256) {
+    function getFundAssetHoldings(address _asset) public view returns (uint256) {
         return assetBalances[_asset];
     }
 
