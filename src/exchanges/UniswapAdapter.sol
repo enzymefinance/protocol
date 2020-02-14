@@ -53,7 +53,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts
         )
     {
-        address nativeAsset = getAccounting().NATIVE_ASSET();
+        address nativeAsset = getNativeAssetAddress();
 
         if (_fillAssets[1] == nativeAsset) {
             swapNativeAssetToToken(
