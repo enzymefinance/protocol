@@ -2,9 +2,9 @@ pragma solidity 0.6.1;
 
 import "../../factory/Factory.sol";
 import "../../prices/IPriceSource.sol";
-import "../fees/FeeManager.sol";
+import "../fees/IFeeManager.sol";
 import "../hub/Spoke.sol";
-import "../shares/Shares.sol";
+import "../shares/IShares.sol";
 import "../trading/ITrading.sol";
 import "../../engine/AmguConsumer.sol";
 
@@ -197,8 +197,8 @@ contract Accounting is AmguConsumer, Spoke {
         )
     {
         gav_ = calcGav();
-        uint256 totalSupply = Shares(routes.shares).totalSupply();
-        feesInShares_ = FeeManager(routes.feeManager).totalFeeAmount();
+        uint256 totalSupply = IShares(routes.shares).totalSupply();
+        feesInShares_ = IFeeManager(routes.feeManager).totalFeeAmount();
         feesInDenominationAsset_ = (totalSupply == 0) ?
             0 :
             mul(feesInShares_, gav_) / add(totalSupply, feesInShares_);
@@ -213,7 +213,7 @@ contract Accounting is AmguConsumer, Spoke {
         gavPerShareNetManagementFee_ = (totalSupply > 0) ?
             valuePerShare(
                 gav_,
-                add(totalSupply, FeeManager(routes.feeManager).managementFeeAmount())
+                add(totalSupply, IFeeManager(routes.feeManager).managementFeeAmount())
             ) :
             DEFAULT_SHARE_PRICE;
     }
@@ -238,8 +238,8 @@ contract Accounting is AmguConsumer, Spoke {
         uint256 feesInShares;
         uint256 nav;
         (gav, feesInDenomination, feesInShares, nav,,) = performCalculations();
-        uint256 totalSupply = Shares(routes.shares).totalSupply();
-        FeeManager(routes.feeManager).rewardAllFees();
+        uint256 totalSupply = IShares(routes.shares).totalSupply();
+        IFeeManager(routes.feeManager).rewardAllFees();
         atLastAllocation = Calculations({
             gav: gav,
             nav: nav,
