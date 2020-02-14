@@ -101,7 +101,6 @@ describe('Fund takes an order', () => {
     orderAddresses[5] = order.affiliate.token;
     orderAddresses[6] = order.signature.signatory;
     orderAddresses[7] = order.signature.validator;
-    orderAddresses[8] = swapContract.options.address;
 
     orderValues[0] = order.nonce;
     orderValues[1] = order.expiry;
@@ -121,7 +120,7 @@ describe('Fund takes an order', () => {
     const version = order.signature.version;
 
     const hex = web3.eth.abi.encodeParameters(
-      ['address[9]', 'uint[8]', 'bytes4[3]', 'bytes32[2]', 'uint8', 'bytes1'],
+      ['address[8]', 'uint[8]', 'bytes4[3]', 'bytes32[2]', 'uint8', 'bytes1'],
       [orderAddresses, orderValues, tokenKinds, sigBytesComponents, sigUintComponent, version],
     );
 

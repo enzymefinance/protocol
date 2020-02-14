@@ -15,7 +15,7 @@ contract AirSwapAdapter is ExchangeAdapter {
         returns (address[6] memory, uint[3] memory)
     {
         (
-            address[9] memory orderAddresses,
+            address[8] memory orderAddresses,
             uint[8] memory orderValues, , , ,
         ) = _decodeArgs(_encodedArgs);
 
@@ -37,6 +37,7 @@ contract AirSwapAdapter is ExchangeAdapter {
     }
 
     function testTakeOrder(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
         public
@@ -45,7 +46,7 @@ contract AirSwapAdapter is ExchangeAdapter {
         notShutDown
     {
         (
-            address[9] memory orderAddresses,
+            address[8] memory orderAddresses,
             uint[8] memory orderValues,
             bytes4[3] memory tokenKinds,
             bytes32[2] memory sigBytesComponents,
@@ -62,16 +63,14 @@ contract AirSwapAdapter is ExchangeAdapter {
             version
         );
 
-        address targetExchange = orderAddresses[8];
-
         withdrawAndApproveAsset(
             order.sender.token,
-            targetExchange,
+            _targetExchange,
             order.sender.amount,
             "takerAsset"
         );
 
-        ISwap(targetExchange).swap(order);
+        ISwap(_targetExchange).swap(order);
     }
 
     function _decodeArgs(
@@ -80,7 +79,7 @@ contract AirSwapAdapter is ExchangeAdapter {
         internal
         pure
         returns (
-            address[9] memory orderAddresses,
+            address[8] memory orderAddresses,
             uint[8] memory orderValues,
             bytes4[3] memory tokenKinds,
             bytes32[2] memory sigBytesComponents,
@@ -91,7 +90,7 @@ contract AirSwapAdapter is ExchangeAdapter {
         return abi.decode(
             _encodedArgs,
             (
-                address[9],
+                address[8],
                 uint[8],
                 bytes4[3],
                 bytes32[2],
@@ -102,7 +101,7 @@ contract AirSwapAdapter is ExchangeAdapter {
     }
 
     function _constructOrder(
-        address[9] memory _orderAddresses,
+        address[8] memory _orderAddresses,
         uint[8] memory _orderValues,
         bytes4[3] memory _tokenKinds,
         bytes32[2] memory _sigBytesComponents,
