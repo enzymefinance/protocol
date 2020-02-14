@@ -4,14 +4,15 @@ pragma experimental ABIEncoderV2;
 import "./ExchangeAdapter.sol";
 import "./interfaces/IOasisDex.sol";
 import "./OrderFiller.sol";
-import "../dependencies/DSMath.sol";
 
 /// @title OasisDexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract OasisDexAdapter is DSMath, ExchangeAdapter, OrderFiller {
+contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
     /// @notice Takes an active order on Oasis Dex
     /// @param _targetExchange Address of the exchange
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
     /// @param _orderValues [6] Fill amount : amount of taker token to fill
     /// @param _identifier Active order id
     function takeOrder(
@@ -25,32 +26,16 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter, OrderFiller {
         public
         override
     {
-        uint256 fillTakerQuantity = _orderValues[6];
-        (
-            uint256 maxMakerQuantity,
-            address makerAsset,
-            uint256 maxTakerQuantity,
-            address takerAsset
-        ) = IOasisDex(_targetExchange).getOffer(uint256(_identifier));
-        uint256 fillMakerQuantity = mul(fillTakerQuantity, maxMakerQuantity) / maxTakerQuantity;
-
-        require(
-            makerAsset == _orderAddresses[2] && takerAsset == _orderAddresses[3],
-            "Maker and taker assets do not match the order addresses"
-        );
-        require(
-            makerAsset != takerAsset,
-            "Maker and taker assets cannot be the same"
-        );
-        require(fillMakerQuantity <= maxMakerQuantity, "Maker amount to fill above max");
-        require(fillTakerQuantity <= maxTakerQuantity, "Taker amount to fill above max");
+        validateTakeOrderParams(_targetExchange, _orderAddresses, _orderValues, _identifier);
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
         ) = formatFillTakeOrderArgs(
+            _targetExchange,
             _orderAddresses,
-            _orderValues
+            _orderValues,
+            _identifier
         );
 
         fillTakeOrder(
@@ -78,28 +63,74 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter, OrderFiller {
         approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
 
         // Execute take order on exchange
-        require(
-            IOasisDex(_targetExchange).buy(uint256(_identifier), _fillExpectedAmounts[0]),
-            "Oasis Dex: buy failed"
-        );
+        IOasisDex(_targetExchange).buy(uint256(_identifier), _fillExpectedAmounts[0]);
     }
 
     function formatFillTakeOrderArgs(
+        address _targetExchange,
         address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues
+        uint256[8] memory _orderValues,
+        bytes32 _identifier
     )
         internal
-        pure
+        view
         returns (address[] memory, uint256[] memory)
     {
         address[] memory fillAssets = new address[](2);
         fillAssets[0] = _orderAddresses[2]; // maker asset
         fillAssets[1] = _orderAddresses[3]; // taker asset
 
+        (
+            uint256 maxMakerQuantity,,uint256 maxTakerQuantity,
+        ) = IOasisDex(_targetExchange).getOffer(uint256(_identifier));
+
         uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
-        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
+        fillExpectedAmounts[0] = calculateExpectedFillAmount(
+            maxTakerQuantity,
+            maxMakerQuantity,
+            _orderValues[6]
+        ); // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[6]; // taker fill amount
 
         return (fillAssets, fillExpectedAmounts);
+    }
+
+    function validateTakeOrderParams(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes32 _identifier
+    )
+        internal
+        view
+    {
+        (
+            uint256 maxMakerQuantity,
+            address makerAsset,
+            uint256 maxTakerQuantity,
+            address takerAsset
+        ) = IOasisDex(_targetExchange).getOffer(uint256(_identifier));
+
+        require(
+            makerAsset == _orderAddresses[2],
+            "validateTakeOrderParams: Order maker asset does not match the input address"
+        );
+        require(
+            takerAsset == _orderAddresses[3],
+            "validateTakeOrderParams: Order taker asset does not match the input address"
+        );
+        require(
+            _orderValues[6] <= maxTakerQuantity,
+            "validateTakeOrderParams: Taker fill amount greater than available quantity"
+        );
+
+        require(
+            calculateExpectedFillAmount(
+                maxTakerQuantity,
+                maxMakerQuantity,
+                _orderValues[6]
+            ) <= maxMakerQuantity,
+            "validateTakeOrderParams: Maker fill amount greater than max order quantity"
+        );
     }
 }
