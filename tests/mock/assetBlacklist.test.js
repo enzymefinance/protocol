@@ -10,20 +10,20 @@ describe('assetBlacklist', () => {
   let user, defaultTxOpts;
   let mockSystem;
   let assetArray;
-  let makeOrderSignature, makeOrderSignatureBytes;
+  let takeOrderSignature, takeOrderSignatureBytes;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
     user = accounts[0];
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    makeOrderSignature = getFunctionSignature(
+    takeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
-      'makeOrder',
+      'takeOrder',
     );
 
-    makeOrderSignatureBytes = encodeFunctionSignature(
-      makeOrderSignature
+    takeOrderSignatureBytes = encodeFunctionSignature(
+      takeOrderSignature
     );
 
     mockSystem = await deployMockSystem(
@@ -85,12 +85,12 @@ describe('assetBlacklist', () => {
     const mockAsset = randomHex(20);
 
     await mockSystem.policyManager.methods
-      .register(makeOrderSignatureBytes, blacklist.options.address)
+      .register(takeOrderSignatureBytes, blacklist.options.address)
       .send(defaultTxOpts);
 
     const validateArgs = [
-      makeOrderSignatureBytes,
-      [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, mockAsset, EMPTY_ADDRESS],
+      takeOrderSignatureBytes,
+      [EMPTY_ADDRESS, EMPTY_ADDRESS, mockAsset, EMPTY_ADDRESS, EMPTY_ADDRESS],
       [0, 0, 0],
       '0x0',
     ];

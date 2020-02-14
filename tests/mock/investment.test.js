@@ -189,8 +189,8 @@ describe('investment', () => {
   test('Basic investment works', async () => {
     const investAmount = '1000';
     const sharesAmount = '1000';
-    const preVaultWeth = await mockSystem.weth.methods
-      .balanceOf(mockSystem.vault.options.address)
+    const preTradingWeth = await mockSystem.weth.methods
+      .balanceOf(mockSystem.trading.options.address)
       .call();
     await mockSystem.weth.methods
       .approve(mockSystem.participation.options.address, investAmount)
@@ -202,11 +202,12 @@ describe('investment', () => {
         mockSystem.weth.options.address,
       )
       .send({ ...defaultTxOpts, value: defaultAmgu });
+
     await mockSystem.participation.methods
       .executeRequestFor(user)
       .send({ ...defaultTxOpts, value: defaultAmgu });
-    const postVaultWeth = await mockSystem.weth.methods
-      .balanceOf(mockSystem.vault.options.address)
+    const postTradingWeth = await mockSystem.weth.methods
+      .balanceOf(mockSystem.trading.options.address)
       .call();
     const postShares = await mockSystem.shares.methods
       .balanceOf(user)
@@ -215,8 +216,8 @@ describe('investment', () => {
 
     expect(postShares).toEqual(sharesAmount);
     expect(postSupply).toEqual(sharesAmount);
-    expect(Number(postVaultWeth)).toEqual(
-      Number(preVaultWeth) + Number(investAmount),
+    expect(Number(postTradingWeth)).toEqual(
+      Number(preTradingWeth) + Number(investAmount),
     );
   });
 });
