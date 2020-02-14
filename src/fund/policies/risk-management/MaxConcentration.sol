@@ -34,7 +34,7 @@ contract MaxConcentration is TradingSignatures, DSMath {
 
         uint totalGav = accounting.calcGav();
         uint concentration = _calcConcentration(
-            accounting.calcAssetGAV(takerToken),
+            accounting.calcAssetGav(takerToken),
             totalGav
         );
         return concentration <= maxConcentration;

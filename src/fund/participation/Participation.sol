@@ -289,8 +289,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
 
     /// @notice Redeem shareQuantity across all assets
     function redeemQuantity(uint shareQuantity) public {
-        address[] memory assetList;
-        assetList = Accounting(routes.accounting).getOwnedAssets();
+        (address[] memory assetList,) = Accounting(routes.accounting).getFundHoldings();
         redeemWithConstraints(shareQuantity, assetList);
     }
 
@@ -324,7 +323,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
             if (ofAsset == address(0)) continue;
-            uint quantityHeld = accounting.assetHoldings(ofAsset);
+            uint quantityHeld = accounting.getFundAssetHoldings(ofAsset);
             require(quantityHeld > 0, "Requested asset holdings is 0");
             for (uint j = 0; j < redeemedAssets.length; j++) {
                 require(
