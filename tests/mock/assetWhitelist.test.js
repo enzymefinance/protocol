@@ -9,7 +9,7 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 describe('assetWhitelist', () => {
   let user, defaultTxOpts;
   let assetArray;
-  let makeOrderSignature, makeOrderSignatureBytes;
+  let takeOrderSignature, takeOrderSignatureBytes;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -23,13 +23,13 @@ describe('assetWhitelist', () => {
       randomHex(20),
     ].map(addr => toChecksumAddress(addr));
 
-    makeOrderSignature = getFunctionSignature(
+    takeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
-      'makeOrder',
+      'takeOrder',
     );
 
-    makeOrderSignatureBytes = encodeFunctionSignature(
-      makeOrderSignature
+    takeOrderSignatureBytes = encodeFunctionSignature(
+      takeOrderSignature
     );
   });
 
@@ -79,12 +79,12 @@ describe('assetWhitelist', () => {
     ]);
     const asset = assetArray[1];
     await contracts.policyManager.methods
-      .register(makeOrderSignatureBytes, whitelist.options.address)
+      .register(takeOrderSignatureBytes, whitelist.options.address)
       .send(defaultTxOpts);
 
     const validateArgs = [
-      makeOrderSignatureBytes,
-      [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, asset, EMPTY_ADDRESS],
+      takeOrderSignatureBytes,
+      [EMPTY_ADDRESS, EMPTY_ADDRESS, asset, EMPTY_ADDRESS, EMPTY_ADDRESS],
       [0, 0, 0],
       '0x0',
     ];

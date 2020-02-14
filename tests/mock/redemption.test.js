@@ -40,8 +40,8 @@ describe('redemption', () => {
     ).rejects.toThrow(errorMessage);
   });
 
-  test('Asset not in list prevents redemption', async () => {
-    const errorMessage = 'Requested asset not in asset list';
+  test('Asset with 0 assetBalance prevents redemption', async () => {
+    const errorMessage = 'Requested asset holdings is 0';
     const addr = randomHex(20);
 
     await
@@ -62,13 +62,11 @@ describe('redemption', () => {
   });
 
   test('Asset cannot be redeemed twice', async () => {
-    const errorMessage = 'Asset can only be redeemed once';
+    // const errorMessage = 'Asset can only be redeemed once'; // TODO: add this back in unit test using real fund
+    const errorMessage = 'Requested asset holdings is 0';
 
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
 
-    await mockSystem.accounting.methods.addAssetToOwnedAssets(
-      mockSystem.weth.options.address
-    ).send(defaultTxOpts);
     await expect(
       mockSystem.participation.methods
         .redeemWithConstraints('1', [
@@ -81,33 +79,5 @@ describe('redemption', () => {
     const postShares = await mockSystem.shares.methods.balanceOf(user).call();
 
     expect(preShares).toBe(postShares);
-  });
-
-  test('Vault-held assets can be redeemed', async () => {
-    const wethAmount = toWei('1', 'ether');
-
-    await mockSystem.weth.methods
-      .transfer(mockSystem.vault.options.address, wethAmount)
-      .send(defaultTxOpts);
-    const heldWeth = await mockSystem.accounting.methods
-      .assetHoldings(mockSystem.weth.options.address)
-      .call();
-    const preShares = await mockSystem.shares.methods
-      .balanceOf(user)
-      .call();
-
-    expect(heldWeth).toBe(wethAmount);
-
-    await mockSystem.participation.methods
-      .redeemWithConstraints(preShares, [
-        mockSystem.weth.options.address,
-      ])
-      .send(defaultTxOpts);
-
-    const postShares = await mockSystem.shares.methods
-      .balanceOf(user)
-      .call();
-
-    expect(postShares).toBe('0');
   });
 });

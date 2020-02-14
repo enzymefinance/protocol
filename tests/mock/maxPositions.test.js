@@ -9,7 +9,7 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 describe('maxPositions', () => {
   let user, defaultTxOpts;
   let mockSystem;
-  let makeOrderSignature, makeOrderSignatureBytes;
+  let takeOrderSignature, takeOrderSignatureBytes;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -17,13 +17,13 @@ describe('maxPositions', () => {
     mockSystem = await deployMockSystem();
     defaultTxOpts = { from: user, gas: 8000000 };
 
-    makeOrderSignature = getFunctionSignature(
+    takeOrderSignature = getFunctionSignature(
       CONTRACT_NAMES.EXCHANGE_ADAPTER,
-      'makeOrder',
+      'takeOrder',
     );
 
-    makeOrderSignatureBytes = encodeFunctionSignature(
-      makeOrderSignature
+    takeOrderSignatureBytes = encodeFunctionSignature(
+      takeOrderSignature
     );
   });
 
@@ -43,7 +43,7 @@ describe('maxPositions', () => {
     const nonQuoteAsset = randomHex(20);
     const quoteAsset = mockSystem.weth.options.address;
     await mockSystem.policyManager.methods
-      .register(makeOrderSignatureBytes, policy.options.address)
+      .register(takeOrderSignatureBytes, policy.options.address)
       .send(defaultTxOpts);
     await mockSystem.accounting.methods
       .setOwnedAssets([mockSystem.weth.options.address])
@@ -52,8 +52,8 @@ describe('maxPositions', () => {
     await expect(
       mockSystem.policyManager.methods
         .postValidate(
-          makeOrderSignatureBytes,
-          [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, quoteAsset, EMPTY_ADDRESS],
+          takeOrderSignatureBytes,
+          [EMPTY_ADDRESS, EMPTY_ADDRESS, quoteAsset, EMPTY_ADDRESS, EMPTY_ADDRESS],
           [0, 0, 0],
           '0x0',
         )
@@ -62,12 +62,12 @@ describe('maxPositions', () => {
     await expect(
       mockSystem.policyManager.methods
         .postValidate(
-          makeOrderSignatureBytes,
+          takeOrderSignatureBytes,
           [
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
             nonQuoteAsset,
+            EMPTY_ADDRESS,
             EMPTY_ADDRESS,
           ],
           [0, 0, 0],
@@ -87,8 +87,8 @@ describe('maxPositions', () => {
     await expect(
       mockSystem.policyManager.methods
         .postValidate(
-          makeOrderSignatureBytes,
-          [EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, quoteAsset, EMPTY_ADDRESS],
+          takeOrderSignatureBytes,
+          [EMPTY_ADDRESS, EMPTY_ADDRESS, quoteAsset, EMPTY_ADDRESS, EMPTY_ADDRESS],
           [0, 0, 0],
           '0x0',
         )
@@ -97,12 +97,12 @@ describe('maxPositions', () => {
     await expect(
       mockSystem.policyManager.methods
         .postValidate(
-          makeOrderSignatureBytes,
+          takeOrderSignatureBytes,
           [
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
             nonQuoteAsset,
+            EMPTY_ADDRESS,
             EMPTY_ADDRESS,
           ],
           [0, 0, 0],
@@ -123,12 +123,12 @@ describe('maxPositions', () => {
     await expect(
       mockSystem.policyManager.methods
         .postValidate(
-          makeOrderSignatureBytes,
+          takeOrderSignatureBytes,
           [
-            EMPTY_ADDRESS,
             EMPTY_ADDRESS,
             EMPTY_ADDRESS,
             randomHex(20),
+            EMPTY_ADDRESS,
             EMPTY_ADDRESS,
           ],
           [0, 0, 0],
