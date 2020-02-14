@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 
-import "../../dependencies/DSGuard.sol";
 import "./Spoke.sol";
-import "../../version/Registry.sol";
+import "../../dependencies/DSGuard.sol";
+import "../../version/IRegistry.sol";
 
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
@@ -135,7 +135,7 @@ contract Hub is DSGuard {
 
     function accounting() external view returns (address) { return routes.accounting; }
     function priceSource() external view returns (address) {
-        return Registry(routes.registry).priceSource();
+        return IRegistry(routes.registry).priceSource();
     }
     function participation() external view returns (address) { return routes.participation; }
     function trading() external view returns (address) { return routes.trading; }

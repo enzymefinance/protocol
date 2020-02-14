@@ -2,15 +2,15 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../hub/Spoke.sol";
-import "../policies/PolicyManager.sol";
+import "../policies/IPolicyManager.sol";
 import "../policies/TradingSignatures.sol";
-import "../../factory/Factory.sol";
 import "../../dependencies/DSMath.sol";
+import "../../dependencies/TokenUser.sol";
 import "../../exchanges/ExchangeAdapter.sol";
 import "../../exchanges/interfaces/IZeroExV2.sol";
 import "../../exchanges/interfaces/IZeroExV3.sol";
-import "../../version/Registry.sol";
-import "../../dependencies/TokenUser.sol";
+import "../../factory/Factory.sol";
+import "../../version/IRegistry.sol";
 
 contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     event ExchangeMethodCall(
@@ -70,7 +70,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     ) internal {
         require(!adapterIsAdded[_adapter], "Adapter already added");
         adapterIsAdded[_adapter] = true;
-        Registry registry = Registry(routes.registry);
+        IRegistry registry = IRegistry(routes.registry);
         require(
             registry.exchangeAdapterIsRegistered(_adapter),
             "Adapter is not registered"
@@ -127,7 +127,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
         bytes4 methodSelector = bytes4(keccak256(bytes(methodSignature)));
         validateCallOnExchange(exchangeIndex, methodSelector, orderAddresses);
 
-        PolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        IPolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         (bool success, bytes memory returnData) = exchanges[exchangeIndex].adapter.delegatecall(
             abi.encodeWithSignature(
                 methodSignature,
@@ -140,7 +140,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
             )
         );
         require(success, string(returnData));
-        PolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
+        IPolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
         emit ExchangeMethodCall(
             exchanges[exchangeIndex].exchange,
             methodSignature,
@@ -180,7 +180,7 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
             !hub.isShutDown(),
             "Hub must not be shut down"
         );
-        Registry registry = Registry(routes.registry);
+        IRegistry registry = IRegistry(routes.registry);
         require(
             registry.adapterMethodIsAllowed(
                 exchanges[_exchangeIndex].adapter,
