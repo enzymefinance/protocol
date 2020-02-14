@@ -38,6 +38,11 @@ contract ExchangeAdapter is DSMath {
 
     // PUBLIC FUNCTIONS
 
+    function swapToken(
+        address _targetExchange,
+        bytes memory _encodedArgs
+    ) public virtual { revert("Unimplemented"); }
+
     /// @param _orderAddresses [0] Order maker
     /// @param _orderAddresses [1] Order taker
     /// @param _orderAddresses [2] Order maker asset

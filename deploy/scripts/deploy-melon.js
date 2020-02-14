@@ -63,6 +63,7 @@ const main = async input => {
 
   const sigs = [
     'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
+    'swapToken(address,bytes)',
   ].map(s => web3.utils.keccak256(s).slice(0,10));
 
   const exchanges = {};

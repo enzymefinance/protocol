@@ -36,7 +36,7 @@ contract AirSwapAdapter is ExchangeAdapter {
         );
     }
 
-    function testTakeOrder(
+    function swapToken(
         address _targetExchange,
         bytes memory _encodedArgs
     )

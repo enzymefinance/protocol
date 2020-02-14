@@ -14,7 +14,7 @@ let defaultTxOpts, managerTxOpts;
 let contracts;
 let mln, weth, swapContract, erc20TransferHandler;
 let fund;
-let testTakeOrderSignature;
+let swapTokenSignature;
 let exchangeIndex;
 
 beforeAll(async () => {
@@ -25,9 +25,9 @@ beforeAll(async () => {
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   contracts = deployed.contracts;
 
-  testTakeOrderSignature = getFunctionSignature(
+  swapTokenSignature = getFunctionSignature(
     CONTRACT_NAMES.EXCHANGE_ADAPTER,
-    'testTakeOrder',
+    'swapToken',
   );
 
   mln = contracts.MLN;
@@ -138,7 +138,7 @@ describe('Fund takes an order', () => {
       'callOnExchange',
       [
         exchangeIndex,
-        testTakeOrderSignature,
+        swapTokenSignature,
         '0x0',
         encodedParameters,
       ],
