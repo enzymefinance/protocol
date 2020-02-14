@@ -3,9 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
-import "../fund/accounting/Accounting.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/trading/Trading.sol";
+import "../fund/accounting/IAccounting.sol";
+import "../fund/trading/ITrading.sol";
+import "../version/IRegistry.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
@@ -37,15 +37,11 @@ contract ExchangeAdapter is DSMath {
     /// @param _signature Signature of order maker
 
     // Responsibilities of takeOrder are:
-    // - check sender
-    // - check fund not shut down
-    // - check not buying own fund tokens
-    // - check price exists for asset pair
-    // - check price is recent
-    // - check price passes risk management
-    // - approve funds to be traded (if necessary)
-    // - take order from the exchange
-    // - check order was taken (if possible)
+    // - Validate arguments (via a validateTakeOrderParams function)
+    // - Prepare a formatted list of assets and expected fill amounts
+    // (via a formatFillTakeOrderArgs function)
+    // - Fill an order on the _targetExchange, via a fillTakeOrder function
+    // that uses the validateAndFinalizeFilledOrder modifier
     function takeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -57,7 +53,7 @@ contract ExchangeAdapter is DSMath {
 
     // INTERNAL FUNCTIONS
 
-    /// @notice Increment allowance of an asset for some target
+    // Increment allowance of an asset for some target
     function approveAsset(
         address _asset,
         address _target,
@@ -78,15 +74,23 @@ contract ExchangeAdapter is DSMath {
         );
     }
 
-    function getAccounting() internal view returns (Accounting) {
-        return Accounting(getHub().accounting());
+    function getAccounting() internal view returns (IAccounting) {
+        return IAccounting(getTrading().routes().accounting);
     }
 
-    function getHub() internal view returns (Hub) {
-        return Hub(getTrading().hub());
+    function getNativeAssetAddress() internal view returns (address) {
+        return getRegistry().nativeAsset();
     }
 
-    function getTrading() internal view returns (Trading) {
-        return Trading(payable(address(this)));
+    function getMlnTokenAddress() internal view returns (address) {
+        return getRegistry().mlnToken();
+    }
+
+    function getRegistry() internal view returns (IRegistry) {
+        return IRegistry(getTrading().routes().registry);
+    }
+
+    function getTrading() internal view returns (ITrading) {
+        return ITrading(payable(address(this)));
     }
 }

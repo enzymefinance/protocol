@@ -2,10 +2,9 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "./ExchangeAdapter.sol";
-import "./OrderFiller.sol";
-// import "../fund/trading/Trading.sol";
-import "../dependencies/DSMath.sol";
 import "./interfaces/IZeroExV3.sol";
+import "./OrderFiller.sol";
+import "../dependencies/DSMath.sol";
 
 /// @title ZeroExV3Adapter Contract
 /// @author Melonport AG <team@melonport.com>
@@ -123,9 +122,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter, OrderFiller {
         uint256 protocolFeeAmount = calcProtocolFeeAmount(_targetExchange);
         if (protocolFeeCollector == address(0) || protocolFeeAmount == 0) return;
 
-        address nativeAsset = getAccounting().NATIVE_ASSET();
-
-        approveAsset(nativeAsset, protocolFeeCollector, protocolFeeAmount, "protocolFee");
+        approveAsset(getNativeAssetAddress(), protocolFeeCollector, protocolFeeAmount, "protocolFee");
     }
 
     function fillTakeOrder(
@@ -193,7 +190,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter, OrderFiller {
         address[] memory fillAssets = new address[](4);
         fillAssets[0] = _orderAddresses[2]; // maker asset
         fillAssets[1] = _orderAddresses[3]; // taker asset
-        fillAssets[2] = getAccounting().NATIVE_ASSET(); // protocol fee
+        fillAssets[2] = getNativeAssetAddress(); // protocol fee
         fillAssets[3] = _orderAddresses[7]; // taker fee asset
 
         uint256[] memory fillExpectedAmounts = new uint256[](4);

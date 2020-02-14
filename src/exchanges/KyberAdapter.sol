@@ -67,7 +67,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts
         )
     {
-        address nativeAsset = getAccounting().NATIVE_ASSET();
+        address nativeAsset = getNativeAssetAddress();
 
         // Execute order on exchange, depending on asset types
         if (_fillAssets[1] == nativeAsset) {
