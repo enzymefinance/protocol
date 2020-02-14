@@ -7,14 +7,17 @@ import "../dependencies/WETH.sol";
 import "./interfaces/IUniswapFactory.sol";
 import "./interfaces/IUniswapExchange.sol";
 
-contract UniswapAdapter is DSMath, ExchangeAdapter, OrderFiller {
+/// @title UniswapAdapter Contract
+/// @author Melonport AG <team@melonport.com>
+/// @notice Adapter between Melon and Uniswap
+contract UniswapAdapter is ExchangeAdapter, OrderFiller {
     /// @notice Take a market order on Uniswap
     /// @param _targetExchange Address of Uniswap factory contract
     /// @param _orderAddresses [2] Maker asset
     /// @param _orderAddresses [3] Taker asset
     /// @param _orderValues [0] Maker asset quantity
     /// @param _orderValues [1] Taker asset quantity
-    /// @param _orderValues [6] Taker asset fill amount
+    /// @param _orderValues [6] Taker asset fill amount (same as _orderValues[1])
     function takeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -26,10 +29,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter, OrderFiller {
         public
         override
     {
-        require(
-            _orderValues[1] == _orderValues[6],
-            "taker order amount must equal taker fill amount"
-        );
+        validateTakeOrderParams(_orderValues);
 
         (
             address[] memory fillAssets,
@@ -160,6 +160,18 @@ contract UniswapAdapter is DSMath, ExchangeAdapter, OrderFiller {
             1,
             add(block.timestamp, 1),
             _fillAssets[0]
+        );
+    }
+
+    function validateTakeOrderParams(
+        uint256[8] memory _orderValues
+    )
+        internal
+        pure
+    {
+        require(
+            _orderValues[1] == _orderValues[6],
+            "validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }

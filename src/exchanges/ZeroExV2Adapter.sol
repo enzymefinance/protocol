@@ -3,98 +3,58 @@ pragma experimental ABIEncoderV2;
 
 import "./ExchangeAdapter.sol";
 import "./OrderFiller.sol";
-import "../dependencies/DSMath.sol";
 import "./interfaces/IZeroExV2.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to 0xV2 Exchange Contract
-contract ZeroExV2Adapter is DSMath, ExchangeAdapter, OrderFiller {
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderData [0] Order maker asset data
-    /// @param orderData [1] Order taker asset data
-    modifier orderAddressesMatchOrderData(
-        address[8] memory orderAddresses,
-        bytes[4] memory orderData
-    )
-    {
-        require(
-            getAssetAddress(orderData[0]) == orderAddresses[2],
-            "Maker asset data does not match order address in array"
-        );
-        require(
-            getAssetAddress(orderData[1]) == orderAddresses[3],
-            "Taker asset data does not match order address in array"
-        );
-        _;
-    }
-
-    //  METHODS
-
-    //  PUBLIC METHODS
-
-    // Responsibilities of takeOrder are:
-    // - check sender
-    // - check fund not shut down
-    // - check not buying own fund tokens
-    // - check price exists for asset pair
-    // - check price is recent
-    // - check price passes risk management
-    // - approve funds to be traded (if necessary)
-    // - take order from the exchange
-    // - check order was taken (if possible)
-    // - place asset in ownedAssets if not already tracked
-    /// @notice Takes an active order on the selected exchange
-    /// @dev These orders are expected to settle immediately
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [0] Order maker
-    /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [4] feeRecipientAddress
-    /// @param orderAddresses [5] senderAddress
-    /// @param orderValues [0] makerAssetAmount
-    /// @param orderValues [1] takerAssetAmount
-    /// @param orderValues [2] Maker fee
-    /// @param orderValues [3] Taker fee
-    /// @param orderValues [4] expirationTimeSeconds
-    /// @param orderValues [5] Salt/nonce
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param orderValues [7] Dexy signature mode
-    /// @param orderData [0] Encoded data specific to maker asset
-    /// @param orderData [1] Encoded data specific to taker asset
-    /// @param orderData [2] Encoded data specific to maker asset fee
-    /// @param orderData [3] Encoded data specific to taker asset fee
-    /// @param identifier Order identifier
-    /// @param signature Signature of the order.
+contract ZeroExV2Adapter is ExchangeAdapter, OrderFiller {
+    /// @notice Takes an active order on 0x v2
+    /// @param _orderAddresses [0] Order param: makerAddress
+    /// @param _orderAddresses [1] Order param: takerAddress
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderAddresses [4] Order param: feeRecipientAddress
+    /// @param _orderAddresses [5] Order param: senderAddress
+    /// @param _orderData [0] Order param: makerAssetData
+    /// @param _orderData [1] Order param: takerAssetData
+    /// @param _orderValues [0] Order param: makerAssetAmount
+    /// @param _orderValues [1] Order param: takerAssetAmount
+    /// @param _orderValues [2] Order param: makerFee
+    /// @param _orderValues [3] Order param: takerFee
+    /// @param _orderValues [4] Order param: expirationTimeSeconds
+    /// @param _orderValues [5] Order param: salt
+    /// @param _orderValues [6] Taker asset fill quantity
+    /// @param _identifier Order identifier
+    /// @param _signature Signature of the order
     function takeOrder(
-        address targetExchange,
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData,
-        bytes32 identifier,
-        bytes memory signature
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
         public
         override
-        orderAddressesMatchOrderData(orderAddresses, orderData)
     {
+        validateTakeOrderParams(_orderAddresses, _orderValues, _orderData);
+
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
         ) = formatFillTakeOrderArgs(
-            targetExchange,
-            orderAddresses,
-            orderValues
+            _targetExchange,
+            _orderAddresses,
+            _orderValues
         );
 
         fillTakeOrder(
-            targetExchange,
+            _targetExchange,
             fillAssets,
             fillExpectedAmounts,
-            constructOrderStruct(orderAddresses, orderValues, orderData),
-            signature
+            constructOrderStruct(_orderAddresses, _orderValues, _orderData),
+            _signature
         );
     }
 
@@ -127,6 +87,31 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter, OrderFiller {
         }
     }
 
+    function constructOrderStruct(
+        address[8] memory _orderAddresses,
+        uint[8] memory _orderValues,
+        bytes[4] memory _orderData
+    )
+        internal
+        pure
+        returns (IZeroExV2.Order memory order)
+    {
+        order = IZeroExV2.Order({
+            makerAddress: _orderAddresses[0],
+            takerAddress: _orderAddresses[1],
+            feeRecipientAddress: _orderAddresses[4],
+            senderAddress: _orderAddresses[5],
+            makerAssetAmount: _orderValues[0],
+            takerAssetAmount: _orderValues[1],
+            makerFee: _orderValues[2],
+            takerFee: _orderValues[3],
+            expirationTimeSeconds: _orderValues[4],
+            salt: _orderValues[5],
+            makerAssetData: _orderData[0],
+            takerAssetData: _orderData[1]
+        });
+    }
+
     function fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
@@ -148,33 +133,6 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter, OrderFiller {
         IZeroExV2(_targetExchange).fillOrder(_order, _fillExpectedAmounts[1], _signature);
     }
 
-    // VIEW METHODS
-
-    function constructOrderStruct(
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData
-    )
-        internal
-        view
-        returns (IZeroExV2.Order memory order)
-    {
-        order = IZeroExV2.Order({
-            makerAddress: orderAddresses[0],
-            takerAddress: orderAddresses[1],
-            feeRecipientAddress: orderAddresses[4],
-            senderAddress: orderAddresses[5],
-            makerAssetAmount: orderValues[0],
-            takerAssetAmount: orderValues[1],
-            makerFee: orderValues[2],
-            takerFee: orderValues[3],
-            expirationTimeSeconds: orderValues[4],
-            salt: orderValues[5],
-            makerAssetData: orderData[0],
-            takerAssetData: orderData[1]
-        });
-    }
-
     function formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -190,36 +148,69 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter, OrderFiller {
         fillAssets[2] = getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA()); // taker fee asset
 
         uint256[] memory fillExpectedAmounts = new uint256[](3);
-        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
-        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
-        fillExpectedAmounts[2] = _orderValues[3]; // taker fee amount
+        fillExpectedAmounts[0] = calculateExpectedFillAmount(
+            _orderValues[1],
+            _orderValues[0],
+            _orderValues[6]
+        ); // maker fill amount; calculated relative to taker fill amount
+        fillExpectedAmounts[1] = _orderValues[6]; // taker fill amount
+        fillExpectedAmounts[2] = calculateExpectedFillAmount(
+            _orderValues[1],
+            _orderValues[3],
+            _orderValues[6]
+        ); // taker fee amount; calculated relative to taker fill amount
 
         return (fillAssets, fillExpectedAmounts);
     }
 
-
-    function getAssetProxy(address targetExchange, bytes memory assetData)
+    function getAssetProxy(address _targetExchange, bytes memory _assetData)
         internal
         view
-        returns (address assetProxy)
+        returns (address assetProxy_)
     {
         bytes4 assetProxyId;
         assembly {
             assetProxyId := and(mload(
-                add(assetData, 32)),
+                add(_assetData, 32)),
                 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
             )
         }
-        assetProxy = IZeroExV2(targetExchange).getAssetProxy(assetProxyId);
+        assetProxy_ = IZeroExV2(_targetExchange).getAssetProxy(assetProxyId);
     }
 
-    function getAssetAddress(bytes memory assetData)
+    function getAssetAddress(bytes memory _assetData)
         internal
         view
-        returns (address assetAddress)
+        returns (address assetAddress_)
     {
         assembly {
-            assetAddress := mload(add(assetData, 36))
+            assetAddress_ := mload(add(_assetData, 36))
         }
+    }
+
+    function validateTakeOrderParams(
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData
+    )
+        internal
+        view
+    {
+        require(
+            getAssetAddress(_orderData[0]) == _orderAddresses[2],
+            "validateTakeOrderParams: makerAssetData does not match address"
+        );
+        require(
+            getAssetAddress(_orderData[1]) == _orderAddresses[3],
+            "validateTakeOrderParams: takerAssetData does not match address"
+        );
+        require(
+            calculateExpectedFillAmount(
+                _orderValues[1],
+                _orderValues[0],
+                _orderValues[6]
+            ) <= _orderValues[0],
+            "validateTakeOrderParams: Maker fill amount greater than max order quantity"
+        );
     }
 }

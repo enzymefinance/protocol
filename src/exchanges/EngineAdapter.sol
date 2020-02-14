@@ -6,6 +6,8 @@ import "./OrderFiller.sol";
 import "../dependencies/WETH.sol";
 import "../engine/IEngine.sol";
 
+/// @title EngineAdapter Contract
+/// @author Melonport AG <team@melonport.com>
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is ExchangeAdapter, OrderFiller {
     /// @notice Buys Ether from the Melon Engine, selling MLN
