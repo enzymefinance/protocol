@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 
-import "./FeeManager.sol";
-import "../hub/Hub.sol";
-import "../shares/Shares.sol";
+import "./IFeeManager.sol";
+import "../hub/IHub.sol";
+import "../shares/IShares.sol";
 import "../../dependencies/DSMath.sol";
 
 contract ManagementFee is DSMath {
@@ -13,8 +13,8 @@ contract ManagementFee is DSMath {
     mapping (address => uint) public lastPayoutTime;
 
     function feeAmount() external view returns (uint feeInShares) {
-        Hub hub = FeeManager(msg.sender).hub();
-        Shares shares = Shares(hub.shares());
+        IHub hub = IFeeManager(msg.sender).hub();
+        IShares shares = IShares(hub.shares());
         if (shares.totalSupply() == 0 || managementFeeRate[msg.sender] == 0) {
             feeInShares = 0;
         } else {

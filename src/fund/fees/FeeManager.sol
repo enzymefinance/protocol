@@ -2,12 +2,12 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "./IFee.sol";
-import "../hub/Spoke.sol";
-import "../shares/Shares.sol";
-import "../../factory/Factory.sol";
-import "../../version/Registry.sol";
-import "../../dependencies/DSMath.sol";
 import "./IFeeManager.sol";
+import "../hub/Spoke.sol";
+import "../shares/IShares.sol";
+import "../../dependencies/DSMath.sol";
+import "../../factory/Factory.sol";
+import "../../version/IRegistry.sol";
 
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is DSMath, Spoke {
@@ -27,7 +27,7 @@ contract FeeManager is DSMath, Spoke {
     constructor(address _hub, address _denominationAsset, address[] memory _fees, uint[] memory _rates, uint[] memory _periods, address _registry) Spoke(_hub) public {
         for (uint i = 0; i < _fees.length; i++) {
             require(
-                Registry(_registry).isFeeRegistered(_fees[i]),
+                IRegistry(_registry).isFeeRegistered(_fees[i]),
                 "Fee must be known to Registry"
             );
             register(_fees[i], _rates[i], _periods[i], _denominationAsset);
@@ -66,7 +66,7 @@ contract FeeManager is DSMath, Spoke {
         require(feeIsRegistered[address(fee)], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
         fee.updateState();
-        Shares(routes.shares).createFor(hub.manager(), rewardShares);
+        IShares(routes.shares).createFor(hub.manager(), rewardShares);
         emit FeeReward(rewardShares);
     }
 
