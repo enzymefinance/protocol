@@ -1,16 +1,17 @@
 pragma solidity 0.6.1;
 
-import "../shares/Shares.sol";
-import "../policies/PolicyManager.sol";
+import "../accounting/IAccounting.sol";
+import "../fees/IFeeManager.sol";
 import "../hub/Spoke.sol";
-import "../accounting/Accounting.sol";
+import "../policies/IPolicyManager.sol";
+import "../shares/IShares.sol";
 import "../trading/ITrading.sol";
-import "../../prices/IPriceSource.sol";
-import "../../factory/Factory.sol";
-import "../../engine/AmguConsumer.sol";
-import "../../dependencies/token/IERC20.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
+import "../../dependencies/token/IERC20.sol";
+import "../../engine/AmguConsumer.sol";
+import "../../factory/Factory.sol";
+import "../../prices/IPriceSource.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is TokenUser, AmguConsumer, Spoke {
@@ -105,7 +106,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     function hasValidRequest(address _who) public view returns (bool) {
         IPriceSource priceSource = IPriceSource(priceSource());
         bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.getLastUpdate() ||
-            Shares(routes.shares).totalSupply() == 0;
+            IShares(routes.shares).totalSupply() == 0;
 
         return hasRequest(_who) &&
             delayRespectedOrNoShares &&
@@ -125,7 +126,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         amguPayable(true)
         onlyInitialized
     {
-        PolicyManager(routes.policyManager).preValidate(
+        IPolicyManager(routes.policyManager).preValidate(
             msg.sig,
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
@@ -148,7 +149,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             requestedShares: requestedShares,
             timestamp: block.timestamp
         });
-        PolicyManager(routes.policyManager).postValidate(
+        IPolicyManager(routes.policyManager).postValidate(
             msg.sig,
             [msg.sender, address(0), address(0), investmentAsset, address(0)],
             [uint(0), uint(0), uint(0)],
@@ -208,9 +209,9 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             "No valid request for this address"
         );
 
-        FeeManager(routes.feeManager).rewardManagementFee();
+        IFeeManager(routes.feeManager).rewardManagementFee();
 
-        uint totalShareCostInInvestmentAsset = Accounting(routes.accounting)
+        uint totalShareCostInInvestmentAsset = IAccounting(routes.accounting)
             .getShareCostInAsset(
                 request.requestedShares,
                 request.investmentAsset
@@ -243,8 +244,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
 
         msg.sender.transfer(Registry(routes.registry).incentive());
 
-        Shares(routes.shares).createFor(requestOwner, request.requestedShares);
-        Accounting(routes.accounting).increaseAssetBalance(
+        IShares(routes.shares).createFor(requestOwner, request.requestedShares);
+        IAccounting(routes.accounting).increaseAssetBalance(
             request.investmentAsset,
             totalShareCostInInvestmentAsset
         );
@@ -268,9 +269,9 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         public
         returns (uint remainingShareQuantity)
     {
-        Shares shares = Shares(routes.shares);
+        IShares shares = IShares(routes.shares);
 
-        uint totalPerformanceFee = FeeManager(routes.feeManager).performanceFeeAmount();
+        uint totalPerformanceFee = IFeeManager(routes.feeManager).performanceFeeAmount();
         // The denominator is augmented because performanceFeeAmount() accounts for inflation
         // Since shares are directly transferred, we don't need to account for inflation in this case
         uint performanceFeePortion = mul(
@@ -283,20 +284,20 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     /// @dev "Happy path" (no asset throws & quantity available)
     /// @notice Redeem all shares and across all assets
     function redeem() external {
-        uint ownedShares = Shares(routes.shares).balanceOf(msg.sender);
+        uint ownedShares = IShares(routes.shares).balanceOf(msg.sender);
         redeemQuantity(ownedShares);
     }
 
     /// @notice Redeem shareQuantity across all assets
     function redeemQuantity(uint shareQuantity) public {
-        (address[] memory assetList,) = Accounting(routes.accounting).getFundHoldings();
+        (address[] memory assetList,) = IAccounting(routes.accounting).getFundHoldings();
         redeemWithConstraints(shareQuantity, assetList);
     }
 
     // TODO: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     /// @dev Redeem only selected assets (used only when an asset throws)
     function redeemWithConstraints(uint shareQuantity, address[] memory requestedAssets) public {
-        Shares shares = Shares(routes.shares);
+        IShares shares = IShares(routes.shares);
         require(
             shares.balanceOf(msg.sender) >= shareQuantity &&
             shares.balanceOf(msg.sender) > 0,
@@ -308,7 +309,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             IPriceSource(priceSource()).hasValidPrices(requestedAssets) &&
             msg.sender != hub.manager()
         ) {
-            FeeManager(routes.feeManager).rewardManagementFee();
+            IFeeManager(routes.feeManager).rewardManagementFee();
             owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
             shares.destroyFor(msg.sender, owedPerformanceFees);
             shares.createFor(hub.manager(), owedPerformanceFees);
@@ -319,7 +320,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
         address[] memory redeemedAssets = new address[](requestedAssets.length);
         // Check whether enough assets held by fund
-        Accounting accounting = Accounting(routes.accounting);
+        IAccounting accounting = IAccounting(routes.accounting);
         for (uint i = 0; i < requestedAssets.length; ++i) {
             ofAsset = requestedAssets[i];
             if (ofAsset == address(0)) continue;
@@ -348,7 +349,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             } else {
                 ITrading(routes.trading).withdraw(ofAsset, ownershipQuantities[k]);
                 safeTransfer(ofAsset, msg.sender, ownershipQuantities[k]);
-                Accounting(routes.accounting).decreaseAssetBalance(ofAsset, ownershipQuantities[k]);
+                IAccounting(routes.accounting).decreaseAssetBalance(ofAsset, ownershipQuantities[k]);
             }
         }
         emit Redemption(

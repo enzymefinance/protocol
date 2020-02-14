@@ -1,6 +1,7 @@
 pragma solidity 0.6.1;
 
-import "../../accounting/Accounting.sol";
+import "../../accounting/IAccounting.sol";
+import "../../hub/Hub.sol";
 import "../../trading/Trading.sol";
 import "../TradingSignatures.sol";
 
@@ -18,11 +19,11 @@ contract MaxPositions is TradingSignatures {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        Accounting accounting = Accounting(Hub(Trading(msg.sender).hub()).accounting());
+        IAccounting accounting = IAccounting(Hub(Trading(msg.sender).hub()).accounting());
         address denominationAsset = accounting.DENOMINATION_ASSET();
         // Always allow a trade INTO the quote asset
         address incomingToken = addresses[2];
-        if (denominationAsset == incomingToken) { return true; }
+        if (denominationAsset == incomingToken) return true;
         return accounting.getOwnedAssetsLength() <= maxPositions;
     }
 

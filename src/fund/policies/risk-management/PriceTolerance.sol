@@ -1,11 +1,11 @@
 pragma solidity 0.6.1;
 
-import "../../hub/Hub.sol";
-import "../../../prices/IPriceSource.sol";
 import "../TradingSignatures.sol";
+import "../../hub/IHub.sol";
+import "../../trading/ITrading.sol";
 import "../../../dependencies/DSMath.sol";
-import "../../trading/Trading.sol";
 import "../../../exchanges/interfaces/IOasisDex.sol";
+import "../../../prices/IPriceSource.sol";
 
 contract PriceTolerance is TradingSignatures, DSMath {
     enum Applied { pre, post }
@@ -39,7 +39,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
         view
         returns (bool)
     {
-        IPriceSource pricefeed = IPriceSource(Hub(Trading(msg.sender).hub()).priceSource());
+        IPriceSource pricefeed = IPriceSource(ITrading(msg.sender).priceSource());
         uint256 referencePrice;
         (referencePrice,) = pricefeed.getReferencePriceInfo(_takerAsset, _makerAsset);
 
