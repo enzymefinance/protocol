@@ -6,6 +6,17 @@ import "./interfaces/ISwap.sol";
 
 contract AirSwapAdapter is ExchangeAdapter {
 
+    /// @notice Extract arguments for risk management validations
+    /// @param _encodedArgs Encoded arguments for a specific exchange
+    /// @notice rskMngAddrs [0] makerAddress
+    /// @notice rskMngAddrs [1] takerAddress
+    /// @notice rskMngAddrs [2] makerAsset
+    /// @notice rskMngAddrs [3] takerAsset
+    /// @notice rskMngAddrs [4] makerFeeAsset
+    /// @notice rskMngAddrs [5] takerFeeAsset
+    /// @notice rskMngVals [0] makerAssetAmount
+    /// @notice rskMngVals [1] takerAssetAmount
+    /// @notice rskMngVals [2] fillAmout
     function extractRiskManagementArgs(
         bytes calldata _encodedArgs
     )
@@ -19,21 +30,20 @@ contract AirSwapAdapter is ExchangeAdapter {
             uint[8] memory orderValues, , , ,
         ) = _decodeArgs(_encodedArgs);
 
-        return (
-            [
-                orderAddresses[0],
-                orderAddresses[2],
-                orderAddresses[1],
-                orderAddresses[3],
-                address(0),
-                address(0)
-            ],
-            [
-                orderValues[2],
-                orderValues[4],
-                orderValues[4]
-            ]
-        );
+        address[6] memory rskMngAddrs = [
+            orderAddresses[0],
+            orderAddresses[2],
+            orderAddresses[1],
+            orderAddresses[3],
+            address(0),
+            address(0)
+        ];
+        uint[3] memory rskMngVals = [
+            orderValues[2],
+            orderValues[4],
+            orderValues[4]
+        ];
+        return (rskMngAddrs, rskMngVals);
     }
 
     function swapToken(
@@ -73,6 +83,32 @@ contract AirSwapAdapter is ExchangeAdapter {
         ISwap(_targetExchange).swap(order);
     }
 
+    /// @notice Decoder
+    /// @notice Reference ISwap.sol for Order type
+    /// @param _encodedArgs Encoded arguments for a specific exchange
+    /// @notice orderAddresses [0] order.signer.wallet
+    /// @notice orderAddresses [1] order.signer.token
+    /// @notice orderAddresses [2] order.sender.wallet
+    /// @notice orderAddresses [3] order.sender.token
+    /// @notice orderAddresses [4] order.affiliate.wallet
+    /// @notice orderAddresses [5] order.affiliate.token
+    /// @notice orderAddresses [6] order.signature.signatory
+    /// @notice orderAddresses [7] order.signature.validator
+    /// @notice orderValues [0] order.nonce
+    /// @notice orderValues [1] order.expiry
+    /// @notice orderValues [2] order.signer.amount
+    /// @notice orderValues [3] order.signer.id
+    /// @notice orderValues [4] order.sender.amount
+    /// @notice orderValues [5] order.sender.id
+    /// @notice orderValues [6] order.affiliate.amount
+    /// @notice orderValues [7] order.affiliate.id
+    /// @notice tokenKinds [0] order.signer.kind
+    /// @notice tokenKinds [1] order.sender.kind
+    /// @notice tokenKinds [2] order.affiliate.kind
+    /// @notice sigBytesComponents [0] order.signature.r
+    /// @notice sigBytesComponents [1] order.signature.s
+    /// @notice sigUintComponent order.signature.v
+    /// @notice version order.signature.version
     function _decodeArgs(
         bytes memory _encodedArgs
     )
