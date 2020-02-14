@@ -264,7 +264,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
             spreadFromKyber = mul(
                 sub(askRate, bidRate),
                 10 ** uint(KYBER_PRECISION)
-            ) / kyberPrice;
+            ) / askRate;
         }
 
         return (
