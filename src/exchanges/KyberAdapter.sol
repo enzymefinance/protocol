@@ -67,7 +67,13 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
         getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(makerAsset);
+        uint256 timesMakerAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
+        if (
+            !getTrading().isInOpenMakeOrder(makerAsset) &&
+            timesMakerAssetUsedAsFee == 0
+        ) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(0),

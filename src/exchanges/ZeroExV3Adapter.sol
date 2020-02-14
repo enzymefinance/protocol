@@ -310,9 +310,9 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             makerAssetRemainingInOrder,
             "makerAsset"
         );
-        uint256 timesFeeAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
+        uint256 timesMakerAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
         // only return makerAsset early when it is not being used as a fee anywhere
-        if (timesFeeAssetUsedAsFee == 0) {
+        if (timesMakerAssetUsedAsFee == 0) {
             getTrading().returnAssetToVault(makerAsset);
         }
 
@@ -325,6 +325,7 @@ contract ZeroExV3Adapter is DSMath, ExchangeAdapter {
             );
             // only return feeAsset when not used in another makeOrder AND
             //  when it is only used as a fee in this order that we are cancelling
+            uint256 timesFeeAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerFeeAsset);
             if (
                 !getTrading().isInOpenMakeOrder(makerFeeAsset) &&
                 timesFeeAssetUsedAsFee == 1

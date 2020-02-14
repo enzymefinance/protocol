@@ -138,7 +138,13 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
 
         getAccounting().addAssetToOwnedAssets(makerAsset);
         getAccounting().updateOwnedAssets();
-        getTrading().returnAssetToVault(makerAsset);
+        uint256 timesMakerAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
+        if (
+            !getTrading().isInOpenMakeOrder(makerAsset) &&
+            timesMakerAssetUsedAsFee == 0
+        ) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
         getTrading().orderUpdateHook(
             targetExchange,
             bytes32(identifier),
@@ -176,7 +182,10 @@ contract OasisDexAdapter is DSMath, ExchangeAdapter {
 
         getTrading().removeOpenMakeOrder(targetExchange, makerAsset);
         IOasisDex(targetExchange).cancel(uint256(identifier));
-        getTrading().returnAssetToVault(makerAsset);
+        uint256 timesMakerAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(makerAsset);
+        if (timesMakerAssetUsedAsFee == 0) {
+            getTrading().returnAssetToVault(makerAsset);
+        }
         getAccounting().updateOwnedAssets();
         getTrading().orderUpdateHook(
             targetExchange,

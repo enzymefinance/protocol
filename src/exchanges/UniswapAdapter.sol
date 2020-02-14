@@ -179,7 +179,13 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
 
         // Convert ETH to WETH and move to Vault
         WETH(payable(_nativeAsset)).deposit.value(actualReceiveAmount_)();
-        getTrading().returnAssetToVault(_nativeAsset);
+        uint256 timesNativeAssetUsedAsFee = getTrading().openMakeOrdersUsingAssetAsFee(_nativeAsset);
+        if (
+            !getTrading().isInOpenMakeOrder(_nativeAsset) &&
+            timesNativeAssetUsedAsFee == 0
+        ) {
+            getTrading().returnAssetToVault(_nativeAsset);
+        }
     }
 
     /// @param _targetExchange Address of Uniswap factory contract
