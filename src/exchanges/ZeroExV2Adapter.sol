@@ -1,17 +1,15 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/token/IERC20.sol";
-import "../fund/trading/Trading.sol";
-import "../fund/accounting/Accounting.sol";
+import "./ExchangeAdapter.sol";
+import "./OrderFiller.sol";
 import "../dependencies/DSMath.sol";
 import "./interfaces/IZeroExV2.sol";
-import "./ExchangeAdapter.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to 0xV2 Exchange Contract
-contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
+contract ZeroExV2Adapter is DSMath, ExchangeAdapter, OrderFiller {
     /// @param orderAddresses [2] Order maker asset
     /// @param orderAddresses [3] Order taker asset
     /// @param orderData [0] Order maker asset data
@@ -82,112 +80,72 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
         override
         orderAddressesMatchOrderData(orderAddresses, orderData)
     {
-        IZeroExV2.Order memory order = constructOrderStruct(orderAddresses, orderValues, orderData);
-
-        uint fillTakerQuantity = orderValues[6];
-
-        approveAssetsTakeOrder(targetExchange, order, fillTakerQuantity);
-
-        uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
-        require(
-            takerAssetFilledAmount == fillTakerQuantity,
-            "Filled amount does not match desired fill amount"
+        (
+            address[] memory fillAssets,
+            uint256[] memory fillExpectedAmounts
+        ) = formatFillTakeOrderArgs(
+            targetExchange,
+            orderAddresses,
+            orderValues
         );
 
-        completeTakeOrder(targetExchange, order, orderValues[0], takerAssetFilledAmount);
+        fillTakeOrder(
+            targetExchange,
+            fillAssets,
+            fillExpectedAmounts,
+            constructOrderStruct(orderAddresses, orderValues, orderData),
+            signature
+        );
     }
 
     // INTERNAL METHODS
 
-    /// @notice Approves takerAsset, takerFee
+    // Approves takerAsset, takerFee
     function approveAssetsTakeOrder(
         address _targetExchange,
         IZeroExV2.Order memory _order,
-        uint256 _fillTakerAmount
+        uint256[] memory _fillExpectedAmounts
     )
         internal
     {
+        // Taker asset
         approveAsset(
             getAssetAddress(_order.takerAssetData),
             getAssetProxy(_targetExchange, _order.takerAssetData),
-            _fillTakerAmount,
+            _fillExpectedAmounts[1],
             "takerAsset"
         );
-        uint256 takerFeeAmount = mul(_order.takerFee, _fillTakerAmount) / _order.takerAssetAmount;
-        if (takerFeeAmount > 0) {
+        // Taker fee asset
+        if (_order.takerFee > 0) {
             bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
             approveAsset(
                 getAssetAddress(zrxAssetData),
                 getAssetProxy(_targetExchange, zrxAssetData),
-                takerFeeAmount,
+                _fillExpectedAmounts[2],
                 "takerFeeAsset"
             );
         }
     }
 
-    /// @dev Needed to avoid stack too deep error
-    function completeTakeOrder(
+    function fillTakeOrder(
         address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts,
         IZeroExV2.Order memory _order,
-        uint256 _makerAssetFilledAmount,
-        uint256 _takerAssetFilledAmount
+        bytes memory _signature
     )
         internal
-    {
-        address makerAsset = getAssetAddress(_order.makerAssetData);
-        address takerAsset = getAssetAddress(_order.takerAssetData);
-
-        getAccounting().decreaseAssetBalance(takerAsset, _takerAssetFilledAmount);
-        getAccounting().increaseAssetBalance(makerAsset, _makerAssetFilledAmount);
-
-        emit OrderFilled(
+        validateAndFinalizeFilledOrder(
             _targetExchange,
-            OrderType.Take,
-            makerAsset,
-            _makerAssetFilledAmount,
-            takerAsset,
-            _takerAssetFilledAmount,
-            getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA()),
-            _order.takerFee
-        );
-    }
-
-    /// @dev Needed to avoid stack too deep error
-    function executeFill(
-        address targetExchange,
-        IZeroExV2.Order memory order,
-        uint256 takerAssetFillAmount,
-        bytes memory signature
-    )
-        internal
-        returns (uint256)
+            _fillAssets,
+            _fillExpectedAmounts
+        )
     {
-        address makerAsset = getAssetAddress(order.makerAssetData);
-        uint preMakerAssetBalance = IERC20(makerAsset).balanceOf(address(this));
+        // Approve taker and taker fee assets
+        approveAssetsTakeOrder(_targetExchange, _order, _fillExpectedAmounts);
 
-        IZeroExV2.FillResults memory fillResults = IZeroExV2(targetExchange).fillOrder(
-            order,
-            takerAssetFillAmount,
-            signature
-        );
-
-        uint256 postMakerAssetBalance = IERC20(makerAsset).balanceOf(address(this));
-
-        // Account for case where makerAsset is ZRX (same as takerFee)
-        uint256 makerAssetFeesTotal;
-        if (makerAsset == getAssetAddress(IZeroExV2(targetExchange).ZRX_ASSET_DATA())) {
-            makerAssetFeesTotal = add(makerAssetFeesTotal, order.takerFee);
-        }
-
-        require(
-            postMakerAssetBalance == sub(
-                add(preMakerAssetBalance, fillResults.makerAssetFilledAmount),
-                makerAssetFeesTotal
-            ),
-            "Maker asset balance different than expected"
-        );
-
-        return fillResults.takerAssetFilledAmount;
+        // Execute take order on exchange
+        IZeroExV2(_targetExchange).fillOrder(_order, _fillExpectedAmounts[1], _signature);
     }
 
     // VIEW METHODS
@@ -216,6 +174,29 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
             takerAssetData: orderData[1]
         });
     }
+
+    function formatFillTakeOrderArgs(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues
+    )
+        internal
+        view
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory fillAssets = new address[](3);
+        fillAssets[0] = _orderAddresses[2]; // maker asset
+        fillAssets[1] = _orderAddresses[3]; // taker asset
+        fillAssets[2] = getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA()); // taker fee asset
+
+        uint256[] memory fillExpectedAmounts = new uint256[](3);
+        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
+        fillExpectedAmounts[2] = _orderValues[3]; // taker fee amount
+
+        return (fillAssets, fillExpectedAmounts);
+    }
+
 
     function getAssetProxy(address targetExchange, bytes memory assetData)
         internal
