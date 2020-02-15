@@ -1,0 +1,166 @@
+{
+  "conf": {
+    "deployer": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
+    "provider": "https://kovan.infura.io/v3/9136e09ace01493b86fed528cb6a87a5",
+    "track": "TESTING"
+  },
+  "melon": {
+    "addr": {
+      "EthfinexAdapter": "0xeC16266600199df70593fFc0a28A2Fde30222F1E",
+      "KyberAdapter": "0xECA55DB693d0C52280F16A6a66cFC570EaCAc882",
+      "OasisDexAdapter": "0xc422270aC1C1520078fc3dcCA90b5E2eAEDD22eD",
+      "OasisDexAccessor": "0x465d730068bD2920353d6F60A04e471c88b1CaDd",
+      "UniswapAdapter": "0x121e0fa2e35F0A42f72e3D7f3E35aD796078060e",
+      "ZeroExV2Adapter": "0x7600Af9942b292c5D7D29902610383D1138d93eC",
+      "ZeroExV3Adapter": "0x4Ad264465a87c829bAa646d09e6f853c843abf55",
+      "EngineAdapter": "0x74E301BCb70024f9a0A7a61f88Cdd6314e0Bf9C2",
+      "PriceTolerance": "0x7D4b33485fbA06D1Bd14f48caA0aE67495e91311",
+      "UserWhitelist": "0x49f8c1cc80101193918142A37b670f8Eefc0659c",
+      "ManagementFee": "0xf7D02D3CBe429B94a559D684cfafAfcdA2052A42",
+      "AccountingFactory": "0xc4bbCb1a95122E1dADA448ba291A7FeC062657e0",
+      "FeeManagerFactory": "0x2BC5E0086E7E0beC489f38Dc0b7174137C321B17",
+      "ParticipationFactory": "0xbEb4C9D0DddeEABDfce9CEC33d2cf7e7Fea77606",
+      "PolicyManagerFactory": "0x98b5b7c1278056CC9DeaE04E8B914Ed6b3f19e8D",
+      "SharesFactory": "0x0e93B127c88225fc71d8fa1927beb0D533564663",
+      "TradingFactory": "0xDeAa6B6C325257aA2481F9928b7522f6D3FfcCa3",
+      "VaultFactory": "0x37d767DE33181cD5c3bd41F63b229160F849C634",
+      "PerformanceFee": "0xf27663493dcaFAAA8098B0cB56A93d24532f5594",
+      "Registry": "0x5C029095BbbBbfc8BfE9F645f70ce55D11e9bBdE",
+      "Engine": "0xFC1E6Ba6ef3994D3dAC81A61F6495B78e565a040",
+      "Version": "0xBFCFaE67039b4f9AF98c92A99294097012D78120",
+      "TestingPriceFeed": "0xf6f8fA3cfA34daB354baf47dbB6fd3D9c8210d98"
+    },
+    "conf": {
+      "priceTolerance": 10,
+      "userWhitelist": [
+        "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9"
+      ],
+      "registryOwner": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
+      "engineDelay": 2592000,
+      "maxSpread": "150000000000000000",
+      "versionOwner": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
+      "initialMGM": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
+      "initialUpdater": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
+      "versionName": "1.1.0-kovan",
+      "exchangeTakesCustody": {
+        "oasis": true,
+        "kyber": false,
+        "zeroex": false,
+        "ethfinex": true,
+        "engine": false
+      }
+    }
+  },
+  "kyber": {
+    "addr": {
+      "KGT": "",
+      "ConversionRates": "",
+      "KyberReserve": "",
+      "KyberNetwork": "",
+      "KyberNetworkProxy": "",
+      "KyberWhiteList": "",
+      "ExpectedRate": "",
+      "FeeBurner": ""
+    },
+    "conf": {
+      "initialReserveAmount": "1000000000000000000"
+    }
+  },
+  "oasis": {
+    "addr": {
+      "OasisDexExchange": "0x66f46c83426BB370Be1735Db4769E0950D95f36D"
+    },
+    "conf": {
+      "closeTime": "9999999999999",
+      "quoteToken": "WETH"
+    }
+  },
+  "ethfinex": {
+    "addr": {
+      "WrapperRegistryEFX": ""
+    },
+    "conf": {}
+  },
+  "uniswap": {
+    "addr": {
+      "UniswapExchange": "0xBD99b819b65c27DF4182C42c4ce8991048b05c9f",
+      "UniswapFactory": "0x86708A34381DBA9374c1A2743B910fa603564d28"
+    },
+    "conf": {}
+  },
+  "zeroExV2": {
+    "addr": {
+      "ZeroExV2Exchange": "0x14aE58e969C0A6E57E2a36a0A29F967B8711bc34",
+      "ZeroExV2ERC20Proxy": "0x3dde31d968449C4D66b7DaA9FAe8cABeaa1f678e"
+    },
+    "conf": {}
+  },
+  "zeroExV3": {
+    "addr": {
+      "ZeroExV3Exchange": "0xf8A7A952D8AF2E6943291209a0Ca198bED8bc83c",
+      "ZeroExV3ERC20Proxy": "0xDe9033f5bf1bCDF5822128d44120e06CA8c8A6A4",
+      "ZeroExV3Staking": "0x8c3cA0c7276425F10b533B9e1fB9Bd3da1cd9eDd",
+      "ZeroExV3StakingProxy": "0x8AbE666B82Ce5f37e22a4a6B6A7Ce158BE1870fe",
+      "ZeroExV3ZrxVault": "0xF39C4739Ba2D635d01c0661EEC0F883Ac6b4A256"
+    },
+    "conf": {
+      "protocolFeeMultiplier": 150000
+    }
+  },
+  "tokens": {
+    "addr": {
+      "WETH": "0x4a1218C3BE387F11E9FEb0d6Eb61659D085b0589",
+      "MLN": "0x1f27B5638512d5a3b35E136334455cA1C9065065",
+      "BAT": "0xc0a6D9ae0b92249A680F0A47D2b5300dc6CBc5e0",
+      "DAI": "0xcBe0e15B492933721B82a6c76a5D6C9A56A3E5B3",
+      "EUR": "0x8001b04F81D17c9Bf68F714D66bcB1a92468C07b",
+      "KNC": "0x0D6E43d9aFeacf28a2DaBb3A05b1FD60e1bd3a1e",
+      "MKR": "0x23721744ED349241E40925680D12d9C9CF6fbb15",
+      "REP": "0xC4a9bfA60535627458C8Bf6A8131b4f04673153f",
+      "ZRX": "0x215874a38Aaf82B4DB94a02b7E0d2482d35A405b"
+    },
+    "conf": {
+      "WETH": {
+        "name": "Eth Token",
+        "decimals": 18,
+        "initialDepositAmount": "1000000000000000000"
+      },
+      "MLN": {
+        "name": "Melon Token",
+        "decimals": 18
+      },
+      "BAT": {
+        "name": "Basic Attention Token",
+        "decimals": 18
+      },
+      "DAI": {
+        "name": "Dai",
+        "decimals": 18
+      },
+      "EUR": {
+        "name": "Euro Token",
+        "decimals": 18
+      },
+      "KNC": {
+        "name": "Kyber Network",
+        "decimals": 18
+      },
+      "MKR": {
+        "name": "MakerDao",
+        "decimals": 18
+      },
+      "REP": {
+        "name": "Rep Token",
+        "decimals": 18
+      },
+      "ZRX": {
+        "name": "ZeroX Protocol Token",
+        "decimals": 18
+      }
+    }
+  },
+  "postDeployment": {
+    "deployerWethAmount": "100000000000000000000",
+    "kyberReserveAmount": "100000000000000000000"
+  }
+}
