@@ -11,18 +11,6 @@ import "../fund/trading/Trading.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Override the public methods to implement an adapter
 contract ExchangeAdapter is DSMath {
-    event OrderFilled(
-        address indexed exchangeAddress,
-        OrderType indexed orderType,
-        address targetAsset,
-        uint256 targetAmount,
-        address offerAsset,
-        uint256 offerAmount,
-        address[] feeAssets,
-        uint256[] feeAmounts
-    );
-    enum OrderType { Take }
-
     // PUBLIC FUNCTIONS
 
     /// @param _orderAddresses [0] Order maker

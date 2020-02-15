@@ -1,17 +1,15 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
+import "./ExchangeAdapter.sol";
+import "./OrderFiller.sol";
 import "../engine/Engine.sol";
-import "../fund/trading/Trading.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/WETH.sol";
-import "../dependencies/token/IERC20.sol";
-import "./ExchangeAdapter.sol";
 import "../dependencies/TokenUser.sol";
 
 /// @notice Trading adapter to Melon Engine
-contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
-
+contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter, OrderFiller {
     /// @notice Buys Ether from the engine, selling MLN
     /// @param targetExchange Address of the engine
     /// @param orderValues [0] Min Eth to receive from the engine
@@ -30,13 +28,8 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
         public
         override
     {
-        address wethAddress = orderAddresses[2];
-        address mlnAddress = orderAddresses[3];
-        uint minEthToReceive = orderValues[0];
-        uint mlnQuantity = orderValues[1];
-
         require(
-            wethAddress == Registry(getHub().registry()).nativeAsset(),
+            orderAddresses[2] == Registry(getHub().registry()).nativeAsset(),
             "maker asset doesnt match nativeAsset on registry"
         );
         require(
@@ -44,30 +37,62 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
             "fillTakerQuantity must equal takerAssetQuantity"
         );
 
-        approveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
+        (
+            address[] memory fillAssets,
+            uint256[] memory fillExpectedAmounts
+        ) = formatFillTakeOrderArgs(orderAddresses, orderValues);
 
-        uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
+        fillTakeOrder(targetExchange, fillAssets, fillExpectedAmounts);
+    }
 
-        require(
-            ethToReceive >= minEthToReceive,
-            "Expected ETH to receive is less than takerQuantity (minEthToReceive)"
-        );
+    // INTERNAL FUNCTIONS
+    function formatFillTakeOrderArgs(
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues
+    )
+        internal
+        pure
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory fillAssets = new address[](2);
+        fillAssets[0] = _orderAddresses[2]; // maker asset
+        fillAssets[1] = _orderAddresses[3]; // taker asset
 
-        Engine(targetExchange).sellAndBurnMln(mlnQuantity);
-        WETH(payable(wethAddress)).deposit.value(ethToReceive)();
+        uint256[] memory fillExpectedAmounts = new uint256[](2);
+        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
 
-        getAccounting().decreaseAssetBalance(mlnAddress, mlnQuantity);
-        getAccounting().increaseAssetBalance(wethAddress, ethToReceive);
+        return (fillAssets, fillExpectedAmounts);
+    }
 
-        emit OrderFilled(
-            targetExchange,
-            OrderType.Take,
-            wethAddress,
-            ethToReceive,
-            mlnAddress,
-            mlnQuantity,
-            address(0),
-            0
-        );
+    function executeTakeOrderOnExchange(address _targetExchange, uint256 _expectedTakerAmount)
+        internal
+        returns (uint256 ethFilledAmount_)
+    {
+        uint256 preEthBalance = payable(address(this)).balance;
+        Engine(_targetExchange).sellAndBurnMln(_expectedTakerAmount);
+        ethFilledAmount_ = sub(payable(address(this)).balance, preEthBalance);
+    }
+
+    function fillTakeOrder(
+        address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        internal
+        validateAndFinalizeFilledOrder(
+            _targetExchange,
+            _fillAssets,
+            _fillExpectedAmounts
+        )
+    {
+        // Approve taker asset
+        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+
+        // Fill order
+        uint256 ethFilledAmount = executeTakeOrderOnExchange(_targetExchange, _fillExpectedAmounts[1]);
+
+        // Return ETH to WETH
+        WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 }
