@@ -35,7 +35,7 @@ const main = async input => {
   if (conf.track === 'KYBER_PRICE') {
     priceSource = await nab('KyberPriceFeed', [
       registry.options.address, input.kyber.addr.KyberNetworkProxy,
-      melonConf.maxSpread, tokenAddrs.WETH
+      melonConf.maxSpread, tokenAddrs.WETH, melonConf.initialUpdater
     ], melonAddrs);
   } else if (conf.track === 'TESTING') {
     priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH, input.tokens.conf.WETH.decimals], melonAddrs);
@@ -138,10 +138,11 @@ const main = async input => {
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
     const assetInfo = await call(registry, 'assetInformation', [tokenAddress]);
+    const reserveMin = info.reserveMin || '0';
     if (!assetInfo.exists) {
-      // TODO: fix token.sym and reserveMin
-      const reserveMin = 0;
       await send(registry, 'registerAsset', [tokenAddress, info.name, sym, '', reserveMin, [], []]);
+    } else {
+      await send(registry, 'updateAsset', [tokenAddress, info.name, sym, '', reserveMin, [], []]);
     }
     if (conf.track === 'TESTING') {
       const previousDecimals = await call(priceSource, 'assetsToDecimals', [tokenAddress]);

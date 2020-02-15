@@ -6,7 +6,7 @@
   },
   "melon": {
     "addr": {
-      "PriceSource": "",
+      "TestingPriceFeed": "",
       "EthfinexAdapter": "",
       "KyberAdapter": "",
       "MatchingMarketAdapter": "",
@@ -26,8 +26,6 @@
       "SharesFactory": "",
       "TradingFactory": "",
       "VaultFactory": "",
-      "ManagementFee": "",
-      "PerformanceFee": "",
       "Engine": "",
       "Registry": "",
       "Version": ""
@@ -37,10 +35,11 @@
       "userWhitelist": ["0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9"],
       "registryOwner": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
       "engineDelay": 2592000,
-      "maxSpread": "100000000000000000",
+      "maxSpread": "150000000000000000",
       "versionOwner": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
       "initialMGM": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
-      "versionName": "Fakename",
+      "initialUpdater": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
+      "versionName": "1.1.0-kovan",
       "exchangeTakesCustody": {
         "oasis": true,
         "kyber": false,
@@ -67,7 +66,7 @@
   },
   "oasis": {
     "addr": {
-      "MatchingMarket": ""
+      "OasisDexExchange": ""
     },
     "conf": {
       "closeTime": "9999999999999",
@@ -112,7 +111,6 @@
       "MLN": "",
       "BAT": "",
       "DAI": "",
-      "DGX": "",
       "EUR": "",
       "KNC": "",
       "MKR": "",
@@ -136,10 +134,6 @@
       "DAI": {
         "name": "Dai",
         "decimals": 18
-      },
-      "DGX": {
-        "name": "Digix Gold Token",
-        "decimals": 9
       },
       "EUR": {
         "name": "Euro Token",
