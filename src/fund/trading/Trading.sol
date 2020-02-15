@@ -4,25 +4,11 @@ pragma experimental ABIEncoderV2;
 import "../hub/Spoke.sol";
 import "../policies/IPolicyManager.sol";
 import "../policies/TradingSignatures.sol";
-import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
-import "../../exchanges/ExchangeAdapter.sol";
-import "../../exchanges/interfaces/IZeroExV2.sol";
-import "../../exchanges/interfaces/IZeroExV3.sol";
 import "../../factory/Factory.sol";
 import "../../version/IRegistry.sol";
 
-contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
-    event ExchangeMethodCall(
-        address indexed exchangeAddress,
-        string indexed methodSignature,
-        address[8] orderAddresses,
-        uint[8] orderValues,
-        bytes[4] orderData,
-        bytes32 identifier,
-        bytes signature
-    );
-
+contract Trading is TokenUser, Spoke, TradingSignatures {
     struct Exchange {
         address exchange;
         address adapter;
@@ -31,11 +17,6 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
 
     Exchange[] public exchanges;
     mapping (address => bool) public adapterIsAdded;
-
-    modifier delegateInternal() {
-        require(msg.sender == address(this), "Sender is not this contract");
-        _;
-    }
 
     constructor(
         address _hub,
@@ -48,23 +29,131 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
     {
         routes.registry = _registry;
         require(_exchanges.length == _adapters.length, "Array lengths unequal");
-        for (uint i = 0; i < _exchanges.length; i++) {
-            _addExchange(_exchanges[i], _adapters[i]);
+        for (uint256 i = 0; i < _exchanges.length; i++) {
+            addExchangeInternal(_exchanges[i], _adapters[i]);
         }
     }
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Receive ether function (used to receive ETH from WETH)
     receive() external payable {}
 
     function addExchange(address _exchange, address _adapter) external auth {
-        _addExchange(_exchange, _adapter);
+        addExchangeInternal(_exchange, _adapter);
     }
 
-    function withdraw(address _token, uint _amount) external auth {
+    function getExchangeInfo()
+        external
+        view
+        returns (address[] memory, address[] memory, bool[] memory)
+    {
+        address[] memory ofExchanges = new address[](exchanges.length);
+        address[] memory ofAdapters = new address[](exchanges.length);
+        bool[] memory takesCustody = new bool[](exchanges.length);
+        for (uint256 i = 0; i < exchanges.length; i++) {
+            ofExchanges[i] = exchanges[i].exchange;
+            ofAdapters[i] = exchanges[i].adapter;
+            takesCustody[i] = exchanges[i].takesCustody;
+        }
+        return (ofExchanges, ofAdapters, takesCustody);
+    }
+
+    function withdraw(address _token, uint256 _amount) external auth {
         safeTransfer(_token, msg.sender, _amount);
     }
 
-    function _addExchange(
+    // PUBLIC FUNCTIONS
+
+    /// @notice Universal method for calling exchange functions through adapters
+    /// @notice See adapter contracts for parameters needed for each exchange
+    /// @param _exchangeIndex Index of the exchange in the "exchanges" array
+    /// @param _orderAddresses [0] Order maker
+    /// @param _orderAddresses [1] Order taker
+    /// @param _orderAddresses [2] maker asset
+    /// @param _orderAddresses [3] taker asset
+    /// @param _orderAddresses [4] fee recipient
+    /// @param _orderAddresses [5] sender address
+    /// @param _orderAddresses [6] maker fee asset
+    /// @param _orderAddresses [7] taker fee asset
+    /// @param _orderValues [0] maker asset amount
+    /// @param _orderValues [1] taker asset amount
+    /// @param _orderValues [2] maker fee
+    /// @param _orderValues [3] taker fee
+    /// @param _orderValues [4] expiration time (seconds)
+    /// @param _orderValues [5] Salt/nonce
+    /// @param _orderValues [6] Fill amount: amount of taker token to be traded
+    /// @param _orderValues [7] Dexy signature mode
+    /// @param _orderData [0] Encoded data specific to maker asset
+    /// @param _orderData [1] Encoded data specific to taker asset
+    /// @param _orderData [2] Encoded data specific to maker asset fee
+    /// @param _orderData [3] Encoded data specific to taker asset fee
+    /// @param _identifier Order identifier
+    /// @param _signature Signature of order maker
+    function callOnExchange(
+        uint256 _exchangeIndex,
+        string memory _methodSignature,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    )
+        public
+        onlyInitialized
+    {
+        bytes4 methodSelector = bytes4(keccak256(bytes(_methodSignature)));
+        validateCallOnExchange(_exchangeIndex, methodSelector, _orderAddresses);
+
+        IPolicyManager(routes.policyManager).preValidate(
+            methodSelector,
+            [
+                _orderAddresses[0],
+                _orderAddresses[1],
+                _orderAddresses[2],
+                _orderAddresses[3],
+                exchanges[_exchangeIndex].exchange
+            ],
+            [
+                _orderValues[0],
+                _orderValues[1],
+                _orderValues[6]
+            ],
+            _identifier
+        );
+        (bool success, bytes memory returnData) = exchanges[_exchangeIndex].adapter.delegatecall(
+            abi.encodeWithSignature(
+                _methodSignature,
+                exchanges[_exchangeIndex].exchange,
+                _orderAddresses,
+                _orderValues,
+                _orderData,
+                _identifier,
+                _signature
+            )
+        );
+        require(success, string(returnData));
+        IPolicyManager(routes.policyManager).postValidate(
+            methodSelector,
+            [
+                _orderAddresses[0],
+                _orderAddresses[1],
+                _orderAddresses[2],
+                _orderAddresses[3],
+                exchanges[_exchangeIndex].exchange
+            ],
+            [
+                _orderValues[0],
+                _orderValues[1],
+                _orderValues[6]
+            ],
+            _identifier
+        );
+    }
+
+    // INTERNAL FUNCTIONS
+
+    function addExchangeInternal(
         address _exchange,
         address _adapter
     ) internal {
@@ -85,83 +174,6 @@ contract Trading is DSMath, TokenUser, Spoke, TradingSignatures {
             "Exchange and adapter do not match"
         );
         exchanges.push(Exchange(_exchange, _adapter, takesCustody));
-    }
-
-    /// @notice Universal method for calling exchange functions through adapters
-    /// @notice See adapter contracts for parameters needed for each exchange
-    /// @param exchangeIndex Index of the exchange in the "exchanges" array
-    /// @param orderAddresses [0] Order maker
-    /// @param orderAddresses [1] Order taker
-    /// @param orderAddresses [2] Order maker asset
-    /// @param orderAddresses [3] Order taker asset
-    /// @param orderAddresses [4] feeRecipientAddress
-    /// @param orderAddresses [5] senderAddress
-    /// @param orderAddresses [6] maker fee asset
-    /// @param orderAddresses [7] taker fee asset
-    /// @param orderValues [0] makerAssetAmount
-    /// @param orderValues [1] takerAssetAmount
-    /// @param orderValues [2] Maker fee
-    /// @param orderValues [3] Taker fee
-    /// @param orderValues [4] expirationTimeSeconds
-    /// @param orderValues [5] Salt/nonce
-    /// @param orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param orderValues [7] Dexy signature mode
-    /// @param orderData [0] Encoded data specific to maker asset
-    /// @param orderData [1] Encoded data specific to taker asset
-    /// @param orderData [2] Encoded data specific to maker asset fee
-    /// @param orderData [3] Encoded data specific to taker asset fee
-    /// @param identifier Order identifier
-    /// @param signature Signature of order maker
-    function callOnExchange(
-        uint exchangeIndex,
-        string memory methodSignature,
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData,
-        bytes32 identifier,
-        bytes memory signature
-    )
-        public
-        onlyInitialized
-    {
-        bytes4 methodSelector = bytes4(keccak256(bytes(methodSignature)));
-        validateCallOnExchange(exchangeIndex, methodSelector, orderAddresses);
-
-        IPolicyManager(routes.policyManager).preValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        (bool success, bytes memory returnData) = exchanges[exchangeIndex].adapter.delegatecall(
-            abi.encodeWithSignature(
-                methodSignature,
-                exchanges[exchangeIndex].exchange,
-                orderAddresses,
-                orderValues,
-                orderData,
-                identifier,
-                signature
-            )
-        );
-        require(success, string(returnData));
-        IPolicyManager(routes.policyManager).postValidate(methodSelector, [orderAddresses[0], orderAddresses[1], orderAddresses[2], orderAddresses[3], exchanges[exchangeIndex].exchange], [orderValues[0], orderValues[1], orderValues[6]], identifier);
-        emit ExchangeMethodCall(
-            exchanges[exchangeIndex].exchange,
-            methodSignature,
-            orderAddresses,
-            orderValues,
-            orderData,
-            identifier,
-            signature
-        );
-    }
-
-    function getExchangeInfo() public view returns (address[] memory, address[] memory, bool[] memory) {
-        address[] memory ofExchanges = new address[](exchanges.length);
-        address[] memory ofAdapters = new address[](exchanges.length);
-        bool[] memory takesCustody = new bool[](exchanges.length);
-        for (uint i = 0; i < exchanges.length; i++) {
-            ofExchanges[i] = exchanges[i].exchange;
-            ofAdapters[i] = exchanges[i].adapter;
-            takesCustody[i] = exchanges[i].takesCustody;
-        }
-        return (ofExchanges, ofAdapters, takesCustody);
     }
 
     function validateCallOnExchange(
@@ -220,7 +232,10 @@ contract TradingFactory is Factory {
         address[] memory _exchanges,
         address[] memory _adapters,
         address _registry
-    ) public returns (address) {
+    )
+        public
+        returns (address)
+    {
         address trading = address(new Trading(_hub, _exchanges, _adapters, _registry));
         childExists[trading] = true;
         emit NewInstance(
