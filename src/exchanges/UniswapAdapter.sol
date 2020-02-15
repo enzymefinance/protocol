@@ -1,21 +1,19 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/token/IERC20.sol";
+import "./ExchangeAdapter.sol";
+import "./OrderFiller.sol";
 import "../dependencies/WETH.sol";
-import "../fund/trading/Trading.sol";
 import "./interfaces/IUniswapFactory.sol";
 import "./interfaces/IUniswapExchange.sol";
-import "./ExchangeAdapter.sol";
 
-contract UniswapAdapter is DSMath, ExchangeAdapter {
-    /// @notice Take order that uses a user-defined src token amount to trade for a dest token amount
-    /// @dev For the purpose of PriceTolerance, _orderValues [1] == _orderValues [6] = Dest token amount
+contract UniswapAdapter is DSMath, ExchangeAdapter, OrderFiller {
+    /// @notice Take a market order on Uniswap
     /// @param _targetExchange Address of Uniswap factory contract
-    /// @param _orderAddresses [2] Maker asset (Dest token)
-    /// @param _orderAddresses [3] Taker asset (Src token)
-    /// @param _orderValues [0] Maker asset quantity (Dest token amount)
-    /// @param _orderValues [1] Taker asset quantity (Src token amount)
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderValues [0] Maker asset quantity
+    /// @param _orderValues [1] Taker asset quantity
     /// @param _orderValues [6] Taker asset fill amount
     function takeOrder(
         address _targetExchange,
@@ -30,175 +28,138 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
     {
         require(
             _orderValues[1] == _orderValues[6],
-            "Taker asset amount must equal taker asset fill amount"
+            "taker order amount must equal taker fill amount"
         );
 
-        address makerAsset = _orderAddresses[2];
-        address takerAsset = _orderAddresses[3];
-        uint makerAssetAmount = _orderValues[0];
-        uint takerAssetAmount = _orderValues[1];
+        (
+            address[] memory fillAssets,
+            uint256[] memory fillExpectedAmounts
+        ) = formatFillTakeOrderArgs(_orderAddresses, _orderValues);
 
-        uint actualReceiveAmount = dispatchSwap(
-            _targetExchange, takerAsset, takerAssetAmount, makerAsset, makerAssetAmount
-        );
-        require(
-            actualReceiveAmount >= makerAssetAmount,
-            "Received less than expected from Uniswap exchange"
-        );
-
-        getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
-        getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
-
-        emit OrderFilled(
-            _targetExchange,
-            OrderType.Take,
-            makerAsset,
-            actualReceiveAmount,
-            takerAsset,
-            takerAssetAmount,
-            new address[](0),
-            new uint256[](0)
-        );
+        fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
     }
 
     // INTERNAL FUNCTIONS
 
-    /// @notice Call different functions based on type of assets supplied
-    /// @param _targetExchange Address of Uniswap factory contract
-    /// @param _srcToken Address of src token
-    /// @param _srcAmount Amount of src token supplied
-    /// @param _destToken Address of dest token
-    /// @param _minDestAmount Minimum amount of dest token to receive
-    /// @return actualReceiveAmount_ Actual amount of _destToken received
-    function dispatchSwap(
+    function fillTakeOrder(
         address _targetExchange,
-        address _srcToken,
-        uint _srcAmount,
-        address _destToken,
-        uint _minDestAmount
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
     )
         internal
-        returns (uint actualReceiveAmount_)
+        validateAndFinalizeFilledOrder(
+            _targetExchange,
+            _fillAssets,
+            _fillExpectedAmounts
+        )
     {
-        require(
-            _srcToken != _destToken,
-            "Src token cannot be the same as dest token"
-        );
-
         address nativeAsset = getAccounting().NATIVE_ASSET();
 
-        if (_srcToken == nativeAsset) {
-            actualReceiveAmount_ = swapNativeAssetToToken(
+        if (_fillAssets[1] == nativeAsset) {
+            swapNativeAssetToToken(
                 _targetExchange,
-                nativeAsset,
-                _srcAmount,
-                _destToken,
-                _minDestAmount
+                _fillAssets,
+                _fillExpectedAmounts
             );
-        } else if (_destToken == nativeAsset) {
-            actualReceiveAmount_ = swapTokenToNativeAsset(
+        }
+        else if (_fillAssets[0] == nativeAsset) {
+            swapTokenToNativeAsset(
                 _targetExchange,
-                _srcToken,
-                _srcAmount,
-                nativeAsset,
-                _minDestAmount
+                _fillAssets,
+                _fillExpectedAmounts
             );
-        } else {
-            actualReceiveAmount_ = swapTokenToToken(
+        }
+        else {
+            swapTokenToToken(
                 _targetExchange,
-                _srcToken,
-                _srcAmount,
-                _destToken,
-                _minDestAmount
+                _fillAssets,
+                _fillExpectedAmounts
             );
         }
     }
 
-    /// @param _targetExchange Address of Uniswap factory contract
-    /// @param _nativeAsset Native asset address as src token
-    /// @param _srcAmount Amount of native asset supplied
-    /// @param _destToken Address of dest token
-    /// @param _minDestAmount Minimum amount of dest token to get back
-    /// @return actualReceiveAmount_ Actual amount of _destToken received
+    function formatFillTakeOrderArgs(
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues
+    )
+        internal
+        pure
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory fillAssets = new address[](2);
+        fillAssets[0] = _orderAddresses[2]; // maker asset
+        fillAssets[1] = _orderAddresses[3]; // taker asset
+
+        uint256[] memory fillExpectedAmounts = new uint256[](2);
+        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
+
+        return (fillAssets, fillExpectedAmounts);
+    }
+
     function swapNativeAssetToToken(
         address _targetExchange,
-        address _nativeAsset,
-        uint _srcAmount,
-        address _destToken,
-        uint _minDestAmount
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
     )
         internal
-        returns (uint actualReceiveAmount_)
     {
-        // Convert WETH to ETH
         require(
-            getAccounting().assetBalances(_nativeAsset) >= _srcAmount,
+            getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
             "swapNativeAssetToToken: insufficient native token assetBalance"
         );
-        WETH(payable(_nativeAsset)).withdraw(_srcAmount);
 
-        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_destToken);
-        actualReceiveAmount_ = IUniswapExchange(tokenExchange).ethToTokenSwapInput.value(
-            _srcAmount
+        // Convert WETH to ETH
+        WETH(payable(_fillAssets[1])).withdraw(_fillExpectedAmounts[1]);
+
+        // Swap tokens
+        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[0]);
+        IUniswapExchange(tokenExchange).ethToTokenSwapInput.value(
+            _fillExpectedAmounts[1]
         )
         (
-            _minDestAmount,
+            _fillExpectedAmounts[0],
             add(block.timestamp, 1)
         );
     }
 
-    /// @param _targetExchange Address of Uniswap factory contract
-    /// @param _srcToken Address of src token
-    /// @param _srcAmount Amount of src token supplied
-    /// @param _nativeAsset Native asset address as dest token
-    /// @param _minDestAmount Minimum amount of dest token to get back
-    /// @return actualReceiveAmount_ Actual amount of _destToken received
     function swapTokenToNativeAsset(
         address _targetExchange,
-        address _srcToken,
-        uint _srcAmount,
-        address _nativeAsset,
-        uint _minDestAmount
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
     )
         internal
-        returns (uint actualReceiveAmount_)
     {
-        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
-        approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
-        actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToEthSwapInput(
-            _srcAmount,
-            _minDestAmount,
+        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[1]);
+        approveAsset(_fillAssets[1], tokenExchange, _fillExpectedAmounts[1], "takerAsset");
+
+        uint256 preEthBalance = payable(address(this)).balance;
+        IUniswapExchange(tokenExchange).tokenToEthSwapInput(
+            _fillExpectedAmounts[1],
+            _fillExpectedAmounts[0],
             add(block.timestamp, 1)
         );
+        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
         // Convert ETH to WETH
-        WETH(payable(_nativeAsset)).deposit.value(actualReceiveAmount_)();
+        WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
-    /// @param _targetExchange Address of Uniswap factory contract
-    /// @param _srcToken Address of src token
-    /// @param _srcAmount Amount of src token supplied
-    /// @param _destToken Address of dest token
-    /// @param _minDestAmount Minimum amount of dest token to get back
-    /// @return actualReceiveAmount_ Actual amount of _destToken received
     function swapTokenToToken(
         address _targetExchange,
-        address _srcToken,
-        uint _srcAmount,
-        address _destToken,
-        uint _minDestAmount
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
     )
         internal
-        returns (uint actualReceiveAmount_)
     {
-        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
-        approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
-        actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
-            _srcAmount,
-            _minDestAmount,
+        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[1]);
+        approveAsset(_fillAssets[1], tokenExchange, _fillExpectedAmounts[1], "takerAsset");
+        IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
+            _fillExpectedAmounts[1],
+            _fillExpectedAmounts[0],
             1,
             add(block.timestamp, 1),
-            _destToken
+            _fillAssets[0]
         );
     }
 }

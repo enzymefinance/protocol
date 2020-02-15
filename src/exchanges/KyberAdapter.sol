@@ -1,200 +1,177 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/WETH.sol";
-import "../dependencies/token/IERC20.sol";
-import "../fund/trading/Trading.sol";
-import "../prices/IPriceSource.sol";
-import "./interfaces/IKyberNetworkProxy.sol";
 import "./ExchangeAdapter.sol";
+import "./OrderFiller.sol";
+import "../dependencies/WETH.sol";
+import "./interfaces/IKyberNetworkProxy.sol";
 
-contract KyberAdapter is DSMath, ExchangeAdapter {
-    address public constant ETH_TOKEN_ADDRESS = address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
-
-    // NON-CONSTANT METHODS
-
-    // Responsibilities of takeOrder (Kybers swapToken) are:
-    // - check price recent
-    // - check risk management passes
-    // - approve funds to be traded (if necessary)
-    // - perform swap order on the exchange
-    // - place asset in ownedAssets if not already tracked
-    /// @notice Swaps srcAmount of srcToken for destAmount of destToken
-    /// @dev Variable naming to be close to Kyber's naming
-    /// @dev For the purpose of PriceTolerance, fillTakerQuantity == takerAssetQuantity = Dest token amount
-    /// @param targetExchange Address of the exchange
-    /// @param orderAddresses [2] Maker asset (Dest token)
-    /// @param orderAddresses [3] Taker asset (Src token)
-    /// @param orderValues [0] Maker asset quantity (Dest token amount)
-    /// @param orderValues [1] Taker asset quantity (Src token amount)
+contract KyberAdapter is DSMath, ExchangeAdapter, OrderFiller {
+    /// @notice Take a market order on Kyber Swap
+    /// @param _targetExchange Address of the exchange
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderValues [0] Maker asset quantity
+    /// @param _orderValues [1] Taker asset quantity
+    /// @param _orderValues [6] Taker asset fill quantity
     function takeOrder(
-        address targetExchange,
-        address[8] memory orderAddresses,
-        uint[8] memory orderValues,
-        bytes[4] memory orderData,
-        bytes32 identifier,
-        bytes memory signature
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
         public
         override
     {
         require(
-            orderValues[1] == orderValues[6],
-            "fillTakerQuantity must equal takerAssetQuantity"
+            _orderValues[1] == _orderValues[6],
+            "taker order amount must equal taker fill amount"
         );
 
-        address makerAsset = orderAddresses[2];
-        address takerAsset = orderAddresses[3];
-        uint makerAssetAmount = orderValues[0];
-        uint takerAssetAmount = orderValues[1];
+        (
+            address[] memory fillAssets,
+            uint256[] memory fillExpectedAmounts
+        ) = formatFillTakeOrderArgs(_orderAddresses, _orderValues);
 
-        uint minRate = calcMinRate(
-            takerAsset,
-            makerAsset,
-            takerAssetAmount,
-            makerAssetAmount
-        );
-
-        uint actualReceiveAmount = dispatchSwap(
-            targetExchange, takerAsset, takerAssetAmount, makerAsset, minRate
-        );
-        require(
-            actualReceiveAmount >= makerAssetAmount,
-            "Received less than expected from Kyber swap"
-        );
-
-        getAccounting().decreaseAssetBalance(takerAsset, takerAssetAmount);
-        getAccounting().increaseAssetBalance(makerAsset, actualReceiveAmount);
-
-        emit OrderFilled(
-            targetExchange,
-            OrderType.Take,
-            makerAsset,
-            actualReceiveAmount,
-            takerAsset,
-            takerAssetAmount,
-            new address[](0),
-            new uint256[](0)
-        );
+        fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
     }
 
     // INTERNAL FUNCTIONS
 
-    /// @notice Call different functions based on type of assets supplied
-    function dispatchSwap(
-        address targetExchange,
-        address srcToken,
-        uint srcAmount,
-        address destToken,
-        uint minRate
-    )
-        internal
-        returns (uint actualReceiveAmount)
-    {
-        address nativeAsset = getAccounting().NATIVE_ASSET();
-
-        if (srcToken == nativeAsset) {
-            actualReceiveAmount = swapNativeAssetToToken(targetExchange, nativeAsset, srcAmount, destToken, minRate);
-        }
-        else if (destToken == nativeAsset) {
-            actualReceiveAmount = swapTokenToNativeAsset(targetExchange, srcToken, srcAmount, nativeAsset, minRate);
-        }
-        else {
-            actualReceiveAmount = swapTokenToToken(targetExchange, srcToken, srcAmount, destToken, minRate);
-        }
-    }
-
-    /// @dev If minRate is not defined, uses expected rate from the network
-    /// @param targetExchange Address of Kyber proxy contract
-    /// @param nativeAsset Native asset address as src token
-    /// @param srcAmount Amount of native asset supplied
-    /// @param destToken Address of dest token
-    /// @param minRate Minimum rate supplied to the Kyber proxy
-    /// @return receivedAmount Actual amount of destToken received from the exchange
-    function swapNativeAssetToToken(
-        address targetExchange,
-        address nativeAsset,
-        uint srcAmount,
-        address destToken,
-        uint minRate
-    )
-        internal
-        returns (uint receivedAmount)
-    {
-        // Convert WETH to ETH
-        require(
-            getAccounting().assetBalances(nativeAsset) >= srcAmount,
-            "swapNativeAssetToToken: insufficient native token assetBalance"
-        );
-        WETH(payable(nativeAsset)).withdraw(srcAmount);
-        receivedAmount = IKyberNetworkProxy(targetExchange).swapEtherToToken.value(srcAmount)(destToken, minRate);
-    }
-
-    /// @dev If minRate is not defined, uses expected rate from the network
-    /// @param targetExchange Address of Kyber proxy contract
-    /// @param srcToken Address of src token
-    /// @param srcAmount Amount of src token supplied
-    /// @param nativeAsset Native asset address as src token
-    /// @param minRate Minimum rate supplied to the Kyber proxy
-    /// @return receivedAmount Actual amount of destToken received from the exchange
-    function swapTokenToNativeAsset(
-        address targetExchange,
-        address srcToken,
-        uint srcAmount,
-        address nativeAsset,
-        uint minRate
-    )
-        internal
-        returns (uint receivedAmount)
-    {
-        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
-        receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
-
-        // Convert ETH to WETH
-        WETH(payable(nativeAsset)).deposit.value(receivedAmount)();
-    }
-
-    /// @dev If minRate is not defined, uses expected rate from the network
-    /// @param targetExchange Address of Kyber proxy contract
-    /// @param srcToken Address of src token
-    /// @param srcAmount Amount of src token supplied
-    /// @param destToken Address of dest token
-    /// @param minRate Minimum rate supplied to the Kyber proxy
-    /// @return receivedAmount Actual amount of destToken received from the exchange
-    function swapTokenToToken(
-        address targetExchange,
-        address srcToken,
-        uint srcAmount,
-        address destToken,
-        uint minRate
-    )
-        internal
-        returns (uint receivedAmount)
-    {
-        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
-
-        receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
-    }
-
-    /// @param srcToken Address of src token
-    /// @param destToken Address of dest token
-    /// @param srcAmount Amount of src token
-    /// @return minRate Minimum rate to be supplied to the network for some order params
-    function calcMinRate(
-        address srcToken,
-        address destToken,
-        uint srcAmount,
-        uint destAmount
+    // Minimum acceptable rate of taker asset per maker asset
+    function calcMinMakerAssetPerTakerAssetRate(
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
     )
         internal
         view
-        returns (uint minRate)
+        returns (uint)
     {
-        IPriceSource pricefeed = IPriceSource(getHub().priceSource());
-        minRate = pricefeed.getOrderPriceInfo(
-            srcToken,
-            srcAmount,
-            destAmount
+        return mul(
+            _fillExpectedAmounts[1],
+            10 ** uint256(ERC20WithFields(_fillAssets[1]).decimals())
+        ) / _fillExpectedAmounts[0];
+    }
+
+    function fillTakeOrder(
+        address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        internal
+        validateAndFinalizeFilledOrder(
+            _targetExchange,
+            _fillAssets,
+            _fillExpectedAmounts
+        )
+    {
+        address nativeAsset = getAccounting().NATIVE_ASSET();
+
+        // Execute order on exchange, depending on asset types
+        if (_fillAssets[1] == nativeAsset) {
+            swapNativeAssetToToken(
+                _targetExchange,
+                _fillAssets,
+                _fillExpectedAmounts
+            );
+        }
+        else if (_fillAssets[0] == nativeAsset) {
+            swapTokenToNativeAsset(
+                _targetExchange,
+                _fillAssets,
+                _fillExpectedAmounts
+            );
+        }
+        else {
+            swapTokenToToken(
+                _targetExchange,
+                _fillAssets,
+                _fillExpectedAmounts
+            );
+        }
+    }
+
+    function formatFillTakeOrderArgs(
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues
+    )
+        internal
+        pure
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory fillAssets = new address[](2);
+        fillAssets[0] = _orderAddresses[2]; // maker asset
+        fillAssets[1] = _orderAddresses[3]; // taker asset
+
+        uint256[] memory fillExpectedAmounts = new uint256[](2);
+        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
+
+        return (fillAssets, fillExpectedAmounts);
+    }
+
+    function swapNativeAssetToToken(
+        address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        internal
+    {
+        require(
+            getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
+            "swapNativeAssetToToken: insufficient native token assetBalance"
+        );
+
+        // Convert WETH to ETH
+        WETH(payable(_fillAssets[1])).withdraw(_fillExpectedAmounts[1]);
+
+        // Swap tokens
+        IKyberNetworkProxy(_targetExchange).swapEtherToToken.value(
+            _fillExpectedAmounts[1]
+        )
+        (
+            _fillAssets[0],
+            calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+        );
+    }
+
+    function swapTokenToNativeAsset(
+        address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        internal
+    {
+        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+
+        uint256 preEthBalance = payable(address(this)).balance;
+        IKyberNetworkProxy(_targetExchange).swapTokenToEther(
+            _fillAssets[1],
+            _fillExpectedAmounts[1],
+            calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+        );
+        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
+
+        // Convert ETH to WETH
+        WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
+    }
+
+    function swapTokenToToken(
+        address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        internal
+    {
+        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+
+        IKyberNetworkProxy(_targetExchange).swapTokenToToken(
+            _fillAssets[1],
+            _fillExpectedAmounts[1],
+            _fillAssets[0],
+            calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
         );
     }
 }
