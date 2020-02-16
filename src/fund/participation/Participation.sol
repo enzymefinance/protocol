@@ -15,48 +15,47 @@ import "../../prices/IPriceSource.sol";
 
 /// @notice Entry and exit point for investors
 contract Participation is TokenUser, AmguConsumer, Spoke {
+    event CancelRequest (address indexed requestOwner);
+
     event EnableInvestment (address[] asset);
+
     event DisableInvestment (address[] assets);
 
     event InvestmentRequest (
         address indexed requestOwner,
         address indexed investmentAsset,
-        uint requestedShares,
-        uint investmentAmount
-    );
-
-    event RequestExecution (
-        address indexed requestOwner,
-        address indexed executor,
-        address indexed investmentAsset,
-        uint investmentAmount,
-        uint requestedShares
-    );
-
-    event CancelRequest (
-        address indexed requestOwner
+        uint256 requestedShares,
+        uint256 investmentAmount
     );
 
     event Redemption (
         address indexed redeemer,
         address[] assets,
-        uint[] assetQuantities,
-        uint redeemedShares
+        uint256[] assetQuantities,
+        uint256 redeemedShares
     );
 
     struct Request {
         address investmentAsset;
-        uint investmentAmount;
-        uint requestedShares;
-        uint timestamp;
+        uint256 investmentAmount;
+        uint256 requestedShares;
+        uint256 timestamp;
     }
 
-    uint constant public SHARES_DECIMALS = 18;
-    uint constant public REQUEST_LIFESPAN = 1 days;
+    event RequestExecution (
+        address indexed requestOwner,
+        address indexed executor,
+        address indexed investmentAsset,
+        uint256 investmentAmount,
+        uint256 requestedShares
+    );
+
+    uint8 constant public SHARES_DECIMALS = 18;
+    uint32 constant public REQUEST_LIFESPAN = 1 days; // 86,400 seconds
 
     mapping (address => Request) public requests;
-    mapping (address => bool) public investAllowed;
     mapping (address => bool) public hasInvested; // for information purposes only (read)
+    mapping (address => bool) public investAllowed;
 
     address[] public historicalInvestors; // for information purposes only (read)
 
@@ -65,31 +64,182 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         Spoke(_hub)
     {
         routes.registry = _registry;
-        _enableInvestment(_defaultAssets);
+        enableInvestmentInternal(_defaultAssets);
     }
+
+    // EXTERNAL
 
     receive() external payable {}
 
-    function _enableInvestment(address[] memory _assets) internal {
-        for (uint i = 0; i < _assets.length; i++) {
-            require(
-                Registry(routes.registry).assetIsRegistered(_assets[i]),
-                "Asset not registered"
-            );
-            investAllowed[_assets[i]] = true;
-        }
-        emit EnableInvestment(_assets);
+    /// @notice Can only cancel when no price, request expired or fund shut down
+    /// @dev Only request owner can cancel their request
+    function cancelRequest() external payable amguPayable(false) {
+        cancelRequestForInternal(msg.sender);
     }
 
-    function enableInvestment(address[] calldata _assets) external auth {
-        _enableInvestment(_assets);
+    function cancelRequestFor(address _requestOwner)
+        external
+        payable
+        amguPayable(false)
+    {
+        cancelRequestForInternal(_requestOwner);
     }
 
     function disableInvestment(address[] calldata _assets) external auth {
-        for (uint i = 0; i < _assets.length; i++) {
+        for (uint256 i = 0; i < _assets.length; i++) {
             investAllowed[_assets[i]] = false;
         }
         emit DisableInvestment(_assets);
+    }
+
+    function enableInvestment(address[] calldata _assets) external auth {
+        enableInvestmentInternal(_assets);
+    }
+
+    function executeRequestFor(address _requestOwner)
+        external
+        notShutDown
+        amguPayable(false)
+        payable
+    {
+        Request memory request = requests[_requestOwner];
+        require(
+            hasValidRequest(_requestOwner),
+            "No valid request for this address"
+        );
+
+        IFeeManager(routes.feeManager).rewardManagementFee();
+
+        uint256 totalShareCostInInvestmentAsset = IAccounting(routes.accounting)
+            .getShareCostInAsset(
+                request.requestedShares,
+                request.investmentAsset
+            );
+
+        require(
+            totalShareCostInInvestmentAsset <= request.investmentAmount,
+            "Invested amount too low"
+        );
+        // send necessary amount of investmentAsset to Trading
+        safeTransfer(
+            request.investmentAsset,
+            routes.trading,
+            totalShareCostInInvestmentAsset
+        );
+
+        uint256 investmentAssetChange = sub(
+            request.investmentAmount,
+            totalShareCostInInvestmentAsset
+        );
+
+        // return investmentAsset change to request owner
+        if (investmentAssetChange > 0) {
+            safeTransfer(
+                request.investmentAsset,
+                _requestOwner,
+                investmentAssetChange
+            );
+        }
+
+        msg.sender.transfer(Registry(routes.registry).incentive());
+
+        IShares(routes.shares).createFor(_requestOwner, request.requestedShares);
+        IAccounting(routes.accounting).increaseAssetBalance(
+            request.investmentAsset,
+            totalShareCostInInvestmentAsset
+        );
+
+        if (!hasInvested[_requestOwner]) {
+            hasInvested[_requestOwner] = true;
+            historicalInvestors.push(_requestOwner);
+        }
+
+        emit RequestExecution(
+            _requestOwner,
+            msg.sender,
+            request.investmentAsset,
+            request.investmentAmount,
+            request.requestedShares
+        );
+        delete requests[_requestOwner];
+    }
+
+    function getHistoricalInvestors() external view returns (address[] memory) {
+        return historicalInvestors;
+    }
+
+    /// @notice Redeem all shares and across all assets
+    function redeem() external {
+        uint256 ownedShares = IShares(routes.shares).balanceOf(msg.sender);
+        redeemQuantity(ownedShares);
+    }
+
+    function requestInvestment(
+        uint256 _requestedShares,
+        uint256 _investmentAmount,
+        address _investmentAsset
+    )
+        external
+        notShutDown
+        payable
+        amguPayable(true)
+        onlyInitialized
+    {
+        IPolicyManager(routes.policyManager).preValidate(
+            bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
+            [msg.sender, address(0), address(0), _investmentAsset, address(0)],
+            [uint256(0), uint256(0), uint256(0)],
+            bytes32(0)
+        );
+        require(
+            investAllowed[_investmentAsset],
+            "Investment not allowed in this asset"
+        );
+        safeTransferFrom(_investmentAsset, msg.sender, address(this), _investmentAmount);
+        require(
+            requests[msg.sender].timestamp == 0,
+            "Only one request can exist at a time"
+        );
+        requests[msg.sender] = Request({
+            investmentAsset: _investmentAsset,
+            investmentAmount: _investmentAmount,
+            requestedShares: _requestedShares,
+            timestamp: block.timestamp
+        });
+        IPolicyManager(routes.policyManager).postValidate(
+            bytes4(keccak256("requestInvestment(uint256,uint256,address)")),
+            [msg.sender, address(0), address(0), _investmentAsset, address(0)],
+            [uint256(0), uint256(0), uint256(0)],
+            bytes32(0)
+        );
+
+        emit InvestmentRequest(
+            msg.sender,
+            _investmentAsset,
+            _requestedShares,
+            _investmentAmount
+        );
+    }
+
+    // PUBLIC FUNCTIONS
+    function engine() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.engine();
+    }
+
+    function getOwedPerformanceFees(uint256 _shareQuantity)
+        public
+        returns (uint256 remainingShareQuantity)
+    {
+        IShares shares = IShares(routes.shares);
+
+        uint256 totalPerformanceFee = IFeeManager(routes.feeManager).performanceFeeAmount();
+        // The denominator is augmented because performanceFeeAmount() accounts for inflation
+        // Since shares are directly transferred, we don't need to account for inflation in this case
+        uint256 performanceFeePortion = mul(
+            totalPerformanceFee,
+            _shareQuantity
+        ) / add(shares.totalSupply(), totalPerformanceFee);
+        return performanceFeePortion;
     }
 
     function hasRequest(address _who) public view returns (bool) {
@@ -115,218 +265,52 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             requests[_who].requestedShares > 0;
     }
 
-    function requestInvestment(
-        uint requestedShares,
-        uint investmentAmount,
-        address investmentAsset
-    )
-        external
-        notShutDown
-        payable
-        amguPayable(true)
-        onlyInitialized
-    {
-        IPolicyManager(routes.policyManager).preValidate(
-            msg.sig,
-            [msg.sender, address(0), address(0), investmentAsset, address(0)],
-            [uint(0), uint(0), uint(0)],
-            bytes32(0)
-        );
-        require(
-            investAllowed[investmentAsset],
-            "Investment not allowed in this asset"
-        );
-        safeTransferFrom(
-            investmentAsset, msg.sender, address(this), investmentAmount
-        );
-        require(
-            requests[msg.sender].timestamp == 0,
-            "Only one request can exist at a time"
-        );
-        requests[msg.sender] = Request({
-            investmentAsset: investmentAsset,
-            investmentAmount: investmentAmount,
-            requestedShares: requestedShares,
-            timestamp: block.timestamp
-        });
-        IPolicyManager(routes.policyManager).postValidate(
-            msg.sig,
-            [msg.sender, address(0), address(0), investmentAsset, address(0)],
-            [uint(0), uint(0), uint(0)],
-            bytes32(0)
-        );
-
-        emit InvestmentRequest(
-            msg.sender,
-            investmentAsset,
-            requestedShares,
-            investmentAmount
-        );
-    }
-
-    function _cancelRequestFor(address requestOwner) internal {
-        require(hasRequest(requestOwner), "No request to cancel");
-        IPriceSource priceSource = IPriceSource(priceSource());
-        Request memory request = requests[requestOwner];
-        require(
-            !priceSource.hasValidPrice(request.investmentAsset) ||
-            hasExpiredRequest(requestOwner) ||
-            hub.isShutDown(),
-            "No cancellation condition was met"
-        );
-        IERC20 investmentAsset = IERC20(request.investmentAsset);
-        uint investmentAmount = request.investmentAmount;
-        delete requests[requestOwner];
-        msg.sender.transfer(Registry(routes.registry).incentive());
-        safeTransfer(address(investmentAsset), requestOwner, investmentAmount);
-
-        emit CancelRequest(requestOwner);
-    }
-
-    /// @notice Can only cancel when no price, request expired or fund shut down
-    /// @dev Only request owner can cancel their request
-    function cancelRequest() external payable amguPayable(false) {
-        _cancelRequestFor(msg.sender);
-    }
-
-    function cancelRequestFor(address requestOwner)
-        external
-        payable
-        amguPayable(false)
-    {
-        _cancelRequestFor(requestOwner);
-    }
-
-    function executeRequestFor(address requestOwner)
-        external
-        notShutDown
-        amguPayable(false)
-        payable
-    {
-        Request memory request = requests[requestOwner];
-        require(
-            hasValidRequest(requestOwner),
-            "No valid request for this address"
-        );
-
-        IFeeManager(routes.feeManager).rewardManagementFee();
-
-        uint totalShareCostInInvestmentAsset = IAccounting(routes.accounting)
-            .getShareCostInAsset(
-                request.requestedShares,
-                request.investmentAsset
-            );
-
-        require(
-            totalShareCostInInvestmentAsset <= request.investmentAmount,
-            "Invested amount too low"
-        );
-        // send necessary amount of investmentAsset to Trading
-        safeTransfer(
-            request.investmentAsset,
-            routes.trading,
-            totalShareCostInInvestmentAsset
-        );
-
-        uint investmentAssetChange = sub(
-            request.investmentAmount,
-            totalShareCostInInvestmentAsset
-        );
-
-        // return investmentAsset change to request owner
-        if (investmentAssetChange > 0) {
-            safeTransfer(
-                request.investmentAsset,
-                requestOwner,
-                investmentAssetChange
-            );
+    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.mlnToken();
         }
 
-        msg.sender.transfer(Registry(routes.registry).incentive());
-
-        IShares(routes.shares).createFor(requestOwner, request.requestedShares);
-        IAccounting(routes.accounting).increaseAssetBalance(
-            request.investmentAsset,
-            totalShareCostInInvestmentAsset
-        );
-
-        if (!hasInvested[requestOwner]) {
-            hasInvested[requestOwner] = true;
-            historicalInvestors.push(requestOwner);
-        }
-
-        emit RequestExecution(
-            requestOwner,
-            msg.sender,
-            request.investmentAsset,
-            request.investmentAmount,
-            request.requestedShares
-        );
-        delete requests[requestOwner];
-    }
-
-    function getOwedPerformanceFees(uint shareQuantity)
-        public
-        returns (uint remainingShareQuantity)
-    {
-        IShares shares = IShares(routes.shares);
-
-        uint totalPerformanceFee = IFeeManager(routes.feeManager).performanceFeeAmount();
-        // The denominator is augmented because performanceFeeAmount() accounts for inflation
-        // Since shares are directly transferred, we don't need to account for inflation in this case
-        uint performanceFeePortion = mul(
-            totalPerformanceFee,
-            shareQuantity
-        ) / add(shares.totalSupply(), totalPerformanceFee);
-        return performanceFeePortion;
-    }
-
-    /// @dev "Happy path" (no asset throws & quantity available)
-    /// @notice Redeem all shares and across all assets
-    function redeem() external {
-        uint ownedShares = IShares(routes.shares).balanceOf(msg.sender);
-        redeemQuantity(ownedShares);
+    function priceSource() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.priceSource();
     }
 
     /// @notice Redeem shareQuantity across all assets
-    function redeemQuantity(uint shareQuantity) public {
+    function redeemQuantity(uint256 _shareQuantity) public {
         (address[] memory assetList,) = IAccounting(routes.accounting).getFundHoldings();
-        redeemWithConstraints(shareQuantity, assetList);
+        redeemWithConstraints(_shareQuantity, assetList);
     }
 
-    // TODO: reconsider the scenario where the user has enough funds to force shutdown on a large trade (any way around this?)
     /// @dev Redeem only selected assets (used only when an asset throws)
-    function redeemWithConstraints(uint shareQuantity, address[] memory requestedAssets) public {
+    function redeemWithConstraints(uint256 _shareQuantity, address[] memory _requestedAssets) public {
         IShares shares = IShares(routes.shares);
         require(
-            shares.balanceOf(msg.sender) >= shareQuantity &&
+            shares.balanceOf(msg.sender) >= _shareQuantity &&
             shares.balanceOf(msg.sender) > 0,
             "Sender does not have enough shares to fulfill request"
         );
 
-        uint owedPerformanceFees = 0;
+        uint256 owedPerformanceFees = 0;
         if (
-            IPriceSource(priceSource()).hasValidPrices(requestedAssets) &&
+            IPriceSource(priceSource()).hasValidPrices(_requestedAssets) &&
             msg.sender != hub.manager()
         ) {
             IFeeManager(routes.feeManager).rewardManagementFee();
-            owedPerformanceFees = getOwedPerformanceFees(shareQuantity);
+            owedPerformanceFees = getOwedPerformanceFees(_shareQuantity);
             shares.destroyFor(msg.sender, owedPerformanceFees);
             shares.createFor(hub.manager(), owedPerformanceFees);
         }
-        uint remainingShareQuantity = sub(shareQuantity, owedPerformanceFees);
+        uint256 remainingShareQuantity = sub(_shareQuantity, owedPerformanceFees);
 
         address ofAsset;
-        uint[] memory ownershipQuantities = new uint[](requestedAssets.length);
-        address[] memory redeemedAssets = new address[](requestedAssets.length);
+        uint256[] memory ownershipQuantities = new uint256[](_requestedAssets.length);
+        address[] memory redeemedAssets = new address[](_requestedAssets.length);
         // Check whether enough assets held by fund
         IAccounting accounting = IAccounting(routes.accounting);
-        for (uint i = 0; i < requestedAssets.length; ++i) {
-            ofAsset = requestedAssets[i];
+        for (uint256 i = 0; i < _requestedAssets.length; ++i) {
+            ofAsset = _requestedAssets[i];
             if (ofAsset == address(0)) continue;
-            uint quantityHeld = accounting.getFundAssetHoldings(ofAsset);
+            uint256 quantityHeld = accounting.getFundAssetHoldings(ofAsset);
             require(quantityHeld > 0, "Requested asset holdings is 0");
-            for (uint j = 0; j < redeemedAssets.length; j++) {
+            for (uint256 j = 0; j < redeemedAssets.length; j++) {
                 require(
                     ofAsset != redeemedAssets[j],
                     "Asset can only be redeemed once"
@@ -336,38 +320,70 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             if (quantityHeld == 0) continue;
 
             // participant's ownership percentage of asset holdings
-            ownershipQuantities[i] = mul(quantityHeld, remainingShareQuantity) / shares.totalSupply();
+            ownershipQuantities[i] = mul(
+                quantityHeld,
+                remainingShareQuantity
+            ) / shares.totalSupply();
         }
 
         shares.destroyFor(msg.sender, remainingShareQuantity);
 
         // Transfer owned assets
-        for (uint k = 0; k < requestedAssets.length; ++k) {
-            ofAsset = requestedAssets[k];
+        for (uint256 k = 0; k < _requestedAssets.length; ++k) {
+            ofAsset = _requestedAssets[k];
             if (ownershipQuantities[k] == 0) {
                 continue;
             } else {
                 ITrading(routes.trading).withdraw(ofAsset, ownershipQuantities[k]);
                 safeTransfer(ofAsset, msg.sender, ownershipQuantities[k]);
-                IAccounting(routes.accounting).decreaseAssetBalance(ofAsset, ownershipQuantities[k]);
+                IAccounting(routes.accounting).decreaseAssetBalance(
+                    ofAsset,
+                    ownershipQuantities[k]
+                );
             }
         }
         emit Redemption(
             msg.sender,
-            requestedAssets,
+            _requestedAssets,
             ownershipQuantities,
             remainingShareQuantity
         );
     }
 
-    function getHistoricalInvestors() external view returns (address[] memory) {
-        return historicalInvestors;
+    function registry() public view override(AmguConsumer, Spoke) returns (address) {
+        return Spoke.registry();
     }
 
-    function engine() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.engine(); }
-    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.mlnToken(); }
-    function priceSource() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.priceSource(); }
-    function registry() public view override(AmguConsumer, Spoke) returns (address) { return Spoke.registry(); }
+    // INTERNAL FUNCTIONS
+    function cancelRequestForInternal(address _requestOwner) internal {
+        require(hasRequest(_requestOwner), "No request to cancel");
+        IPriceSource priceSource = IPriceSource(priceSource());
+        Request memory request = requests[_requestOwner];
+        require(
+            !priceSource.hasValidPrice(request.investmentAsset) ||
+            hasExpiredRequest(_requestOwner) ||
+            hub.isShutDown(),
+            "No cancellation condition was met"
+        );
+        IERC20 investmentAsset = IERC20(request.investmentAsset);
+        uint256 investmentAmount = request.investmentAmount;
+        delete requests[_requestOwner];
+        msg.sender.transfer(Registry(routes.registry).incentive());
+        safeTransfer(address(investmentAsset), _requestOwner, investmentAmount);
+
+        emit CancelRequest(_requestOwner);
+    }
+
+    function enableInvestmentInternal (address[] memory _assets) internal {
+        for (uint256 i = 0; i < _assets.length; i++) {
+            require(
+                Registry(routes.registry).assetIsRegistered(_assets[i]),
+                "Asset not registered"
+            );
+            investAllowed[_assets[i]] = true;
+        }
+        emit EnableInvestment(_assets);
+    }
 }
 
 contract ParticipationFactory is Factory {
