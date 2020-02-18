@@ -11,7 +11,6 @@ const main = async input => {
 
   const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
   const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
-  const oasisDexAccessor = await nab('OasisDexAccessor', [], melonAddrs);
   const uniswapAdapter = await nab('UniswapAdapter', [], melonAddrs);
   const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
   const zeroExV3Adapter = await nab('ZeroExV3Adapter', [], melonAddrs);
@@ -167,7 +166,6 @@ const main = async input => {
   const contracts = {
     "KyberAdapter": kyberAdapter,
     "OasisDexAdapter": oasisDexAdapter,
-    "OasisDexAccessor": oasisDexAccessor,
     "UniswapAdapter": uniswapAdapter,
     "ZeroExV2Adapter": zeroExV2Adapter,
     "ZeroExV3Adapter": zeroExV3Adapter,

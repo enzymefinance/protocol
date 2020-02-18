@@ -44,7 +44,6 @@ export const CONTRACT_NAMES = {
   MOCK_REGISTRY: 'MockRegistry',
   MOCK_SHARES: 'MockShares',
   MOCK_VERSION: 'MockVersion',
-  OASIS_DEX_ACCESSOR: 'OasisDexAccessor',
   OASIS_DEX_ADAPTER: 'OasisDexAdapter',
   OASIS_DEX_EXCHANGE: 'OasisDexExchange',
   PARTICIPATION: 'Participation',
