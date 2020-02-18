@@ -112,11 +112,6 @@ contract Hub is DSGuard {
         permit(
             routes.participation,
             routes.accounting,
-            bytes4(keccak256('addAssetToOwnedAssets(address)'))
-        );
-        permit(
-            routes.participation,
-            routes.accounting,
             bytes4(keccak256('decreaseAssetBalance(address,uint256)'))
         );
         permit(
@@ -138,22 +133,12 @@ contract Hub is DSGuard {
         permit(
             routes.trading,
             routes.accounting,
-            bytes4(keccak256('addAssetToOwnedAssets(address)'))
-        );
-        permit(
-            routes.trading,
-            routes.accounting,
             bytes4(keccak256('decreaseAssetBalance(address,uint256)'))
         );
         permit(
             routes.trading,
             routes.accounting,
             bytes4(keccak256('increaseAssetBalance(address,uint256)'))
-        );
-        permit(
-            routes.trading,
-            routes.accounting,
-            bytes4(keccak256('removeFromOwnedAssets(address)'))
         );
         permissionsSet = true;
     }
