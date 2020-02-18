@@ -28,20 +28,20 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        validateTakeOrderParams(_orderValues);
+        __validateTakeOrderParams(_orderValues);
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = formatFillTakeOrderArgs(_orderAddresses, _orderValues);
+        ) = __formatFillTakeOrderArgs(_orderAddresses, _orderValues);
 
-        fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
+        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
     }
 
     // INTERNAL FUNCTIONS
 
     // Minimum acceptable rate of taker asset per maker asset
-    function calcMinMakerAssetPerTakerAssetRate(
+    function __calcMinMakerAssetPerTakerAssetRate(
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
@@ -55,7 +55,7 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         ) / _fillExpectedAmounts[0];
     }
 
-    function fillTakeOrder(
+    function __fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -67,25 +67,25 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts
         )
     {
-        address nativeAsset = getNativeAssetAddress();
+        address nativeAsset = __getNativeAssetAddress();
 
         // Execute order on exchange, depending on asset types
         if (_fillAssets[1] == nativeAsset) {
-            swapNativeAssetToToken(
+            __swapNativeAssetToToken(
                 _targetExchange,
                 _fillAssets,
                 _fillExpectedAmounts
             );
         }
         else if (_fillAssets[0] == nativeAsset) {
-            swapTokenToNativeAsset(
+            __swapTokenToNativeAsset(
                 _targetExchange,
                 _fillAssets,
                 _fillExpectedAmounts
             );
         }
         else {
-            swapTokenToToken(
+            __swapTokenToToken(
                 _targetExchange,
                 _fillAssets,
                 _fillExpectedAmounts
@@ -93,7 +93,7 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         }
     }
 
-    function formatFillTakeOrderArgs(
+    function __formatFillTakeOrderArgs(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
@@ -112,7 +112,7 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
-    function swapNativeAssetToToken(
+    function __swapNativeAssetToToken(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -120,8 +120,8 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         internal
     {
         require(
-            getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
-            "swapNativeAssetToToken: insufficient native token assetBalance"
+            __getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
+            "__swapNativeAssetToToken: insufficient native token assetBalance"
         );
 
         // Convert WETH to ETH
@@ -133,24 +133,24 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         )
         (
             _fillAssets[0],
-            calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+            __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
         );
     }
 
-    function swapTokenToNativeAsset(
+    function __swapTokenToNativeAsset(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
         internal
     {
-        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+        __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
 
         uint256 preEthBalance = payable(address(this)).balance;
         IKyberNetworkProxy(_targetExchange).swapTokenToEther(
             _fillAssets[1],
             _fillExpectedAmounts[1],
-            calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+            __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
         );
         uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
@@ -158,24 +158,24 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
-    function swapTokenToToken(
+    function __swapTokenToToken(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
         internal
     {
-        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+        __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
 
-        IKyberNetworkProxy(_targetExchange).swapTokenToToken(
+        IKyberNetworkProxy(_targetExchange).__swapTokenToToken(
             _fillAssets[1],
             _fillExpectedAmounts[1],
             _fillAssets[0],
-            calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+            __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
         );
     }
 
-    function validateTakeOrderParams(
+    function __validateTakeOrderParams(
         uint256[8] memory _orderValues
     )
         internal
@@ -183,7 +183,7 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
     {
         require(
             _orderValues[1] == _orderValues[6],
-            "validateTakeOrderParams: fill taker quantity must equal taker quantity"
+            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }

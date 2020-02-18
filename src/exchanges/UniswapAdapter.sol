@@ -29,19 +29,19 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        validateTakeOrderParams(_orderValues);
+        __validateTakeOrderParams(_orderValues);
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = formatFillTakeOrderArgs(_orderAddresses, _orderValues);
+        ) = __formatFillTakeOrderArgs(_orderAddresses, _orderValues);
 
-        fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
+        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
     }
 
     // INTERNAL FUNCTIONS
 
-    function fillTakeOrder(
+    function __fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -53,24 +53,24 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts
         )
     {
-        address nativeAsset = getNativeAssetAddress();
+        address nativeAsset = __getNativeAssetAddress();
 
         if (_fillAssets[1] == nativeAsset) {
-            swapNativeAssetToToken(
+            __swapNativeAssetToToken(
                 _targetExchange,
                 _fillAssets,
                 _fillExpectedAmounts
             );
         }
         else if (_fillAssets[0] == nativeAsset) {
-            swapTokenToNativeAsset(
+            __swapTokenToNativeAsset(
                 _targetExchange,
                 _fillAssets,
                 _fillExpectedAmounts
             );
         }
         else {
-            swapTokenToToken(
+            __swapTokenToToken(
                 _targetExchange,
                 _fillAssets,
                 _fillExpectedAmounts
@@ -78,7 +78,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         }
     }
 
-    function formatFillTakeOrderArgs(
+    function __formatFillTakeOrderArgs(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
@@ -97,7 +97,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
-    function swapNativeAssetToToken(
+    function __swapNativeAssetToToken(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -105,8 +105,8 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         internal
     {
         require(
-            getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
-            "swapNativeAssetToToken: insufficient native token assetBalance"
+            __getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
+            "__swapNativeAssetToToken: insufficient native token assetBalance"
         );
 
         // Convert WETH to ETH
@@ -123,7 +123,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         );
     }
 
-    function swapTokenToNativeAsset(
+    function __swapTokenToNativeAsset(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -131,7 +131,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         internal
     {
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[1]);
-        approveAsset(_fillAssets[1], tokenExchange, _fillExpectedAmounts[1], "takerAsset");
+        __approveAsset(_fillAssets[1], tokenExchange, _fillExpectedAmounts[1], "takerAsset");
 
         uint256 preEthBalance = payable(address(this)).balance;
         IUniswapExchange(tokenExchange).tokenToEthSwapInput(
@@ -145,7 +145,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
-    function swapTokenToToken(
+    function __swapTokenToToken(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -153,7 +153,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         internal
     {
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[1]);
-        approveAsset(_fillAssets[1], tokenExchange, _fillExpectedAmounts[1], "takerAsset");
+        __approveAsset(_fillAssets[1], tokenExchange, _fillExpectedAmounts[1], "takerAsset");
         IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
             _fillExpectedAmounts[1],
             _fillExpectedAmounts[0],
@@ -163,7 +163,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         );
     }
 
-    function validateTakeOrderParams(
+    function __validateTakeOrderParams(
         uint256[8] memory _orderValues
     )
         internal
@@ -171,7 +171,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
     {
         require(
             _orderValues[1] == _orderValues[6],
-            "validateTakeOrderParams: fill taker quantity must equal taker quantity"
+            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }

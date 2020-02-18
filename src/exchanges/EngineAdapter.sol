@@ -28,18 +28,18 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        validateTakeOrderParams(_orderAddresses, _orderValues);
+        __validateTakeOrderParams(_orderAddresses, _orderValues);
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = formatFillTakeOrderArgs(_orderAddresses, _orderValues);
+        ) = __formatFillTakeOrderArgs(_orderAddresses, _orderValues);
 
-        fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
+        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
     }
 
     // INTERNAL FUNCTIONS
-    function formatFillTakeOrderArgs(
+    function __formatFillTakeOrderArgs(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
@@ -58,7 +58,7 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
-    function fillTakeOrder(
+    function __fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
@@ -71,7 +71,7 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         )
     {
         // Approve taker asset
-        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+        __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
 
         // Fill order on Engine
         uint256 preEthBalance = payable(address(this)).balance;
@@ -82,7 +82,7 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
-    function validateTakeOrderParams(
+    function __validateTakeOrderParams(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
@@ -90,16 +90,16 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         view
     {
         require(
-            _orderAddresses[2] == getNativeAssetAddress(),
-            "validateTakeOrderParams: maker asset does not match nativeAsset"
+            _orderAddresses[2] == __getNativeAssetAddress(),
+            "__validateTakeOrderParams: maker asset does not match nativeAsset"
         );
         require(
-            _orderAddresses[3] == getMlnTokenAddress(),
-            "validateTakeOrderParams: taker asset does not match mlnToken"
+            _orderAddresses[3] == __getMlnTokenAddress(),
+            "__validateTakeOrderParams: taker asset does not match mlnToken"
         );
         require(
             _orderValues[1] == _orderValues[6],
-            "validateTakeOrderParams: fill taker quantity must equal taker quantity"
+            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }

@@ -42,7 +42,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        validateTakeOrderParams(
+        __validateTakeOrderParams(
             _targetExchange,
             _orderAddresses,
             _orderValues,
@@ -53,17 +53,17 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = formatFillTakeOrderArgs(
+        ) = __formatFillTakeOrderArgs(
             _targetExchange,
             _orderAddresses,
             _orderValues
         );
 
-        fillTakeOrder(
+        __fillTakeOrder(
             _targetExchange,
             fillAssets,
             fillExpectedAmounts,
-            constructOrderStruct(_orderAddresses, _orderValues, _orderData),
+            __constructOrderStruct(_orderAddresses, _orderValues, _orderData),
             _signature
         );
     }
@@ -71,48 +71,48 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
     // INTERNAL METHODS
 
     // Approves takerAsset, takerFeeAsset, protocolFee
-    function approveAssetsTakeOrder(
+    function __approveAssetsTakeOrder(
         address _targetExchange,
         IZeroExV3.Order memory _order,
         uint256[] memory _fillExpectedAmounts
     )
         internal
     {
-        approveProtocolFeeAsset(_targetExchange);
-        approveAsset(
-            getAssetAddress(_order.takerAssetData),
-            getAssetProxy(_targetExchange, _order.takerAssetData),
+        __approveProtocolFeeAsset(_targetExchange);
+        __approveAsset(
+            __getAssetAddress(_order.takerAssetData),
+            __getAssetProxy(_targetExchange, _order.takerAssetData),
             _fillExpectedAmounts[1],
             "takerAsset"
         );
         if (_order.takerFee > 0) {
-            approveAsset(
-                getAssetAddress(_order.takerFeeAssetData),
-                getAssetProxy(_targetExchange, _order.takerFeeAssetData),
+            __approveAsset(
+                __getAssetAddress(_order.takerFeeAssetData),
+                __getAssetProxy(_targetExchange, _order.takerFeeAssetData),
                 _fillExpectedAmounts[3],
                 "takerFeeAsset"
             );
         }
     }
 
-    function approveProtocolFeeAsset(address _targetExchange) internal {
+    function __approveProtocolFeeAsset(address _targetExchange) internal {
         address protocolFeeCollector = IZeroExV3(_targetExchange).protocolFeeCollector();
-        uint256 protocolFeeAmount = calcProtocolFeeAmount(_targetExchange);
+        uint256 protocolFeeAmount = __calcProtocolFeeAmount(_targetExchange);
         if (protocolFeeCollector == address(0) || protocolFeeAmount == 0) return;
 
-        approveAsset(
-            getNativeAssetAddress(),
+        __approveAsset(
+            __getNativeAssetAddress(),
             protocolFeeCollector,
             protocolFeeAmount,
             "protocolFee"
         );
     }
 
-    function calcProtocolFeeAmount(address _targetExchange) internal view returns (uint256) {
+    function __calcProtocolFeeAmount(address _targetExchange) internal view returns (uint256) {
         return mul(IZeroExV3(_targetExchange).protocolFeeMultiplier(), tx.gasprice);
     }
 
-    function constructOrderStruct(
+    function __constructOrderStruct(
         address[8] memory _orderAddresses,
         uint[8] memory _orderValues,
         bytes[4] memory _orderData
@@ -139,7 +139,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         });
     }
 
-    function fillTakeOrder(
+    function __fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts,
@@ -154,13 +154,13 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         )
     {
         // Approve taker and taker fee assets
-        approveAssetsTakeOrder(_targetExchange, _order, _fillExpectedAmounts);
+        __approveAssetsTakeOrder(_targetExchange, _order, _fillExpectedAmounts);
 
         // Execute take order on exchange
         IZeroExV3(_targetExchange).fillOrder(_order, _fillExpectedAmounts[1], _signature);
     }
 
-    function formatFillTakeOrderArgs(
+    function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
@@ -172,18 +172,18 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         address[] memory fillAssets = new address[](4);
         fillAssets[0] = _orderAddresses[2]; // maker asset
         fillAssets[1] = _orderAddresses[3]; // taker asset
-        fillAssets[2] = getNativeAssetAddress(); // protocol fee
+        fillAssets[2] = __getNativeAssetAddress(); // protocol fee
         fillAssets[3] = _orderAddresses[7]; // taker fee asset
 
         uint256[] memory fillExpectedAmounts = new uint256[](4);
-        fillExpectedAmounts[0] = calculateExpectedFillAmount(
+        fillExpectedAmounts[0] = __calculateExpectedFillAmount(
             _orderValues[1],
             _orderValues[0],
             _orderValues[6]
         ); // maker fill amount; calculated relative to taker fill amount
         fillExpectedAmounts[1] = _orderValues[6]; // taker fill amount
-        fillExpectedAmounts[2] = calcProtocolFeeAmount(_targetExchange); // protocol fee
-        fillExpectedAmounts[3] = calculateExpectedFillAmount(
+        fillExpectedAmounts[2] = __calcProtocolFeeAmount(_targetExchange); // protocol fee
+        fillExpectedAmounts[3] = __calculateExpectedFillAmount(
             _orderValues[1],
             _orderValues[3],
             _orderValues[6]
@@ -192,7 +192,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
-    function getAssetProxy(address _targetExchange, bytes memory _assetData)
+    function __getAssetProxy(address _targetExchange, bytes memory _assetData)
         internal
         view
         returns (address assetProxy_)
@@ -207,7 +207,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         assetProxy_ = IZeroExV3(_targetExchange).getAssetProxy(assetProxyId);
     }
 
-    function getAssetAddress(bytes memory _assetData)
+    function __getAssetAddress(bytes memory _assetData)
         internal
         pure
         returns (address assetAddress_)
@@ -217,7 +217,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         }
     }
 
-    function validateTakeOrderParams(
+    function __validateTakeOrderParams(
         address _targetExchange,
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
@@ -228,39 +228,39 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         view
     {
         require(
-            getAssetAddress(_orderData[0]) == _orderAddresses[2],
-            "validateTakeOrderParams: makerAssetData does not match address"
+            __getAssetAddress(_orderData[0]) == _orderAddresses[2],
+            "__validateTakeOrderParams: makerAssetData does not match address"
         );
         require(
-            getAssetAddress(_orderData[1]) == _orderAddresses[3],
-            "validateTakeOrderParams: takerAssetData does not match address"
+            __getAssetAddress(_orderData[1]) == _orderAddresses[3],
+            "__validateTakeOrderParams: takerAssetData does not match address"
         );
         require(
-            calculateExpectedFillAmount(
+            __calculateExpectedFillAmount(
                 _orderValues[1],
                 _orderValues[0],
                 _orderValues[6]
             ) <= _orderValues[0],
-            "validateTakeOrderParams: Maker fill amount greater than max order quantity"
+            "__validateTakeOrderParams: Maker fill amount greater than max order quantity"
         );
         if (_orderValues[2] > 0) {
             require(
-                getAssetAddress(_orderData[2]) == _orderAddresses[6],
-                "validateTakeOrderParams: makerFeeAssetData does not match address"
+                __getAssetAddress(_orderData[2]) == _orderAddresses[6],
+                "__validateTakeOrderParams: makerFeeAssetData does not match address"
             );
         }
         if (_orderValues[3] > 0) {
             require(
-                getAssetAddress(_orderData[3]) == _orderAddresses[7],
-                "validateTakeOrderParams: takerFeeAssetData does not match address"
+                __getAssetAddress(_orderData[3]) == _orderAddresses[7],
+                "__validateTakeOrderParams: takerFeeAssetData does not match address"
             );
         }
         require(
             IZeroExV3(_targetExchange).isValidOrderSignature(
-                constructOrderStruct(_orderAddresses, _orderValues, _orderData),
+                __constructOrderStruct(_orderAddresses, _orderValues, _orderData),
                 _signature
             ),
-            "validateTakeOrderParams: order signature is invalid"
+            "__validateTakeOrderParams: order signature is invalid"
         );
     }
 }
