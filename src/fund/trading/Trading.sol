@@ -30,7 +30,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         routes.registry = _registry;
         require(_exchanges.length == _adapters.length, "Array lengths unequal");
         for (uint256 i = 0; i < _exchanges.length; i++) {
-            addExchangeInternal(_exchanges[i], _adapters[i]);
+            __addExchange(_exchanges[i], _adapters[i]);
         }
     }
 
@@ -40,7 +40,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
     receive() external payable {}
 
     function addExchange(address _exchange, address _adapter) external auth {
-        addExchangeInternal(_exchange, _adapter);
+        __addExchange(_exchange, _adapter);
     }
 
     function getExchangeInfo()
@@ -103,7 +103,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         onlyInitialized
     {
         bytes4 methodSelector = bytes4(keccak256(bytes(_methodSignature)));
-        validateCallOnExchange(_exchangeIndex, methodSelector, _orderAddresses);
+        __validateCallOnExchange(_exchangeIndex, methodSelector, _orderAddresses);
 
         IPolicyManager(routes.policyManager).preValidate(
             methodSelector,
@@ -153,7 +153,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
 
     // INTERNAL FUNCTIONS
 
-    function addExchangeInternal(
+    function __addExchange(
         address _exchange,
         address _adapter
     ) internal {
@@ -176,7 +176,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         exchanges.push(Exchange(_exchange, _adapter, takesCustody));
     }
 
-    function validateCallOnExchange(
+    function __validateCallOnExchange(
         uint256 _exchangeIndex,
         bytes4 _methodSelector,
         address[8] memory _orderAddresses

@@ -24,9 +24,9 @@ contract MockAdapter is ExchangeAdapter, OrderFiller {
         uint makerQuantity = orderValues[0];
         uint fillTakerQuantity = orderValues[6];
 
-        approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
-        getAccounting().decreaseAssetBalance(takerAsset, fillTakerQuantity);
-        getAccounting().increaseAssetBalance(makerAsset, makerQuantity);
+        __approveAsset(takerAsset, targetExchange, fillTakerQuantity, "takerAsset");
+        __getAccounting().decreaseAssetBalance(takerAsset, fillTakerQuantity);
+        __getAccounting().increaseAssetBalance(makerAsset, makerQuantity);
 
         emit OrderFilled(
             targetExchange,

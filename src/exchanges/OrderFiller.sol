@@ -35,37 +35,37 @@ contract OrderFiller is DSMath {
         uint256[] memory _expectedAmounts
     )
     {
-        validateFillOrderInputs(_targetExchange, _assets, _expectedAmounts);
+        __validateFillOrderInputs(_targetExchange, _assets, _expectedAmounts);
 
         (
             address[] memory cleanedAssets,
             uint256[] memory cleanedExpectedAmounts
-        ) = formatFillOrderInputs(_assets, _expectedAmounts);
+        ) = __formatFillOrderInputs(_assets, _expectedAmounts);
 
-        uint256[] memory preFillBalances = getERC20BalancesOf(cleanedAssets);
+        uint256[] memory preFillBalances = __getERC20BalancesOf(cleanedAssets);
 
         _;
 
-        uint256[] memory balanceDiffs = calculateFillOrderBalanceDiffs(
+        uint256[] memory balanceDiffs = __calculateFillOrderBalanceDiffs(
             cleanedAssets,
             preFillBalances
         );
 
-        validateAndEmitOrderFillResults(
+        __validateAndEmitOrderFillResults(
             _targetExchange,
             cleanedAssets,
             cleanedExpectedAmounts,
             balanceDiffs
         );
 
-        updateFillOrderAssetBalances(cleanedAssets, balanceDiffs);
+        __updateFillOrderAssetBalances(cleanedAssets, balanceDiffs);
 
         // TODO: revoke extra approval amounts?
     }
 
     // INTERNAL FUNCTIONS
 
-    function calculateExpectedFillAmount(
+    function __calculateExpectedFillAmount(
         uint256 orderQuantity1,
         uint256 orderQuantity2,
         uint256 fillAmount1
@@ -79,7 +79,7 @@ contract OrderFiller is DSMath {
 
     // PRIVATE FUNCTIONS
 
-    function calculateFillOrderBalanceDiffs(
+    function __calculateFillOrderBalanceDiffs(
         address[] memory _assets,
         uint256[] memory _preFillBalances
     )
@@ -97,7 +97,7 @@ contract OrderFiller is DSMath {
             if (i == 0) {
                 require(
                     assetBalance > _preFillBalances[i],
-                    "calculateFillOrderBalanceDiffs: did not receive more of buy asset"
+                    "__calculateFillOrderBalanceDiffs: did not receive more of buy asset"
                 );
                 balanceDiffs[i] = sub(assetBalance, _preFillBalances[i]);
             }
@@ -108,7 +108,7 @@ contract OrderFiller is DSMath {
             else if (i == 1) {
                 require(
                     assetBalance < _preFillBalances[i],
-                    "calculateFillOrderBalanceDiffs: did not spend any sell asset"
+                    "__calculateFillOrderBalanceDiffs: did not spend any sell asset"
                 );
                 balanceDiffs[i] = sub(_preFillBalances[i], assetBalance);
             }
@@ -124,7 +124,7 @@ contract OrderFiller is DSMath {
         return balanceDiffs;
     }
 
-    function formatFillOrderInputs(
+    function __formatFillOrderInputs(
         address[] memory _assets,
         uint256[] memory _expectedAmounts
     )
@@ -191,7 +191,7 @@ contract OrderFiller is DSMath {
         return (cleanedAssets, cleanedExpectedAmounts);
     }
 
-    function getERC20BalancesOf(address[] memory _assets)
+    function __getERC20BalancesOf(address[] memory _assets)
         private
         view
         returns (uint256[] memory)
@@ -203,7 +203,7 @@ contract OrderFiller is DSMath {
         return balances;
     }
 
-    function updateFillOrderAssetBalances(
+    function __updateFillOrderAssetBalances(
         address[] memory _assets,
         uint256[] memory _balanceDiffs
     )
@@ -221,7 +221,7 @@ contract OrderFiller is DSMath {
         }
     }
 
-    function validateAndEmitOrderFillResults(
+    function __validateAndEmitOrderFillResults(
         address _targetExchange,
         address[] memory _assets,
         uint256[] memory _expectedAmounts,
@@ -251,7 +251,7 @@ contract OrderFiller is DSMath {
                 // Fee asset check
                 require(
                     _balanceDiffs[i] <= _expectedAmounts[i],
-                    "validateAndEmitOrderFillResults: fee higher than expected"
+                    "__validateAndEmitOrderFillResults: fee higher than expected"
                 );
                 feeAmountsFilled[i-feeOffset] = _balanceDiffs[i];
             }
@@ -260,13 +260,13 @@ contract OrderFiller is DSMath {
         // Buy asset checks
         require(
             buyAmountFilled >= _expectedAmounts[0],
-            "validateAndEmitOrderFillResults: received less buy asset than expected"
+            "__validateAndEmitOrderFillResults: received less buy asset than expected"
         );
 
         // Sell asset checks
         require(
             sellAmountFilled <= _expectedAmounts[1],
-            "validateAndEmitOrderFillResults: spent more sell asset than expected"
+            "__validateAndEmitOrderFillResults: spent more sell asset than expected"
         );
 
         emit OrderFilled(
@@ -280,7 +280,7 @@ contract OrderFiller is DSMath {
         );
     }
 
-    function validateFillOrderInputs(
+    function __validateFillOrderInputs(
         address _targetExchange,
         address[] memory _assets,
         uint256[] memory _expectedAmounts
@@ -291,15 +291,15 @@ contract OrderFiller is DSMath {
     {
         require(
             _targetExchange != address(0),
-            "validateFillOrderInputs: targetExchange cannot be empty"
+            "__validateFillOrderInputs: targetExchange cannot be empty"
         );
         require(
             _assets.length == _expectedAmounts.length,
-            "validateFillOrderInputs: array lengths not equal"
+            "__validateFillOrderInputs: array lengths not equal"
         );
         require(
             _assets[0] != _assets[1],
-            "validateFillOrderInputs: buy and sell asset cannot be the same"
+            "__validateFillOrderInputs: buy and sell asset cannot be the same"
         );
     }
 }
