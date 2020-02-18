@@ -132,7 +132,7 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
 
         uint fillTakerQuantity = orderValues[6];
 
-        approveAssetsTakeOrder(targetExchange, order);
+        approveAssetsTakeOrder(targetExchange, order, fillTakerQuantity);
 
         uint takerAssetFilledAmount = executeFill(targetExchange, order, fillTakerQuantity, signature);
         require(
@@ -219,21 +219,26 @@ contract ZeroExV2Adapter is DSMath, ExchangeAdapter {
     }
 
     /// @notice Approves takerAsset, takerFee
-    function approveAssetsTakeOrder(address _targetExchange, IZeroExV2.Order memory _order)
+    function approveAssetsTakeOrder(
+        address _targetExchange,
+        IZeroExV2.Order memory _order,
+        uint256 _fillTakerAmount
+    )
         internal
     {
         approveAsset(
             getAssetAddress(_order.takerAssetData),
             getAssetProxy(_targetExchange, _order.takerAssetData),
-            _order.takerAssetAmount,
+            _fillTakerAmount,
             "takerAsset"
         );
-        if (_order.takerFee > 0) {
+        uint256 takerFeeAmount = mul(_order.takerFee, _fillTakerAmount) / _order.takerAssetAmount;
+        if (takerFeeAmount > 0) {
             bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
             approveAsset(
                 getAssetAddress(zrxAssetData),
                 getAssetProxy(_targetExchange, zrxAssetData),
-                _order.takerFee,
+                takerFeeAmount,
                 "takerFeeAsset"
             );
         }
