@@ -134,7 +134,7 @@ contract Accounting is AmguConsumer, Spoke {
         );
 
         uint256 newBalance = sub(oldBalance, _amount);
-        if (newBalance == 0) removeFromOwnedAssets(_asset);
+        if (newBalance == 0) __removeFromOwnedAssets(_asset);
         assetBalances[_asset] = newBalance;
 
         emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
@@ -146,7 +146,7 @@ contract Accounting is AmguConsumer, Spoke {
 
     function increaseAssetBalance(address _asset, uint256 _amount) public auth {
         uint256 oldBalance = assetBalances[_asset];
-        if (oldBalance == 0) addAssetToOwnedAssets(_asset);
+        if (oldBalance == 0) __addAssetToOwnedAssets(_asset);
         uint256 newBalance = add(oldBalance, _amount);
         assetBalances[_asset] = newBalance;
 
@@ -255,7 +255,7 @@ contract Accounting is AmguConsumer, Spoke {
     }
 
     // INTERNAL FUNCTIONS
-    function addAssetToOwnedAssets(address _asset) internal {
+    function __addAssetToOwnedAssets(address _asset) internal {
         require(
             ownedAssets.length < MAX_OWNED_ASSETS,
             "Max owned asset limit reached"
@@ -264,7 +264,7 @@ contract Accounting is AmguConsumer, Spoke {
         emit AssetAddition(_asset);
     }
 
-    function removeFromOwnedAssets(address _asset) internal {
+    function __removeFromOwnedAssets(address _asset) internal {
         for (uint256 i; i < ownedAssets.length; i++) {
             if (ownedAssets[i] == _asset) {
                 ownedAssets[i] = ownedAssets[ownedAssets.length - 1];

@@ -64,7 +64,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         Spoke(_hub)
     {
         routes.registry = _registry;
-        enableInvestmentInternal(_defaultAssets);
+        __enableInvestment(_defaultAssets);
     }
 
     // EXTERNAL
@@ -74,7 +74,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     /// @notice Can only cancel when no price, request expired or fund shut down
     /// @dev Only request owner can cancel their request
     function cancelRequest() external payable amguPayable(false) {
-        cancelRequestForInternal(msg.sender);
+        __cancelRequestFor(msg.sender);
     }
 
     function cancelRequestFor(address _requestOwner)
@@ -82,7 +82,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         payable
         amguPayable(false)
     {
-        cancelRequestForInternal(_requestOwner);
+        __cancelRequestFor(_requestOwner);
     }
 
     function disableInvestment(address[] calldata _assets) external auth {
@@ -93,7 +93,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     }
 
     function enableInvestment(address[] calldata _assets) external auth {
-        enableInvestmentInternal(_assets);
+        __enableInvestment(_assets);
     }
 
     function executeRequestFor(address _requestOwner)
@@ -355,7 +355,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     }
 
     // INTERNAL FUNCTIONS
-    function cancelRequestForInternal(address _requestOwner) internal {
+    function __cancelRequestFor(address _requestOwner) internal {
         require(hasRequest(_requestOwner), "No request to cancel");
         IPriceSource priceSource = IPriceSource(priceSource());
         Request memory request = requests[_requestOwner];
@@ -374,7 +374,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         emit CancelRequest(_requestOwner);
     }
 
-    function enableInvestmentInternal (address[] memory _assets) internal {
+    function __enableInvestment (address[] memory _assets) internal {
         for (uint256 i = 0; i < _assets.length; i++) {
             require(
                 Registry(routes.registry).assetIsRegistered(_assets[i]),

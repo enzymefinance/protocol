@@ -37,10 +37,10 @@ contract ExchangeAdapter is DSMath {
     /// @param _signature Signature of order maker
 
     // Responsibilities of takeOrder are:
-    // - Validate arguments (via a validateTakeOrderParams function)
+    // - Validate arguments (via a __validateTakeOrderParams function)
     // - Prepare a formatted list of assets and expected fill amounts
-    // (via a formatFillTakeOrderArgs function)
-    // - Fill an order on the _targetExchange, via a fillTakeOrder function
+    // (via a __formatFillTakeOrderArgs function)
+    // - Fill an order on the _targetExchange, via a __fillTakeOrder function
     // that uses the validateAndFinalizeFilledOrder modifier
     function takeOrder(
         address _targetExchange,
@@ -54,7 +54,7 @@ contract ExchangeAdapter is DSMath {
     // INTERNAL FUNCTIONS
 
     // Increment allowance of an asset for some target
-    function approveAsset(
+    function __approveAsset(
         address _asset,
         address _target,
         uint256 _amount,
@@ -63,7 +63,7 @@ contract ExchangeAdapter is DSMath {
         internal
     {
         require(
-            getAccounting().assetBalances(_asset) >= _amount,
+            __getAccounting().assetBalances(_asset) >= _amount,
             string(abi.encodePacked("Insufficient available assetBalance: ", _assetType))
         );
 
@@ -74,23 +74,23 @@ contract ExchangeAdapter is DSMath {
         );
     }
 
-    function getAccounting() internal view returns (IAccounting) {
-        return IAccounting(getTrading().routes().accounting);
+    function __getAccounting() internal view returns (IAccounting) {
+        return IAccounting(__getTrading().routes().accounting);
     }
 
-    function getNativeAssetAddress() internal view returns (address) {
-        return getRegistry().nativeAsset();
+    function __getNativeAssetAddress() internal view returns (address) {
+        return __getRegistry().nativeAsset();
     }
 
-    function getMlnTokenAddress() internal view returns (address) {
-        return getRegistry().mlnToken();
+    function __getMlnTokenAddress() internal view returns (address) {
+        return __getRegistry().mlnToken();
     }
 
-    function getRegistry() internal view returns (IRegistry) {
-        return IRegistry(getTrading().routes().registry);
+    function __getRegistry() internal view returns (IRegistry) {
+        return IRegistry(__getTrading().routes().registry);
     }
 
-    function getTrading() internal view returns (ITrading) {
+    function __getTrading() internal view returns (ITrading) {
         return ITrading(payable(address(this)));
     }
 }

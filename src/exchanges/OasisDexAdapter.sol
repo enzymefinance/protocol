@@ -26,19 +26,19 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        validateTakeOrderParams(_targetExchange, _orderAddresses, _orderValues, _identifier);
+        __validateTakeOrderParams(_targetExchange, _orderAddresses, _orderValues, _identifier);
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = formatFillTakeOrderArgs(
+        ) = __formatFillTakeOrderArgs(
             _targetExchange,
             _orderAddresses,
             _orderValues,
             _identifier
         );
 
-        fillTakeOrder(
+        __fillTakeOrder(
             _targetExchange,
             fillAssets,
             fillExpectedAmounts,
@@ -46,7 +46,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         );
     }
 
-    function fillTakeOrder(
+    function __fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts,
@@ -60,13 +60,13 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         )
     {
         // Approve taker asset
-        approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
+        __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
 
         // Execute take order on exchange
         IOasisDex(_targetExchange).buy(uint256(_identifier), _fillExpectedAmounts[0]);
     }
 
-    function formatFillTakeOrderArgs(
+    function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
@@ -85,7 +85,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         ) = IOasisDex(_targetExchange).getOffer(uint256(_identifier));
 
         uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = calculateExpectedFillAmount(
+        fillExpectedAmounts[0] = __calculateExpectedFillAmount(
             maxTakerQuantity,
             maxMakerQuantity,
             _orderValues[6]
@@ -95,7 +95,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
-    function validateTakeOrderParams(
+    function __validateTakeOrderParams(
         address _targetExchange,
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
@@ -113,24 +113,24 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
 
         require(
             makerAsset == _orderAddresses[2],
-            "validateTakeOrderParams: Order maker asset does not match the input address"
+            "__validateTakeOrderParams: Order maker asset does not match the input address"
         );
         require(
             takerAsset == _orderAddresses[3],
-            "validateTakeOrderParams: Order taker asset does not match the input address"
+            "__validateTakeOrderParams: Order taker asset does not match the input address"
         );
         require(
             _orderValues[6] <= maxTakerQuantity,
-            "validateTakeOrderParams: Taker fill amount greater than available quantity"
+            "__validateTakeOrderParams: Taker fill amount greater than available quantity"
         );
 
         require(
-            calculateExpectedFillAmount(
+            __calculateExpectedFillAmount(
                 maxTakerQuantity,
                 maxMakerQuantity,
                 _orderValues[6]
             ) <= maxMakerQuantity,
-            "validateTakeOrderParams: Maker fill amount greater than max order quantity"
+            "__validateTakeOrderParams: Maker fill amount greater than max order quantity"
         );
     }
 }
