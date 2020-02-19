@@ -1,9 +1,9 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./ExchangeAdapter.sol";
-import "./interfaces/IZeroExV3.sol";
-import "./OrderFiller.sol";
+import "../interfaces/IZeroExV3.sol";
+import "../libs/ExchangeAdapter.sol";
+import "../libs/OrderFiller.sol";
 
 /// @title ZeroExV3Adapter Contract
 /// @author Melonport AG <team@melonport.com>
@@ -236,12 +236,8 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
             "__validateTakeOrderParams: takerAssetData does not match address"
         );
         require(
-            __calculateExpectedFillAmount(
-                _orderValues[1],
-                _orderValues[0],
-                _orderValues[6]
-            ) <= _orderValues[0],
-            "__validateTakeOrderParams: Maker fill amount greater than max order quantity"
+            _orderValues[6] <= _orderValues[1],
+            "__validateTakeOrderParams: taker fill amount greater than max order quantity"
         );
         if (_orderValues[2] > 0) {
             require(
