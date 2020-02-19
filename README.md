@@ -4,13 +4,12 @@
 
 Melon is blockchain software that seeks to enable participants to set up, manage and invest in technology regulated investment funds in a way that reduces barriers to entry, while minimizing the requirements for trust.
 
-It does so by leveraging the fact that digital assets on distributed quasi-Turing Complete machines can be held solely by smart-contract code, and spent only according to preprogrammed rules within this code.
 The Melon protocol is a set of rules for how digital assets can be spent once held in a Melon smart-contract, or a Melon investment fund.
 These rules are meant to protect the investor and fund manager from malevolent behaviour of each other, even when both parties remain private.
 
-Melon is to investment funds as Bitcoin is to accounting: a set of rules, enforced by blockchain technology, legitimized by the consent of its participants.
+### Contract addresses
 
-[Melon paper](https://github.com/melonproject/paper/blob/specs/specs.pdf)
+For the addresses of the latest deployed contracts, check out the `deployments/latest` directory on the `master` branch.
 
 ## Install
 
@@ -69,10 +68,6 @@ In order to run these tests on Kovan testnet, you'll need your own `kovan_keys.j
 yarn deploy-kovan
 yarn test-kovan
 ```
-
-## Consume
-
-TODO: check out other repo
 
 ## Contribute
 
