@@ -1,0 +1,9 @@
+{
+  "private_keys": {
+    "PUBLIC_KEY_1": "PRIVATE_KEY_1",
+    "PUBLIC_KEY_2": "PRIVATE_KEY_2",
+    "PUBLIC_KEY_3": "PRIVATE_KEY_3",
+    "PUBLIC_KEY_4": "PRIVATE_KEY_4",
+    "PUBLIC_KEY_5": "PRIVATE_KEY_5"
+  }
+}
