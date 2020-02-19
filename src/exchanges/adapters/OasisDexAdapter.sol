@@ -1,9 +1,9 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./ExchangeAdapter.sol";
-import "./interfaces/IOasisDex.sol";
-import "./OrderFiller.sol";
+import "../interfaces/IOasisDex.sol";
+import "../libs/ExchangeAdapter.sol";
+import "../libs/OrderFiller.sol";
 
 /// @title OasisDexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
@@ -105,7 +105,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         view
     {
         (
-            uint256 maxMakerQuantity,
+            ,
             address makerAsset,
             uint256 maxTakerQuantity,
             address takerAsset
@@ -113,24 +113,15 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
 
         require(
             makerAsset == _orderAddresses[2],
-            "__validateTakeOrderParams: Order maker asset does not match the input address"
+            "__validateTakeOrderParams: Order maker asset does not match the input"
         );
         require(
             takerAsset == _orderAddresses[3],
-            "__validateTakeOrderParams: Order taker asset does not match the input address"
+            "__validateTakeOrderParams: Order taker asset does not match the input"
         );
         require(
             _orderValues[6] <= maxTakerQuantity,
             "__validateTakeOrderParams: Taker fill amount greater than available quantity"
-        );
-
-        require(
-            __calculateExpectedFillAmount(
-                maxTakerQuantity,
-                maxMakerQuantity,
-                _orderValues[6]
-            ) <= maxMakerQuantity,
-            "__validateTakeOrderParams: Maker fill amount greater than max order quantity"
         );
     }
 }

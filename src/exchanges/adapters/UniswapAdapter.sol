@@ -1,11 +1,11 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./ExchangeAdapter.sol";
-import "./OrderFiller.sol";
-import "../dependencies/WETH.sol";
-import "./interfaces/IUniswapFactory.sol";
-import "./interfaces/IUniswapExchange.sol";
+import "../libs/ExchangeAdapter.sol";
+import "../libs/OrderFiller.sol";
+import "../interfaces/IUniswapFactory.sol";
+import "../interfaces/IUniswapExchange.sol";
+import "../../dependencies/WETH.sol";
 
 /// @title UniswapAdapter Contract
 /// @author Melonport AG <team@melonport.com>
