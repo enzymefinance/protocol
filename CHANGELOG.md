@@ -4,13 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.1.0
 
 ### Added
 
 - Uniswap adapter
 - 0xV3 adapter
 - interfaces to third-party contracts
+- allow anyone to continue setup of a fund
 
 ### Changed
 
@@ -23,10 +24,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - allow manager to add exchanges after fund setup
 - allow anyone to cancel an expired investment request on behalf of another
 - for 0xV3 fee assets, check that they are registered before trading
-- get mid-market price instead of just one side of bid/ask in KyberPriceFeed
+- use ask-side instead of bid-side to calculate spread in KyberPriceFeed
 - move contracts only used in tests to tests directory
 - improve revert messages for policy failures
 - get pricefeed from registry dynamically and at fund runtime
+- account for revoking approval from cancelled non-custodial orders
 
 ### Fixed
 
@@ -35,6 +37,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - bug yielding price of 0 for WETH
 - bug yielding incorrect price in cross-market condition
 - default investment assets are not tracked as owned assets unless actually owned
+- bug allowing orders unrelated to the intended order to be cancelled
+- bug returning makerAsset and makerFeeAsset to vault when still in use
+- bug allowing investor to avoid paying performance fees
+- bug preventing partially-filled orders from being cancelled
+- bug allowing fund manager to keep funds in Trading contract
 
 ### Removed
 
