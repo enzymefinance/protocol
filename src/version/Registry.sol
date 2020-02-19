@@ -21,7 +21,6 @@ contract Registry is DSAuth {
     event ExchangeAdapterUpsert (
         address indexed exchange,
         address indexed adapter,
-        bool takesCustody,
         bytes4[] sigs
     );
 
@@ -50,7 +49,6 @@ contract Registry is DSAuth {
     struct Exchange {
         bool exists;
         address exchangeAddress;
-        bool takesCustody;
         bytes4[] sigs;
     }
 
@@ -191,12 +189,10 @@ contract Registry is DSAuth {
     /// @dev Post: Address _exchange is registered
     /// @param _exchange Address of the exchange for the adapter
     /// @param _adapter Address of exchange adapter
-    /// @param _takesCustody Whether this exchange takes custody of tokens before trading
     /// @param _sigs Function signatures for whitelisted exchange functions
     function registerExchangeAdapter(
         address _exchange,
         address _adapter,
-        bool _takesCustody,
         bytes4[] calldata _sigs
     ) external auth {
         require(!exchangeInformation[_adapter].exists, "Adapter already exists");
@@ -206,7 +202,6 @@ contract Registry is DSAuth {
         updateExchangeAdapter(
             _exchange,
             _adapter,
-            _takesCustody,
             _sigs
         );
     }
@@ -297,18 +292,15 @@ contract Registry is DSAuth {
     function updateExchangeAdapter(
         address _exchange,
         address _adapter,
-        bool _takesCustody,
         bytes4[] memory _sigs
     ) public auth {
         require(exchangeInformation[_adapter].exists, "Exchange with adapter doesn't exist");
         Exchange storage exchange = exchangeInformation[_adapter];
         exchange.exchangeAddress = _exchange;
-        exchange.takesCustody = _takesCustody;
         exchange.sigs = _sigs;
         emit ExchangeAdapterUpsert(
             _exchange,
             _adapter,
-            _takesCustody,
             _sigs
         );
     }
@@ -403,17 +395,6 @@ contract Registry is DSAuth {
     }
     function getRegisteredExchangeAdapters() external view returns (address[] memory) {
         return registeredExchangeAdapters;
-    }
-    function getExchangeInformation(address _adapter)
-        public
-        view
-        returns (address, bool)
-    {
-        Exchange memory exchange = exchangeInformation[_adapter];
-        return (
-            exchange.exchangeAddress,
-            exchange.takesCustody
-        );
     }
     function exchangeForAdapter(address _adapter) external view returns (address) {
         Exchange memory exchange = exchangeInformation[_adapter];

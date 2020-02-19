@@ -26,8 +26,6 @@
       "SharesFactory": "",
       "TradingFactory": "",
       "VaultFactory": "",
-      "ManagementFee": "",
-      "PerformanceFee": "",
       "Engine": "",
       "Registry": "",
       "Version": ""
@@ -40,16 +38,7 @@
       "maxSpread": "100000000000000000",
       "versionOwner": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
       "initialMGM": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
-      "versionName": "Fakename",
-      "exchangeTakesCustody": {
-        "oasis": true,
-        "kyber": false,
-        "zeroExV2": false,
-        "zeroExV3": false,
-        "ethfinex": true,
-        "engine": false,
-        "uniswap": false
-      }
+      "versionName": "Fakename"
     }
   },
   "kyber": {

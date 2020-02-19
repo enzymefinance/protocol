@@ -67,42 +67,36 @@ const main = async input => {
   const exchanges = {};
   exchanges.engine = {
     exchange: engine.options.address,
-    adapter: engineAdapter.options.address,
-    takesCustody: melonConf.exchangeTakesCustody.engine
+    adapter: engineAdapter.options.address 
   };
   if (input.kyber) {
     exchanges.kyber = {
       exchange: input.kyber.addr.KyberNetworkProxy,
-      adapter: kyberAdapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.kyber
+      adapter: kyberAdapter.options.address
     };
   }
   if (input.oasis) {
     exchanges.oasis = {
       exchange: input.oasis.addr.OasisDexExchange,
-      adapter: oasisDexAdapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.oasis
+      adapter: oasisDexAdapter.options.address
     };
   }
   if (input.uniswap) {
     exchanges.uniswap = {
       exchange: input.uniswap.addr.UniswapFactory,
-      adapter: uniswapAdapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.uniswap
+      adapter: uniswapAdapter.options.address
     };
   }
   if (input.zeroExV2) {
     exchanges.zeroExV2 = {
       exchange: input.zeroExV2.addr.ZeroExV2Exchange,
-      adapter: zeroExV2Adapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.zeroExV2
+      adapter: zeroExV2Adapter.options.address
     };
   }
   if (input.zeroExV3) {
     exchanges.zeroExV3 = {
       exchange: input.zeroExV3.addr.ZeroExV3Exchange,
-      adapter: zeroExV3Adapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.zeroExV3
+      adapter: zeroExV3Adapter.options.address
     };
   }
 
@@ -110,9 +104,9 @@ const main = async input => {
     const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);
     // TODO: check here if we actually need to update as well
     if (isRegistered) {
-      await send(registry, 'updateExchangeAdapter', [info.exchange, info.adapter, info.takesCustody, sigs]);
+      await send(registry, 'updateExchangeAdapter', [info.exchange, info.adapter, sigs]);
     } else {
-      await send(registry, 'registerExchangeAdapter', [info.exchange, info.adapter, info.takesCustody, sigs]);
+      await send(registry, 'registerExchangeAdapter', [info.exchange, info.adapter, sigs]);
     }
   }
 
@@ -172,7 +166,6 @@ const main = async input => {
     "EngineAdapter": engineAdapter,
     "PriceTolerance": priceTolerance,
     "UserWhitelist": userWhitelist,
-    "ManagementFee": performanceFee,
     "AccountingFactory": accountingFactory,
     "FeeManagerFactory": feeManagerFactory,
     "ParticipationFactory": participationFactory,
