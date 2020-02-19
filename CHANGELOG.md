@@ -4,7 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.1.0
+
+### Added
+
+- Uniswap adapter
+- 0xV3 adapter
+- interfaces to third-party contracts
+- allow anyone to continue setup of a fund
+
+### Changed
+
+- upgrade all contracts to solidity 0.6.1
+- rename all interfaces to IInterfaceName
+- trading function parameters (added bytes value and 2 addresses)
+- move events from interfaces to contracts themselves
+- use interfaces to third-party contracts instead of the contracts themselves
+- do not track default investment assets as owned assets
+- allow manager to add exchanges after fund setup
+- allow anyone to cancel an expired investment request on behalf of another
+- for 0xV3 fee assets, check that they are registered before trading
+- use ask-side instead of bid-side to calculate spread in KyberPriceFeed
+- move contracts only used in tests to tests directory
+- improve revert messages for policy failures
+- get pricefeed from registry dynamically and at fund runtime
+- account for revoking approval from cancelled non-custodial orders
+
+### Fixed
+
+- prevent manager from triggering fee rewarding when redeeming their shares
+- bug in calculating maxConcentration on makeOrder
+- bug yielding price of 0 for WETH
+- bug yielding incorrect price in cross-market condition
+- default investment assets are not tracked as owned assets unless actually owned
+- bug allowing orders unrelated to the intended order to be cancelled
+- bug returning makerAsset and makerFeeAsset to vault when still in use
+- bug allowing investor to avoid paying performance fees
+- bug preventing partially-filled orders from being cancelled
+- bug allowing fund manager to keep funds in Trading contract
+
+### Removed
+
+- third-party contracts
+- FundRanking.sol
+- CanonicalPriceFeed.sol
+- CanonicalRegistrar.sol
+- OperatorStaking.sol
+- SimplePriceFeed.sol
+- StakingPriceFeed.sol
+- UpdatableFeed.i.sol
+
+## 1.0.6
 
 ### Added
 

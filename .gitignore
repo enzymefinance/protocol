@@ -1,42 +1,15 @@
 node_modules/
 *.log
-*.orig
-*.swp
-
-.env
-
-# manual backup files
-*.bak
-
-# doxity
-scripts/
 
 # ignore built code
 out/
-build/
-lib/
-
-# ignore generated coverage data
-coverage.json
-coverage/
-
-# ignore cache
-.cache/
-
-# ignore concatenated files (only updated at verification time)
-utils/etherscan/concatenated
 
 # ignore node version manager files
 .nvmrc
 .node-version
 
-# ignore devchain snapshot
-legacy/utils/devchain-snapshot/
+# Ganache Keystore
+keys.json
 
-deployments/development-*.json
-
-# Keystore
-.keystore*.json
-
-# API key
-tests/system/.coinapi.json
+# Kovan Keystore
+kovan_keys.json

@@ -1,7 +1,0 @@
-node_modules
-scripts
-lib
-out
-src/exchange/thirdParty
-src/dependencies
-utils/etherscan/concatenated
