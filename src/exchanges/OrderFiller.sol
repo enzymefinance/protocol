@@ -19,8 +19,17 @@ contract OrderFiller is DSMath {
         uint256[] feeAmounts
     );
 
-    // TODO: modifier to assert that param array lengths are equal
-    // modifier hasEqualArrayLengths
+    // TODO: abstract modifier and accompanying function to new base contract
+    modifier equalAddressAndAmountArrayLengths(
+        address[] memory _addresses,
+        uint256[] memory _amounts)
+    {
+        require(
+            __addressAndAmountArraysAreEqualLength(_addresses, _amounts),
+            "equalAddressAndAmountArrayLengths: unequal array lengths"
+        );
+        _;
+    }
 
     // address _targetExchange = exchange where order filled (only needed for event emission)
     // @param _assets[0] = buy asset
@@ -79,16 +88,27 @@ contract OrderFiller is DSMath {
 
     // PRIVATE FUNCTIONS
 
+    function __addressAndAmountArraysAreEqualLength(
+        address[] memory _addresses,
+        uint256[] memory _amounts
+    )
+        internal
+        pure
+        returns (bool)
+    {
+        if (_addresses.length == _amounts.length) return true;
+        return false;
+    }
+
     function __calculateFillOrderBalanceDiffs(
         address[] memory _assets,
         uint256[] memory _preFillBalances
     )
         private
         view
+        equalAddressAndAmountArrayLengths(_assets, _preFillBalances)
         returns (uint256[] memory)
     {
-        assert(_assets.length == _preFillBalances.length);
-
         uint256[] memory balanceDiffs = new uint256[](_assets.length);
         for (uint256 i = 0; i < _assets.length; i++) {
             uint256 assetBalance = IERC20(_assets[i]).balanceOf(address(this));
@@ -120,7 +140,7 @@ contract OrderFiller is DSMath {
                 else balanceDiffs[i] = sub(_preFillBalances[i], assetBalance);
             }
         }
-        assert(_assets.length == balanceDiffs.length);
+        assert(__addressAndAmountArraysAreEqualLength(_assets, balanceDiffs));
         return balanceDiffs;
     }
 
@@ -130,6 +150,7 @@ contract OrderFiller is DSMath {
     )
         private
         pure
+        equalAddressAndAmountArrayLengths(_assets, _expectedAmounts)
         returns (address[] memory, uint256[] memory)
     {
         uint256 feeOffset = 2;
@@ -188,6 +209,7 @@ contract OrderFiller is DSMath {
                 }
             }
         }
+        assert(__addressAndAmountArraysAreEqualLength(cleanedAssets, cleanedExpectedAmounts));
         return (cleanedAssets, cleanedExpectedAmounts);
     }
 
@@ -208,6 +230,7 @@ contract OrderFiller is DSMath {
         uint256[] memory _balanceDiffs
     )
         private
+        equalAddressAndAmountArrayLengths(_assets, _balanceDiffs)
     {
         IAccounting accounting = IAccounting(ITrading(payable(address(this))).routes().accounting);
 
@@ -228,6 +251,8 @@ contract OrderFiller is DSMath {
         uint256[] memory _balanceDiffs
     )
         private
+        equalAddressAndAmountArrayLengths(_assets, _expectedAmounts)
+        equalAddressAndAmountArrayLengths(_assets, _balanceDiffs)
     {
         uint256 buyAmountFilled = _balanceDiffs[0];
         uint256 sellAmountFilled = _balanceDiffs[1];
@@ -287,7 +312,6 @@ contract OrderFiller is DSMath {
     )
         private
         pure
-        returns (address[] memory, uint256[] memory)
     {
         require(
             _targetExchange != address(0),
