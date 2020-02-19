@@ -1,10 +1,10 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/DSMath.sol";
-import "../dependencies/token/IERC20.sol";
-import "../fund/accounting/IAccounting.sol";
-import "../fund/trading/ITrading.sol";
+import "../../dependencies/DSMath.sol";
+import "../../dependencies/token/IERC20.sol";
+import "../../fund/accounting/IAccounting.sol";
+import "../../fund/trading/ITrading.sol";
 
 /// @title Order Filler
 /// @author Melonport AG <team@melonport.com>

@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "main/exchanges/ExchangeAdapter.sol";
-import "main/exchanges/OrderFiller.sol";
+import "main/exchanges/libs/ExchangeAdapter.sol";
+import "main/exchanges/libs/OrderFiller.sol";
 
 contract MockAdapter is ExchangeAdapter, OrderFiller {
 
