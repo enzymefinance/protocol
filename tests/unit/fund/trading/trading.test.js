@@ -80,7 +80,7 @@ describe('addExchange', () => {
     await send(
       registry,
       'registerExchangeAdapter',
-      [newExchange, newAdapter, false, []],
+      [newExchange, newAdapter, []],
       defaultTxOpts
     )
     await expect(

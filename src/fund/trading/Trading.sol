@@ -12,7 +12,6 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
     struct Exchange {
         address exchange;
         address adapter;
-        bool takesCustody;
     }
 
     Exchange[] public exchanges;
@@ -46,17 +45,15 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
     function getExchangeInfo()
         external
         view
-        returns (address[] memory, address[] memory, bool[] memory)
+        returns (address[] memory, address[] memory)
     {
         address[] memory ofExchanges = new address[](exchanges.length);
         address[] memory ofAdapters = new address[](exchanges.length);
-        bool[] memory takesCustody = new bool[](exchanges.length);
         for (uint256 i = 0; i < exchanges.length; i++) {
             ofExchanges[i] = exchanges[i].exchange;
             ofAdapters[i] = exchanges[i].adapter;
-            takesCustody[i] = exchanges[i].takesCustody;
         }
-        return (ofExchanges, ofAdapters, takesCustody);
+        return (ofExchanges, ofAdapters);
     }
 
     function withdraw(address _token, uint256 _amount) external auth {
@@ -164,16 +161,11 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
             registry.exchangeAdapterIsRegistered(_adapter),
             "Adapter is not registered"
         );
-
-        address registeredExchange;
-        bool takesCustody;
-        (registeredExchange, takesCustody) = registry.getExchangeInformation(_adapter);
-
         require(
-            registeredExchange == _exchange,
+            registry.exchangeForAdapter(_adapter) == _exchange,
             "Exchange and adapter do not match"
         );
-        exchanges.push(Exchange(_exchange, _adapter, takesCustody));
+        exchanges.push(Exchange(_exchange, _adapter));
     }
 
     function __validateCallOnExchange(

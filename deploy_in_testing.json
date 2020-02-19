@@ -39,16 +39,7 @@
       "maxSpread": "100000000000000000",
       "versionOwner": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
       "initialMGM": "0xc0c82081f2ad248391cd1483ae211d56c280887a",
-      "versionName": "Fakename",
-      "exchangeTakesCustody": {
-        "oasis": true,
-        "kyber": false,
-        "zeroExV2": false,
-        "zeroExV3": false,
-        "ethfinex": true,
-        "engine": false,
-        "uniswap": false
-      }
+      "versionName": "Fakename"
     }
   },
   "kyber": {
