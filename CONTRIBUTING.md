@@ -57,6 +57,7 @@ Please adhere to the recommended [official Solidity style guide for v0.6.1](http
 
 - function, modifier, and event _parameters_ are _prefixed_ with an underscore, e.g., `_myParameter`
 - function, modifier, and event _return values_ are _suffixed_ with an underscore, e.g., `myReturnValue_`
+- non-externally visible _functions_ (`internal` and `private` visibility) are _prefixed_ with a double underscore, e.g., `__myInternalFunction()`
 - An `interface` for a contract should be prefixed with an `I`, e.g., `IMyContract`
 
 #### Layout
