@@ -1,11 +1,11 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/DSMath.sol";
-import "../dependencies/token/IERC20.sol";
-import "../fund/accounting/IAccounting.sol";
-import "../fund/trading/ITrading.sol";
-import "../version/IRegistry.sol";
+import "../../dependencies/DSMath.sol";
+import "../../dependencies/token/IERC20.sol";
+import "../../fund/accounting/IAccounting.sol";
+import "../../fund/trading/ITrading.sol";
+import "../../version/IRegistry.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
