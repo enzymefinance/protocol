@@ -55,7 +55,6 @@ beforeEach(async () => {
     [
       mockExchangeAddress,
       mockAdapter.options.address,
-      false,
       [encodeFunctionSignature(takeOrderSignature)]
     ],
     defaultTxOpts

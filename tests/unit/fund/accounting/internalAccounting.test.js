@@ -45,7 +45,6 @@ beforeAll(async () => {
     [
       mockExchangeAddress,
       mockAdapterAddress,
-      false,
       [encodeFunctionSignature(takeOrderSignature)]
     ],
     defaultTxOpts

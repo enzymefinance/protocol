@@ -18,7 +18,6 @@ interface IRegistry {
     struct Exchange {
         bool exists;
         address exchangeAddress;
-        bool takesCustody;
         bytes4[] sigs;
     }
 
@@ -61,7 +60,6 @@ interface IRegistry {
     function getRegisteredVersions() external view returns (address[] memory);
     function getDecimals(address _asset) external view returns (uint256);
     function getName(address _asset) external view returns (string memory);
-    function getExchangeInformation(address _adapter) external view returns (address, bool);
     function getRegisteredAssets() external view returns (address[] memory);
     function getRegisteredExchangeAdapters() external view returns (address[] memory);
     function getReserveMin(address _asset) external view returns (uint256);
@@ -88,7 +86,6 @@ interface IRegistry {
     function registerExchangeAdapter(
         address _exchange,
         address _adapter,
-        bool _takesCustody,
         bytes4[] calldata _sigs
     ) external;
     function registerFees(address[] calldata _fees) external;
@@ -113,7 +110,6 @@ interface IRegistry {
     function updateExchangeAdapter(
         address _exchange,
         address _adapter,
-        bool _takesCustody,
         bytes4[] calldata _sigs
     ) external;
 
