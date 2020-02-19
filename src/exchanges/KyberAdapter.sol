@@ -167,7 +167,7 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
     {
         __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
 
-        IKyberNetworkProxy(_targetExchange).__swapTokenToToken(
+        IKyberNetworkProxy(_targetExchange).swapTokenToToken(
             _fillAssets[1],
             _fillExpectedAmounts[1],
             _fillAssets[0],

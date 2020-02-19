@@ -7,7 +7,6 @@ interface ITrading {
     struct Exchange {
         address exchange;
         address adapter;
-        bool takesCustody;
     }
 
     // STORAGE
@@ -27,7 +26,7 @@ interface ITrading {
     function getExchangeInfo()
         external
         view
-        returns (address[] memory, address[] memory, bool[] memory);
+        returns (address[] memory, address[] memory);
 
     // Caller: Auth only
     function addExchange(address _exchange, address _adapter) external;
