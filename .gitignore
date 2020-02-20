@@ -8,8 +8,13 @@ out/
 .nvmrc
 .node-version
 
-# Ganache Keystore
-keys.json
+# compile output
+compile_in.json
+compile_out.json
 
-# Kovan Keystore
+# keystores
+keys.json
 kovan_keys.json
+rinkeby_keys.json
+mainnet_keys.json
+
