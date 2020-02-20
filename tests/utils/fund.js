@@ -1,13 +1,13 @@
 import { BN, toWei } from 'web3-utils';
 
 import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 
 import { BNExpDiv } from '~/tests/utils/BNmath';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getEventFromLogs } from '~/tests/utils/metadata';
+import { delay } from '~/tests/utils/time';
+import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
 export const getFundComponents = async hubAddress => {
   const components = {};
@@ -21,6 +21,80 @@ export const getFundComponents = async hubAddress => {
   components.trading = fetchContract('Trading', routes.trading);
 
   return components;
+}
+
+export const investInFund = async ({ fundAddress, investment, amguTxValue, tokenPriceData }) => {
+  const { contribAmount, tokenContract, investor, isInitial = false } = investment;
+  const investorTxOpts = { from: investor, gas: 8000000 };
+
+  const hub = fetchContract('Hub', fundAddress);
+  const routes = await call(hub, 'routes');
+  const accounting = fetchContract('Accounting', routes.accounting);
+  const participation = fetchContract('Participation', routes.participation);
+
+  // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
+  if (!amguTxValue) {
+    amguTxValue = toWei('0.01', 'ether');
+  }
+
+  // Calculate amount of shares to buy with contribution
+  const shareCost = new BN(
+    await call(
+      accounting,
+      'getShareCostInAsset',
+      [toWei('1', 'ether'), tokenContract.options.address]
+    )
+  );
+  const wantedShares = BNExpDiv(new BN(contribAmount), shareCost).toString();
+
+  // Fund investor with contribution token, if necessary
+  const investorTokenBalance = new BN(
+    await call(
+      tokenContract,
+      'balanceOf',
+      [investor]
+    )
+  );
+  const investorTokenShortfall =
+    new BN(contribAmount).sub(investorTokenBalance);
+  if (investorTokenShortfall.gt(new BN(0))) {
+    await send(
+      tokenContract,
+      'transfer',
+      [investor, investorTokenShortfall.toString()]
+    )
+  }
+
+  // Invest in fund
+  await send(
+    tokenContract,
+    'approve',
+    [participation.options.address, contribAmount],
+    investorTxOpts
+  )
+  await send(
+    participation,
+    'requestInvestment',
+    [wantedShares, contribAmount, tokenContract.options.address],
+    { ...investorTxOpts, value: amguTxValue }
+  )
+
+  // Update prices if not initial investment
+  if (isInitial !== true) {
+    await delay(1000);
+    await updateTestingPriceFeed(
+      tokenPriceData.priceSource,
+      tokenPriceData.tokenAddresses,
+      tokenPriceData.tokenPrices
+    );
+  }
+
+  await send(
+    participation,
+    'executeRequestFor',
+    [investor],
+    { ...investorTxOpts, value: amguTxValue }
+  )
 }
 
 export const setupFundWithParams = async ({
@@ -80,55 +154,11 @@ export const setupFundWithParams = async ({
 
   // Make initial investment, if applicable
   if (new BN(initialInvestment.contribAmount).gt(new BN(0))) {
-    const investorTxOpts = { ...managerTxOpts, from: initialInvestment.investor };
-    // const amguAmount = toWei('.1', 'ether');
-    // Calculate amount of shares to buy with contribution
-    const shareCost = new BN(
-      await call(
-        fund.accounting,
-        'getShareCostInAsset',
-        [toWei('1', 'ether'), initialInvestment.tokenContract.options.address]
-      )
-    );
-    const wantedShares = BNExpDiv(new BN(initialInvestment.contribAmount), shareCost).toString();
-
-    // Fund investor with contribution token, if necessary
-    const investorTokenBalance = new BN(
-      await call(
-        initialInvestment.tokenContract,
-        'balanceOf',
-        [initialInvestment.investor]
-      )
-    );
-    const investorTokenShortfall =
-      new BN(initialInvestment.contribAmount).sub(investorTokenBalance);
-    if (investorTokenShortfall.gt(new BN(0))) {
-      await send(
-        initialInvestment.tokenContract,
-        'transfer',
-        [initialInvestment.investor, investorTokenShortfall.toString()],
-        { ...managerTxOpts, from: deployer }
-      )
-    }
-    // Invest in fund
-    await send(
-      initialInvestment.tokenContract,
-      'approve',
-      [fund.participation.options.address, initialInvestment.contribAmount],
-      investorTxOpts
-    )
-    await send(
-      fund.participation,
-      'requestInvestment',
-      [wantedShares, initialInvestment.contribAmount, initialInvestment.tokenContract.options.address],
-      { ...investorTxOpts, value: amguTxValue }
-    )
-    await send(
-      fund.participation,
-      'executeRequestFor',
-      [initialInvestment.investor],
-      { ...investorTxOpts, value: amguTxValue }
-    )
+    await investInFund({
+      amguTxValue,
+      fundAddress: fund.hub.options.address,
+      investment: { ...initialInvestment, isInitial: true },
+    });
   }
 
   return fund;
