@@ -11,10 +11,10 @@ import "../fund/trading/ITrading.sol";
 contract OrderFiller is DSMath {
     event OrderFilled(
         address indexed exchangeAddress,
-        address targetAsset,
-        uint256 targetAmount,
-        address offerAsset,
-        uint256 offerAmount,
+        address buyAsset,
+        uint256 buyAmount,
+        address sellAsset,
+        uint256 sellAmount,
         address[] feeAssets,
         uint256[] feeAmounts
     );
