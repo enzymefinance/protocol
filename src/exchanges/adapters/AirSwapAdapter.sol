@@ -1,10 +1,11 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./ExchangeAdapter.sol";
-import "./interfaces/ISwap.sol";
+import "../libs/ExchangeAdapter.sol";
+import "../interfaces/ISwap.sol";
+import "../libs/OrderFiller.sol";
 
-contract AirSwapAdapter is ExchangeAdapter {
+contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
 
     /// @notice Extract arguments for risk management validations
     /// @param _encodedArgs Encoded arguments for a specific exchange
@@ -52,8 +53,6 @@ contract AirSwapAdapter is ExchangeAdapter {
     )
         external
         override
-        onlyManager
-        notShutDown
     {
         (
             address[8] memory orderAddresses,
@@ -63,6 +62,10 @@ contract AirSwapAdapter is ExchangeAdapter {
             uint8 sigUintComponent,
             bytes1 version
         ) = _decodeArgs(_encodedArgs);
+        (
+            address[] memory fillAssets,
+            uint256[] memory fillExpectedAmounts
+        ) = __formatFillTakeOrderArgs(orderAddresses, orderValues);
 
         ISwap.Order memory order = _constructOrder(
             orderAddresses,
@@ -73,14 +76,49 @@ contract AirSwapAdapter is ExchangeAdapter {
             version
         );
 
-        withdrawAndApproveAsset(
-            order.sender.token,
+        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts, order);
+    }
+
+    function __fillTakeOrder(
+        address _targetExchange,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts,
+        ISwap.Order memory _order
+    )
+        internal
+        validateAndFinalizeFilledOrder(
             _targetExchange,
-            order.sender.amount,
+            _fillAssets,
+            _fillExpectedAmounts
+        )
+    {
+        __approveAsset(
+            _order.sender.token,
+            _targetExchange,
+            _order.sender.amount,
             "takerAsset"
         );
 
-        ISwap(_targetExchange).swap(order);
+        ISwap(_targetExchange).swap(_order);
+    }
+
+    function __formatFillTakeOrderArgs(
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues
+    )
+        internal
+        pure
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory fillAssets = new address[](2);
+        fillAssets[0] = _orderAddresses[1]; // maker asset
+        fillAssets[1] = _orderAddresses[3]; // taker asset
+
+        uint256[] memory fillExpectedAmounts = new uint256[](2);
+        fillExpectedAmounts[0] = _orderValues[2]; // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[4]; // taker fill amount
+
+        return (fillAssets, fillExpectedAmounts);
     }
 
     /// @notice Decoder

@@ -31,7 +31,7 @@ contract ExchangeAdapter is DSMath {
         external
         pure
         virtual
-        returns (address[6] memory, uint[3] memory)
+        returns (address[6] memory, uint256[3] memory)
     {
         revert("Unimplemented");
     }
@@ -40,8 +40,8 @@ contract ExchangeAdapter is DSMath {
 
     function swapToken(
         address _targetExchange,
-        bytes memory _encodedArgs
-    ) public virtual { revert("Unimplemented"); }
+        bytes calldata _encodedArgs
+    ) external virtual { revert("Unimplemented"); }
 
     /// @param _orderAddresses [0] Order maker
     /// @param _orderAddresses [1] Order taker

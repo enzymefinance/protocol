@@ -74,8 +74,7 @@ const main = async input => {
   if (input.airSwap) {
     exchanges.airSwap = {
       exchange: input.airSwap.addr.Swap,
-      adapter: airSwapAdapter.options.address,
-      takesCustody: melonConf.exchangeTakesCustody.airSwap
+      adapter: airSwapAdapter.options.address
     };
   }
   if (input.kyber) {
