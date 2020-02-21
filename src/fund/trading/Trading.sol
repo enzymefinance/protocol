@@ -87,12 +87,12 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         onlyInitialized
     {
         bytes4 methodSelector = bytes4(keccak256(bytes(_methodSignature)));
-        address adapter = exchanges[_exchangeIndex].adapter;
-        address targetExchange = exchanges[_exchangeIndex].exchange;
         (
             address[6] memory rskMngAddrs,
             uint256[3] memory rskMngVals
-        ) = ExchangeAdapter(adapter).extractRiskManagementArgs(_encodedArgs);
+        ) = __getRiskManagementArgs(_exchangeIndex, _encodedArgs);
+        address adapter = exchanges[_exchangeIndex].adapter;
+        address targetExchange = exchanges[_exchangeIndex].exchange;
 
         __validateCallOnExchange(_exchangeIndex, methodSelector, rskMngAddrs);
 
@@ -151,6 +151,24 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
             "Exchange and adapter do not match"
         );
         exchanges.push(Exchange(_exchange, _adapter));
+    }
+
+    function __getRiskManagementArgs(
+        uint256 _exchangeIndex,
+        bytes memory _encodedArgs
+    )
+        internal
+        returns (address[6] memory, uint256[3] memory)
+    {
+        address adapter = exchanges[_exchangeIndex].adapter;
+        (bool success, bytes memory returnData) = adapter.delegatecall(
+            abi.encodeWithSelector(
+                ExchangeAdapter(adapter).extractRiskManagementArgs.selector,
+                _encodedArgs
+            )
+        );
+        require(success, "Encoded arguments might not match");
+        return abi.decode(returnData, (address[6], uint256[3]));
     }
 
     function __validateCallOnExchange(
