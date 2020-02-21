@@ -239,12 +239,6 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
             _orderValues[6] <= _orderValues[1],
             "__validateTakeOrderParams: taker fill amount greater than max order quantity"
         );
-        if (_orderValues[2] > 0) {
-            require(
-                __getAssetAddress(_orderData[2]) == _orderAddresses[6],
-                "__validateTakeOrderParams: makerFeeAssetData does not match address"
-            );
-        }
         if (_orderValues[3] > 0) {
             require(
                 __getAssetAddress(_orderData[3]) == _orderAddresses[7],
