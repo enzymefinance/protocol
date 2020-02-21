@@ -11,6 +11,31 @@ import "../../version/IRegistry.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Override the public methods to implement an adapter
 contract ExchangeAdapter is DSMath {
+
+    // EXTERNAL FUNCTIONS
+
+    /// @notice Extract arguments for risk management validations
+    /// @param _encodedArgs Encoded arguments for a specific exchange
+    /// @notice rskMngAddrs [0] makerAddress
+    /// @notice rskMngAddrs [1] takerAddress
+    /// @notice rskMngAddrs [2] makerAsset
+    /// @notice rskMngAddrs [3] takerAsset
+    /// @notice rskMngAddrs [4] makerFeeAsset
+    /// @notice rskMngAddrs [5] takerFeeAsset
+    /// @notice rskMngVals [0] makerAssetAmount
+    /// @notice rskMngVals [1] takerAssetAmount
+    /// @notice rskMngVals [2] fillAmout
+    function extractRiskManagementArgs(
+        bytes calldata _encodedArgs
+    )
+        external
+        pure
+        virtual
+        returns (address[6] memory, uint[3] memory)
+    {
+        revert("Unimplemented");
+    }
+
     // PUBLIC FUNCTIONS
 
     /// @param _orderAddresses [0] Order maker
