@@ -4,10 +4,14 @@ pragma experimental ABIEncoderV2;
 import "../libs/ExchangeAdapter.sol";
 import "../interfaces/ISwap.sol";
 import "../libs/OrderFiller.sol";
+import "../../fund/policies/TradingSignatures.sol";
 
-contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
+contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Extract arguments for risk management validations
+    /// @param _methodSelector method selector of TAKE_ORDER, ...
     /// @param _encodedArgs Encoded arguments for a specific exchange
     /// @notice rskMngAddrs [0] makerAddress
     /// @notice rskMngAddrs [1] takerAddress
@@ -18,32 +22,42 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
     /// @notice rskMngVals [0] makerAssetAmount
     /// @notice rskMngVals [1] takerAssetAmount
     /// @notice rskMngVals [2] fillAmout
-    function extractRiskManagementArgs(
+    function extractRiskManagementArgsOf(
+        bytes4 _methodSelector,
         bytes calldata _encodedArgs
     )
         external
         pure
         override
-        returns (address[6] memory, uint[3] memory)
+        returns (address[6] memory, uint256[3] memory)
     {
-        (
-            address[8] memory orderAddresses,
-            uint[8] memory orderValues, , , ,
-        ) = _decodeArgs(_encodedArgs);
+        address[6] memory rskMngAddrs;
+        uint256[3] memory rskMngVals;
 
-        address[6] memory rskMngAddrs = [
-            orderAddresses[0],
-            orderAddresses[2],
-            orderAddresses[1],
-            orderAddresses[3],
-            address(0),
-            address(0)
-        ];
-        uint[3] memory rskMngVals = [
-            orderValues[2],
-            orderValues[4],
-            orderValues[4]
-        ];
+        if (_methodSelector == SWAP_TOKEN) {
+            (
+                address[8] memory orderAddresses,
+                uint256[8] memory orderValues, , , ,
+            ) = __decodeTakeOrderArgs(_encodedArgs);
+
+            rskMngAddrs = [
+                orderAddresses[0],
+                orderAddresses[2],
+                orderAddresses[1],
+                orderAddresses[3],
+                address(0),
+                address(0)
+            ];
+            rskMngVals = [
+                orderValues[2],
+                orderValues[4],
+                orderValues[4]
+            ];
+        }
+        else {
+            revert("methodSelector doesn't exist");
+        }
+
         return (rskMngAddrs, rskMngVals);
     }
 
@@ -56,18 +70,18 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
     {
         (
             address[8] memory orderAddresses,
-            uint[8] memory orderValues,
+            uint256[8] memory orderValues,
             bytes4[3] memory tokenKinds,
             bytes32[2] memory sigBytesComponents,
             uint8 sigUintComponent,
             bytes1 version
-        ) = _decodeArgs(_encodedArgs);
+        ) = __decodeTakeOrderArgs(_encodedArgs);
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
         ) = __formatFillTakeOrderArgs(orderAddresses, orderValues);
 
-        ISwap.Order memory order = _constructOrder(
+        ISwap.Order memory order = __constructTakerOrder(
             orderAddresses,
             orderValues,
             tokenKinds,
@@ -78,6 +92,8 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
 
         __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts, order);
     }
+
+    // INTERNAL FUNCTIONS
 
     function __fillTakeOrder(
         address _targetExchange,
@@ -147,14 +163,14 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
     /// @notice sigBytesComponents [1] order.signature.s
     /// @notice sigUintComponent order.signature.v
     /// @notice version order.signature.version
-    function _decodeArgs(
+    function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
         internal
         pure
         returns (
             address[8] memory orderAddresses,
-            uint[8] memory orderValues,
+            uint256[8] memory orderValues,
             bytes4[3] memory tokenKinds,
             bytes32[2] memory sigBytesComponents,
             uint8 sigUintComponent,
@@ -165,7 +181,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
             _encodedArgs,
             (
                 address[8],
-                uint[8],
+                uint256[8],
                 bytes4[3],
                 bytes32[2],
                 uint8,
@@ -174,9 +190,9 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller {
         );
     }
 
-    function _constructOrder(
+    function __constructTakerOrder(
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes4[3] memory _tokenKinds,
         bytes32[2] memory _sigBytesComponents,
         uint8 _sigUintComponent,

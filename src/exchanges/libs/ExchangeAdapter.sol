@@ -15,6 +15,7 @@ contract ExchangeAdapter is DSMath {
     // EXTERNAL FUNCTIONS
 
     /// @notice Extract arguments for risk management validations
+    /// @param _methodSelector method selector of TAKE_ORDER, ...
     /// @param _encodedArgs Encoded arguments for a specific exchange
     /// @notice rskMngAddrs [0] makerAddress
     /// @notice rskMngAddrs [1] takerAddress
@@ -25,7 +26,8 @@ contract ExchangeAdapter is DSMath {
     /// @notice rskMngVals [0] makerAssetAmount
     /// @notice rskMngVals [1] takerAssetAmount
     /// @notice rskMngVals [2] fillAmout
-    function extractRiskManagementArgs(
+    function extractRiskManagementArgsOf(
+        bytes4 _methodSelector,
         bytes calldata _encodedArgs
     )
         external
