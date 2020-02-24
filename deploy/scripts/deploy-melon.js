@@ -60,10 +60,6 @@ const main = async input => {
   }
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
-  const sigs = [
-    'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)',
-  ].map(s => web3.utils.keccak256(s).slice(0,10));
-
   const exchanges = {};
   exchanges.engine = {
     exchange: engine.options.address,
@@ -99,6 +95,10 @@ const main = async input => {
       adapter: zeroExV3Adapter.options.address
     };
   }
+
+  // TODO: lift metadata.js and constants.js from tests/utils into a shared utils file in root
+  const takeOrderSignature = 'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)';
+  const sigs = [web3.eth.abi.encodeFunctionSignature(takeOrderSignature)];
 
   for (const info of Object.values(exchanges)) {
     const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);
