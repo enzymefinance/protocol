@@ -33,7 +33,8 @@ describe('kyber-price-feed', () => {
         kyberNetworkProxy.options.address,
         toWei('0.5', 'ether'),
         weth.options.address,
-        updater
+        updater,
+        toWei('0.1', 'ether')
       ],
       deployerTxOpts
     );
@@ -53,7 +54,13 @@ describe('kyber-price-feed', () => {
 
     expect(registryOwner).toBe(deployer);
 
-    await kyberPriceFeed.methods.update().send({from: deployer, gas: 8000000});
+    const registeredAssets = await mockRegistry.methods.getRegisteredAssets().call();
+
+    await kyberPriceFeed.methods.update(
+      registeredAssets,
+      [toWei('1', 'ether'), toWei('1', 'ether'), toWei('1', 'ether')]
+    ).send({from: deployer, gas: 8000000});
+
     const hasValidMlnPrice = await kyberPriceFeed.methods
       .hasValidPrice(mln.options.address)
       .call();

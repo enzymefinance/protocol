@@ -23,6 +23,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
     uint public constant KYBER_PRECISION = 18;
     uint public constant VALIDITY_INTERVAL = 2 days;
     uint public lastUpdate;
+    uint256 public maxPriceDeviation; // percent, expressed as a uint (fraction of 10^18)
 
     // FIELDS
 
@@ -38,7 +39,8 @@ contract KyberPriceFeed is DSMath, DSAuth {
         address ofKyberNetworkProxy,
         uint ofMaxSpread,
         address ofQuoteAsset,
-        address initialUpdater
+        address initialUpdater,
+        uint256 _maxPriceDeviation
     )
         public
     {
@@ -47,30 +49,58 @@ contract KyberPriceFeed is DSMath, DSAuth {
         QUOTE_ASSET = ofQuoteAsset;
         REGISTRY = Registry(ofRegistry);
         UPDATER = initialUpdater;
+        maxPriceDeviation = _maxPriceDeviation;
+    }
+
+    function __priceIsSane(
+        uint256 _priceFromKyber,
+        uint256 _offchainPrice
+    )
+        internal
+        view
+        returns (bool)
+    {
+        uint256 deviation;
+        if (_priceFromKyber >= _offchainPrice) {
+            deviation = sub(_priceFromKyber, _offchainPrice);
+        } else {
+            deviation = sub(_offchainPrice, _priceFromKyber);
+        }
+        return mul(deviation, 10 ** KYBER_PRECISION) / _offchainPrice <= maxPriceDeviation;
     }
 
     /// @dev Stores zero as a convention for invalid price
-    function update() external {
+    /// @dev passed _saneAssets must match the assets array from getRegisteredAssets
+    function update(address[] calldata _saneAssets, uint256[] calldata _sanePrices) external {
+        require(_saneAssets.length == _sanePrices.length, "Array lengths unequal");
         require(
             msg.sender == REGISTRY.owner() || msg.sender == UPDATER,
             "Only registry owner or updater can call"
         );
-        address[] memory assets = REGISTRY.getRegisteredAssets();
-        uint[] memory newPrices = new uint[](assets.length);
-        for (uint i; i < assets.length; i++) {
+        address[] memory registeredAssets = REGISTRY.getRegisteredAssets();
+        uint256[] memory newPrices = new uint256[](registeredAssets.length);
+        for (uint i; i < registeredAssets.length; i++) {
             bool isValid;
-            uint price;
-            if (assets[i] == QUOTE_ASSET) {
+            uint256 kyberPrice;
+            require(
+                _saneAssets[i] == registeredAssets[i],
+                "Passed assets must match registered assets"
+            );
+            if (registeredAssets[i] == QUOTE_ASSET) {
                 isValid = true;
-                price = 1 ether;
+                kyberPrice = 1 ether;
             } else {
-                (isValid, price) = getKyberPrice(assets[i], QUOTE_ASSET);
+                (isValid, kyberPrice) = getKyberPrice(registeredAssets[i], QUOTE_ASSET);
             }
-            newPrices[i] = isValid ? price : 0;
-            prices[assets[i]] = newPrices[i];
+            require(
+                __priceIsSane(kyberPrice, _sanePrices[i]),
+                "Kyber asset price deviates too much from maxPriceDeviation"
+            );
+            newPrices[i] = isValid ? kyberPrice : 0;
+            prices[registeredAssets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
-        emit PriceUpdate(assets, newPrices);
+        emit PriceUpdate(registeredAssets, newPrices);
     }
 
     function setUpdaterToRegistryOwner() external {
@@ -93,6 +123,11 @@ contract KyberPriceFeed is DSMath, DSAuth {
     function setMaxSpread(uint _maxSpread) external {
         require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
         MAX_SPREAD = _maxSpread;
+    }
+
+    function setMaxPriceDeviation(uint256 _maxPriceDeviation) external {
+        require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
+        maxPriceDeviation = _maxPriceDeviation;
     }
 
     // PUBLIC VIEW METHODS
