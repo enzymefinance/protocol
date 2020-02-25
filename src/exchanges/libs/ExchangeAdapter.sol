@@ -64,13 +64,13 @@ contract ExchangeAdapter is DSMath {
     {
         require(
             __getAccounting().assetBalances(_asset) >= _amount,
-            string(abi.encodePacked("Insufficient available assetBalance: ", _assetType))
+            string(abi.encodePacked("__approveAsset: Insufficient available assetBalance: ", _assetType))
         );
 
         uint256 allowance = IERC20(_asset).allowance(address(this), _target);
         require(
             IERC20(_asset).approve(_target, add(allowance, _amount)),
-            string(abi.encodePacked("Approval failed: ", _assetType))
+            string(abi.encodePacked("__approveAsset: Approval failed: ", _assetType))
         );
     }
 
