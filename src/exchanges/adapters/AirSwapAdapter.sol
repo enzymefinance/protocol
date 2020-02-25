@@ -36,8 +36,8 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
 
         if (_methodSelector == SWAP_TOKEN) {
             (
-                address[8] memory orderAddresses,
-                uint256[8] memory orderValues, , , ,
+                address[6] memory orderAddresses,
+                uint256[6] memory orderValues, , , ,
             ) = __decodeTakeOrderArgs(_encodedArgs);
 
             rskMngAddrs = [
@@ -69,9 +69,9 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
         override
     {
         (
-            address[8] memory orderAddresses,
-            uint256[8] memory orderValues,
-            bytes4[3] memory tokenKinds,
+            address[6] memory orderAddresses,
+            uint256[6] memory orderValues,
+            bytes4[2] memory tokenKinds,
             bytes32[2] memory sigBytesComponents,
             uint8 sigUintComponent,
             bytes1 version
@@ -119,8 +119,8 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
     }
 
     function __formatFillTakeOrderArgs(
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues
+        address[6] memory _orderAddresses,
+        uint256[6] memory _orderValues
     )
         internal
         pure
@@ -144,21 +144,16 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
     /// @notice orderAddresses [1] order.signer.token
     /// @notice orderAddresses [2] order.sender.wallet
     /// @notice orderAddresses [3] order.sender.token
-    /// @notice orderAddresses [4] order.affiliate.wallet
-    /// @notice orderAddresses [5] order.affiliate.token
-    /// @notice orderAddresses [6] order.signature.signatory
-    /// @notice orderAddresses [7] order.signature.validator
+    /// @notice orderAddresses [4] order.signature.signatory
+    /// @notice orderAddresses [5] order.signature.validator
     /// @notice orderValues [0] order.nonce
     /// @notice orderValues [1] order.expiry
     /// @notice orderValues [2] order.signer.amount
     /// @notice orderValues [3] order.signer.id
     /// @notice orderValues [4] order.sender.amount
     /// @notice orderValues [5] order.sender.id
-    /// @notice orderValues [6] order.affiliate.amount
-    /// @notice orderValues [7] order.affiliate.id
     /// @notice tokenKinds [0] order.signer.kind
     /// @notice tokenKinds [1] order.sender.kind
-    /// @notice tokenKinds [2] order.affiliate.kind
     /// @notice sigBytesComponents [0] order.signature.r
     /// @notice sigBytesComponents [1] order.signature.s
     /// @notice sigUintComponent order.signature.v
@@ -169,9 +164,9 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
         internal
         pure
         returns (
-            address[8] memory orderAddresses,
-            uint256[8] memory orderValues,
-            bytes4[3] memory tokenKinds,
+            address[6] memory orderAddresses,
+            uint256[6] memory orderValues,
+            bytes4[2] memory tokenKinds,
             bytes32[2] memory sigBytesComponents,
             uint8 sigUintComponent,
             bytes1 version
@@ -180,9 +175,9 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
         return abi.decode(
             _encodedArgs,
             (
-                address[8],
-                uint256[8],
-                bytes4[3],
+                address[6],
+                uint256[6],
+                bytes4[2],
                 bytes32[2],
                 uint8,
                 bytes1
@@ -191,9 +186,9 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
     }
 
     function __constructTakerOrder(
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes4[3] memory _tokenKinds,
+        address[6] memory _orderAddresses,
+        uint256[6] memory _orderValues,
+        bytes4[2] memory _tokenKinds,
         bytes32[2] memory _sigBytesComponents,
         uint8 _sigUintComponent,
         bytes1 _version
@@ -220,15 +215,15 @@ contract AirSwapAdapter is ExchangeAdapter, OrderFiller, TradingSignatures {
                 id: _orderValues[5]
             }),
             affiliate: ISwap.Party({
-                kind: _tokenKinds[2],
-                wallet: _orderAddresses[4],
-                token: _orderAddresses[5],
-                amount: _orderValues[6],
-                id: _orderValues[7]
+                kind: bytes4(0),
+                wallet: address(0),
+                token: address(0),
+                amount: 0,
+                id: 0
             }),
             signature: ISwap.Signature({
-                signatory: _orderAddresses[6],
-                validator: _orderAddresses[7],
+                signatory: _orderAddresses[4],
+                validator: _orderAddresses[5],
                 version: _version,
                 v: _sigUintComponent,
                 r: _sigBytesComponents[0],

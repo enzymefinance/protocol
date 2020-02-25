@@ -74,6 +74,7 @@ describe('Fund takes an order', () => {
     order.sender.wallet = trading.options.address;
     order.sender.token = weth.options.address;
     order.sender.amount = fillQuantity;
+    order.affiliate.kind = '0x0';
 
     order.signature = await signatures.getWeb3Signature(
       order,
@@ -93,10 +94,8 @@ describe('Fund takes an order', () => {
     orderAddresses[1] = order.signer.token;
     orderAddresses[2] = order.sender.wallet;
     orderAddresses[3] = order.sender.token;
-    orderAddresses[4] = order.affiliate.wallet;
-    orderAddresses[5] = order.affiliate.token;
-    orderAddresses[6] = order.signature.signatory;
-    orderAddresses[7] = order.signature.validator;
+    orderAddresses[4] = order.signature.signatory;
+    orderAddresses[5] = order.signature.validator;
 
     orderValues[0] = order.nonce;
     orderValues[1] = order.expiry;
@@ -104,19 +103,16 @@ describe('Fund takes an order', () => {
     orderValues[3] = order.signer.id;
     orderValues[4] = order.sender.amount;
     orderValues[5] = order.sender.id;
-    orderValues[6] = order.affiliate.amount;
-    orderValues[7] = order.affiliate.id;
 
     tokenKinds[0] = order.signer.kind;
     tokenKinds[1] = order.sender.kind;
-    tokenKinds[2] = order.affiliate.kind;
     sigBytesComponents[0] = order.signature.r;
     sigBytesComponents[1] = order.signature.s;
     const sigUintComponent = order.signature.v;
     const version = order.signature.version;
 
     const hex = web3.eth.abi.encodeParameters(
-      ['address[8]', 'uint[8]', 'bytes4[3]', 'bytes32[2]', 'uint8', 'bytes1'],
+      ['address[6]', 'uint[6]', 'bytes4[2]', 'bytes32[2]', 'uint8', 'bytes1'],
       [orderAddresses, orderValues, tokenKinds, sigBytesComponents, sigUintComponent, version],
     );
 
