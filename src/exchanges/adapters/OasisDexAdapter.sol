@@ -3,64 +3,22 @@ pragma experimental ABIEncoderV2;
 
 import "../interfaces/IOasisDex.sol";
 import "../libs/ExchangeAdapter.sol";
-import "../libs/OrderFiller.sol";
+import "../libs/OrderTaker.sol";
 
 /// @title OasisDexAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and OasisDex Matching Market
-contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
-    /// @notice Takes an active order on Oasis Dex
-    /// @param _targetExchange Address of the exchange
+contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
+    /// @notice Takes an active order on Oasis Dex (takeOrder)
+    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _orderAddresses [2] Maker asset
     /// @param _orderAddresses [3] Taker asset
-    /// @param _orderValues [6] Fill amount : amount of taker token to fill
-    /// @param _identifier Active order id
-    function takeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        override
-    {
-        __validateTakeOrderParams(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        __fillTakeOrder(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature,
-            fillAssets,
-            fillExpectedAmounts
-        );
-    }
-
-    // INTERNAL FUNCTIONS
-
+    /// @param _orderValues [6] Taker asset fill quantity
+    /// @param _identifier Order id on Oasis Dex
+    /// @param _fillAssets [0] Maker asset (same as _orderAddresses[2])
+    /// @param _fillAssets [1] Taker asset (same as _orderAddresses[3])
+    /// @param _fillExpectedAmounts [0] Expected (min) quantity of maker asset to receive
+    /// @param _fillExpectedAmounts [1] Expected (max) quantity of taker asset to spend
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -86,6 +44,18 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         IOasisDex(_targetExchange).buy(uint256(_identifier), _fillExpectedAmounts[0]);
     }
 
+    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
+    /// @param _targetExchange Address of the Oasis Dex exchange
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderValues [6] Taker asset fill quantity
+    /// @param _identifier Order id on Oasis Dex
+    /// @return _fillAssets Assets to fill
+    /// - [0] Maker asset (same as _orderAddresses[2])
+    /// - [1] Taker asset (same as _orderAddresses[3])
+    /// @return _fillExpectedAmounts Asset fill amounts
+    /// - [0] Expected (min) quantity of maker asset to receive
+    /// - [1] Expected (max) quantity of taker asset to spend
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -108,7 +78,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         ) = IOasisDex(_targetExchange).getOffer(uint256(_identifier));
 
         uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = __calculateExpectedFillAmount(
+        fillExpectedAmounts[0] = __calculateRelativeQuantity(
             maxTakerQuantity,
             maxMakerQuantity,
             _orderValues[6]
@@ -118,6 +88,12 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
+    /// @notice Validate the parameters of a takeOrder call
+    /// @param _targetExchange Address of the Oasis Dex exchange
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderValues [6] Taker asset fill quantity
+    /// @param _identifier Order id on Oasis Dex
     function __validateTakeOrderParams(
         address _targetExchange,
         address[8] memory _orderAddresses,

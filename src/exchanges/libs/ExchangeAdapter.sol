@@ -9,53 +9,10 @@ import "../../version/IRegistry.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
-/// @notice Override the public methods to implement an adapter
+/// @notice Provides convenience functions for use in exchange adapters
 abstract contract ExchangeAdapter is DSMath {
-    // PUBLIC FUNCTIONS
-
-    /// @param _orderAddresses [0] Order maker
-    /// @param _orderAddresses [1] Order taker
-    /// @param _orderAddresses [2] Order maker asset
-    /// @param _orderAddresses [3] Order taker asset
-    /// @param _orderAddresses [4] feeRecipientAddress
-    /// @param _orderAddresses [5] senderAddress
-    /// @param _orderAddresses [6] maker fee asset
-    /// @param _orderAddresses [7] taker fee asset
-    /// @param _orderValues [0] makerAssetAmount
-    /// @param _orderValues [1] takerAssetAmount
-    /// @param _orderValues [2] Maker fee
-    /// @param _orderValues [3] Taker fee
-    /// @param _orderValues [4] expirationTimeSeconds
-    /// @param _orderValues [5] Salt/nonce
-    /// @param _orderValues [6] Fill amount: amount of taker token to be traded
-    /// @param _orderValues [7] Dexy signature mode
-    /// @param _orderData [0] Encoded data specific to maker asset
-    /// @param _orderData [1] Encoded data specific to taker asset
-    /// @param _orderData [2] Encoded data specific to maker asset fee
-    /// @param _orderData [3] Encoded data specific to taker asset fee
-    /// @param _identifier Order identifier
-    /// @param _signature Signature of order maker
-
-    // Responsibilities of takeOrder are:
-    // - Validate arguments (via a __validateTakeOrderParams function)
-    // - Prepare a formatted list of assets and expected fill amounts
-    // (via a __formatFillTakeOrderArgs function)
-    // - Fill an order on the _targetExchange, via a __fillTakeOrder function
-    // that uses the validateAndFinalizeFilledOrder modifier
-    function takeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        virtual;
-
-    // INTERNAL FUNCTIONS
-
-    // Increment allowance of an asset for some target
+    /// @notice Increment allowance of an asset for some target
+    /// @dev Checks the actual in-contract assetBalances (as opposed to "holdings")
     function __approveAsset(
         address _asset,
         address _target,
@@ -76,22 +33,44 @@ abstract contract ExchangeAdapter is DSMath {
         );
     }
 
+    /// @notice Calculates a proportional value relative to a known ratio
+    /// @dev For use in calculating expected a missing expected fill amount
+    /// based on an asset pair's price
+    function __calculateRelativeQuantity(
+        uint256 quantity1,
+        uint256 quantity2,
+        uint256 relativeQuantity1
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        return mul(relativeQuantity1, quantity2) / quantity1;
+    }
+
+    /// @notice Gets an IAccounting instance
     function __getAccounting() internal view returns (IAccounting) {
         return IAccounting(__getTrading().routes().accounting);
     }
 
+    /// @notice Gets the canonical WETH address
+    /// @dev Uses Registry as the canonical source
     function __getNativeAssetAddress() internal view returns (address) {
         return __getRegistry().nativeAsset();
     }
 
+    /// @notice Gets the canonical MLN address from Registry
+    /// @dev Uses Registry as the canonical source
     function __getMlnTokenAddress() internal view returns (address) {
         return __getRegistry().mlnToken();
     }
 
+    /// @notice Gets an IRegistry instance
     function __getRegistry() internal view returns (IRegistry) {
         return IRegistry(__getTrading().routes().registry);
     }
 
+    /// @notice Gets an ITrading instance
     function __getTrading() internal view returns (ITrading) {
         return ITrading(payable(address(this)));
     }

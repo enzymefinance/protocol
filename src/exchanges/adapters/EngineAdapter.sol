@@ -2,67 +2,25 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../libs/ExchangeAdapter.sol";
-import "../libs/OrderFiller.sol";
+import "../libs/OrderTaker.sol";
 import "../../dependencies/WETH.sol";
 import "../../engine/IEngine.sol";
 
 /// @title EngineAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Trading adapter to Melon Engine
-contract EngineAdapter is ExchangeAdapter, OrderFiller {
-    /// @notice Buys Ether from the Melon Engine, selling MLN
-    /// @param _targetExchange Address of the engine
+contract EngineAdapter is ExchangeAdapter, OrderTaker {
+    /// @notice Buys Ether from the Melon Engine, selling MLN (takeOrder)
+    /// @param _targetExchange Address of the Melon Engine
     /// @param _orderValues [0] Expected min ETH quantity (maker quantity)
     /// @param _orderValues [1] Expected MLN quantity (taker quantity)
     /// @param _orderValues [6] Same as orderValues[1]
     /// @param _orderAddresses [2] WETH token (maker asset)
     /// @param _orderAddresses [3] MLN token (taker asset)
-    function takeOrder (
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        override
-    {
-        __validateTakeOrderParams(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        __fillTakeOrder(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature,
-            fillAssets,
-            fillExpectedAmounts
-        );
-    }
-
-    // INTERNAL FUNCTIONS
-
+    /// @param _fillAssets [0] WETH token (maker asset)
+    /// @param _fillAssets [1] MLN token (taker asset)
+    /// @param _fillExpectedAmounts [0] Expected (min) ETH to receive
+    /// @param _fillExpectedAmounts [1] Expected (max) MLN to spend
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -93,6 +51,19 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
+    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
+    /// @param _targetExchange Address of the Melon Engine
+    /// @param _orderValues [0] Expected min ETH quantity (maker quantity)
+    /// @param _orderValues [1] Expected MLN quantity (taker quantity)
+    /// @param _orderValues [6] Same as orderValues[1]
+    /// @param _orderAddresses [2] WETH token (maker asset)
+    /// @param _orderAddresses [3] MLN token (taker asset)
+    /// @return _fillAssets Assets to fill
+    /// - [0] Maker asset (same as _orderAddresses[2])
+    /// - [1] Taker asset (same as _orderAddresses[3])
+    /// @return _fillExpectedAmounts Asset fill amounts
+    /// - [0] Expected (min) quantity of WETH to receive
+    /// - [1] Expected (max) quantity of MLN to spend
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -117,6 +88,13 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
+    /// @notice Validate the parameters of a takeOrder call
+    /// @param _targetExchange Address of the Melon Engine
+    /// @param _orderValues [0] Expected min ETH quantity (maker quantity)
+    /// @param _orderValues [1] Expected MLN quantity (taker quantity)
+    /// @param _orderValues [6] Same as orderValues[1]
+    /// @param _orderAddresses [2] WETH token (maker asset)
+    /// @param _orderAddresses [3] MLN token (taker asset)
     function __validateTakeOrderParams(
         address _targetExchange,
         address[8] memory _orderAddresses,

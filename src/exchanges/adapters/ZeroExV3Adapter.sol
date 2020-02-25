@@ -3,80 +3,43 @@ pragma experimental ABIEncoderV2;
 
 import "../interfaces/IZeroExV3.sol";
 import "../libs/ExchangeAdapter.sol";
-import "../libs/OrderFiller.sol";
+import "../libs/OrderTaker.sol";
 
 /// @title ZeroExV3Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to 0xV3 Exchange Contract
-contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
-    /// @notice Takes an active order on 0x v3
-    /// @param _orderAddresses [0] Order param: makerAddress
-    /// @param _orderAddresses [1] Order param: takerAddress
+contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
+    /// @notice Takes an active order on 0x v3 (takeOrder)
+    /// @param _targetExchange Address of 0x v3 exchange
+    /// @param _orderAddresses [0] 0x Order param: makerAddress
+    /// @param _orderAddresses [1] 0x Order param: takerAddress
     /// @param _orderAddresses [2] Maker asset
     /// @param _orderAddresses [3] Taker asset
-    /// @param _orderAddresses [4] Order param: feeRecipientAddress
-    /// @param _orderAddresses [5] Order param: senderAddress
+    /// @param _orderAddresses [4] 0x Order param: feeRecipientAddress
+    /// @param _orderAddresses [5] 0x Order param: senderAddress
     /// @param _orderAddresses [6] Maker fee asset
     /// @param _orderAddresses [7] Taker fee asset
-    /// @param _orderData [0] Order param: makerAssetData
-    /// @param _orderData [1] Order param: takerAssetData
-    /// @param _orderData [2] Order param: makerFeeAssetData
-    /// @param _orderData [3] Order param: takerFeeAssetData
-    /// @param _orderValues [0] Order param: makerAssetAmount
-    /// @param _orderValues [1] Order param: takerAssetAmount
-    /// @param _orderValues [2] Order param: makerFee
-    /// @param _orderValues [3] Order param: takerFee
-    /// @param _orderValues [4] Order param: expirationTimeSeconds
-    /// @param _orderValues [5] Order param: salt
+    /// @param _orderData [0] 0x Order param: makerAssetData
+    /// @param _orderData [1] 0x Order param: takerAssetData
+    /// @param _orderData [2] 0x Order param: makerFeeAssetData
+    /// @param _orderData [3] 0x Order param: takerFeeAssetData
+    /// @param _orderValues [0] 0x Order param: makerAssetAmount
+    /// @param _orderValues [1] 0x Order param: takerAssetAmount
+    /// @param _orderValues [2] 0x Order param: makerFee
+    /// @param _orderValues [3] 0x Order param: takerFee
+    /// @param _orderValues [4] 0x Order param: expirationTimeSeconds
+    /// @param _orderValues [5] 0x Order param: salt
     /// @param _orderValues [6] Taker asset fill quantity
     /// @param _identifier Order identifier
     /// @param _signature Signature of the order
-    function takeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        override
-    {
-        __validateTakeOrderParams(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        __fillTakeOrder(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature,
-            fillAssets,
-            fillExpectedAmounts
-        );
-    }
-
-    // INTERNAL FUNCTIONS
-
+    /// @param _fillAssets [0] Maker asset (same as _orderAddresses[2])
+    /// @param _fillAssets [1] Taker asset (same as _orderAddresses[3])
+    /// @param _fillAssets [2] Protocol Fee asset (WETH)
+    /// @param _fillAssets [3] Taker Fee asset (same as _orderAddresses[7])
+    /// @param _fillExpectedAmounts [0] Expected (min) quantity of maker asset to receive
+    /// @param _fillExpectedAmounts [1] Expected (max) quantity of taker asset to spend
+    /// @param _fillExpectedAmounts [2] Expected (max) quantity of protocol asset to spend
+    /// @param _fillExpectedAmounts [3] Expected (max) quantity of taker fee asset to spend
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -108,6 +71,39 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         IZeroExV3(_targetExchange).fillOrder(order, _fillExpectedAmounts[1], _signature);
     }
 
+    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
+    /// @param _targetExchange Address of 0x v3 exchange
+    /// @param _orderAddresses [0] 0x Order param: makerAddress
+    /// @param _orderAddresses [1] 0x Order param: takerAddress
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderAddresses [4] 0x Order param: feeRecipientAddress
+    /// @param _orderAddresses [5] 0x Order param: senderAddress
+    /// @param _orderAddresses [6] Maker fee asset
+    /// @param _orderAddresses [7] Taker fee asset
+    /// @param _orderData [0] 0x Order param: makerAssetData
+    /// @param _orderData [1] 0x Order param: takerAssetData
+    /// @param _orderData [2] 0x Order param: makerFeeAssetData
+    /// @param _orderData [3] 0x Order param: takerFeeAssetData
+    /// @param _orderValues [0] 0x Order param: makerAssetAmount
+    /// @param _orderValues [1] 0x Order param: takerAssetAmount
+    /// @param _orderValues [2] 0x Order param: makerFee
+    /// @param _orderValues [3] 0x Order param: takerFee
+    /// @param _orderValues [4] 0x Order param: expirationTimeSeconds
+    /// @param _orderValues [5] 0x Order param: salt
+    /// @param _orderValues [6] Taker asset fill quantity
+    /// @param _identifier Order identifier
+    /// @param _signature Signature of the order
+    /// @return _fillAssets Assets to fill
+    /// - [0] Maker asset (same as _orderAddresses[2])
+    /// - [1] Taker asset (same as _orderAddresses[3])
+    /// - [2] Protocol Fee asset (WETH)
+    /// - [3] Taker Fee asset (same as _orderAddresses[7])
+    /// @return _fillExpectedAmounts Asset fill amounts
+    /// - [0] Expected (min) quantity of maker asset to receive
+    /// - [1] Expected (max) quantity of taker asset to spend
+    /// - [2] Expected (max) quantity of protocol asset to spend
+    /// - [3] Expected (max) quantity of taker fee asset to spend
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -128,14 +124,14 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         fillAssets[3] = _orderAddresses[7]; // taker fee asset
 
         uint256[] memory fillExpectedAmounts = new uint256[](4);
-        fillExpectedAmounts[0] = __calculateExpectedFillAmount(
+        fillExpectedAmounts[0] = __calculateRelativeQuantity(
             _orderValues[1],
             _orderValues[0],
             _orderValues[6]
         ); // maker fill amount; calculated relative to taker fill amount
         fillExpectedAmounts[1] = _orderValues[6]; // taker fill amount
         fillExpectedAmounts[2] = __calcProtocolFeeAmount(_targetExchange); // protocol fee
-        fillExpectedAmounts[3] = __calculateExpectedFillAmount(
+        fillExpectedAmounts[3] = __calculateRelativeQuantity(
             _orderValues[1],
             _orderValues[3],
             _orderValues[6]
@@ -144,6 +140,29 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
+    /// @notice Validate the parameters of a takeOrder call
+    /// @param _targetExchange Address of 0x v3 exchange
+    /// @param _orderAddresses [0] 0x Order param: makerAddress
+    /// @param _orderAddresses [1] 0x Order param: takerAddress
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderAddresses [4] 0x Order param: feeRecipientAddress
+    /// @param _orderAddresses [5] 0x Order param: senderAddress
+    /// @param _orderAddresses [6] Maker fee asset
+    /// @param _orderAddresses [7] Taker fee asset
+    /// @param _orderData [0] 0x Order param: makerAssetData
+    /// @param _orderData [1] 0x Order param: takerAssetData
+    /// @param _orderData [2] 0x Order param: makerFeeAssetData
+    /// @param _orderData [3] 0x Order param: takerFeeAssetData
+    /// @param _orderValues [0] 0x Order param: makerAssetAmount
+    /// @param _orderValues [1] 0x Order param: takerAssetAmount
+    /// @param _orderValues [2] 0x Order param: makerFee
+    /// @param _orderValues [3] 0x Order param: takerFee
+    /// @param _orderValues [4] 0x Order param: expirationTimeSeconds
+    /// @param _orderValues [5] 0x Order param: salt
+    /// @param _orderValues [6] Taker asset fill quantity
+    /// @param _identifier Order identifier
+    /// @param _signature Signature of the order
     function __validateTakeOrderParams(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -227,6 +246,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         return mul(IZeroExV3(_targetExchange).protocolFeeMultiplier(), tx.gasprice);
     }
 
+    /// @notice Parses user inputs into a ZeroExV3.Order format
     function __constructOrderStruct(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
@@ -254,6 +274,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         });
     }
 
+    /// @notice Gets the 0x assetProxy address for an ERC20 token
     function __getAssetProxy(address _targetExchange, bytes memory _assetData)
         private
         view
@@ -269,6 +290,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         assetProxy_ = IZeroExV3(_targetExchange).getAssetProxy(assetProxyId);
     }
 
+    /// @notice Parses the asset address from 0x assetData
     function __getAssetAddress(bytes memory _assetData)
         private
         pure
