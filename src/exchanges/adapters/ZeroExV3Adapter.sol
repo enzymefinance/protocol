@@ -153,7 +153,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts
         )
     {
-        // Approve taker and taker fee assets
+        // Approve taker, taker fee, and protocol fee assets
         __approveAssetsTakeOrder(_targetExchange, _order, _fillExpectedAmounts);
 
         // Execute take order on exchange
