@@ -28,39 +28,53 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        __validateTakeOrderParams(_orderValues);
+        __validateTakeOrderParams(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(_orderAddresses, _orderValues);
+        ) = __formatFillTakeOrderArgs(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
-        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
+        __fillTakeOrder(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature,
+            fillAssets,
+            fillExpectedAmounts
+        );
     }
 
-    // PRIVATE FUNCTIONS
-
-    // Minimum acceptable rate of taker asset per maker asset
-    function __calcMinMakerAssetPerTakerAssetRate(
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
-    )
-        private
-        view
-        returns (uint256)
-    {
-        return mul(
-            _fillExpectedAmounts[1],
-            10 ** uint256(ERC20WithFields(_fillAssets[0]).decimals())
-        ) / _fillExpectedAmounts[0];
-    }
+    // INTERNAL FUNCTIONS
 
     function __fillTakeOrder(
         address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
-        private
+        internal
+        override
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -94,11 +108,16 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
     }
 
     function __formatFillTakeOrderArgs(
+        address _targetExchange,
         address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
-        private
-        pure
+        internal
+        view
+        override
         returns (address[] memory, uint256[] memory)
     {
         address[] memory fillAssets = new address[](2);
@@ -110,6 +129,41 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
         fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
 
         return (fillAssets, fillExpectedAmounts);
+    }
+
+    function __validateTakeOrderParams(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    )
+        internal
+        view
+        override
+    {
+        require(
+            _orderValues[1] == _orderValues[6],
+            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
+        );
+    }
+
+    // PRIVATE FUNCTIONS
+
+    // Minimum acceptable rate of taker asset per maker asset
+    function __calcMinMakerAssetPerTakerAssetRate(
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        private
+        view
+        returns (uint256)
+    {
+        return mul(
+            _fillExpectedAmounts[1],
+            10 ** uint256(ERC20WithFields(_fillAssets[0]).decimals())
+        ) / _fillExpectedAmounts[0];
     }
 
     function __swapNativeAssetToToken(
@@ -172,18 +226,6 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
             _fillExpectedAmounts[1],
             _fillAssets[0],
             __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
-        );
-    }
-
-    function __validateTakeOrderParams(
-        uint256[8] memory _orderValues
-    )
-        private
-        pure
-    {
-        require(
-            _orderValues[1] == _orderValues[6],
-            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }
