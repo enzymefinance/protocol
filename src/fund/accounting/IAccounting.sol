@@ -17,7 +17,6 @@ interface IAccounting {
     function atLastAllocation() external view returns (Calculations memory);
     function DEFAULT_SHARE_PRICE() external view returns (uint256);
     function DENOMINATION_ASSET() external view returns (address);
-    function DENOMINATION_ASSET_DECIMALS() external view returns (uint8);
     function MAX_OWNED_ASSETS() external view returns (uint8);
     function ownedAssets(uint256 _index) external view returns (address);
     function SHARES_DECIMALS() external view returns (uint8);
