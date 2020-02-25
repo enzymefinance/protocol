@@ -52,6 +52,11 @@ contract KyberPriceFeed is DSMath, DSAuth {
         maxPriceDeviation = _maxPriceDeviation;
     }
 
+    modifier onlyRegistryOwner() {
+        require(msg.sender == registry.owner(), "Only registry owner can set");
+        _;
+    }
+
     /// @return Whether _priceFromKyber deviates no more than some % from _offChainPrice
     function __priceIsSane(
         uint256 _priceFromKyber,
@@ -73,10 +78,13 @@ contract KyberPriceFeed is DSMath, DSAuth {
     /// @dev Stores zero as a convention for invalid price
     /// @dev passed _saneAssets must match the assets array from getRegisteredAssets
     function update(address[] calldata _saneAssets, uint256[] calldata _sanePrices) external {
-        require(_saneAssets.length == _sanePrices.length, "Array lengths unequal");
+        require(
+            _saneAssets.length == _sanePrices.length,
+            "update: Passed array lengths unequal"
+        );
         require(
             msg.sender == registry.owner() || msg.sender == updater,
-            "Only registry owner or updater can call"
+            "update: Only registry owner or updater can call"
         );
         address[] memory registeredAssets = registry.getRegisteredAssets();
         uint256[] memory newPrices = new uint256[](registeredAssets.length);
@@ -85,7 +93,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
             uint256 kyberPrice;
             require(
                 _saneAssets[i] == registeredAssets[i],
-                "Passed assets must match registered assets"
+                "update: Passed asset does not match registered assets"
             );
             if (registeredAssets[i] == QUOTE_ASSET) {
                 isValid = true;
@@ -95,7 +103,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
             }
             require(
                 __priceIsSane(kyberPrice, _sanePrices[i]),
-                "Kyber asset price deviates too much from maxPriceDeviation"
+                "update: Kyber price deviates too much from maxPriceDeviation"
             );
             newPrices[i] = isValid ? kyberPrice : 0;
             prices[registeredAssets[i]] = newPrices[i];
@@ -105,29 +113,28 @@ contract KyberPriceFeed is DSMath, DSAuth {
     }
 
     function setUpdaterToRegistryOwner() external {
-        require(msg.sender == updater, "Only current updater can do this");
+        require(
+            msg.sender == updater,
+            "setUpdaterToRegistryOwner: Only current updater can do this"
+        );
         updater = registry.owner();
     }
 
-    function setUpdater(address _updater) external {
-        require(msg.sender == registry.owner(), "Only registry owner can set");
+    function setUpdater(address _updater) external onlyRegistryOwner {
         updater = _updater;
     }
 
-    function setRegistry(address _newRegistry) external {
-        require(msg.sender == registry.owner(), "Only registry owner can set");
+    function setRegistry(address _newRegistry) external onlyRegistryOwner {
         registry = Registry(_newRegistry);
     }
 
     /// @notice _maxSpread becomes a percentage when divided by 10^18
     /// @notice (e.g. 10^17 becomes 10%)
-    function setMaxSpread(uint256 _maxSpread) external {
-        require(msg.sender == registry.owner(), "Only registry owner can set");
+    function setMaxSpread(uint256 _maxSpread) external onlyRegistryOwner {
         maxSpread = _maxSpread;
     }
 
-    function setMaxPriceDeviation(uint256 _maxPriceDeviation) external {
-        require(msg.sender == registry.owner(), "Only registry owner can set");
+    function setMaxPriceDeviation(uint256 _maxPriceDeviation) external onlyRegistryOwner {
         maxPriceDeviation = _maxPriceDeviation;
     }
 
@@ -208,7 +215,7 @@ contract KyberPriceFeed is DSMath, DSAuth {
             referencePrice_,
             decimals_
         ) = getRawReferencePriceInfo(_baseAsset, _quoteAsset);
-        require(isValid, "Price is not valid");
+        require(isValid, "getReferencePriceInfo: Price is not valid");
         return (referencePrice_, decimals_);
     }
 
