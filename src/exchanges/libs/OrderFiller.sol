@@ -6,7 +6,7 @@ import "../../dependencies/token/IERC20.sol";
 import "../../fund/accounting/IAccounting.sol";
 import "../../fund/trading/ITrading.sol";
 
-/// @title Order Filler
+/// @title Order Filler base contract
 /// @author Melonport AG <team@melonport.com>
 abstract contract OrderFiller is DSMath {
     event OrderFilled(
@@ -19,25 +19,26 @@ abstract contract OrderFiller is DSMath {
         uint256[] feeAmounts
     );
 
-    // TODO: abstract modifier and accompanying function to new base contract
-    modifier equalAddressAndAmountArrayLengths(
+    modifier equalArrayLengths(
         address[] memory _addresses,
         uint256[] memory _amounts)
     {
         require(
-            __addressAndAmountArraysAreEqualLength(_addresses, _amounts),
-            "equalAddressAndAmountArrayLengths: unequal array lengths"
+            __arraysAreEqualLength(_addresses, _amounts),
+            "equalArrayLengths: unequal array lengths"
         );
         _;
     }
 
-    // address _targetExchange = exchange where order filled (only needed for event emission)
-    // @param _assets[0] = buy asset
-    // @param _assets[1] = sell asset
-    // @param _assets[2:end] = fee assets
-    // @param _expectedAmounts[0] = expected received buy asset amount
-    // @param _expectedAmounts[1] = expected spent sell asset amount
-    // @param _expectedAmounts[2:end] = expected spent fee asset amounts
+    /// @notice Wraps an on-chain order execution to validate received values,
+    /// update fund asset ammounts, and emit an event
+    /// @param _targetExchange Exchange where order filled (only needed for event emission)
+    /// @param _assets[0] Buy asset
+    /// @param _assets[1] Sell asset
+    /// @param _assets[2:end] Fee assets
+    /// @param _expectedAmounts[0] Expected received buy asset amount
+    /// @param _expectedAmounts[1] Expected spent sell asset amount
+    /// @param _expectedAmounts[2:end] Expected spent fee asset amounts
     modifier validateAndFinalizeFilledOrder(
         address _targetExchange,
         address[] memory _assets,
@@ -47,104 +48,57 @@ abstract contract OrderFiller is DSMath {
         __validateFillOrderInputs(_targetExchange, _assets, _expectedAmounts);
 
         (
-            address[] memory cleanedAssets,
-            uint256[] memory cleanedExpectedAmounts
+            address[] memory formatedAssets,
+            uint256[] memory formatedExpectedAmounts
         ) = __formatFillOrderInputs(_assets, _expectedAmounts);
 
-        uint256[] memory preFillBalances = __getERC20BalancesOf(cleanedAssets);
+        uint256[] memory preFillBalances = __getFundERC20BalanceOfValues(formatedAssets);
 
         _;
 
         uint256[] memory balanceDiffs = __calculateFillOrderBalanceDiffs(
-            cleanedAssets,
+            formatedAssets,
             preFillBalances
         );
 
         __validateAndEmitOrderFillResults(
             _targetExchange,
-            cleanedAssets,
-            cleanedExpectedAmounts,
+            formatedAssets,
+            formatedExpectedAmounts,
             balanceDiffs
         );
 
-        __updateFillOrderAssetBalances(cleanedAssets, balanceDiffs);
+        __updateFillOrderAssetBalances(formatedAssets, balanceDiffs);
 
         // TODO: revoke extra approval amounts?
     }
 
-    // INTERNAL FUNCTIONS
-
-    function __calculateExpectedFillAmount(
-        uint256 orderQuantity1,
-        uint256 orderQuantity2,
-        uint256 fillAmount1
-    )
-        internal
-        pure
-        returns (uint256)
-    {
-        return mul(fillAmount1, orderQuantity2) / orderQuantity1;
-    }
-
-    function __fillTakeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature,
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
-    )
-        internal
-        virtual;
-
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        internal
-        view
-        virtual
-        returns (address[] memory, uint256[] memory);
-
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        internal
-        view
-        virtual;
-
     // PRIVATE FUNCTIONS
 
-    function __addressAndAmountArraysAreEqualLength(
+    function __arraysAreEqualLength(
         address[] memory _addresses,
         uint256[] memory _amounts
     )
-        internal
+        private
         pure
         returns (bool)
     {
-        if (_addresses.length == _amounts.length) return true;
-        return false;
+        return _addresses.length == _amounts.length;
     }
 
+    /// @notice Calculates the differences in a fund's asset balances before and after an order fill
+    /// @dev Fee assets that are the same as a buy/sell asset are given a diff of 0 to ensure
+    /// that they are only added/subtracted once from a fund's asset balance
+    /// @param _assets The assets for which to check balances
+    /// @param _preFillBalances The balances of _assets prior to the fill
+    /// @return The balances of _assets subsequent to the fill
     function __calculateFillOrderBalanceDiffs(
         address[] memory _assets,
         uint256[] memory _preFillBalances
     )
         private
         view
-        equalAddressAndAmountArrayLengths(_assets, _preFillBalances)
+        equalArrayLengths(_assets, _preFillBalances)
         returns (uint256[] memory)
     {
         uint256[] memory balanceDiffs = new uint256[](_assets.length);
@@ -178,17 +132,24 @@ abstract contract OrderFiller is DSMath {
                 else balanceDiffs[i] = sub(_preFillBalances[i], assetBalance);
             }
         }
-        assert(__addressAndAmountArraysAreEqualLength(_assets, balanceDiffs));
         return balanceDiffs;
     }
 
+    /// @notice Formats the _assets and _expectedAmounts provided by an exchange adapter
+    /// for use by validateAndFinalizeFilledOrder
+    /// @dev At present, this is only used to aggregate multiple fees of the same asset
+    /// e.g., in 0x v3, if the takerFee asset is WETH, then takerFee and protocolFee are aggregated
+    /// @param _assets The raw assets of the fill order, passed by the exchange adapter
+    /// @param _expectedAmounts The raw expected fill amounts for _assets, passed by the exchange adapter
+    /// @return The formatted asset array (no duplicate fee assets)
+    /// @return The formatted expected fill amounts array (duplicate fee assets aggregated)
     function __formatFillOrderInputs(
         address[] memory _assets,
         uint256[] memory _expectedAmounts
     )
         private
         pure
-        equalAddressAndAmountArrayLengths(_assets, _expectedAmounts)
+        equalArrayLengths(_assets, _expectedAmounts)
         returns (address[] memory, uint256[] memory)
     {
         uint256 feeOffset = 2;
@@ -247,11 +208,15 @@ abstract contract OrderFiller is DSMath {
                 }
             }
         }
-        assert(__addressAndAmountArraysAreEqualLength(cleanedAssets, cleanedExpectedAmounts));
         return (cleanedAssets, cleanedExpectedAmounts);
     }
 
-    function __getERC20BalancesOf(address[] memory _assets)
+    /// @notice Gets the ERC20 balanceOf for a fund contract, for a list of assets
+    /// @dev We use this separate function to avoid adding to the memory variable stack
+    /// in validateAndFinalizeFilledOrder
+    /// @param _assets The assets to get balanceOf
+    /// @return The current balanceOf values
+    function __getFundERC20BalanceOfValues(address[] memory _assets)
         private
         view
         returns (uint256[] memory)
@@ -263,12 +228,18 @@ abstract contract OrderFiller is DSMath {
         return balances;
     }
 
+    /// @notice Updates a fund's assetBalances, for a list of assets
+    /// @dev This function assumes that _assets[0] should always be added, 
+    /// and that _assets[1:end] should always be subtracted. We could also pass a _balanceDiffSign
+    /// @dev __formatFillOrderInputs will have already set _balanceDiffs to 0 for duplicate assets
+    /// @param _assets The assets to update
+    /// @param _balanceDiffs The differences in pre- and post-fill balanceOf _assets, for the fund
     function __updateFillOrderAssetBalances(
         address[] memory _assets,
         uint256[] memory _balanceDiffs
     )
         private
-        equalAddressAndAmountArrayLengths(_assets, _balanceDiffs)
+        equalArrayLengths(_assets, _balanceDiffs)
     {
         IAccounting accounting = IAccounting(ITrading(payable(address(this))).routes().accounting);
 
@@ -282,6 +253,13 @@ abstract contract OrderFiller is DSMath {
         }
     }
 
+    /// @notice Validates the spent/received amounts from the fill, and emits an OrderFill event
+    /// @dev Since a fee asset can be the same as a buy/sell asset,
+    /// this takes that into account in calculating the actual fill amounts
+    /// @param _targetExchange The exchange address where the fill was executed
+    /// @param _assets The assets that were filled
+    /// @param _expectedAmounts The expected fill amounts of _assets
+    /// @param _balanceDiffs The differences in pre- and post-fill balanceOf of _assets, for the fund
     function __validateAndEmitOrderFillResults(
         address _targetExchange,
         address[] memory _assets,
@@ -289,8 +267,8 @@ abstract contract OrderFiller is DSMath {
         uint256[] memory _balanceDiffs
     )
         private
-        equalAddressAndAmountArrayLengths(_assets, _expectedAmounts)
-        equalAddressAndAmountArrayLengths(_assets, _balanceDiffs)
+        equalArrayLengths(_assets, _expectedAmounts)
+        equalArrayLengths(_assets, _balanceDiffs)
     {
         uint256 buyAmountFilled = _balanceDiffs[0];
         uint256 sellAmountFilled = _balanceDiffs[1];
@@ -305,7 +283,7 @@ abstract contract OrderFiller is DSMath {
                 buyAmountFilled = add(buyAmountFilled, _expectedAmounts[i]);
                 feeAmountsFilled[i-feeOffset] = _expectedAmounts[i];
             }
-            // If sell asset, subtract the fee to the buy balance diff
+            // If sell asset, subtract the fee from the sell balance diff
             else if (_assets[i] == _assets[1]) {
                 sellAmountFilled = sub(sellAmountFilled, _expectedAmounts[i]);
                 feeAmountsFilled[i-feeOffset] = _expectedAmounts[i];
@@ -343,6 +321,10 @@ abstract contract OrderFiller is DSMath {
         );
     }
 
+    /// @notice Validates the args passed by an exchange adapter
+    /// @param _targetExchange The exchange address where the fill will be executed
+    /// @param _assets The assets to be filled
+    /// @param _expectedAmounts The expected fill amounts of _assets
     function __validateFillOrderInputs(
         address _targetExchange,
         address[] memory _assets,
@@ -356,7 +338,7 @@ abstract contract OrderFiller is DSMath {
             "__validateFillOrderInputs: targetExchange cannot be empty"
         );
         require(
-            _assets.length == _expectedAmounts.length,
+            __arraysAreEqualLength(_assets, _expectedAmounts),
             "__validateFillOrderInputs: array lengths not equal"
         );
         require(

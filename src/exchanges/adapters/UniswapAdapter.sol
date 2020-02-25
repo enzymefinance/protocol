@@ -2,7 +2,7 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../libs/ExchangeAdapter.sol";
-import "../libs/OrderFiller.sol";
+import "../libs/OrderTaker.sol";
 import "../interfaces/IUniswapFactory.sol";
 import "../interfaces/IUniswapExchange.sol";
 import "../../dependencies/WETH.sol";
@@ -10,60 +10,18 @@ import "../../dependencies/WETH.sol";
 /// @title UniswapAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and Uniswap
-contract UniswapAdapter is ExchangeAdapter, OrderFiller {
-    /// @notice Take a market order on Uniswap
+contract UniswapAdapter is ExchangeAdapter, OrderTaker {
+    /// @notice Take a market order on Uniswap (takeOrder)
     /// @param _targetExchange Address of Uniswap factory contract
     /// @param _orderAddresses [2] Maker asset
     /// @param _orderAddresses [3] Taker asset
     /// @param _orderValues [0] Maker asset quantity
     /// @param _orderValues [1] Taker asset quantity
-    /// @param _orderValues [6] Taker asset fill amount (same as _orderValues[1])
-    function takeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        public
-        override
-    {
-        __validateTakeOrderParams(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
-        );
-
-        __fillTakeOrder(
-            _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature,
-            fillAssets,
-            fillExpectedAmounts
-        );
-    }
-
-    // INTERNAL FUNCTIONS
-
+    /// @param _orderValues [6] Taker asset fill quantity (same as _orderValues[1])
+    /// @param _fillAssets [0] Maker asset (same as _orderAddresses[2])
+    /// @param _fillAssets [1] Taker asset (same as _orderAddresses[3])
+    /// @param _fillExpectedAmounts [0] Expected (min) quantity of maker asset to receive
+    /// @param _fillExpectedAmounts [1] Expected (max) quantity of taker asset to spend
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -107,6 +65,19 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         }
     }
 
+    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
+    /// @param _targetExchange Address of Uniswap factory contract
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderValues [0] Maker asset quantity
+    /// @param _orderValues [1] Taker asset quantity
+    /// @param _orderValues [6] Taker asset fill quantity (same as _orderValues[1])
+    /// @return _fillAssets Assets to fill
+    /// - [0] Maker asset (same as _orderAddresses[2])
+    /// - [1] Taker asset (same as _orderAddresses[3])
+    /// @return _fillExpectedAmounts Asset fill amounts
+    /// - [0] Expected (min) quantity of maker asset to receive
+    /// - [1] Expected (max) quantity of taker asset to spend
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -131,6 +102,13 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         return (fillAssets, fillExpectedAmounts);
     }
 
+    /// @notice Validate the parameters of a takeOrder call
+    /// @param _targetExchange Address of Uniswap factory contract
+    /// @param _orderAddresses [2] Maker asset
+    /// @param _orderAddresses [3] Taker asset
+    /// @param _orderValues [0] Maker asset quantity
+    /// @param _orderValues [1] Taker asset quantity
+    /// @param _orderValues [6] Taker asset fill quantity (same as _orderValues[1])
     function __validateTakeOrderParams(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -151,6 +129,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
 
     // PRIVATE FUNCTIONS
 
+    /// @notice Executes a swap of ETH (taker) to ERC20 (maker)
     function __swapNativeAssetToToken(
         address _targetExchange,
         address[] memory _fillAssets,
@@ -177,6 +156,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         );
     }
 
+    /// @notice Executes a swap of ERC20 (taker) to ETH (maker)
     function __swapTokenToNativeAsset(
         address _targetExchange,
         address[] memory _fillAssets,
@@ -199,6 +179,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
+    /// @notice Executes a swap of ERC20 (taker) to ERC20 (maker)
     function __swapTokenToToken(
         address _targetExchange,
         address[] memory _fillAssets,
