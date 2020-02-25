@@ -20,7 +20,7 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
     function takeOrder (
         address _targetExchange,
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature
@@ -38,12 +38,12 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
     }
 
-    // INTERNAL FUNCTIONS
+    // PRIVATE FUNCTIONS
     function __formatFillTakeOrderArgs(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
-        internal
+        private
         pure
         returns (address[] memory, uint256[] memory)
     {
@@ -63,7 +63,7 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
-        internal
+        private
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -86,7 +86,7 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
-        internal
+        private
         view
     {
         require(
