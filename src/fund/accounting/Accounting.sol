@@ -11,13 +11,14 @@ import "../../engine/AmguConsumer.sol";
 contract Accounting is AmguConsumer, Spoke {
 
     event AssetAddition(address indexed asset);
-    event AssetRemoval(address indexed asset);
 
     event AssetBalanceUpdated(
         address indexed asset,
         uint256 oldBalance,
         uint256 newBalance
     );
+
+    event AssetRemoval(address indexed asset);
 
     struct Calculations {
         uint256 gav;
@@ -29,10 +30,8 @@ contract Accounting is AmguConsumer, Spoke {
 
     uint8 constant public MAX_OWNED_ASSETS = 20;
     uint8 constant public SHARES_DECIMALS = 18;
-    uint8 public DENOMINATION_ASSET_DECIMALS;
     uint256 public DEFAULT_SHARE_PRICE;
     address public DENOMINATION_ASSET;
-    address public NATIVE_ASSET;
     address[] public ownedAssets;
     Calculations public atLastAllocation;
 
@@ -43,9 +42,7 @@ contract Accounting is AmguConsumer, Spoke {
         Spoke(_hub)
     {
         DENOMINATION_ASSET = _denominationAsset;
-        NATIVE_ASSET = _nativeAsset;
-        DENOMINATION_ASSET_DECIMALS = ERC20WithFields(DENOMINATION_ASSET).decimals();
-        DEFAULT_SHARE_PRICE = 10 ** uint256(DENOMINATION_ASSET_DECIMALS);
+        DEFAULT_SHARE_PRICE = 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
     }
 
     // EXTERNAL FUNCTIONS
