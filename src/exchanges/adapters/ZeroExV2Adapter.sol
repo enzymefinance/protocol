@@ -30,7 +30,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderFiller {
     function takeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature
@@ -58,7 +58,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderFiller {
         );
     }
 
-    // INTERNAL METHODS
+    // PRIVATE METHODS
 
     // Approves takerAsset, takerFee
     function __approveAssetsTakeOrder(
@@ -66,7 +66,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderFiller {
         IZeroExV2.Order memory _order,
         uint256[] memory _fillExpectedAmounts
     )
-        internal
+        private
     {
         // Taker asset
         __approveAsset(
@@ -89,7 +89,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderFiller {
 
     function __constructOrderStruct(
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData
     )
         internal

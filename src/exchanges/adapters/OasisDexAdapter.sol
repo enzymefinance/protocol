@@ -18,7 +18,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
     function takeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature
@@ -46,13 +46,15 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         );
     }
 
+    // PRIVATE FUNCTIONS
+
     function __fillTakeOrder(
         address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts,
         bytes32 _identifier
     )
-        internal
+        private
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -72,7 +74,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         uint256[8] memory _orderValues,
         bytes32 _identifier
     )
-        internal
+        private
         view
         returns (address[] memory, uint256[] memory)
     {
@@ -101,7 +103,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         uint256[8] memory _orderValues,
         bytes32 _identifier
     )
-        internal
+        private
         view
     {
         (

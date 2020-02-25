@@ -34,7 +34,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
     function takeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature
@@ -68,7 +68,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         );
     }
 
-    // INTERNAL METHODS
+    // PRIVATE METHODS
 
     // Approves takerAsset, takerFeeAsset, protocolFee
     function __approveAssetsTakeOrder(
@@ -76,7 +76,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         IZeroExV3.Order memory _order,
         uint256[] memory _fillExpectedAmounts
     )
-        internal
+        private
     {
         __approveProtocolFeeAsset(_targetExchange);
         __approveAsset(
@@ -114,10 +114,10 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
 
     function __constructOrderStruct(
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData
     )
-        internal
+        private
         pure
         returns (IZeroExV3.Order memory order_)
     {
@@ -146,7 +146,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         IZeroExV3.Order memory _order,
         bytes memory _signature
     )
-        internal
+        private
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -165,7 +165,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues
     )
-        internal
+        private
         view
         returns (address[] memory, uint256[] memory)
     {
@@ -193,7 +193,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
     }
 
     function __getAssetProxy(address _targetExchange, bytes memory _assetData)
-        internal
+        private
         view
         returns (address assetProxy_)
     {
@@ -208,7 +208,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
     }
 
     function __getAssetAddress(bytes memory _assetData)
-        internal
+        private
         pure
         returns (address assetAddress_)
     {
@@ -224,7 +224,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderFiller {
         bytes[4] memory _orderData,
         bytes memory _signature
     )
-        internal
+        private
         view
     {
         require(
