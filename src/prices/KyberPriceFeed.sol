@@ -2,7 +2,6 @@ pragma solidity 0.6.1;
 
 import "../dependencies/token/IERC20.sol";
 import "../dependencies/DSMath.sol";
-import "../dependencies/DSAuth.sol"; // TODO: remove? this may not be used at all
 import "../exchanges/interfaces/IKyberNetworkProxy.sol";
 import "../version/Registry.sol";
 
@@ -11,7 +10,7 @@ import "../version/Registry.sol";
 /// @notice Routes external data to smart contracts
 /// @notice Where external data includes sharePrice of Melon funds
 /// @notice PriceFeed operator could be staked and sharePrice input validated on chain
-contract KyberPriceFeed is DSMath, DSAuth {
+contract KyberPriceFeed is DSMath {
     event PriceUpdate(address[] token, uint256[] price);
 
     uint8 public constant KYBER_PRECISION = 18;
@@ -33,23 +32,21 @@ contract KyberPriceFeed is DSMath, DSAuth {
 
     // CONSTRUCTOR
 
-    /// @dev Define and register a quote asset against which all prices are measured/based against
     constructor(
         address _registry,
         address _kyberNetworkProxy,
         uint256 _maxSpread,
         address _quoteAsset,
-        address _initialUpdater,
         uint256 _maxPriceDeviation
     )
         public
     {
+        registry = Registry(_registry);
         KYBER_NETWORK_PROXY = _kyberNetworkProxy;
         maxSpread = _maxSpread;
         QUOTE_ASSET = _quoteAsset;
-        registry = Registry(_registry);
-        updater = _initialUpdater;
         maxPriceDeviation = _maxPriceDeviation;
+        updater = registry.owner();
     }
 
     modifier onlyRegistryOwner() {
@@ -110,14 +107,6 @@ contract KyberPriceFeed is DSMath, DSAuth {
         }
         lastUpdate = block.timestamp;
         emit PriceUpdate(registeredAssets, newPrices);
-    }
-
-    function setUpdaterToRegistryOwner() external {
-        require(
-            msg.sender == updater,
-            "setUpdaterToRegistryOwner: Only current updater can do this"
-        );
-        updater = registry.owner();
     }
 
     function setUpdater(address _updater) external onlyRegistryOwner {
