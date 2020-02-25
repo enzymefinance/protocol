@@ -45,7 +45,7 @@ contract ExchangeAdapter is DSMath {
     function takeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
-        uint[8] memory _orderValues,
+        uint256[8] memory _orderValues,
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature
