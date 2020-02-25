@@ -8,7 +8,7 @@ import "../../fund/trading/ITrading.sol";
 
 /// @title Order Filler
 /// @author Melonport AG <team@melonport.com>
-contract OrderFiller is DSMath {
+abstract contract OrderFiller is DSMath {
     event OrderFilled(
         address indexed exchangeAddress,
         address buyAsset,
@@ -85,6 +85,44 @@ contract OrderFiller is DSMath {
     {
         return mul(fillAmount1, orderQuantity2) / orderQuantity1;
     }
+
+    function __fillTakeOrder(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature,
+        address[] memory _fillAssets,
+        uint256[] memory _fillExpectedAmounts
+    )
+        internal
+        virtual;
+
+    function __formatFillTakeOrderArgs(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    )
+        internal
+        view
+        virtual
+        returns (address[] memory, uint256[] memory);
+
+    function __validateTakeOrderParams(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    )
+        internal
+        view
+        virtual;
 
     // PRIVATE FUNCTIONS
 

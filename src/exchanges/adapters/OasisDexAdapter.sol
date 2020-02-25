@@ -26,7 +26,14 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        __validateTakeOrderParams(_targetExchange, _orderAddresses, _orderValues, _identifier);
+        __validateTakeOrderParams(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
         (
             address[] memory fillAssets,
@@ -35,26 +42,37 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
             _targetExchange,
             _orderAddresses,
             _orderValues,
-            _identifier
+            _orderData,
+            _identifier,
+            _signature
         );
 
         __fillTakeOrder(
             _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature,
             fillAssets,
-            fillExpectedAmounts,
-            _identifier
+            fillExpectedAmounts
         );
     }
 
-    // PRIVATE FUNCTIONS
+    // INTERNAL FUNCTIONS
 
     function __fillTakeOrder(
         address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature,
         address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts,
-        bytes32 _identifier
+        uint256[] memory _fillExpectedAmounts
     )
-        private
+        internal
+        override
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -72,10 +90,13 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         address _targetExchange,
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
-        bytes32 _identifier
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
-        private
+        internal
         view
+        override
         returns (address[] memory, uint256[] memory)
     {
         address[] memory fillAssets = new address[](2);
@@ -101,10 +122,13 @@ contract OasisDexAdapter is ExchangeAdapter, OrderFiller {
         address _targetExchange,
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
-        bytes32 _identifier
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
-        private
+        internal
         view
+        override
     {
         (
             ,
