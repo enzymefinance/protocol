@@ -48,7 +48,7 @@ beforeAll(async () => {
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 

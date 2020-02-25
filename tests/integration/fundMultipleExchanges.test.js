@@ -32,7 +32,7 @@ beforeAll(async () => {
   const contracts = deployed.contracts;
 
   takeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 

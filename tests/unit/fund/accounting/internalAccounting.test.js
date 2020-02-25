@@ -33,7 +33,7 @@ beforeAll(async () => {
 
   // Register a mock exchange and adapter
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder'
   );
   mockExchangeAddress = randomHex(20);

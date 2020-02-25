@@ -100,7 +100,7 @@ beforeAll(async () => {
   exchangeIndex = 0;
 
   takeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
   await send(fund.policyManager, 'register', [

@@ -39,7 +39,7 @@ beforeAll(async () => {
   const version = contracts.Version;
 
   takeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
