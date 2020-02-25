@@ -10,7 +10,7 @@ import "../../version/IRegistry.sol";
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Override the public methods to implement an adapter
-contract ExchangeAdapter is DSMath {
+abstract contract ExchangeAdapter is DSMath {
     // PUBLIC FUNCTIONS
 
     /// @param _orderAddresses [0] Order maker
@@ -49,7 +49,9 @@ contract ExchangeAdapter is DSMath {
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature
-    ) public virtual { revert("Unimplemented"); }
+    )
+        public
+        virtual;
 
     // INTERNAL FUNCTIONS
 
