@@ -28,42 +28,53 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        __validateTakeOrderParams(_orderAddresses, _orderValues);
+        __validateTakeOrderParams(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(_orderAddresses, _orderValues);
+        ) = __formatFillTakeOrderArgs(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
-        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
+        __fillTakeOrder(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature,
+            fillAssets,
+            fillExpectedAmounts
+        );
     }
 
-    // PRIVATE FUNCTIONS
-    function __formatFillTakeOrderArgs(
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues
-    )
-        private
-        pure
-        returns (address[] memory, uint256[] memory)
-    {
-        address[] memory fillAssets = new address[](2);
-        fillAssets[0] = _orderAddresses[2]; // maker asset
-        fillAssets[1] = _orderAddresses[3]; // taker asset
-
-        uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
-        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
-
-        return (fillAssets, fillExpectedAmounts);
-    }
+    // INTERNAL FUNCTIONS
 
     function __fillTakeOrder(
         address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
-        private
+        internal
+        override
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -82,12 +93,41 @@ contract EngineAdapter is ExchangeAdapter, OrderFiller {
         WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
     }
 
-    function __validateTakeOrderParams(
+    function __formatFillTakeOrderArgs(
+        address _targetExchange,
         address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
-        private
+        internal
         view
+        override
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory fillAssets = new address[](2);
+        fillAssets[0] = _orderAddresses[2]; // maker asset
+        fillAssets[1] = _orderAddresses[3]; // taker asset
+
+        uint256[] memory fillExpectedAmounts = new uint256[](2);
+        fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
+        fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
+
+        return (fillAssets, fillExpectedAmounts);
+    }
+
+    function __validateTakeOrderParams(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    )
+        internal
+        view
+        override
     {
         require(
             _orderAddresses[2] == __getNativeAssetAddress(),

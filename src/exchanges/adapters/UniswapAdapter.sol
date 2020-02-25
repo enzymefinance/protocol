@@ -29,24 +29,53 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
         public
         override
     {
-        __validateTakeOrderParams(_orderValues);
+        __validateTakeOrderParams(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
         (
             address[] memory fillAssets,
             uint256[] memory fillExpectedAmounts
-        ) = __formatFillTakeOrderArgs(_orderAddresses, _orderValues);
+        ) = __formatFillTakeOrderArgs(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature
+        );
 
-        __fillTakeOrder(_targetExchange, fillAssets, fillExpectedAmounts);
+        __fillTakeOrder(
+            _targetExchange,
+            _orderAddresses,
+            _orderValues,
+            _orderData,
+            _identifier,
+            _signature,
+            fillAssets,
+            fillExpectedAmounts
+        );
     }
 
-    // PRIVATE FUNCTIONS
+    // INTERNAL FUNCTIONS
 
     function __fillTakeOrder(
         address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
-        private
+        internal
+        override
         validateAndFinalizeFilledOrder(
             _targetExchange,
             _fillAssets,
@@ -79,11 +108,16 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
     }
 
     function __formatFillTakeOrderArgs(
+        address _targetExchange,
         address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
     )
-        private
-        pure
+        internal
+        view
+        override
         returns (address[] memory, uint256[] memory)
     {
         address[] memory fillAssets = new address[](2);
@@ -96,6 +130,26 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
 
         return (fillAssets, fillExpectedAmounts);
     }
+
+    function __validateTakeOrderParams(
+        address _targetExchange,
+        address[8] memory _orderAddresses,
+        uint256[8] memory _orderValues,
+        bytes[4] memory _orderData,
+        bytes32 _identifier,
+        bytes memory _signature
+    )
+        internal
+        view
+        override
+    {
+        require(
+            _orderValues[1] == _orderValues[6],
+            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
+        );
+    }
+
+    // PRIVATE FUNCTIONS
 
     function __swapNativeAssetToToken(
         address _targetExchange,
@@ -160,18 +214,6 @@ contract UniswapAdapter is ExchangeAdapter, OrderFiller {
             1,
             add(block.timestamp, 1),
             _fillAssets[0]
-        );
-    }
-
-    function __validateTakeOrderParams(
-        uint256[8] memory _orderValues
-    )
-        private
-        pure
-    {
-        require(
-            _orderValues[1] == _orderValues[6],
-            "__validateTakeOrderParams: fill taker quantity must equal taker quantity"
         );
     }
 }
