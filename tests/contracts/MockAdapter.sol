@@ -5,11 +5,6 @@ import "main/exchanges/libs/ExchangeAdapter.sol";
 import "main/exchanges/libs/OrderFiller.sol";
 
 contract MockAdapter is ExchangeAdapter, OrderFiller {
-
-    //  METHODS
-
-    //  PUBLIC METHODS
-
     /// @notice Mock take order
     function takeOrder(
         address targetExchange,
@@ -20,7 +15,6 @@ contract MockAdapter is ExchangeAdapter, OrderFiller {
         bytes memory signature
     )
         public
-        override
     {
         address makerAsset = orderAddresses[2];
         address takerAsset = orderAddresses[3];
@@ -40,52 +34,5 @@ contract MockAdapter is ExchangeAdapter, OrderFiller {
             new address[](0),
             new uint256[](0)
         );
-    }
-
-    function __fillTakeOrder(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature,
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
-    )
-        internal
-        override
-    {
-        revert("Unimplemented");
-    }
-
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        internal
-        view
-        override
-        returns (address[] memory, uint256[] memory)
-    {
-        revert("Unimplemented");
-    }
-
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
-    )
-        internal
-        view
-        override
-    {
-        revert("Unimplemented");
     }
 }
