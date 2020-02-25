@@ -20,7 +20,7 @@ describe('maxConcentration', () => {
     mockSystem.nonQuote = mockSystem.mln.options.address;
 
     takeOrderSignature = getFunctionSignature(
-      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      CONTRACT_NAMES.ORDER_TAKER,
       'takeOrder',
     );
 

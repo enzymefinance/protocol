@@ -32,7 +32,7 @@ beforeAll(async () => {
   // Define vars - orders
   exchangeIndex = 0;
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder'
   );
 });
