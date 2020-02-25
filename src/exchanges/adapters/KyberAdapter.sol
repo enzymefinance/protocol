@@ -51,7 +51,7 @@ contract KyberAdapter is ExchangeAdapter, OrderFiller {
     {
         return mul(
             _fillExpectedAmounts[1],
-            10 ** uint256(ERC20WithFields(_fillAssets[1]).decimals())
+            10 ** uint256(ERC20WithFields(_fillAssets[0]).decimals())
         ) / _fillExpectedAmounts[0];
     }
 
