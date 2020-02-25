@@ -24,7 +24,7 @@ describe('assetWhitelist', () => {
     ].map(addr => toChecksumAddress(addr));
 
     takeOrderSignature = getFunctionSignature(
-      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      CONTRACT_NAMES.ORDER_TAKER,
       'takeOrder',
     );
 

@@ -44,7 +44,7 @@ beforeAll(async () => {
   weth = contracts.WETH;
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.EXCHANGE_ADAPTER,
+    CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
   takeOrderSignatureBytes = encodeFunctionSignature(

@@ -18,7 +18,7 @@ describe('maxPositions', () => {
     defaultTxOpts = { from: user, gas: 8000000 };
 
     takeOrderSignature = getFunctionSignature(
-      CONTRACT_NAMES.EXCHANGE_ADAPTER,
+      CONTRACT_NAMES.ORDER_TAKER,
       'takeOrder',
     );
 
