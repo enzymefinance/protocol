@@ -83,6 +83,11 @@ contract KyberPriceFeed is DSMath, DSAuth {
         UPDATER = _updater;
     }
 
+    function setRegistry(address _newRegistry) external {
+        require(msg.sender == REGISTRY.owner(), "Only registry owner can set");
+        REGISTRY = Registry(_newRegistry);
+    }
+
     /// @notice _maxSpread becomes a percentage when divided by 10^18
     /// @notice (e.g. 10^17 becomes 10%)
     function setMaxSpread(uint _maxSpread) external {
