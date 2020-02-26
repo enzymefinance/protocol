@@ -121,10 +121,10 @@ describe('Fund takes an order', () => {
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     await send(
@@ -165,10 +165,10 @@ describe('Fund takes an order', () => {
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
@@ -284,13 +284,13 @@ describe('Fund takes an order with a taker fee', () => {
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [trading.options.address]));
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
     const preFundHoldingsZrx = new BN(
-      await call(accounting, 'getFundAssetHoldings', [zrx.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [zrx.options.address])
     );
     
     await send(
@@ -332,13 +332,13 @@ describe('Fund takes an order with a taker fee', () => {
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
     const postFundHoldingsZrx = new BN(
-      await call(accounting, 'getFundAssetHoldings', [zrx.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [zrx.options.address])
     );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));

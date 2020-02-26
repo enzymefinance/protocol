@@ -110,10 +110,10 @@ describe('takeOrder', () => {
       const { accounting, trading } = fund;
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
       tx = await send(
@@ -141,10 +141,10 @@ describe('takeOrder', () => {
       )
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
     });
 
@@ -227,10 +227,10 @@ describe('takeOrder', () => {
       const { accounting, trading } = fund;
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
       tx = await send(
@@ -258,10 +258,10 @@ describe('takeOrder', () => {
       )
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
     });
 

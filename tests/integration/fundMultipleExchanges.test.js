@@ -103,10 +103,10 @@ test('fund takes an order on Kyber', async () => {
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
   await send(
@@ -136,10 +136,10 @@ test('fund takes an order on Kyber', async () => {
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);

@@ -47,19 +47,13 @@ it('(contract) has correct values after initialization', async () => {
   await expect(
     call(accounting, 'DENOMINATION_ASSET')
   ).resolves.toBe(weth.options.address);
-  await expect(
-    call(accounting, 'NATIVE_ASSET')
-  ).resolves.toBe(weth.options.address);
-  await expect(
-    call(accounting, 'calcSharePrice')
-  ).resolves.toBe(exaUnit);
 });
 
-describe('performCalculations', () => {
+describe('calcFundMetrics', () => {
   it('correctly calculates values after initialization', async () => {
     const { accounting } = fund;
 
-    const fundCalcs = await call(accounting, 'performCalculations');
+    const fundCalcs = await call(accounting, 'calcFundMetrics');
 
     expect(fundCalcs.gav_).toBe('0');
     expect(fundCalcs.feesInDenominationAsset_).toBe('0');
@@ -89,7 +83,7 @@ describe('performCalculations', () => {
     );
     await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
 
-    const fundCalcs = await call(accounting, 'performCalculations');
+    const fundCalcs = await call(accounting, 'calcFundMetrics');
     expect(new BN(fundCalcs.gav_)).bigNumberEq(new BN(investmentAmount));
     expect(fundCalcs.feesInDenominationAsset_).toBe('0');
     expect(fundCalcs.feesInShares_).toBe('0');

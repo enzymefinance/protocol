@@ -87,9 +87,7 @@ const deployMockSystem = async (
     accountingContract,
     [
       hub.options.address,
-      quoteToken.options.address,
-      weth.options.address
-    ]
+      quoteToken.options.address    ]
   );
 
   const feeManager = await deploy(
