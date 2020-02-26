@@ -9,11 +9,11 @@ import "../version/Registry.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external prices to smart contracts from Kyber
 contract KyberPriceFeed is DSMath {
-    event PriceUpdate(address[] token, uint256[] price);
-    event UpdaterSet(address _updater);
-    event RegistrySet(address _newRegistry);
-    event MaxSpreadSet(uint256 _maxSpread);
-    event MaxPriceDeviationSet(uint256 _maxPriceDeviation);
+    event MaxPriceDeviationSet(uint256 maxPriceDeviation);
+    event MaxSpreadSet(uint256 maxSpread);
+    event PriceUpdate(address[] asset, uint256[] price);
+    event RegistrySet(address newRegistry);
+    event UpdaterSet(address updater);
 
     uint8 public constant KYBER_PRECISION = 18;
     uint32 public constant VALIDITY_INTERVAL = 2 days;
@@ -44,7 +44,7 @@ contract KyberPriceFeed is DSMath {
     }
 
     modifier onlyRegistryOwner() {
-        require(msg.sender == registry.owner(), "Only registry owner can set");
+        require(msg.sender == registry.owner(), "Only registry owner can do this");
         _;
     }
 
@@ -52,7 +52,10 @@ contract KyberPriceFeed is DSMath {
 
     /// @dev Stores zero as a convention for invalid price
     /// @dev passed _saneAssets must match the assets array from getRegisteredAssets
-    function update(address[] calldata _saneAssets, uint256[] calldata _sanePrices) external {
+    function update(
+        address[] calldata _saneAssets,
+        uint256[] calldata _sanePrices
+    ) external {
         require(
             _saneAssets.length == _sanePrices.length,
             "update: Passed array lengths unequal"
@@ -68,7 +71,7 @@ contract KyberPriceFeed is DSMath {
             uint256 kyberPrice;
             require(
                 _saneAssets[i] == registeredAssets[i],
-                "update: Passed asset does not match registered assets"
+                "update: Passed asset does not match registered asset"
             );
             if (registeredAssets[i] == QUOTE_ASSET) {
                 isValid = true;
@@ -118,11 +121,32 @@ contract KyberPriceFeed is DSMath {
 
     // PRICES
 
+    /// @notice Get price of an asset in terms of some quote asset, plus the quote asset's decimals
+    /// @notice This function reverts if either the base or quote have invalid prices
+    /// @param _baseAsset = Address of base asset
+    /// @param _quoteAsset = Address of quote asset
+    /// @return referencePrice_ = Quantity of _quoteAsset per whole _baseAsset
+    /// @return decimals_ = Decimal places for _quoteAsset
+    function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
+        public
+        view
+        returns (uint256 referencePrice_, uint256 decimals_)
+    {
+        bool isValid;
+        (
+            isValid,
+            referencePrice_,
+            decimals_
+        ) = __getRawReferencePriceInfo(_baseAsset, _quoteAsset);
+        require(isValid, "getReferencePriceInfo: Price is not valid");
+        return (referencePrice_, decimals_);
+    }
+
     /// @notice Gets price of an asset multiplied by ten to the power of assetDecimals
-    /// @dev Asset has been registered
+    /// @dev Asset must be registered
     /// @param _asset = Asset for which price should be returned
-    /// @return price_ = Price formatting: mul(exchangePrice, 10 ** decimal) to avoid floating point
-    /// @return timestamp_ = When the asset's price was updated
+    /// @return price_ = Formatting: mul(exchangePrice, 10 ** decimal) to avoid floating point
+    /// @return timestamp_ = When the asset's price was last updated
     function getPrice(address _asset)
         public
         view
@@ -133,7 +157,7 @@ contract KyberPriceFeed is DSMath {
     }
 
     /// @notice Return getPrice for each of _assets
-    function getPrices(address[] memory _assets)
+    function getPrices(address[] calldata _assets)
         external
         view
         returns (uint256[] memory, uint256[] memory)
@@ -158,7 +182,7 @@ contract KyberPriceFeed is DSMath {
     }
 
     /// @notice Whether each of the _assets is registered and has a fresh price
-    function hasValidPrices(address[] memory _assets)
+    function hasValidPrices(address[] calldata _assets)
         external
         view
         returns (bool)
@@ -169,66 +193,6 @@ contract KyberPriceFeed is DSMath {
             }
         }
         return true;
-    }
-
-    /// @param _baseAsset = Address of base asset
-    /// @param _quoteAsset = Address of quote asset
-    /// @return referencePrice_ = Quantity of _quoteAsset per whole _baseAsset
-    /// @return decimals_ = Decimal places for _quoteAsset
-    function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
-        public
-        view
-        returns (uint256 referencePrice_, uint256 decimals_)
-    {
-        bool isValid;
-        (
-            isValid,
-            referencePrice_,
-            decimals_
-        ) = getRawReferencePriceInfo(_baseAsset, _quoteAsset);
-        require(isValid, "getReferencePriceInfo: Price is not valid");
-        return (referencePrice_, decimals_);
-    }
-
-    function getRawReferencePriceInfo(address _baseAsset, address _quoteAsset)
-        public
-        view
-        returns (bool isValid_, uint256 referencePrice_, uint256 quoteDecimals_)
-    {
-        isValid_ = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
-        quoteDecimals_ = ERC20WithFields(_quoteAsset).decimals();
-
-        if (prices[_quoteAsset] == 0) {
-            return (false, 0, 0);  // return early and avoid revert
-        }
-
-        referencePrice_ = mul(
-            prices[_baseAsset],
-            10 ** uint256(quoteDecimals_)
-        ) / prices[_quoteAsset];
-
-        return (isValid_, referencePrice_, quoteDecimals_);
-    }
-
-    function getPriceInfo(address _asset)
-        public
-        view
-        returns (uint256 price_, uint256 assetDecimals_)
-    {
-        return getReferencePriceInfo(_asset, QUOTE_ASSET);
-    }
-
-    /// @notice Gets inverted price of an asset
-    /// @dev Asset has been initialised and its price is non-zero
-    /// @param _asset = Asset for which inverted price should be return
-    /// @return invertedPrice_ = Price based (instead of quoted) against QUOTE_ASSET
-    /// @return assetDecimals_ = Decimal places for this asset
-    function getInvertedPriceInfo(address _asset)
-        public
-        view
-        returns (uint256 invertedPrice_, uint256 assetDecimals_)
-    {
-        return getReferencePriceInfo(QUOTE_ASSET, _asset);
     }
 
     /// @notice Returns validity and price from Kyber
@@ -293,7 +257,7 @@ contract KyberPriceFeed is DSMath {
         uint256 _sellQuantity,
         uint256 _buyQuantity
     )
-        public
+        external
         view
         returns (uint256)
     {
@@ -303,25 +267,13 @@ contract KyberPriceFeed is DSMath {
         ) / _sellQuantity;
     }
 
-    /// @notice Checks whether data exists for a given asset pair
-    /// @dev Prices are only upated against QUOTE_ASSET
-    /// @param _sellAsset = Asset for which check to be done if data exists
-    /// @param _buyAsset = Asset for which check to be done if data exists
-    function existsPriceOnAssetPair(address _sellAsset, address _buyAsset)
-        public
-        view
-        returns (bool)
-    {
-        return hasValidPrice(_sellAsset) && hasValidPrice(_buyAsset);
-    }
-
     /// @notice Get quantity of _toAsset equal in value to some quantity of _fromAsset
     function convertQuantity(
         uint256 _fromAssetQuantity,
         address _fromAsset,
         address _toAsset
     )
-        public
+        external
         view
         returns (uint256)
     {
@@ -342,6 +294,28 @@ contract KyberPriceFeed is DSMath {
             return address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
         }
         return _asset;
+    }
+
+    /// @dev Get quantity of _baseAsset per whole _quoteAsset
+    /// @dev This function will not revert if there is no price, but return (false,0,0)
+    function __getRawReferencePriceInfo(address _baseAsset, address _quoteAsset)
+        internal
+        view
+        returns (bool isValid_, uint256 referencePrice_, uint256 quoteDecimals_)
+    {
+        isValid_ = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
+        quoteDecimals_ = ERC20WithFields(_quoteAsset).decimals();
+
+        if (prices[_quoteAsset] == 0) {
+            return (false, 0, 0);  // return early and avoid revert
+        }
+
+        referencePrice_ = mul(
+            prices[_baseAsset],
+            10 ** uint256(quoteDecimals_)
+        ) / prices[_quoteAsset];
+
+        return (isValid_, referencePrice_, quoteDecimals_);
     }
 
     /// @dev Whether _priceFromKyber deviates no more than some % from _offChainPrice
