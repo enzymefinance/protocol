@@ -101,7 +101,7 @@ test('Fund gets non-quote asset from investment', async () => {
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
 
   await send(weth, 'approve', [participation.options.address, wantedShares], investorTxOpts);
@@ -124,7 +124,7 @@ test('Fund gets non-quote asset from investment', async () => {
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const postFundGav = new BN(await call(accounting, 'calcGav'));
 
@@ -154,7 +154,7 @@ test('investor redeems his shares', async () => {
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -163,7 +163,7 @@ test('investor redeems his shares', async () => {
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -206,7 +206,7 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
 
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -228,7 +228,7 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
 
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));

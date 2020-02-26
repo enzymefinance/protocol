@@ -116,7 +116,7 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
       'redeemWithConstraints',
       [
         preInvestorShares.toString(),
-        [...holdings[1], EMPTY_ADDRESS],
+        [...holdings[0], EMPTY_ADDRESS],
       ],
       investorTxOpts
     )
@@ -175,13 +175,13 @@ test(`Redeem with constraints works as expected`, async () => {
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
 
   const preFundHoldingsMaliciousToken = new BN(
-    await call(accounting, 'getFundAssetHoldings', [maliciousToken.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [maliciousToken.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
 
   const investorShares = await call(shares, 'balanceOf', [investor]);
@@ -199,10 +199,10 @@ test(`Redeem with constraints works as expected`, async () => {
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
 
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));

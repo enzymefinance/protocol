@@ -154,10 +154,10 @@ describe('Fund takes an order', () => {
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     await send(trading, 'callOnExchange', [
@@ -198,10 +198,10 @@ describe('Fund takes an order', () => {
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
@@ -321,7 +321,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
         callOnExchangeArgs,
         managerTxOpts
       )
-    ).rejects.toThrowFlexible("Insufficient available assetBalance: takerFeeAsset");
+    ).rejects.toThrowFlexible("Insufficient available assetBalance: fee asset");
   });
 
   test('Invest in fund with enough DAI to take trade with taker fee', async () => {
@@ -386,13 +386,13 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const preFundHoldingsDai = new BN(
-      await call(accounting, 'getFundAssetHoldings', [dai.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [dai.options.address])
     );
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     await send(
@@ -408,13 +408,13 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsDai = new BN(
-      await call(accounting, 'getFundAssetHoldings', [dai.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [dai.options.address])
     );
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
@@ -501,10 +501,10 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     await send(
@@ -550,10 +550,10 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
@@ -640,10 +640,10 @@ describe('Fund can take an order when protocol fee disabled', () => {
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     await send(
@@ -689,10 +689,10 @@ describe('Fund can take an order when protocol fee disabled', () => {
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));

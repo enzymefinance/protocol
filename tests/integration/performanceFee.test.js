@@ -160,12 +160,12 @@ test(`can NOT artificially inflate share price by transfering weth to Trading`, 
   const inflationAmount = toWei('0.1', 'ether');
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const preFundCalcs = await call(accounting, 'performCalculations');
+  const preFundCalcs = await call(accounting, 'calcFundMetrics');
 
   await send(weth, 'transfer', [trading.options.address, inflationAmount], defaultTxOpts);
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundCalcs = await call(accounting, 'performCalculations');
+  const postFundCalcs = await call(accounting, 'calcFundMetrics');
 
   const feeInDenominationAsset =
     new BN(postFundCalcs.feesInShares_)
@@ -195,7 +195,7 @@ test(`performance fee is calculated correctly`, async () => {
     await call(performanceFee, 'highWaterMark', [feeManager.options.address])
   );
   const currentTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const fundCalculations = await call(accounting, 'performCalculations');
+  const fundCalculations = await call(accounting, 'calcFundMetrics');
   const gavPerShare = BNExpDiv(
     new BN(fundCalculations.gav_),
     currentTotalSupply,
@@ -300,7 +300,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
 
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
-  const preFundCalcs = await call(accounting, 'performCalculations');
+  const preFundCalcs = await call(accounting, 'calcFundMetrics');
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preMlnManager = new BN(await call(mln, 'balanceOf', [manager]));
   const preWethManager = new BN(await call(weth, 'balanceOf', [manager]));
@@ -351,14 +351,14 @@ test(`manager calls triggerRewardAllFees to update high watermark`, async () => 
   const { accounting, feeManager, shares } = fund;
 
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
-  const preFundCalcs = await call(accounting, 'performCalculations');
+  const preFundCalcs = await call(accounting, 'calcFundMetrics');
 
   // Wait for performance period
   await delay(2000);
   await send(accounting, 'triggerRewardAllFees', [], managerTxOpts);
 
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
-  const postFundCalcs = await call(accounting, 'performCalculations');
+  const postFundCalcs = await call(accounting, 'calcFundMetrics');
   const currentHWM = new BN(
     await call(performanceFee, 'highWaterMark', [feeManager.options.address])
   );
