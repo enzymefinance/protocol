@@ -134,10 +134,10 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
   await send(
@@ -167,10 +167,10 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
@@ -201,10 +201,10 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
   await send(
@@ -234,10 +234,10 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
   const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
@@ -275,13 +275,13 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
   const preFundHoldingsEur = new BN(
-    await call(accounting, 'getFundAssetHoldings', [eur.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
   );
 
   await send(
@@ -312,13 +312,13 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
   const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundAssetHoldings', [mln.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
   const postFundHoldingsEur = new BN(
-    await call(accounting, 'getFundAssetHoldings', [eur.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);

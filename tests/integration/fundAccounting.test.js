@@ -59,8 +59,8 @@ test('initial investment (with quote token)', async () => {
   );
   await send(participation, 'executeRequestFor', [investor], investorTxOpts);
 
-  const fundWethHoldings = await call(accounting, 'getFundAssetHoldings', [weth.options.address])
-  const fundCalculations = await call(accounting, 'performCalculations');
+  const fundWethHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+  const fundCalculations = await call(accounting, 'calcFundMetrics');
 
   expect(fundWethHoldings).toBe(offeredValue);
   expect(fundCalculations.gav_).toBe(offeredValue);
@@ -74,16 +74,16 @@ test('sending quote token directly to Trading does NOT affect fund calculations'
   const { accounting, trading } = fund;
   const tokenQuantity = toWei('1', 'ether');
 
-  const preFundCalculations = await call(accounting, 'performCalculations');
+  const preFundCalculations = await call(accounting, 'calcFundMetrics');
   const preFundWethHoldings = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
 
   await send(weth, 'transfer', [trading.options.address, tokenQuantity], defaultTxOpts);
 
-  const postFundCalculations = await call(accounting, 'performCalculations');
+  const postFundCalculations = await call(accounting, 'calcFundMetrics');
   const postFundWethHoldings = new BN(
-    await call(accounting, 'getFundAssetHoldings', [weth.options.address])
+    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
   
   expect(postFundWethHoldings).bigNumberEq(preFundWethHoldings);

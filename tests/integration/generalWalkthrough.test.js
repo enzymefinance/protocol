@@ -174,8 +174,8 @@ test('Fund can take an order on Oasis DEX', async () => {
   const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
   const orderId = logMake.id;
 
-  const preMlnFundHoldings = await call(accounting, 'getFundAssetHoldings', [mln.options.address]);
-  const preWethFundHoldings = await call(accounting, 'getFundAssetHoldings', [weth.options.address]);
+  const preMlnFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [mln.options.address]);
+  const preWethFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address]);
 
   await send(
     trading,
@@ -201,8 +201,8 @@ test('Fund can take an order on Oasis DEX', async () => {
     managerTxOpts
   );
 
-  const postMlnFundHoldings = await call(accounting, 'getFundAssetHoldings', [mln.options.address]);
-  const postWethFundHoldings = await call(accounting, 'getFundAssetHoldings', [weth.options.address]);
+  const postMlnFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [mln.options.address]);
+  const postWethFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address]);
 
   expect(
     new BN(postMlnFundHoldings.toString()).eq(

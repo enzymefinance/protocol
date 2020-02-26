@@ -11,22 +11,17 @@ contract MockAccounting is Spoke {
     uint public mockValuePerShare;
 
     address[] public ownedAssets;
-    mapping (address => bool) public isInAssetList;
     mapping (address => uint) public held; // mock total held across all components
     mapping (address => uint) public assetGav;
     address public DENOMINATION_ASSET;
-    address public NATIVE_ASSET;
     uint public DEFAULT_SHARE_PRICE;
-    uint public SHARES_DECIMALS;
 
-    constructor(address _hub, address _denominationAsset, address _nativeAsset)
+    constructor(address _hub, address _denominationAsset)
         public
         Spoke(_hub)
     {
         DENOMINATION_ASSET = _denominationAsset;
-        NATIVE_ASSET = _nativeAsset;
-        SHARES_DECIMALS = 18;
-        DEFAULT_SHARE_PRICE = 10 ** uint(SHARES_DECIMALS);
+        DEFAULT_SHARE_PRICE = 10 ** 18;
     }
 
     function setOwnedAssets(address[] memory _assets) public { ownedAssets = _assets; }
@@ -65,7 +60,7 @@ contract MockAccounting is Spoke {
         return mockValuePerShare;
     }
 
-    function performCalculations() public view returns (uint, uint, uint, uint, uint) {
+    function calcFundMetrics() public view returns (uint, uint, uint, uint, uint) {
         return (gav, unclaimedFees, 0, nav, mockValuePerShare);
     }
 }
