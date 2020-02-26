@@ -4,17 +4,8 @@ pragma experimental ABIEncoderV2;
 import "../hub/IHub.sol";
 
 interface IAccounting {
-    struct Calculations {
-        uint256 gav;
-        uint256 nav;
-        uint256 allocatedFees;
-        uint256 totalSupply;
-        uint256 timestamp;
-    }
-
     // STORAGE
     function assetBalances(address) external view returns (uint256);
-    function atLastAllocation() external view returns (Calculations memory);
     function DEFAULT_SHARE_PRICE() external view returns (uint256);
     function DENOMINATION_ASSET() external view returns (address);
     function MAX_OWNED_ASSETS() external view returns (uint8);
@@ -23,20 +14,7 @@ interface IAccounting {
 
     // FUNCTIONS
     function calcAssetGav(address _asset) external view returns (uint256);
-    function calcGav() external view returns (uint256);
-    function calcGavPerShareNetManagementFee() external returns (uint256);
-    function calcNav(uint256 _gav, uint256 _unclaimedFees) external pure returns (uint256);
-    function calcSharePrice() external returns (uint256);
-    function getAllAssetBalances()
-        external
-        view
-        returns(address[] memory assets_, uint256[] memory balances_);
-    function getAssetBalances(address[] calldata _assets) external view returns(uint256[] memory);
-    function getFundAssetHoldings(address _asset) external view returns (uint256);
-    function getFundHoldings() external returns (address[] memory assets_, uint256[] memory balances_);
-    function getOwnedAssetsLength() external view returns (uint256);
-    function getShareCostInAsset(uint256 _numShares, address _altAsset) external returns (uint256);
-    function performCalculations() external returns (
+    function calcFundMetrics() external returns (
         uint256 gav_,
         uint256 unclaimedFees_,
         uint256 feesInShares_,
@@ -44,6 +22,17 @@ interface IAccounting {
         uint256 sharePrice_,
         uint256 gavPerShareNetManagementFee_
     );
+    function calcGav() external view returns (uint256);
+    function calcNav(uint256 _gav, uint256 _unclaimedFees) external pure returns (uint256);
+    function getAllAssetBalances()
+        external
+        view
+        returns(address[] memory assets_, uint256[] memory balances_);
+    function getAssetBalances(address[] calldata _assets) external view returns(uint256[] memory);
+    function getFundHoldingsForAsset(address _asset) external view returns (uint256);
+    function getFundHoldings() external returns (address[] memory assets_, uint256[] memory balances_);
+    function getOwnedAssetsLength() external view returns (uint256);
+    function getShareCostInAsset(uint256 _numShares, address _altAsset) external returns (uint256);
     function triggerRewardAllFees() external payable;
     function valuePerShare(uint256 _totalValue, uint256 _numShares)
         external
@@ -69,7 +58,7 @@ interface IAccounting {
 }
 
 interface IAccountingFactory {
-    function createInstance(address _hub, address _denominationAsset, address _nativeAsset)
+    function createInstance(address _hub, address _denominationAsset)
         external
         returns (address);
 }

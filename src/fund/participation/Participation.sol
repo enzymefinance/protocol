@@ -308,7 +308,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         for (uint256 i = 0; i < _requestedAssets.length; ++i) {
             ofAsset = _requestedAssets[i];
             if (ofAsset == address(0)) continue;
-            uint256 quantityHeld = accounting.getFundAssetHoldings(ofAsset);
+            uint256 quantityHeld = accounting.getFundHoldingsForAsset(ofAsset);
             require(quantityHeld > 0, "Requested asset holdings is 0");
             for (uint256 j = 0; j < redeemedAssets.length; j++) {
                 require(
