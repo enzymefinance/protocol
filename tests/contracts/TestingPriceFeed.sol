@@ -6,34 +6,31 @@ import "main/dependencies/DSMath.sol";
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
 contract TestingPriceFeed is DSMath {
-    event PriceUpdate(address[] token, uint[] price);
+    event PriceUpdate(address[] token, uint256[] price);
 
     struct Data {
-        uint price;
-        uint timestamp;
+        uint256 price;
+        uint256 timestamp;
     }
 
     address public QUOTE_ASSET;
-    uint public updateId;
-    uint public lastUpdate;
+    mapping(address => uint256) public assetsToDecimals;
     mapping(address => Data) public assetsToPrices;
-    mapping(address => uint) public assetsToDecimals;
+    uint256 public lastUpdate;
     bool mockIsRecent = true;
     bool neverValid = false;
 
-    constructor(address _quoteAsset, uint _quoteDecimals) public {
+    constructor(address _quoteAsset, uint256 _quoteDecimals) public {
         QUOTE_ASSET = _quoteAsset;
         setDecimals(_quoteAsset, _quoteDecimals);
     }
 
-    /**
-      Input price is how much quote asset you would get
-      for one unit of _asset (10**assetDecimals)
-     */
-    function update(address[] calldata _assets, uint[] calldata _prices) external {
+    // STATE-CHANGING FUNCTIONS
+
+    // Input price is how much quote asset you get for one unit of _asset (10**assetDecimals)
+    function update(address[] calldata _assets, uint256[] calldata _prices) external {
         require(_assets.length == _prices.length, "Array lengths unequal");
-        updateId++;
-        for (uint i = 0; i < _assets.length; ++i) {
+        for (uint256 i = 0; i < _assets.length; ++i) {
             assetsToPrices[_assets[i]] = Data({
                 timestamp: block.timestamp,
                 price: _prices[i]
@@ -43,128 +40,104 @@ contract TestingPriceFeed is DSMath {
         emit PriceUpdate(_assets, _prices);
     }
 
-    function getPrice(address ofAsset)
+    function setNeverValid(bool _state) external { neverValid = _state; }
+    function setIsRecent(bool _state) external { mockIsRecent = _state; }
+    function setDecimals(address _asset, uint256 _decimal) public {
+        assetsToDecimals[_asset] = _decimal;
+    }
+    function batchSetDecimals(address[] memory _assets, uint256[] memory _decimals) public {
+        require(_assets.length == _decimals.length, "Array lengths unequal");
+        for (uint256 i = 0; i < _assets.length; i++) {
+            setDecimals(_assets[i], _decimals[i]);
+        }
+    }
+
+    // VIEW FUNCTIONS
+
+    // FEED INFORMATION
+
+    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
+    function getLastUpdate() public view returns (uint256) { return lastUpdate; }
+
+    // PRICES
+
+    function getPrice(address _asset)
         public
         view
-        returns (uint price, uint timestamp)
+        returns (uint256, uint256)
     {
-        Data storage data = assetsToPrices[ofAsset];
+        Data storage data = assetsToPrices[_asset];
         return (data.price, data.timestamp);
     }
 
-    function getPrices(address[] memory ofAssets)
+    function getPrices(address[] memory _assets)
         public
         view
-        returns (uint[] memory, uint[] memory)
+        returns (uint256[] memory, uint256[] memory)
     {
-        uint[] memory prices = new uint[](ofAssets.length);
-        uint[] memory timestamps = new uint[](ofAssets.length);
-        for (uint i; i < ofAssets.length; i++) {
-            uint price;
-            uint timestamp;
-            (price, timestamp) = getPrice(ofAssets[i]);
+        uint256[] memory prices = new uint256[](_assets.length);
+        uint256[] memory timestamps = new uint256[](_assets.length);
+        for (uint256 i; i < _assets.length; i++) {
+            uint256 price;
+            uint256 timestamp;
+            (price, timestamp) = getPrice(_assets[i]);
             prices[i] = price;
             timestamps[i] = timestamp;
         }
         return (prices, timestamps);
     }
 
-    function getPriceInfo(address ofAsset)
+    function getPriceInfo(address _asset) public view returns (uint256, uint256) {
+        uint256 price;
+        (price,) = getPrice(_asset);
+        return (price, assetsToDecimals[_asset]);
+    }
+
+    function getReferencePriceInfo(address _base, address _quote)
         public
         view
-        returns (uint price, uint assetDecimals)
+        returns (uint256, uint256)
     {
-        (price, ) = getPrice(ofAsset);
-        assetDecimals = assetsToDecimals[ofAsset];
-    }
+        uint256 quoteDecimals = assetsToDecimals[_quote];
 
-    function getInvertedPriceInfo(address ofAsset)
-        public
-        view
-        returns (uint invertedPrice, uint assetDecimals)
-    {
-        uint inputPrice;
-        // inputPrice quoted in QUOTE_ASSET and multiplied by 10 ** assetDecimal
-        (inputPrice, assetDecimals) = getPriceInfo(ofAsset);
-
-        // outputPrice based in QUOTE_ASSET and multiplied by 10 ** quoteDecimal
-        uint quoteDecimals = assetsToDecimals[QUOTE_ASSET];
-
-        return (
-            mul(
-                10 ** uint(quoteDecimals),
-                10 ** uint(assetDecimals)
-            ) / inputPrice,
-            quoteDecimals
-        );
-    }
-
-    function setNeverValid(bool _state) public {
-        neverValid = _state;
-    }
-
-    function setIsRecent(bool _state) public {
-        mockIsRecent = _state;
-    }
-
-    // NB: not permissioned; anyone can change this in a test
-    function setDecimals(address _asset, uint _decimal) public {
-        assetsToDecimals[_asset] = _decimal;
-    }
-
-    // needed just to get decimals for prices
-    function batchSetDecimals(address[] memory _assets, uint[] memory _decimals) public {
-        require(_assets.length == _decimals.length, "Array lengths unequal");
-        for (uint i = 0; i < _assets.length; i++) {
-            setDecimals(_assets[i], _decimals[i]);
-        }
-    }
-
-    function getReferencePriceInfo(address ofBase, address ofQuote)
-        public
-        view
-        returns (uint referencePrice, uint decimal)
-    {
-        uint quoteDecimals = assetsToDecimals[ofQuote];
-
-        bool bothValid = hasValidPrice(ofBase) && hasValidPrice(ofQuote);
-        require(bothValid, "Price not valid");
+        require(hasValidPrice(_base) && hasValidPrice(_quote), "Price not valid");
         // Price of 1 unit for the pair of same asset
-        if (ofBase == ofQuote) {
-            return (10 ** uint(quoteDecimals), quoteDecimals);
+        if (_base == _quote) {
+            return (10 ** uint256(quoteDecimals), quoteDecimals);
         }
 
-        referencePrice = mul(
-            assetsToPrices[ofBase].price,
-            10 ** uint(quoteDecimals)
-        ) / assetsToPrices[ofQuote].price;
+        uint256 referencePrice = mul(
+            assetsToPrices[_base].price,
+            10 ** uint256(quoteDecimals)
+        ) / assetsToPrices[_quote].price;
 
         return (referencePrice, quoteDecimals);
     }
 
     function getOrderPriceInfo(
-        address sellAsset,
-        uint sellQuantity,
-        uint buyQuantity
+        address _sellAsset,
+        uint256 _sellQuantity,
+        uint256 _buyQuantity
     )
         public
         view
-        returns (uint orderPrice)
+        returns (uint256)
     {
-        return mul(buyQuantity, 10 ** uint(assetsToDecimals[sellAsset])) / sellQuantity;
+        return mul(
+            _buyQuantity,
+            10 ** uint256(assetsToDecimals[_sellAsset])
+        ) / _sellQuantity;
     }
 
     /// @notice Doesn't check validity as TestingPriceFeed has no validity variable
     /// @param _asset Asset in registrar
-    /// @return isValid Price information ofAsset is recent
     function hasValidPrice(address _asset)
         public
         view
-        returns (bool isValid)
+        returns (bool)
     {
-        uint price;
+        uint256 price;
         (price, ) = getPrice(_asset);
-
         return !neverValid && price != 0;
     }
 
@@ -173,7 +146,7 @@ contract TestingPriceFeed is DSMath {
         view
         returns (bool)
     {
-        for (uint i; i < _assets.length; i++) {
+        for (uint256 i; i < _assets.length; i++) {
             if (!hasValidPrice(_assets[i])) {
                 return false;
             }
@@ -181,42 +154,22 @@ contract TestingPriceFeed is DSMath {
         return true;
     }
 
-    /// @notice Checks whether data exists for a given asset pair
-    /// @dev Prices are only upated against QUOTE_ASSET
-    /// @param sellAsset Asset for which check to be done if data exists
-    /// @param buyAsset Asset for which check to be done if data exists
-    function existsPriceOnAssetPair(address sellAsset, address buyAsset)
-        public
-        view
-        returns (bool isExistent)
-    {
-        return
-            hasValidPrice(sellAsset) &&
-            hasValidPrice(buyAsset);
-    }
-
-    function getLastUpdateId() public view returns (uint) { return updateId; }
-    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
-
-    /// @notice Get quantity of toAsset equal in value to given quantity of fromAsset
+    /// @notice Get quantity of _toAsset equal in value to given quantity of _fromAsset
     function convertQuantity(
-        uint fromAssetQuantity,
-        address fromAsset,
-        address toAsset
+        uint256 _fromAssetQuantity,
+        address _fromAsset,
+        address _toAsset
     )
         public
         view
-        returns (uint)
+        returns (uint256)
     {
-        uint fromAssetPrice;
-        (fromAssetPrice,) = getReferencePriceInfo(fromAsset, toAsset);
-        uint fromAssetDecimals = ERC20WithFields(fromAsset).decimals();
+        uint256 fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(_fromAsset, _toAsset);
+        uint256 fromAssetDecimals = ERC20WithFields(_fromAsset).decimals();
         return mul(
-            fromAssetQuantity,
+            _fromAssetQuantity,
             fromAssetPrice
-        ) / (10 ** uint(fromAssetDecimals));
+        ) / (10 ** uint256(fromAssetDecimals));
     }
-
-    function getLastUpdate() public view returns (uint) { return lastUpdate; }
 }
-
