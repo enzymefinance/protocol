@@ -44,8 +44,7 @@ describe('sell-and-burn-mln', () => {
       .update(
         [weth.options.address, mln.options.address],
         [toWei('1', 'ether'), toWei('2', 'ether')]
-      )
-      .send(defaultTxOpts);
+      ).send(defaultTxOpts);
   });
 
   test('directly sending eth fails', async () => {
@@ -134,7 +133,7 @@ describe('sell-and-burn-mln', () => {
       await engine.methods.premiumPercent().call()
     );
     const ethPerMln = new BN(
-      (await priceSource.methods.getPrice(mln.options.address).call()).price,
+      (await priceSource.methods.getPrice(mln.options.address).call())[0],
     );
     const premiumPrice =
       ethPerMln.add(ethPerMln.mul(premiumPercent).div(new BN(100)));

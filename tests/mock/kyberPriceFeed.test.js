@@ -9,7 +9,7 @@ describe('kyber-price-feed', () => {
   let deployerTxOpts;
   let conversionRates, kyberPriceFeed, kyberNetworkProxy, mockRegistry;
   let deployer, updater;
-  let eur, mln, weth;
+  let eur, mln, weth, registeredAssets;
 
   beforeAll(async () => {
     const accounts = await web3.eth.getAccounts();
@@ -31,9 +31,8 @@ describe('kyber-price-feed', () => {
       [
         mockRegistry.options.address,
         kyberNetworkProxy.options.address,
-        toWei('0.5', 'ether'),
+        toWei('100.5', 'ether'),
         weth.options.address,
-        updater,
         toWei('0.1', 'ether')
       ],
       deployerTxOpts
@@ -47,6 +46,8 @@ describe('kyber-price-feed', () => {
         .register(addr)
         .send(deployerTxOpts);
     }
+
+    registeredAssets = await mockRegistry.methods.getRegisteredAssets().call();
   });
 
   test('Registry owner updates pricefeed', async () => {
@@ -55,7 +56,6 @@ describe('kyber-price-feed', () => {
     expect(registryOwner).toBe(deployer);
 
     const registeredAssets = await mockRegistry.methods.getRegisteredAssets().call();
-
     await kyberPriceFeed.methods.update(
       registeredAssets,
       [toWei('1', 'ether'), toWei('1', 'ether'), toWei('1', 'ether')]
@@ -74,11 +74,7 @@ describe('kyber-price-feed', () => {
     expect(mlnPrice.toString()).toBe(toWei('1', 'ether'));
   });
 
-  test('MLN price is changed in reserve, and Updater updates', async () => {
-    const listedUpdater = await kyberPriceFeed.methods.UPDATER().call();
-
-    expect(listedUpdater).toBe(updater);
-
+  test('MLN price is changed in reserve', async () => {
     const mlnPrice = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.05', 'ether'))
@@ -103,7 +99,9 @@ describe('kyber-price-feed', () => {
         [0]
       ).send(deployerTxOpts);
 
-    await kyberPriceFeed.methods.update().send({from: updater, gas: 8000000});
+    await kyberPriceFeed.methods.update(
+      registeredAssets, [eurPrice.toString(), mlnPrice.toString(), toWei('1', 'ether')]
+    ).send(deployerTxOpts);
 
     const { 0: updatedMlnPrice } = await kyberPriceFeed.methods
       .getPrice(mln.options.address).call();
@@ -125,6 +123,9 @@ describe('kyber-price-feed', () => {
       new BN(toWei('0.04', 'ether'))
     );
     const ethBidInMln = BNExpInverse(mlnBid); // ETH per 1 MLN (based on bid)
+    const midpointPrice = BNExpDiv(
+      mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
+    ).toString();
 
     const blockNumber = (await web3.eth.getBlock('latest')).number;
     await conversionRates.methods
@@ -138,15 +139,19 @@ describe('kyber-price-feed', () => {
         [0]
       ).send(deployerTxOpts);
 
-    await kyberPriceFeed.methods.update().send(deployerTxOpts);
+    const preEurPrice = await kyberPriceFeed.methods.getPrice(
+      eur.options.address
+    ).call();
 
-    const mlnPrice = await kyberPriceFeed.methods.getPrice(
+    await kyberPriceFeed.methods.update(
+      registeredAssets,
+      [preEurPrice.price_.toString(), midpointPrice.toString(), toWei('1', 'ether')]
+    ).send(deployerTxOpts);
+
+    const postMlnPrice = await kyberPriceFeed.methods.getPrice(
       mln.options.address
     ).call();
-    const midpointPrice = BNExpDiv(
-      mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
-    ).toString();
-    expect(mlnPrice.price).toBe(midpointPrice);
+    expect(postMlnPrice.price_).toBe(midpointPrice);
   });
 
   test('Crossed market condition yields midpoint price', async () => {
@@ -159,6 +164,9 @@ describe('kyber-price-feed', () => {
       new BN(toWei('0.05', 'ether'))
     );
     const ethBidInMln = BNExpInverse(mlnBid); // ETH per 1 MLN (based on bid)
+    const midpointPrice = BNExpDiv(
+      mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
+    ).toString();
 
     const blockNumber = (await web3.eth.getBlock('latest')).number;
     await conversionRates.methods
@@ -172,15 +180,19 @@ describe('kyber-price-feed', () => {
         [0]
       ).send(deployerTxOpts);
 
-    await kyberPriceFeed.methods.update().send(deployerTxOpts);
+    const preEurPrice = await kyberPriceFeed.methods.getPrice(
+      eur.options.address
+    ).call();
+
+    await kyberPriceFeed.methods.update(
+      registeredAssets,
+      [preEurPrice.price_.toString(), midpointPrice, toWei('1', 'ether')]
+    ).send(deployerTxOpts);
  
-    const mlnPrice = await kyberPriceFeed.methods.getPrice(
+    const postMlnPrice = await kyberPriceFeed.methods.getPrice(
       mln.options.address
     ).call();
 
-    const midpointPrice = BNExpDiv(
-      mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
-    ).toString();
-    expect(mlnPrice.price).toBe(midpointPrice);
+    expect(postMlnPrice.price_).toBe(midpointPrice);
   });
 });
