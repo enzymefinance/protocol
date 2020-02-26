@@ -218,7 +218,7 @@ contract KyberPriceFeed is DSMath {
             return (false, 0);  // return early and avoid revert
         }
 
-        uint256 askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
+        uint256 askRate = 10 ** (uint256(KYBER_PRECISION) * 2) / bidRateOfReversePair;
         /**
           Average the bid/ask prices:
           avgPriceFromKyber = (bidRate + askRate) / 2
@@ -333,6 +333,6 @@ contract KyberPriceFeed is DSMath {
         } else {
             deviation = sub(_offchainPrice, _priceFromKyber);
         }
-        return mul(deviation, 10 ** KYBER_PRECISION) / _offchainPrice <= maxPriceDeviation;
+        return mul(deviation, 10 ** uint256(KYBER_PRECISION)) / _offchainPrice <= maxPriceDeviation;
     }
 }
