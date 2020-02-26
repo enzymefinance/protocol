@@ -131,8 +131,7 @@ contract FundFactory is AmguConsumer, Factory {
         ensureComponentNotSet(managersToRoutes[_manager].accounting);
         managersToRoutes[_manager].accounting = accountingFactory.createInstance(
             managersToHubs[_manager],
-            managersToSettings[_manager].denominationAsset,
-            associatedRegistry.nativeAsset()
+            managersToSettings[_manager].denominationAsset
         );
     }
 
