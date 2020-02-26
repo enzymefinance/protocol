@@ -7,30 +7,24 @@ import "../version/Registry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
-/// @notice Routes external data to smart contracts
-/// @notice Where external data includes sharePrice of Melon funds
-/// @notice PriceFeed operator could be staked and sharePrice input validated on chain
+/// @notice Routes external prices to smart contracts from Kyber
 contract KyberPriceFeed is DSMath {
     event PriceUpdate(address[] token, uint256[] price);
+    event UpdaterSet(address _updater);
+    event RegistrySet(address _newRegistry);
+    event MaxSpreadSet(uint256 _maxSpread);
+    event MaxPriceDeviationSet(uint256 _maxPriceDeviation);
 
     uint8 public constant KYBER_PRECISION = 18;
     uint32 public constant VALIDITY_INTERVAL = 2 days;
-    address public constant KYBER_ETH_TOKEN = address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
-    address public updater;
-    Registry public registry;
-    uint256 public maxSpread;
     uint256 public lastUpdate;
     uint256 public maxPriceDeviation; // percent, expressed as a uint256 (fraction of 10^18)
-
-    // FIELDS
-
+    uint256 public maxSpread;
+    address public updater;
     mapping (address => uint256) public prices;
-
-    // METHODS
-
-    // CONSTRUCTOR
+    Registry public registry;
 
     constructor(
         address _registry,
@@ -54,23 +48,7 @@ contract KyberPriceFeed is DSMath {
         _;
     }
 
-    /// @return Whether _priceFromKyber deviates no more than some % from _offChainPrice
-    function __priceIsSane(
-        uint256 _priceFromKyber,
-        uint256 _offchainPrice
-    )
-        internal
-        view
-        returns (bool)
-    {
-        uint256 deviation;
-        if (_priceFromKyber >= _offchainPrice) {
-            deviation = sub(_priceFromKyber, _offchainPrice);
-        } else {
-            deviation = sub(_offchainPrice, _priceFromKyber);
-        }
-        return mul(deviation, 10 ** KYBER_PRECISION) / _offchainPrice <= maxPriceDeviation;
-    }
+    // EXTERNAL FUNCTIONS
 
     /// @dev Stores zero as a convention for invalid price
     /// @dev passed _saneAssets must match the assets array from getRegisteredAssets
@@ -111,23 +89,27 @@ contract KyberPriceFeed is DSMath {
 
     function setUpdater(address _updater) external onlyRegistryOwner {
         updater = _updater;
+        emit UpdaterSet(_updater);
     }
 
     function setRegistry(address _newRegistry) external onlyRegistryOwner {
         registry = Registry(_newRegistry);
+        emit RegistrySet(_newRegistry);
     }
 
-    /// @notice _maxSpread becomes a percentage when divided by 10^18
-    /// @notice (e.g. 10^17 becomes 10%)
-    function setMaxSpread(uint256 _maxSpread) external onlyRegistryOwner {
-        maxSpread = _maxSpread;
-    }
-
+    /// @notice _maxPriceDeviation becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
     function setMaxPriceDeviation(uint256 _maxPriceDeviation) external onlyRegistryOwner {
         maxPriceDeviation = _maxPriceDeviation;
+        emit MaxPriceDeviationSet(_maxPriceDeviation);
     }
 
-    // PUBLIC VIEW METHODS
+    /// @notice _maxSpread becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
+    function setMaxSpread(uint256 _maxSpread) external onlyRegistryOwner {
+        maxSpread = _maxSpread;
+        emit MaxSpreadSet(_maxSpread);
+    }
+
+    // PUBLIC/EXTERNAL VIEW FUNCTIONS
 
     // FEED INFORMATION
 
@@ -146,13 +128,13 @@ contract KyberPriceFeed is DSMath {
         view
         returns (uint256 price_, uint256 timestamp_)
     {
-        (price_, ) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
+        (price_,) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
         timestamp_ = now;
     }
 
     /// @notice Return getPrice for each of _assets
     function getPrices(address[] memory _assets)
-        public
+        external
         view
         returns (uint256[] memory, uint256[] memory)
     {
@@ -177,7 +159,7 @@ contract KyberPriceFeed is DSMath {
 
     /// @notice Whether each of the _assets is registered and has a fresh price
     function hasValidPrices(address[] memory _assets)
-        public
+        external
         view
         returns (bool)
     {
@@ -249,14 +231,6 @@ contract KyberPriceFeed is DSMath {
         return getReferencePriceInfo(QUOTE_ASSET, _asset);
     }
 
-    /// @dev Get Kyber representation of ETH if necessary
-    function getKyberMaskAsset(address _asset) public view returns (address) {
-        if (_asset == registry.nativeAsset()) {
-            return KYBER_ETH_TOKEN;
-        }
-        return _asset;
-    }
-
     /// @notice Returns validity and price from Kyber
     function getKyberPrice(address _baseAsset, address _quoteAsset)
         public
@@ -266,13 +240,13 @@ contract KyberPriceFeed is DSMath {
         uint256 bidRate;
         uint256 bidRateOfReversePair;
         (bidRate,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            getKyberMaskAsset(_baseAsset),
-            getKyberMaskAsset(_quoteAsset),
+            __getKyberMaskAsset(_baseAsset),
+            __getKyberMaskAsset(_quoteAsset),
             registry.getReserveMin(_baseAsset)
         );
         (bidRateOfReversePair,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
-            getKyberMaskAsset(_quoteAsset),
-            getKyberMaskAsset(_baseAsset),
+            __getKyberMaskAsset(_quoteAsset),
+            __getKyberMaskAsset(_baseAsset),
             registry.getReserveMin(_quoteAsset)
         );
 
@@ -358,5 +332,33 @@ contract KyberPriceFeed is DSMath {
             _fromAssetQuantity,
             fromAssetPrice
         ) / (10 ** uint256(fromAssetDecimals));
+    }
+
+    // INTERNAL FUNCTIONS
+
+    /// @dev Return Kyber ETH asset symbol if _asset is WETH
+    function __getKyberMaskAsset(address _asset) internal view returns (address) {
+        if (_asset == registry.nativeAsset()) {
+            return address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
+        }
+        return _asset;
+    }
+
+    /// @dev Whether _priceFromKyber deviates no more than some % from _offChainPrice
+    function __priceIsSane(
+        uint256 _priceFromKyber,
+        uint256 _offchainPrice
+    )
+        internal
+        view
+        returns (bool)
+    {
+        uint256 deviation;
+        if (_priceFromKyber >= _offchainPrice) {
+            deviation = sub(_priceFromKyber, _offchainPrice);
+        } else {
+            deviation = sub(_offchainPrice, _priceFromKyber);
+        }
+        return mul(deviation, 10 ** KYBER_PRECISION) / _offchainPrice <= maxPriceDeviation;
     }
 }
