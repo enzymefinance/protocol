@@ -10,14 +10,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - "Internal Accounting" (storage-based calculations of fund holdings)
 - Standardized pipeline for takeOrder (OrderFiller + OrderTaker contracts)
 - OrderFilled event (replaces ExchangeMethodCall)
+- KyberPriceFeed price deviation sanity checks
 
 ### Changed
+- KyberPriceFeed function interfaces/visibility
 
 ### Removed
 - EthfinexAdapter
 - makeOrder and related functions/storage
 - Vault component
 - ExchangeMethodCall event
+- KyberPriceFeed functions
+  - existsPriceOnAssetPair
+  - getPriceInfo
+  - getInvertedPriceInfo
+  - setUpdaterToRegistryOwner
+  - getQuoteAsset
+  - getLastUpdate
 
 ## 1.1.1
 
