@@ -8,9 +8,9 @@
  * @test takeOrder: __validateTakeOrderParams
  */
 
-import { BN, toWei } from 'web3-utils';
+import { toWei } from 'web3-utils';
 
-import { call, send } from '~/deploy/utils/deploy-contract';
+import { send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import getAccounts from '~/deploy/utils/getAccounts';
 
@@ -50,7 +50,7 @@ beforeAll(async () => {
 
 describe('takeOrder', () => {
   describe('__validateTakeOrderParams', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity, fillQuantity;
+    let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let badAsset;
   
     beforeAll(async () => {

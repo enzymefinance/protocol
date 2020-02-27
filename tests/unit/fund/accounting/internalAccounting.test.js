@@ -9,11 +9,10 @@ import web3 from '~/deploy/utils/get-web3';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import { delay } from '~/tests/utils/time';
 
 let deployer;
 let defaultTxOpts;
-let testingPriceFeed, version, weth, mln;
+let version, weth, mln;
 let fund;
 let takeOrderSignature;
 let mockExchangeAddress, mockAdapterAddress;
