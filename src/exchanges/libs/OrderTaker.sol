@@ -55,7 +55,8 @@ abstract contract OrderTaker is OrderFiller {
 
         (
             address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts
+            uint256[] memory fillExpectedAmounts,
+            address[] memory fillApprovalTargets
         ) = __formatFillTakeOrderArgs(
             _targetExchange,
             _orderAddresses,
@@ -72,8 +73,7 @@ abstract contract OrderTaker is OrderFiller {
             _orderData,
             _identifier,
             _signature,
-            fillAssets,
-            fillExpectedAmounts
+            __encodeOrderFillData(fillAssets, fillExpectedAmounts, fillApprovalTargets)
         );
     }
 
@@ -82,8 +82,7 @@ abstract contract OrderTaker is OrderFiller {
     /// @notice Reserved function for executing a take order on an external exchange
     /// @dev When executing your order, use the values in __fillAssets and __fillExpectedAmounts
     /// @dev Include the `validateAndFinalizeFilledOrder` modifier
-    /// @param _fillAssets Addresses of assets to be filled, from __formatFillTakeOrderArgs
-    /// @param _fillExpectedAmounts Expected fill amounts, relative to each fillAssets, from __formatFillTakeOrderArgs
+    /// @param _fillData Encoded data used by the OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -91,8 +90,7 @@ abstract contract OrderTaker is OrderFiller {
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature,
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        bytes memory _fillData
     )
         internal
         virtual;
@@ -101,6 +99,7 @@ abstract contract OrderTaker is OrderFiller {
     /// @dev Pass the returned values as the final args for __fillTakeOrder()
     /// @return fillAssets_ Addresses of filled assets
     /// @return fillExpectedAmounts_ Expected amounts of asset fills
+    /// @return fillApprovalTargets_ Targets to approve() for asset fills
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -112,7 +111,11 @@ abstract contract OrderTaker is OrderFiller {
         internal
         view
         virtual
-        returns (address[] memory fillAssets_, uint256[] memory fillExpectedAmounts_);
+        returns (
+            address[] memory fillAssets_,
+            uint256[] memory fillExpectedAmounts_,
+            address[] memory fillApprovalTargets_
+        );
 
     /// @notice Reserved function for validating the parameters of a takeOrder call
     /// @dev Use this to perform validation of takeOrder's inputs

@@ -30,12 +30,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// @param _orderValues [6] Taker asset fill quantity
     /// @param _identifier Order identifier
     /// @param _signature Signature of the order
-    /// @param _fillAssets [0] Maker asset (same as _orderAddresses[2])
-    /// @param _fillAssets [1] Taker asset (same as _orderAddresses[3])
-    /// @param _fillAssets [2] Taker Fee asset (ZRX)
-    /// @param _fillExpectedAmounts [0] Expected (min) quantity of maker asset to receive
-    /// @param _fillExpectedAmounts [1] Expected (max) quantity of taker asset to spend
-    /// @param _fillExpectedAmounts [2] Expected (max) quantity of taker fee asset (ZRX) to spend
+    /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -43,28 +38,20 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature,
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        bytes memory _fillData
     )
         internal
         override
-        validateAndFinalizeFilledOrder(
-            _targetExchange,
-            _fillAssets,
-            _fillExpectedAmounts
-        )
+        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
     {
-        IZeroExV2.Order memory order = __constructOrderStruct(
-            _orderAddresses,
-            _orderValues,
-            _orderData
-        );
-
-        // Approve taker and taker fee assets
-        __approveAssetsTakeOrder(_targetExchange, order, _fillExpectedAmounts);
+        (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
 
         // Execute take order on exchange
-        IZeroExV2(_targetExchange).fillOrder(order, _fillExpectedAmounts[1], _signature);
+        IZeroExV2(_targetExchange).fillOrder(
+            __constructOrderStruct(_orderAddresses, _orderValues, _orderData),
+            fillExpectedAmounts[1],
+            _signature
+        );
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
@@ -96,6 +83,10 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// - [0] Expected (min) quantity of maker asset to receive
     /// - [1] Expected (max) quantity of taker asset to spend
     /// - [2] Expected (max) quantity of taker fee asset (ZRX) to spend
+    /// @return _fillApprovalTargets Recipients of assets in fill order
+    /// - [0] Taker (fund), set to address(0)
+    /// - [1] 0x asset proxy for the taker asset
+    /// - [2] 0x asset proxy for the taker fee asset (ZRX)
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -107,7 +98,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
         internal
         view
         override
-        returns (address[] memory, uint256[] memory)
+        returns (address[] memory, uint256[] memory, address[] memory)
     {
         address[] memory fillAssets = new address[](3);
         fillAssets[0] = _orderAddresses[2]; // maker asset
@@ -127,7 +118,15 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
             _orderValues[6]
         ); // taker fee amount; calculated relative to taker fill amount
 
-        return (fillAssets, fillExpectedAmounts);
+        address[] memory fillApprovalTargets = new address[](3);
+        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
+        fillApprovalTargets[1] = __getAssetProxy(_targetExchange, _orderData[1]); // 0x asset proxy for taker asset
+        fillApprovalTargets[2] = __getAssetProxy(
+            _targetExchange,
+            IZeroExV2(_targetExchange).ZRX_ASSET_DATA()
+        ); // 0x asset proxy for taker fee asset (ZRX)
+
+        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
@@ -179,40 +178,13 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
 
     // PRIVATE FUNCTIONS
 
-    /// @notice Approves takerAsset, takerFee for a take order
-    function __approveAssetsTakeOrder(
-        address _targetExchange,
-        IZeroExV2.Order memory _order,
-        uint256[] memory _fillExpectedAmounts
-    )
-        private
-    {
-        // Taker asset
-        __approveAsset(
-            __getAssetAddress(_order.takerAssetData),
-            __getAssetProxy(_targetExchange, _order.takerAssetData),
-            _fillExpectedAmounts[1],
-            "takerAsset"
-        );
-        // Taker fee asset
-        if (_order.takerFee > 0) {
-            bytes memory zrxAssetData = IZeroExV2(_targetExchange).ZRX_ASSET_DATA();
-            __approveAsset(
-                __getAssetAddress(zrxAssetData),
-                __getAssetProxy(_targetExchange, zrxAssetData),
-                _fillExpectedAmounts[2],
-                "takerFeeAsset"
-            );
-        }
-    }
-
     /// @notice Parses user inputs into a ZeroExV2.Order format
     function __constructOrderStruct(
         address[8] memory _orderAddresses,
         uint256[8] memory _orderValues,
         bytes[4] memory _orderData
     )
-        internal
+        private
         pure
         returns (IZeroExV2.Order memory order)
     {
@@ -234,7 +206,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Gets the 0x assetProxy address for an ERC20 token
     function __getAssetProxy(address _targetExchange, bytes memory _assetData)
-        internal
+        private
         view
         returns (address assetProxy_)
     {
@@ -250,7 +222,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Parses the asset address from 0x assetData
     function __getAssetAddress(bytes memory _assetData)
-        internal
+        private
         view
         returns (address assetAddress_)
     {

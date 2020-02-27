@@ -1,6 +1,7 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
+import "./ExchangeAdapter.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
 import "../../fund/accounting/IAccounting.sol";
@@ -8,7 +9,7 @@ import "../../fund/trading/ITrading.sol";
 
 /// @title Order Filler base contract
 /// @author Melonport AG <team@melonport.com>
-abstract contract OrderFiller is DSMath {
+abstract contract OrderFiller is DSMath, ExchangeAdapter {
     event OrderFilled(
         address indexed exchangeAddress,
         address buyAsset,
@@ -19,71 +20,139 @@ abstract contract OrderFiller is DSMath {
         uint256[] feeAmounts
     );
 
-    modifier equalArrayLengths(
-        address[] memory _addresses,
-        uint256[] memory _amounts)
-    {
-        require(
-            __arraysAreEqualLength(_addresses, _amounts),
-            "equalArrayLengths: unequal array lengths"
-        );
-        _;
-    }
-
     /// @notice Wraps an on-chain order execution to validate received values,
     /// update fund asset ammounts, and emit an event
     /// @param _targetExchange Exchange where order filled (only needed for event emission)
+    /// @param _fillData Encoded data used by the OrderFiller
+    modifier validateAndFinalizeFilledOrder(
+        address _targetExchange,
+        bytes memory _fillData
+    )
+    {
+        // Validate params
+        __validateFillOrderInputs(_targetExchange, _fillData);
+
+        // Approve ERC20s to-be-filled, storing original allowances
+        // @dev Don't use aggregated fill data for this step, as we need targets for approvals
+        uint256[] memory originalAllowances = __approveFillOrderAssets(_fillData);
+
+        // Parse _fillData by filtering out empty/invalid fees and aggregating duplicate ones
+        (
+            address[] memory aggregatedAssets,
+            uint256[] memory aggregatedExpectedAmounts
+        ) = __parseAggregatedFillDataValues(_fillData);
+
+        // Get the fund's ERC20 balanceOf amounts pre-fill
+        uint256[] memory preFillBalances = __getFundERC20BalanceOfValues(aggregatedAssets);
+
+        _;
+
+        // Calculate the diffs between the fund's pre- and post-fill balanceOf amounts
+        uint256[] memory balanceDiffs = __calculateFillOrderBalanceDiffs(
+            aggregatedAssets,
+            preFillBalances
+        );
+
+        // Validate whether the actual fill amounts are at least as beneficial for the fund as the expected amounts
+        // Emit event in this step with the actual fill amounts for each asset
+        __validateAndEmitOrderFillResults(
+            _targetExchange,
+            aggregatedAssets,
+            aggregatedExpectedAmounts,
+            balanceDiffs
+        );
+
+        // Update assetBalances in Accounting for the assets in the filled order
+        __updateFillOrderAssetBalances(aggregatedAssets, balanceDiffs);
+
+        // Revoke excess ERC20 allowances, if necessary
+        // @dev Don't use aggregated fill data for this step, as we need targets for approvals
+        __resetFillOrderAssetAllowances(originalAllowances, _fillData);
+    }
+
+    // INTERNAL FUNCTIONS
+
+    /// @notice Decodes the encoded data used by the OrderFiller
+    /// @param _fillData Encoded data used by the OrderFiller
+    /// @return _assets Assets to be filled
+    /// - [0] Buy asset
+    /// - [1] Sell asset
+    /// - [2:end] Fee assets
+    /// @return _expectedAmounts Expected amounts of assets to be filled
+    /// - [0] Expected received buy asset amount
+    /// - [1] Expected spent sell asset amount
+    /// - [2:end] Expected spent fee asset amounts
+    /// @return _approvalTargets The approve() targets for assets to be filled
+    /// - [0] The fund
+    /// - [1] The approve() target for the sell asset
+    /// - [2:end] The approve() targets for fee assets
+    function __decodeOrderFillData(bytes memory _fillData)
+        internal
+        pure 
+        returns (address[] memory, uint256[] memory, address[] memory)
+    {
+        return abi.decode(_fillData, (address[], uint256[], address[]));
+    }
+
+    /// @notice Encodes the data used by the OrderFiller
     /// @param _assets[0] Buy asset
     /// @param _assets[1] Sell asset
     /// @param _assets[2:end] Fee assets
     /// @param _expectedAmounts[0] Expected received buy asset amount
     /// @param _expectedAmounts[1] Expected spent sell asset amount
     /// @param _expectedAmounts[2:end] Expected spent fee asset amounts
-    modifier validateAndFinalizeFilledOrder(
-        address _targetExchange,
+    /// @param _approvalTargets[0] The fund
+    /// @param _approvalTargets[1] The approve() target for the sell asset
+    /// @param _approvalTargets[2:end] The approve() targets for fee assets
+    function __encodeOrderFillData(
         address[] memory _assets,
-        uint256[] memory _expectedAmounts
+        uint256[] memory _expectedAmounts,
+        address[] memory _approvalTargets
     )
+        internal
+        pure 
+        returns (bytes memory)
     {
-        __validateFillOrderInputs(_targetExchange, _assets, _expectedAmounts);
-
-        (
-            address[] memory formatedAssets,
-            uint256[] memory formatedExpectedAmounts
-        ) = __formatFillOrderInputs(_assets, _expectedAmounts);
-
-        uint256[] memory preFillBalances = __getFundERC20BalanceOfValues(formatedAssets);
-
-        _;
-
-        uint256[] memory balanceDiffs = __calculateFillOrderBalanceDiffs(
-            formatedAssets,
-            preFillBalances
-        );
-
-        __validateAndEmitOrderFillResults(
-            _targetExchange,
-            formatedAssets,
-            formatedExpectedAmounts,
-            balanceDiffs
-        );
-
-        __updateFillOrderAssetBalances(formatedAssets, balanceDiffs);
-
-        // TODO: revoke extra approval amounts?
+        return abi.encode(_assets, _expectedAmounts, _approvalTargets);
     }
 
     // PRIVATE FUNCTIONS
 
-    function __arraysAreEqualLength(
-        address[] memory _addresses,
-        uint256[] memory _amounts
-    )
+    /// @notice Approves allowances of sell and fee assets in the order fill
+    /// @param _fillData Encoded data used by the OrderFiller
+    /// @return originalAllowances_ The original allowances for the assets involved in the fill 
+    function __approveFillOrderAssets(bytes memory _fillData) private returns (uint256[] memory) {
+        (
+            address[] memory assets,
+            uint256[] memory expectedAmounts,
+            address[] memory approvalTargets
+        ) = __decodeOrderFillData(_fillData);
+
+        uint256[] memory originalAllowances = new uint256[](assets.length);
+
+        // Skip first asset, as the "buy" side is always the fund
+        for (uint i = 1; i < assets.length; i++) {
+            string memory fillAssetType = i == 1 ? "sell asset" : "fee asset";
+            if (__approvalParamsAreValid(assets[i], approvalTargets[i], expectedAmounts[i])) {
+                __approveAsset(
+                    assets[i],
+                    approvalTargets[i],
+                    expectedAmounts[i],
+                    fillAssetType
+                );
+            }
+        }
+
+        return originalAllowances;
+    }
+
+    /// @notice Helper to confirm whether the params for an ERC20 approval are valid
+    function __approvalParamsAreValid(address _asset, address _target, uint256 _amount)
         private
         pure
         returns (bool)
     {
-        return _addresses.length == _amounts.length;
+        return _asset != address(0) && _amount > 0 && _target != address(0);
     }
 
     /// @notice Calculates the differences in a fund's asset balances before and after an order fill
@@ -98,7 +167,6 @@ abstract contract OrderFiller is DSMath {
     )
         private
         view
-        equalArrayLengths(_assets, _preFillBalances)
         returns (uint256[] memory)
     {
         uint256[] memory balanceDiffs = new uint256[](_assets.length);
@@ -135,82 +203,6 @@ abstract contract OrderFiller is DSMath {
         return balanceDiffs;
     }
 
-    /// @notice Formats the _assets and _expectedAmounts provided by an exchange adapter
-    /// for use by validateAndFinalizeFilledOrder
-    /// @dev At present, this is only used to aggregate multiple fees of the same asset
-    /// e.g., in 0x v3, if the takerFee asset is WETH, then takerFee and protocolFee are aggregated
-    /// @param _assets The raw assets of the fill order, passed by the exchange adapter
-    /// @param _expectedAmounts The raw expected fill amounts for _assets, passed by the exchange adapter
-    /// @return The formatted asset array (no duplicate fee assets)
-    /// @return The formatted expected fill amounts array (duplicate fee assets aggregated)
-    function __formatFillOrderInputs(
-        address[] memory _assets,
-        uint256[] memory _expectedAmounts
-    )
-        private
-        pure
-        equalArrayLengths(_assets, _expectedAmounts)
-        returns (address[] memory, uint256[] memory)
-    {
-        uint256 feeOffset = 2;
-        uint256 cleanedAssetsLength = feeOffset;
-        for (uint256 i = feeOffset; i < _assets.length; i++) {
-            if (_assets[i] == address(0) || _expectedAmounts[i] == 0) continue;
-
-            // If only 1 fee asset, just check if 0 value
-            if (_assets.length == feeOffset + 1) {
-                cleanedAssetsLength++;
-            }
-            else {
-                bool feeAssetAdded;
-                for (uint256 j = feeOffset; j < i; j++) {
-                    if (_assets[i] == _assets[j]) {
-                        feeAssetAdded = true;
-                        break;
-                    }
-                }
-                if (!feeAssetAdded) cleanedAssetsLength++;
-            }
-        }
-
-        address[] memory cleanedAssets = new address[](cleanedAssetsLength);
-        uint256[] memory cleanedExpectedAmounts = new uint256[](cleanedAssetsLength);
-        cleanedAssets[0] = _assets[0];
-        cleanedAssets[1] = _assets[1];
-        cleanedExpectedAmounts[0] = _expectedAmounts[0];
-        cleanedExpectedAmounts[1] = _expectedAmounts[1];
-
-        for (uint256 i = feeOffset; i < _assets.length; i++) {
-            if (_assets[i] == address(0) || _expectedAmounts[i] == 0) continue;
-
-            // If only 1 fee asset, just add it
-            if (_assets.length == feeOffset + 1) {
-                cleanedAssets[i] = _assets[i];
-                cleanedExpectedAmounts[i] = _expectedAmounts[i];
-            }
-            else {
-                for (uint256 j = feeOffset; j < cleanedAssetsLength; j++) {
-                    // If asset slot is empty, just add it
-                    if (cleanedAssets[j] == address(0)) {
-                        cleanedAssets[j] = _assets[i];
-                        cleanedExpectedAmounts[j] = _expectedAmounts[i];
-                        break;
-                    }
-                    // If asset has already been added, aggregate the values
-                    else if (_assets[i] == cleanedAssets[j]) {
-                        cleanedAssets[j] = _assets[i];
-                        cleanedExpectedAmounts[j] = add(
-                            cleanedExpectedAmounts[j],
-                            _expectedAmounts[i]
-                        );
-                        break;
-                    }
-                }
-            }
-        }
-        return (cleanedAssets, cleanedExpectedAmounts);
-    }
-
     /// @notice Gets the ERC20 balanceOf for a fund contract, for a list of assets
     /// @dev We use this separate function to avoid adding to the memory variable stack
     /// in validateAndFinalizeFilledOrder
@@ -228,6 +220,118 @@ abstract contract OrderFiller is DSMath {
         return balances;
     }
 
+    /// @notice Formats the _assets and _expectedAmounts provided by an exchange adapter
+    /// for use by validateAndFinalizeFilledOrder
+    /// @dev At present, this is only used to aggregate multiple fees of the same asset
+    /// e.g., in 0x v3, if the takerFee asset is WETH, then takerFee and protocolFee are aggregated
+    /// @param _fillData Encoded data used by the OrderFiller
+    /// @return aggregatedAssets_ The formatted asset array (no duplicate fee assets)
+    /// @return aggregatedExpectedAmounts_ The formatted expected fill amounts array (duplicate fee assets aggregated)
+    function __parseAggregatedFillDataValues(
+        bytes memory _fillData
+    )
+        private
+        pure
+        returns (address[] memory, uint256[] memory)
+    {
+        (
+            address[] memory assets,
+            uint256[] memory expectedAmounts,
+        ) = __decodeOrderFillData(_fillData);
+
+        uint256 feeOffset = 2;
+        uint256 cleanedAssetsLength = feeOffset;
+
+        // Filter out assets with a 0 address, 0 expected amount
+        // Filter out fee assets that have already been added
+        for (uint256 i = feeOffset; i < assets.length; i++) {
+            if (assets[i] == address(0) || expectedAmounts[i] == 0) continue;
+
+            // If only 1 fee asset, just check if 0 value
+            if (assets.length == feeOffset + 1) {
+                cleanedAssetsLength++;
+            }
+            else {
+                bool feeAssetAdded;
+                for (uint256 j = feeOffset; j < i; j++) {
+                    if (assets[i] == assets[j]) {
+                        feeAssetAdded = true;
+                        break;
+                    }
+                }
+                if (!feeAssetAdded) cleanedAssetsLength++;
+            }
+        }
+
+        address[] memory cleanedAssets = new address[](cleanedAssetsLength);
+        uint256[] memory cleanedExpectedAmounts = new uint256[](cleanedAssetsLength);
+        cleanedAssets[0] = assets[0];
+        cleanedAssets[1] = assets[1];
+        cleanedExpectedAmounts[0] = expectedAmounts[0];
+        cleanedExpectedAmounts[1] = expectedAmounts[1];
+
+        for (uint256 i = feeOffset; i < assets.length; i++) {
+            if (assets[i] == address(0) || expectedAmounts[i] == 0) continue;
+
+            // If only 1 fee asset, just add it
+            if (assets.length == feeOffset + 1) {
+                cleanedAssets[i] = assets[i];
+                cleanedExpectedAmounts[i] = expectedAmounts[i];
+            }
+            else {
+                for (uint256 j = feeOffset; j < cleanedAssetsLength; j++) {
+                    // If asset slot is empty, just add it
+                    if (cleanedAssets[j] == address(0)) {
+                        cleanedAssets[j] = assets[i];
+                        cleanedExpectedAmounts[j] = expectedAmounts[i];
+                        break;
+                    }
+                    // If asset has already been added, aggregate the values
+                    else if (assets[i] == cleanedAssets[j]) {
+                        cleanedAssets[j] = assets[i];
+                        cleanedExpectedAmounts[j] = add(
+                            cleanedExpectedAmounts[j],
+                            expectedAmounts[i]
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+        return (cleanedAssets, cleanedExpectedAmounts);
+    }
+
+    /// @notice Resets allowances of sell and fee assets in the order fill to their original values
+    /// @param _originalAllowances The original allowances (pre-approval) for assets in the order fill
+    /// @param _fillData Encoded data used by the OrderFiller
+    function __resetFillOrderAssetAllowances(
+        uint256[] memory _originalAllowances,
+        bytes memory _fillData
+    )
+        private
+    {
+        (
+            address[] memory assets,
+            uint256[] memory expectedAmounts,
+            address[] memory approvalTargets
+        ) = __decodeOrderFillData(_fillData);
+    
+        // Skip first asset, as the "buy" side is always the fund
+        for (uint i = 1; i < assets.length; i++) {
+            // Same as __approveFillOrderAssets, but also check current vs original allowance
+            if (
+                __approvalParamsAreValid(assets[i], approvalTargets[i], expectedAmounts[i]) &&
+                IERC20(assets[i]).allowance(
+                    address(this),
+                    approvalTargets[i]
+                ) != _originalAllowances[i]
+            )
+            {
+                IERC20(assets[i]).approve(approvalTargets[i], _originalAllowances[i]);
+            }
+        }
+    }
+
     /// @notice Updates a fund's assetBalances, for a list of assets
     /// @dev This function assumes that _assets[0] should always be added, 
     /// and that _assets[1:end] should always be subtracted. We could also pass a _balanceDiffSign
@@ -239,7 +343,6 @@ abstract contract OrderFiller is DSMath {
         uint256[] memory _balanceDiffs
     )
         private
-        equalArrayLengths(_assets, _balanceDiffs)
     {
         IAccounting accounting = IAccounting(ITrading(payable(address(this))).routes().accounting);
 
@@ -267,8 +370,6 @@ abstract contract OrderFiller is DSMath {
         uint256[] memory _balanceDiffs
     )
         private
-        equalArrayLengths(_assets, _expectedAmounts)
-        equalArrayLengths(_assets, _balanceDiffs)
     {
         uint256 buyAmountFilled = _balanceDiffs[0];
         uint256 sellAmountFilled = _balanceDiffs[1];
@@ -323,26 +424,33 @@ abstract contract OrderFiller is DSMath {
 
     /// @notice Validates the args passed by an exchange adapter
     /// @param _targetExchange The exchange address where the fill will be executed
-    /// @param _assets The assets to be filled
-    /// @param _expectedAmounts The expected fill amounts of _assets
+    /// @param _fillData Encoded data used by the OrderFiller
     function __validateFillOrderInputs(
         address _targetExchange,
-        address[] memory _assets,
-        uint256[] memory _expectedAmounts
+        bytes memory _fillData
     )
         private
         pure
     {
+        (
+            address[] memory assets,
+            uint256[] memory expectedAmounts,
+            address[] memory assetReceipients
+        ) = __decodeOrderFillData(_fillData);
         require(
             _targetExchange != address(0),
             "__validateFillOrderInputs: targetExchange cannot be empty"
         );
         require(
-            __arraysAreEqualLength(_assets, _expectedAmounts),
-            "__validateFillOrderInputs: array lengths not equal"
+            assets.length == expectedAmounts.length,
+            "__validateFillOrderInputs: assets and expectedAmounts lengths not equal"
         );
         require(
-            _assets[0] != _assets[1],
+            assets.length == assetReceipients.length,
+            "__validateFillOrderInputs: assets and assetReceipients lengths not equal"
+        );
+        require(
+            assets[0] != assets[1],
             "__validateFillOrderInputs: buy and sell asset cannot be the same"
         );
     }
