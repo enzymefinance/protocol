@@ -170,7 +170,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         vault.withdraw(_srcToken, _srcAmount);
 
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
-        approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
+        withdrawAndApproveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
         actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToEthSwapInput(
             _srcAmount,
             _minDestAmount,
@@ -209,7 +209,7 @@ contract UniswapAdapter is DSMath, ExchangeAdapter {
         vault.withdraw(_srcToken, _srcAmount);
 
         address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_srcToken);
-        approveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
+        withdrawAndApproveAsset(_srcToken, tokenExchange, _srcAmount, "takerAsset");
         actualReceiveAmount_ = IUniswapExchange(tokenExchange).tokenToTokenTransferInput(
             _srcAmount,
             _minDestAmount,

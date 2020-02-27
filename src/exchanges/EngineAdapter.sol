@@ -45,7 +45,7 @@ contract EngineAdapter is DSMath, TokenUser, ExchangeAdapter {
             "fillTakerQuantity must equal takerAssetQuantity"
         );
 
-        approveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
+        withdrawAndApproveAsset(mlnAddress, targetExchange, mlnQuantity, "takerAsset");
 
         uint ethToReceive = Engine(targetExchange).ethPayoutForMlnAmount(mlnQuantity);
 
