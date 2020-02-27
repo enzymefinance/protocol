@@ -153,7 +153,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        withdrawAndApproveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
+        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToEther(srcToken, srcAmount, minRate);
 
         // Convert ETH to WETH
@@ -177,7 +177,7 @@ contract KyberAdapter is DSMath, ExchangeAdapter {
         internal
         returns (uint receivedAmount)
     {
-        withdrawAndApproveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
+        approveAsset(srcToken, targetExchange, srcAmount, "takerAsset");
 
         receivedAmount = IKyberNetworkProxy(targetExchange).swapTokenToToken(srcToken, srcAmount, destToken, minRate);
     }
