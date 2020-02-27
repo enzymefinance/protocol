@@ -32,14 +32,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     /// @param _orderValues [6] Taker asset fill quantity
     /// @param _identifier Order identifier
     /// @param _signature Signature of the order
-    /// @param _fillAssets [0] Maker asset (same as _orderAddresses[2])
-    /// @param _fillAssets [1] Taker asset (same as _orderAddresses[3])
-    /// @param _fillAssets [2] Protocol Fee asset (WETH)
-    /// @param _fillAssets [3] Taker Fee asset (same as _orderAddresses[7])
-    /// @param _fillExpectedAmounts [0] Expected (min) quantity of maker asset to receive
-    /// @param _fillExpectedAmounts [1] Expected (max) quantity of taker asset to spend
-    /// @param _fillExpectedAmounts [2] Expected (max) quantity of protocol asset to spend
-    /// @param _fillExpectedAmounts [3] Expected (max) quantity of taker fee asset to spend
+    /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -47,28 +40,20 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature,
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        bytes memory _fillData
     )
         internal
         override
-        validateAndFinalizeFilledOrder(
-            _targetExchange,
-            _fillAssets,
-            _fillExpectedAmounts
-        )
+        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
     {
-        IZeroExV3.Order memory order = __constructOrderStruct(
-            _orderAddresses,
-            _orderValues,
-            _orderData
-        );
-
-        // Approve taker, taker fee, and protocol fee assets
-        __approveAssetsTakeOrder(_targetExchange, order, _fillExpectedAmounts);
+        (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
 
         // Execute take order on exchange
-        IZeroExV3(_targetExchange).fillOrder(order, _fillExpectedAmounts[1], _signature);
+        IZeroExV3(_targetExchange).fillOrder(
+            __constructOrderStruct(_orderAddresses, _orderValues, _orderData),
+            fillExpectedAmounts[1],
+            _signature
+        );
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
@@ -104,6 +89,11 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     /// - [1] Expected (max) quantity of taker asset to spend
     /// - [2] Expected (max) quantity of protocol asset to spend
     /// - [3] Expected (max) quantity of taker fee asset to spend
+    /// @return _fillApprovalTargets Recipients of assets in fill order
+    /// - [0] Taker (fund), set to address(0)
+    /// - [1] 0x asset proxy for the taker asset
+    /// - [2] 0x protocolFeeCollector
+    /// - [3] 0x asset proxy for the taker fee asset
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -115,7 +105,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
         internal
         view
         override
-        returns (address[] memory, uint256[] memory)
+        returns (address[] memory, uint256[] memory, address[] memory)
     {
         address[] memory fillAssets = new address[](4);
         fillAssets[0] = _orderAddresses[2]; // maker asset
@@ -137,7 +127,13 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
             _orderValues[6]
         ); // taker fee amount; calculated relative to taker fill amount
 
-        return (fillAssets, fillExpectedAmounts);
+        address[] memory fillApprovalTargets = new address[](4);
+        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
+        fillApprovalTargets[1] = __getAssetProxy(_targetExchange, _orderData[1]); // 0x asset proxy for taker asset
+        fillApprovalTargets[2] = IZeroExV3(_targetExchange).protocolFeeCollector(); // 0x protocol fee collector
+        fillApprovalTargets[3] = __getAssetProxy(_targetExchange, _orderData[3]); // 0x asset proxy for taker fee asset
+
+        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
@@ -204,45 +200,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
 
     // PRIVATE FUNCTIONS
 
-    // Approves takerAsset, takerFeeAsset, protocolFee
-    function __approveAssetsTakeOrder(
-        address _targetExchange,
-        IZeroExV3.Order memory _order,
-        uint256[] memory _fillExpectedAmounts
-    )
-        private
-    {
-        __approveProtocolFeeAsset(_targetExchange);
-        __approveAsset(
-            __getAssetAddress(_order.takerAssetData),
-            __getAssetProxy(_targetExchange, _order.takerAssetData),
-            _fillExpectedAmounts[1],
-            "takerAsset"
-        );
-        if (_order.takerFee > 0) {
-            __approveAsset(
-                __getAssetAddress(_order.takerFeeAssetData),
-                __getAssetProxy(_targetExchange, _order.takerFeeAssetData),
-                _fillExpectedAmounts[3],
-                "takerFeeAsset"
-            );
-        }
-    }
-
-    function __approveProtocolFeeAsset(address _targetExchange) internal {
-        address protocolFeeCollector = IZeroExV3(_targetExchange).protocolFeeCollector();
-        uint256 protocolFeeAmount = __calcProtocolFeeAmount(_targetExchange);
-        if (protocolFeeCollector == address(0) || protocolFeeAmount == 0) return;
-
-        __approveAsset(
-            __getNativeAssetAddress(),
-            protocolFeeCollector,
-            protocolFeeAmount,
-            "protocolFee"
-        );
-    }
-
-    function __calcProtocolFeeAmount(address _targetExchange) internal view returns (uint256) {
+    function __calcProtocolFeeAmount(address _targetExchange) private view returns (uint256) {
         return mul(IZeroExV3(_targetExchange).protocolFeeMultiplier(), tx.gasprice);
     }
 

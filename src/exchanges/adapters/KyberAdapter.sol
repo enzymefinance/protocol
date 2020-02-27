@@ -17,10 +17,7 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
     /// @param _orderValues [0] Maker asset quantity
     /// @param _orderValues [1] Taker asset quantity
     /// @param _orderValues [6] Taker asset fill quantity (same as _orderValues[1])
-    /// @param _fillAssets [0] Maker asset (same as _orderAddresses[2])
-    /// @param _fillAssets [1] Taker asset (same as _orderAddresses[3])
-    /// @param _fillExpectedAmounts [0] Expected (min) quantity of maker asset to receive
-    /// @param _fillExpectedAmounts [1] Expected (max) quantity of taker asset to spend
+    /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -28,39 +25,37 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         bytes[4] memory _orderData,
         bytes32 _identifier,
         bytes memory _signature,
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        bytes memory _fillData
     )
         internal
         override
-        validateAndFinalizeFilledOrder(
-            _targetExchange,
-            _fillAssets,
-            _fillExpectedAmounts
-        )
+        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
     {
-        address nativeAsset = __getNativeAssetAddress();
+        (
+            address[] memory fillAssets,
+            uint256[] memory fillExpectedAmounts,
+        ) = __decodeOrderFillData(_fillData);
 
         // Execute order on exchange, depending on asset types
-        if (_fillAssets[1] == nativeAsset) {
+        if (fillAssets[1] == __getNativeAssetAddress()) {
             __swapNativeAssetToToken(
                 _targetExchange,
-                _fillAssets,
-                _fillExpectedAmounts
+                fillAssets,
+                fillExpectedAmounts
             );
         }
-        else if (_fillAssets[0] == nativeAsset) {
+        else if (fillAssets[0] == __getNativeAssetAddress()) {
             __swapTokenToNativeAsset(
                 _targetExchange,
-                _fillAssets,
-                _fillExpectedAmounts
+                fillAssets,
+                fillExpectedAmounts
             );
         }
         else {
             __swapTokenToToken(
                 _targetExchange,
-                _fillAssets,
-                _fillExpectedAmounts
+                fillAssets,
+                fillExpectedAmounts
             );
         }
     }
@@ -78,6 +73,9 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
     /// @return _fillExpectedAmounts Asset fill amounts
     /// - [0] Expected (min) quantity of maker asset to receive
     /// - [1] Expected (max) quantity of taker asset to spend
+    /// @return _fillApprovalTargets Recipients of assets in fill order
+    /// - [0] Taker (fund), set to address(0)
+    /// - [1] Kyber exchange (_targetExchange)
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         address[8] memory _orderAddresses,
@@ -89,7 +87,7 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         internal
         view
         override
-        returns (address[] memory, uint256[] memory)
+        returns (address[] memory, uint256[] memory, address[] memory)
     {
         address[] memory fillAssets = new address[](2);
         fillAssets[0] = _orderAddresses[2]; // maker asset
@@ -99,7 +97,13 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         fillExpectedAmounts[0] = _orderValues[0]; // maker fill amount
         fillExpectedAmounts[1] = _orderValues[1]; // taker fill amount
 
-        return (fillAssets, fillExpectedAmounts);
+        address[] memory fillApprovalTargets = new address[](2);
+        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
+        fillApprovalTargets[1] = fillAssets[1] == __getNativeAssetAddress() ?
+            address(0) :
+            _targetExchange; // Kyber exchange
+
+        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
@@ -179,8 +183,6 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
     )
         private
     {
-        __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
-
         uint256 preEthBalance = payable(address(this)).balance;
         IKyberNetworkProxy(_targetExchange).swapTokenToEther(
             _fillAssets[1],
@@ -201,8 +203,6 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
     )
         private
     {
-        __approveAsset(_fillAssets[1], _targetExchange, _fillExpectedAmounts[1], "takerAsset");
-
         IKyberNetworkProxy(_targetExchange).swapTokenToToken(
             _fillAssets[1],
             _fillExpectedAmounts[1],
