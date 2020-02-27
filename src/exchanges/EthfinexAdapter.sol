@@ -192,7 +192,7 @@ contract EthfinexAdapter is DSMath, ExchangeAdapter {
             WETH(payable(nativeAsset)).withdraw(_makerQuantity);
             IWrapperLockEth(wrappedToken).deposit.value(_makerQuantity)(_makerQuantity, depositTime);
         } else {
-            withdrawAndApproveAsset(
+            approveAsset(
                 _makerAsset,
                 wrappedToken,
                 _makerQuantity,
