@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+- "Internal Accounting" (storage-based calculations of fund holdings)
+- Standardized pipeline for takeOrder (OrderFiller + OrderTaker contracts)
+- OrderFilled event (replaces ExchangeMethodCall)
+
+### Removed
+- EthfinexAdapter
+- makeOrder and related functions/storage
+- Vault component
+- ExchangeMethodCall event
+
 ## 1.1.2
 
 ### Fixed
