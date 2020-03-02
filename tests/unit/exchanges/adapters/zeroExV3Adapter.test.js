@@ -1208,24 +1208,6 @@ describe('takeOrder', () => {
         version
       });
       exchangeIndex = 0;
-
-      // Make 2nd investment with MLN to allow taker fee trade
-      takerFee = toWei('0.001', 'ether');
-      await investInFund({
-        fundAddress: fund.hub.options.address,
-        investment: {
-          contribAmount: takerFee,
-          investor: deployer,
-          tokenContract: mln
-        },
-        isInitial: false,
-        tokenPriceData: {
-          priceSource,
-          tokenAddresses: [
-            mln.options.address
-          ]
-        }
-      });
     });
     
     test('third party makes and validates an off-chain order', async () => {
@@ -1233,6 +1215,7 @@ describe('takeOrder', () => {
       const makerAssetAmount = toWei('1', 'Ether');
       const takerAssetAmount = toWei('0.05', 'Ether');
       const feeRecipientAddress = randomHex(20);
+      const takerFee = toWei('0.001', 'ether');
       takerFeeTokenAddress = mln.options.address;
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
