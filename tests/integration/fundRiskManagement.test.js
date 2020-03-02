@@ -98,9 +98,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
   beforeAll(async () => {
     fund = await setupInvestedTestFund(contracts, manager);
-    const { accounting, policyManager, trading } = fund;
+    const { accounting, policyManager, vault } = fund;
 
-    const exchangeInfo = await call(trading, 'getExchangeInfo');
+    const exchangeInfo = await call(vault, 'getExchangeInfo');
     oasisDexExchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase(),
     );
@@ -198,7 +198,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Bad take order: blacklisted maker asset', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       const makerAsset = knc.options.address;
       const wethToMakerAssetRate = new BN(
@@ -211,7 +211,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -260,11 +260,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Good take order: non-blacklisted maker asset', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -315,7 +315,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Bad take order: slippage just above limit', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       const badMakerQuantity = BNExpMul(
         new BN(expectedMakerQuantity),
@@ -324,7 +324,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -370,11 +370,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Good take order: slippage just within limit', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -460,11 +460,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Good make order: just under max-concentration', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -505,11 +505,11 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Bad make order: max concentration exceeded', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -551,9 +551,9 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     contracts = deployed.contracts;
 
     fund = await setupInvestedTestFund(contracts, manager);
-    const { accounting, policyManager, trading } = fund;
+    const { accounting, policyManager, vault } = fund;
 
-    const exchangeInfo = await call(trading, 'getExchangeInfo');
+    const exchangeInfo = await call(vault, 'getExchangeInfo');
     oasisDexExchangeIndex = exchangeInfo[1].findIndex(
       e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase(),
     );
@@ -628,7 +628,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Bad take order: non-whitelisted maker asset', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       const badMakerAsset = knc.options.address;
       const makerToWethAssetRate = new BN(
@@ -641,7 +641,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -690,11 +690,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Good take order: whitelisted maker asset', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -775,7 +775,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Good take order 1: final allowed position', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       const maxPositionsVal = await call(maxPositions, 'maxPositions');
 
@@ -783,7 +783,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 
       await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           oasisDexExchangeIndex,
@@ -827,11 +827,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Bad take order: over limit for positions', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,
@@ -873,11 +873,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Good make order 2: add to current position', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             oasisDexExchangeIndex,

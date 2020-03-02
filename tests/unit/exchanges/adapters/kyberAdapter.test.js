@@ -1,5 +1,5 @@
 /*
- * @file Unit tests for trading via the KyberAdapter
+ * @file Unit tests for vault via the KyberAdapter
  *
  * @dev Note that liquidity pool is only added to in top-level beforeAll,
  * which is fine because these unit tests are agnostic to pricefeed
@@ -106,7 +106,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       preFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -116,7 +116,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -221,7 +221,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       preFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -231,7 +231,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -336,7 +336,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       preFundHoldingsEur = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
@@ -346,7 +346,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,

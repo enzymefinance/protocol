@@ -91,7 +91,7 @@ beforeAll(async () => {
   await send(version, 'createParticipation', [], managerTxOpts);
   await send(version, 'createPolicyManager', [], managerTxOpts);
   await send(version, 'createShares', [], managerTxOpts);
-  await send(version, 'createTrading', [], managerTxOpts);
+  await send(version, 'createVault', [], managerTxOpts);
   const res = await send(version, 'completeSetup', [], managerTxOpts);
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
 
@@ -159,7 +159,7 @@ test('Request investment succeeds for whitelisted user with allowance', async ()
 });
 
 test('Fund can take an order on Oasis DEX', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const makerQuantity = toWei('2', 'ether');
   const makerAsset = mln.options.address;
@@ -178,14 +178,14 @@ test('Fund can take an order on Oasis DEX', async () => {
   const preWethFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address]);
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderFunctionSig,
       [
         deployer,
-        fund.trading.options.address,
+        fund.vault.options.address,
         makerAsset,
         takerAsset,
         EMPTY_ADDRESS,

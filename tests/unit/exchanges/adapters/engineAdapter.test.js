@@ -1,5 +1,5 @@
 /*
- * @file Unit tests for trading via the EngineAdapter (input validation only)
+ * @file Unit tests for vault via the EngineAdapter (input validation only)
  * 
  * @dev This file only contains tests for callOnExchange param validation.
  * Other tests rely on EVM manipulation not allowed on testnets (only local blockchain).
@@ -78,11 +78,11 @@ describe('takeOrder', () => {
     });
 
     it('does not allow maker asset other than WETH', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -108,11 +108,11 @@ describe('takeOrder', () => {
     });
 
     it('does not allow taker asset other than MLN', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -138,12 +138,12 @@ describe('takeOrder', () => {
     });
 
     it('does not allow trade when no ether in engine', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
       const zeroMakerQuanity = 0;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,

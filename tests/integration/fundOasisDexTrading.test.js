@@ -1,5 +1,5 @@
 /*
- * @file Tests funds trading via the Oasis Dex adapter
+ * @file Tests funds vault via the Oasis Dex adapter
  *
  * @test A fund can take an order (buy MLN with WETH)
  * @test A fund can take and order (buy WETH with MLN)
@@ -107,10 +107,10 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
   });
 
   test('Fund takes the order', async () => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
 
-    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -119,14 +119,14 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
     );
   
     await send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,
         takeOrderFunctionSig,
         [
           deployer,
-          trading.options.address,
+          vault.options.address,
           makerAsset,
           takerAsset,
           EMPTY_ADDRESS,
@@ -142,8 +142,8 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
       managerTxOpts
     );
   
-    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -198,10 +198,10 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
   });
 
   test('Fund takes the order', async () => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
 
-    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -210,14 +210,14 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
     );
   
     await send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,
         takeOrderFunctionSig,
         [
           deployer,
-          trading.options.address,
+          vault.options.address,
           makerAsset,
           takerAsset,
           EMPTY_ADDRESS,
@@ -233,8 +233,8 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
       managerTxOpts
     );
   
-    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );

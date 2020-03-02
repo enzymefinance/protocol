@@ -1,5 +1,5 @@
 /*
- * @file Unit tests for trading via the ZeroExV3Adapter
+ * @file Unit tests for vault via the ZeroExV3Adapter
  *
  * @test takeOrder: __validateTakeOrderParams
  * @test takeOrder: Order 1: full amount w/ protocolFee
@@ -126,11 +126,11 @@ describe('takeOrder', () => {
     });
 
     it('does not allow different maker asset address and maker asset data address', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -170,11 +170,11 @@ describe('takeOrder', () => {
     });
   
     it('does not allow different taker asset address and taker asset data address', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -214,12 +214,12 @@ describe('takeOrder', () => {
     });
   
     it('does not allow taker fill amount greater than order max', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
       const badFillQuantity = new BN(fillQuantity).add(new BN(1)).toString();
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -259,12 +259,12 @@ describe('takeOrder', () => {
     });
 
     it('does not allow different taker fee asset address and takerFeeAssetData', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
       const badFillQuantity = new BN(fillQuantity).add(new BN(1)).toString();
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -363,7 +363,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
         EMPTY_ADDRESS :
@@ -380,7 +380,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -525,7 +525,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
         EMPTY_ADDRESS :
@@ -542,7 +542,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -709,7 +709,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
         EMPTY_ADDRESS :
@@ -726,7 +726,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -909,7 +909,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
         EMPTY_ADDRESS :
@@ -929,7 +929,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -1087,7 +1087,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
         EMPTY_ADDRESS :
@@ -1104,7 +1104,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -1248,7 +1248,7 @@ describe('takeOrder', () => {
     });
 
     test('half of the order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
       const partialFillDivisor = new BN(2);
       takerFillQuantity = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
       makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
@@ -1269,7 +1269,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
