@@ -21,11 +21,6 @@ abstract contract ExchangeAdapter is DSMath {
     )
         internal
     {
-        require(
-            __getAccounting().assetBalances(_asset) >= _amount,
-            string(abi.encodePacked("__approveAsset: Insufficient available assetBalance: ", _assetType))
-        );
-
         uint256 allowance = IERC20(_asset).allowance(address(this), _target);
         require(
             IERC20(_asset).approve(_target, add(allowance, _amount)),
