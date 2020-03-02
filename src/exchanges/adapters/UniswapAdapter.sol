@@ -12,7 +12,6 @@ import "../../fund/policies/TradingSignatures.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and Uniswap
 contract UniswapAdapter is ExchangeAdapter, OrderTaker, TradingSignatures {
-
     /// @notice Extract arguments for risk management validations
     /// @param _methodSelector method selector of TAKE_ORDER, ...
     /// @param _encodedArgs Encoded arguments for a specific exchange
@@ -260,5 +259,4 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker, TradingSignatures {
             )
         );
     }
-
 }
