@@ -196,7 +196,7 @@ describe('trading', () => {
         ],
         defaultTxOpts
       )
-    ).rejects.toThrowFlexible("Insufficient available assetBalance: takerAsset");
+    ).rejects.toThrowFlexible("new balance cannot be less than 0");
   });
 
   it('can take a trade that decreases asset balance to exactly 0', async() => {

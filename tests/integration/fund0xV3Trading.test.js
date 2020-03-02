@@ -321,7 +321,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
         callOnExchangeArgs,
         managerTxOpts
       )
-    ).rejects.toThrowFlexible("Insufficient available assetBalance: fee asset");
+    ).rejects.toThrowFlexible("TRANSFER_FAILED");
   });
 
   test('Invest in fund with enough DAI to take trade with taker fee', async () => {
