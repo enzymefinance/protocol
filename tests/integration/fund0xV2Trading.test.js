@@ -1,5 +1,5 @@
 /*
- * @file Tests funds trading via the 0x adapter
+ * @file Tests funds vault via the 0x adapter
  *
  * @test Fund takes an order
  * @test Fund takes an order with a taker fee
@@ -113,13 +113,13 @@ describe('Fund takes an order', () => {
   });
 
   test('manager takes order through adapter', async () => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -128,7 +128,7 @@ describe('Fund takes an order', () => {
     );
 
     await send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,
@@ -162,8 +162,8 @@ describe('Fund takes an order', () => {
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -275,14 +275,14 @@ describe('Fund takes an order with a taker fee', () => {
   });
 
   test('fund with enough ZRX takes order', async () => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
-    const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [trading.options.address]));
+    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -294,7 +294,7 @@ describe('Fund takes an order with a taker fee', () => {
     );
     
     await send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,
@@ -328,9 +328,9 @@ describe('Fund takes an order with a taker fee', () => {
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
-    const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [trading.options.address]));
+    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );

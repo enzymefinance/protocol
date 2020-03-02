@@ -190,7 +190,7 @@ describe('investment', () => {
     const investAmount = '1000';
     const sharesAmount = '1000';
     const preTradingWeth = await mockSystem.weth.methods
-      .balanceOf(mockSystem.trading.options.address)
+      .balanceOf(mockSystem.vault.options.address)
       .call();
     await mockSystem.weth.methods
       .approve(mockSystem.participation.options.address, investAmount)
@@ -207,7 +207,7 @@ describe('investment', () => {
       .executeRequestFor(user)
       .send({ ...defaultTxOpts, value: defaultAmgu });
     const postTradingWeth = await mockSystem.weth.methods
-      .balanceOf(mockSystem.trading.options.address)
+      .balanceOf(mockSystem.vault.options.address)
       .call();
     const postShares = await mockSystem.shares.methods
       .balanceOf(user)

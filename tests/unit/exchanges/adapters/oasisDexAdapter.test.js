@@ -1,5 +1,5 @@
 /*
- * @file Unit tests for trading via the OasisDexAdapter
+ * @file Unit tests for vault via the OasisDexAdapter
  *
  * @test takeOrder: __validateTakeOrderParams
  * @test takeOrder: Order 1: full amount
@@ -92,11 +92,11 @@ describe('takeOrder', () => {
     });
 
     it('does not allow different maker asset address than actual oasisDex order', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -122,11 +122,11 @@ describe('takeOrder', () => {
     });
   
     it('does not allow different taker asset address than actual oasisDex order', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -152,12 +152,12 @@ describe('takeOrder', () => {
     });
   
     it('does not allow taker fill amount greater than order max', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
       const badFillQuantity = new BN(fillQuantity).add(new BN(1)).toString();
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,
@@ -232,7 +232,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       preFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -242,7 +242,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -354,7 +354,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
       const partialFillDivisor = new BN(2);
       takerFillQuantity = new BN(takerQuantity).div(partialFillDivisor);
       makerFillQuantity = new BN(makerQuantity).div(partialFillDivisor);
@@ -367,7 +367,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,

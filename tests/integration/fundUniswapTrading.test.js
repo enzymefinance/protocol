@@ -1,5 +1,5 @@
 /*
- * @file Tests funds trading via the Uniswap adapter
+ * @file Tests funds vault via the Uniswap adapter
  *
  * @test Swap ERC20 for WETH (with minimum set from Uniswap price)
  * @test Swap WETH for ERC20 (with minimum set from Uniswap price)
@@ -64,7 +64,7 @@ beforeAll(async () => {
   });
   exchangeIndex = 0;
 
-  takerAddress = fund.trading.options.address;
+  takerAddress = fund.vault.options.address;
 
   // Load interfaces for uniswap exchanges of tokens to be traded
   const iUniswapFactory = await fetchContract(
@@ -119,7 +119,7 @@ beforeAll(async () => {
 });
 
 test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -131,8 +131,8 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     [takerQuantity]
   );
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -141,7 +141,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -164,8 +164,8 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -186,7 +186,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
 });
 
 test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -198,8 +198,8 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     [takerQuantity]
   );
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -208,7 +208,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -231,8 +231,8 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -253,7 +253,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
 });
 
 test('Swap MLN directly to EUR without specifying a minimum maker quantity', async () => {
-  const { accounting, trading, vault } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -271,9 +271,9 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     [intermediateEth]
   );
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -285,7 +285,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -308,9 +308,9 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -337,7 +337,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
 });
 
 test('Order fails if maker amount is not satisfied', async () => {
-  const { trading } = fund;
+  const { vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -352,7 +352,7 @@ test('Order fails if maker amount is not satisfied', async () => {
 
   await expect(
     send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,

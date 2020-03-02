@@ -21,7 +21,7 @@ const deployMockSystem = async (
     priceSourceContract = CONTRACT_NAMES.TESTING_PRICEFEED,
     registryContract = CONTRACT_NAMES.MOCK_REGISTRY,
     sharesContract = CONTRACT_NAMES.MOCK_SHARES,
-    tradingContract = CONTRACT_NAMES.TRADING,
+    vaultContract = CONTRACT_NAMES.VAULT,
     versionContract = CONTRACT_NAMES.MOCK_VERSION
   } = {},
 ) => {
@@ -121,13 +121,13 @@ const deployMockSystem = async (
     [hub.options.address]
   );
 
-  const trading = await deploy(
-    tradingContract,
+  const vault = await deploy(
+    vaultContract,
     [
       hub.options.address,
       [oasisDex.options.address],
       [oasisDexAdapter.options.address],
-      registry.options.address,
+      registry.options.address
     ]
   );
 
@@ -152,7 +152,7 @@ const deployMockSystem = async (
       participation.options.address,
       policyManager.options.address,
       shares.options.address,
-      trading.options.address,
+      vault.options.address,
       registry.options.address,
       version.options.address,
       engine.options.address,
@@ -164,7 +164,7 @@ const deployMockSystem = async (
     accounting,
     participation,
     shares,
-    trading,
+    vault,
     feeManager,
   ];
   for (const contract of toInit) {
@@ -187,7 +187,7 @@ const deployMockSystem = async (
     priceSource,
     registry,
     shares,
-    trading,
+    vault,
     version,
     weth,
   };

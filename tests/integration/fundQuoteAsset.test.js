@@ -61,7 +61,7 @@ test('Quote asset is KNC', async () => {
 });
 
 test('Fund gets non-quote asset from investment', async () => {
-  const { accounting, participation, shares, trading } = fund;
+  const { accounting, participation, shares, vault } = fund;
 
   const offeredValue = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
@@ -99,7 +99,7 @@ test('Fund gets non-quote asset from investment', async () => {
 
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -122,7 +122,7 @@ test('Fund gets non-quote asset from investment', async () => {
 
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -148,11 +148,11 @@ test('Fund gets non-quote asset from investment', async () => {
 });
 
 test('investor redeems his shares', async () => {
-  const { accounting, participation, shares, trading } = fund;
+  const { accounting, participation, shares, vault } = fund;
 
   const investorShares =  new BN(await call(shares, 'balanceOf', [investor]));
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -161,7 +161,7 @@ test('investor redeems his shares', async () => {
 
   await send(participation, 'redeem', [], investorTxOpts);
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -181,7 +181,7 @@ test('investor redeems his shares', async () => {
 });
 
 test('Fund gets asset from investment that has no pair with the quote asset in the pricefeed', async () => {
-  const { accounting, participation, shares, trading } = fund;
+  const { accounting, participation, shares, vault } = fund;
 
   const offeredValue = toWei('1', 'ether');
   const wantedShares = toWei('1', 'ether');
@@ -204,7 +204,7 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
   );
   expect(expectedCostOfShares).bigNumberEq(actualCostOfShares);
 
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsMln = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
@@ -226,7 +226,7 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
     investorTxOpts
   );
 
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsMln = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );

@@ -71,7 +71,7 @@ test('initial investment (with quote token)', async () => {
 });
 
 test('sending quote token directly to Trading does NOT affect fund calculations', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
   const tokenQuantity = toWei('1', 'ether');
 
   const preFundCalculations = await call(accounting, 'calcFundMetrics');
@@ -79,7 +79,7 @@ test('sending quote token directly to Trading does NOT affect fund calculations'
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
 
-  await send(weth, 'transfer', [trading.options.address, tokenQuantity], defaultTxOpts);
+  await send(weth, 'transfer', [vault.options.address, tokenQuantity], defaultTxOpts);
 
   const postFundCalculations = await call(accounting, 'calcFundMetrics');
   const postFundWethHoldings = new BN(

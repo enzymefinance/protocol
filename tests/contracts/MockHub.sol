@@ -13,7 +13,7 @@ contract MockHub is DSGuard {
         address participation;
         address policyManager;
         address shares;
-        address trading;
+        address vault;
         address registry;
         address version;
         address engine;
@@ -38,7 +38,7 @@ contract MockHub is DSGuard {
         routes.participation = _spokes[2];
         routes.policyManager = _spokes[3];
         routes.shares = _spokes[4];
-        routes.trading = _spokes[5];
+        routes.vault = _spokes[5];
         routes.registry = _spokes[6];
         routes.version = _spokes[7];
         routes.engine = _spokes[8];
@@ -52,7 +52,7 @@ contract MockHub is DSGuard {
             routes.participation,
             routes.policyManager,
             routes.shares,
-            routes.trading,
+            routes.vault,
             routes.registry,
             routes.version,
             routes.engine,
@@ -63,11 +63,11 @@ contract MockHub is DSGuard {
         Spoke(routes.participation).initialize(spokes);
         Spoke(routes.policyManager).initialize(spokes);
         Spoke(routes.shares).initialize(spokes);
-        Spoke(routes.trading).initialize(spokes);
+        Spoke(routes.vault).initialize(spokes);
     }
 
     function setPermissions() public {
-        permit(routes.participation, routes.trading, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(routes.participation, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(routes.participation, routes.shares, bytes4(keccak256('destroyFor(address,uint256)')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
@@ -75,10 +75,10 @@ contract MockHub is DSGuard {
         permit(routes.participation, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
         permit(routes.participation, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
         permit(routes.participation, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
-        permit(routes.trading, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
-        permit(routes.trading, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
-        permit(routes.trading, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
-        permit(routes.trading, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(routes.vault, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
+        permit(routes.vault, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
+        permit(routes.vault, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
+        permit(routes.vault, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(manager, routes.feeManager, bytes4(keccak256('register(address)')));
         permit(manager, routes.feeManager, bytes4(keccak256('batchRegister(address[])')));
@@ -104,7 +104,7 @@ contract MockHub is DSGuard {
             routes.participation,
             routes.policyManager,
             routes.shares,
-            routes.trading,
+            routes.vault,
             routes.registry,
             routes.version,
             routes.engine,
@@ -116,7 +116,7 @@ contract MockHub is DSGuard {
     function accounting() public view returns (address) { return routes.accounting; }
     function priceSource() public view returns (address) { return Registry(routes.registry).priceSource(); }
     function participation() public view returns (address) { return routes.participation; }
-    function trading() public view returns (address) { return routes.trading; }
+    function vault() public view returns (address) { return routes.vault; }
     function shares() public view returns (address) { return routes.shares; }
     function policyManager() public view returns (address) { return routes.policyManager; }
     function registry() public view returns (address) { return routes.registry; }

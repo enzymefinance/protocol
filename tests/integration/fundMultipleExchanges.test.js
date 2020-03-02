@@ -1,5 +1,5 @@
 /*
- * @file Tests a fund trading with multiple exchange adapters
+ * @file Tests a fund vault with multiple exchange adapters
  *
  * @test A fund can add an exchange adapter after it is created
  * @test A fund can take an order with the newly-added exchange
@@ -62,18 +62,18 @@ beforeAll(async () => {
 });
 
 test("add Kyber to fund's allowed exchanges", async () => {
-  const { trading } = fund;
+  const { vault } = fund;
 
-  const preAddExchangeCount = (await call(trading, 'getExchangeInfo'))[0].length;
+  const preAddExchangeCount = (await call(vault, 'getExchangeInfo'))[0].length;
 
   await send(
-    trading,
+    vault,
     'addExchange',
     [kyberNetworkProxy.options.address, kyberAdapter.options.address],
     managerTxOpts
   );
 
-  const exchangeInfo = await call(trading, 'getExchangeInfo');
+  const exchangeInfo = await call(vault, 'getExchangeInfo');
   kyberExchangeIndex = exchangeInfo[1].findIndex(
     e => e.toLowerCase() === kyberAdapter.options.address.toLowerCase()
   );
@@ -82,7 +82,7 @@ test("add Kyber to fund's allowed exchanges", async () => {
 });
 
 test('fund takes an order on Kyber', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -100,8 +100,8 @@ test('fund takes an order on Kyber', async () => {
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -110,7 +110,7 @@ test('fund takes an order on Kyber', async () => {
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       kyberExchangeIndex,
@@ -133,8 +133,8 @@ test('fund takes an order on Kyber', async () => {
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );

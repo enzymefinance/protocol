@@ -136,7 +136,7 @@ describe('new investment in fund', () => {
   });
 });
 
-describe('trading', () => {
+describe('vault', () => {
   let preTxBlock;
   let makerAsset, makerQuantity, takerAsset, takerQuantity;
   let preFundMlnHoldings, preFundWethHoldings, postFundMlnHoldings, postFundWethHoldings;
@@ -168,13 +168,13 @@ describe('trading', () => {
   });
 
   it('cannot take a trade that decreases an asset balance below 0', async() => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     const badTakerQuantity = new BN(investmentAmount).add(new BN(1)).toString();
 
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -200,7 +200,7 @@ describe('trading', () => {
   });
 
   it('can take a trade that decreases asset balance to exactly 0', async() => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
 
     preFundMlnHoldings = new BN(
       await call(accounting, 'assetBalances', [mln.options.address])
@@ -213,7 +213,7 @@ describe('trading', () => {
 
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,

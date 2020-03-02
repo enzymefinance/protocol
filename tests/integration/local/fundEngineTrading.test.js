@@ -1,5 +1,5 @@
 /*
- * @file Tests a fund trading with the Melon Engine
+ * @file Tests a fund vault with the Melon Engine
  *
  * @test A fund can take an order once liquid ETH is thawed
  * @test The amount of WETH being asked for by the fund is respected as a minimum
@@ -80,7 +80,7 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
   // TODO: Need to calculate this in fund.js
   const amguTxValue = toWei('10', 'ether');
   fund = await setupInvestedTestFund(contracts, manager, amguTxValue);
-  const { policyManager, trading } = fund;
+  const { policyManager, vault } = fund;
 
   await send(
     policyManager,
@@ -89,7 +89,7 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
     managerTxOpts
   );
 
-  const exchangeInfo = await call(trading, 'getExchangeInfo');
+  const exchangeInfo = await call(vault, 'getExchangeInfo');
   exchangeIndex = exchangeInfo[1].findIndex(
     e =>
       e.toLowerCase() ===
@@ -152,15 +152,15 @@ test('Invest in fund with enough MLN to buy desired ETH from engine', async () =
 
 // TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
 test('Trade on Melon Engine', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   // Thaw frozen eth
   await increaseTime(86400 * 32);
   await send(engine, 'thaw');
 
   const preliquidEther = new BN(await call(engine, 'liquidEther'));
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -169,7 +169,7 @@ test('Trade on Melon Engine', async () => {
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -193,8 +193,8 @@ test('Trade on Melon Engine', async () => {
   );
 
   const postliquidEther = new BN(await call(engine, 'liquidEther'));
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -213,13 +213,13 @@ test('Trade on Melon Engine', async () => {
 });
 
 test('Maker quantity as minimum returned WETH is respected', async () => {
-  const { trading } = fund;
+  const { vault } = fund;
 
   const makerQuantity = new BN(mlnPrice.toString()).div(new BN(2)).toString();
 
   await expect(
     send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,

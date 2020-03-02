@@ -1,5 +1,5 @@
 /*
- * @file Unit tests for trading via the EngineAdapter (local only)
+ * @file Unit tests for vault via the EngineAdapter (local only)
  *
  * @dev This file contains tests that will only work locally because of EVM manipulation.
  * Input validation tests are in engineAdapter.test.js
@@ -107,7 +107,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       preFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -117,7 +117,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -224,7 +224,7 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, trading } = fund;
+      const { accounting, vault } = fund;
 
       preFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -234,7 +234,7 @@ describe('takeOrder', () => {
       );
 
       tx = await send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -341,11 +341,11 @@ describe('takeOrder', () => {
     });
 
     it('cannot fill the order', async () => {
-      const { trading } = fund;
+      const { vault } = fund;
 
       await expect(
         send(
-          trading,
+          vault,
           'callOnExchange',
           [
             exchangeIndex,

@@ -1,5 +1,5 @@
 /*
- * @file Tests funds trading via the mock adapter.
+ * @file Tests funds vault via the mock adapter.
  * @dev This allows checking policies and other proprietary requirements without needing to satisfy exchange requirements
  *
  * @test Fund can NOT trade when maker or taker asset NOT in Registry
@@ -76,7 +76,7 @@ beforeEach(async () => {
 
 describe('Asset in Registry', () => {
   test('can NOT trade when maker or taker asset NOT in Registry', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     const makerQuantity = 100;
     const takerQuantity = 200;
@@ -84,7 +84,7 @@ describe('Asset in Registry', () => {
     // Take orders
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -110,7 +110,7 @@ describe('Asset in Registry', () => {
 
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -136,14 +136,14 @@ describe('Asset in Registry', () => {
   });
 
   test('can NOT TAKE order when TAKER fee asset NOT in Registry', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     const makerQuantity = 100;
     const takerQuantity = 200;
 
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -169,7 +169,7 @@ describe('Asset in Registry', () => {
   });
 
   test('can TAKE order when MAKER fee asset NOT in Registry', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     const makerQuantity = 100;
     const takerQuantity = 200;
@@ -177,7 +177,7 @@ describe('Asset in Registry', () => {
     // Take order
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,

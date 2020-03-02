@@ -18,7 +18,7 @@ export const getFundComponents = async hubAddress => {
   components.participation = fetchContract('Participation', routes.participation);
   components.policyManager = fetchContract('PolicyManager', routes.policyManager);
   components.shares = fetchContract('Shares', routes.shares);
-  components.trading = fetchContract('Trading', routes.trading);
+  components.vault = fetchContract('Vault', routes.vault);
 
   return components;
 }
@@ -117,7 +117,6 @@ export const setupFundWithParams = async ({
   quoteToken,
   version
 }) => {
-  const [deployer] = await getAccounts();
   const managerTxOpts = { from: manager, gas: 8000000 };
 
   // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
@@ -140,13 +139,12 @@ export const setupFundWithParams = async ({
     ],
     managerTxOpts
   );
-
   await send(version, 'createAccounting', [], managerTxOptsWithAmgu);
   await send(version, 'createFeeManager', [], managerTxOptsWithAmgu);
   await send(version, 'createParticipation', [], managerTxOptsWithAmgu);
   await send(version, 'createPolicyManager', [], managerTxOptsWithAmgu);
   await send(version, 'createShares', [], managerTxOptsWithAmgu);
-  await send(version, 'createTrading', [], managerTxOptsWithAmgu);
+  await send(version, 'createVault', [], managerTxOptsWithAmgu);
   const res = await send(version, 'completeSetup', [], managerTxOptsWithAmgu);
 
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
@@ -168,7 +166,6 @@ export const setupFundWithParams = async ({
 // @dev `contracts` is an object of web3.Contract instances
 export const setupInvestedTestFund = async (contracts, manager, amguTxValue = null) => {
   const [deployer] = await getAccounts();
-  const managerTxOpts = { from: manager, gas: 8000000 };
 
   const weth = contracts.WETH;
   const mln = contracts.MLN;
@@ -176,7 +173,6 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
   const performanceFee = contracts.PerformanceFee;
   const managementFee = contracts.ManagementFee;
 
-  const fundName = `test-fund-${Date.now()}`;
   const managementFeeRate = toWei('.02', 'ether');
   const performanceFeeRate = toWei('.2', 'ether');
   const managementFeePeriod = 0;
@@ -247,6 +243,4 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
     quoteToken: weth.options.address,
     version
   });
-
-  return fund;
 };

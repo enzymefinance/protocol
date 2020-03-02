@@ -52,11 +52,11 @@ describe('addExchange', () => {
   });
 
   test('does not allow unauthorized user', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     await expect(
       send(
-        trading,
+        vault,
         'addExchange',
         [newExchange, newAdapter],
         { ...defaultTxOpts, from: maliciousUser }
@@ -65,17 +65,17 @@ describe('addExchange', () => {
   });
 
   test('does not allow un-registered adapter', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     await expect(
-      send(trading, 'addExchange', [newExchange, newAdapter], managerTxOpts)
+      send(vault, 'addExchange', [newExchange, newAdapter], managerTxOpts)
     ).rejects.toThrowFlexible("Adapter is not registered");
   });
 
   test('allows an authenticated user to add a registered exchange adapter', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
-    const preAddExchangeCount = (await call(trading, 'getExchangeInfo'))[0].length;
+    const preAddExchangeCount = (await call(vault, 'getExchangeInfo'))[0].length;
 
     await send(
       registry,
@@ -84,10 +84,10 @@ describe('addExchange', () => {
       defaultTxOpts
     )
     await expect(
-      send(trading, 'addExchange', [newExchange, newAdapter], managerTxOpts)
+      send(vault, 'addExchange', [newExchange, newAdapter], managerTxOpts)
     ).resolves.not.toThrowFlexible();
 
-    const postExchangeInfo = await call(trading, 'getExchangeInfo');
+    const postExchangeInfo = await call(vault, 'getExchangeInfo');
     const newExchangeIndex = postExchangeInfo[0].findIndex(
       e => e.toLowerCase() === newExchange.toLowerCase()
     );
@@ -99,10 +99,10 @@ describe('addExchange', () => {
   });
 
   test('does not allow a previously-added exchange', async () => {
-    const { trading } = fund;
+    const { vault } = fund;
 
     await expect(
-      send(trading, 'addExchange', [newExchange, newAdapter], managerTxOpts)
+      send(vault, 'addExchange', [newExchange, newAdapter], managerTxOpts)
     ).rejects.toThrowFlexible("Adapter already added");
   });
 });

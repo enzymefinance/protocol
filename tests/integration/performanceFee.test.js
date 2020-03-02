@@ -1,7 +1,7 @@
 /*
  * @file Tests how setting a performanceFee affects a fund
  *
- * @test Sending weth to a fund's Trading artificially does NOT increase share price
+ * @test Sending weth to a fund's Vault artificially does NOT increase share price
  * @test Performance fee is calculated correctly
  * @test Performance fee is deducted when an investor redeems shares
  * @test Executing rewardAllFees updates the "high water mark" for performance fees
@@ -154,15 +154,15 @@ test(`fund gets weth from (non-initial) investor`, async () => {
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(new BN(wantedShares)));
 });
 
-test(`can NOT artificially inflate share price by transfering weth to Trading`, async () => {
-  const { accounting, shares, trading } = fund;
+test(`can NOT artificially inflate share price by transfering weth to Vault`, async () => {
+  const { accounting, shares, vault } = fund;
 
   const inflationAmount = toWei('0.1', 'ether');
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundCalcs = await call(accounting, 'calcFundMetrics');
 
-  await send(weth, 'transfer', [trading.options.address, inflationAmount], defaultTxOpts);
+  await send(weth, 'transfer', [vault.options.address, inflationAmount], defaultTxOpts);
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundCalcs = await call(accounting, 'calcFundMetrics');
@@ -225,7 +225,7 @@ test(`performance fee is calculated correctly`, async () => {
 
 // @dev To inflate performance fee, take a trade, then update the pricefeed with a more favorable price.
 test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const makerAsset = mln.options.address;
   const makerQuantity = toWei('0.1', 'ether');
@@ -255,7 +255,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
 
   // Fund takes the trade
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,

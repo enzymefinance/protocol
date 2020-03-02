@@ -1,5 +1,5 @@
 /*
- * @file Tests funds trading via the Kyber adapter
+ * @file Tests funds vault via the Kyber adapter
  *
  * @test Fund takes a MLN order with WETH using KyberNetworkProxy's expected price
  * @test Fund takes a WETH order with MLN using KyberNetworkProxy's expected price
@@ -65,7 +65,7 @@ beforeAll(async () => {
 });
 
 test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -82,8 +82,8 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -92,7 +92,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -115,8 +115,8 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -137,7 +137,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
 });
 
 test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -154,8 +154,8 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -164,7 +164,7 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -187,8 +187,8 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -209,7 +209,7 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
 });
 
 test('swap MLN directly to EUR without intermediary', async () => {
-  const { accounting, trading } = fund;
+  const { accounting, vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -226,9 +226,9 @@ test('swap MLN directly to EUR without intermediary', async () => {
     new BN(expectedRate.toString()),
   ).toString();
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
-  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -240,7 +240,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
   );
 
   await send(
-    trading,
+    vault,
     'callOnExchange',
     [
       exchangeIndex,
@@ -263,9 +263,9 @@ test('swap MLN directly to EUR without intermediary', async () => {
     managerTxOpts
   );
 
-  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
-  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [trading.options.address]));
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   );
@@ -292,7 +292,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
 });
 
 test('swap fails if make quantity is too high', async () => {
-  const { trading } = fund;
+  const { vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -311,7 +311,7 @@ test('swap fails if make quantity is too high', async () => {
 
   await expect(
     send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,

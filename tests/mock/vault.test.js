@@ -4,10 +4,10 @@ import web3 from '~/deploy/utils/get-web3';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import deployMockSystem from '~/tests/utils/deployMockSystem';
 
-describe('trading', () => {
+describe('vault', () => {
   let user, defaulTxOpts;
   let mockSystem;
-  let trading;
+  let vault;
 
   // Mock data
   const mockExchanges = [ randomHex(20), randomHex(20) ];
@@ -24,11 +24,11 @@ describe('trading', () => {
         .send({ from: user, gas: 8000000 });
     }
 
-    trading = await deploy(CONTRACT_NAMES.TRADING, [
+    vault = await deploy(CONTRACT_NAMES.VAULT, [
       mockSystem.hub.options.address,
       mockExchanges,
       mockExchangeAdapters,
-      mockSystem.registry.options.address,
+      mockSystem.registry.options.address
     ]);
 
     await mockSystem.hub.methods
@@ -46,16 +46,16 @@ describe('trading', () => {
       ])
       .send(defaulTxOpts);
     await mockSystem.hub.methods
-      .initializeSpoke(trading.options.address)
+      .initializeSpoke(vault.options.address)
       .send({ from: user, gas: 8000000 });
   });
 
   test('Exchanges are properly initialized', async () => {
     for (const i in mockExchanges) {
-      const exchangeObject = await trading.methods.exchanges(i).call();
+      const exchangeObject = await vault.methods.exchanges(i).call();
       expect(exchangeObject.exchange.toLowerCase()).toBe(mockExchanges[i]);
       expect(exchangeObject.adapter.toLowerCase()).toBe(mockExchangeAdapters[i]);
-      const exchangeAdded = await trading.methods
+      const exchangeAdded = await vault.methods
         .adapterIsAdded(exchangeObject.adapter)
         .call();
       expect(exchangeAdded).toBe(true);
@@ -64,13 +64,12 @@ describe('trading', () => {
 
   test('Exchanges cannot be initialized without their adapters', async () => {
     await expect(
-      deploy(CONTRACT_NAMES.TRADING, [
+      deploy(CONTRACT_NAMES.VAULT, [
         mockSystem.hub.options.address,
         mockExchanges,
         [mockExchangeAdapters[0]],
-        mockSystem.registry.options.address,
+        mockSystem.registry.options.address
       ], {gas: 8000000})
     ).rejects.toThrow('Array lengths unequal');
   });
-
 });
