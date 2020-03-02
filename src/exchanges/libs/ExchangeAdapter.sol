@@ -4,13 +4,13 @@ pragma experimental ABIEncoderV2;
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
 import "../../fund/accounting/IAccounting.sol";
-import "../../fund/trading/ITrading.sol";
+import "../../fund/hub/SpokeAccessor.sol";
 import "../../version/IRegistry.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Provides convenience functions for use in exchange adapters
-abstract contract ExchangeAdapter is DSMath {
+abstract contract ExchangeAdapter is DSMath, SpokeAccessor {
     /// @notice Increment allowance of an asset for some target
     /// @dev Checks the actual in-contract assetBalances (as opposed to "holdings")
     function __approveAsset(
@@ -45,7 +45,7 @@ abstract contract ExchangeAdapter is DSMath {
 
     /// @notice Gets an IAccounting instance
     function __getAccounting() internal view returns (IAccounting) {
-        return IAccounting(__getTrading().routes().accounting);
+        return IAccounting(__getRoutes().accounting);
     }
 
     /// @notice Gets the canonical WETH address
@@ -62,11 +62,6 @@ abstract contract ExchangeAdapter is DSMath {
 
     /// @notice Gets an IRegistry instance
     function __getRegistry() internal view returns (IRegistry) {
-        return IRegistry(__getTrading().routes().registry);
-    }
-
-    /// @notice Gets an ITrading instance
-    function __getTrading() internal view returns (ITrading) {
-        return ITrading(payable(address(this)));
+        return IRegistry(__getRoutes().registry);
     }
 }

@@ -5,7 +5,6 @@ import "../../prices/IPriceSource.sol";
 import "../fees/IFeeManager.sol";
 import "../hub/Spoke.sol";
 import "../shares/IShares.sol";
-import "../trading/ITrading.sol";
 import "../../engine/AmguConsumer.sol";
 
 contract Accounting is AmguConsumer, Spoke {

@@ -1,8 +1,7 @@
 pragma solidity 0.6.1;
 
 import "../../accounting/IAccounting.sol";
-import "../../hub/Hub.sol";
-import "../../trading/Trading.sol";
+import "../../hub/ISpoke.sol";
 import "../TradingSignatures.sol";
 
 contract MaxPositions is TradingSignatures {
@@ -19,7 +18,7 @@ contract MaxPositions is TradingSignatures {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IAccounting accounting = IAccounting(Hub(Trading(msg.sender).hub()).accounting());
+        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).hub()).accounting());
         address denominationAsset = accounting.DENOMINATION_ASSET();
         // Always allow a trade INTO the quote asset
         address incomingToken = addresses[2];

@@ -8,7 +8,7 @@ interface IHub {
         address participation;
         address policyManager;
         address shares;
-        address trading;
+        address vault;
         address registry;
         address version;
         address engine;
@@ -34,7 +34,7 @@ interface IHub {
     function priceSource() external view returns (address);
     function registry() external view returns (address);
     function shares() external view returns (address);
-    function trading() external view returns (address);
+    function vault() external view returns (address);
     function version() external view returns (address);
 
     // Caller: Creator only:
