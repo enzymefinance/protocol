@@ -24,7 +24,7 @@ const main = async input => {
   const participationFactory = await nab('ParticipationFactory', [], melonAddrs);
   const policyManagerFactory = await nab('PolicyManagerFactory', [], melonAddrs);
   const sharesFactory = await nab('SharesFactory', [], melonAddrs);
-  const tradingFactory = await nab('TradingFactory', [], melonAddrs);
+  const vaultFactory = await nab('VaultFactory', [], melonAddrs);
   const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
 
@@ -132,7 +132,7 @@ const main = async input => {
     feeManagerFactory.options.address,
     participationFactory.options.address,
     sharesFactory.options.address,
-    tradingFactory.options.address,
+    vaultFactory.options.address,
     policyManagerFactory.options.address,
     registry.options.address,
     melonConf.versionOwner
@@ -172,7 +172,7 @@ const main = async input => {
     "ParticipationFactory": participationFactory,
     "PolicyManagerFactory": policyManagerFactory,
     "SharesFactory": sharesFactory,
-    "TradingFactory": tradingFactory,
+    "VaultFactory": vaultFactory,
     "PerformanceFee": performanceFee,
     "ManagementFee": managementFee,
     "Registry": registry,
