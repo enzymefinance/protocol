@@ -187,14 +187,16 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker, TradingSignatures {
         pure
         returns (
             address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            uint256[2] memory orderValues,
+            uint256 identifier
         )
     {
         return abi.decode(
             _encodedArgs,
             (
                 address[2],
-                uint256[2]
+                uint256[2],
+                uint256
             )
         );
     }
