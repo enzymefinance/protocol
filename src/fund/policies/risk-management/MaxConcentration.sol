@@ -2,8 +2,7 @@ pragma solidity 0.6.1;
 
 import "../TradingSignatures.sol";
 import "../../accounting/IAccounting.sol";
-import "../../hub/Hub.sol";
-import "../../trading/Trading.sol";
+import "../../hub/ISpoke.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../../prices/IPriceSource.sol";
 
@@ -26,7 +25,7 @@ contract MaxConcentration is TradingSignatures, DSMath {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IAccounting accounting = IAccounting(Hub(Trading(msg.sender).hub()).accounting());
+        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).hub()).accounting());
         address denominationAsset = accounting.DENOMINATION_ASSET();
         // Max concentration is only checked for non-quote assets
         address takerToken = addresses[2];

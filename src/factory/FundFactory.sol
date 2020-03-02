@@ -7,7 +7,7 @@ import "../fund/hub/Hub.sol";
 import "../fund/policies/IPolicyManager.sol";
 import "../fund/participation/IParticipation.sol";
 import "../fund/shares/IShares.sol";
-import "../fund/trading/ITrading.sol";
+import "../fund/vault/IVault.sol";
 import "../version/IVersion.sol";
 import "../engine/AmguConsumer.sol";
 import "./Factory.sol";
@@ -28,7 +28,7 @@ contract FundFactory is AmguConsumer, Factory {
     IParticipationFactory public participationFactory;
     IPolicyManagerFactory public policyManagerFactory;
     ISharesFactory public sharesFactory;
-    ITradingFactory public tradingFactory;
+    IVaultFactory public vaultFactory;
 
     address[] public funds;
     mapping (address => address) public managersToHubs;
@@ -52,7 +52,7 @@ contract FundFactory is AmguConsumer, Factory {
         address _feeManagerFactory,
         address _participationFactory,
         address _sharesFactory,
-        address _tradingFactory,
+        address _vaultFactory,
         address _policyManagerFactory,
         address _version
     )
@@ -62,7 +62,7 @@ contract FundFactory is AmguConsumer, Factory {
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         participationFactory = IParticipationFactory(_participationFactory);
         sharesFactory = ISharesFactory(_sharesFactory);
-        tradingFactory = ITradingFactory(_tradingFactory);
+        vaultFactory = IVaultFactory(_vaultFactory);
         policyManagerFactory = IPolicyManagerFactory(_policyManagerFactory);
         version = IVersion(_version);
     }
@@ -197,12 +197,12 @@ contract FundFactory is AmguConsumer, Factory {
     function createSharesFor(address _manager) external amguPayable(false) payable { _createSharesFor(_manager); }
     function createShares() external amguPayable(false) payable { _createSharesFor(msg.sender); }
 
-    function _createTradingFor(address _manager)
+    function _createVaultFor(address _manager)
         internal
     {
         ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].trading);
-        managersToRoutes[_manager].trading = tradingFactory.createInstance(
+        ensureComponentNotSet(managersToRoutes[_manager].vault);
+        managersToRoutes[_manager].vault = vaultFactory.createInstance(
             managersToHubs[_manager],
             managersToSettings[_manager].exchanges,
             managersToSettings[_manager].adapters,
@@ -210,8 +210,8 @@ contract FundFactory is AmguConsumer, Factory {
         );
     }
 
-    function createTradingFor(address _manager) external amguPayable(false) payable { _createTradingFor(_manager); }
-    function createTrading() external amguPayable(false) payable { _createTradingFor(msg.sender); }
+    function createVaultFor(address _manager) external amguPayable(false) payable { _createVaultFor(_manager); }
+    function createVault() external amguPayable(false) payable { _createVaultFor(msg.sender); }
 
     function _completeSetupFor(address _manager) internal {
         Hub.Routes memory routes = managersToRoutes[_manager];
@@ -224,7 +224,7 @@ contract FundFactory is AmguConsumer, Factory {
             componentExists(routes.participation) &&
             componentExists(routes.policyManager) &&
             componentExists(routes.shares) &&
-            componentExists(routes.trading),
+            componentExists(routes.vault),
             "Components must be set before completing setup"
         );
         childExists[address(hub)] = true;
@@ -234,7 +234,7 @@ contract FundFactory is AmguConsumer, Factory {
             routes.participation,
             routes.policyManager,
             routes.shares,
-            routes.trading,
+            routes.vault,
             routes.registry,
             routes.version,
             routes.engine,
@@ -256,7 +256,7 @@ contract FundFactory is AmguConsumer, Factory {
                 routes.participation,
                 routes.policyManager,
                 routes.shares,
-                routes.trading,
+                routes.vault,
                 routes.registry,
                 routes.version,
                 routes.engine,

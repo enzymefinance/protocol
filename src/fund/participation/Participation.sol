@@ -5,7 +5,7 @@ import "../fees/IFeeManager.sol";
 import "../hub/Spoke.sol";
 import "../policies/IPolicyManager.sol";
 import "../shares/IShares.sol";
-import "../trading/ITrading.sol";
+import "../vault/IVault.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/TokenUser.sol";
 import "../../dependencies/token/IERC20.sol";
@@ -120,10 +120,10 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             totalShareCostInInvestmentAsset <= request.investmentAmount,
             "Invested amount too low"
         );
-        // send necessary amount of investmentAsset to Trading
+        // send necessary amount of investmentAsset to Vault
         safeTransfer(
             request.investmentAsset,
-            routes.trading,
+            routes.vault,
             totalShareCostInInvestmentAsset
         );
 
@@ -333,7 +333,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             if (ownershipQuantities[k] == 0) {
                 continue;
             } else {
-                ITrading(routes.trading).withdraw(ofAsset, ownershipQuantities[k]);
+                IVault(routes.vault).withdraw(ofAsset, ownershipQuantities[k]);
                 safeTransfer(ofAsset, msg.sender, ownershipQuantities[k]);
                 IAccounting(routes.accounting).decreaseAssetBalance(
                     ofAsset,

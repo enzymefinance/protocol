@@ -1,14 +1,13 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "../hub/Spoke.sol";
+import "../hub/SpokeAccessor.sol";
 import "../policies/IPolicyManager.sol";
 import "../policies/TradingSignatures.sol";
-import "../../dependencies/TokenUser.sol";
-import "../../factory/Factory.sol";
+import "../../dependencies/DSAuth.sol";
 import "../../version/IRegistry.sol";
 
-contract Trading is TokenUser, Spoke, TradingSignatures {
+contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
     struct Exchange {
         address exchange;
         address adapter;
@@ -17,29 +16,19 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
     Exchange[] public exchanges;
     mapping (address => bool) public adapterIsAdded;
 
-    constructor(
-        address _hub,
-        address[] memory _exchanges,
-        address[] memory _adapters,
-        address _registry
-    )
+    constructor(address[] memory _exchanges, address[] memory _adapters, address _registry)
         public
-        Spoke(_hub)
     {
-        routes.registry = _registry;
         require(_exchanges.length == _adapters.length, "Array lengths unequal");
         for (uint256 i = 0; i < _exchanges.length; i++) {
-            __addExchange(_exchanges[i], _adapters[i]);
+            __addExchange(_exchanges[i], _adapters[i], _registry);
         }
     }
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Receive ether function (used to receive ETH from WETH)
-    receive() external payable {}
-
     function addExchange(address _exchange, address _adapter) external auth {
-        __addExchange(_exchange, _adapter);
+        __addExchange(_exchange, _adapter, __getRoutes().registry);
     }
 
     function getExchangeInfo()
@@ -54,10 +43,6 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
             ofAdapters[i] = exchanges[i].adapter;
         }
         return (ofExchanges, ofAdapters);
-    }
-
-    function withdraw(address _token, uint256 _amount) external auth {
-        safeTransfer(_token, msg.sender, _amount);
     }
 
     // PUBLIC FUNCTIONS
@@ -97,12 +82,12 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         bytes memory _signature
     )
         public
-        onlyInitialized
+        spokeInitialized
     {
         bytes4 methodSelector = bytes4(keccak256(bytes(_methodSignature)));
         __validateCallOnExchange(_exchangeIndex, methodSelector, _orderAddresses);
 
-        IPolicyManager(routes.policyManager).preValidate(
+        IPolicyManager(__getRoutes().policyManager).preValidate(
             methodSelector,
             [
                 _orderAddresses[0],
@@ -130,7 +115,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
             )
         );
         require(success, string(returnData));
-        IPolicyManager(routes.policyManager).postValidate(
+        IPolicyManager(__getRoutes().policyManager).postValidate(
             methodSelector,
             [
                 _orderAddresses[0],
@@ -150,13 +135,10 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
 
     // INTERNAL FUNCTIONS
 
-    function __addExchange(
-        address _exchange,
-        address _adapter
-    ) internal {
+    function __addExchange(address _exchange, address _adapter, address _registry) internal {
         require(!adapterIsAdded[_adapter], "Adapter already added");
         adapterIsAdded[_adapter] = true;
-        IRegistry registry = IRegistry(routes.registry);
+        IRegistry registry = IRegistry(_registry);
         require(
             registry.exchangeAdapterIsRegistered(_adapter),
             "Adapter is not registered"
@@ -173,18 +155,18 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         bytes4 _methodSelector,
         address[8] memory _orderAddresses
     )
-        internal
+        private
         view
     {
         require(
-            hub.manager() == msg.sender,
+            __getHub().manager() == msg.sender,
             "Manager must be sender"
         );
         require(
-            !hub.isShutDown(),
+            !__getHub().isShutDown(),
             "Hub must not be shut down"
         );
-        IRegistry registry = IRegistry(routes.registry);
+        IRegistry registry = IRegistry(__getRoutes().registry);
         require(
             registry.adapterMethodIsAllowed(
                 exchanges[_exchangeIndex].adapter,
@@ -207,36 +189,5 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
                 );
             }
         }
-    }
-}
-
-contract TradingFactory is Factory {
-    event NewInstance(
-        address indexed hub,
-        address indexed instance,
-        address[] exchanges,
-        address[] adapters,
-        address registry
-    );
-
-    function createInstance(
-        address _hub,
-        address[] memory _exchanges,
-        address[] memory _adapters,
-        address _registry
-    )
-        public
-        returns (address)
-    {
-        address trading = address(new Trading(_hub, _exchanges, _adapters, _registry));
-        childExists[trading] = true;
-        emit NewInstance(
-            _hub,
-            trading,
-            _exchanges,
-            _adapters,
-            _registry
-        );
-        return trading;
     }
 }

@@ -5,11 +5,11 @@ import "./ExchangeAdapter.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
 import "../../fund/accounting/IAccounting.sol";
-import "../../fund/trading/ITrading.sol";
+import "../../fund/hub/SpokeAccessor.sol";
 
 /// @title Order Filler base contract
 /// @author Melonport AG <team@melonport.com>
-abstract contract OrderFiller is DSMath, ExchangeAdapter {
+abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
     event OrderFilled(
         address indexed exchangeAddress,
         address buyAsset,
@@ -344,7 +344,7 @@ abstract contract OrderFiller is DSMath, ExchangeAdapter {
     )
         private
     {
-        IAccounting accounting = IAccounting(ITrading(payable(address(this))).routes().accounting);
+        IAccounting accounting = IAccounting(__getRoutes().accounting);
 
         accounting.increaseAssetBalance(_assets[0], _balanceDiffs[0]);
         accounting.decreaseAssetBalance(_assets[1], _balanceDiffs[1]);
