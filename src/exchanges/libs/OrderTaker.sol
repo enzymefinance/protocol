@@ -36,21 +36,13 @@ abstract contract OrderTaker is OrderFiller {
     /// @param _signature Signature of order maker
     function takeOrder (
         address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
+        bytes memory _encodedArgs
     )
         public
     {
         __validateTakeOrderParams(
             _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
+            _encodedArgs
         );
 
         (
@@ -59,37 +51,25 @@ abstract contract OrderTaker is OrderFiller {
             address[] memory fillApprovalTargets
         ) = __formatFillTakeOrderArgs(
             _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature
+            _encodedArgs
         );
 
         __fillTakeOrder(
             _targetExchange,
-            _orderAddresses,
-            _orderValues,
-            _orderData,
-            _identifier,
-            _signature,
+            _encodedArgs,
             __encodeOrderFillData(fillAssets, fillExpectedAmounts, fillApprovalTargets)
         );
     }
 
     // INTERNAL FUNCTIONS
- 
+
     /// @notice Reserved function for executing a take order on an external exchange
     /// @dev When executing your order, use the values in __fillAssets and __fillExpectedAmounts
     /// @dev Include the `validateAndFinalizeFilledOrder` modifier
     /// @param _fillData Encoded data used by the OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature,
+        bytes memory _encodedArgs,
         bytes memory _fillData
     )
         internal
@@ -102,11 +82,7 @@ abstract contract OrderTaker is OrderFiller {
     /// @return fillApprovalTargets_ Targets to approve() for asset fills
     function __formatFillTakeOrderArgs(
         address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
+        bytes memory _encodedArgs
     )
         internal
         view
@@ -121,11 +97,7 @@ abstract contract OrderTaker is OrderFiller {
     /// @dev Use this to perform validation of takeOrder's inputs
     function __validateTakeOrderParams(
         address _targetExchange,
-        address[8] memory _orderAddresses,
-        uint256[8] memory _orderValues,
-        bytes[4] memory _orderData,
-        bytes32 _identifier,
-        bytes memory _signature
+        bytes memory _encodedArgs
     )
         internal
         view

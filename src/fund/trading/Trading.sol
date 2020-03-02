@@ -90,7 +90,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         (
             address[6] memory rskMngAddrs,
             uint256[3] memory rskMngVals
-        ) = __getRiskManagementArgs(_exchangeIndex, _encodedArgs);
+        ) = __getRiskManagementArgs(_exchangeIndex, methodSelector, _encodedArgs);
         address adapter = exchanges[_exchangeIndex].adapter;
         address targetExchange = exchanges[_exchangeIndex].exchange;
 
@@ -155,6 +155,7 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
 
     function __getRiskManagementArgs(
         uint256 _exchangeIndex,
+        bytes4 _methodSelector,
         bytes memory _encodedArgs
     )
         internal
@@ -163,8 +164,8 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         address adapter = exchanges[_exchangeIndex].adapter;
         (bool success, bytes memory returnData) = adapter.delegatecall(
             abi.encodeWithSelector(
-                ExchangeAdapter(adapter).extractRiskManagementArgs.selector,
-                exchanges[_exchangeIndex].exchange,
+                ExchangeAdapter(adapter).extractRiskManagementArgsOf.selector,
+                _methodSelector,
                 _encodedArgs
             )
         );
