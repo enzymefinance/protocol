@@ -52,15 +52,15 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
 
     /// @notice Universal method for calling exchange functions through adapters
     /// @notice See decoder in adapters to know how to encode needed arguments for each exchange
-    /// @notice rskMngAddrs [0] makerAddress
-    /// @notice rskMngAddrs [1] takerAddress
-    /// @notice rskMngAddrs [2] makerAsset
-    /// @notice rskMngAddrs [3] takerAsset
-    /// @notice rskMngAddrs [4] makerFeeAsset
-    /// @notice rskMngAddrs [5] takerFeeAsset
-    /// @notice rskMngVals [0] makerAssetAmount
-    /// @notice rskMngVals [1] takerAssetAmount
-    /// @notice rskMngVals [2] fillAmout
+    /// - rskMngAddrs [0] makerAddress
+    /// - rskMngAddrs [1] takerAddress
+    /// - rskMngAddrs [2] makerAsset
+    /// - rskMngAddrs [3] takerAsset
+    /// - rskMngAddrs [4] makerFeeAsset
+    /// - rskMngAddrs [5] takerFeeAsset
+    /// - rskMngVals [0] makerAssetAmount
+    /// - rskMngVals [1] takerAssetAmount
+    /// - rskMngVals [2] fillAmout
     /// @param _exchangeIndex Index of the exchange in the "exchanges" array
     /// @param _identifier Order identifier
     /// @param _encodedArgs Encoded arguments for a specific exchange
