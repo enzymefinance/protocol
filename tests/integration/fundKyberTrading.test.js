@@ -9,6 +9,7 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import {
@@ -91,28 +92,30 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -127,7 +130,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
   const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
 
@@ -163,28 +166,30 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -199,7 +204,7 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
   const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
   const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
 
@@ -239,28 +244,30 @@ test('swap MLN directly to EUR without intermediary', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -280,7 +287,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
   const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
   const fundHoldingsEurDiff = postFundHoldingsEur.sub(preFundHoldingsEur);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
   expect(fundHoldingsEurDiff).bigNumberEq(postFundBalanceOfEur.sub(preFundBalanceOfEur));
@@ -309,6 +316,20 @@ test('swap fails if make quantity is too high', async () => {
     new BN(expectedRate.toString()).mul(new BN(2)),
   ).toString();
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await expect(
     send(
       vault,
@@ -316,22 +337,10 @@ test('swap fails if make quantity is too high', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        [
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          makerAsset,
-          takerAsset,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-        ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
-      '0x0',
-      '0x0',
+        '0x0',
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     )
   ).rejects.toThrowFlexible("received less buy asset than expected");
 });

@@ -140,28 +140,30 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        takerAddress,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -176,7 +178,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
   const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
 
@@ -207,28 +209,30 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        takerAddress,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -243,7 +247,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
   const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
 
@@ -284,28 +288,30 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        takerAddress,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -325,7 +331,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
   const fundHoldingsEurDiff = postFundHoldingsEur.sub(preFundHoldingsEur);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
   expect(fundHoldingsEurDiff).bigNumberEq(postFundBalanceOfEur.sub(preFundBalanceOfEur));
@@ -350,6 +356,20 @@ test('Order fails if maker amount is not satisfied', async () => {
   );
   const highMakerQuantity = new BN(makerQuantity).mul(new BN(2)).toString();
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = highMakerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await expect(
     send(
       vault,
@@ -357,22 +377,10 @@ test('Order fails if maker amount is not satisfied', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        [
-          EMPTY_ADDRESS,
-          takerAddress,
-          makerAsset,
-          takerAsset,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS
-        ],
-        [highMakerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
-        '0x0',
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     )
   ).rejects.toThrow(); // No specific message, fails at Uniswap level
 });

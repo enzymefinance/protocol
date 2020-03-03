@@ -1,16 +1,17 @@
 /*
  * @file Unit tests for vault via the EngineAdapter (input validation only)
- * 
+ *
  * @dev This file only contains tests for callOnExchange param validation.
  * Other tests rely on EVM manipulation not allowed on testnets (only local blockchain).
  * Those tests are in engineAdapterLocal.test.js
- * 
+ *
  * @test takeOrder: __validateTakeOrderParams
  */
 
 import { toWei } from 'web3-utils';
 
 import { send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import getAccounts from '~/deploy/utils/getAccounts';
 
@@ -31,7 +32,7 @@ let exchangeIndex;
 beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  
+
   const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
@@ -52,7 +53,7 @@ describe('takeOrder', () => {
   describe('__validateTakeOrderParams', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let badAsset;
-  
+
     beforeAll(async () => {
       makerAsset = weth.options.address;
       makerQuantity = toWei('0.02', 'ether');
@@ -79,6 +80,19 @@ describe('takeOrder', () => {
 
     it('does not allow maker asset other than WETH', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = badAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -87,28 +101,29 @@ describe('takeOrder', () => {
           [
             exchangeIndex,
             takeOrderSignature,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              badAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          defaultTxOpts
+          defaultTxOpts,
         )
       ).rejects.toThrowFlexible("maker asset does not match nativeAsset")
     });
 
     it('does not allow taker asset other than MLN', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = badAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -117,22 +132,10 @@ describe('takeOrder', () => {
           [
             exchangeIndex,
             takeOrderSignature,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              badAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          defaultTxOpts
+          defaultTxOpts,
         )
       ).rejects.toThrowFlexible("taker asset does not match mlnToken")
     });
@@ -140,6 +143,19 @@ describe('takeOrder', () => {
     it('does not allow trade when no ether in engine', async () => {
       const { vault } = fund;
       const zeroMakerQuanity = 0;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = zeroMakerQuanity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -148,22 +164,10 @@ describe('takeOrder', () => {
           [
             exchangeIndex,
             takeOrderSignature,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [zeroMakerQuanity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          defaultTxOpts
+          defaultTxOpts,
         )
       ).rejects.toThrowFlexible("Not enough liquid ether to send")
     });

@@ -3,7 +3,7 @@
  *
  * @dev Note that liquidity pool is only added to in top-level beforeAll,
  * which is fine because these unit tests are agnostic to pricefeed
- * 
+ *
  * @test takeOrder: __validateTakeOrderParams
  * @test takeOrder: Order 1: eth to token
  * @test takeOrder: Order 2: token to eth
@@ -13,6 +13,7 @@
 import { BN, toWei } from 'web3-utils';
 
 import { call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import getAccounts from '~/deploy/utils/getAccounts';
@@ -41,7 +42,7 @@ let exchangeIndex;
 beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  
+
   const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
@@ -68,7 +69,7 @@ describe('takeOrder', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
-  
+
     beforeAll(async () => {
       takerAsset = weth.options.address;
       takerQuantity = toWei('0.01', 'ether');
@@ -79,7 +80,7 @@ describe('takeOrder', () => {
         'getExpectedRate',
         [KYBER_ETH_ADDRESS, makerAsset, takerQuantity],
       );
-    
+
       makerQuantity = BNExpMul(
         new BN(takerQuantity.toString()),
         new BN(expectedRate.toString()),
@@ -115,28 +116,30 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         vault,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       );
 
       postFundHoldingsWeth = new BN(
@@ -183,18 +186,18 @@ describe('takeOrder', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
-  
+
     beforeAll(async () => {
       takerAsset = mln.options.address;
       takerQuantity = toWei('0.01', 'ether');
       makerAsset = weth.options.address;
-    
+
       const { 0: expectedRate } = await call(
         kyberNetworkProxy,
         'getExpectedRate',
         [takerAsset, KYBER_ETH_ADDRESS, takerQuantity],
       );
-    
+
       makerQuantity = BNExpMul(
         new BN(takerQuantity.toString()),
         new BN(expectedRate.toString()),
@@ -230,28 +233,30 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         vault,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       );
 
       postFundHoldingsWeth = new BN(
@@ -298,7 +303,7 @@ describe('takeOrder', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsEur, postFundHoldingsMln, postFundHoldingsEur;
     let tx;
-  
+
     beforeAll(async () => {
       takerAsset = mln.options.address;
       takerQuantity = toWei('0.01', 'ether');
@@ -309,7 +314,7 @@ describe('takeOrder', () => {
         'getExpectedRate',
         [takerAsset, makerAsset, takerQuantity],
       );
-    
+
       makerQuantity = BNExpMul(
         new BN(takerQuantity.toString()),
         new BN(expectedRate.toString()),
@@ -345,28 +350,30 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         vault,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       );
 
       postFundHoldingsEur = new BN(

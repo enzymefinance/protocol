@@ -31,10 +31,10 @@ export const createUnsignedZeroExOrder = async (
   const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
   const makerFeeAssetData = makerFeeTokenAddress
     ? assetDataUtils.encodeERC20AssetData(makerFeeTokenAddress)
-    : '0x';
+    : assetDataUtils.encodeERC20AssetData(EMPTY_ADDRESS);
   const takerFeeAssetData = takerFeeTokenAddress
     ? assetDataUtils.encodeERC20AssetData(takerFeeTokenAddress)
-    : '0x';
+    : assetDataUtils.encodeERC20AssetData(EMPTY_ADDRESS);
   const latestBlock = await web3.eth.getBlock('latest');
   const formattedMakerFee = makerFee
     ? makerFee.toString()

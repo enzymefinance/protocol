@@ -9,6 +9,7 @@
 
 import { toWei, BN } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
@@ -226,28 +227,30 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   const orderId = logMake.id;
 
   // Fund takes the trade
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]', 'uint256'],
+    [orderAddresses, orderValues, orderId],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
-      orderId,
       '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   // Update prices with higher MLN/WETH price
@@ -300,7 +303,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
 
   const finalMlnManager = new BN(await call(mln, 'balanceOf', [manager]));
   const finalWethManager = new BN(await call(weth, 'balanceOf', [manager]));
-  
+
   // Get mln value in weth
   const redeemedMlnFees = finalMlnManager.sub(preMlnManager);
   const redeemedWethFees = finalWethManager.sub(preWethManager);

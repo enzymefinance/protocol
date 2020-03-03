@@ -162,7 +162,31 @@ describe('vault', () => {
   it('cannot take a trade that decreases an asset balance below 0', async() => {
     const { vault } = fund;
 
+    const makerAddress = EMPTY_ADDRESS;
+    const takerAddress = EMPTY_ADDRESS;
+    const makerFeeAsset = EMPTY_ADDRESS;
+    const takerFeeAsset = EMPTY_ADDRESS;
     const badTakerQuantity = new BN(investmentAmount).add(new BN(1)).toString();
+    const fillAmount = badTakerQuantity;
+
+    const orderAddresses = [];
+    const orderValues = [];
+
+    orderAddresses[0] = makerAddress;
+    orderAddresses[1] = takerAddress;
+    orderAddresses[2] = makerAsset;
+    orderAddresses[3] = takerAsset;
+    orderAddresses[4] = makerFeeAsset;
+    orderAddresses[5] = takerFeeAsset;
+    orderValues[0] = makerQuantity;
+    orderValues[1] = badTakerQuantity;
+    orderValues[2] = fillAmount;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[6]', 'uint256[3]'],
+      [orderAddresses, orderValues],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
 
     await expect(
       send(
@@ -171,22 +195,10 @@ describe('vault', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-          ],
-          [makerQuantity, badTakerQuantity, 0, 0, 0, 0, badTakerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       )
     ).rejects.toThrowFlexible("new balance cannot be less than 0");
   });
@@ -203,6 +215,31 @@ describe('vault', () => {
 
     preTxBlock = await web3.eth.getBlockNumber();
 
+    const makerAddress = EMPTY_ADDRESS;
+    const takerAddress = EMPTY_ADDRESS;
+    const makerFeeAsset = EMPTY_ADDRESS;
+    const takerFeeAsset = EMPTY_ADDRESS;
+    const fillAmount = takerQuantity;
+
+    const orderAddresses = [];
+    const orderValues = [];
+
+    orderAddresses[0] = makerAddress;
+    orderAddresses[1] = takerAddress;
+    orderAddresses[2] = makerAsset;
+    orderAddresses[3] = takerAsset;
+    orderAddresses[4] = makerFeeAsset;
+    orderAddresses[5] = takerFeeAsset;
+    orderValues[0] = makerQuantity;
+    orderValues[1] = takerQuantity;
+    orderValues[2] = fillAmount;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[6]', 'uint256[3]'],
+      [orderAddresses, orderValues],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await expect(
       send(
         vault,
@@ -210,22 +247,10 @@ describe('vault', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       )
     ).resolves.not.toThrow();
 

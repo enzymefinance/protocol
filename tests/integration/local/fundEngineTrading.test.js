@@ -150,28 +150,32 @@ test('Trade on Melon Engine', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
+  const makerAsset = weth.options.address;
+  const takerAsset = mln.options.address;
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderSignature,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        weth.options.address,
-        mln.options.address,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postliquidEther = new BN(await call(engine, 'liquidEther'));
@@ -199,6 +203,22 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
 
   const makerQuantity = new BN(mlnPrice.toString()).div(new BN(2)).toString();
 
+  const makerAsset = weth.options.address;
+  const takerAsset = mln.options.address;
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await expect(
     send(
       vault,
@@ -206,22 +226,10 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        [
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          weth.options.address,
-          mln.options.address,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS
-        ],
-        [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        ['0x0', '0x0', '0x0', '0x0'],
         '0x0',
-        '0x0',
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     )
   ).rejects.toThrowFlexible(
     "validateAndEmitOrderFillResults: received less buy asset than expected"
