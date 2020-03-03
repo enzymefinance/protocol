@@ -151,7 +151,6 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker {
         view
         override
     {
-        require(true);
     }
 
     // PRIVATE FUNCTIONS
