@@ -63,7 +63,7 @@ const main = async input => {
   const exchanges = {};
   exchanges.engine = {
     exchange: engine.options.address,
-    adapter: engineAdapter.options.address 
+    adapter: engineAdapter.options.address
   };
   if (input.kyber) {
     exchanges.kyber = {
@@ -97,7 +97,7 @@ const main = async input => {
   }
 
   // TODO: lift metadata.js and constants.js from tests/utils into a shared utils file in root
-  const takeOrderSignature = 'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)';
+  const takeOrderSignature = 'takeOrder(address,bytes)';
   const sigs = [web3.eth.abi.encodeFunctionSignature(takeOrderSignature)];
 
   for (const info of Object.values(exchanges)) {
