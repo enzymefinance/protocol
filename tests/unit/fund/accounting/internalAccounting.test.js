@@ -169,18 +169,28 @@ describe('trading', () => {
 
   it('cannot take a trade that decreases an asset balance below 0', async() => {
     const { trading } = fund;
+    const makerAddress = EMPTY_ADDRESS;
+    const takerAddress = EMPTY_ADDRESS;
+    const makerFeeAsset = EMPTY_ADDRESS;
+    const takerFeeAsset = EMPTY_ADDRESS;
     const badTakerQuantity = new BN(investmentAmount).add(new BN(1)).toString();
+    const fillAmount = badTakerQuantity;
 
     const orderAddresses = [];
     const orderValues = [];
 
-    orderAddresses[0] = makerAsset;
-    orderAddresses[1] = takerAsset;
+    orderAddresses[0] = makerAddress;
+    orderAddresses[1] = takerAddress;
+    orderAddresses[2] = makerAsset;
+    orderAddresses[3] = takerAsset;
+    orderAddresses[4] = makerFeeAsset;
+    orderAddresses[5] = takerFeeAsset;
     orderValues[0] = makerQuantity;
     orderValues[1] = badTakerQuantity;
+    orderValues[2] = fillAmount;
 
     const hex = web3.eth.abi.encodeParameters(
-      ['address[2]', 'uint256[2]'],
+      ['address[6]', 'uint256[3]'],
       [orderAddresses, orderValues],
     );
     const encodedArgs = web3.utils.hexToBytes(hex);
@@ -212,16 +222,27 @@ describe('trading', () => {
 
     preTxBlock = await web3.eth.getBlockNumber();
 
+    const makerAddress = EMPTY_ADDRESS;
+    const takerAddress = EMPTY_ADDRESS;
+    const makerFeeAsset = EMPTY_ADDRESS;
+    const takerFeeAsset = EMPTY_ADDRESS;
+    const fillAmount = takerQuantity;
+
     const orderAddresses = [];
     const orderValues = [];
 
-    orderAddresses[0] = makerAsset;
-    orderAddresses[1] = takerAsset;
+    orderAddresses[0] = makerAddress;
+    orderAddresses[1] = takerAddress;
+    orderAddresses[2] = makerAsset;
+    orderAddresses[3] = takerAsset;
+    orderAddresses[4] = makerFeeAsset;
+    orderAddresses[5] = takerFeeAsset;
     orderValues[0] = makerQuantity;
     orderValues[1] = takerQuantity;
+    orderValues[2] = fillAmount;
 
     const hex = web3.eth.abi.encodeParameters(
-      ['address[2]', 'uint256[2]'],
+      ['address[6]', 'uint256[3]'],
       [orderAddresses, orderValues],
     );
     const encodedArgs = web3.utils.hexToBytes(hex);

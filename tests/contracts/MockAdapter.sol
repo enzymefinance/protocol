@@ -5,6 +5,19 @@ import "main/exchanges/libs/ExchangeAdapter.sol";
 import "main/exchanges/libs/OrderTaker.sol";
 
 contract MockAdapter is ExchangeAdapter, OrderTaker {
+    /// @notice Mock extracting arguments for risk management validations
+    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @return rskMngAddrs needed addresses for risk management
+    /// - [0] Maker address
+    /// - [1] Taker address
+    /// - [2] Maker asset
+    /// - [3] Taker asset
+    /// - [4] Maker fee asset
+    /// - [5] Taker fee asset
+    /// @return rskMngVals needed values for risk management
+    /// - [0] Maker asset amount
+    /// - [1] Taker asset amount
+    /// - [2] Fill amount
     function extractTakeOrderRiskManagementArgs(
         bytes calldata _encodedArgs
     )
@@ -13,28 +26,7 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
         override
         returns (address[6] memory, uint256[3] memory)
     {
-        address[6] memory rskMngAddrs;
-        uint256[3] memory rskMngVals;
-        (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        rskMngAddrs = [
-            address(0),
-            address(0),
-            orderAddresses[0],
-            orderAddresses[1],
-            address(0),
-            address(0)
-        ];
-        rskMngVals = [
-            orderValues[0],
-            orderValues[1],
-            orderValues[1]
-        ];
-
-        return (rskMngAddrs, rskMngVals);
+        return __decodeTakeOrderArgs(_encodedArgs);
     }
 
     /// @notice Mock take order
@@ -47,14 +39,14 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
         override
     {
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address[6] memory orderAddresses,
+            uint256[3] memory orderValues
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        address makerAsset = orderAddresses[0];
-        address takerAsset = orderAddresses[1];
+        address makerAsset = orderAddresses[2];
+        address takerAsset = orderAddresses[3];
         uint makerQuantity = orderValues[0];
-        uint fillTakerQuantity = orderValues[1];
+        uint fillTakerQuantity = orderValues[2];
 
         __approveAsset(takerAsset, _targetExchange, fillTakerQuantity, "takerAsset");
         __getAccounting().decreaseAssetBalance(takerAsset, fillTakerQuantity);
@@ -103,15 +95,15 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
         internal
         pure
         returns (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address[6] memory orderAddresses,
+            uint256[3] memory orderValues
         )
     {
         return abi.decode(
             _encodedArgs,
             (
-                address[2],
-                uint256[2]
+                address[6],
+                uint256[3]
             )
         );
     }
