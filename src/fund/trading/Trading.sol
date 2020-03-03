@@ -205,10 +205,10 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
 
         if (_methodSelector == TAKE_ORDER) {
             require(registry.assetIsRegistered(
-                _rskMngAddrs[0]), 'Maker asset not registered'
+                _rskMngAddrs[2]), 'Maker asset not registered'
             );
             require(registry.assetIsRegistered(
-                _rskMngAddrs[1]), 'Taker asset not registered'
+                _rskMngAddrs[3]), 'Taker asset not registered'
             );
             if (_rskMngAddrs[5] != address(0)) {
                 require(
