@@ -12,14 +12,14 @@ import "../../dependencies/WETH.sol";
 contract KyberAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return rskMngAddrs needed addresses for risk management
+    /// @return riskManagementAddresses needed addresses for risk management
     /// - [0] Maker address
     /// - [1] Taker address
     /// - [2] Maker asset
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return rskMngVals needed values for risk management
+    /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Fill amount
@@ -31,14 +31,14 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         override
         returns (address[6] memory, uint256[3] memory)
     {
-        address[6] memory rskMngAddrs;
-        uint256[3] memory rskMngVals;
+        address[6] memory riskManagementAddresses;
+        uint256[3] memory riskManagementValues;
         (
             address[2] memory orderAddresses,
             uint256[2] memory orderValues
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        rskMngAddrs = [
+        riskManagementAddresses = [
             address(0),
             address(0),
             orderAddresses[0],
@@ -46,13 +46,13 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
             address(0),
             address(0)
         ];
-        rskMngVals = [
+        riskManagementValues = [
             orderValues[0],
             orderValues[1],
             orderValues[1]
         ];
 
-        return (rskMngAddrs, rskMngVals);
+        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Take a market order on Kyber Swap (takeOrder)
@@ -151,7 +151,6 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         view
         override
     {
-        require(true);
     }
 
     // PRIVATE FUNCTIONS

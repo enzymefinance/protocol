@@ -9,6 +9,7 @@ const main = async input => {
   const melonAddrs = input.melon.addr;
   const tokenAddrs = input.tokens.addr;
 
+  const airSwapAdapter = await nab('AirSwapAdapter', [], melonAddrs);
   const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
   const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
   const uniswapAdapter = await nab('UniswapAdapter', [], melonAddrs);
@@ -69,6 +70,12 @@ const main = async input => {
     exchange: engine.options.address,
     adapter: engineAdapter.options.address
   };
+  if (input.airSwap) {
+    exchanges.airSwap = {
+      exchange: input.airSwap.addr.Swap,
+      adapter: airSwapAdapter.options.address
+    };
+  }
   if (input.kyber) {
     exchanges.kyber = {
       exchange: input.kyber.addr.KyberNetworkProxy,
@@ -162,6 +169,7 @@ const main = async input => {
   }
 
   const contracts = {
+    "AirSwapAdapter": airSwapAdapter,
     "KyberAdapter": kyberAdapter,
     "OasisDexAdapter": oasisDexAdapter,
     "UniswapAdapter": uniswapAdapter,
@@ -193,3 +201,4 @@ const main = async input => {
 }
 
 module.exports = main;
+

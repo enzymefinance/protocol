@@ -8,6 +8,7 @@
   "melon": {
     "addr": {
       "PriceSource": "",
+      "AirSwapAdapter": "",
       "EthfinexAdapter": "",
       "KyberAdapter": "",
       "MatchingMarketAdapter": "",
@@ -97,6 +98,14 @@
       "protocolFeeMultiplier": 150000
     }
   },
+  "airSwap": {
+    "addr": {
+      "Types": "",
+      "TransferHandlerRegistry": "",
+      "Swap": "",
+      "ERC20TransferHandler": ""
+    }
+  },
   "tokens": {
     "addr": {
       "WETH": "",
@@ -154,3 +163,4 @@
     "kyberReserveAmount": "10000000000000000000000"
   }
 }
+

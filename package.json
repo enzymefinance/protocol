@@ -30,7 +30,7 @@
     "devchain": "ganache-cli --gasLimit 0x989680 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis' --networkId=4447 --acctKeys ./keys.json",
     "lint": "solhint src/**/*.sol",
     "test": "LOCAL_CHAIN=true PRIVATE_KEYS=./keys.json REDEPLOY_ALL=true DEPLOY_IN=./deploy_in_testing.json DEPLOY_OUT=./deploy_out_testing.json yarn jest --runInBand --detectOpenHandles",
-    "test-kovan": "PRIVATE_KEYS=./kovan_keys.json REDEPLOY_ALL=false DEPLOY_IN=./deploy_in_kovan.json DEPLOY_OUT=./deploy_out_kovan.json yarn jest --testPathIgnorePatterns '/(local|tests\/mock|tests\/thirdparty)/' --runInBand"
+    "test-kovan": "PRIVATE_KEYS=./kovan_keys.json REDEPLOY_ALL=false DEPLOY_IN=./deploy_in_kovan.json DEPLOY_OUT=./deploy_out_kovan.json yarn jest --testPathIgnorePatterns '/(local|tests/mock|tests/thirdparty)/' --runInBand"
   },
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
@@ -39,6 +39,7 @@
     "@0x/types": "^2.5.0-beta.3",
     "@0x/types-v2": "npm:@0x/types@2.4.3",
     "@0x/utils": "^5.1.2",
+    "@airswap/order-utils": "^0.3.20",
     "@babel/core": "^7.1.6",
     "@babel/preset-env": "^7.1.6",
     "babel-jest": "^24.9.0",

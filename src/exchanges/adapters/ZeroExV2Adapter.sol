@@ -11,14 +11,14 @@ import "../libs/OrderTaker.sol";
 contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return rskMngAddrs needed addresses for risk management
+    /// @return riskManagementAddresses needed addresses for risk management
     /// - [0] Maker address
     /// - [1] Taker address
     /// - [2] Maker asset
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return rskMngVals needed values for risk management
+    /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Fill amount
@@ -30,15 +30,15 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
         override
         returns (address[6] memory, uint256[3] memory)
     {
-        address[6] memory rskMngAddrs;
-        uint256[3] memory rskMngVals;
+        address[6] memory riskManagementAddresses;
+        uint256[3] memory riskManagementValues;
         (
             address[4] memory orderAddresses,
             uint256[7] memory orderValues,
             bytes[2] memory orderData,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        rskMngAddrs = [
+        riskManagementAddresses = [
             orderAddresses[0],
             orderAddresses[1],
             __getAssetAddress(orderData[0]),
@@ -46,13 +46,13 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
             address(0),
             address(0)
         ];
-        rskMngVals = [
+        riskManagementValues = [
             orderValues[0],
             orderValues[1],
             orderValues[6]
         ];
 
-        return (rskMngAddrs, rskMngVals);
+        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Takes an active order on 0x v2 (takeOrder)
