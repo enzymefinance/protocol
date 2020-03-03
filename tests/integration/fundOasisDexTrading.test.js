@@ -7,6 +7,7 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import getAccounts from '~/deploy/utils/getAccounts';
 
@@ -19,7 +20,7 @@ let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let exchangeIndex;
 let mln, weth, oasisDexExchange, priceSource;
-let takeOrderFunctionSig;
+let takeOrderSignature;
 let fund;
 
 beforeAll(async () => {
@@ -38,7 +39,7 @@ beforeAll(async () => {
   const oasisDexAdapter = contracts.OasisDexAdapter;
   const version = contracts.Version;
 
-  takeOrderFunctionSig = getFunctionSignature(
+  takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
@@ -101,7 +102,7 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
       ],
       defaultTxOpts
     );
-  
+
     const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
     orderId = logMake.id;
   });
@@ -117,31 +118,33 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
     const preFundHoldingsMln = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
-  
+
+    const orderAddresses = [];
+    const orderValues = [];
+
+    orderAddresses[0] = makerAsset;
+    orderAddresses[1] = takerAsset;
+    orderValues[0] = makerQuantity;
+    orderValues[1] = takerQuantity;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[2]', 'uint256[2]', 'uint256'],
+      [orderAddresses, orderValues, orderId],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await send(
       trading,
       'callOnExchange',
       [
         exchangeIndex,
-        takeOrderFunctionSig,
-        [
-          deployer,
-          trading.options.address,
-          makerAsset,
-          takerAsset,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS
-        ],
-        [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        ['0x0', '0x0', '0x0', '0x0'],
-        orderId,
+        takeOrderSignature,
         '0x0',
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     );
-  
+
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
@@ -150,14 +153,14 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
     const postFundHoldingsMln = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
-  
+
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
     const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-  
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+
+    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
     expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
-  
+
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(new BN(takerQuantity));
     expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerQuantity));
@@ -192,7 +195,7 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
       ],
       defaultTxOpts
     );
-  
+
     const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
     orderId = logMake.id;
   });
@@ -208,31 +211,33 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
     const preFundHoldingsMln = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
-  
+
+    const orderAddresses = [];
+    const orderValues = [];
+
+    orderAddresses[0] = makerAsset;
+    orderAddresses[1] = takerAsset;
+    orderValues[0] = makerQuantity;
+    orderValues[1] = takerQuantity;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[2]', 'uint256[2]', 'uint256'],
+      [orderAddresses, orderValues, orderId],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await send(
       trading,
       'callOnExchange',
       [
         exchangeIndex,
-        takeOrderFunctionSig,
-        [
-          deployer,
-          trading.options.address,
-          makerAsset,
-          takerAsset,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS,
-          EMPTY_ADDRESS
-        ],
-        [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-        ['0x0', '0x0', '0x0', '0x0'],
-        orderId,
+        takeOrderSignature,
         '0x0',
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     );
-  
+
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
     const postFundHoldingsWeth = new BN(
@@ -241,14 +246,14 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
     const postFundHoldingsMln = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
-  
+
     const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
     const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
-  
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+
+    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
     expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
-  
+
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(new BN(makerQuantity));
     expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
