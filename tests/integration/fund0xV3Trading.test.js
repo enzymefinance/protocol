@@ -160,38 +160,43 @@ describe('Fund takes an order', () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    await send(trading, 'callOnExchange', [
-      exchangeIndex,
-      takeOrderSignature,
+    const orderAddresses = [];
+    const orderValues = [];
+    const orderData = [];
+
+    orderAddresses[0] = signedOrder.makerAddress;
+    orderAddresses[1] = signedOrder.takerAddress;
+    orderAddresses[2] = signedOrder.feeRecipientAddress;
+    orderAddresses[3] = signedOrder.senderAddress;
+    orderValues[0] = signedOrder.makerAssetAmount;
+    orderValues[1] = signedOrder.takerAssetAmount;
+    orderValues[2] = signedOrder.makerFee;
+    orderValues[3] = signedOrder.takerFee;
+    orderValues[4] = signedOrder.expirationTimeSeconds;
+    orderValues[5] = signedOrder.salt;
+    orderValues[6] = fillQuantity;
+    orderData[0] =  signedOrder.makerAssetData;
+    orderData[1] = signedOrder.takerAssetData;
+    orderData[2] = signedOrder.makerFeeAssetData;
+    orderData[3] = signedOrder.takerFeeAssetData;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
+      [orderAddresses, orderValues, orderData, signedOrder.signature],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
+    await send(
+      trading,
+      'callOnExchange',
       [
-        signedOrder.makerAddress,
-        signedOrder.takerAddress,
-        mln.options.address,
-        weth.options.address,
-        signedOrder.feeRecipientAddress,
-        EMPTY_ADDRESS,
-        makerFeeAsset,
-        takerFeeAsset
+        exchangeIndex,
+        takeOrderSignature,
+        '0x0',
+        encodedArgs,
       ],
-      [
-        signedOrder.makerAssetAmount,
-        signedOrder.takerAssetAmount,
-        signedOrder.makerFee,
-        signedOrder.takerFee,
-        signedOrder.expirationTimeSeconds,
-        signedOrder.salt,
-        fillQuantity,
-        0,
-      ],
-      [
-        signedOrder.makerAssetData,
-        signedOrder.takerAssetData,
-        signedOrder.makerFeeAssetData,
-        signedOrder.takerFeeAssetData
-      ],
-      '0x0',
-      signedOrder.signature,
-    ], managerTxOpts);
+      managerTxOpts,
+    );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
@@ -210,7 +215,7 @@ describe('Fund takes an order', () => {
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
     const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
 
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
     expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
 
@@ -224,7 +229,6 @@ describe('Fund takes an order', () => {
 
 describe('Fund takes an order with a different taker fee asset', () => {
   let signedOrder;
-  let callOnExchangeArgs;
 
   test('Third party makes an order', async () => {
     const makerAddress = deployer;
@@ -272,75 +276,65 @@ describe('Fund takes an order with a different taker fee asset', () => {
 
   test('Fund WITHOUT enough taker fee fails to take order', async () => {
     const { trading } = fund;
-
     const fillQuantity = signedOrder.takerAssetAmount;
-    const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-    const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
+    const orderAddresses = [];
+    const orderValues = [];
+    const orderData = [];
 
-    callOnExchangeArgs = [
-      exchangeIndex,
-      takeOrderSignature,
-      [
-        signedOrder.makerAddress,
-        signedOrder.takerAddress,
-        mln.options.address,
-        weth.options.address,
-        signedOrder.feeRecipientAddress,
-        EMPTY_ADDRESS,
-        makerFeeAsset,
-        takerFeeAsset
-      ],
-      [
-        signedOrder.makerAssetAmount,
-        signedOrder.takerAssetAmount,
-        signedOrder.makerFee,
-        signedOrder.takerFee,
-        signedOrder.expirationTimeSeconds,
-        signedOrder.salt,
-        fillQuantity,
-        0,
-      ],
-      [
-        signedOrder.makerAssetData,
-        signedOrder.takerAssetData,
-        signedOrder.makerFeeAssetData,
-        signedOrder.takerFeeAssetData
-      ],
-      '0x0',
-      signedOrder.signature,
-    ];
+    orderAddresses[0] = signedOrder.makerAddress;
+    orderAddresses[1] = signedOrder.takerAddress;
+    orderAddresses[2] = signedOrder.feeRecipientAddress;
+    orderAddresses[3] = signedOrder.senderAddress;
+    orderValues[0] = signedOrder.makerAssetAmount;
+    orderValues[1] = signedOrder.takerAssetAmount;
+    orderValues[2] = signedOrder.makerFee;
+    orderValues[3] = signedOrder.takerFee;
+    orderValues[4] = signedOrder.expirationTimeSeconds;
+    orderValues[5] = signedOrder.salt;
+    orderValues[6] = fillQuantity;
+    orderData[0] =  signedOrder.makerAssetData;
+    orderData[1] = signedOrder.takerAssetData;
+    orderData[2] = signedOrder.makerFeeAssetData;
+    orderData[3] = signedOrder.takerFeeAssetData;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
+      [orderAddresses, orderValues, orderData, signedOrder.signature],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
 
     await expect(
       send(
         trading,
         'callOnExchange',
-        callOnExchangeArgs,
-        managerTxOpts
+        [
+          exchangeIndex,
+          takeOrderSignature,
+          '0x0',
+          encodedArgs,
+        ],
+        managerTxOpts,
       )
     ).rejects.toThrowFlexible("TRANSFER_FAILED");
   });
 
   test('Invest in fund with enough DAI to take trade with taker fee', async () => {
     const { accounting, participation, shares } = fund;
-  
+
     // Enable investment with dai
     await send(participation, 'enableInvestment', [[dai.options.address]], managerTxOpts);
-  
+
     const wantedShares = toWei('1', 'ether');
     const amguAmount = toWei('0.01', 'ether');
-  
+
     const costOfShares = await call(
         accounting,
         'getShareCostInAsset',
         [wantedShares, dai.options.address]
     );
-  
+
     const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  
+
     await send(dai, 'transfer', [investor, costOfShares], defaultTxOpts);
     await send(
       dai,
@@ -354,7 +348,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
       [wantedShares, costOfShares, dai.options.address],
       { ...investorTxOpts, value: amguAmount }
     );
-  
+
     // Need price update before participation executed
     await delay(1000);
     await send(
@@ -372,10 +366,10 @@ describe('Fund takes an order with a different taker fee asset', () => {
       [investor],
       { ...investorTxOpts, value: amguAmount }
     );
-  
+
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
     expect(postInvestorShares).bigNumberEq(preInvestorShares.add(new BN(wantedShares)));
-  });  
+  });
 
   test('Fund with enough taker fee asset takes order', async () => {
     const { accounting, trading } = fund;
@@ -395,12 +389,45 @@ describe('Fund takes an order with a different taker fee asset', () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
+    const orderAddresses = [];
+    const orderValues = [];
+    const orderData = [];
+    const fillQuantity = signedOrder.takerAssetAmount;
+
+    orderAddresses[0] = signedOrder.makerAddress;
+    orderAddresses[1] = signedOrder.takerAddress;
+    orderAddresses[2] = signedOrder.feeRecipientAddress;
+    orderAddresses[3] = signedOrder.senderAddress;
+    orderValues[0] = signedOrder.makerAssetAmount;
+    orderValues[1] = signedOrder.takerAssetAmount;
+    orderValues[2] = signedOrder.makerFee;
+    orderValues[3] = signedOrder.takerFee;
+    orderValues[4] = signedOrder.expirationTimeSeconds;
+    orderValues[5] = signedOrder.salt;
+    orderValues[6] = fillQuantity;
+    orderData[0] =  signedOrder.makerAssetData;
+    orderData[1] = signedOrder.takerAssetData;
+    orderData[2] = signedOrder.makerFeeAssetData;
+    orderData[3] = signedOrder.takerFeeAssetData;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
+      [orderAddresses, orderValues, orderData, signedOrder.signature],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await send(
       trading,
       'callOnExchange',
-      callOnExchangeArgs,
-      managerTxOpts
+      [
+        exchangeIndex,
+        takeOrderSignature,
+        '0x0',
+        encodedArgs,
+      ],
+      managerTxOpts,
     );
+
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
@@ -424,11 +451,11 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
 
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsDaiDiff).bigNumberEq(preFundBalanceOfDai.sub(postFundBalanceOfDai));
     expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-  
+
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount).add(new BN(protocolFeeAmount))
@@ -489,13 +516,6 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const { accounting, trading } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
-    const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-    const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
@@ -507,42 +527,42 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
+    const orderAddresses = [];
+    const orderValues = [];
+    const orderData = [];
+
+    orderAddresses[0] = signedOrder.makerAddress;
+    orderAddresses[1] = signedOrder.takerAddress;
+    orderAddresses[2] = signedOrder.feeRecipientAddress;
+    orderAddresses[3] = signedOrder.senderAddress;
+    orderValues[0] = signedOrder.makerAssetAmount;
+    orderValues[1] = signedOrder.takerAssetAmount;
+    orderValues[2] = signedOrder.makerFee;
+    orderValues[3] = signedOrder.takerFee;
+    orderValues[4] = signedOrder.expirationTimeSeconds;
+    orderValues[5] = signedOrder.salt;
+    orderValues[6] = fillQuantity;
+    orderData[0] =  signedOrder.makerAssetData;
+    orderData[1] = signedOrder.takerAssetData;
+    orderData[2] = signedOrder.makerFeeAssetData;
+    orderData[3] = signedOrder.takerFeeAssetData;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
+      [orderAddresses, orderValues, orderData, signedOrder.signature],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await send(
       trading,
       'callOnExchange',
       [
         exchangeIndex,
         takeOrderSignature,
-        [
-          signedOrder.makerAddress,
-          signedOrder.takerAddress,
-          mln.options.address,
-          weth.options.address,
-          signedOrder.feeRecipientAddress,
-          EMPTY_ADDRESS,
-          makerFeeAsset,
-          takerFeeAsset
-        ],
-        [
-          signedOrder.makerAssetAmount,
-          signedOrder.takerAssetAmount,
-          signedOrder.makerFee,
-          signedOrder.takerFee,
-          signedOrder.expirationTimeSeconds,
-          signedOrder.salt,
-          fillQuantity,
-          0,
-        ],
-        [
-          signedOrder.makerAssetData,
-          signedOrder.takerAssetData,
-          signedOrder.makerFeeAssetData,
-          signedOrder.takerFeeAssetData
-        ],
         '0x0',
-        signedOrder.signature,
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
@@ -562,10 +582,10 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
 
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-  
+
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount)
@@ -646,42 +666,42 @@ describe('Fund can take an order when protocol fee disabled', () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
+    const orderAddresses = [];
+    const orderValues = [];
+    const orderData = [];
+
+    orderAddresses[0] = signedOrder.makerAddress;
+    orderAddresses[1] = signedOrder.takerAddress;
+    orderAddresses[2] = signedOrder.feeRecipientAddress;
+    orderAddresses[3] = signedOrder.senderAddress;
+    orderValues[0] = signedOrder.makerAssetAmount;
+    orderValues[1] = signedOrder.takerAssetAmount;
+    orderValues[2] = signedOrder.makerFee;
+    orderValues[3] = signedOrder.takerFee;
+    orderValues[4] = signedOrder.expirationTimeSeconds;
+    orderValues[5] = signedOrder.salt;
+    orderValues[6] = fillQuantity;
+    orderData[0] =  signedOrder.makerAssetData;
+    orderData[1] = signedOrder.takerAssetData;
+    orderData[2] = signedOrder.makerFeeAssetData;
+    orderData[3] = signedOrder.takerFeeAssetData;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
+      [orderAddresses, orderValues, orderData, signedOrder.signature],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await send(
       trading,
       'callOnExchange',
       [
         exchangeIndex,
         takeOrderSignature,
-        [
-          signedOrder.makerAddress,
-          signedOrder.takerAddress,
-          mln.options.address,
-          weth.options.address,
-          signedOrder.feeRecipientAddress,
-          EMPTY_ADDRESS,
-          makerFeeAsset,
-          takerFeeAsset
-        ],
-        [
-          signedOrder.makerAssetAmount,
-          signedOrder.takerAssetAmount,
-          signedOrder.makerFee,
-          signedOrder.takerFee,
-          signedOrder.expirationTimeSeconds,
-          signedOrder.salt,
-          fillQuantity,
-          0,
-        ],
-        [
-          signedOrder.makerAssetData,
-          signedOrder.takerAssetData,
-          signedOrder.makerFeeAssetData,
-          signedOrder.takerFeeAssetData
-        ],
         '0x0',
-        signedOrder.signature,
+        encodedArgs,
       ],
-      managerTxOpts
+      managerTxOpts,
     );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
@@ -701,10 +721,10 @@ describe('Fund can take an order when protocol fee disabled', () => {
     const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
 
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-  
+
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount).add(new BN(signedOrder.takerFee))
