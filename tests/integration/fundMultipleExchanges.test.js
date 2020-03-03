@@ -9,6 +9,7 @@
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS, KYBER_ETH_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
@@ -17,7 +18,7 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let takeOrderFunctionSig;
+let takeOrderSignature;
 let mln, weth;
 let oasisDexExchange, oasisDexAdapter;
 let kyberNetworkProxy, kyberAdapter, kyberExchangeIndex;
@@ -31,7 +32,7 @@ beforeAll(async () => {
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   const contracts = deployed.contracts;
 
-  takeOrderFunctionSig = getFunctionSignature(
+  takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
@@ -109,28 +110,30 @@ test('fund takes an order on Kyber', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]'],
+    [orderAddresses, orderValues],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     trading,
     'callOnExchange',
     [
       kyberExchangeIndex,
-      takeOrderFunctionSig,
-      [
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
+      takeOrderSignature,
       '0x0',
-      '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
@@ -145,7 +148,7 @@ test('fund takes an order on Kyber', async () => {
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
   const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
 
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
+  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
   expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
   expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
 
