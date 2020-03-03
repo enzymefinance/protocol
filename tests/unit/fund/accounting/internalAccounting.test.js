@@ -169,8 +169,21 @@ describe('trading', () => {
 
   it('cannot take a trade that decreases an asset balance below 0', async() => {
     const { trading } = fund;
-
     const badTakerQuantity = new BN(investmentAmount).add(new BN(1)).toString();
+
+    const orderAddresses = [];
+    const orderValues = [];
+
+    orderAddresses[0] = makerAsset;
+    orderAddresses[1] = takerAsset;
+    orderValues[0] = makerQuantity;
+    orderValues[1] = badTakerQuantity;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[2]', 'uint256[2]'],
+      [orderAddresses, orderValues],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
 
     await expect(
       send(
@@ -179,22 +192,10 @@ describe('trading', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-          ],
-          [makerQuantity, badTakerQuantity, 0, 0, 0, 0, badTakerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       )
     ).rejects.toThrowFlexible("new balance cannot be less than 0");
   });
@@ -211,6 +212,20 @@ describe('trading', () => {
 
     preTxBlock = await web3.eth.getBlockNumber();
 
+    const orderAddresses = [];
+    const orderValues = [];
+
+    orderAddresses[0] = makerAsset;
+    orderAddresses[1] = takerAsset;
+    orderValues[0] = makerQuantity;
+    orderValues[1] = takerQuantity;
+
+    const hex = web3.eth.abi.encodeParameters(
+      ['address[2]', 'uint256[2]'],
+      [orderAddresses, orderValues],
+    );
+    const encodedArgs = web3.utils.hexToBytes(hex);
+
     await expect(
       send(
         trading,
@@ -218,22 +233,10 @@ describe('trading', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       )
     ).resolves.not.toThrow();
 
