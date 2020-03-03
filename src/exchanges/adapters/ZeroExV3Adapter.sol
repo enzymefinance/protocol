@@ -10,22 +10,23 @@ import "../libs/OrderTaker.sol";
 /// @notice Adapter to 0xV3 Exchange Contract
 contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations
-    /// @param _methodSelector method selector of TAKE_ORDER, ...
-    /// @param _encodedArgs Encoded arguments for a specific exchange
-    /// @notice rskMngAddrs [0] makerAddress
-    /// @notice rskMngAddrs [1] takerAddress
-    /// @notice rskMngAddrs [2] makerAsset
-    /// @notice rskMngAddrs [3] takerAsset
-    /// @notice rskMngAddrs [4] makerFeeAsset
-    /// @notice rskMngAddrs [5] takerFeeAsset
-    /// @notice rskMngVals [0] makerAssetAmount
-    /// @notice rskMngVals [1] takerAssetAmount
-    /// @notice rskMngVals [2] fillAmout
+    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @return rskMngAddrs needed addresses for risk management
+    /// - [0] Maker address
+    /// - [1] Taker address
+    /// - [2] Maker asset
+    /// - [3] Taker asset
+    /// - [4] Maker fee asset
+    /// - [5] Taker fee asset
+    /// @return rskMngVals needed values for risk management
+    /// - [0] Maker asset amount
+    /// - [1] Taker asset amount
+    /// - [2] Fill amount
     function extractTakeOrderRiskManagementArgs(
         bytes calldata _encodedArgs
     )
         external
-        pure
+        view
         override
         returns (address[6] memory, uint256[3] memory)
     {
@@ -56,27 +57,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Takes an active order on 0x v3 (takeOrder)
     /// @param _targetExchange Address of 0x v3 exchange
-    /// @param _orderAddresses [0] 0x Order param: makerAddress
-    /// @param _orderAddresses [1] 0x Order param: takerAddress
-    /// @param _orderAddresses [2] Maker asset
-    /// @param _orderAddresses [3] Taker asset
-    /// @param _orderAddresses [4] 0x Order param: feeRecipientAddress
-    /// @param _orderAddresses [5] 0x Order param: senderAddress
-    /// @param _orderAddresses [6] Maker fee asset
-    /// @param _orderAddresses [7] Taker fee asset
-    /// @param _orderData [0] 0x Order param: makerAssetData
-    /// @param _orderData [1] 0x Order param: takerAssetData
-    /// @param _orderData [2] 0x Order param: makerFeeAssetData
-    /// @param _orderData [3] 0x Order param: takerFeeAssetData
-    /// @param _orderValues [0] 0x Order param: makerAssetAmount
-    /// @param _orderValues [1] 0x Order param: takerAssetAmount
-    /// @param _orderValues [2] 0x Order param: makerFee
-    /// @param _orderValues [3] 0x Order param: takerFee
-    /// @param _orderValues [4] 0x Order param: expirationTimeSeconds
-    /// @param _orderValues [5] 0x Order param: salt
-    /// @param _orderValues [6] Taker asset fill quantity
-    /// @param _identifier Order identifier
-    /// @param _signature Signature of the order
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
@@ -106,27 +87,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
     /// @param _targetExchange Address of 0x v3 exchange
-    /// @param _orderAddresses [0] 0x Order param: makerAddress
-    /// @param _orderAddresses [1] 0x Order param: takerAddress
-    /// @param _orderAddresses [2] Maker asset
-    /// @param _orderAddresses [3] Taker asset
-    /// @param _orderAddresses [4] 0x Order param: feeRecipientAddress
-    /// @param _orderAddresses [5] 0x Order param: senderAddress
-    /// @param _orderAddresses [6] Maker fee asset
-    /// @param _orderAddresses [7] Taker fee asset
-    /// @param _orderData [0] 0x Order param: makerAssetData
-    /// @param _orderData [1] 0x Order param: takerAssetData
-    /// @param _orderData [2] 0x Order param: makerFeeAssetData
-    /// @param _orderData [3] 0x Order param: takerFeeAssetData
-    /// @param _orderValues [0] 0x Order param: makerAssetAmount
-    /// @param _orderValues [1] 0x Order param: takerAssetAmount
-    /// @param _orderValues [2] 0x Order param: makerFee
-    /// @param _orderValues [3] 0x Order param: takerFee
-    /// @param _orderValues [4] 0x Order param: expirationTimeSeconds
-    /// @param _orderValues [5] 0x Order param: salt
-    /// @param _orderValues [6] Taker asset fill quantity
-    /// @param _identifier Order identifier
-    /// @param _signature Signature of the order
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @return _fillAssets Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
     /// - [1] Taker asset (same as _orderAddresses[3])
@@ -187,27 +148,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Validate the parameters of a takeOrder call
     /// @param _targetExchange Address of 0x v3 exchange
-    /// @param _orderAddresses [0] 0x Order param: makerAddress
-    /// @param _orderAddresses [1] 0x Order param: takerAddress
-    /// @param _orderAddresses [2] Maker asset
-    /// @param _orderAddresses [3] Taker asset
-    /// @param _orderAddresses [4] 0x Order param: feeRecipientAddress
-    /// @param _orderAddresses [5] 0x Order param: senderAddress
-    /// @param _orderAddresses [6] Maker fee asset
-    /// @param _orderAddresses [7] Taker fee asset
-    /// @param _orderData [0] 0x Order param: makerAssetData
-    /// @param _orderData [1] 0x Order param: takerAssetData
-    /// @param _orderData [2] 0x Order param: makerFeeAssetData
-    /// @param _orderData [3] 0x Order param: takerFeeAssetData
-    /// @param _orderValues [0] 0x Order param: makerAssetAmount
-    /// @param _orderValues [1] 0x Order param: takerAssetAmount
-    /// @param _orderValues [2] 0x Order param: makerFee
-    /// @param _orderValues [3] 0x Order param: takerFee
-    /// @param _orderValues [4] 0x Order param: expirationTimeSeconds
-    /// @param _orderValues [5] 0x Order param: salt
-    /// @param _orderValues [6] Taker asset fill quantity
-    /// @param _identifier Order identifier
-    /// @param _signature Signature of the order
+    /// @param _encodedArgs Encoded parameters passed from client side
     function __validateTakeOrderParams(
         address _targetExchange,
         bytes memory _encodedArgs
@@ -297,6 +238,27 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
         }
     }
 
+    /// @notice Decode the parameters of a takeOrder call
+    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @return orderAddresses needed addresses for an exchange to take an order
+    /// - [0] 0x Order param: makerAddress
+    /// - [1] 0x Order param: takerAddress
+    /// - [2] 0x Order param: feeRecipientAddress
+    /// - [3] 0x Order param: senderAddress
+    /// @return orderValues needed values for an exchange to take an order
+    /// - [0] 0x Order param: makerAssetAmount
+    /// - [1] 0x Order param: takerAssetAmount
+    /// - [2] 0x Order param: makerFee
+    /// - [3] 0x Order param: takerFee
+    /// - [4] 0x Order param: expirationTimeSeconds
+    /// - [5] 0x Order param: salt
+    /// - [6] Taker asset fill quantity
+    /// @return orderData Need data for an exchange to take an order
+    /// - [0] 0x Order param: makerAssetData
+    /// - [1] 0x Order param: takerAssetData
+    /// - [2] 0x Order param: makerFeeAssetData
+    /// - [3] 0x Order param: takerFeeAssetData
+    /// @return signature Signature of the order
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )

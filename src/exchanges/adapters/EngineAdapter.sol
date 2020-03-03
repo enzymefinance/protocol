@@ -10,23 +10,24 @@ import "../../engine/IEngine.sol";
 /// @author Melonport AG <team@melonport.com>
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is ExchangeAdapter, OrderTaker {
-    /// @notice Extract arguments for risk management validations
-    /// @param _methodSelector method selector of TAKE_ORDER, ...
-    /// @param _encodedArgs Encoded arguments for a specific exchange
-    /// @notice rskMngAddrs [0] makerAddress
-    /// @notice rskMngAddrs [1] takerAddress
-    /// @notice rskMngAddrs [2] makerAsset
-    /// @notice rskMngAddrs [3] takerAsset
-    /// @notice rskMngAddrs [4] makerFeeAsset
-    /// @notice rskMngAddrs [5] takerFeeAsset
-    /// @notice rskMngVals [0] makerAssetAmount
-    /// @notice rskMngVals [1] takerAssetAmount
-    /// @notice rskMngVals [2] fillAmout
+    /// @notice Extract arguments for risk management validations of a takeOrder call
+    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @return rskMngAddrs needed addresses for risk management
+    /// - [0] Maker address
+    /// - [1] Taker address
+    /// - [2] Maker asset
+    /// - [3] Taker asset
+    /// - [4] Maker fee asset
+    /// - [5] Taker fee asset
+    /// @return rskMngVals needed values for risk management
+    /// - [0] Maker asset amount
+    /// - [1] Taker asset amount
+    /// - [2] Fill amount
     function extractTakeOrderRiskManagementArgs(
         bytes calldata _encodedArgs
     )
         external
-        pure
+        view
         override
         returns (address[6] memory, uint256[3] memory)
     {
@@ -56,11 +57,7 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Buys Ether from the Melon Engine, selling MLN (takeOrder)
     /// @param _targetExchange Address of the Melon Engine
-    /// @param _orderValues [0] Expected min ETH quantity (maker quantity)
-    /// @param _orderValues [1] Expected MLN quantity (taker quantity)
-    /// @param _orderValues [6] Same as orderValues[1]
-    /// @param _orderAddresses [2] WETH token (maker asset)
-    /// @param _orderAddresses [3] MLN token (taker asset)
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
@@ -87,11 +84,7 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
     /// @param _targetExchange Address of the Melon Engine
-    /// @param _orderValues [0] Expected min ETH quantity (maker quantity)
-    /// @param _orderValues [1] Expected MLN quantity (taker quantity)
-    /// @param _orderValues [6] Same as orderValues[1]
-    /// @param _orderAddresses [2] WETH token (maker asset)
-    /// @param _orderAddresses [3] MLN token (taker asset)
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @return _fillAssets Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
     /// - [1] Taker asset (same as _orderAddresses[3])
@@ -132,11 +125,7 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Validate the parameters of a takeOrder call
     /// @param _targetExchange Address of the Melon Engine
-    /// @param _orderValues [0] Expected min ETH quantity (maker quantity)
-    /// @param _orderValues [1] Expected MLN quantity (taker quantity)
-    /// @param _orderValues [6] Same as orderValues[1]
-    /// @param _orderAddresses [2] WETH token (maker asset)
-    /// @param _orderAddresses [3] MLN token (taker asset)
+    /// @param _encodedArgs Encoded parameters passed from client side
     function __validateTakeOrderParams(
         address _targetExchange,
         bytes memory _encodedArgs
@@ -160,6 +149,14 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
         );
     }
 
+    /// @notice Decode the parameters of a takeOrder call
+    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @return orderAddresses needed addresses for an exchange to take an order
+    /// - [0] Expected min ETH quantity (maker quantity)
+    /// - [1] Expected MLN quantity (taker quantity)
+    /// @return orderValues needed values for an exchange to take an order
+    /// - [0] WETH token (maker asset)
+    /// - [1] MLN token (taker asset)
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
