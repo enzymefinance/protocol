@@ -8,14 +8,14 @@ import "./OrderFiller.sol";
 abstract contract OrderTaker is OrderFiller {
     /// @notice Extract arguments for risk management validations
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return rskMngAddrs needed addresses for risk management
+    /// @return riskManagementAddresses needed addresses for risk management
     /// - [0] Maker address
     /// - [1] Taker address
     /// - [2] Maker asset
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return rskMngVals needed values for risk management
+    /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Fill amount

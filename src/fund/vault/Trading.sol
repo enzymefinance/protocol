@@ -52,15 +52,15 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
 
     /// @notice Universal method for calling exchange functions through adapters
     /// @notice See decoder in adapters to know how to encode needed arguments for each exchange
-    /// - rskMngAddrs [0] makerAddress
-    /// - rskMngAddrs [1] takerAddress
-    /// - rskMngAddrs [2] makerAsset
-    /// - rskMngAddrs [3] takerAsset
-    /// - rskMngAddrs [4] makerFeeAsset
-    /// - rskMngAddrs [5] takerFeeAsset
-    /// - rskMngVals [0] makerAssetAmount
-    /// - rskMngVals [1] takerAssetAmount
-    /// - rskMngVals [2] fillAmout
+    /// - riskManagementAddresses [0] makerAddress
+    /// - riskManagementAddresses [1] takerAddress
+    /// - riskManagementAddresses [2] makerAsset
+    /// - riskManagementAddresses [3] takerAsset
+    /// - riskManagementAddresses [4] makerFeeAsset
+    /// - riskManagementAddresses [5] takerFeeAsset
+    /// - riskManagementValues [0] makerAssetAmount
+    /// - riskManagementValues [1] takerAssetAmount
+    /// - riskManagementValues [2] fillAmout
     /// @param _exchangeIndex Index of the exchange in the "exchanges" array
     /// @param _identifier Order identifier
     /// @param _encodedArgs Encoded arguments for a specific exchange
@@ -75,24 +75,24 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
     {
         bytes4 methodSelector = bytes4(keccak256(bytes(_methodSignature)));
         (
-            address[6] memory rskMngAddrs,
-            uint256[3] memory rskMngVals
+            address[6] memory riskManagementAddresses,
+            uint256[3] memory riskManagementValues
         ) = __getRiskManagementArgs(_exchangeIndex, methodSelector, _encodedArgs);
         address adapter = exchanges[_exchangeIndex].adapter;
         address targetExchange = exchanges[_exchangeIndex].exchange;
 
-        __validateCallOnExchange(_exchangeIndex, methodSelector, rskMngAddrs);
+        __validateCallOnExchange(_exchangeIndex, methodSelector, riskManagementAddresses);
 
         IPolicyManager(__getRoutes().policyManager).preValidate(
             methodSelector,
             [
-                rskMngAddrs[0],
-                rskMngAddrs[1],
-                rskMngAddrs[2],
-                rskMngAddrs[3],
+                riskManagementAddresses[0],
+                riskManagementAddresses[1],
+                riskManagementAddresses[2],
+                riskManagementAddresses[3],
                 targetExchange
             ],
-            rskMngVals,
+            riskManagementValues,
             _identifier
         );
 
@@ -108,13 +108,13 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
         IPolicyManager(__getRoutes().policyManager).postValidate(
             methodSelector,
             [
-                rskMngAddrs[0],
-                rskMngAddrs[1],
-                rskMngAddrs[2],
-                rskMngAddrs[3],
+                riskManagementAddresses[0],
+                riskManagementAddresses[1],
+                riskManagementAddresses[2],
+                riskManagementAddresses[3],
                 targetExchange
             ],
-            rskMngVals,
+            riskManagementValues,
             _identifier
         );
     }
@@ -163,7 +163,7 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
     function __validateCallOnExchange(
         uint256 _exchangeIndex,
         bytes4 _methodSelector,
-        address[6] memory _rskMngAddrs
+        address[6] memory _riskManagementAddresses
     )
         private
         view
@@ -187,14 +187,14 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
 
         if (_methodSelector == TAKE_ORDER) {
             require(registry.assetIsRegistered(
-                _rskMngAddrs[2]), 'Maker asset not registered'
+                _riskManagementAddresses[2]), 'Maker asset not registered'
             );
             require(registry.assetIsRegistered(
-                _rskMngAddrs[3]), 'Taker asset not registered'
+                _riskManagementAddresses[3]), 'Taker asset not registered'
             );
-            if (_rskMngAddrs[5] != address(0)) {
+            if (_riskManagementAddresses[5] != address(0)) {
                 require(
-                    registry.assetIsRegistered(_rskMngAddrs[5]),
+                    registry.assetIsRegistered(_riskManagementAddresses[5]),
                     'Taker fee asset not registered'
                 );
             }

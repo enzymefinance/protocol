@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const web3 = require('./get-web3');
+const web3Utils = require('web3-utils');
 
 const outdir = path.resolve(`${__dirname}/../../out`);
 
@@ -28,6 +29,23 @@ const getNextNonce = async account => {
 
 const stdout = msg => {
   process.env.MLN_VERBOSE && console.log(msg);
+}
+
+const linkLibs = (name, libs) => {
+  let bin = fs.readFileSync(`${outdir}/${name}.bin`, 'utf8').trim();
+  for (const lib of libs) {
+    const reg = new RegExp(`_+${lib.name}_+`, "g");
+    if (!web3Utils.isAddress(lib.addr)) {
+      console.error(`Invalid library address! Please check the address of the deployed ${lib.name} library`)
+      process.exit(1);
+    }
+    if (!bin.match(reg)) {
+      console.error(`Wrong library name! "${lib.name}" library is not included in "${name}" contract.`)
+      process.exit(1);
+    }
+    bin = bin.replace(reg, lib.addr.replace("0x",""));
+  }
+  return bin;
 }
 
 const call = async (contract, method=undefined, args=[], opts={}) => {
@@ -97,7 +115,7 @@ const signAndSend = async (tx, pkey) => {
 
 // TODO: factor out common code between deploy and send
 // deploy a contract with some args
-const deploy = async (name, args=[], overrideOpts={}) => {
+const deploy = async (name, args=[], overrideOpts={}, libs=[]) => {
   let account;
   if (overrideOpts.from) {
     account = web3.eth.accounts.wallet[overrideOpts.from];
@@ -105,7 +123,8 @@ const deploy = async (name, args=[], overrideOpts={}) => {
     account = web3.eth.accounts.wallet['0'];
   }
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
-  const bin = fs.readFileSync(`${outdir}/${name}.bin`, 'utf8').trim();
+  const bin = linkLibs(name, libs);
+
   const contract = new web3.eth.Contract(abi);
   const txFunction = contract.deploy({
     arguments: args,
@@ -151,11 +170,11 @@ const fetchContract = (name, address) => {
 // get address from deploy input if we have one
 // otherwise deploy it with args
 // TODO: better document
-const nab = async (name, args, input, explicitKey=null) => {
+const nab = async (name, args, input, explicitKey=null, libs=[]) => {
   let contract;
   const key = explicitKey || name;
   if (input[key] === '' || input[key] === undefined) {
-    contract = await deploy(name, args);
+    contract = await deploy(name, args, {}, libs);
   } else {
     contract = fetchContract(name, input[key]);
   }
@@ -163,3 +182,4 @@ const nab = async (name, args, input, explicitKey=null) => {
 }
 
 module.exports = { call, send, deploy, fetchContract, nab };
+
