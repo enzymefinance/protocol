@@ -8,6 +8,7 @@ import "../policies/IPolicyManager.sol";
 import "../policies/TradingSignatures.sol";
 import "../../version/IRegistry.sol";
 import "../../exchanges/libs/ExchangeAdapter.sol";
+import "../../exchanges/libs/OrderTaker.sol";
 
 contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
     struct Exchange {
@@ -143,16 +144,20 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
         internal
         returns (address[6] memory, uint256[3] memory)
     {
-        address adapter = exchanges[_exchangeIndex].adapter;
-        (bool success, bytes memory returnData) = adapter.delegatecall(
-            abi.encodeWithSelector(
-                ExchangeAdapter(adapter).extractRiskManagementArgsOf.selector,
-                _methodSelector,
-                _encodedArgs
-            )
-        );
-        require(success, "Encoded arguments might not match");
-        return abi.decode(returnData, (address[6], uint256[3]));
+        if (_methodSelector == TAKE_ORDER) {
+            address adapter = exchanges[_exchangeIndex].adapter;
+            (bool success, bytes memory returnData) = adapter.delegatecall(
+                abi.encodeWithSelector(
+                    OrderTaker(adapter).extractTakeOrderRiskManagementArgs.selector,
+                    _encodedArgs
+                )
+            );
+            require(success, "Encoded arguments might not match");
+            return abi.decode(returnData, (address[6], uint256[3]));
+        }
+        else {
+            revert("Method selector doesn't not exist");
+        }
     }
 
     function __validateCallOnExchange(
@@ -182,10 +187,10 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
 
         if (_methodSelector == TAKE_ORDER) {
             require(registry.assetIsRegistered(
-                _rskMngAddrs[0]), 'Maker asset not registered'
+                _rskMngAddrs[2]), 'Maker asset not registered'
             );
             require(registry.assetIsRegistered(
-                _rskMngAddrs[1]), 'Taker asset not registered'
+                _rskMngAddrs[3]), 'Taker asset not registered'
             );
             if (_rskMngAddrs[5] != address(0)) {
                 require(
