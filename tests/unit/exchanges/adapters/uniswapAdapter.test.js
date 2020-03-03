@@ -3,7 +3,7 @@
  *
  * @dev Note that liquidity pool is only added to in top-level beforeAll,
  * which is fine because these unit tests are agnostic to pricefeed
- * 
+ *
  * @test takeOrder: __validateTakeOrderParams
  * @test takeOrder: Order 1: eth to token
  * @test takeOrder: Order 2: token to eth
@@ -38,7 +38,7 @@ let exchangeIndex;
 beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  
+
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   contracts = deployed.contracts;
 
@@ -115,7 +115,7 @@ describe('takeOrder', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
-  
+
     beforeAll(async () => {
       takerAsset = weth.options.address;
       takerQuantity = toWei('0.01', 'ether');
@@ -157,28 +157,30 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         trading,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       );
 
       postFundHoldingsWeth = new BN(
@@ -225,7 +227,7 @@ describe('takeOrder', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
-  
+
     beforeAll(async () => {
       takerAsset = mln.options.address;
       takerQuantity = toWei('0.01', 'ether');
@@ -267,28 +269,30 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         trading,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       );
 
       postFundHoldingsWeth = new BN(
@@ -335,7 +339,7 @@ describe('takeOrder', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsDai, postFundHoldingsMln, postFundHoldingsDai;
     let tx;
-  
+
     beforeAll(async () => {
       takerAsset = mln.options.address;
       takerQuantity = toWei('0.01', 'ether');
@@ -382,28 +386,30 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         trading,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
+        defaultTxOpts,
       );
 
       postFundHoldingsDai = new BN(

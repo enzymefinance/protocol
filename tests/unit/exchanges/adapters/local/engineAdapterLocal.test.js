@@ -3,7 +3,7 @@
  *
  * @dev This file contains tests that will only work locally because of EVM manipulation.
  * Input validation tests are in engineAdapter.test.js
- * 
+ *
  * @test takeOrder: Order 1: full amount of liquid eth
  * @test takeOrder: Order 2: arbitrary amount of liquid eth
  * @test takeOrder: Order 3: greater amount of liquid eth than full amount
@@ -12,6 +12,7 @@
 import { BN, toWei } from 'web3-utils';
 
 import { call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import getAccounts from '~/deploy/utils/getAccounts';
 
@@ -39,7 +40,7 @@ let mlnPrice;
 beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  
+
   const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
   contracts = deployed.contracts;
 
@@ -116,29 +117,31 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         trading,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
-      )
+        defaultTxOpts,
+      );
 
       postFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -233,29 +236,31 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       tx = await send(
         trading,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            makerAsset,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
           '0x0',
-          '0x0',
+          encodedArgs,
         ],
-        defaultTxOpts
-      )
+        defaultTxOpts,
+      );
 
       postFundHoldingsWeth = new BN(
         await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
@@ -343,6 +348,20 @@ describe('takeOrder', () => {
     it('cannot fill the order', async () => {
       const { trading } = fund;
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]'],
+        [orderAddresses, orderValues],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       await expect(
         send(
           trading,
@@ -350,22 +369,10 @@ describe('takeOrder', () => {
           [
             exchangeIndex,
             takeOrderSignature,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          defaultTxOpts
+          defaultTxOpts,
         )
       ).rejects.toThrowFlexible("Not enough liquid ether to send")
     });
