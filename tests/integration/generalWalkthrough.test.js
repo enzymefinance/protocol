@@ -11,6 +11,7 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 import { deploy, call, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import getAccounts from '~/deploy/utils/getAccounts';
@@ -195,28 +196,30 @@ test('Fund can take an order on Oasis DEX', async () => {
   const preMlnFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [mln.options.address]);
   const preWethFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address]);
 
+  const orderAddresses = [];
+  const orderValues = [];
+
+  orderAddresses[0] = makerAsset;
+  orderAddresses[1] = takerAsset;
+  orderValues[0] = makerQuantity;
+  orderValues[1] = takerQuantity;
+
+  const hex = web3.eth.abi.encodeParameters(
+    ['address[2]', 'uint256[2]', 'uint256'],
+    [orderAddresses, orderValues, orderId],
+  );
+  const encodedArgs = web3.utils.hexToBytes(hex);
+
   await send(
     vault,
     'callOnExchange',
     [
       exchangeIndex,
       takeOrderFunctionSig,
-      [
-        deployer,
-        fund.vault.options.address,
-        makerAsset,
-        takerAsset,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS
-      ],
-      [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-      ['0x0', '0x0', '0x0', '0x0'],
-      orderId,
       '0x0',
+      encodedArgs,
     ],
-    managerTxOpts
+    managerTxOpts,
   );
 
   const postMlnFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [mln.options.address]);

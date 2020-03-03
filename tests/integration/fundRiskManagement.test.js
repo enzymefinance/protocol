@@ -13,6 +13,7 @@ import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupInvestedTestFund } from '~/tests/utils/fund';
@@ -209,6 +210,21 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         wethToMakerAssetRate
       ).toString();
 
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+      const orderId = 0;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, orderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       await expect(
         send(
           vault,
@@ -216,22 +232,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).rejects.toThrowFlexible(`${ruleFailureString}AssetBlacklist`);
     });
@@ -254,13 +258,26 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         ],
         defaultTxOpts
       );
-    
+
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
       goodOrderId = logMake.id;
     });
 
     test('Good take order: non-blacklisted maker asset', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = goodMakerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = goodMakerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, goodOrderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -269,22 +286,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              goodMakerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [goodMakerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            goodOrderId,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).resolves.not.toThrow();
     });
@@ -316,11 +321,25 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Bad take order: slippage just above limit', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
 
       const badMakerQuantity = BNExpMul(
         new BN(expectedMakerQuantity),
         makerQuantityPercentLimit.sub(makerQuantityPercentShift)
       ).toString();
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = badMakerQuantity;
+      orderValues[1] = takerQuantity;
+      const orderId = 0;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, orderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -329,22 +348,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [badMakerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).rejects.toThrowFlexible(`${ruleFailureString}PriceTolerance`);
     });
@@ -364,13 +371,26 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         ],
         defaultTxOpts
       );
-    
+
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
       goodOrderId = logMake.id;
     });
 
     test('Good take order: slippage just within limit', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = toleratedMakerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, goodOrderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -379,22 +399,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [toleratedMakerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            goodOrderId,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).resolves.not.toThrow();
     });
@@ -454,13 +462,26 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         ],
         defaultTxOpts
       );
-    
+
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
       goodOrderId = logMake.id;
     });
 
     test('Good make order: just under max-concentration', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = goodMakerQuantity;
+      orderValues[1] = goodTakerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, goodOrderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -469,22 +490,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [goodMakerQuantity, goodTakerQuantity, 0, 0, 0, 0, goodTakerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            goodOrderId,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).resolves.not.toThrow();
     });
@@ -499,13 +508,26 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         ],
         defaultTxOpts
       );
-    
+
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
       badOrderId = logMake.id;
     });
 
     test('Bad make order: max concentration exceeded', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = makerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = badMakerQuantity;
+      orderValues[1] = badTakerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, badOrderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -514,22 +536,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              makerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [badMakerQuantity, badTakerQuantity, 0, 0, 0, 0, badTakerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            badOrderId,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).rejects.toThrowFlexible(`${ruleFailureString}MaxConcentration`);
     });
@@ -629,6 +639,8 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Bad take order: non-whitelisted maker asset', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
 
       const badMakerAsset = knc.options.address;
       const makerToWethAssetRate = new BN(
@@ -639,6 +651,18 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         makerToWethAssetRate
       ).toString();
 
+      orderAddresses[0] = badMakerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = makerQuantity;
+      orderValues[1] = takerQuantity;
+      const orderId = 0;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, orderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
+
       await expect(
         send(
           vault,
@@ -646,22 +670,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              badMakerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [makerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
             '0x0',
-            '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).rejects.toThrowFlexible(`${ruleFailureString}AssetWhitelist`);
     });
@@ -684,13 +696,25 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         ],
         defaultTxOpts
       );
-    
+
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
       goodOrderId = logMake.id;
     });
 
     test('Good take order: whitelisted maker asset', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+      orderAddresses[0] = goodMakerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = goodMakerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, goodOrderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -699,22 +723,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              goodMakerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [goodMakerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            goodOrderId,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).resolves.not.toThrow();
     });
@@ -776,11 +788,24 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Good take order 1: final allowed position', async () => {
       const { accounting, vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
 
       const maxPositionsVal = await call(maxPositions, 'maxPositions');
 
       const preOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
+
+      orderAddresses[0] = goodMakerAsset1;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = goodMakerQuantity1;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, goodOrderId1],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await send(
         vault,
@@ -788,22 +813,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         [
           oasisDexExchangeIndex,
           takeOrderFunctionSig,
-          [
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            goodMakerAsset1,
-            takerAsset,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS,
-            EMPTY_ADDRESS
-          ],
-          [goodMakerQuantity1, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-          ['0x0', '0x0', '0x0', '0x0'],
-          goodOrderId1,
           '0x0',
+          encodedArgs,
         ],
-        managerTxOpts
+        managerTxOpts,
       );
 
       const postOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
@@ -828,6 +841,19 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Bad take order: over limit for positions', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = badMakerAsset;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = badMakerQuantity;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, badOrderId],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -836,22 +862,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              badMakerAsset,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [badMakerQuantity, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            badOrderId,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).rejects.toThrowFlexible(`${ruleFailureString}MaxPositions`);
     });
@@ -874,6 +888,19 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Good make order 2: add to current position', async () => {
       const { vault } = fund;
+      const orderAddresses = [];
+      const orderValues = [];
+
+      orderAddresses[0] = goodMakerAsset2;
+      orderAddresses[1] = takerAsset;
+      orderValues[0] = goodMakerQuantity2;
+      orderValues[1] = takerQuantity;
+
+      const hex = web3.eth.abi.encodeParameters(
+        ['address[2]', 'uint256[2]', 'uint256'],
+        [orderAddresses, orderValues, goodOrderId2],
+      );
+      const encodedArgs = web3.utils.hexToBytes(hex);
 
       await expect(
         send(
@@ -882,24 +909,12 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            [
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              goodMakerAsset2,
-              takerAsset,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS,
-              EMPTY_ADDRESS
-            ],
-            [goodMakerQuantity2, takerQuantity, 0, 0, 0, 0, takerQuantity, 0],
-            ['0x0', '0x0', '0x0', '0x0'],
-            goodOrderId2,
             '0x0',
+            encodedArgs,
           ],
-          managerTxOpts
+          managerTxOpts,
         )
       ).resolves.not.toThrowFlexible();
     });
-  });
+ });
 });
