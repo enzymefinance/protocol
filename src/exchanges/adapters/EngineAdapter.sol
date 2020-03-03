@@ -40,7 +40,7 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
 
         rskMngAddrs = [
             address(0),
-            address(this),
+            address(0),
             orderAddresses[0],
             orderAddresses[1],
             address(0),
