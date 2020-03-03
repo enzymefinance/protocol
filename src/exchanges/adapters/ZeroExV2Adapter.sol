@@ -4,12 +4,11 @@ pragma experimental ABIEncoderV2;
 import "../interfaces/IZeroExV2.sol";
 import "../libs/ExchangeAdapter.sol";
 import "../libs/OrderTaker.sol";
-import "../../fund/policies/TradingSignatures.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter to 0xV2 Exchange Contract
-contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker, TradingSignatures {
+contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations
     /// @param _methodSelector method selector of TAKE_ORDER, ...
     /// @param _encodedArgs Encoded arguments for a specific exchange
@@ -22,8 +21,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker, TradingSignatures {
     /// @notice rskMngVals [0] makerAssetAmount
     /// @notice rskMngVals [1] takerAssetAmount
     /// @notice rskMngVals [2] fillAmout
-    function extractRiskManagementArgsOf(
-        bytes4 _methodSelector,
+    function extractTakeOrderRiskManagementArgs(
         bytes calldata _encodedArgs
     )
         external
@@ -33,31 +31,25 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker, TradingSignatures {
     {
         address[6] memory rskMngAddrs;
         uint256[3] memory rskMngVals;
+        (
+            address[4] memory orderAddresses,
+            uint256[7] memory orderValues,
+            bytes[2] memory orderData,
+        ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        if (_methodSelector == TAKE_ORDER) {
-            (
-                address[4] memory orderAddresses,
-                uint256[7] memory orderValues,
-                bytes[2] memory orderData,
-            ) = __decodeTakeOrderArgs(_encodedArgs);
-
-            rskMngAddrs = [
-                orderAddresses[0],
-                orderAddresses[1],
-                __getAssetAddress(orderData[0]),
-                __getAssetAddress(orderData[1]),
-                address(0),
-                address(0)
-            ];
-            rskMngVals = [
-                orderValues[0],
-                orderValues[1],
-                orderValues[6]
-            ];
-        }
-        else {
-            revert("methodSelector doesn't exist");
-        }
+        rskMngAddrs = [
+            orderAddresses[0],
+            orderAddresses[1],
+            __getAssetAddress(orderData[0]),
+            __getAssetAddress(orderData[1]),
+            address(0),
+            address(0)
+        ];
+        rskMngVals = [
+            orderValues[0],
+            orderValues[1],
+            orderValues[6]
+        ];
 
         return (rskMngAddrs, rskMngVals);
     }

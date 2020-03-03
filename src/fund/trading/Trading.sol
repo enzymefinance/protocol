@@ -8,6 +8,7 @@ import "../../dependencies/TokenUser.sol";
 import "../../factory/Factory.sol";
 import "../../version/IRegistry.sol";
 import "../../exchanges/libs/ExchangeAdapter.sol";
+import "../../exchanges/libs/OrderTaker.sol";
 
 contract Trading is TokenUser, Spoke, TradingSignatures {
     struct Exchange {
@@ -161,16 +162,20 @@ contract Trading is TokenUser, Spoke, TradingSignatures {
         internal
         returns (address[6] memory, uint256[3] memory)
     {
-        address adapter = exchanges[_exchangeIndex].adapter;
-        (bool success, bytes memory returnData) = adapter.delegatecall(
-            abi.encodeWithSelector(
-                ExchangeAdapter(adapter).extractRiskManagementArgsOf.selector,
-                _methodSelector,
-                _encodedArgs
-            )
-        );
-        require(success, "Encoded arguments might not match");
-        return abi.decode(returnData, (address[6], uint256[3]));
+        if (_methodSelector == TAKE_ORDER) {
+            address adapter = exchanges[_exchangeIndex].adapter;
+            (bool success, bytes memory returnData) = adapter.delegatecall(
+                abi.encodeWithSelector(
+                    OrderTaker(adapter).extractTakeOrderRiskManagementArgs.selector,
+                    _encodedArgs
+                )
+            );
+            require(success, "Encoded arguments might not match");
+            return abi.decode(returnData, (address[6], uint256[3]));
+        }
+        else {
+            revert("Method selector doesn't not exist");
+        }
     }
 
     function __validateCallOnExchange(

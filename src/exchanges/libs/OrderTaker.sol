@@ -6,6 +6,26 @@ import "./OrderFiller.sol";
 /// @title Order Taker base contract
 /// @author Melonport AG <team@melonport.com>
 abstract contract OrderTaker is OrderFiller {
+    /// @notice Extract arguments for risk management validations
+    /// @param _methodSelector method selector of TAKE_ORDER, ...
+    /// @param _encodedArgs Encoded arguments for a specific exchange
+    /// @notice rskMngAddrs [0] makerAddress
+    /// @notice rskMngAddrs [1] takerAddress
+    /// @notice rskMngAddrs [2] makerAsset
+    /// @notice rskMngAddrs [3] takerAsset
+    /// @notice rskMngAddrs [4] makerFeeAsset
+    /// @notice rskMngAddrs [5] takerFeeAsset
+    /// @notice rskMngVals [0] makerAssetAmount
+    /// @notice rskMngVals [1] takerAssetAmount
+    /// @notice rskMngVals [2] fillAmout
+    function extractTakeOrderRiskManagementArgs(
+        bytes calldata _encodedArgs
+    )
+        external
+        pure
+        virtual
+        returns (address[6] memory, uint256[3] memory);
+
     /// @notice Perform a Take Order on a particular exchange
     /// @dev Synchronously handles the responsibilities of takeOrder:
     /// - Validate user inputs

@@ -21,8 +21,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     /// @notice rskMngVals [0] makerAssetAmount
     /// @notice rskMngVals [1] takerAssetAmount
     /// @notice rskMngVals [2] fillAmout
-    function extractRiskManagementArgsOf(
-        bytes4 _methodSelector,
+    function extractTakeOrderRiskManagementArgs(
         bytes calldata _encodedArgs
     )
         external
@@ -30,39 +29,27 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
         override
         returns (address[6] memory, uint256[3] memory)
     {
+        address[6] memory rskMngAddrs;
+        uint256[3] memory rskMngVals;
         (
-            address[5] memory orderAddresses,
+            address[4] memory orderAddresses,
             uint256[7] memory orderValues,
             bytes[4] memory orderData,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        address[6] memory rskMngAddrs;
-        uint256[3] memory rskMngVals;
-
-        if (_methodSelector == TAKE_ORDER) {
-            (
-                address[4] memory orderAddresses,
-                uint256[7] memory orderValues,
-                bytes[2] memory orderData,
-            ) = __decodeTakeOrderArgs(_encodedArgs);
-
-            rskMngAddrs = [
-                orderAddresses[0],
-                orderAddresses[1],
-                __getAssetAddress(orderData[0]),
-                __getAssetAddress(orderData[1]),
-                __getAssetAddress(orderData[2]),
-                __getAssetAddress(orderData[3])
-            ];
-            rskMngVals = [
-                orderValues[0],
-                orderValues[1],
-                orderValues[6]
-            ];
-        }
-        else {
-            revert("methodSelector doesn't exist");
-        }
+        rskMngAddrs = [
+            orderAddresses[0],
+            orderAddresses[1],
+            __getAssetAddress(orderData[0]),
+            __getAssetAddress(orderData[1]),
+            __getAssetAddress(orderData[2]),
+            __getAssetAddress(orderData[3])
+        ];
+        rskMngVals = [
+            orderValues[0],
+            orderValues[1],
+            orderValues[6]
+        ];
 
         return (rskMngAddrs, rskMngVals);
     }
@@ -101,7 +88,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
         validateAndFinalizeFilledOrder(_targetExchange, _fillData)
     {
         (
-            address[5] memory orderAddresses,
+            address[4] memory orderAddresses,
             uint256[7] memory orderValues,
             bytes[4] memory orderData,
             bytes memory signature

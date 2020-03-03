@@ -6,12 +6,11 @@ import "../libs/OrderTaker.sol";
 import "../interfaces/IUniswapFactory.sol";
 import "../interfaces/IUniswapExchange.sol";
 import "../../dependencies/WETH.sol";
-import "../../fund/policies/TradingSignatures.sol";
 
 /// @title UniswapAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and Uniswap
-contract UniswapAdapter is ExchangeAdapter, OrderTaker, TradingSignatures {
+contract UniswapAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations
     /// @param _methodSelector method selector of TAKE_ORDER, ...
     /// @param _encodedArgs Encoded arguments for a specific exchange
@@ -24,8 +23,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker, TradingSignatures {
     /// @notice rskMngVals [0] makerAssetAmount
     /// @notice rskMngVals [1] takerAssetAmount
     /// @notice rskMngVals [2] fillAmout
-    function extractRiskManagementArgsOf(
-        bytes4 _methodSelector,
+    function extractTakeOrderRiskManagementArgs(
         bytes calldata _encodedArgs
     )
         external
@@ -35,30 +33,24 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker, TradingSignatures {
     {
         address[6] memory rskMngAddrs;
         uint256[3] memory rskMngVals;
+        (
+            address[2] memory orderAddresses,
+            uint256[2] memory orderValues
+        ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        if (_methodSelector == TAKE_ORDER) {
-            (
-                address[2] memory orderAddresses,
-                uint256[2] memory orderValues
-            ) = __decodeTakeOrderArgs(_encodedArgs);
-
-            rskMngAddrs = [
-                address(0),
-                address(this),
-                orderAddresses[0],
-                orderAddresses[1],
-                address(0),
-                address(0)
-            ];
-            rskMngVals = [
-                orderValues[0],
-                orderValues[1],
-                orderValues[1]
-            ];
-        }
-        else {
-            revert("methodSelector doesn't exist");
-        }
+        rskMngAddrs = [
+            address(0),
+            address(this),
+            orderAddresses[0],
+            orderAddresses[1],
+            address(0),
+            address(0)
+        ];
+        rskMngVals = [
+            orderValues[0],
+            orderValues[1],
+            orderValues[1]
+        ];
 
         return (rskMngAddrs, rskMngVals);
     }
