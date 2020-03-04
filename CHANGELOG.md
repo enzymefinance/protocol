@@ -7,16 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 - "Internal Accounting" (storage-based calculations of fund holdings)
 - Standardized pipeline for takeOrder (OrderFiller + OrderTaker contracts)
 - OrderFilled event (replaces ExchangeMethodCall)
 
 ### Changed
 
+- Vault inherits capabilities from Trading, which is no longer its own component
+
 ### Removed
+
 - EthfinexAdapter
 - makeOrder and related functions/storage
-- Vault component
 - ExchangeMethodCall event
 
 ## 1.1.1
