@@ -11,7 +11,7 @@ import "../version/Registry.sol";
 contract KyberPriceFeed is DSMath {
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
     event MaxSpreadSet(uint256 maxSpread);
-    event PriceUpdate(address[] asset, uint256[] price);
+    event PriceUpdated(address[] asset, uint256[] price);
     event RegistrySet(address newRegistry);
     event UpdaterSet(address updater);
 
@@ -50,8 +50,10 @@ contract KyberPriceFeed is DSMath {
 
     // EXTERNAL FUNCTIONS
 
+    /// @notice Update prices for registered assets
     /// @dev Stores zero as a convention for invalid price
-    /// @dev passed _saneAssets must match the assets array from getRegisteredAssets
+    /// @param _saneAssets = Asset addresses (must match assets array from getRegisteredAssets)
+    /// @param _sanePrices = Asset price hints (checked against prices from Kyber)
     function update(
         address[] calldata _saneAssets,
         uint256[] calldata _sanePrices
@@ -87,29 +89,37 @@ contract KyberPriceFeed is DSMath {
             prices[registeredAssets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
-        emit PriceUpdate(registeredAssets, newPrices);
+        emit PriceUpdated(registeredAssets, newPrices);
     }
 
-    function setUpdater(address _updater) external onlyRegistryOwner {
-        updater = _updater;
-        emit UpdaterSet(_updater);
+    /// @notice Update this feed's designated updater
+    /// @param _newUpdater = New designated updater for this feed
+    function setUpdater(address _newUpdater) external onlyRegistryOwner {
+        updater = _newUpdater;
+        emit UpdaterSet(_newUpdater);
     }
 
+    /// @notice Update this feed's Registry reference
+    /// @param _newRegistry = New Registry this feed should point to
     function setRegistry(address _newRegistry) external onlyRegistryOwner {
         registry = Registry(_newRegistry);
         emit RegistrySet(_newRegistry);
     }
 
-    /// @notice _maxPriceDeviation becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
-    function setMaxPriceDeviation(uint256 _maxPriceDeviation) external onlyRegistryOwner {
-        maxPriceDeviation = _maxPriceDeviation;
-        emit MaxPriceDeviationSet(_maxPriceDeviation);
+    /// @notice Update maximum price deviation between price hints and Kyber price
+    /// @notice Price deviation becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
+    /// @param _newMaxPriceDeviation = New maximum price deviation
+    function setMaxPriceDeviation(uint256 _newMaxPriceDeviation) external onlyRegistryOwner {
+        maxPriceDeviation = _newMaxPriceDeviation;
+        emit MaxPriceDeviationSet(_newMaxPriceDeviation);
     }
 
-    /// @notice _maxSpread becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
-    function setMaxSpread(uint256 _maxSpread) external onlyRegistryOwner {
-        maxSpread = _maxSpread;
-        emit MaxSpreadSet(_maxSpread);
+    /// @notice Update maximum spread for prices derived from Kyber
+    /// @notice Max spread becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
+    /// @param _newMaxSpread = New maximum spread
+    function setMaxSpread(uint256 _newMaxSpread) external onlyRegistryOwner {
+        maxSpread = _newMaxSpread;
+        emit MaxSpreadSet(_newMaxSpread);
     }
 
     // PUBLIC/EXTERNAL VIEW FUNCTIONS
@@ -142,10 +152,10 @@ contract KyberPriceFeed is DSMath {
         return (referencePrice_, decimals_);
     }
 
-    /// @notice Gets price of an asset multiplied by ten to the power of assetDecimals
+    /// @notice Gets price of an asset times 10^assetDecimals
     /// @dev Asset must be registered
     /// @param _asset = Asset for which price should be returned
-    /// @return price_ = Formatting: mul(exchangePrice, 10 ** decimal) to avoid floating point
+    /// @return price_ = Formatting: exchangePrice * 10^decimals (to avoid floating point)
     /// @return timestamp_ = When the asset's price was last updated
     function getPrice(address _asset)
         public
@@ -157,6 +167,7 @@ contract KyberPriceFeed is DSMath {
     }
 
     /// @notice Return getPrice for each of _assets
+    /// @param _assets = Assets for which prices should be returned
     function getPrices(address[] calldata _assets)
         external
         view
@@ -171,6 +182,7 @@ contract KyberPriceFeed is DSMath {
     }
 
     /// @notice Whether an asset is registered and has a fresh price
+    /// @param _asset = Asset to check for a valid price
     function hasValidPrice(address _asset)
         public
         view
@@ -182,6 +194,7 @@ contract KyberPriceFeed is DSMath {
     }
 
     /// @notice Whether each of the _assets is registered and has a fresh price
+    /// @param _assets = Assets for which validity information should be returned
     function hasValidPrices(address[] calldata _assets)
         external
         view
@@ -195,11 +208,15 @@ contract KyberPriceFeed is DSMath {
         return true;
     }
 
-    /// @notice Returns validity and price from Kyber
+    /// @notice Returns validity and price for some pair of assets from Kyber
+    /// @param _baseAsset = Address of base asset from the pair
+    /// @param _quoteAsset = Address of quote asset from the pair
+    /// @return validity_ = Whether the price for this pair is valid
+    /// @return kyberPrice_ = The price of _baseAsset in terms of _quoteAsset
     function getKyberPrice(address _baseAsset, address _quoteAsset)
         public
         view
-        returns (bool, uint256)
+        returns (bool validity_, uint256 kyberPrice_)
     {
         uint256 bidRate;
         uint256 bidRateOfReversePair;
@@ -226,7 +243,7 @@ contract KyberPriceFeed is DSMath {
           or, rearranged:
           kyberPrice = ((bidRate + askRate) * 10^quoteDecimals) / 2 * 10^kyberPrecision
         */
-        uint256 kyberPrice = mul(
+        kyberPrice_ = mul(
             add(bidRate, askRate),
             10 ** uint256(ERC20WithFields(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
         ) / mul(2, 10 ** uint256(KYBER_PRECISION));
@@ -242,10 +259,8 @@ contract KyberPriceFeed is DSMath {
             ) / askRate;
         }
 
-        return (
-            spreadFromKyber <= maxSpread && bidRate != 0 && askRate != 0,
-            kyberPrice
-        );
+        validity_ = spreadFromKyber <= maxSpread && bidRate != 0 && askRate != 0;
+        return (validity_, kyberPrice_);
     }
 
     /// @notice Returns price as determined by an order
@@ -268,6 +283,9 @@ contract KyberPriceFeed is DSMath {
     }
 
     /// @notice Get quantity of _toAsset equal in value to some quantity of _fromAsset
+    /// @param _fromAssetQuantity = Amount of _fromAsset
+    /// @param _fromAsset = Address of _fromAsset
+    /// @param _toAsset = Address of _toAsset
     function convertQuantity(
         uint256 _fromAssetQuantity,
         address _fromAsset,
@@ -318,21 +336,21 @@ contract KyberPriceFeed is DSMath {
         return (isValid_, referencePrice_, quoteDecimals_);
     }
 
-    /// @dev Whether _priceFromKyber deviates no more than some % from _offChainPrice
+    /// @dev Whether _priceFromKyber deviates no more than some % from _sanePrice
     function __priceIsSane(
         uint256 _priceFromKyber,
-        uint256 _offchainPrice
+        uint256 _sanePrice
     )
         internal
         view
         returns (bool)
     {
         uint256 deviation;
-        if (_priceFromKyber >= _offchainPrice) {
-            deviation = sub(_priceFromKyber, _offchainPrice);
+        if (_priceFromKyber >= _sanePrice) {
+            deviation = sub(_priceFromKyber, _sanePrice);
         } else {
-            deviation = sub(_offchainPrice, _priceFromKyber);
+            deviation = sub(_sanePrice, _priceFromKyber);
         }
-        return mul(deviation, 10 ** uint256(KYBER_PRECISION)) / _offchainPrice <= maxPriceDeviation;
+        return mul(deviation, 10 ** uint256(KYBER_PRECISION)) / _sanePrice <= maxPriceDeviation;
     }
 }

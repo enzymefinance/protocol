@@ -6,7 +6,7 @@ import "main/dependencies/DSMath.sol";
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
 contract TestingPriceFeed is DSMath {
-    event PriceUpdate(address[] token, uint256[] price);
+    event PriceUpdated(address[] token, uint256[] price);
 
     struct Data {
         uint256 price;
@@ -37,7 +37,7 @@ contract TestingPriceFeed is DSMath {
             });
         }
         lastUpdate = block.timestamp;
-        emit PriceUpdate(_assets, _prices);
+        emit PriceUpdated(_assets, _prices);
     }
 
     function setNeverValid(bool _state) external { neverValid = _state; }
