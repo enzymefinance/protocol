@@ -11,7 +11,7 @@ import "../version/Registry.sol";
 contract KyberPriceFeed is DSMath {
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
     event MaxSpreadSet(uint256 maxSpread);
-    event PriceUpdated(address[] asset, uint256[] price);
+    event PricesUpdated(address[] assets, uint256[] prices);
     event RegistrySet(address newRegistry);
     event UpdaterSet(address updater);
 
@@ -52,8 +52,8 @@ contract KyberPriceFeed is DSMath {
 
     /// @notice Update prices for registered assets
     /// @dev Stores zero as a convention for invalid price
-    /// @param _saneAssets = Asset addresses (must match assets array from getRegisteredAssets)
-    /// @param _sanePrices = Asset price hints (checked against prices from Kyber)
+    /// @param _saneAssets Asset addresses (must match assets array from getRegisteredAssets)
+    /// @param _sanePrices Asset price hints (checked against prices from Kyber)
     function update(
         address[] calldata _saneAssets,
         uint256[] calldata _sanePrices
@@ -86,26 +86,12 @@ contract KyberPriceFeed is DSMath {
             prices[_saneAssets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
-        emit PriceUpdated(_saneAssets, newPrices);
-    }
-
-    /// @notice Update this feed's designated updater
-    /// @param _newUpdater = New designated updater for this feed
-    function setUpdater(address _newUpdater) external onlyRegistryOwner {
-        updater = _newUpdater;
-        emit UpdaterSet(_newUpdater);
-    }
-
-    /// @notice Update this feed's Registry reference
-    /// @param _newRegistry = New Registry this feed should point to
-    function setRegistry(address _newRegistry) external onlyRegistryOwner {
-        registry = Registry(_newRegistry);
-        emit RegistrySet(_newRegistry);
+        emit PricesUpdated(_saneAssets, newPrices);
     }
 
     /// @notice Update maximum price deviation between price hints and Kyber price
     /// @notice Price deviation becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
-    /// @param _newMaxPriceDeviation = New maximum price deviation
+    /// @param _newMaxPriceDeviation New maximum price deviation
     function setMaxPriceDeviation(uint256 _newMaxPriceDeviation) external onlyRegistryOwner {
         maxPriceDeviation = _newMaxPriceDeviation;
         emit MaxPriceDeviationSet(_newMaxPriceDeviation);
@@ -113,27 +99,133 @@ contract KyberPriceFeed is DSMath {
 
     /// @notice Update maximum spread for prices derived from Kyber
     /// @notice Max spread becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
-    /// @param _newMaxSpread = New maximum spread
+    /// @param _newMaxSpread New maximum spread
     function setMaxSpread(uint256 _newMaxSpread) external onlyRegistryOwner {
         maxSpread = _newMaxSpread;
         emit MaxSpreadSet(_newMaxSpread);
     }
 
-    // PUBLIC/EXTERNAL VIEW FUNCTIONS
+    /// @notice Update this feed's Registry reference
+    /// @param _newRegistry New Registry this feed should point to
+    function setRegistry(address _newRegistry) external onlyRegistryOwner {
+        registry = Registry(_newRegistry);
+        emit RegistrySet(_newRegistry);
+    }
 
-    // FEED INFORMATION
+    /// @notice Update this feed's designated updater
+    /// @param _newUpdater New designated updater for this feed
+    function setUpdater(address _newUpdater) external onlyRegistryOwner {
+        updater = _newUpdater;
+        emit UpdaterSet(_newUpdater);
+    }
 
-    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
-    function getLastUpdate() public view returns (uint256) { return lastUpdate; }
+    // EXTERNAL VIEW FUNCTIONS
 
-    // PRICES
+    /// @notice Return getPrice for each of _assets
+    /// @param _assets Assets for which prices should be returned
+    function getPrices(address[] calldata _assets)
+        external
+        view
+        returns (uint256[] memory, uint256[] memory)
+    {
+        uint256[] memory newPrices = new uint256[](_assets.length);
+        uint256[] memory timestamps = new uint256[](_assets.length);
+        for (uint256 i; i < _assets.length; i++) {
+            (newPrices[i], timestamps[i]) = getPrice(_assets[i]);
+        }
+        return (newPrices, timestamps);
+    }
+
+    /// @notice Whether each of the _assets is registered and has a fresh price
+    /// @param _assets Assets for which validity information should be returned
+    function hasValidPrices(address[] calldata _assets)
+        external
+        view
+        returns (bool)
+    {
+        for (uint256 i; i < _assets.length; i++) {
+            if (!hasValidPrice(_assets[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// @notice Returns price as determined by an order
+    /// @param _sellAsset Address of the asset to be sold
+    /// @param _sellQuantity Quantity (in base units) of _sellAsset being sold
+    /// @param _buyQuantity Quantity (in base units) of _buyAsset being bought
+    function getOrderPriceInfo(
+        address _sellAsset,
+        uint256 _sellQuantity,
+        uint256 _buyQuantity
+    )
+        external
+        view
+        returns (uint256)
+    {
+        return mul(
+            _buyQuantity,
+            10 ** uint256(ERC20WithFields(_sellAsset).decimals())
+        ) / _sellQuantity;
+    }
+
+    /// @notice Get quantity of _toAsset equal in value to some quantity of _fromAsset
+    /// @param _fromAssetQuantity Amount of _fromAsset
+    /// @param _fromAsset Address of _fromAsset
+    /// @param _toAsset Address of _toAsset
+    function convertQuantity(
+        uint256 _fromAssetQuantity,
+        address _fromAsset,
+        address _toAsset
+    )
+        external
+        view
+        returns (uint256)
+    {
+        uint256 fromAssetPrice;
+        (fromAssetPrice,) = getReferencePriceInfo(_fromAsset, _toAsset);
+        uint256 fromAssetDecimals = ERC20WithFields(_fromAsset).decimals();
+        return mul(
+            _fromAssetQuantity,
+            fromAssetPrice
+        ) / (10 ** uint256(fromAssetDecimals));
+    }
+    
+    // PUBLIC FUNCTIONS
+
+    /// @notice Gets price of an asset times 10^assetDecimals
+    /// @dev Asset must be registered
+    /// @param _asset Asset for which price should be returned
+    /// @return price_ Formatting: exchangePrice * 10^decimals (to avoid floating point)
+    /// @return timestamp_ When the asset's price was last updated
+    function getPrice(address _asset)
+        public
+        view
+        returns (uint256 price_, uint256 timestamp_)
+    {
+        (price_,) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
+        timestamp_ = now;
+    }
+
+    /// @notice Whether an asset is registered and has a fresh price
+    /// @param _asset Asset to check for a valid price
+    function hasValidPrice(address _asset)
+        public
+        view
+        returns (bool)
+    {
+        bool isRegistered = registry.assetIsRegistered(_asset);
+        bool isFresh = block.timestamp < add(lastUpdate, VALIDITY_INTERVAL);
+        return prices[_asset] != 0 && isRegistered && isFresh;
+    }
 
     /// @notice Get price of an asset in terms of some quote asset, plus the quote asset's decimals
     /// @notice This function reverts if either the base or quote have invalid prices
-    /// @param _baseAsset = Address of base asset
-    /// @param _quoteAsset = Address of quote asset
-    /// @return referencePrice_ = Quantity of _quoteAsset per whole _baseAsset
-    /// @return decimals_ = Decimal places for _quoteAsset
+    /// @param _baseAsset Address of base asset
+    /// @param _quoteAsset Address of quote asset
+    /// @return referencePrice_ Quantity of _quoteAsset per whole _baseAsset
+    /// @return decimals_ Decimal places for _quoteAsset
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
         public
         view
@@ -149,67 +241,11 @@ contract KyberPriceFeed is DSMath {
         return (referencePrice_, decimals_);
     }
 
-    /// @notice Gets price of an asset times 10^assetDecimals
-    /// @dev Asset must be registered
-    /// @param _asset = Asset for which price should be returned
-    /// @return price_ = Formatting: exchangePrice * 10^decimals (to avoid floating point)
-    /// @return timestamp_ = When the asset's price was last updated
-    function getPrice(address _asset)
-        public
-        view
-        returns (uint256 price_, uint256 timestamp_)
-    {
-        (price_,) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
-        timestamp_ = now;
-    }
-
-    /// @notice Return getPrice for each of _assets
-    /// @param _assets = Assets for which prices should be returned
-    function getPrices(address[] calldata _assets)
-        external
-        view
-        returns (uint256[] memory, uint256[] memory)
-    {
-        uint256[] memory newPrices = new uint256[](_assets.length);
-        uint256[] memory timestamps = new uint256[](_assets.length);
-        for (uint256 i; i < _assets.length; i++) {
-            (newPrices[i], timestamps[i]) = getPrice(_assets[i]);
-        }
-        return (newPrices, timestamps);
-    }
-
-    /// @notice Whether an asset is registered and has a fresh price
-    /// @param _asset = Asset to check for a valid price
-    function hasValidPrice(address _asset)
-        public
-        view
-        returns (bool)
-    {
-        bool isRegistered = registry.assetIsRegistered(_asset);
-        bool isFresh = block.timestamp < add(lastUpdate, VALIDITY_INTERVAL);
-        return prices[_asset] != 0 && isRegistered && isFresh;
-    }
-
-    /// @notice Whether each of the _assets is registered and has a fresh price
-    /// @param _assets = Assets for which validity information should be returned
-    function hasValidPrices(address[] calldata _assets)
-        external
-        view
-        returns (bool)
-    {
-        for (uint256 i; i < _assets.length; i++) {
-            if (!hasValidPrice(_assets[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /// @notice Returns validity and price for some pair of assets from Kyber
-    /// @param _baseAsset = Address of base asset from the pair
-    /// @param _quoteAsset = Address of quote asset from the pair
-    /// @return validity_ = Whether the price for this pair is valid
-    /// @return kyberPrice_ = The price of _baseAsset in terms of _quoteAsset
+    /// @param _baseAsset Address of base asset from the pair
+    /// @param _quoteAsset Address of quote asset from the pair
+    /// @return validity_ Whether the price for this pair is valid
+    /// @return kyberPrice_ The price of _baseAsset in terms of _quoteAsset
     function getKyberPrice(address _baseAsset, address _quoteAsset)
         public
         view
@@ -258,47 +294,6 @@ contract KyberPriceFeed is DSMath {
 
         validity_ = spreadFromKyber <= maxSpread && bidRate != 0 && askRate != 0;
         return (validity_, kyberPrice_);
-    }
-
-    /// @notice Returns price as determined by an order
-    /// @param _sellAsset = Address of the asset to be sold
-    /// @param _sellQuantity = Quantity (in base units) of _sellAsset being sold
-    /// @param _buyQuantity = Quantity (in base units) of _buyAsset being bought
-    function getOrderPriceInfo(
-        address _sellAsset,
-        uint256 _sellQuantity,
-        uint256 _buyQuantity
-    )
-        external
-        view
-        returns (uint256)
-    {
-        return mul(
-            _buyQuantity,
-            10 ** uint256(ERC20WithFields(_sellAsset).decimals())
-        ) / _sellQuantity;
-    }
-
-    /// @notice Get quantity of _toAsset equal in value to some quantity of _fromAsset
-    /// @param _fromAssetQuantity = Amount of _fromAsset
-    /// @param _fromAsset = Address of _fromAsset
-    /// @param _toAsset = Address of _toAsset
-    function convertQuantity(
-        uint256 _fromAssetQuantity,
-        address _fromAsset,
-        address _toAsset
-    )
-        external
-        view
-        returns (uint256)
-    {
-        uint256 fromAssetPrice;
-        (fromAssetPrice,) = getReferencePriceInfo(_fromAsset, _toAsset);
-        uint256 fromAssetDecimals = ERC20WithFields(_fromAsset).decimals();
-        return mul(
-            _fromAssetQuantity,
-            fromAssetPrice
-        ) / (10 ** uint256(fromAssetDecimals));
     }
 
     // INTERNAL FUNCTIONS

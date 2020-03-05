@@ -255,7 +255,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     /// @dev If no shares exist and not expired, request can be executed immediately
     function hasValidRequest(address _who) public view returns (bool) {
         IPriceSource priceSource = IPriceSource(priceSource());
-        bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.getLastUpdate() ||
+        bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.lastUpdate() ||
             IShares(routes.shares).totalSupply() == 0;
 
         return hasRequest(_who) &&
