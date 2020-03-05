@@ -59,37 +59,34 @@ contract KyberPriceFeed is DSMath {
         uint256[] calldata _sanePrices
     ) external {
         require(
-            _saneAssets.length == _sanePrices.length,
-            "update: Passed array lengths unequal"
-        );
-        require(
             msg.sender == registry.owner() || msg.sender == updater,
             "update: Only registry owner or updater can call"
         );
         address[] memory registeredAssets = registry.getRegisteredAssets();
-        uint256[] memory newPrices = new uint256[](registeredAssets.length);
-        for (uint256 i; i < registeredAssets.length; i++) {
+        require(
+            keccak256(abi.encodePacked(_saneAssets)) ==
+            keccak256(abi.encodePacked(registeredAssets)),
+            "update: Passed and registered assets are not identical"
+        );
+        uint256[] memory newPrices = new uint256[](_saneAssets.length);
+        for (uint256 i; i < _saneAssets.length; i++) {
             bool isValid;
             uint256 kyberPrice;
-            require(
-                _saneAssets[i] == registeredAssets[i],
-                "update: Passed asset does not match registered asset"
-            );
-            if (registeredAssets[i] == QUOTE_ASSET) {
+            if (_saneAssets[i] == QUOTE_ASSET) {
                 isValid = true;
                 kyberPrice = 1 ether;
             } else {
-                (isValid, kyberPrice) = getKyberPrice(registeredAssets[i], QUOTE_ASSET);
+                (isValid, kyberPrice) = getKyberPrice(_saneAssets[i], QUOTE_ASSET);
             }
             require(
                 __priceIsSane(kyberPrice, _sanePrices[i]),
                 "update: Kyber price deviates too much from maxPriceDeviation"
             );
             newPrices[i] = isValid ? kyberPrice : 0;
-            prices[registeredAssets[i]] = newPrices[i];
+            prices[_saneAssets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
-        emit PriceUpdated(registeredAssets, newPrices);
+        emit PriceUpdated(_saneAssets, newPrices);
     }
 
     /// @notice Update this feed's designated updater
