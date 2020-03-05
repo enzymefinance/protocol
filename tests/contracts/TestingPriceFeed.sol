@@ -6,7 +6,7 @@ import "main/dependencies/DSMath.sol";
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
 contract TestingPriceFeed is DSMath {
-    event PriceUpdated(address[] token, uint256[] price);
+    event PricesUpdated(address[] assets, uint256[] pricest);
 
     struct Data {
         uint256 price;
@@ -37,7 +37,7 @@ contract TestingPriceFeed is DSMath {
             });
         }
         lastUpdate = block.timestamp;
-        emit PriceUpdated(_assets, _prices);
+        emit PricesUpdated(_assets, _prices);
     }
 
     function setNeverValid(bool _state) external { neverValid = _state; }
@@ -53,11 +53,6 @@ contract TestingPriceFeed is DSMath {
     }
 
     // VIEW FUNCTIONS
-
-    // FEED INFORMATION
-
-    function getQuoteAsset() public view returns (address) { return QUOTE_ASSET; }
-    function getLastUpdate() public view returns (uint256) { return lastUpdate; }
 
     // PRICES
 
