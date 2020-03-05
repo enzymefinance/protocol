@@ -123,25 +123,28 @@ contract KyberPriceFeed is DSMath {
 
     /// @notice Return getPrice for each of _assets
     /// @param _assets Assets for which prices should be returned
+    /// @return prices_ Prices for each of the assets_
+    /// @return timestamps_ Update times for each of the assets_
     function getPrices(address[] calldata _assets)
         external
         view
-        returns (uint256[] memory, uint256[] memory)
+        returns (uint256[] memory prices_, uint256[] memory timestamps_)
     {
-        uint256[] memory newPrices = new uint256[](_assets.length);
-        uint256[] memory timestamps = new uint256[](_assets.length);
+        prices_ = new uint256[](_assets.length);
+        timestamps_ = new uint256[](_assets.length);
         for (uint256 i; i < _assets.length; i++) {
-            (newPrices[i], timestamps[i]) = getPrice(_assets[i]);
+            (prices_[i], timestamps_[i]) = getPrice(_assets[i]);
         }
-        return (newPrices, timestamps);
+        return (prices_, timestamps_);
     }
 
     /// @notice Whether each of the _assets is registered and has a fresh price
     /// @param _assets Assets for which validity information should be returned
+    /// @return allValid_ Validity of prices for each of _assets (true/false)
     function hasValidPrices(address[] calldata _assets)
         external
         view
-        returns (bool)
+        returns (bool allValid_)
     {
         for (uint256 i; i < _assets.length; i++) {
             if (!hasValidPrice(_assets[i])) {
@@ -155,6 +158,7 @@ contract KyberPriceFeed is DSMath {
     /// @param _sellAsset Address of the asset to be sold
     /// @param _sellQuantity Quantity (in base units) of _sellAsset being sold
     /// @param _buyQuantity Quantity (in base units) of _buyAsset being bought
+    /// @return orderPrice_ Price determined by buy/sell quantities
     function getOrderPriceInfo(
         address _sellAsset,
         uint256 _sellQuantity,
@@ -162,9 +166,9 @@ contract KyberPriceFeed is DSMath {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 orderPrice_)
     {
-        return mul(
+        orderPrice_ = mul(
             _buyQuantity,
             10 ** uint256(ERC20WithFields(_sellAsset).decimals())
         ) / _sellQuantity;
@@ -174,6 +178,7 @@ contract KyberPriceFeed is DSMath {
     /// @param _fromAssetQuantity Amount of _fromAsset
     /// @param _fromAsset Address of _fromAsset
     /// @param _toAsset Address of _toAsset
+    /// @return toAssetQuantity_ Amount of _toAsset equal in value to _fromAssetQuantity
     function convertQuantity(
         uint256 _fromAssetQuantity,
         address _fromAsset,
@@ -181,12 +186,12 @@ contract KyberPriceFeed is DSMath {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 toAssetQuantity_)
     {
         uint256 fromAssetPrice;
         (fromAssetPrice,) = getReferencePriceInfo(_fromAsset, _toAsset);
         uint256 fromAssetDecimals = ERC20WithFields(_fromAsset).decimals();
-        return mul(
+        toAssetQuantity_ = mul(
             _fromAssetQuantity,
             fromAssetPrice
         ) / (10 ** uint256(fromAssetDecimals));
@@ -205,19 +210,20 @@ contract KyberPriceFeed is DSMath {
         returns (uint256 price_, uint256 timestamp_)
     {
         (price_,) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
-        timestamp_ = now;
+        timestamp_ = lastUpdate;
     }
 
     /// @notice Whether an asset is registered and has a fresh price
     /// @param _asset Asset to check for a valid price
+    /// @return isValid_ whether price of _asset is valid
     function hasValidPrice(address _asset)
         public
         view
-        returns (bool)
+        returns (bool isValid_)
     {
         bool isRegistered = registry.assetIsRegistered(_asset);
         bool isFresh = block.timestamp < add(lastUpdate, VALIDITY_INTERVAL);
-        return prices[_asset] != 0 && isRegistered && isFresh;
+        isValid_ = prices[_asset] != 0 && isRegistered && isFresh;
     }
 
     /// @notice Get price of an asset in terms of some quote asset, plus the quote asset's decimals
