@@ -3,7 +3,7 @@ pragma solidity 0.6.1;
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
 import "../prices/IPriceSource.sol";
-import "../version/Registry.sol";
+import "../registry/IRegistry.sol";
 
 /// @notice Liquidity contract and token sink
 contract Engine is DSMath {
@@ -16,7 +16,7 @@ contract Engine is DSMath {
 
     uint public constant MLN_DECIMALS = 18;
 
-    Registry public registry;
+    IRegistry public registry;
     uint public amguPrice;
     uint public frozenEther;
     uint public liquidEther;
@@ -50,7 +50,7 @@ contract Engine is DSMath {
     }
 
     function _setRegistry(address _registry) internal {
-        registry = Registry(_registry);
+        registry = IRegistry(_registry);
         emit RegistryChange(address(registry));
     }
 

@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 
-import "./Spoke.sol";
 import "../../dependencies/DSGuard.sol";
-import "../../version/IRegistry.sol";
+import "../../registry/IRegistry.sol";
+import "./Spoke.sol";
 
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes

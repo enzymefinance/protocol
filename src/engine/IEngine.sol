@@ -2,7 +2,7 @@ pragma solidity 0.6.1;
 
 import "../dependencies/token/BurnableToken.sol";
 import "../prices/IPriceSource.sol";
-import "../version/IRegistry.sol";
+import "../registry/IRegistry.sol";
 
 interface IEngine {
     // STORAGE

@@ -5,7 +5,7 @@ import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
 import "../../fund/accounting/IAccounting.sol";
 import "../../fund/hub/SpokeAccessor.sol";
-import "../../version/IRegistry.sol";
+import "../../registry/IRegistry.sol";
 
 /// @title Exchange Adapter base contract
 /// @author Melonport AG <team@melonport.com>

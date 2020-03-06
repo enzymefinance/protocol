@@ -9,7 +9,7 @@ import "../fund/participation/IParticipation.sol";
 import "../fund/shares/IShares.sol";
 import "../fund/vault/IVault.sol";
 import "../engine/AmguConsumer.sol";
-import "../version/IRegistry.sol";
+import "../registry/IRegistry.sol";
 import "./Factory.sol";
 
 /// @notice Creates fund routes and links them together

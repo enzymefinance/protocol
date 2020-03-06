@@ -1,13 +1,13 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./IFee.sol";
-import "./IFeeManager.sol";
-import "../hub/Spoke.sol";
-import "../shares/IShares.sol";
 import "../../dependencies/DSMath.sol";
 import "../../factory/Factory.sol";
-import "../../version/IRegistry.sol";
+import "../../registry/IRegistry.sol";
+import "../hub/Spoke.sol";
+import "../shares/IShares.sol";
+import "./IFee.sol";
+import "./IFeeManager.sol";
 
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is DSMath, Spoke {
