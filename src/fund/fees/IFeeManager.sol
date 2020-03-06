@@ -29,7 +29,6 @@ interface IFeeManager {
     function mlnToken() external view returns (address);
     function priceSource() external view returns (address);
     function version() external view returns (address);
-    function registry() external view returns (address);
 }
 
 interface IFeeManagerFactory {

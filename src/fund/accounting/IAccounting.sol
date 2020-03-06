@@ -58,7 +58,7 @@ interface IAccounting {
 }
 
 interface IAccountingFactory {
-    function createInstance(address _hub, address _denominationAsset)
+    function createInstance(address _hub, address _denominationAsset, address _registry)
         external
         returns (address);
 }

@@ -62,6 +62,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     constructor(address _hub, address[] memory _defaultAssets, address _registry)
         public
         Spoke(_hub)
+        AmguConsumer(_registry)
     {
         routes.registry = _registry;
         __enableInvestment(_defaultAssets);
@@ -141,7 +142,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             );
         }
 
-        msg.sender.transfer(Registry(routes.registry).incentive());
+        msg.sender.transfer(IRegistry(routes.registry).incentive());
 
         IShares(routes.shares).createFor(_requestOwner, request.requestedShares);
         IAccounting(routes.accounting).increaseAssetBalance(
@@ -222,10 +223,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     }
 
     // PUBLIC FUNCTIONS
-    function engine() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.engine();
-    }
-
     function getOwedPerformanceFees(uint256 _shareQuantity)
         public
         returns (uint256 remainingShareQuantity)
@@ -263,14 +260,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
             !hasExpiredRequest(_who) &&
             requests[_who].investmentAmount > 0 &&
             requests[_who].requestedShares > 0;
-    }
-
-    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.mlnToken();
-        }
-
-    function priceSource() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.priceSource();
     }
 
     /// @notice Redeem shareQuantity across all assets
@@ -349,10 +338,6 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         );
     }
 
-    function registry() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.registry();
-    }
-
     // INTERNAL FUNCTIONS
     function __cancelRequestFor(address _requestOwner) internal {
         require(hasRequest(_requestOwner), "No request to cancel");
@@ -367,7 +352,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         IERC20 investmentAsset = IERC20(request.investmentAsset);
         uint256 investmentAmount = request.investmentAmount;
         delete requests[_requestOwner];
-        msg.sender.transfer(Registry(routes.registry).incentive());
+        msg.sender.transfer(IRegistry(routes.registry).incentive());
         safeTransfer(address(investmentAsset), _requestOwner, investmentAmount);
 
         emit CancelRequest(_requestOwner);
@@ -376,7 +361,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     function __enableInvestment (address[] memory _assets) internal {
         for (uint256 i = 0; i < _assets.length; i++) {
             require(
-                Registry(routes.registry).assetIsRegistered(_assets[i]),
+                IRegistry(routes.registry).assetIsRegistered(_assets[i]),
                 "Asset not registered"
             );
             investAllowed[_assets[i]] = true;

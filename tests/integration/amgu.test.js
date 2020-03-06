@@ -36,7 +36,7 @@ async function assertAmguTx(contract, method, args = []) {
   const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
   const wethAddress = await call(registry, 'nativeAsset');
-  const mlnAddress = await call(version, 'mlnToken');
+  const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
     await call(
@@ -208,7 +208,7 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   const postUserBalance = new BN(await web3.eth.getBalance(deployer));
 
   const wethAddress = await call(registry, 'nativeAsset');
-  const mlnAddress = await call(version, 'mlnToken');
+  const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
     await call(

@@ -25,7 +25,16 @@ contract Accounting is AmguConsumer, Spoke {
 
     /// @param _hub The fund's primary address
     /// @param _denominationAsset The asset in which to denominate fund metrics and values
-    constructor(address _hub, address _denominationAsset) public Spoke(_hub) {
+    /// @param _registry Address of the Registry contract
+    constructor(
+        address _hub,
+        address _denominationAsset,
+        address _registry
+    )
+        public
+        Spoke(_hub)
+        AmguConsumer(_registry)
+    {
         DENOMINATION_ASSET = _denominationAsset;
         DEFAULT_SHARE_PRICE = 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
     }
@@ -197,11 +206,6 @@ contract Accounting is AmguConsumer, Spoke {
         emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
     }
 
-    /// @notice Gets the address of the Melon Engine used by this fund
-    function engine() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.engine();
-    }
-
     /// @notice Increases the balance of an asset in a fund's internal system of account
     /// @param _asset The asset for which to increase the assetBalance
     /// @param _amount The amount by which to increase the assetBalance
@@ -241,21 +245,6 @@ contract Accounting is AmguConsumer, Spoke {
         }
         assert(balances.length == _assets.length);
         return balances;
-    }
-
-    /// @notice Gets the address of the Melon Token used by this fund
-    function mlnToken() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.mlnToken();
-    }
-
-    /// @notice Gets the address of the price source used by this fund
-    function priceSource() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.priceSource();
-    }
-
-    /// @notice Gets the address of the Registry used by this fund
-    function registry() public view override(AmguConsumer, Spoke) returns (address) {
-        return Spoke.registry();
     }
 
     /// @notice Calculates the value per unit of shares, given a total value and total number of shares
@@ -302,12 +291,13 @@ contract AccountingFactory is Factory {
     /// @notice Deploys an instance of the Accounting contract
     /// @param _hub The fund's primary address
     /// @param _denominationAsset The asset in which to denominate fund metrics
+    /// @param _registry Address of the Registry contract
     /// @return The address of the newly deployed contract
-    function createInstance(address _hub, address _denominationAsset)
+    function createInstance(address _hub, address _denominationAsset, address _registry)
         external
         returns (address)
     {
-        address accounting = address(new Accounting(_hub, _denominationAsset));
+        address accounting = address(new Accounting(_hub, _denominationAsset, _registry));
         childExists[accounting] = true;
         emit NewInstance(_hub, accounting, _denominationAsset);
         return accounting;
