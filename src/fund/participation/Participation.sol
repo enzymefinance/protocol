@@ -96,7 +96,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     function executeRequestFor(address _requestOwner)
         external
         notShutDown
-        amguPayable(false)
+        amguPayableWithIncentive(0)
         payable
     {
         Request memory request = requests[_requestOwner];
@@ -179,7 +179,9 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         external
         notShutDown
         payable
-        amguPayable(true)
+        amguPayableWithIncentive(
+            IRegistry(routes.registry).incentive()
+        )
         onlyInitialized
     {
         IPolicyManager(routes.policyManager).preValidate(

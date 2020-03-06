@@ -7,8 +7,7 @@ import "../version/IRegistry.sol";
 import "../version/IFundFactory.sol";
 import "./IEngine.sol";
 
-/// @notice Abstract contracts
-/// @notice inherit this to pay AMGU on a function call
+/// @notice Inherit this to pay AMGU on a function call
 abstract contract AmguConsumer is DSMath {
 
     event AmguPaid(
@@ -24,44 +23,51 @@ abstract contract AmguConsumer is DSMath {
         registry = IRegistry(_registry);
     }
 
-    /// @param _deductIncentive is used when sending extra eth beyond amgu
-    modifier amguPayable(bool _deductIncentive) {
-        uint preGas = gasleft();
+    /// @dev if amgu price is zero, skip price fetching
+    /// @param _incentiveAmount Wei amount to be paid above AMGU
+    modifier amguPayableWithIncentive(uint256 _incentiveAmount) {
+        uint256 preGas = gasleft();
         _;
-        uint postGas = gasleft();
+        uint256 postGas = gasleft();
 
-        uint mlnPerAmgu = IEngine(registry.engine()).getAmguPrice();
-        uint mlnQuantity = mul(
-            mlnPerAmgu,
-            sub(preGas, postGas)
-        );
-        address nativeAsset = registry.nativeAsset();
-        uint ethToPay = IPriceSource(registry.priceSource()).convertQuantity(
-            mlnQuantity,
-            registry.mlnToken(),
-            nativeAsset
-        );
-        uint incentiveAmount;
-        if (_deductIncentive) {
-            incentiveAmount = registry.incentive();
-        } else {
-            incentiveAmount = 0;
+        uint256 mlnPerAmgu = IEngine(registry.engine()).getAmguPrice();
+        uint256 ethToPayForAmgu = 0;
+        if (mlnPerAmgu > 0) {
+            uint256 mlnQuantity = mul(
+                mlnPerAmgu,
+                sub(preGas, postGas)
+            );
+            address nativeAsset = registry.nativeAsset();
+            ethToPayForAmgu = IPriceSource(registry.priceSource()).convertQuantity(
+                mlnQuantity,
+                registry.mlnToken(),
+                nativeAsset
+            );
         }
+
         require(
-            msg.value >= add(ethToPay, incentiveAmount),
-            "Insufficent AMGU and/or incentive"
+            msg.value >= add(ethToPayForAmgu, _incentiveAmount),
+            "amguPayableWithIncentive: Insufficent value for AMGU + incentive"
         );
-        IEngine(registry.engine()).payAmguInEther.value(ethToPay)();
+
+        IEngine(
+            registry.engine()
+        ).payAmguInEther.value(ethToPayForAmgu)();
 
         require(
             msg.sender.send(
                 sub(
-                    sub(msg.value, ethToPay),
-                    incentiveAmount
+                    sub(msg.value, ethToPayForAmgu),
+                    _incentiveAmount
                 )
             ),
-            "Refund failed"
+            "amguPayableWithIncentive: Refund failed"
         );
-        emit AmguPaid(msg.sender, ethToPay, sub(preGas, postGas), incentiveAmount);
+        emit AmguPaid(
+            msg.sender,
+            ethToPayForAmgu,
+            sub(preGas, postGas),
+            _incentiveAmount
+        );
     }
 }
