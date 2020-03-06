@@ -68,7 +68,7 @@ describe('investment', () => {
 
     await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...defaultTxOpts, value: defaultAmgu });
+      .send(defaultTxOpts);
   });
 
   test('Request must exist to execute', async () => {
@@ -99,7 +99,7 @@ describe('investment', () => {
 
     await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...defaultTxOpts, value: defaultAmgu });
+      .send(defaultTxOpts);
   });
 
   test('Need fresh price to execute request', async () => {
@@ -136,7 +136,7 @@ describe('investment', () => {
 
     await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...defaultTxOpts, value: defaultAmgu })
+      .send(defaultTxOpts)
   });
 
   test('Asset must be permitted', async () => {
@@ -183,7 +183,7 @@ describe('investment', () => {
 
     await mockSystem.participation.methods
       .cancelRequest()
-      .send({ ...defaultTxOpts, value: defaultAmgu });
+      .send(defaultTxOpts);
   });
 
   test('Basic investment works', async () => {

@@ -16,23 +16,22 @@ import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 
 let deployer, manager, investor;
-let defaultTxOpts, investorTxOpts, managerTxOpts;
+let defaultTxOpts, investorTxOpts;
 let fundDenominationAsset;
 let contracts, deployOut;
-let knc, mln, weth, oasisDexExchange, version, priceSource;
+let knc, mln, weth, oasisDexExchange, fundFactory, priceSource;
 let fund;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
 
   contracts = deployed.contracts;
   deployOut = deployed.deployOut;
-  version = contracts.Version;
+  fundFactory = contracts.FundFactory;
   knc = contracts.KNC;
   mln = contracts.MLN;
   weth = contracts.WETH;
@@ -47,7 +46,7 @@ beforeAll(async () => {
     exchangeAdapters: [oasisDexAdapter.options.address],
     manager,
     quoteToken: knc.options.address,
-    version
+    fundFactory
   });
 
   // Seed investor with MLN and WETH

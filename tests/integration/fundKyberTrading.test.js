@@ -24,7 +24,7 @@ let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let contracts;
 let exchangeIndex, takeOrderSignature;
-let version, kyberAdapter, kyberNetworkProxy, weth, mln, eur;
+let fundFactory, kyberAdapter, kyberNetworkProxy, weth, mln, eur;
 let fund;
 
 beforeAll(async () => {
@@ -32,10 +32,10 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
-  version = contracts.Version;
+  fundFactory = contracts.FundFactory;
   kyberAdapter = contracts.KyberAdapter;
   kyberNetworkProxy = contracts.KyberNetworkProxy;
   weth = contracts.WETH;
@@ -53,7 +53,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 
   exchangeIndex = 0;

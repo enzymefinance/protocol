@@ -38,11 +38,11 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
 
   const registry = contracts.Registry;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
   weth = contracts.WETH;
   mln = contracts.MLN;
 
@@ -70,7 +70,7 @@ beforeEach(async () => {
       tokenContract: weth
     },
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 });
 

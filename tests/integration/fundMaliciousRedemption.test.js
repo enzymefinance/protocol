@@ -25,12 +25,13 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]); contracts = deployed.contracts;
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
+  contracts = deployed.contracts;
   weth = contracts.WETH;
   mln = contracts.MLN;
   priceSource = contracts.TestingPriceFeed;
   const registry = contracts.Registry;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
 
   maliciousToken = await deploy(
     CONTRACT_NAMES.MALICIOUS_TOKEN,
@@ -63,7 +64,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 });
 

@@ -90,7 +90,9 @@ const deployMockSystem = async (
     accountingContract,
     [
       hub.options.address,
-      quoteToken.options.address    ]
+      quoteToken.options.address,
+      registry.options.address
+    ]
   );
 
   const feeManager = await deploy(
@@ -157,7 +159,7 @@ const deployMockSystem = async (
       shares.options.address,
       vault.options.address,
       registry.options.address,
-      version.options.address,
+      fundFactory.options.address,
       engine.options.address,
       mln.options.address,
     ])
@@ -191,7 +193,7 @@ const deployMockSystem = async (
     registry,
     shares,
     vault,
-    version,
+    fundFactory,
     weth,
   };
 

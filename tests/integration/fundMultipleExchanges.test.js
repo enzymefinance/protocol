@@ -21,14 +21,14 @@ let takeOrderFunctionSig;
 let mln, weth;
 let oasisDexExchange, oasisDexAdapter;
 let kyberNetworkProxy, kyberAdapter, kyberExchangeIndex;
-let version, fund;
+let fundFactory, fund;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
 
   takeOrderFunctionSig = getFunctionSignature(
@@ -37,7 +37,7 @@ beforeAll(async () => {
   );
 
   mln = contracts.MLN;
-  version = contracts.Version;
+  fundFactory = contracts.FundFactory;
   weth = contracts.WETH;
 
   oasisDexExchange = contracts.OasisDexExchange;
@@ -57,7 +57,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 });
 

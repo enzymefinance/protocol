@@ -19,7 +19,7 @@ describe('sell-and-burn-mln', () => {
 
     const weth = await deploy(CONTRACT_NAMES.PREMINED_TOKEN, ['WETH', 18, '']);
     const mln = await deploy(CONTRACT_NAMES.BURNABLE_TOKEN, ['MLN', 18, '']);
-    const version = await deploy(CONTRACT_NAMES.MOCK_VERSION);
+    const fundFactory = await deploy(CONTRACT_NAMES.MOCK_INFRASTRUCTURE);
     const registry = await deploy(CONTRACT_NAMES.MOCK_REGISTRY);
     const priceSource = await deploy(
       CONTRACT_NAMES.TESTING_PRICEFEED,
@@ -29,7 +29,7 @@ describe('sell-and-burn-mln', () => {
       CONTRACT_NAMES.ENGINE,
       [delay, registry.options.address]
     );
-    contracts = { engine, mln, priceSource, registry, version }
+    contracts = { engine, mln, priceSource, registry, fundFactory }
 
     await registry.methods
       .setPriceSource(priceSource.options.address)

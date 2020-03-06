@@ -28,14 +28,14 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
+  const deployed = await partialRedeploy(CONTRACT_NAMES.FUND_FACTORY);
   contracts = deployed.contracts;
 
   weth = contracts.WETH;
   mln = contracts.MLN;
   managementFee = contracts.ManagementFee;
   const registry = contracts.Registry;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
 
   const managementFeePeriod = 0;
   managementFeeRate = toWei('0.02', 'ether');
@@ -56,7 +56,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 });
 

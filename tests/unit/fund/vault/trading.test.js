@@ -27,14 +27,14 @@ describe('addExchange', () => {
   let newAdapter, newExchange;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
     contracts = deployed.contracts;
 
     weth = contracts.WETH;
     mln = contracts.MLN;
     registry = contracts.Registry;
 
-    const version = contracts.Version;
+    const fundFactory = contracts.FundFactory;
     const oasisDexExchange = contracts.OasisDexExchange;
     const oasisDexAdapter = contracts.OasisDexAdapter;
 
@@ -44,7 +44,7 @@ describe('addExchange', () => {
       exchangeAdapters: [oasisDexAdapter.options.address],
       manager,
       quoteToken: weth.options.address,
-      version
+      fundFactory
     });
 
     newExchange = randomHex(20);

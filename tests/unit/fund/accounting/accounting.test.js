@@ -4,7 +4,6 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
-import { delay } from '~/tests/utils/time';
 
 let deployer;
 let defaultTxOpts;
@@ -16,9 +15,9 @@ beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
-  const version = contracts[CONTRACT_NAMES.VERSION];
+  const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
   testingPriceFeed = contracts[CONTRACT_NAMES.TESTING_PRICEFEED];
   weth = contracts.WETH;
   mln = contracts.MLN;
@@ -34,7 +33,7 @@ beforeAll(async () => {
     defaultTokens: [mln.options.address, weth.options.address],
     manager: deployer,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 });
 

@@ -33,7 +33,7 @@ beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -65,13 +65,13 @@ describe('takeOrder', () => {
       badAsset = dai.options.address;
 
       // Set up fund
-      const version = contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [oasisDexExchange.options.address],
         exchangeAdapters: [oasisDexAdapter.options.address],
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
     });
@@ -196,11 +196,11 @@ describe('takeOrder', () => {
       takerQuantity = toWei('0.01', 'ether');
       fillQuantity = takerQuantity;
 
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [oasisDexExchange.options.address],
@@ -211,7 +211,7 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
     });
@@ -318,11 +318,11 @@ describe('takeOrder', () => {
       takerAsset = weth.options.address;
       takerQuantity = toWei('0.01', 'ether');
 
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [oasisDexExchange.options.address],
@@ -333,7 +333,7 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
     });

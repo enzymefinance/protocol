@@ -33,7 +33,7 @@ beforeAll(async () => {
   deployerTxOpts = { from: deployer, gas: 8000000 };
   updaterTxOpts = { from: updater, gas: 8000000 };
   someAccountTxOpts = { from: someAccount, gas: 8000000 };
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
 
   eur = contracts.EUR;

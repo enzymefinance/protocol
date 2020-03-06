@@ -10,7 +10,7 @@ import { getEventFromLogs } from '~/tests/utils/metadata';
 let deployer;
 let defaultTxOpts, managerTxOpts;
 let baseToken, quoteToken;
-let engine, version, priceSource, registry;
+let engine, fundFactory, priceSource, registry;
 let amguPrice;
 
 async function assertAmguTx(contract, method, args = []) {
@@ -66,12 +66,12 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   const deployed = await partialRedeploy([
-    CONTRACT_NAMES.VERSION
+    CONTRACT_NAMES.FUND_FACTORY
   ]);
   const contracts = deployed.contracts;
 
   engine = contracts.Engine;
-  version = contracts.Version;
+  fundFactory = contracts.FundFactory;
   registry = contracts.Registry;
   priceSource = contracts.TestingPriceFeed;
 
@@ -107,7 +107,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
   expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
   await send(
-    version,
+    fundFactory,
     'beginSetup',
     [
       `test-fund-${Date.now()}`,
@@ -122,7 +122,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
     managerTxOpts
   );
 
-  await assertAmguTx(version, 'createAccounting');
+  await assertAmguTx(fundFactory, 'createAccounting');
 });
 
 test('set amgu with incentive attatched and check its usage in creating a fund', async () => {
@@ -141,7 +141,7 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
   await send(
-    version,
+    fundFactory,
     'beginSetup',
     [
       `test-fund-${Date.now()}`,
@@ -156,15 +156,15 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     managerTxOpts
   );
 
-  await assertAmguTx(version, 'createAccounting');
-  await assertAmguTx(version, 'createFeeManager');
-  await assertAmguTx(version, 'createParticipation');
-  await assertAmguTx(version, 'createPolicyManager');
-  await assertAmguTx(version, 'createShares');
-  await assertAmguTx(version, 'createVault');
-  const res = await assertAmguTx(version, 'completeSetup');
+  await assertAmguTx(fundFactory, 'createAccounting');
+  await assertAmguTx(fundFactory, 'createFeeManager');
+  await assertAmguTx(fundFactory, 'createParticipation');
+  await assertAmguTx(fundFactory, 'createPolicyManager');
+  await assertAmguTx(fundFactory, 'createShares');
+  await assertAmguTx(fundFactory, 'createVault');
+  const res = await assertAmguTx(fundFactory, 'completeSetup');
 
-  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
+  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
   const fund = await getFundComponents(hubAddress);
 
   const requestedShares = toWei('100', 'ether');

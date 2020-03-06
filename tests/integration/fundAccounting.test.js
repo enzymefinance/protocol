@@ -22,18 +22,18 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
 
   mln = contracts.MLN;
   weth = contracts.WETH;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 });
 

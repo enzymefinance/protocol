@@ -10,7 +10,7 @@
  */
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, hexToNumber, toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
@@ -22,7 +22,7 @@ import {
   getFunctionSignature
 } from '~/tests/utils/metadata';
 
-let deployer, manager, investor;
+let deployer, manager;
 let defaultTxOpts, managerTxOpts;
 let takeOrderFunctionSig;
 let dai, knc, mln, weth, zrx, oasisDexExchange, oasisDexAdapter, priceSource, priceTolerance;
@@ -32,11 +32,11 @@ let contracts;
 const ruleFailureString = 'Rule evaluated to false: ';
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  [deployer, manager] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   dai = contracts.DAI;
@@ -547,7 +547,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
   let oasisDexExchangeIndex;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
     contracts = deployed.contracts;
 
     fund = await setupInvestedTestFund(contracts, manager);
