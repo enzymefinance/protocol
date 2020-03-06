@@ -2,7 +2,7 @@ pragma solidity 0.6.1;
 
 import "main/dependencies/DSGuard.sol";
 import "main/fund/hub/Spoke.sol";
-import "main/version/Registry.sol";
+import "main/registry/IRegistry.sol";
 
 /// @notice Hub used for testing
 contract MockHub is DSGuard {
@@ -114,7 +114,7 @@ contract MockHub is DSGuard {
     }
 
     function accounting() public view returns (address) { return routes.accounting; }
-    function priceSource() public view returns (address) { return Registry(routes.registry).priceSource(); }
+    function priceSource() public view returns (address) { return IRegistry(routes.registry).priceSource(); }
     function participation() public view returns (address) { return routes.participation; }
     function vault() public view returns (address) { return routes.vault; }
     function shares() public view returns (address) { return routes.shares; }

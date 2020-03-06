@@ -1,11 +1,11 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
+import "../../dependencies/DSAuth.sol";
+import "../../registry/IRegistry.sol";
 import "../hub/SpokeAccessor.sol";
 import "../policies/IPolicyManager.sol";
 import "../policies/TradingSignatures.sol";
-import "../../dependencies/DSAuth.sol";
-import "../../version/IRegistry.sol";
 
 contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
     struct Exchange {

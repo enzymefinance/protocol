@@ -1,9 +1,9 @@
 pragma solidity 0.6.1;
 
-import "../dependencies/token/IERC20.sol";
 import "../dependencies/DSMath.sol";
+import "../dependencies/token/IERC20.sol";
 import "../exchanges/interfaces/IKyberNetworkProxy.sol";
-import "../version/Registry.sol";
+import "../registry/IRegistry.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
@@ -24,7 +24,7 @@ contract KyberPriceFeed is DSMath {
     uint256 public maxSpread;
     address public updater;
     mapping (address => uint256) public prices;
-    Registry public registry;
+    IRegistry public registry;
 
     constructor(
         address _registry,
@@ -35,7 +35,7 @@ contract KyberPriceFeed is DSMath {
     )
         public
     {
-        registry = Registry(_registry);
+        registry = IRegistry(_registry);
         KYBER_NETWORK_PROXY = _kyberNetworkProxy;
         maxSpread = _maxSpread;
         QUOTE_ASSET = _quoteAsset;
@@ -108,7 +108,7 @@ contract KyberPriceFeed is DSMath {
     /// @notice Update this feed's Registry reference
     /// @param _newRegistry New Registry this feed should point to
     function setRegistry(address _newRegistry) external onlyRegistryOwner {
-        registry = Registry(_newRegistry);
+        registry = IRegistry(_newRegistry);
         emit RegistrySet(_newRegistry);
     }
 

@@ -116,7 +116,7 @@ interface IRegistry {
     // INHERITED: DSAuth
     // STORAGE
     // function authority() external view returns (DSAuthority);
-    // function owner() external view returns(address);
+    function owner() external view returns(address);
 
     // FUNCTIONS
     // function setAuthority(DSAuthority authority_) external;

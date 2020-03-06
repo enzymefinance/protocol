@@ -2,9 +2,9 @@ pragma solidity 0.6.1;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
+import "../factory/IFundFactory.sol";
 import "../prices/IPriceSource.sol";
-import "../version/IRegistry.sol";
-import "../version/IFundFactory.sol";
+import "../registry/IRegistry.sol";
 import "./IEngine.sol";
 
 /// @notice Inherit this to pay AMGU on a function call
