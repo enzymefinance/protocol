@@ -101,7 +101,7 @@ contract Accounting is AmguConsumer, Spoke {
     /// @dev Anyone can call this
     function triggerRewardAllFees()
         external
-        amguPayable(false)
+        amguPayableWithIncentive(0)
         payable
     {
         IFeeManager(routes.feeManager).rewardAllFees();
