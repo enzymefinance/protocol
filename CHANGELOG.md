@@ -14,16 +14,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - KyberPriceFeed price deviation sanity checks
 
 ### Changed
-- KyberPriceFeed function interfaces/visibility
 
+- KyberPriceFeed function interfaces/visibility
 - Vault inherits capabilities from Trading, which is no longer its own component
 - skip price fetching in AmguConsumer when amgu price is zero
 - cancelRequest is no longer amguPayable
 - in Funds, engine and mlnToken are fetched dynamically from registry (no longer in routes)
 - split amguPayable into amguPayable and amguPayableWithIncentive
 
+- Vault inherits capabilities from Trading, which is no longer its own component
+
 ### Removed
 
+- Version.sol (merged into FundFactory.sol)
 - EthfinexAdapter
 - makeOrder and related functions/storage
 - ExchangeMethodCall event
