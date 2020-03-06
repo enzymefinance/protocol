@@ -6,7 +6,7 @@ import getAccounts from '~/deploy/utils/getAccounts';
 
 let deployer, manager, user;
 let defaultTxOpts, managerTxOpts, userTxOpts;
-let version;
+let fundFactory;
 
 beforeAll(async () => {
   [deployer, manager, user] = await getAccounts();
@@ -14,14 +14,14 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   userTxOpts = { ...defaultTxOpts, from: user };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
-  version = contracts[CONTRACT_NAMES.VERSION];
+  fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
   const weth = contracts.WETH;
   const mln = contracts.MLN;
   
   await send(
-    version,
+    fundFactory,
     'beginSetup',
     [
       `test-fund-${Date.now()}`,
@@ -41,12 +41,12 @@ test('continue setup of a fund', async () => {
   const amguTxValue = toWei('0.01', 'ether')
   const userTxOptsWithAmgu = { ...userTxOpts, value: amguTxValue };
   
-  await send(version, 'createAccountingFor', [manager], userTxOptsWithAmgu);
-  await send(version, 'createFeeManagerFor', [manager], userTxOptsWithAmgu);
-  await send(version, 'createParticipationFor', [manager], userTxOptsWithAmgu);
-  await send(version, 'createPolicyManagerFor', [manager], userTxOptsWithAmgu);
-  await send(version, 'createSharesFor', [manager], userTxOptsWithAmgu);
-  await send(version, 'createVaultFor', [manager], userTxOptsWithAmgu);
-  const res = await send(version, 'completeSetupFor', [manager], userTxOptsWithAmgu);
+  await send(fundFactory, 'createAccountingFor', [manager], userTxOptsWithAmgu);
+  await send(fundFactory, 'createFeeManagerFor', [manager], userTxOptsWithAmgu);
+  await send(fundFactory, 'createParticipationFor', [manager], userTxOptsWithAmgu);
+  await send(fundFactory, 'createPolicyManagerFor', [manager], userTxOptsWithAmgu);
+  await send(fundFactory, 'createSharesFor', [manager], userTxOptsWithAmgu);
+  await send(fundFactory, 'createVaultFor', [manager], userTxOptsWithAmgu);
+  const res = await send(fundFactory, 'completeSetupFor', [manager], userTxOptsWithAmgu);
   expect(res).toBeTruthy();
 });

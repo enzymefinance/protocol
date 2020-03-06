@@ -26,7 +26,7 @@ import {
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let contracts;
-let dai, mln, weth, priceSource, version, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
+let dai, mln, weth, priceSource, fundFactory, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
 let exchangeIndex;
 let takeOrderSignature;
 let protocolFeeAmount, chainId;
@@ -39,7 +39,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -51,7 +51,7 @@ beforeAll(async () => {
   mln = contracts.MLN;
   weth = contracts.WETH;
   priceSource = contracts.TestingPriceFeed;
-  version = contracts.Version;
+  fundFactory = contracts.FundFactory;
   zeroExExchange = contracts.ZeroExV3Exchange;
   zeroExAdapter = contracts.ZeroExV3Adapter;
   erc20Proxy = contracts.ZeroExV3ERC20Proxy;
@@ -80,7 +80,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 
   // Get 0x exchangeIndex

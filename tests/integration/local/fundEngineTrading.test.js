@@ -11,7 +11,6 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import getAccounts from '~/deploy/utils/getAccounts';
 
-import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import {
   CONTRACT_NAMES,
@@ -34,7 +33,7 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION, CONTRACT_NAMES.ENGINE]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY, CONTRACT_NAMES.ENGINE]);
   contracts = deployed.contracts;
   engine = contracts.Engine;
   engineAdapter = contracts.EngineAdapter;

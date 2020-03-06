@@ -127,7 +127,7 @@ const main = async input => {
     }
   }
 
-  const version = await nab('Version', [
+  const fundFactory = await nab('FundFactory', [
     accountingFactory.options.address,
     feeManagerFactory.options.address,
     participationFactory.options.address,
@@ -135,19 +135,19 @@ const main = async input => {
     vaultFactory.options.address,
     policyManagerFactory.options.address,
     registry.options.address,
-    melonConf.versionOwner
+    melonConf.fundFactoryOwner
   ], melonAddrs);
 
-  const versionInformation = await call(registry, 'versionInformation', [version.options.address]);
+  const fundFactoryInformation = await call(registry, 'fundFactoryInformation', [fundFactory.options.address]);
 
-  if (!versionInformation.exists) {
-    let versionName;
+  if (!fundFactoryInformation.exists) {
+    let fundFactoryName;
     if (conf.track === 'TESTING') {
-      versionName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64);
+      fundFactoryName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64);
     } else {
-      versionName = web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64);
+      fundFactoryName = web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64);
     }
-    await send(registry, 'registerVersion', [ version.options.address, versionName ]);
+    await send(registry, 'registerFundFactory', [ fundFactory.options.address, fundFactoryName ]);
   }
 
   if (conf.track === 'KYBER_PRICE')
@@ -177,7 +177,7 @@ const main = async input => {
     "ManagementFee": managementFee,
     "Registry": registry,
     "Engine": engine,
-    "Version": version,
+    "FundFactory": fundFactory,
   };
 
   if (conf.track === 'KYBER_PRICE') {

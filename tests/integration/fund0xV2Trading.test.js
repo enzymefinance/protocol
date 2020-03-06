@@ -5,7 +5,6 @@
  * @test Fund takes an order with a taker fee
  */
 
-import { orderHashUtils } from '@0x/order-utils-v2';
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
@@ -35,7 +34,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
   
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -50,7 +49,7 @@ beforeAll(async () => {
   zeroExExchange = contracts.ZeroExV2Exchange;
   priceSource = contracts.TestingPriceFeed;
 
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
   const zeroExAdapter = contracts.ZeroExV2Adapter;
 
   wethToEthRate = toWei('1', 'ether');
@@ -77,7 +76,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
   exchangeIndex = 0;
 });

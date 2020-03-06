@@ -115,7 +115,7 @@ export const setupFundWithParams = async ({
   manager,
   name = `test-fund-${Date.now()}`,
   quoteToken,
-  version
+  fundFactory
 }) => {
   const managerTxOpts = { from: manager, gas: 8000000 };
 
@@ -125,7 +125,7 @@ export const setupFundWithParams = async ({
   }
   const managerTxOptsWithAmgu = { ...managerTxOpts, value: amguTxValue };
   await send(
-    version,
+    fundFactory,
     'beginSetup',
     [
       name,
@@ -139,15 +139,15 @@ export const setupFundWithParams = async ({
     ],
     managerTxOpts
   );
-  await send(version, 'createAccounting', [], managerTxOptsWithAmgu);
-  await send(version, 'createFeeManager', [], managerTxOptsWithAmgu);
-  await send(version, 'createParticipation', [], managerTxOptsWithAmgu);
-  await send(version, 'createPolicyManager', [], managerTxOptsWithAmgu);
-  await send(version, 'createShares', [], managerTxOptsWithAmgu);
-  await send(version, 'createVault', [], managerTxOptsWithAmgu);
-  const res = await send(version, 'completeSetup', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createAccounting', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createParticipation', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu);
+  const res = await send(fundFactory, 'completeSetup', [], managerTxOptsWithAmgu);
 
-  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
+  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
   const fund = await getFundComponents(hubAddress);
 
   // Make initial investment, if applicable
@@ -169,7 +169,7 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
 
   const weth = contracts.WETH;
   const mln = contracts.MLN;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
   const performanceFee = contracts.PerformanceFee;
   const managementFee = contracts.ManagementFee;
 
@@ -241,6 +241,6 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
 };

@@ -40,7 +40,7 @@ beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -76,7 +76,7 @@ describe('takeOrder', () => {
       await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
 
       // Set up fund
-      const version = contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         defaultTokens: [mln.options.address, weth.options.address],
@@ -88,7 +88,7 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
 
@@ -189,11 +189,11 @@ describe('takeOrder', () => {
       // Set amgu price
       await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
 
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         defaultTokens: [mln.options.address, weth.options.address],
@@ -205,7 +205,7 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
 
@@ -306,11 +306,11 @@ describe('takeOrder', () => {
       // Set amgu price
       await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
 
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         defaultTokens: [mln.options.address, weth.options.address],
@@ -322,7 +322,7 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
 

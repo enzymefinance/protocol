@@ -32,7 +32,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
   const deployed = await partialRedeploy(
-    [CONTRACT_NAMES.VERSION, CONTRACT_NAMES.UNISWAP_EXCHANGE]
+    [CONTRACT_NAMES.FUND_FACTORY, CONTRACT_NAMES.UNISWAP_EXCHANGE]
   );
   contracts = deployed.contracts;
 
@@ -44,7 +44,7 @@ beforeAll(async () => {
   eur = contracts.EUR;
   mln = contracts.MLN;
   weth = contracts.WETH;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
 
   const uniswapFactory = contracts.UniswapFactory;
   const uniswapAdapter = contracts.UniswapAdapter;
@@ -60,7 +60,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
   exchangeIndex = 0;
 

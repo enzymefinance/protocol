@@ -40,13 +40,13 @@ describe('Fund 1: user whitelist', () => {
   let fund;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
     const contracts = deployed.contracts;
 
     mln = contracts.MLN;
     weth = contracts.WETH;
     priceSource = contracts.TestingPriceFeed;
-    const version = contracts.Version;
+    const fundFactory = contracts.FundFactory;
 
     userWhitelist = await deploy(CONTRACT_NAMES.USER_WHITELIST, [[investor]]);
 
@@ -59,7 +59,7 @@ describe('Fund 1: user whitelist', () => {
       },
       manager,
       quoteToken: weth.options.address,
-      version
+      fundFactory
     });
 
     await send(

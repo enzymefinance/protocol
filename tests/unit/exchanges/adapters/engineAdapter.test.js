@@ -32,7 +32,7 @@ beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -61,7 +61,7 @@ describe('takeOrder', () => {
       badAsset = dai.options.address;
 
       // Set up fund
-      const version = contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [engine.options.address],
@@ -72,7 +72,7 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
     });

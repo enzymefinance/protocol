@@ -16,7 +16,11 @@ contract MockAccounting is Spoke {
     address public DENOMINATION_ASSET;
     uint public DEFAULT_SHARE_PRICE;
 
-    constructor(address _hub, address _denominationAsset)
+    constructor(
+        address _hub,
+        address _denominationAsset,
+        address _registry
+    )
         public
         Spoke(_hub)
     {

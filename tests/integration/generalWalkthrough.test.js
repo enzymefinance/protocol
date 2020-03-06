@@ -23,7 +23,7 @@ let defaultTxOpts, managerTxOpts, investorTxOpts;
 let contracts;
 let exchangeIndex;
 let offeredValue, wantedShares, amguAmount;
-let mln, weth, version, oasisDex, oasisDexAdapter, priceSource;
+let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
 let takeOrderFunctionSig;
 let priceTolerance, userWhitelist;
 let managementFee, performanceFee;
@@ -35,14 +35,14 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
+  const deployed = await partialRedeploy(CONTRACT_NAMES.FUND_FACTORY);
   contracts = deployed.contracts;
 
   userWhitelist = await deploy(CONTRACT_NAMES.USER_WHITELIST, [[]]);
 
   mln = contracts.MLN;
   weth = contracts.WETH;
-  version = contracts.Version;
+  fundFactory = contracts.FundFactory;
   oasisDex = contracts.OasisDexExchange;
   oasisDexAdapter = contracts.OasisDexAdapter;
   priceSource = contracts.TestingPriceFeed;
@@ -76,7 +76,7 @@ beforeAll(async () => {
     periods: [0, 7776000], // 0 and 90 days
   };
   const fundName = stringToBytes(`Test fund ${Date.now()}`, 32);
-  await send(version, 'beginSetup', [
+  await send(fundFactory, 'beginSetup', [
     fundName,
     fees.contracts,
     fees.rates,
@@ -86,14 +86,14 @@ beforeAll(async () => {
     weth.options.address,
     [weth.options.address, mln.options.address],
   ], managerTxOpts);
-  await send(version, 'createAccounting', [], managerTxOpts);
-  await send(version, 'createFeeManager', [], managerTxOpts);
-  await send(version, 'createParticipation', [], managerTxOpts);
-  await send(version, 'createPolicyManager', [], managerTxOpts);
-  await send(version, 'createShares', [], managerTxOpts);
-  await send(version, 'createVault', [], managerTxOpts);
-  const res = await send(version, 'completeSetup', [], managerTxOpts);
-  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.VERSION, 'NewFund').hub;
+  await send(fundFactory, 'createAccounting', [], managerTxOpts);
+  await send(fundFactory, 'createFeeManager', [], managerTxOpts);
+  await send(fundFactory, 'createParticipation', [], managerTxOpts);
+  await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
+  await send(fundFactory, 'createShares', [], managerTxOpts);
+  await send(fundFactory, 'createVault', [], managerTxOpts);
+  const res = await send(fundFactory, 'completeSetup', [], managerTxOpts);
+  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
 
   fund = await getFundComponents(hubAddress);
 
@@ -223,7 +223,7 @@ test('Fund can take an order on Oasis DEX', async () => {
 test('Cannot invest in a shutdown fund', async () => {
   const { hub, participation } = fund;
 
-  await send(version, 'shutDownFund', [hub.options.address], managerTxOpts);
+  await send(fundFactory, 'shutDownFund', [hub.options.address], managerTxOpts);
   await send(weth, 'approve', [participation.options.address, offeredValue], investorTxOpts);
   await expect(
     send(

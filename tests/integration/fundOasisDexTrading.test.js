@@ -27,7 +27,7 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
+  const deployed = await partialRedeploy(CONTRACT_NAMES.FUND_FACTORY);
   const contracts = deployed.contracts;
 
   mln = contracts.MLN;
@@ -36,7 +36,7 @@ beforeAll(async () => {
   priceSource = contracts.TestingPriceFeed;
 
   const oasisDexAdapter = contracts.OasisDexAdapter;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
 
   takeOrderFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -54,7 +54,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
   exchangeIndex = 0;
 

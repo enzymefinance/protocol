@@ -40,7 +40,7 @@ beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -69,13 +69,13 @@ describe('takeOrder', () => {
   
     beforeAll(async () => {
       // Set up fund
-      const version = contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [zeroExExchange.options.address],
         exchangeAdapters: [zeroExAdapter.options.address],
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
     });
@@ -237,11 +237,11 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [zeroExExchange.options.address],
@@ -252,7 +252,7 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
     });
@@ -379,11 +379,11 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [zeroExExchange.options.address],
@@ -394,7 +394,7 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
 
@@ -554,11 +554,11 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy Version contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
       // Set up fund
-      const version = deployed.contracts[CONTRACT_NAMES.VERSION];
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         exchanges: [zeroExExchange.options.address],
@@ -569,7 +569,7 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        version
+        fundFactory
       });
       exchangeIndex = 0;
 

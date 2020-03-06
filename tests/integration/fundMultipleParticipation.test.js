@@ -44,13 +44,13 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   let fund;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
     const contracts = deployed.contracts;
     dai = contracts.DAI;
     mln = contracts.MLN;
     weth = contracts.WETH;
     priceSource = contracts.TestingPriceFeed;
-    const version = contracts.Version;
+    const fundFactory = contracts.FundFactory;
 
     // Set initial prices to be predictably the same as prices when updated again later
     wethToEthRate = toWei('1', 'ether');
@@ -75,7 +75,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       },
       manager,
       quoteToken: weth.options.address,
-      version
+      fundFactory
     });
 
     amguAmount = toWei('.01', 'ether');

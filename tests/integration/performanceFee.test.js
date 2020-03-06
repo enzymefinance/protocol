@@ -32,7 +32,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy(CONTRACT_NAMES.VERSION);
+  const deployed = await partialRedeploy(CONTRACT_NAMES.FUND_FACTORY);
   contracts = deployed.contracts;
 
   mln = contracts.MLN;
@@ -44,7 +44,7 @@ beforeAll(async () => {
   const managementFee = contracts.ManagementFee;
   const oasisDexAdapter = contracts.OasisDexAdapter;
   const registry = contracts.Registry;
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
 
   const feeAddresses = [
     managementFee.options.address,
@@ -83,7 +83,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version
+    fundFactory
   });
   exchangeIndex = 0;
 

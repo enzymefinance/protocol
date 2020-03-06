@@ -12,7 +12,7 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer;
 let defaultTxOpts;
-let version, weth, mln;
+let fundFactory, weth, mln;
 let fund;
 let takeOrderSignature;
 let mockExchangeAddress, mockAdapterAddress;
@@ -22,11 +22,11 @@ beforeAll(async () => {
   [deployer] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
 
   const registry = contracts[CONTRACT_NAMES.REGISTRY];
-  version = contracts[CONTRACT_NAMES.VERSION];
+  fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
   weth = contracts.WETH;
   mln = contracts.MLN;
 
@@ -59,7 +59,7 @@ describe('new investment in fund', () => {
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
       quoteToken: weth.options.address,
-      version
+      fundFactory
     });
     const { participation } = fund;
 
@@ -142,9 +142,9 @@ describe('vault', () => {
   let exchangeIndex;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
     const contracts = deployed.contracts;
-    version = contracts[CONTRACT_NAMES.VERSION];
+    fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
@@ -156,7 +156,7 @@ describe('vault', () => {
         tokenContract: weth
       },
       quoteToken: weth.options.address,
-      version
+      fundFactory
     });
     exchangeIndex = 0;
 
@@ -342,9 +342,9 @@ describe('redeem shares', () => {
   let preTxBlock;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION], true);
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
     const contracts = deployed.contracts;
-    version = contracts[CONTRACT_NAMES.VERSION];
+    fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
       initialInvestment: {
@@ -353,7 +353,7 @@ describe('redeem shares', () => {
         tokenContract: weth
       },
       quoteToken: weth.options.address,
-      version
+      fundFactory
     });
     const { participation } = fund;
 
