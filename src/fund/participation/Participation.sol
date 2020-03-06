@@ -74,15 +74,11 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
 
     /// @notice Can only cancel when no price, request expired or fund shut down
     /// @dev Only request owner can cancel their request
-    function cancelRequest() external payable amguPayable(false) {
+    function cancelRequest() external {
         __cancelRequestFor(msg.sender);
     }
 
-    function cancelRequestFor(address _requestOwner)
-        external
-        payable
-        amguPayable(false)
-    {
+    function cancelRequestFor(address _requestOwner) external {
         __cancelRequestFor(_requestOwner);
     }
 
