@@ -4,7 +4,7 @@ import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
 import "../prices/IPriceSource.sol";
 import "../version/IRegistry.sol";
-import "../version/IVersion.sol";
+import "../version/IFundFactory.sol";
 import "./IEngine.sol";
 
 /// @notice Abstract contracts

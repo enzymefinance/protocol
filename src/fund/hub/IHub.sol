@@ -10,7 +10,7 @@ interface IHub {
         address shares;
         address vault;
         address registry;
-        address version;
+        address fundFactory;
         address engine;
         address mlnToken;
     }
@@ -35,13 +35,13 @@ interface IHub {
     function registry() external view returns (address);
     function shares() external view returns (address);
     function vault() external view returns (address);
-    function version() external view returns (address);
+    function fundFactory() external view returns (address);
 
     // Caller: Creator only:
     function setPermissions() external;
     function setRouting() external;
     function setSpokes(address[10] calldata _spokes) external;
 
-    // Caller: Version contract only:
+    // Caller: FundFactory contract only:
     function shutDownFund() external;
 }

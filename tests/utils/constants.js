@@ -41,6 +41,7 @@ export const CONTRACT_NAMES = {
   MOCK_FEE: 'MockFee',
   MOCK_FEE_MANAGER: 'MockFeeManager',
   MOCK_HUB: 'MockHub',
+  MOCK_INFRASTRUCTURE: 'MockInfrastructure',
   MOCK_REGISTRY: 'MockRegistry',
   MOCK_SHARES: 'MockShares',
   MOCK_VERSION: 'MockVersion',

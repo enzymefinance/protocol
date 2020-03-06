@@ -22,7 +22,7 @@ const deployMockSystem = async (
     registryContract = CONTRACT_NAMES.MOCK_REGISTRY,
     sharesContract = CONTRACT_NAMES.MOCK_SHARES,
     vaultContract = CONTRACT_NAMES.VAULT,
-    versionContract = CONTRACT_NAMES.MOCK_VERSION
+    fundFactoryContract = CONTRACT_NAMES.MOCK_INFRASTRUCTURE
   } = {},
 ) => {
   const deployer = web3.eth.accounts.wallet[0].address;
@@ -56,7 +56,10 @@ const deployMockSystem = async (
   );
   const oasisDexAdapter = await deploy(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
 
-  const version = await deploy(versionContract);
+  // NB: this is a complete mock; not a factory at all.
+  // Only leaving it because we are deprecating this type of mock.
+  const fundFactory = await deploy(fundFactoryContract);
+
   const registry = await deploy(registryContract);
 
   await registry.methods

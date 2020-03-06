@@ -8,13 +8,12 @@ import "../fund/policies/IPolicyManager.sol";
 import "../fund/participation/IParticipation.sol";
 import "../fund/shares/IShares.sol";
 import "../fund/vault/IVault.sol";
-import "../version/IVersion.sol";
 import "../engine/AmguConsumer.sol";
 import "../version/IRegistry.sol";
 import "./Factory.sol";
 
 /// @notice Creates fund routes and links them together
-contract FundFactory is AmguConsumer, Factory {
+contract FundFactory is AmguConsumer, Factory, DSAuth {
 
     event NewFund(
         address indexed manager,
@@ -22,7 +21,6 @@ contract FundFactory is AmguConsumer, Factory {
         address[10] routes
     );
 
-    IVersion public version;
     IRegistry public associatedRegistry;
     IAccountingFactory public accountingFactory;
     IFeeManagerFactory public feeManagerFactory;
@@ -55,19 +53,20 @@ contract FundFactory is AmguConsumer, Factory {
         address _sharesFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _version,
-        address _registry
+        address _registry,
+        address _postDeployOwner
     )
         AmguConsumer(_registry)
         public
     {
+        setOwner(_postDeployOwner);
+        associatedRegistry = IRegistry(_registry);
         accountingFactory = IAccountingFactory(_accountingFactory);
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         participationFactory = IParticipationFactory(_participationFactory);
         sharesFactory = ISharesFactory(_sharesFactory);
         vaultFactory = IVaultFactory(_vaultFactory);
         policyManagerFactory = IPolicyManagerFactory(_policyManagerFactory);
-        version = IVersion(_version);
     }
 
     function componentExists(address _component) internal pure returns (bool) {
@@ -122,7 +121,7 @@ contract FundFactory is AmguConsumer, Factory {
             _feePeriods
         );
         managersToRoutes[msg.sender].registry = address(associatedRegistry);
-        managersToRoutes[msg.sender].version = address(version);
+        managersToRoutes[msg.sender].fundFactory = address(this);
         managersToRoutes[msg.sender].engine = registry.engine();
         managersToRoutes[msg.sender].mlnToken = registry.mlnToken();
     }
@@ -240,7 +239,7 @@ contract FundFactory is AmguConsumer, Factory {
             routes.shares,
             routes.vault,
             routes.registry,
-            routes.version,
+            routes.fundFactory,
             routes.engine,
             routes.mlnToken
         ]);
@@ -262,7 +261,7 @@ contract FundFactory is AmguConsumer, Factory {
                 routes.shares,
                 routes.vault,
                 routes.registry,
-                routes.version,
+                routes.fundFactory,
                 routes.engine,
                 routes.mlnToken
             ]
@@ -278,5 +277,13 @@ contract FundFactory is AmguConsumer, Factory {
 
     function getExchangesInfo(address user) public view returns (address[] memory) {
         return (managersToSettings[user].exchanges);
+    }
+
+    function shutDownFund(address _hub) external {
+        require(
+            managersToHubs[msg.sender] == _hub,
+            "Conditions not met for fund shutdown"
+        );
+        Hub(_hub).shutDownFund();
     }
 }
