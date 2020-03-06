@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../factory/FundFactory.sol";
 import "../fund/hub/Hub.sol";
+import "../version/IRegistry.sol";
 
 /// @notice Controlled by governance
 contract Version is FundFactory, DSAuth {
@@ -25,10 +26,11 @@ contract Version is FundFactory, DSAuth {
             _sharesFactory,
             _vaultFactory,
             _policyManagerFactory,
-            address(this)
+            address(this),
+            _registry
         )
     {
-        associatedRegistry = Registry(_registry);
+        associatedRegistry = IRegistry(_registry);
         setOwner(_postDeployOwner);
     }
 

@@ -10,6 +10,7 @@ import "../fund/shares/IShares.sol";
 import "../fund/vault/IVault.sol";
 import "../version/IVersion.sol";
 import "../engine/AmguConsumer.sol";
+import "../version/IRegistry.sol";
 import "./Factory.sol";
 
 /// @notice Creates fund routes and links them together
@@ -22,7 +23,7 @@ contract FundFactory is AmguConsumer, Factory {
     );
 
     IVersion public version;
-    Registry public associatedRegistry;
+    IRegistry public associatedRegistry;
     IAccountingFactory public accountingFactory;
     IFeeManagerFactory public feeManagerFactory;
     IParticipationFactory public participationFactory;
@@ -54,8 +55,10 @@ contract FundFactory is AmguConsumer, Factory {
         address _sharesFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _version
+        address _version,
+        address _registry
     )
+        AmguConsumer(_registry)
         public
     {
         accountingFactory = IAccountingFactory(_accountingFactory);
@@ -120,8 +123,8 @@ contract FundFactory is AmguConsumer, Factory {
         );
         managersToRoutes[msg.sender].registry = address(associatedRegistry);
         managersToRoutes[msg.sender].version = address(version);
-        managersToRoutes[msg.sender].engine = engine();
-        managersToRoutes[msg.sender].mlnToken = mlnToken();
+        managersToRoutes[msg.sender].engine = registry.engine();
+        managersToRoutes[msg.sender].mlnToken = registry.mlnToken();
     }
 
     function _createAccountingFor(address _manager)
@@ -131,7 +134,8 @@ contract FundFactory is AmguConsumer, Factory {
         ensureComponentNotSet(managersToRoutes[_manager].accounting);
         managersToRoutes[_manager].accounting = accountingFactory.createInstance(
             managersToHubs[_manager],
-            managersToSettings[_manager].denominationAsset
+            managersToSettings[_manager].denominationAsset,
+            managersToRoutes[_manager].registry
         );
     }
 
@@ -269,18 +273,9 @@ contract FundFactory is AmguConsumer, Factory {
     function completeSetup() external amguPayable(false) payable { _completeSetupFor(msg.sender); }
 
     function getFundById(uint withId) external view returns (address) { return funds[withId]; }
+
     function getLastFundId() external view returns (uint) { return funds.length - 1; }
 
-    function mlnToken() public view override returns (address) {
-        return address(associatedRegistry.mlnToken());
-    }
-    function engine() public view override returns (address) {
-        return address(associatedRegistry.engine());
-    }
-    function priceSource() public view override returns (address) {
-        return address(associatedRegistry.priceSource());
-    }
-    function registry() public view override returns (address) { return address(associatedRegistry); }
     function getExchangesInfo(address user) public view returns (address[] memory) {
         return (managersToSettings[user].exchanges);
     }
