@@ -15,7 +15,7 @@ contract MockHub is DSGuard {
         address shares;
         address vault;
         address registry;
-        address version;
+        address fundFactory;
         address engine;
         address mlnAddress;
     }
@@ -40,7 +40,7 @@ contract MockHub is DSGuard {
         routes.shares = _spokes[4];
         routes.vault = _spokes[5];
         routes.registry = _spokes[6];
-        routes.version = _spokes[7];
+        routes.fundFactory = _spokes[7];
         routes.engine = _spokes[8];
         routes.mlnAddress = _spokes[9];
     }
@@ -54,7 +54,7 @@ contract MockHub is DSGuard {
             routes.shares,
             routes.vault,
             routes.registry,
-            routes.version,
+            routes.fundFactory,
             routes.engine,
             routes.mlnAddress
         ];
@@ -106,7 +106,7 @@ contract MockHub is DSGuard {
             routes.shares,
             routes.vault,
             routes.registry,
-            routes.version,
+            routes.fundFactory,
             routes.engine,
             routes.mlnAddress
         ];

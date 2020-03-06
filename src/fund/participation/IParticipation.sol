@@ -54,7 +54,7 @@ interface IParticipation {
     function engine() external view returns (address);
     function mlnToken() external view returns (address);
     function priceSource() external view returns (address);
-    function version() external view returns (address);
+    function fundFactory() external view returns (address);
     function registry() external view returns (address);
 }
 

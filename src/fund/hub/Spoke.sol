@@ -47,5 +47,5 @@ contract Spoke is DSAuth {
     function engine() public view returns (address) { return routes.engine; }
     function mlnToken() public view returns (address) { return routes.mlnToken; }
     function priceSource() public view returns (address) { return hub.priceSource(); }
-    function version() public view returns (address) { return routes.version; }
+    function fundFactory() public view returns (address) { return routes.fundFactory; }
 }

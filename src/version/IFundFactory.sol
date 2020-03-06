@@ -1,6 +1,5 @@
 pragma solidity 0.6.1;
 
-interface IVersion {
+interface IFundFactory {
     function shutDownFund(address) external;
 }
-

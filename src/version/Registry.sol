@@ -32,7 +32,7 @@ contract Registry is DSAuth {
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
     event PriceSourceChange(address indexed priceSource);
-    event VersionRegistration(address indexed version);
+    event FundFactoryRegistered(address indexed fundFactory);
 
     // TYPES
     struct Asset {
@@ -52,7 +52,7 @@ contract Registry is DSAuth {
         bytes4[] sigs;
     }
 
-    struct Version {
+    struct FundFactory {
         bool exists;
         bytes32 name;
     }
@@ -69,13 +69,13 @@ contract Registry is DSAuth {
     mapping (address => Exchange) public exchangeInformation;
     address[] public registeredExchangeAdapters;
 
-    mapping (address => Version) public versionInformation;
-    address[] public registeredVersions;
+    mapping (address => FundFactory) public fundFactoryInformation;
+    address[] public registeredFundFactories;
 
     mapping (address => bool) public isFeeRegistered;
 
-    mapping (address => address) public fundsToVersions;
-    mapping (bytes32 => bool) public versionNameExists;
+    mapping (address => address) public fundsToFundFactories;
+    mapping (bytes32 => bool) public fundFactoryNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
 
 
@@ -86,10 +86,10 @@ contract Registry is DSAuth {
     address public engine;
     address public MGM;
 
-    modifier onlyVersion() {
+    modifier onlyFundFactory() {
         require(
-            versionInformation[msg.sender].exists,
-            "Only a Version can do this"
+            fundFactoryInformation[msg.sender].exists,
+            "Only a FundFactory can do this"
         );
         _;
     }
@@ -136,7 +136,7 @@ contract Registry is DSAuth {
 
     function reserveFundName(address _owner, string calldata _name)
         external
-        onlyVersion
+        onlyFundFactory
     {
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
         fundNameHashToOwner[keccak256(bytes(_name))] = _owner;
@@ -144,10 +144,10 @@ contract Registry is DSAuth {
 
     function registerFund(address _fund, address _owner, string calldata _name)
         external
-        onlyVersion
+        onlyFundFactory
     {
         require(canUseFundName(_owner, _name), "Fund name cannot be used");
-        fundsToVersions[_fund] = msg.sender;
+        fundsToFundFactories[_fund] = msg.sender;
     }
 
     /// @notice Registers an Asset information entry
@@ -206,20 +206,20 @@ contract Registry is DSAuth {
         );
     }
 
-    /// @notice Versions cannot be removed from registry
-    /// @param _version Address of the version contract
-    /// @param _name Name of the version
-    function registerVersion(
-        address _version,
+    /// @notice FundFactories cannot be removed from registry
+    /// @param _fundFactory Address of the FundFactory contract
+    /// @param _name Name of the fundFactory version
+    function registerFundFactory(
+        address _fundFactory,
         bytes32 _name
     ) external auth {
-        require(!versionInformation[_version].exists, "Version already exists");
-        require(!versionNameExists[_name], "Version name already exists");
-        versionInformation[_version].exists = true;
-        versionNameExists[_name] = true;
-        versionInformation[_version].name = _name;
-        registeredVersions.push(_version);
-        emit VersionRegistration(_version);
+        require(!fundFactoryInformation[_fundFactory].exists, "FundFactory already exists");
+        require(!fundFactoryNameExists[_name], "FundFactory name already exists");
+        fundFactoryInformation[_fundFactory].exists = true;
+        fundFactoryNameExists[_name] = true;
+        fundFactoryInformation[_fundFactory].name = _name;
+        registeredFundFactories.push(_fundFactory);
+        emit FundFactoryRegistered(_fundFactory);
     }
 
     function setIncentive(uint _weiAmount) external auth {
@@ -423,13 +423,13 @@ contract Registry is DSAuth {
         return false;
     }
 
-    // get version and fund information
-    function getRegisteredVersions() external view returns (address[] memory) {
-        return registeredVersions;
+    /// @notice get FundFactory and fund information
+    function getRegisteredFundFactories() external view returns (address[] memory) {
+        return registeredFundFactories;
     }
 
     function isFund(address _who) external view returns (bool) {
-        if (fundsToVersions[_who] != address(0)) {
+        if (fundsToFundFactories[_who] != address(0)) {
             return true; // directly from a hub
         } else {
             Hub hub = Hub(Spoke(_who).hub());
@@ -437,12 +437,12 @@ contract Registry is DSAuth {
                 hub.isSpoke(_who),
                 "Call from either a spoke or hub"
             );
-            return fundsToVersions[address(hub)] != address(0);
+            return fundsToFundFactories[address(hub)] != address(0);
         }
     }
 
     function isFundFactory(address _who) external view returns (bool) {
-        return versionInformation[_who].exists;
+        return fundFactoryInformation[_who].exists;
     }
 }
 

@@ -18,7 +18,7 @@ contract Hub is DSGuard {
         address shares;
         address vault;
         address registry;
-        address version;
+        address fundFactory;
         address engine;
         address mlnToken;
     }
@@ -45,7 +45,7 @@ contract Hub is DSGuard {
     }
 
     function shutDownFund() external {
-        require(msg.sender == routes.version);
+        require(msg.sender == routes.fundFactory);
         isShutDown = true;
         emit FundShutDown();
     }
@@ -62,7 +62,7 @@ contract Hub is DSGuard {
         routes.shares = _spokes[4];
         routes.vault = _spokes[5];
         routes.registry = _spokes[6];
-        routes.version = _spokes[7];
+        routes.fundFactory = _spokes[7];
         routes.engine = _spokes[8];
         routes.mlnToken = _spokes[9];
 
@@ -126,6 +126,6 @@ contract Hub is DSGuard {
     function vault() external view returns (address) { return routes.vault; }
     function shares() external view returns (address) { return routes.shares; }
     function registry() external view returns (address) { return routes.registry; }
-    function version() external view returns (address) { return routes.version; }
+    function fundFactory() external view returns (address) { return routes.fundFactory; }
     function policyManager() external view returns (address) { return routes.policyManager; }
 }

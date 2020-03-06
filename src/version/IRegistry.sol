@@ -21,7 +21,7 @@ interface IRegistry {
         bytes4[] sigs;
     }
 
-    struct Version {
+    struct FundFactory {
         bool exists;
         bytes32 name;
     }
@@ -31,7 +31,7 @@ interface IRegistry {
     function engine() external view returns(address);
     function exchangeInformation(address) external view returns(Exchange memory);
     function fundNameHashToOwner(bytes32) external view returns(address);
-    function fundsToVersions(address) external view returns(address);
+    function fundsToFundFactories(address) external view returns(address);
     function incentive() external view returns(uint256);
     function isFeeRegistered(address) external view returns(bool);
     function MAX_FUND_NAME_BYTES() external view returns(uint256);
@@ -42,9 +42,9 @@ interface IRegistry {
     function priceSource() external view returns(address);
     function registeredAssets(uint256 _index) external view returns(address);
     function registeredExchangeAdapters(uint256 _index) external view returns(address);
-    function registeredVersions(uint256 _index) external view returns(address);
-    function versionInformation(address) external view returns(Version memory);
-    function versionNameExists(bytes32) external view returns(bool);
+    function registeredFundFactories(uint256 _index) external view returns(address);
+    function fundFactoryInformation(address) external view returns(FundFactory memory);
+    function fundFactoryNameExists(bytes32) external view returns(bool);
 
     // FUNCTIONS
     function adapterMethodIsAllowed(address _adapter, bytes4 _sig) external view returns (bool);
@@ -57,7 +57,7 @@ interface IRegistry {
         external
         view
         returns (bytes4[] memory);
-    function getRegisteredVersions() external view returns (address[] memory);
+    function getRegisteredFundFactories() external view returns (address[] memory);
     function getDecimals(address _asset) external view returns (uint256);
     function getName(address _asset) external view returns (string memory);
     function getRegisteredAssets() external view returns (address[] memory);
@@ -68,7 +68,7 @@ interface IRegistry {
     function isFundFactory(address _who) external view returns (bool);
     function isValidFundName(string calldata _name) external pure returns (bool);
 
-    // Caller: Version contract only:
+    // Caller: FundFactory contract only:
     function registerFund(address _fund, address _owner, string calldata _name) external;
     function reserveFundName(address _owner, string calldata _name) external;
 
@@ -89,7 +89,7 @@ interface IRegistry {
         bytes4[] calldata _sigs
     ) external;
     function registerFees(address[] calldata _fees) external;
-    function registerVersion(address _version, bytes32 _name) external;
+    function registerFundFactory(address _fundFactory, bytes32 _name) external;
     function removeAsset(address _asset, uint _assetIndex) external;
     function removeExchangeAdapter(address _adapter, uint _adapterIndex) external;
     function setEngine(address _engine) external;

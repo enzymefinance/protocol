@@ -2,8 +2,8 @@ pragma solidity 0.6.1;
 
 import "main/fund/hub/Hub.sol";
 
-/// @notice Version contract useful for testing
-contract MockVersion {
+/// @notice Mock infrastructure level-contract useful for testing
+contract MockInfrastructure {
     uint public amguPrice;
     bool public isShutDown;
 
