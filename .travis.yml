@@ -12,10 +12,11 @@ cache:
     - node_modules
 install:
   - yarn install
-script:
+before_script:
   - make all
   - yarn devchain > ganache.log &
-  - sleep 10
+  - until curl 127.0.0.1:8545 -X POST --data '{"method":"net_listening"}' >/dev/null 2>&1; do :; done
+script:
   - yarn test
-after_script:
+after_failure:
   - cat ganache.log
