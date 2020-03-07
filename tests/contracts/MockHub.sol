@@ -16,8 +16,6 @@ contract MockHub is DSGuard {
         address vault;
         address registry;
         address fundFactory;
-        address engine;
-        address mlnAddress;
     }
     Routes public routes;
     address public manager;
@@ -32,7 +30,7 @@ contract MockHub is DSGuard {
 
     function setShutDownState(bool _state) public { isShutDown = _state; }
 
-    function setSpokes(address[10] memory _spokes) public {
+    function setSpokes(address[8] memory _spokes) public {
         routes.accounting = _spokes[0];
         routes.feeManager = _spokes[1];
         routes.participation = _spokes[2];
@@ -41,12 +39,10 @@ contract MockHub is DSGuard {
         routes.vault = _spokes[5];
         routes.registry = _spokes[6];
         routes.fundFactory = _spokes[7];
-        routes.engine = _spokes[8];
-        routes.mlnAddress = _spokes[9];
     }
 
     function setRouting() public {
-        address[10] memory spokes = [
+        address[8] memory spokes = [
             routes.accounting,
             routes.feeManager,
             routes.participation,
@@ -54,9 +50,7 @@ contract MockHub is DSGuard {
             routes.shares,
             routes.vault,
             routes.registry,
-            routes.fundFactory,
-            routes.engine,
-            routes.mlnAddress
+            routes.fundFactory
         ];
         Spoke(routes.accounting).initialize(spokes);
         Spoke(routes.feeManager).initialize(spokes);
@@ -98,7 +92,7 @@ contract MockHub is DSGuard {
     }
 
     function initializeSpoke(address _spoke) public {
-        address[10] memory spokes = [
+        address[8] memory spokes = [
             routes.accounting,
             routes.feeManager,
             routes.participation,
@@ -106,9 +100,7 @@ contract MockHub is DSGuard {
             routes.shares,
             routes.vault,
             routes.registry,
-            routes.fundFactory,
-            routes.engine,
-            routes.mlnAddress
+            routes.fundFactory
         ];
         Spoke(_spoke).initialize(spokes);
     }

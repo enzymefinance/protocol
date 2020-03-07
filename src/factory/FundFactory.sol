@@ -18,10 +18,9 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     event NewFund(
         address indexed manager,
         address indexed hub,
-        address[10] routes
+        address[8] routes
     );
 
-    IRegistry public associatedRegistry;
     IAccountingFactory public accountingFactory;
     IFeeManagerFactory public feeManagerFactory;
     IParticipationFactory public participationFactory;
@@ -60,7 +59,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         public
     {
         setOwner(_postDeployOwner);
-        associatedRegistry = IRegistry(_registry);
         accountingFactory = IAccountingFactory(_accountingFactory);
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         participationFactory = IParticipationFactory(_participationFactory);
@@ -100,12 +98,12 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         public
     {
         ensureComponentNotSet(managersToHubs[msg.sender]);
-        associatedRegistry.reserveFundName(
+        REGISTRY.reserveFundName(
             msg.sender,
             _name
         );
         require(
-            associatedRegistry.assetIsRegistered(_denominationAsset),
+            REGISTRY.assetIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
 
@@ -120,10 +118,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
             _feeRates,
             _feePeriods
         );
-        managersToRoutes[msg.sender].registry = address(associatedRegistry);
+        managersToRoutes[msg.sender].registry = address(REGISTRY);
         managersToRoutes[msg.sender].fundFactory = address(this);
-        managersToRoutes[msg.sender].engine = registry.engine();
-        managersToRoutes[msg.sender].mlnToken = registry.mlnToken();
     }
 
     function _createAccountingFor(address _manager)
@@ -239,12 +235,10 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
             routes.shares,
             routes.vault,
             routes.registry,
-            routes.fundFactory,
-            routes.engine,
-            routes.mlnToken
+            routes.fundFactory
         ]);
         funds.push(address(hub));
-        associatedRegistry.registerFund(
+        REGISTRY.registerFund(
             address(hub),
             _manager,
             managersToSettings[_manager].name
@@ -261,9 +255,7 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
                 routes.shares,
                 routes.vault,
                 routes.registry,
-                routes.fundFactory,
-                routes.engine,
-                routes.mlnToken
+                routes.fundFactory
             ]
         );
     }

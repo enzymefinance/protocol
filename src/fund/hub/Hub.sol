@@ -19,8 +19,6 @@ contract Hub is DSGuard {
         address vault;
         address registry;
         address fundFactory;
-        address engine;
-        address mlnToken;
     }
 
     Routes public routes;
@@ -50,7 +48,7 @@ contract Hub is DSGuard {
         emit FundShutDown();
     }
 
-    function initializeAndSetPermissions(address[10] calldata _spokes) external onlyCreator {
+    function initializeAndSetPermissions(address[8] calldata _spokes) external onlyCreator {
         require(!fundInitialized, "Fund is already initialized");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
@@ -63,8 +61,6 @@ contract Hub is DSGuard {
         routes.vault = _spokes[5];
         routes.registry = _spokes[6];
         routes.fundFactory = _spokes[7];
-        routes.engine = _spokes[8];
-        routes.mlnToken = _spokes[9];
 
         Spoke(routes.accounting).initialize(_spokes);
         Spoke(routes.feeManager).initialize(_spokes);

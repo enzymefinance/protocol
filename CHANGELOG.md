@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - KyberPriceFeed function interfaces/visibility
 
 - Vault inherits capabilities from Trading, which is no longer its own component
+- skip price fetching in AmguConsumer when amgu price is zero
+- cancelRequest is no longer amguPayable
+- in Funds, engine and mlnToken are fetched dynamically from registry (no longer in routes)
 
 ### Removed
 

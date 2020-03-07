@@ -11,8 +11,6 @@ interface IHub {
         address vault;
         address registry;
         address fundFactory;
-        address engine;
-        address mlnToken;
     }
 
     // STORAGE

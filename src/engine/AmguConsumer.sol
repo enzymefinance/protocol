@@ -17,50 +17,50 @@ abstract contract AmguConsumer is DSMath {
         uint256 incentivePaid
     );
 
-    IRegistry public registry;
+    IRegistry public REGISTRY;
 
     constructor (address _registry) public {
-        registry = IRegistry(_registry);
+        REGISTRY = IRegistry(_registry);
     }
 
     /// @dev if amgu price is zero, skip price fetching
     /// @param _incentiveAmount Wei amount to be paid above AMGU
     modifier amguPayableWithIncentive(uint256 _incentiveAmount) {
+        require(
+            msg.value >= _incentiveAmount,
+            "amguPayableWithIncentive: Insufficent value for incentive"
+        );
         uint256 preGas = gasleft();
         _;
         uint256 postGas = gasleft();
 
-        uint256 mlnPerAmgu = IEngine(registry.engine()).getAmguPrice();
+        uint256 mlnPerAmgu = IEngine(REGISTRY.engine()).getAmguPrice();
         uint256 ethToPayForAmgu = 0;
         if (mlnPerAmgu > 0) {
             uint256 mlnQuantity = mul(
                 mlnPerAmgu,
                 sub(preGas, postGas)
             );
-            address nativeAsset = registry.nativeAsset();
-            ethToPayForAmgu = IPriceSource(registry.priceSource()).convertQuantity(
+            ethToPayForAmgu = IPriceSource(REGISTRY.priceSource()).convertQuantity(
                 mlnQuantity,
-                registry.mlnToken(),
-                nativeAsset
+                REGISTRY.mlnToken(),
+                REGISTRY.nativeAsset()
             );
         }
 
+        uint256 totalEthToPay = add(ethToPayForAmgu, _incentiveAmount);
+
         require(
-            msg.value >= add(ethToPayForAmgu, _incentiveAmount),
+            msg.value >= totalEthToPay,
             "amguPayableWithIncentive: Insufficent value for AMGU + incentive"
         );
 
         IEngine(
-            registry.engine()
+            REGISTRY.engine()
         ).payAmguInEther.value(ethToPayForAmgu)();
 
         require(
-            msg.sender.send(
-                sub(
-                    sub(msg.value, ethToPayForAmgu),
-                    _incentiveAmount
-                )
-            ),
+            msg.sender.send(sub(msg.value, totalEthToPay)),
             "amguPayableWithIncentive: Refund failed"
         );
         emit AmguPaid(
