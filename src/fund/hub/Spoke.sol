@@ -25,7 +25,7 @@ contract Spoke is DSAuth {
         setOwner(address(hub)); // temporary, to allow initialization
     }
 
-    function initialize(address[10] calldata _spokes) external auth {
+    function initialize(address[8] calldata _spokes) external auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
         routes = Hub.Routes(
@@ -36,16 +36,12 @@ contract Spoke is DSAuth {
             _spokes[4],
             _spokes[5],
             _spokes[6],
-            _spokes[7],
-            _spokes[8],
-            _spokes[9]
+            _spokes[7]
         );
         initialized = true;
         setOwner(address(0));
     }
 
-    function engine() public view returns (address) { return routes.engine; }
-    function mlnToken() public view returns (address) { return routes.mlnToken; }
     function priceSource() public view returns (address) { return hub.priceSource(); }
     function fundFactory() public view returns (address) { return routes.fundFactory; }
 }

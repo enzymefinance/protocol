@@ -41,8 +41,6 @@ describe('vault', () => {
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
         EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
-        EMPTY_ADDRESS,
       ])
       .send(defaulTxOpts);
     await mockSystem.hub.methods
