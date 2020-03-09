@@ -96,7 +96,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     function executeRequestFor(address _requestOwner)
         external
         notShutDown
-        amguPayableWithIncentive(0)
+        amguPayable
         payable
     {
         Request memory request = requests[_requestOwner];
@@ -179,9 +179,7 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
         external
         notShutDown
         payable
-        amguPayableWithIncentive(
-            IRegistry(routes.registry).incentive()
-        )
+        amguPayableWithIncentive
         onlyInitialized
     {
         IPolicyManager(routes.policyManager).preValidate(
@@ -249,8 +247,8 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     /// @dev Request valid if price update happened since request and not expired
     /// @dev If no shares exist and not expired, request can be executed immediately
     function hasValidRequest(address _who) public view returns (bool) {
-        IPriceSource priceSource = IPriceSource(priceSource());
-        bool delayRespectedOrNoShares = requests[_who].timestamp < priceSource.lastUpdate() ||
+        bool delayRespectedOrNoShares =
+            requests[_who].timestamp < IPriceSource(priceSource()).lastUpdate() ||
             IShares(routes.shares).totalSupply() == 0;
 
         return hasRequest(_who) &&
@@ -339,10 +337,9 @@ contract Participation is TokenUser, AmguConsumer, Spoke {
     // INTERNAL FUNCTIONS
     function __cancelRequestFor(address _requestOwner) internal {
         require(hasRequest(_requestOwner), "No request to cancel");
-        IPriceSource priceSource = IPriceSource(priceSource());
         Request memory request = requests[_requestOwner];
         require(
-            !priceSource.hasValidPrice(request.investmentAsset) ||
+            !IPriceSource(priceSource()).hasValidPrice(request.investmentAsset) ||
             hasExpiredRequest(_requestOwner) ||
             hub.isShutDown(),
             "No cancellation condition was met"
