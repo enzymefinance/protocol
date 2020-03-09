@@ -134,8 +134,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function createAccountingFor(address _manager) external amguPayableWithIncentive(0) payable { _createAccountingFor(_manager); }
-    function createAccounting() external amguPayableWithIncentive(0) payable { _createAccountingFor(msg.sender); }
+    function createAccountingFor(address _manager) external amguPayable payable { _createAccountingFor(_manager); }
+    function createAccounting() external amguPayable payable { _createAccountingFor(msg.sender); }
 
     function _createFeeManagerFor(address _manager)
         internal
@@ -152,8 +152,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function createFeeManagerFor(address _manager) external amguPayableWithIncentive(0) payable { _createFeeManagerFor(_manager); }
-    function createFeeManager() external amguPayableWithIncentive(0) payable { _createFeeManagerFor(msg.sender); }
+    function createFeeManagerFor(address _manager) external amguPayable payable { _createFeeManagerFor(_manager); }
+    function createFeeManager() external amguPayable payable { _createFeeManagerFor(msg.sender); }
 
     function _createParticipationFor(address _manager)
         internal
@@ -167,8 +167,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function createParticipationFor(address _manager) external amguPayableWithIncentive(0) payable { _createParticipationFor(_manager); }
-    function createParticipation() external amguPayableWithIncentive(0) payable { _createParticipationFor(msg.sender); }
+    function createParticipationFor(address _manager) external amguPayable payable { _createParticipationFor(_manager); }
+    function createParticipation() external amguPayable payable { _createParticipationFor(msg.sender); }
 
     function _createPolicyManagerFor(address _manager)
         internal
@@ -180,8 +180,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function createPolicyManagerFor(address _manager) external amguPayableWithIncentive(0) payable { _createPolicyManagerFor(_manager); }
-    function createPolicyManager() external amguPayableWithIncentive(0) payable { _createPolicyManagerFor(msg.sender); }
+    function createPolicyManagerFor(address _manager) external amguPayable payable { _createPolicyManagerFor(_manager); }
+    function createPolicyManager() external amguPayable payable { _createPolicyManagerFor(msg.sender); }
 
     function _createSharesFor(address _manager)
         internal
@@ -193,8 +193,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function createSharesFor(address _manager) external amguPayableWithIncentive(0) payable { _createSharesFor(_manager); }
-    function createShares() external amguPayableWithIncentive(0) payable { _createSharesFor(msg.sender); }
+    function createSharesFor(address _manager) external amguPayable payable { _createSharesFor(_manager); }
+    function createShares() external amguPayable payable { _createSharesFor(msg.sender); }
 
     function _createVaultFor(address _manager)
         internal
@@ -209,8 +209,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function createVaultFor(address _manager) external amguPayableWithIncentive(0) payable { _createVaultFor(_manager); }
-    function createVault() external amguPayableWithIncentive(0) payable { _createVaultFor(msg.sender); }
+    function createVaultFor(address _manager) external amguPayable payable { _createVaultFor(_manager); }
+    function createVault() external amguPayable payable { _createVaultFor(msg.sender); }
 
     function _completeSetupFor(address _manager) internal {
         Hub.Routes memory routes = managersToRoutes[_manager];
@@ -260,8 +260,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function completeSetupFor(address _manager) external amguPayableWithIncentive(0) payable { _completeSetupFor(_manager); }
-    function completeSetup() external amguPayableWithIncentive(0) payable { _completeSetupFor(msg.sender); }
+    function completeSetupFor(address _manager) external amguPayable payable { _completeSetupFor(_manager); }
+    function completeSetup() external amguPayable payable { _completeSetupFor(msg.sender); }
 
     function getFundById(uint withId) external view returns (address) { return funds[withId]; }
 

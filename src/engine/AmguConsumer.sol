@@ -13,61 +13,78 @@ abstract contract AmguConsumer is DSMath {
     event AmguPaid(
         address indexed payer,
         uint256 totalAmguPaidInEth,
-        uint256 amguChargableGas,
-        uint256 incentivePaid
+        uint256 amguChargableGas
+    );
+
+    event IncentivePaid(
+        address indexed payer,
+        uint256 incentiveAmount
     );
 
     IRegistry public REGISTRY;
 
-    constructor (address _registry) public {
+    constructor(address _registry) public {
         REGISTRY = IRegistry(_registry);
     }
 
-    /// @dev if amgu price is zero, skip price fetching
-    /// @param _incentiveAmount Wei amount to be paid above AMGU
-    modifier amguPayableWithIncentive(uint256 _incentiveAmount) {
+    modifier amguPayable() {
+        uint256 preGas = gasleft();
+        _;
+        uint256 postGas = gasleft();
+        uint256 ethChargedForAmgu = __chargeAmgu(sub(preGas, postGas));
+        __refundExtraEther(ethChargedForAmgu);
+    }
+
+    modifier amguPayableWithIncentive() {
+        uint256 incentiveAmount = REGISTRY.incentive();
         require(
-            msg.value >= _incentiveAmount,
+            msg.value >= incentiveAmount,
             "amguPayableWithIncentive: Insufficent value for incentive"
         );
         uint256 preGas = gasleft();
         _;
         uint256 postGas = gasleft();
+        uint256 ethChargedForAmgu = __chargeAmgu(sub(preGas, postGas));
+        uint256 totalEthCharged = add(ethChargedForAmgu, incentiveAmount);
+        require(
+            msg.value >= totalEthCharged,
+            "amguPayableWithIncentive: Insufficent value for incentive + AMGU"
+        );
+        __refundExtraEther(add(incentiveAmount, ethChargedForAmgu));
+        emit IncentivePaid(msg.sender, incentiveAmount);
+    }
 
+    /// @notice Deduct AMGU payment from eth sent with transaction
+    /// @param _gasUsed Amount of gas for which to charge AMGU
+    /// @return ethCharged_ Amount of eth charged for AMGU
+    /// @dev skips price fetching if AMGU price is zero
+    function __chargeAmgu(uint256 _gasUsed) private returns (uint256 ethCharged_) {
         uint256 mlnPerAmgu = IEngine(REGISTRY.engine()).getAmguPrice();
-        uint256 ethToPayForAmgu = 0;
         if (mlnPerAmgu > 0) {
-            uint256 mlnQuantity = mul(
-                mlnPerAmgu,
-                sub(preGas, postGas)
-            );
-            ethToPayForAmgu = IPriceSource(REGISTRY.priceSource()).convertQuantity(
+            uint256 mlnQuantity = mul(mlnPerAmgu, _gasUsed);
+            ethCharged_ = IPriceSource(REGISTRY.priceSource()).convertQuantity(
                 mlnQuantity,
                 REGISTRY.mlnToken(),
                 REGISTRY.nativeAsset()
             );
+            require(
+                msg.value >= ethCharged_,
+                "__chargeAmgu: Insufficent value for AMGU"
+            );
+            IEngine(
+                REGISTRY.engine()
+            ).payAmguInEther.value(ethCharged_)();
+            emit AmguPaid(msg.sender, ethCharged_, _gasUsed);
         }
+        return ethCharged_;
+    }
 
-        uint256 totalEthToPay = add(ethToPayForAmgu, _incentiveAmount);
-
+    /// @notice Send extra eth above charges back to the sender
+    /// @param _totalEthCharged Total amount of eth charged for this transaction
+    function __refundExtraEther(uint256 _totalEthCharged) private {
         require(
-            msg.value >= totalEthToPay,
-            "amguPayableWithIncentive: Insufficent value for AMGU + incentive"
-        );
-
-        IEngine(
-            REGISTRY.engine()
-        ).payAmguInEther.value(ethToPayForAmgu)();
-
-        require(
-            msg.sender.send(sub(msg.value, totalEthToPay)),
-            "amguPayableWithIncentive: Refund failed"
-        );
-        emit AmguPaid(
-            msg.sender,
-            ethToPayForAmgu,
-            sub(preGas, postGas),
-            _incentiveAmount
+            msg.sender.send(sub(msg.value, _totalEthCharged)),
+            "__refundExtraEther: Refund failed"
         );
     }
 }
