@@ -1,7 +1,7 @@
 pragma solidity 0.6.1;
 
 import "../dependencies/DSAuth.sol";
-import "../fund/hub/Hub.sol";
+import "../fund/hub/ISpoke.sol";
 import "../dependencies/token/IERC20.sol";
 
 contract Registry is DSAuth {
@@ -429,15 +429,21 @@ contract Registry is DSAuth {
     }
 
     function isFund(address _who) external view returns (bool) {
+        // Check if hub
         if (fundsToFundFactories[_who] != address(0)) {
-            return true; // directly from a hub
-        } else {
-            Hub hub = Hub(Spoke(_who).hub());
-            require(
-                hub.isSpoke(_who),
-                "Call from either a spoke or hub"
-            );
-            return fundsToFundFactories[address(hub)] != address(0);
+            return true;
+        }
+        // Check if spoke
+        else {
+            // 1. Spoke points to hub
+            // 2. Hub confirms it is a spoke
+            // 3. Fund exists for hub
+            try ISpoke(_who).hub() returns (IHub hub) {
+                return hub.isSpoke(_who) && fundsToFundFactories[address(hub)] != address(0);
+            }
+            catch {
+                return false;
+            }
         }
     }
 
@@ -445,4 +451,3 @@ contract Registry is DSAuth {
         return fundFactoryInformation[_who].exists;
     }
 }
-
