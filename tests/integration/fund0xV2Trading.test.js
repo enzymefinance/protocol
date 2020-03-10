@@ -8,11 +8,11 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import { delay } from '~/tests/utils/time';
 import {
   createUnsignedZeroExOrder,
   isValidZeroExSignatureOffChain,
@@ -20,7 +20,7 @@ import {
 } from '~/tests/utils/zeroExV2';
 
 let deployer, manager, investor;
-let defaultTxOpts, managerTxOpts, investorTxOpts;
+let defaultTxOpts, managerTxOpts;
 let contracts;
 let mln, zrx, weth, erc20Proxy, priceSource, zeroExExchange;
 let fund;
@@ -32,7 +32,6 @@ beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  investorTxOpts = { ...defaultTxOpts, from: investor };
   
   const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
@@ -221,56 +220,39 @@ describe('Fund takes an order with a taker fee', () => {
   });
 
   test('Invest in fund with enough ZRX to take trade with taker fee', async () => {
-    const { accounting, participation, shares } = fund;
+    const { accounting, hub, shares } = fund;
   
     // Enable investment with zrx
-    await send(participation, 'enableInvestment', [[zrx.options.address]], managerTxOpts);
+    await send(shares, 'enableSharesInvestmentAssets', [[zrx.options.address]], managerTxOpts);
   
-    const wantedShares = toWei('1', 'ether');
-    const amguAmount = toWei('0.01', 'ether');
-  
-    const costOfShares = await call(
+    const contribAmount = toWei('1', 'ether');
+    const shareCost = new BN(
+      await call(
         accounting,
         'getShareCostInAsset',
-        [wantedShares, zrx.options.address]
+        [toWei('1', 'ether'), zrx.options.address]
+      )
     );
-  
+    const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
+
     const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  
-    await send(zrx, 'transfer', [investor, costOfShares], defaultTxOpts);
-    await send(
-      zrx,
-      'approve',
-      [participation.options.address, toWei('100', 'ether')],
-      investorTxOpts
-    );
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, costOfShares, zrx.options.address],
-      { ...investorTxOpts, value: amguAmount }
-    );
-  
-    // Need price update before participation executed
-    await delay(1000);
-    await send(
-      priceSource,
-      'update',
-      [
-        [weth.options.address, mln.options.address, zrx.options.address],
-        [wethToEthRate, mlnToEthRate, zrxToEthRate],
-      ],
-      defaultTxOpts
-    );
-    await send(
-      participation,
-      'executeRequestFor',
-      [investor],
-      { ...investorTxOpts, value: amguAmount }
-    );
-  
+
+    await investInFund({
+      fundAddress: hub.options.address,
+      investment: {
+        contribAmount,
+        investor,
+        tokenContract: zrx
+      },
+      tokenPriceData: {
+        priceSource,
+        tokenAddresses: [zrx.options.address],
+        tokenPrices: [zrxToEthRate]
+      }
+    });
+
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-    expect(postInvestorShares).bigNumberEq(preInvestorShares.add(new BN(wantedShares)));
+    expect(postInvestorShares).bigNumberEq(preInvestorShares.add(wantedShares));
   });
 
   test('fund with enough ZRX takes order', async () => {

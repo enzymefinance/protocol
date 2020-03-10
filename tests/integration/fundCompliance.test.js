@@ -12,14 +12,14 @@ import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { deploy } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
 
 let deployer, manager, investor, badInvestor;
 let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;
-let requestInvestmentFunctionSig;
+let buySharesFunctionSig;
 
 beforeAll(async () => {
   [deployer, manager, investor, badInvestor] = await getAccounts();
@@ -28,14 +28,14 @@ beforeAll(async () => {
   investorTxOpts = { ...defaultTxOpts, from: investor };
   badInvestorTxOpts = { ...defaultTxOpts, from: badInvestor };
 
-  requestInvestmentFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.PARTICIPATION,
-    'requestInvestment',
+  buySharesFunctionSig = getFunctionSignature(
+    CONTRACT_NAMES.SHARES,
+    'buyShares',
   );
 });
 
 describe('Fund 1: user whitelist', () => {
-  let amguAmount, offeredValue, wantedShares;
+  let offeredValue, wantedShares;
   let mln, weth, priceSource, userWhitelist;
   let fund;
 
@@ -65,80 +65,73 @@ describe('Fund 1: user whitelist', () => {
     await send(
       fund.policyManager,
       'register',
-      [encodeFunctionSignature(requestInvestmentFunctionSig), userWhitelist.options.address],
+      [encodeFunctionSignature(buySharesFunctionSig), userWhitelist.options.address],
       managerTxOpts
     );
 
-    amguAmount = toWei('.01', 'ether');
-    offeredValue = toWei('1', 'ether');
+    // Investment params
     wantedShares = toWei('1', 'ether');
+    offeredValue = await call(
+      fund.accounting,
+      'getShareCostInAsset',
+      [wantedShares, weth.options.address]
+    );
   });
 
   test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const requestInvestmentPoliciesRes = await call(
+    const buySharesPoliciesRes = await call(
       policyManager,
       'getPoliciesBySig',
-      [encodeFunctionSignature(requestInvestmentFunctionSig)],
+      [encodeFunctionSignature(buySharesFunctionSig)],
     );
-    const requestInvestmentPolicyAddresses = [
-      ...requestInvestmentPoliciesRes[0],
-      ...requestInvestmentPoliciesRes[1]
+    const buySharesPolicyAddresses = [
+      ...buySharesPoliciesRes[0],
+      ...buySharesPoliciesRes[1]
     ];
 
     expect(
-      requestInvestmentPolicyAddresses.includes(userWhitelist.options.address)
+      buySharesPolicyAddresses.includes(userWhitelist.options.address)
     ).toBe(true);
   });
 
   test('Bad request investment: user not on whitelist', async () => {
-    const { participation } = fund;
+    const { hub } = fund;
 
-    await send(weth, 'transfer', [badInvestor, offeredValue], defaultTxOpts);
-
-    await send(weth, 'approve', [participation.options.address, offeredValue], badInvestorTxOpts);
     await expect(
-      send(
-        participation,
-        'requestInvestment',
-        [wantedShares, offeredValue, weth.options.address],
-        { ...badInvestorTxOpts, value: amguAmount }
-      )
+      investInFund({
+        fundAddress: hub.options.address,
+        investment: {
+          contribAmount: offeredValue,
+          investor: badInvestor,
+          tokenContract: weth
+        },
+        tokenPriceData: {
+          priceSource,
+          tokenAddresses: [weth.options.address],
+          tokenPrices: [toWei('1', 'ether')]
+        }
+      })
     ).rejects.toThrowFlexible("Rule evaluated to false: UserWhitelist");
   });
 
   test('Good request investment: user is whitelisted', async () => {
-    const { participation, shares } = fund;
+    const { hub, shares } = fund;
 
-    await send(weth, 'transfer', [investor, offeredValue], defaultTxOpts);
-
-    await send(weth, 'approve', [participation.options.address, offeredValue], investorTxOpts);
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, offeredValue, weth.options.address],
-      { ...investorTxOpts, value: amguAmount }
-    );
-
-    // Need price update before participation executed
-    await delay(1000);
-    await send(
-      priceSource,
-      'update',
-      [
-        [weth.options.address, mln.options.address],
-        [toWei('1', 'ether'), toWei('0.5', 'ether')],
-      ],
-      defaultTxOpts
-    );
-
-    await send(
-      participation,
-      'executeRequestFor',
-      [investor],
-      investorTxOpts
-    );
+    await investInFund({
+      fundAddress: hub.options.address,
+      investment: {
+        contribAmount: offeredValue,
+        investor,
+        tokenContract: weth
+      },
+      tokenPriceData: {
+        priceSource,
+        tokenAddresses: [weth.options.address],
+        tokenPrices: [toWei('1', 'ether')]
+      }
+    })
 
     const investorShares = await call(shares, 'balanceOf', [investor]);
     expect(investorShares).toEqual(wantedShares);

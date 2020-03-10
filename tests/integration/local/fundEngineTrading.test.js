@@ -18,7 +18,7 @@ import {
 } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { increaseTime } from '~/tests/utils/rpc';
-import { setupInvestedTestFund } from '~/tests/utils/fund';
+import { investInFund, setupInvestedTestFund } from '~/tests/utils/fund';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
@@ -97,13 +97,13 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
 });
 
 test('Invest in fund with enough MLN to buy desired ETH from engine', async () => {
-  const { accounting, participation, shares } = fund;
+  const { accounting, hub, shares } = fund;
 
   // Enable investment with mln
-  await send(participation, 'enableInvestment', [[mln.options.address]], managerTxOpts);
+  await send(shares, 'enableSharesInvestmentAssets', [[mln.options.address]], managerTxOpts);
 
   const wantedShares = toWei('1', 'ether');
-  const amguAmount = toWei('10', 'ether');
+  const amguTxValue = toWei('10', 'ether');
 
   const costOfShares = await call(
       accounting,
@@ -113,37 +113,20 @@ test('Invest in fund with enough MLN to buy desired ETH from engine', async () =
 
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
 
-  await send(mln, 'transfer', [investor, costOfShares], defaultTxOpts);
-  await send(
-    mln,
-    'approve',
-    [participation.options.address, toWei('100', 'ether')],
-    investorTxOpts
-  );
-  await send(
-    participation,
-    'requestInvestment',
-    [wantedShares, costOfShares, mln.options.address],
-    { ...investorTxOpts, value: amguAmount }
-  );
-
-  // Need price update before participation executed
-  await increaseTime(2);
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address],
-      [wethToEthRate, mlnToEthRate],
-    ],
-    defaultTxOpts
-  );
-  await send(
-    participation,
-    'executeRequestFor',
-    [investor],
-    { ...investorTxOpts, value: amguAmount }
-  );
+  await investInFund({
+    fundAddress: hub.options.address,
+    investment: {
+      contribAmount: costOfShares,
+      investor,
+      tokenContract: mln
+    },
+    amguTxValue,
+    tokenPriceData: {
+      priceSource,
+      tokenAddresses: [mln.options.address],
+      tokenPrices: [mlnToEthRate]
+    }
+  });
 
   const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   expect(postInvestorShares).bigNumberEq(preInvestorShares.add(new BN(wantedShares)));

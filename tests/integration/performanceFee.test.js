@@ -12,7 +12,7 @@ import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
@@ -94,61 +94,33 @@ beforeAll(async () => {
 });
 
 test(`fund gets weth from (non-initial) investor`, async () => {
-  const { accounting, participation, shares } = fund;
+  const { accounting, hub, shares } = fund;
 
-  const amguAmount = toWei('.01', 'ether');
-  const shareSlippageTolerance = new BN(toWei('0.0001', 'ether')); // 0.01%
-
-  const offerAsset = weth.options.address;
-  const wantedShares = toWei('1', 'ether');
-
-  const expectedOfferAssetCost = new BN(
+  const contribAmount = toWei('1', 'ether');
+  const shareCost = new BN(
     await call(
       accounting,
       'getShareCostInAsset',
-      [wantedShares, offerAsset]
+      [toWei('1', 'ether'), weth.options.address]
     )
   );
-  const offerAssetAmount = BNExpMul(
-    expectedOfferAssetCost,
-    new BN(toWei('1', 'ether')).add(shareSlippageTolerance)
-  ).toString();
-
-  await send(weth, 'transfer', [investor, offerAssetAmount], defaultTxOpts);
+  const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
-  await send(
-    weth,
-    'approve',
-    [participation.options.address, offerAssetAmount],
-    investorTxOpts
-  );
-  await send(
-    participation,
-    'requestInvestment',
-    [wantedShares, offerAssetAmount, offerAsset],
-    { ...investorTxOpts, value: amguAmount }
-  );
-
-  // Need price update before investment request executed
-  await delay(1000);
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address],
-      [wethToEthRate, mlnToEthRate],
-    ],
-    defaultTxOpts
-  );
-
-  await send(
-    participation,
-    'executeRequestFor',
-    [investor],
-    investorTxOpts
-  );
+  await investInFund({
+    fundAddress: hub.options.address,
+    investment: {
+      contribAmount,
+      investor,
+      tokenContract: weth
+    },
+    tokenPriceData: {
+      priceSource,
+      tokenAddresses: [weth.options.address, mln.options.address],
+      tokenPrices: [wethToEthRate, mlnToEthRate]
+    }
+  });
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(new BN(wantedShares)));
@@ -296,7 +268,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
 
 
 test(`investor redeems half his shares, performance fee deducted`, async () => {
-  const { accounting, participation, shares } = fund;
+  const { accounting, shares } = fund;
 
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
@@ -307,7 +279,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
 
   const redeemQuantity = preInvestorShares.div(new BN(2));
 
-  await send(participation, 'redeemQuantity', [redeemQuantity.toString()], investorTxOpts);
+  await send(shares, 'redeemSharesQuantity', [redeemQuantity.toString()], investorTxOpts);
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
 
   const redeemSharesProportion = BNExpDiv(redeemQuantity, preTotalSupply);
@@ -324,7 +296,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
     .bigNumberEq(expectedOwedPerformanceFee);
 
   // Fund manager redeems his shares
-  await send(participation, 'redeem', [], managerTxOpts);
+  await send(shares, 'redeemShares', [], managerTxOpts);
 
   const finalMlnManager = new BN(await call(mln, 'balanceOf', [manager]));
   const finalWethManager = new BN(await call(weth, 'balanceOf', [manager]));

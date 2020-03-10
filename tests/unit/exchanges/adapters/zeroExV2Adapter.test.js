@@ -400,7 +400,7 @@ describe('takeOrder', () => {
 
       // Make 2nd investment with ZRX to allow taker fee trade
       takerFee = toWei('0.0001', 'ether');
-      await send(fund.participation, 'enableInvestment', [[zrx.options.address]], defaultTxOpts);
+      await send(fund.shares, 'enableSharesInvestmentAssets', [[zrx.options.address]], defaultTxOpts);
       await investInFund({
         fundAddress: fund.hub.options.address,
         investment: {
@@ -408,7 +408,6 @@ describe('takeOrder', () => {
           investor: deployer,
           tokenContract: zrx
         },
-        isInitial: false,
         tokenPriceData: {
           priceSource,
           tokenAddresses: [
@@ -575,7 +574,7 @@ describe('takeOrder', () => {
 
       // Make 2nd investment with ZRX to allow taker fee trade
       takerFee = toWei('0.0001', 'ether');
-      await send(fund.participation, 'enableInvestment', [[zrx.options.address]], defaultTxOpts);
+      await send(fund.shares, 'enableSharesInvestmentAssets', [[zrx.options.address]], defaultTxOpts);
       await investInFund({
         fundAddress: fund.hub.options.address,
         investment: {
@@ -583,7 +582,6 @@ describe('takeOrder', () => {
           investor: deployer,
           tokenContract: zrx
         },
-        isInitial: false,
         tokenPriceData: {
           priceSource,
           tokenAddresses: [

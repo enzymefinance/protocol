@@ -662,7 +662,6 @@ describe('takeOrder', () => {
           investor: deployer,
           tokenContract: mln
         },
-        isInitial: false,
         tokenPriceData: {
           priceSource,
           tokenAddresses: [
@@ -841,7 +840,7 @@ describe('takeOrder', () => {
 
       // Make 2nd investment with DAI to allow taker fee trade
       takerFee = toWei('1', 'ether');
-      await send(fund.participation, 'enableInvestment', [[dai.options.address]], defaultTxOpts);
+      await send(fund.shares, 'enableSharesInvestmentAssets', [[dai.options.address]], defaultTxOpts);
       await investInFund({
         fundAddress: fund.hub.options.address,
         investment: {
@@ -849,7 +848,6 @@ describe('takeOrder', () => {
           investor: deployer,
           tokenContract: dai
         },
-        isInitial: false,
         tokenPriceData: {
           priceSource,
           tokenAddresses: [

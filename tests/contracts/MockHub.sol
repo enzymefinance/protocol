@@ -10,7 +10,6 @@ contract MockHub is DSGuard {
     struct Routes {
         address accounting;
         address feeManager;
-        address participation;
         address policyManager;
         address shares;
         address vault;
@@ -30,22 +29,20 @@ contract MockHub is DSGuard {
 
     function setShutDownState(bool _state) public { isShutDown = _state; }
 
-    function setSpokes(address[8] memory _spokes) public {
+    function setSpokes(address[7] memory _spokes) public {
         routes.accounting = _spokes[0];
         routes.feeManager = _spokes[1];
-        routes.participation = _spokes[2];
-        routes.policyManager = _spokes[3];
-        routes.shares = _spokes[4];
-        routes.vault = _spokes[5];
-        routes.registry = _spokes[6];
-        routes.fundFactory = _spokes[7];
+        routes.policyManager = _spokes[2];
+        routes.shares = _spokes[3];
+        routes.vault = _spokes[4];
+        routes.registry = _spokes[5];
+        routes.fundFactory = _spokes[6];
     }
 
     function setRouting() public {
-        address[8] memory spokes = [
+        address[7] memory spokes = [
             routes.accounting,
             routes.feeManager,
-            routes.participation,
             routes.policyManager,
             routes.shares,
             routes.vault,
@@ -54,21 +51,18 @@ contract MockHub is DSGuard {
         ];
         Spoke(routes.accounting).initialize(spokes);
         Spoke(routes.feeManager).initialize(spokes);
-        Spoke(routes.participation).initialize(spokes);
         Spoke(routes.policyManager).initialize(spokes);
         Spoke(routes.shares).initialize(spokes);
         Spoke(routes.vault).initialize(spokes);
     }
 
     function setPermissions() public {
-        permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
-        permit(routes.participation, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
-        permit(routes.participation, routes.shares, bytes4(keccak256('destroyFor(address,uint256)')));
+        permit(routes.shares, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
-        permit(routes.participation, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
-        permit(routes.participation, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
-        permit(routes.participation, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
-        permit(routes.participation, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
+        permit(routes.shares, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
+        permit(routes.shares, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
+        permit(routes.shares, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
+        permit(routes.shares, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
         permit(routes.vault, routes.accounting, bytes4(keccak256('addAssetToOwnedAssets(address)')));
         permit(routes.vault, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
         permit(routes.vault, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
@@ -78,8 +72,8 @@ contract MockHub is DSGuard {
         permit(manager, routes.feeManager, bytes4(keccak256('batchRegister(address[])')));
         permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
         permit(manager, routes.policyManager, bytes4(keccak256('batchRegister(bytes4[],address[])')));
-        permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
-        permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
+        permit(manager, routes.shares, bytes4(keccak256('enableSharesInvestmentAssets(address[])')));
+        permit(manager, routes.shares, bytes4(keccak256('disableSharesInvestmentAssets(address[])')));
         permit(bytes32(bytes20(msg.sender)), ANY, ANY);
     }
 
@@ -92,10 +86,9 @@ contract MockHub is DSGuard {
     }
 
     function initializeSpoke(address _spoke) public {
-        address[8] memory spokes = [
+        address[7] memory spokes = [
             routes.accounting,
             routes.feeManager,
-            routes.participation,
             routes.policyManager,
             routes.shares,
             routes.vault,
@@ -107,10 +100,8 @@ contract MockHub is DSGuard {
 
     function accounting() public view returns (address) { return routes.accounting; }
     function priceSource() public view returns (address) { return IRegistry(routes.registry).priceSource(); }
-    function participation() public view returns (address) { return routes.participation; }
     function vault() public view returns (address) { return routes.vault; }
     function shares() public view returns (address) { return routes.shares; }
     function policyManager() public view returns (address) { return routes.policyManager; }
     function registry() public view returns (address) { return routes.registry; }
 }
-

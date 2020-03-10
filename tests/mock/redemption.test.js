@@ -18,9 +18,6 @@ describe('redemption', () => {
   });
 
   test('Redeem with no shares fails', async () => {
-    const errorMessage =
-      'Sender does not have enough shares to fulfill request';
-
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
 
     await mockSystem.shares.methods
@@ -29,15 +26,15 @@ describe('redemption', () => {
 
     expect(preShares).toBe('0');
     await expect(
-      mockSystem.participation.methods
-        .redeem()
+      mockSystem.shares.methods
+        .redeemShares()
         .send(defaultTxOpts),
-    ).rejects.toThrow(errorMessage);
+    ).rejects.toThrow('_sharesQuantity must be > 0');
     await expect(
-      mockSystem.participation.methods
-        .redeemWithConstraints('1', [])
+      mockSystem.shares.methods
+        .redeemSharesWithConstraints('1', [])
         .send(defaultTxOpts),
-    ).rejects.toThrow(errorMessage);
+    ).rejects.toThrow('_assets cannot be empty');
   });
 
   test('Asset with 0 assetBalance prevents redemption', async () => {
@@ -51,8 +48,8 @@ describe('redemption', () => {
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
 
     await expect(
-      mockSystem.participation.methods
-        .redeemWithConstraints('1', [addr])
+      mockSystem.shares.methods
+        .redeemSharesWithConstraints('1', [addr])
         .send(defaultTxOpts),
     ).rejects.toThrow(errorMessage);
 
@@ -68,8 +65,8 @@ describe('redemption', () => {
     const preShares = await mockSystem.shares.methods.balanceOf(user).call();
 
     await expect(
-      mockSystem.participation.methods
-        .redeemWithConstraints('1', [
+      mockSystem.shares.methods
+        .redeemSharesWithConstraints('1', [
           mockSystem.weth.options.address,
           mockSystem.weth.options.address,
         ])
