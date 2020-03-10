@@ -34,6 +34,8 @@ contract Registry is DSAuth {
     event PriceSourceChange(address indexed priceSource);
     event FundFactoryRegistered(address indexed fundFactory);
 
+    event SharesRequestorChanged(address sharesRequestor);
+
     // TYPES
     struct Asset {
         bool exists;
@@ -85,6 +87,7 @@ contract Registry is DSAuth {
     address public nativeAsset;
     address public engine;
     address public MGM;
+    address public sharesRequestor;
 
     modifier onlyFundFactory() {
         require(
@@ -250,6 +253,11 @@ contract Registry is DSAuth {
     function setMGM(address _MGM) external auth {
         MGM = _MGM;
         emit MGMChange(_MGM);
+    }
+
+    function setSharesRequestor(address _sharesRequestor) external auth {
+        sharesRequestor = _sharesRequestor;
+        emit SharesRequestorChanged(_sharesRequestor);
     }
 
     /// @notice Updates description information of a registered Asset

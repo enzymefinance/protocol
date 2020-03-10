@@ -5,7 +5,6 @@ import "../fund/accounting/IAccounting.sol";
 import "../fund/fees/IFeeManager.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/policies/IPolicyManager.sol";
-import "../fund/participation/IParticipation.sol";
 import "../fund/shares/IShares.sol";
 import "../fund/vault/IVault.sol";
 import "../engine/AmguConsumer.sol";
@@ -18,12 +17,11 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     event NewFund(
         address indexed manager,
         address indexed hub,
-        address[8] routes
+        address[7] routes
     );
 
     IAccountingFactory public accountingFactory;
     IFeeManagerFactory public feeManagerFactory;
-    IParticipationFactory public participationFactory;
     IPolicyManagerFactory public policyManagerFactory;
     ISharesFactory public sharesFactory;
     IVaultFactory public vaultFactory;
@@ -48,7 +46,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     constructor(
         address _accountingFactory,
         address _feeManagerFactory,
-        address _participationFactory,
         address _sharesFactory,
         address _vaultFactory,
         address _policyManagerFactory,
@@ -61,7 +58,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         setOwner(_postDeployOwner);
         accountingFactory = IAccountingFactory(_accountingFactory);
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
-        participationFactory = IParticipationFactory(_participationFactory);
         sharesFactory = ISharesFactory(_sharesFactory);
         vaultFactory = IVaultFactory(_vaultFactory);
         policyManagerFactory = IPolicyManagerFactory(_policyManagerFactory);
@@ -155,21 +151,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     function createFeeManagerFor(address _manager) external amguPayable payable { _createFeeManagerFor(_manager); }
     function createFeeManager() external amguPayable payable { _createFeeManagerFor(msg.sender); }
 
-    function _createParticipationFor(address _manager)
-        internal
-    {
-        ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].participation);
-        managersToRoutes[_manager].participation = participationFactory.createInstance(
-            managersToHubs[_manager],
-            managersToSettings[_manager].defaultInvestmentAssets,
-            managersToRoutes[_manager].registry
-        );
-    }
-
-    function createParticipationFor(address _manager) external amguPayable payable { _createParticipationFor(_manager); }
-    function createParticipation() external amguPayable payable { _createParticipationFor(msg.sender); }
-
     function _createPolicyManagerFor(address _manager)
         internal
     {
@@ -189,7 +170,9 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         ensureComponentSet(managersToHubs[_manager]);
         ensureComponentNotSet(managersToRoutes[_manager].shares);
         managersToRoutes[_manager].shares = sharesFactory.createInstance(
-            managersToHubs[_manager]
+            managersToHubs[_manager],
+            managersToSettings[_manager].defaultInvestmentAssets,
+            managersToRoutes[_manager].registry
         );
     }
 
@@ -220,7 +203,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
             componentExists(address(hub)) &&
             componentExists(routes.accounting) &&
             componentExists(routes.feeManager) &&
-            componentExists(routes.participation) &&
             componentExists(routes.policyManager) &&
             componentExists(routes.shares) &&
             componentExists(routes.vault),
@@ -230,7 +212,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         hub.initializeAndSetPermissions([
             routes.accounting,
             routes.feeManager,
-            routes.participation,
             routes.policyManager,
             routes.shares,
             routes.vault,
@@ -250,7 +231,6 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
             [
                 routes.accounting,
                 routes.feeManager,
-                routes.participation,
                 routes.policyManager,
                 routes.shares,
                 routes.vault,
