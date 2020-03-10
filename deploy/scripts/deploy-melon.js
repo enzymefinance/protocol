@@ -21,12 +21,12 @@ const main = async input => {
   const performanceFee = await nab('PerformanceFee', [], melonAddrs);
   const accountingFactory = await nab('AccountingFactory', [], melonAddrs);
   const feeManagerFactory = await nab('FeeManagerFactory', [], melonAddrs);
-  const participationFactory = await nab('ParticipationFactory', [], melonAddrs);
   const policyManagerFactory = await nab('PolicyManagerFactory', [], melonAddrs);
   const sharesFactory = await nab('SharesFactory', [], melonAddrs);
   const vaultFactory = await nab('VaultFactory', [], melonAddrs);
   const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
+  const sharesRequestor = await nab('SharesRequestor', [registry.options.address], melonAddrs);
 
   let priceSource;
   if (conf.track === 'KYBER_PRICE') {
@@ -57,6 +57,10 @@ const main = async input => {
   const previousRegisteredMGM = await call(registry, 'MGM');
   if (`${previousRegisteredMGM}`.toLowerCase() !== melonConf.initialMGM.toLowerCase()) {
     await send(registry, 'setMGM', [melonConf.initialMGM]);
+  }
+  const previousRegisteredSharesRequestor = await call(registry, 'sharesRequestor');
+  if (`${previousRegisteredSharesRequestor}`.toLowerCase() !== sharesRequestor.options.address.toLowerCase()) {
+    await send(registry, 'setSharesRequestor', [sharesRequestor.options.address]);
   }
   await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
@@ -130,7 +134,6 @@ const main = async input => {
   const fundFactory = await nab('FundFactory', [
     accountingFactory.options.address,
     feeManagerFactory.options.address,
-    participationFactory.options.address,
     sharesFactory.options.address,
     vaultFactory.options.address,
     policyManagerFactory.options.address,
@@ -169,7 +172,6 @@ const main = async input => {
     "UserWhitelist": userWhitelist,
     "AccountingFactory": accountingFactory,
     "FeeManagerFactory": feeManagerFactory,
-    "ParticipationFactory": participationFactory,
     "PolicyManagerFactory": policyManagerFactory,
     "SharesFactory": sharesFactory,
     "VaultFactory": vaultFactory,
@@ -177,7 +179,8 @@ const main = async input => {
     "ManagementFee": managementFee,
     "Registry": registry,
     "Engine": engine,
-    "FundFactory": fundFactory,
+    "SharesRequestor": sharesRequestor,
+    "FundFactory": fundFactory
   };
 
   if (conf.track === 'KYBER_PRICE') {
