@@ -9,18 +9,17 @@ import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 
 let deployer, manager, investor;
-let defaultTxOpts, investorTxOpts;
+let defaultTxOpts;
 let mln, weth;
 let fund;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  investorTxOpts = { ...defaultTxOpts, from: investor };
 
   const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
@@ -38,36 +37,29 @@ beforeAll(async () => {
 });
 
 test('initial investment (with quote token)', async () => {
-  const { accounting, participation } = fund;
+  const { accounting, hub } = fund;
 
-  const offeredValue = toWei('1', 'ether');
-  const wantedShares = toWei('1', 'ether');
-  const amguAmount = toWei('.01', 'ether');
+  const contribAmount = toWei('1', 'ether');
 
-  await send(weth, 'transfer', [investor, offeredValue], defaultTxOpts);
-  await send(
-    weth,
-    'approve',
-    [participation.options.address, offeredValue],
-    investorTxOpts
-  );
-  await send(
-    participation,
-    'requestInvestment',
-    [wantedShares, offeredValue, weth.options.address],
-    { ...investorTxOpts, value: amguAmount }
-  );
-  await send(participation, 'executeRequestFor', [investor], investorTxOpts);
+  await investInFund({
+    fundAddress: hub.options.address,
+    investment: {
+      contribAmount,
+      investor,
+      isInitial: true,
+      tokenContract: weth
+    }
+  });
 
   const fundWethHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
   const fundCalculations = await call(accounting, 'calcFundMetrics');
 
-  expect(fundWethHoldings).toBe(offeredValue);
-  expect(fundCalculations.gav_).toBe(offeredValue);
+  expect(fundWethHoldings).toBe(contribAmount);
+  expect(fundCalculations.gav_).toBe(contribAmount);
   expect(fundCalculations.feesInDenominationAsset_).toBe('0');
   expect(fundCalculations.feesInShares_).toBe('0');
-  expect(fundCalculations.nav_).toBe(offeredValue);
-  expect(fundCalculations.sharePrice_).toBe(offeredValue);
+  expect(fundCalculations.nav_).toBe(contribAmount);
+  expect(fundCalculations.sharePrice_).toBe(contribAmount);
 });
 
 test('sending quote token directly to Trading does NOT affect fund calculations', async () => {

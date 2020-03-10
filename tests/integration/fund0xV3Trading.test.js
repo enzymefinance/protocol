@@ -14,10 +14,9 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import web3 from '~/deploy/utils/get-web3';
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import getAccounts from '~/deploy/utils/getAccounts';
-import { delay } from '~/tests/utils/time';
 import {
   createUnsignedZeroExOrder,
   signZeroExOrder
@@ -325,53 +324,36 @@ describe('Fund takes an order with a different taker fee asset', () => {
   });
 
   test('Invest in fund with enough DAI to take trade with taker fee', async () => {
-    const { accounting, participation, shares } = fund;
+    const { accounting, hub, shares } = fund;
   
     // Enable investment with dai
-    await send(participation, 'enableInvestment', [[dai.options.address]], managerTxOpts);
+    await send(shares, 'enableSharesInvestmentAssets', [[dai.options.address]], managerTxOpts);
   
-    const wantedShares = toWei('1', 'ether');
-    const amguAmount = toWei('0.01', 'ether');
-  
-    const costOfShares = await call(
+    const contribAmount = toWei('100', 'ether');
+    const shareCost = new BN(
+      await call(
         accounting,
         'getShareCostInAsset',
-        [wantedShares, dai.options.address]
+        [toWei('1', 'ether'), dai.options.address]
+      )
     );
+    const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
   
     const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   
-    await send(dai, 'transfer', [investor, costOfShares], defaultTxOpts);
-    await send(
-      dai,
-      'approve',
-      [participation.options.address, toWei('100', 'ether')],
-      investorTxOpts
-    );
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, costOfShares, dai.options.address],
-      { ...investorTxOpts, value: amguAmount }
-    );
-  
-    // Need price update before participation executed
-    await delay(1000);
-    await send(
-      priceSource,
-      'update',
-      [
-        [weth.options.address, mln.options.address, dai.options.address],
-        [wethToEthRate, mlnToEthRate, daiToEthRate],
-      ],
-      defaultTxOpts
-    );
-    await send(
-      participation,
-      'executeRequestFor',
-      [investor],
-      { ...investorTxOpts, value: amguAmount }
-    );
+    await investInFund({
+      fundAddress: hub.options.address,
+      investment: {
+        contribAmount,
+        investor,
+        tokenContract: dai
+      },
+      tokenPriceData: {
+        priceSource,
+        tokenAddresses: [dai.options.address],
+        tokenPrices: [daiToEthRate]
+      }
+    });
   
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
     expect(postInvestorShares).bigNumberEq(preInvestorShares.add(new BN(wantedShares)));

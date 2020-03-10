@@ -7,12 +7,13 @@ import getAccounts from '~/deploy/utils/getAccounts';
 import web3 from '~/deploy/utils/get-web3';
 
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer;
 let defaultTxOpts;
-let fundFactory, weth, mln;
+let weth, mln;
+let fundFactory;
 let fund;
 let takeOrderSignature;
 let mockExchangeAddress, mockAdapterAddress;
@@ -61,26 +62,18 @@ describe('new investment in fund', () => {
       quoteToken: weth.options.address,
       fundFactory
     });
-    const { participation } = fund;
 
-    const wantedShares = toWei('1', 'ether');
-    const amguAmount = toWei('.01', 'ether');
+    preTxBlock = await web3.eth.getBlockNumber()
 
-    await send(
-      weth,
-      'approve',
-      [participation.options.address, investmentAmount],
-      defaultTxOpts
-    );
-
-    preTxBlock = await web3.eth.getBlockNumber();
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, investmentAmount, weth.options.address],
-      { ...defaultTxOpts, value: amguAmount }
-    );
-    await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
+    await investInFund({
+      fundAddress: fund.hub.options.address,
+      investment: {
+        contribAmount: investmentAmount,
+        investor: deployer,
+        isInitial: true,
+        tokenContract: weth
+      }
+    });
   });
 
   it('emits correct AssetBalanceUpdated event', async() => {
@@ -355,10 +348,10 @@ describe('redeem shares', () => {
       quoteToken: weth.options.address,
       fundFactory
     });
-    const { participation } = fund;
+    const { shares } = fund;
 
     preTxBlock = await web3.eth.getBlockNumber();
-    await send(participation, 'redeem', [], defaultTxOpts);
+    await send(shares, 'redeemShares', [], defaultTxOpts);
   });
 
   it('emits correct AssetBalanceUpdated event', async() => {

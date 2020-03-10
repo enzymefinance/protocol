@@ -17,10 +17,9 @@ const deployMockSystem = async (
     fees = [],
     hubContract = CONTRACT_NAMES.MOCK_HUB,
     policyManagerContract = CONTRACT_NAMES.POLICY_MANAGER,
-    participationContract = CONTRACT_NAMES.PARTICIPATION,
     priceSourceContract = CONTRACT_NAMES.TESTING_PRICEFEED,
     registryContract = CONTRACT_NAMES.MOCK_REGISTRY,
-    sharesContract = CONTRACT_NAMES.MOCK_SHARES,
+    sharesContract = CONTRACT_NAMES.SHARES,
     vaultContract = CONTRACT_NAMES.VAULT,
     fundFactoryContract = CONTRACT_NAMES.MOCK_INFRASTRUCTURE
   } = {},
@@ -112,18 +111,13 @@ const deployMockSystem = async (
     [hub.options.address]
   );
 
-  const participation = await deploy(
-    participationContract,
+  const shares = await deploy(
+    sharesContract,
     [
       hub.options.address,
       [quoteToken.options.address, baseToken.options.address],
       registry.options.address,
     ]
-  );
-
-  const shares = await deploy(
-    sharesContract,
-    [hub.options.address]
   );
 
   const vault = await deploy(
@@ -154,7 +148,6 @@ const deployMockSystem = async (
     .setSpokes([
       accounting.options.address,
       feeManager.options.address,
-      participation.options.address,
       policyManager.options.address,
       shares.options.address,
       vault.options.address,
@@ -165,7 +158,6 @@ const deployMockSystem = async (
 
   const toInit = [
     accounting,
-    participation,
     shares,
     vault,
     feeManager,
@@ -185,7 +177,6 @@ const deployMockSystem = async (
     feeManager,
     hub,
     mln,
-    participation,
     policyManager,
     priceSource,
     registry,

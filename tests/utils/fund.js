@@ -15,7 +15,6 @@ export const getFundComponents = async hubAddress => {
   const routes = await call(components.hub, 'routes');
   components.accounting = fetchContract('Accounting', routes.accounting);
   components.feeManager = fetchContract('FeeManager', routes.feeManager);
-  components.participation = fetchContract('Participation', routes.participation);
   components.policyManager = fetchContract('PolicyManager', routes.policyManager);
   components.shares = fetchContract('Shares', routes.shares);
   components.vault = fetchContract('Vault', routes.vault);
@@ -27,11 +26,14 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
   const { contribAmount, tokenContract, investor, isInitial = false } = investment;
   const investorTxOpts = { from: investor, gas: 8000000 };
 
-  const hub = fetchContract('Hub', fundAddress);
+  const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress);
   const routes = await call(hub, 'routes');
-  const accounting = fetchContract('Accounting', routes.accounting);
-  const participation = fetchContract('Participation', routes.participation);
-
+  const accounting = fetchContract(CONTRACT_NAMES.ACCOUNTING, routes.accounting);
+  const registry = fetchContract(CONTRACT_NAMES.REGISTRY, routes.registry);
+  const sharesRequestor = fetchContract(
+    CONTRACT_NAMES.SHARES_REQUESTOR,
+    await call(registry, 'sharesRequestor')  
+  );
   // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
   if (!amguTxValue) {
     amguTxValue = toWei('0.01', 'ether');
@@ -64,22 +66,21 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
       [investor, investorTokenShortfall.toString()]
     )
   }
-
   // Invest in fund
   await send(
     tokenContract,
     'approve',
-    [participation.options.address, contribAmount],
+    [sharesRequestor.options.address, contribAmount],
     investorTxOpts
   )
   await send(
-    participation,
-    'requestInvestment',
-    [wantedShares, contribAmount, tokenContract.options.address],
+    sharesRequestor,
+    'requestShares',
+    [hub.options.address, tokenContract.options.address, contribAmount, wantedShares],
     { ...investorTxOpts, value: amguTxValue }
-  )
+  );
 
-  // Update prices if not initial investment
+  // Update prices and executes reqeust if not initial investment
   if (isInitial !== true) {
     await delay(1000);
     await updateTestingPriceFeed(
@@ -87,14 +88,13 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
       tokenPriceData.tokenAddresses,
       tokenPriceData.tokenPrices
     );
+    await send(
+      sharesRequestor,
+      'executeRequestFor',
+      [investor, hub.options.address],
+      { ...investorTxOpts, value: amguTxValue }
+    );
   }
-
-  await send(
-    participation,
-    'executeRequestFor',
-    [investor],
-    { ...investorTxOpts, value: amguTxValue }
-  )
 }
 
 export const setupFundWithParams = async ({
@@ -141,7 +141,6 @@ export const setupFundWithParams = async ({
   );
   await send(fundFactory, 'createAccounting', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu);
-  await send(fundFactory, 'createParticipation', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu);

@@ -3,7 +3,7 @@
  *
  * @test Redeem fails when malicious token is present
  * @test Redemption with non-registered assets does not succeed
- * @test redeemWithConstraints succeeds to withdraw specific assets only
+ * @test redeemSharesWithConstraints succeeds to withdraw specific assets only
  */
 
 import { BN, toWei, randomHex } from 'web3-utils';
@@ -11,9 +11,8 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
-import { delay } from '~/tests/utils/time';
 
 let defaultTxOpts, investorTxOpts;
 let deployer, manager, investor;
@@ -69,7 +68,7 @@ beforeAll(async () => {
 });
 
 test('Trying to avoid performance fee with invalid asset addresses fails', async () => {
-  const { accounting, participation, shares } = fund;
+  const { accounting, shares } = fund;
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const holdings = await call(accounting, 'getFundHoldings');
   const errorMessage = 'Requested asset holdings is 0';
@@ -77,8 +76,8 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
   // TODO: convert to iterated tests
   await expect(
     send(
-      participation,
-      'redeemWithConstraints',
+      shares,
+      'redeemSharesWithConstraints',
       [
         preInvestorShares.toString(),
         [randomHex(20), EMPTY_ADDRESS],
@@ -89,8 +88,8 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
 
   await expect(
     send(
-      participation,
-      'redeemWithConstraints',
+      shares,
+      'redeemSharesWithConstraints',
       [
         preInvestorShares.toString(),
         [EMPTY_ADDRESS],
@@ -101,8 +100,8 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
 
   await expect(
     send(
-      participation,
-      'redeemWithConstraints',
+      shares,
+      'redeemSharesWithConstraints',
       [
         preInvestorShares.toString(),
         [randomHex(20)],
@@ -113,8 +112,8 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
 
   await expect(
     send(
-      participation,
-      'redeemWithConstraints',
+      shares,
+      'redeemSharesWithConstraints',
       [
         preInvestorShares.toString(),
         [...holdings[0], EMPTY_ADDRESS],
@@ -125,52 +124,45 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
 });
 
 test('General redeem fails in presence of malicious token', async () => {
-  const { participation } = fund;
+  const { hub, shares } = fund;
   const maliciousTokenAmount = toWei('1', 'ether');
-  const wantedShares = toWei('1', 'ether');
-  const amguAmount = toWei('.01', 'ether');
 
-  // Buy shares with malicious token
-  await send(maliciousToken, 'transfer', [investor, maliciousTokenAmount], defaultTxOpts);
-  await send(
-    maliciousToken,
-    'approve',
-    [participation.options.address, maliciousTokenAmount],
-    investorTxOpts
-  );
-  await send(
-    fund.participation,
-    'requestInvestment',
-    [wantedShares, maliciousTokenAmount, maliciousToken.options.address],
-    { ...investorTxOpts, value: amguAmount }
-  );
-  await delay(1000); // Delay 1 sec to ensure block new blocktime
+  const tokenAddresses = [maliciousToken.options.address];
+  const tokenPrices = [toWei('1', 'ether')];
+
+  // Set price for Malicious Token
   await send(
     priceSource,
     'update',
-    [
-      [weth.options.address, maliciousToken.options.address],
-      [toWei('1', 'ether'), toWei('1', 'ether')]
-    ],
+    [tokenAddresses, tokenPrices],
     defaultTxOpts
   );
-  await send(
-    participation,
-    'executeRequestFor',
-    [investor],
-    investorTxOpts
-  );
+
+  // Buy shares with malicious token
+  await investInFund({
+    fundAddress: hub.options.address,
+    investment: {
+      contribAmount: maliciousTokenAmount,
+      investor,
+      tokenContract: maliciousToken
+    },
+    tokenPriceData: {
+      priceSource,
+      tokenAddresses,
+      tokenPrices
+    }
+  });
 
   // Activate malicious token
   await send(maliciousToken, 'startReverting', [], defaultTxOpts);
-
+  
   await expect(
-    send(participation, 'redeem', [], investorTxOpts)
+    send(shares, 'redeemShares', [], investorTxOpts)
   ).rejects.toThrowFlexible();
 });
 
 test(`Redeem with constraints works as expected`, async () => {
-  const { accounting, participation, shares } = fund;
+  const { accounting, shares } = fund;
 
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
@@ -190,8 +182,8 @@ test(`Redeem with constraints works as expected`, async () => {
 
 
   await send(
-    participation,
-    'redeemWithConstraints',
+    shares,
+    'redeemSharesWithConstraints',
     [investorShares, [weth.options.address]],
     investorTxOpts
   );

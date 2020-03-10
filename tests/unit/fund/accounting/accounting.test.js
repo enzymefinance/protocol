@@ -2,12 +2,13 @@ import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 
 let deployer;
 let defaultTxOpts;
-let testingPriceFeed, weth, mln;
+let weth, mln;
+let testingPriceFeed;
 let fund;
 const exaUnit = toWei('1', 'ether');
 
@@ -62,28 +63,22 @@ describe('calcFundMetrics', () => {
   });
 
   it('correctly calculates values after investment', async() => {
-    const { accounting, participation } = fund;
+    const { accounting, hub } = fund;
 
-    const investmentAmount = toWei('1', 'ether');
-    const wantedShares = toWei('1', 'ether');
-    const amguAmount = toWei('.01', 'ether');
+    const contribAmount = toWei('1', 'ether');
 
-    await send(
-      weth,
-      'approve',
-      [participation.options.address, investmentAmount],
-      defaultTxOpts
-    );
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, investmentAmount, weth.options.address],
-      { ...defaultTxOpts, value: amguAmount }
-    );
-    await send(participation, 'executeRequestFor', [deployer], defaultTxOpts);
+    await investInFund({
+      fundAddress: hub.options.address,
+      investment: {
+        contribAmount,
+        investor: deployer,
+        isInitial: true,
+        tokenContract: weth
+      }
+    });
 
     const fundCalcs = await call(accounting, 'calcFundMetrics');
-    expect(new BN(fundCalcs.gav_)).bigNumberEq(new BN(investmentAmount));
+    expect(new BN(fundCalcs.gav_)).bigNumberEq(new BN(contribAmount));
     expect(fundCalcs.feesInDenominationAsset_).toBe('0');
     expect(fundCalcs.feesInShares_).toBe('0');
     expect(fundCalcs.nav_).toBe(fundCalcs.gav_);

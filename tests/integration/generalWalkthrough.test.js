@@ -9,13 +9,14 @@
  */
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, hexToNumber, toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 import { deploy, call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { stringToBytes } from '~/tests/utils/formatting';
-import { getFundComponents } from '~/tests/utils/fund';
+import { investInFund, getFundComponents } from '~/tests/utils/fund';
 import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer, manager, investor;
@@ -25,7 +26,7 @@ let exchangeIndex;
 let offeredValue, wantedShares, amguAmount;
 let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
 let takeOrderFunctionSig;
-let priceTolerance, userWhitelist;
+let priceTolerance, sharesRequestor, userWhitelist;
 let managementFee, performanceFee;
 let fund;
 
@@ -49,10 +50,7 @@ beforeAll(async () => {
   priceTolerance = contracts.PriceTolerance;
   managementFee = contracts.ManagementFee;
   performanceFee = contracts.PerformanceFee;
-
-  offeredValue = toWei('1', 'ether');
-  wantedShares = toWei('1', 'ether');
-  amguAmount = toWei('.01', 'ether');
+  sharesRequestor = contracts.SharesRequestor;
 
   const targetInvestorWeth = new BN(toWei('10', 'ether'));
   const currentInvestorWeth = new BN(await call(weth, 'balanceOf', [investor]));
@@ -88,7 +86,6 @@ beforeAll(async () => {
   ], managerTxOpts);
   await send(fundFactory, 'createAccounting', [], managerTxOpts);
   await send(fundFactory, 'createFeeManager', [], managerTxOpts);
-  await send(fundFactory, 'createParticipation', [], managerTxOpts);
   await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
   await send(fundFactory, 'createShares', [], managerTxOpts);
   await send(fundFactory, 'createVault', [], managerTxOpts);
@@ -96,6 +93,17 @@ beforeAll(async () => {
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
 
   fund = await getFundComponents(hubAddress);
+
+  offeredValue = toWei('1', 'ether');
+  const shareCost = new BN(
+    await call(
+      fund.accounting,
+      'getShareCostInAsset',
+      [toWei('1', 'ether'), weth.options.address]
+    )
+  );
+  wantedShares = BNExpDiv(new BN(offeredValue), shareCost).toString();
+  amguAmount = toWei('0.1', 'ether');
 
   exchangeIndex = 0;
 
@@ -108,51 +116,61 @@ beforeAll(async () => {
     priceTolerance.options.address,
   ], managerTxOpts);
 
-  const requestInvestmentFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.PARTICIPATION,
-    'requestInvestment',
+  const buySharesFunctionSig = getFunctionSignature(
+    CONTRACT_NAMES.SHARES,
+    'buyShares',
   );
   await send(fund.policyManager, 'register', [
-    encodeFunctionSignature(requestInvestmentFunctionSig),
+    encodeFunctionSignature(buySharesFunctionSig),
     userWhitelist.options.address,
   ], managerTxOpts);
 });
 
-test('Request investment fails for whitelisted user with no allowance', async () => {
-  const { participation } = fund;
+test('Request shares fails for whitelisted user with no allowance', async () => {
+  const { hub } = fund;
 
   await expect(
-    send(participation,
-      'requestInvestment', [offeredValue, wantedShares, weth.options.address],
+    send(
+      sharesRequestor,
+      'requestShares',
+      [hub.options.address, weth.options.address, offeredValue, wantedShares],
       { ...defaultTxOpts, value: amguAmount }
     )
   ).rejects.toThrowFlexible();
 });
 
-test('Request investment fails for user not on whitelist', async () => {
-  const { participation } = fund;
+test('Buying shares (initial investment) fails for user not on whitelist', async () => {
+  const { hub } = fund;
 
-  await send(weth, 'approve', [
-    participation.options.address, offeredValue],
+  await send(weth, 'transfer', [investor, offeredValue], defaultTxOpts);
+  await send(
+    weth,
+    'approve',
+    [sharesRequestor.options.address, offeredValue],
     investorTxOpts
   );
-
   await expect(
-    send(participation,
-      'requestInvestment', [offeredValue, wantedShares, weth.options.address],
+    send(
+      sharesRequestor,
+      'requestShares',
+      [hub.options.address, weth.options.address, offeredValue, wantedShares],
       { ...investorTxOpts, value: amguAmount }
-    ),
+    )
   ).rejects.toThrowFlexible("Rule evaluated to false: UserWhitelist");
 });
 
-test('Request investment succeeds for whitelisted user with allowance', async () => {
-  const { participation, shares } = fund;
+test('Buying shares (initial investment) succeeds for whitelisted user with allowance', async () => {
+  const { hub, shares } = fund;
 
   await send(userWhitelist, 'addToWhitelist', [investor], defaultTxOpts);
-  await send(participation, 'requestInvestment', [
-    offeredValue, wantedShares, weth.options.address
-  ], { ...investorTxOpts, value: amguAmount });
-  await send(participation, 'executeRequestFor', [investor], investorTxOpts);
+
+  await send(
+    sharesRequestor,
+    'requestShares',
+    [hub.options.address, weth.options.address, offeredValue, wantedShares],
+    { ...investorTxOpts, value: amguAmount }
+  );
+
   const investorShares = await call(shares, 'balanceOf', [investor]);
 
   expect(investorShares.toString()).toEqual(wantedShares.toString());
@@ -221,16 +239,18 @@ test('Fund can take an order on Oasis DEX', async () => {
 // TODO - calculate fees?
 
 test('Cannot invest in a shutdown fund', async () => {
-  const { hub, participation } = fund;
+  const { hub } = fund;
 
   await send(fundFactory, 'shutDownFund', [hub.options.address], managerTxOpts);
-  await send(weth, 'approve', [participation.options.address, offeredValue], investorTxOpts);
   await expect(
-    send(
-      participation,
-      'requestInvestment',
-      [offeredValue, wantedShares, weth.options.address],
-      { ...investorTxOpts, value: amguAmount }
-    ),
-  ).rejects.toThrowFlexible("Hub is shut down");
+    investInFund({
+      fundAddress: hub.options.address,
+      investment: {
+        contribAmount: offeredValue,
+        investor,
+        isInitial: true,
+        tokenContract: weth
+      }
+    })
+  ).rejects.toThrowFlexible("Fund is not active");
 });

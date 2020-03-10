@@ -12,7 +12,7 @@ import { getEventFromLogs } from '~/tests/utils/metadata';
 let deployer;
 let defaultTxOpts, managerTxOpts;
 let baseToken, quoteToken;
-let engine, fundFactory, priceSource, registry;
+let engine, fundFactory, priceSource, registry, sharesRequestor;
 let amguPrice;
 
 async function assertAmguTx(contract, method, args = []) {
@@ -80,6 +80,7 @@ beforeEach(async () => {
   fundFactory = contracts.FundFactory;
   registry = contracts.Registry;
   priceSource = contracts.TestingPriceFeed;
+  sharesRequestor = contracts.SharesRequestor;
 
   quoteToken = contracts.WETH;
   baseToken = contracts.MLN;
@@ -164,14 +165,12 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
 
   await assertAmguTx(fundFactory, 'createAccounting');
   await assertAmguTx(fundFactory, 'createFeeManager');
-  await assertAmguTx(fundFactory, 'createParticipation');
   await assertAmguTx(fundFactory, 'createPolicyManager');
   await assertAmguTx(fundFactory, 'createShares');
   await assertAmguTx(fundFactory, 'createVault');
   const res = await assertAmguTx(fundFactory, 'completeSetup');
 
   const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
-  const fund = await getFundComponents(hubAddress);
 
   const requestedShares = toWei('100', 'ether');
   const investmentAmount = toWei('100', 'ether');
@@ -179,7 +178,7 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   await send(
     quoteToken,
     'approve',
-    [fund.participation.options.address, investmentAmount],
+    [sharesRequestor.options.address, investmentAmount],
     defaultTxOpts
   );
 
@@ -190,13 +189,15 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
 
   const preUserBalance = new BN(await web3.eth.getBalance(deployer));
   const gasPrice = await web3.eth.getGasPrice();
-  const requestInvestmentRes = await send(
-    fund.participation,
-    'requestInvestment',
+
+  const requestSharesRes = await send(
+    sharesRequestor,
+    'requestShares',
     [
-      requestedShares,
+      hubAddress,
+      quoteToken.options.address,
       investmentAmount,
-      quoteToken.options.address
+      requestedShares
     ],
     { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
   );
@@ -206,8 +207,8 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     totalAmguPaidInEth,
     amguChargableGas
   } = getEventFromLogs(
-    requestInvestmentRes.logs,
-    CONTRACT_NAMES.PARTICIPATION,
+    requestSharesRes.logs,
+    CONTRACT_NAMES.SHARES_REQUESTOR,
     'AmguPaid',
   );
 
@@ -215,14 +216,8 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     payer: payerFromIncentivePaid,
     incentiveAmount
   } = getEventFromLogs(
-    requestInvestmentRes.logs,
-    CONTRACT_NAMES.PARTICIPATION,
-    'IncentivePaid',
-  );
-
-  const evente = getEventFromLogs(
-    requestInvestmentRes.logs,
-    CONTRACT_NAMES.PARTICIPATION,
+    requestSharesRes.logs,
+    CONTRACT_NAMES.SHARES_REQUESTOR,
     'IncentivePaid',
   );
 
@@ -238,8 +233,12 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     )
   );
 
-  const txCostInWei = new BN(gasPrice).mul(new BN(requestInvestmentRes.gasUsed));
-  const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei).add(new BN(newIncentiveAmount));
+  const txCostInWei = new BN(gasPrice).mul(new BN(requestSharesRes.gasUsed));
+
+  // @dev Incentive fee is not applicable here because the user gets the incentive fee
+  // returned immediately, as it is the initial investment into the fund,
+  // which bypasses creating a Request and immediately buys shares
+  const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
   const totalUserCost = preUserBalance.sub(postUserBalance);
 
   expect(new BN(totalAmguPaidInEth)).bigNumberEq(ethAmguAmount);

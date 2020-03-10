@@ -180,7 +180,7 @@ test('executing triggerRewardAllFees distributes fee shares to manager', async (
 });
 
 test('Investor redeems his shares', async () => {
-  const { accounting, feeManager, participation, shares, vault } = fund;
+  const { accounting, feeManager, shares, vault } = fund;
 
   const lastFeeConversion = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
@@ -197,7 +197,7 @@ test('Investor redeems his shares', async () => {
   // Delay 1 sec to ensure block new blocktime
   await delay(1000);
 
-  await send(participation, 'redeem', [], investorTxOpts);
+  await send(shares, 'redeemShares', [], investorTxOpts);
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
@@ -235,7 +235,7 @@ test('Investor redeems his shares', async () => {
 });
 
 test('Manager redeems his shares', async () => {
-  const { participation, shares } = fund;
+  const { shares } = fund;
 
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   expect(preManagerShares).not.bigNumberEq(new BN(0));
@@ -243,7 +243,7 @@ test('Manager redeems his shares', async () => {
   // Delay 1 sec to ensure block new blocktime
   await delay(1000);
 
-  await send(participation, 'redeem', [], managerTxOpts);
+  await send(shares, 'redeemShares', [], managerTxOpts);
 
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   expect(postManagerShares).bigNumberEq(new BN(0));

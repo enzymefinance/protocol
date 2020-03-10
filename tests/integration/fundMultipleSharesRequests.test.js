@@ -1,5 +1,5 @@
 /*
- * @file Tests multiple participations in a fund from multiple investors
+ * @file Tests multiple shares requests in a fund from multiple investors
  *
  * @test A user can only have 1 pending investment at a time
  * @test A second user can simultaneously invest (with a second default token)
@@ -11,8 +11,8 @@ import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { BNExpMul } from '~/tests/utils/BNmath';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { delay } from '~/tests/utils/time';
 
@@ -38,9 +38,10 @@ beforeAll(async () => {
 
 describe('Fund 1: Multiple investors buying shares with different tokens', () => {
   let amguAmount, shareSlippageTolerance;
+  let dai, mln, weth;
+  let priceSource, sharesRequestor; 
   let wantedShares1, wantedShares2, wantedShares3;
-  let daiToEthRate, mlnToEthRate, wethToEthRate;
-  let dai, mln, priceSource, weth;
+  let tokenPrices;
   let fund;
 
   beforeAll(async () => {
@@ -50,19 +51,22 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     mln = contracts.MLN;
     weth = contracts.WETH;
     priceSource = contracts.TestingPriceFeed;
+    sharesRequestor = contracts.SharesRequestor;
     const fundFactory = contracts.FundFactory;
 
     // Set initial prices to be predictably the same as prices when updated again later
-    wethToEthRate = toWei('1', 'ether');
-    mlnToEthRate = toWei('0.5', 'ether');
-    daiToEthRate = toWei('0.005', 'ether');
+    const wethToEthRate = toWei('1', 'ether');
+    const mlnToEthRate = toWei('0.5', 'ether');
+    const daiToEthRate = toWei('0.005', 'ether');
+    tokenPrices = {
+      addresses: [weth.options.address, mln.options.address, dai.options.address],
+      prices: [wethToEthRate, mlnToEthRate, daiToEthRate]
+    };
+  
     await send(
       priceSource,
       'update',
-      [
-        [weth.options.address, mln.options.address, dai.options.address],
-        [wethToEthRate, mlnToEthRate, daiToEthRate],
-      ],
+      [tokenPrices.addresses, tokenPrices.prices],
       defaultTxOpts
     );
 
@@ -86,7 +90,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('A user can have only one pending investment request', async () => {
-    const { accounting, participation } = fund;
+    const { accounting, hub } = fund;
 
     const offerAsset = weth.options.address;
     const expectedOfferAssetCost = new BN(
@@ -106,13 +110,13 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     await send(
       weth,
       'approve',
-      [participation.options.address, offerAssetMaxQuantity],
+      [sharesRequestor.options.address, offerAssetMaxQuantity],
       investor1TxOpts
     );
     await send(
-      participation,
-      'requestInvestment',
-      [wantedShares1, offerAssetMaxQuantity, weth.options.address],
+      sharesRequestor,
+      'requestShares',
+      [hub.options.address, weth.options.address, offerAssetMaxQuantity, wantedShares1],
       { ...investor1TxOpts, value: amguAmount }
     );
 
@@ -121,21 +125,21 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     await send(
       weth,
       'approve',
-      [participation.options.address, offerAssetMaxQuantity],
+      [sharesRequestor.options.address, offerAssetMaxQuantity],
       investor1TxOpts
     );
     await expect(
       send(
-        participation,
-        'requestInvestment',
-        [wantedShares1, offerAssetMaxQuantity, offerAsset],
+        sharesRequestor,
+        'requestShares',
+        [hub.options.address, weth.options.address, offerAssetMaxQuantity, wantedShares1],
         { ...investor1TxOpts, value: amguAmount }
       )
-    ).rejects.toThrowFlexible('Only one request can exist at a time');
+    ).rejects.toThrowFlexible('Only one request can exist (per fund)');
   });
 
   test('Investment request allowed for second user with another default token', async () => {
-    const { accounting, participation } = fund;
+    const { accounting, hub } = fund;
 
     const offerAsset = mln.options.address;
     const expectedOfferAssetCost = new BN(
@@ -155,19 +159,19 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     await send(
       mln,
       'approve',
-      [participation.options.address, offerAssetMaxQuantity],
+      [sharesRequestor.options.address, offerAssetMaxQuantity],
       investor2TxOpts
     );
     await send(
-      participation,
-      'requestInvestment',
-      [wantedShares2, offerAssetMaxQuantity, offerAsset],
+      sharesRequestor,
+      'requestShares',
+      [hub.options.address, mln.options.address, offerAssetMaxQuantity, wantedShares2],
       { ...investor2TxOpts, value: amguAmount }
     );
   });
 
   test('Investment request allowed for third user with approved token', async () => {
-    const { accounting, participation } = fund;
+    const { accounting, hub, shares } = fund;
 
     const offerAsset = dai.options.address;
     const expectedOfferAssetCost = new BN(
@@ -187,126 +191,107 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     await send(
       dai,
       'approve',
-      [participation.options.address, offerAssetMaxQuantity],
+      [sharesRequestor.options.address, offerAssetMaxQuantity],
       investor3TxOpts
     );
 
     // Investment asset must be enabled
     await expect(
       send(
-        participation,
-        'requestInvestment',
-        [wantedShares3, offerAssetMaxQuantity, offerAsset],
+        sharesRequestor,
+        'requestShares',
+        [hub.options.address, offerAsset, offerAssetMaxQuantity, wantedShares3],
         { ...investor3TxOpts, value: amguAmount }
       )
-    ).rejects.toThrowFlexible("Investment not allowed in this asset");
+    ).rejects.toThrowFlexible("_investmentAsset not allowed");
 
-    await send(participation, 'enableInvestment', [[offerAsset]], managerTxOpts);
+    await send(shares, 'enableSharesInvestmentAssets', [[offerAsset]], managerTxOpts);
 
     await send(
-      participation,
-      'requestInvestment',
-      [wantedShares3, offerAssetMaxQuantity, offerAsset],
+      sharesRequestor,
+      'requestShares',
+      [hub.options.address, offerAsset, offerAssetMaxQuantity, wantedShares3],
       { ...investor3TxOpts, value: amguAmount }
-    )
+    );
   });
 
   test('Multiple pending investments can be executed', async () => {
-    const { participation, shares } = fund;
+    const { hub, shares } = fund;
 
-    // Need price update before participation executed
+    // Need price update before sharesRequest executed
     await delay(1000);
 
     await send(
       priceSource,
       'update',
-      [
-        [weth.options.address, mln.options.address, dai.options.address],
-        [wethToEthRate, mlnToEthRate, daiToEthRate],
-      ],
+      [tokenPrices.addresses, tokenPrices.prices],
       defaultTxOpts
     );
 
+    // investor1
     await send(
-      participation,
+      sharesRequestor,
       'executeRequestFor',
-      [investor1],
+      [investor1, hub.options.address],
       investor1TxOpts
     );
+
     const investor1Shares = await call(shares, 'balanceOf', [investor1]);
     expect(investor1Shares).toEqual(wantedShares1);
 
+    // investor2
     await send(
-      participation,
+      sharesRequestor,
       'executeRequestFor',
-      [investor2],
+      [investor2, hub.options.address],
       investor2TxOpts
     );
+  
     const investor2Shares = await call(shares, 'balanceOf', [investor2]);
     expect(investor2Shares).toEqual(wantedShares2);
 
+    // investor3
     await send(
-      participation,
+      sharesRequestor,
       'executeRequestFor',
-      [investor3],
+      [investor3, hub.options.address],
       investor3TxOpts
     );
+  
     const investor3Shares = await call(shares, 'balanceOf', [investor3]);
     expect(investor3Shares).toEqual(wantedShares3);
   });
 
   test('Investor 1 buys more shares, with a different asset', async () => {
-    const { accounting, participation, shares } = fund;
+    const { accounting, hub, shares } = fund;
 
-    const wantedShares = toWei('1', 'ether');
-
-    const offerAsset = dai.options.address;
-    const expectedOfferAssetCost = new BN(
+    const contribAmount = toWei('100', 'ether');
+    const shareCost = new BN(
       await call(
         accounting,
         'getShareCostInAsset',
-        [wantedShares, offerAsset]
+        [toWei('1', 'ether'), dai.options.address]
       )
     );
-    const offerAssetMaxQuantity = BNExpMul(
-      expectedOfferAssetCost,
-      new BN(toWei('1', 'ether')).add(shareSlippageTolerance)
-    ).toString();
+    const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
 
     // Investor 1 - dai
-    await send(dai, 'transfer', [investor1, offerAssetMaxQuantity], defaultTxOpts);
-    await send(
-      dai,
-      'approve',
-      [participation.options.address, offerAssetMaxQuantity],
-      investor1TxOpts
-    );
-    await send(
-      participation,
-      'requestInvestment',
-      [wantedShares, offerAssetMaxQuantity, offerAsset],
-      { ...investor1TxOpts, value: amguAmount }
-    );
-    // Need price update before participation executed
-    await delay(1000);
-
-    await send(
-      priceSource,
-      'update',
-      [
-        [weth.options.address, mln.options.address, dai.options.address],
-        [wethToEthRate, mlnToEthRate, daiToEthRate],
-      ],
-      defaultTxOpts
-    );
-
     const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));
-    await send(
-      participation,
-      'executeRequestFor',
-      [investor1],
-      investor1TxOpts
-    );
+
+    await investInFund({
+      fundAddress: hub.options.address,
+      investment: {
+        contribAmount,
+        investor: investor1,
+        tokenContract: dai
+      },
+      tokenPriceData: {
+        priceSource,
+        tokenAddresses: tokenPrices.addresses,
+        tokenPrices: tokenPrices.prices
+      }
+    });
+
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));
     expect(postInvestorShares).toEqual(preInvestorShares.add(new BN(wantedShares)));
   });
