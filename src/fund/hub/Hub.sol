@@ -13,7 +13,6 @@ contract Hub is DSGuard {
     struct Routes {
         address accounting;
         address feeManager;
-        address participation;
         address policyManager;
         address shares;
         address vault;
@@ -48,29 +47,27 @@ contract Hub is DSGuard {
         emit FundShutDown();
     }
 
-    function initializeAndSetPermissions(address[8] calldata _spokes) external onlyCreator {
+    function initializeAndSetPermissions(address[7] calldata _spokes) external onlyCreator {
         require(!fundInitialized, "Fund is already initialized");
         for (uint i = 0; i < _spokes.length; i++) {
             isSpoke[_spokes[i]] = true;
         }
         routes.accounting = _spokes[0];
         routes.feeManager = _spokes[1];
-        routes.participation = _spokes[2];
-        routes.policyManager = _spokes[3];
-        routes.shares = _spokes[4];
-        routes.vault = _spokes[5];
-        routes.registry = _spokes[6];
-        routes.fundFactory = _spokes[7];
+        routes.policyManager = _spokes[2];
+        routes.shares = _spokes[3];
+        routes.vault = _spokes[4];
+        routes.registry = _spokes[5];
+        routes.fundFactory = _spokes[6];
 
         Spoke(routes.accounting).initialize(_spokes);
         Spoke(routes.feeManager).initialize(_spokes);
-        Spoke(routes.participation).initialize(_spokes);
         Spoke(routes.policyManager).initialize(_spokes);
         Spoke(routes.shares).initialize(_spokes);
         Spoke(routes.vault).initialize(_spokes);
 
-        permit(manager, routes.participation, bytes4(keccak256('enableInvestment(address[])')));
-        permit(manager, routes.participation, bytes4(keccak256('disableInvestment(address[])')));
+        permit(manager, routes.shares, bytes4(keccak256('disableSharesInvestmentAssets(address[])')));
+        permit(manager, routes.shares, bytes4(keccak256('enableSharesInvestmentAssets(address[])')));
         permit(
             manager,
             routes.policyManager,
@@ -81,26 +78,16 @@ contract Hub is DSGuard {
         permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(
-            routes.participation,
+            routes.shares,
             routes.accounting,
             bytes4(keccak256('decreaseAssetBalance(address,uint256)'))
         );
         permit(
-            routes.participation,
+            routes.shares,
             routes.accounting,
             bytes4(keccak256('increaseAssetBalance(address,uint256)'))
         );
-        permit(
-            routes.participation,
-            routes.shares,
-            bytes4(keccak256('createFor(address,uint256)'))
-        );
-        permit(
-            routes.participation,
-            routes.shares,
-            bytes4(keccak256('destroyFor(address,uint256)'))
-        );
-        permit(routes.participation, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
+        permit(routes.shares, routes.vault, bytes4(keccak256('withdraw(address,uint256)')));
         permit(
             routes.vault,
             routes.accounting,
@@ -118,7 +105,6 @@ contract Hub is DSGuard {
     function priceSource() external view returns (address) {
         return IRegistry(routes.registry).priceSource();
     }
-    function participation() external view returns (address) { return routes.participation; }
     function vault() external view returns (address) { return routes.vault; }
     function shares() external view returns (address) { return routes.shares; }
     function registry() external view returns (address) { return routes.registry; }

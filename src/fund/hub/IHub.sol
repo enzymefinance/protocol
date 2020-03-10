@@ -5,7 +5,6 @@ interface IHub {
     struct Routes {
         address accounting;
         address feeManager;
-        address participation;
         address policyManager;
         address shares;
         address vault;
@@ -26,7 +25,6 @@ interface IHub {
     // FUNCTIONS
     function accounting() external view returns (address);
     function feeManager() external view returns (address);
-    function participation() external view returns (address);
     function policyManager() external view returns (address);
     function priceSource() external view returns (address);
     function registry() external view returns (address);

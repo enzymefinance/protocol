@@ -25,7 +25,7 @@ contract Spoke is DSAuth {
         setOwner(address(hub)); // temporary, to allow initialization
     }
 
-    function initialize(address[8] calldata _spokes) external auth {
+    function initialize(address[7] calldata _spokes) external auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
         routes = Hub.Routes(
@@ -35,8 +35,7 @@ contract Spoke is DSAuth {
             _spokes[3],
             _spokes[4],
             _spokes[5],
-            _spokes[6],
-            _spokes[7]
+            _spokes[6]
         );
         initialized = true;
         setOwner(address(0));

@@ -89,7 +89,8 @@ contract Engine is DSMath {
     function payAmguInEther() external payable {
         require(
             registry.isFundFactory(msg.sender) ||
-            registry.isFund(msg.sender),
+            registry.isFund(msg.sender) ||
+            msg.sender == registry.sharesRequestor(),
             "Sender must be a fund or the factory"
         );
         uint mlnPerAmgu = getAmguPrice();

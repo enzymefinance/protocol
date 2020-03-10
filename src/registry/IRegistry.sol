@@ -40,6 +40,7 @@ interface IRegistry {
     function mlnToken() external view returns(address);
     function nativeAsset() external view returns(address);
     function priceSource() external view returns(address);
+    function sharesRequestor() external view returns(address);
     function registeredAssets(uint256 _index) external view returns(address);
     function registeredExchangeAdapters(uint256 _index) external view returns(address);
     function registeredFundFactories(uint256 _index) external view returns(address);
@@ -99,6 +100,7 @@ interface IRegistry {
     function setMlnToken(address _mlnToken) external;
     function setNativeAsset(address _nativeAsset) external;
     function setPriceSource(address _priceSource) external;
+    function setSharesRequestor(address _sharesRequestor) external;
     function updateAsset(
         address _asset,
         string calldata _name,
