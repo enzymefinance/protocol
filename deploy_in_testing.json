@@ -22,11 +22,11 @@
       "PerformanceFee": "",
       "AccountingFactory": "",
       "FeeManagerFactory": "",
-      "ParticipationFactory": "",
       "PolicyManagerFactory": "",
       "SharesFactory": "",
       "VaultFactory": "",
       "Engine": "",
+      "SharesRequestor": "",
       "Registry": "",
       "FundFactory": ""
     },
