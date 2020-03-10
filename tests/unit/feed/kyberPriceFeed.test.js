@@ -7,9 +7,9 @@
  * @test MLN price update on reserve changes price on feed post-update
  * @test Normal spread condition from Kyber rates yields midpoint price
  * @test Crossed market condition from Kyber rates yields midpoint price
+ * @test boundaries of max spread
+ * @test boundaries of max price deviation
  * TODO: add helper function for updating asset prices on kyber itself
- * TODO: test boundaries of max spread
- * TODO: test boundaries of max price deviation
  */
 
 import { BN, toWei } from 'web3-utils';
@@ -24,7 +24,7 @@ import web3 from '~/deploy/utils/get-web3';
 
 let deployer, updater, someAccount;
 let deployerTxOpts, updaterTxOpts, someAccountTxOpts;
-let conversionRates, kyberPriceFeed, kyberNetworkProxy, registry;
+let conversionRates, kyberNetworkProxy, registry;
 let eur, mln, weth, registeredAssets;
 
 beforeAll(async () => {
@@ -44,17 +44,6 @@ beforeAll(async () => {
 
   registry = await deploy(CONTRACT_NAMES.REGISTRY, [deployer], deployerTxOpts);
 
-  kyberPriceFeed = await deploy(
-    CONTRACT_NAMES.KYBER_PRICEFEED,
-    [
-      registry.options.address,
-      kyberNetworkProxy.options.address,
-      toWei('0.5', 'ether'),
-      weth.options.address,
-      toWei('0.1', 'ether')
-    ],
-    deployerTxOpts
-  );
   await send(registry, 'setNativeAsset', [weth.options.address], deployerTxOpts);
 
   for (const addr of [eur.options.address, mln.options.address, weth.options.address]) {
@@ -69,7 +58,34 @@ beforeAll(async () => {
   registeredAssets = await call(registry, 'getRegisteredAssets');
 });
 
-describe('permissions', () => {
+describe('update', () => {
+  const dummyPrices = [
+    toWei('1', 'ether'),
+    toWei('1', 'ether'),
+    toWei('1', 'ether')
+  ];
+  let kyberPriceFeed;
+  let maxDeviationFromFeed;
+  let mlnPriceFromKyber;
+
+  beforeAll(async () => {
+    kyberPriceFeed = await deploy(
+      CONTRACT_NAMES.KYBER_PRICEFEED,
+      [
+        registry.options.address,
+        kyberNetworkProxy.options.address,
+        toWei('0.5', 'ether'),
+        weth.options.address,
+        toWei('0.1', 'ether')
+      ],
+      deployerTxOpts
+    );
+    maxDeviationFromFeed = new BN(await call(kyberPriceFeed, 'maxPriceDeviation'));
+    mlnPriceFromKyber = new BN((await call(
+      kyberPriceFeed, 'getKyberPrice', [mln.options.address, weth.options.address]
+    )).kyberPrice_);
+  });
+
   test('Some unrelated account cannot update feed', async () => {
     const registryOwner = await call(registry, 'owner');
     const designatedUpdater = await call(kyberPriceFeed, 'updater');
@@ -80,17 +96,13 @@ describe('permissions', () => {
       send(
         kyberPriceFeed,
         'update',
-        [
-          registeredAssets,
-          [toWei('1', 'ether'), toWei('1', 'ether'), toWei('1', 'ether')]
-        ],
+        [registeredAssets, dummyPrices],
         someAccountTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
   });
 
   test('Registry owner can update feed', async () => {
-    const prices = [toWei('1', 'ether'), toWei('1', 'ether'), toWei('1', 'ether')]
     const registryOwner = await call(registry, 'owner');
 
     expect(registryOwner).toBe(deployer);
@@ -98,7 +110,7 @@ describe('permissions', () => {
     let receipt = await send(
       kyberPriceFeed,
       'update',
-      [ registeredAssets, prices ],
+      [registeredAssets, dummyPrices],
       deployerTxOpts
     );
     const logUpdated = getEventFromLogs(
@@ -106,16 +118,15 @@ describe('permissions', () => {
     );
 
     expect(logUpdated.assets).toEqual(registeredAssets);
-    expect(logUpdated.prices).toEqual(prices);
+    expect(logUpdated.prices).toEqual(dummyPrices);
   });
 
   test('Designated updater can update feed', async () => {
-    const prices = [toWei('1', 'ether'), toWei('1', 'ether'), toWei('1', 'ether')]
     await expect(
       send(
         kyberPriceFeed,
         'update',
-        [ registeredAssets, prices ],
+        [registeredAssets, dummyPrices],
         updaterTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -130,10 +141,7 @@ describe('permissions', () => {
     receipt = await send(
       kyberPriceFeed,
       'update',
-      [
-        registeredAssets,
-        [toWei('1', 'ether'), toWei('1', 'ether'), toWei('1', 'ether')]
-      ],
+      [registeredAssets, dummyPrices],
       updaterTxOpts
     );
     const logUpdated = getEventFromLogs(
@@ -141,7 +149,7 @@ describe('permissions', () => {
     );
 
     expect(logUpdated.assets).toEqual(registeredAssets);
-    expect(logUpdated.prices).toEqual(prices);
+    expect(logUpdated.prices).toEqual(dummyPrices);
 
     const hasValidMlnPrice = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
     const { 0: mlnPrice } = await call(kyberPriceFeed, 'getPrice', [mln.options.address]);
@@ -149,10 +157,192 @@ describe('permissions', () => {
     expect(hasValidMlnPrice).toBe(true);
     expect(mlnPrice.toString()).toBe(toWei('1', 'ether'));
   });
+
+  test('Price hint above the upper deviation threshold reverts', async () => {
+    const upperEndValidMlnPrice = mlnPriceFromKyber.mul(
+      new BN(toWei('1', 'ether'))
+    ).div(new BN(toWei('1', 'ether')).sub(maxDeviationFromFeed));
+    const barelyTooHighMlnPrice = upperEndValidMlnPrice.add(new BN('2'));
+
+    await expect(
+      send(
+        kyberPriceFeed,
+        'update',
+        [
+          registeredAssets,
+          [toWei('1', 'ether'), barelyTooHighMlnPrice.toString(), toWei('1', 'ether')]
+        ],
+        deployerTxOpts
+      )
+    ).rejects.toThrowFlexible('update: Kyber price deviates too much from maxPriceDeviation');
+
+    let receipt = await send(
+      kyberPriceFeed,
+      'update',
+      [
+        registeredAssets,
+        [toWei('1', 'ether'), upperEndValidMlnPrice.toString(), toWei('1', 'ether')]
+      ],
+      deployerTxOpts
+    );
+
+    const logUpdated = getEventFromLogs(
+        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
+    );
+
+    expect(logUpdated.assets).toEqual(registeredAssets);
+    expect(logUpdated.prices).toEqual(dummyPrices);
+  });
+
+  test('Price hint below the lower deviation threshold reverts', async () => {
+    const maxDeviationFromFeed = new BN(await call(kyberPriceFeed, 'maxPriceDeviation'));
+    const mlnPriceFromKyber = new BN((await call(
+      kyberPriceFeed, 'getKyberPrice', [mln.options.address, weth.options.address]
+    )).kyberPrice_);
+    const lowerEndValidMlnPrice = mlnPriceFromKyber.mul(
+      new BN(toWei('1', 'ether'))
+    ).div(new BN(toWei('1', 'ether')).add(maxDeviationFromFeed)).add(new BN('1'));
+    const barelyTooLowMlnPrice = lowerEndValidMlnPrice.sub(new BN('1'));
+
+    await expect(
+      send(
+        kyberPriceFeed,
+        'update',
+        [
+          registeredAssets,
+          [toWei('1', 'ether'), barelyTooLowMlnPrice.toString(), toWei('1', 'ether')]
+        ],
+        deployerTxOpts
+      )
+    ).rejects.toThrowFlexible('update: Kyber price deviates too much from maxPriceDeviation');
+
+    const receipt = await send(
+      kyberPriceFeed,
+      'update',
+      [
+        registeredAssets,
+        [toWei('1', 'ether'), lowerEndValidMlnPrice.toString(), toWei('1', 'ether')]
+      ],
+      deployerTxOpts
+    );
+
+    const logUpdated = getEventFromLogs(
+        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
+    );
+
+    expect(logUpdated.assets).toEqual(registeredAssets);
+    expect(logUpdated.prices).toEqual(dummyPrices);
+  });
+
+  test('Asset with spread greater than max results in invalid price', async () => {
+    const maxSpreadFromFeed = new BN(await call(kyberPriceFeed, 'maxSpread'));
+    // arbitrary ask rate
+    const mlnPerEthAskRate = new BN(toWei('0.5', 'ether'));
+    // bid rate such that spread is the max permitted
+    const mlnPerEthBidRateValid = mlnPerEthAskRate.sub(
+      maxSpreadFromFeed.mul(mlnPerEthAskRate).div(new BN(toWei('1', 'ether')))
+    );
+    // bid rate such that spread is just above max permitted
+    const mlnPerEthBidRateInvalid = mlnPerEthBidRateValid.sub(new BN('1'))
+
+    const ethPerMlnFromAsk = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      mlnPerEthAskRate
+    );
+    const ethPerMlnFromBid = BNExpDiv(
+      new BN(toWei('1', 'ether')),
+      mlnPerEthBidRateValid
+    );
+    const midpointPrice = BNExpDiv(
+      ethPerMlnFromAsk.add(ethPerMlnFromBid), new BN(toWei('2', 'ether'))
+    ).toString();
+
+    const validPricePreUpdate1 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
+    expect(validPricePreUpdate1).toBe(true);
+
+    // setting price with spread equal to max yields valid price
+    await send(
+      conversionRates,
+      'setBaseRate',
+      [
+        [mln.options.address],
+        [mlnPerEthBidRateValid.toString()],
+        [ethPerMlnFromAsk.toString()],
+        ['0x0000000000000000000000000000'],
+        ['0x0000000000000000000000000000'],
+        (await web3.eth.getBlock('latest')).number,
+        [0]
+      ],
+      deployerTxOpts
+    );
+
+    await send(
+      kyberPriceFeed,
+      'update',
+      [
+        registeredAssets,
+        [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
+      ],
+      deployerTxOpts
+    );
+
+    const validPricePostUpdate1 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
+    expect(validPricePostUpdate1).toBe(true);
+    const mlnPricePostUpdate1 = await call(kyberPriceFeed, 'getPrice', [mln.options.address]);
+    expect(mlnPricePostUpdate1.price_).toBe(midpointPrice);
+
+    const validPricePreUpdate2 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
+    expect(validPricePreUpdate2).toBe(true);
+
+    // setting price with spread outside max yields invalid price
+    await send(
+      conversionRates,
+      'setBaseRate',
+      [
+        [mln.options.address],
+        [mlnPerEthBidRateInvalid.toString()],
+        [ethPerMlnFromAsk.toString()],
+        ['0x0000000000000000000000000000'],
+        ['0x0000000000000000000000000000'],
+        (await web3.eth.getBlock('latest')).number,
+        [0]
+      ],
+      deployerTxOpts
+    );
+
+    await send(
+      kyberPriceFeed,
+      'update',
+      [
+        registeredAssets,
+        [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
+      ],
+      deployerTxOpts
+    );
+
+    const validPricePostUpdate2 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
+    expect(validPricePostUpdate2).toBe(false);
+  });
 });
 
-describe('prices', () => {
-  test('MLN price is changed in reserve', async () => {
+describe('getPrice', () => {
+  let kyberPriceFeed;
+
+  beforeAll(async () => {
+    kyberPriceFeed = await deploy(
+      CONTRACT_NAMES.KYBER_PRICEFEED,
+      [
+        registry.options.address,
+        kyberNetworkProxy.options.address,
+        toWei('0.5', 'ether'),
+        weth.options.address,
+        toWei('0.1', 'ether')
+      ],
+      deployerTxOpts
+    );
+  });
+
+  test('Price change in reserve is reflected in getPrice post-update', async () => {
     const mlnPrice = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.05', 'ether'))
@@ -165,7 +355,6 @@ describe('prices', () => {
     );
     const ethPriceInEur = BNExpInverse(new BN(eurPrice))
 
-    const blockNumber = (await web3.eth.getBlock('latest')).number;
     await send(
       conversionRates,
       'setBaseRate',
@@ -175,7 +364,7 @@ describe('prices', () => {
         [mlnPrice.toString(), eurPrice.toString()],
         ['0x0000000000000000000000000000'],
         ['0x0000000000000000000000000000'],
-        blockNumber,
+        (await web3.eth.getBlock('latest')).number,
         [0]
       ],
       deployerTxOpts
@@ -212,7 +401,6 @@ describe('prices', () => {
       mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
     ).toString();
 
-    const blockNumber = (await web3.eth.getBlock('latest')).number;
     await send(
       conversionRates,
       'setBaseRate',
@@ -222,7 +410,7 @@ describe('prices', () => {
         [mlnAsk.toString()],
         ['0x0000000000000000000000000000'],
         ['0x0000000000000000000000000000'],
-        blockNumber,
+        (await web3.eth.getBlock('latest')).number,
         [0]
       ],
       deployerTxOpts
@@ -258,7 +446,6 @@ describe('prices', () => {
       mlnBid.add(mlnAsk), new BN(toWei('2', 'ether'))
     ).toString();
 
-    const blockNumber = (await web3.eth.getBlock('latest')).number;
     await send(
       conversionRates,
       'setBaseRate',
@@ -268,7 +455,7 @@ describe('prices', () => {
         [mlnAsk.toString()],
         ['0x0000000000000000000000000000'],
         ['0x0000000000000000000000000000'],
-        blockNumber,
+        (await web3.eth.getBlock('latest')).number,
         [0]
       ],
       deployerTxOpts

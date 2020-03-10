@@ -1,3 +1,5 @@
+// TODO: make this into unit tests
+
 import { toWei, BN } from 'web3-utils';
 import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
@@ -24,7 +26,11 @@ async function assertAmguTx(contract, method, args = []) {
     { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice }
   );
 
-  const {payer, amguChargableGas, incentivePaid} = getEventFromLogs(
+  const {
+    payer,
+    totalAmguPaidInEth,
+    amguChargableGas
+  } = getEventFromLogs(
     result.logs,
     CONTRACT_NAMES.AMGU_CONSUMER,
     'AmguPaid',
@@ -49,9 +55,9 @@ async function assertAmguTx(contract, method, args = []) {
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
   const totalUserCost = preUserBalance.sub(postUserBalance);
 
+  expect(new BN(totalAmguPaidInEth)).bigNumberEq(ethAmguAmount);
   expect(txCostInWei).bigNumberLt(totalUserCost);
   expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
-  expect(new BN(incentivePaid)).bigNumberEq(new BN(0));
   expect(payer.toLowerCase()).toBe(deployer.toLowerCase());
 
   return result;
@@ -196,17 +202,31 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   );
 
   const {
-    payer,
-    amguChargableGas,
-    incentivePaid
+    payer: payerFromAmguPaid,
+    totalAmguPaidInEth,
+    amguChargableGas
   } = getEventFromLogs(
     requestInvestmentRes.logs,
     CONTRACT_NAMES.PARTICIPATION,
     'AmguPaid',
   );
 
-  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
+  const {
+    payer: payerFromIncentivePaid,
+    incentiveAmount
+  } = getEventFromLogs(
+    requestInvestmentRes.logs,
+    CONTRACT_NAMES.PARTICIPATION,
+    'IncentivePaid',
+  );
 
+  const evente = getEventFromLogs(
+    requestInvestmentRes.logs,
+    CONTRACT_NAMES.PARTICIPATION,
+    'IncentivePaid',
+  );
+
+  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
   const wethAddress = await call(registry, 'nativeAsset');
   const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
@@ -222,8 +242,10 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei).add(new BN(newIncentiveAmount));
   const totalUserCost = preUserBalance.sub(postUserBalance);
 
+  expect(new BN(totalAmguPaidInEth)).bigNumberEq(ethAmguAmount);
+  expect(new BN(incentiveAmount)).bigNumberEq(new BN(incentiveInputAmount));
   expect(txCostInWei).bigNumberLt(totalUserCost);
   expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
-  expect(payer.toLowerCase()).toBe(deployer.toLowerCase());
-  expect(new BN(incentivePaid)).bigNumberEq(new BN(newIncentiveAmount));
+  expect(payerFromAmguPaid.toLowerCase()).toBe(deployer.toLowerCase());
+  expect(payerFromIncentivePaid.toLowerCase()).toBe(deployer.toLowerCase());
 });
