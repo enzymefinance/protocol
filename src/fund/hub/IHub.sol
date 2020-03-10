@@ -16,14 +16,12 @@ interface IHub {
     // STORAGE
     function creationTime() external view returns (uint256);
     function creator() external view returns (address);
+    function fundInitialized() external view returns (bool);
     function isShutDown() external view returns (bool);
     function isSpoke(address) external view returns (bool);
     function manager() external view returns (address);
     function name() external view returns (string memory);
-    function permissionsSet() external view returns (bool);
     function routes() external view returns (Routes memory);
-    function routingSet() external view returns (bool);
-    function spokesSet() external view returns (bool);
 
     // FUNCTIONS
     function accounting() external view returns (address);
