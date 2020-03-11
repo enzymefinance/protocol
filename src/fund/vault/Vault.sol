@@ -24,7 +24,7 @@ contract Vault is TokenUser, Spoke, Trading {
     receive() external payable {}
 
     function withdraw(address _token, uint256 _amount) external auth {
-        safeTransfer(_token, msg.sender, _amount);
+        __safeTransfer(_token, msg.sender, _amount);
     }
 }
 
