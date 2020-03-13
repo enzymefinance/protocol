@@ -430,9 +430,7 @@ contract Registry is DSAuth {
 
     function isFund(address _who) external view returns (bool) {
         // Check if hub
-        if (fundsToFundFactories[_who] != address(0)) {
-            return true;
-        }
+        if (isHub(_who)) return true;
         // Check if spoke
         else {
             // 1. Spoke points to hub
@@ -449,5 +447,9 @@ contract Registry is DSAuth {
 
     function isFundFactory(address _who) external view returns (bool) {
         return fundFactoryInformation[_who].exists;
+    }
+
+    function isHub(address _who) public view returns (bool) {
+        return fundsToFundFactories[_who] != address(0);
     }
 }

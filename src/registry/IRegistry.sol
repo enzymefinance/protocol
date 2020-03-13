@@ -66,6 +66,7 @@ interface IRegistry {
     function getSymbol(address _asset) external view returns (string memory);
     function isFund(address _who) external view returns (bool);
     function isFundFactory(address _who) external view returns (bool);
+    function isHub(address _who) external view returns (bool);
     function isValidFundName(string calldata _name) external pure returns (bool);
 
     // Caller: FundFactory contract only:
