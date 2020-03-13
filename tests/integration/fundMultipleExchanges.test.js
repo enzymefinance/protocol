@@ -130,7 +130,6 @@ test('fund takes an order on Kyber', async () => {
     [
       kyberExchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,

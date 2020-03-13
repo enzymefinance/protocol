@@ -105,7 +105,6 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -172,7 +171,6 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -243,7 +241,6 @@ test('swap MLN directly to EUR without intermediary', async () => {
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -309,7 +306,6 @@ test('swap fails if make quantity is too high', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,

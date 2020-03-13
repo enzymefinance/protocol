@@ -216,7 +216,6 @@ test('Fund can take an order on Oasis DEX', async () => {
     [
       exchangeIndex,
       takeOrderFunctionSig,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,

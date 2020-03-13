@@ -153,7 +153,6 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -214,7 +213,6 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -286,7 +284,6 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -347,7 +344,6 @@ test('Order fails if maker amount is not satisfied', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,

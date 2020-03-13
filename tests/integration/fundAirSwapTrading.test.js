@@ -26,7 +26,7 @@ beforeAll(async () => {
   defaultTxOpts =  { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.VERSION]);
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
@@ -39,7 +39,7 @@ beforeAll(async () => {
   swapContract = contracts.Swap;
   orders.setVerifyingContract(swapContract.options.address);
 
-  const version = contracts.Version;
+  const fundFactory = contracts.FundFactory;
   const airSwapAdapter = contracts.AirSwapAdapter;
 
   const erc20TransferHandler = contracts.ERC20TransferHandler;
@@ -65,7 +65,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    version,
+    fundFactory,
   });
 
   exchangeIndex = 0;
@@ -75,7 +75,7 @@ describe('Fund takes an order', () => {
   let signedOrder;
 
   test('manager takes order through adapter', async () => {
-    const { trading, accounting} = fund;
+    const { vault, accounting} = fund;
     const makerAssetAmount = toWei('1', 'ether');
     const fillQuantity = toWei('0.05', 'ether');
 
@@ -83,7 +83,7 @@ describe('Fund takes an order', () => {
       signerWallet: deployer,
       signerToken: mln.options.address,
       signerTokenAmount: makerAssetAmount,
-      senderWallet: trading.options.address,
+      senderWallet: vault.options.address,
       senderToken: weth.options.address,
       senderTokenAmount: fillQuantity,
     });
@@ -99,8 +99,8 @@ describe('Fund takes an order', () => {
       defaultTxOpts,
     );
 
-    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );
@@ -109,7 +109,7 @@ describe('Fund takes an order', () => {
     );
 
     await send(
-      trading,
+      vault,
       'callOnExchange',
       [
         exchangeIndex,
@@ -120,8 +120,8 @@ describe('Fund takes an order', () => {
       managerTxOpts,
     );
 
-    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [trading.options.address]));
-    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [trading.options.address]));
+    const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
     );

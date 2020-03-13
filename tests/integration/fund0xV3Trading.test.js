@@ -168,7 +168,6 @@ describe('Fund takes an order', () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
@@ -267,7 +266,6 @@ describe('Fund takes an order with a different taker fee asset', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         managerTxOpts,
@@ -430,7 +428,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
   });
 
   test('Fund with enough taker fee asset and protocol fee takes order', async () => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
 
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
@@ -538,7 +536,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
   });
 
   test('Manager takes order through 0x adapter', async () => {
-    const { accounting, trading } = fund;
+    const { accounting, vault } = fund;
 
     const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
       EMPTY_ADDRESS :

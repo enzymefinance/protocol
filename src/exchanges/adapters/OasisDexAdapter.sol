@@ -21,11 +21,11 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
     /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
-    /// - [2] Fill amount
+    /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
-        bytes calldata _encodedArgs
+        bytes memory _encodedArgs
     )
-        external
+        public
         view
         override
         returns (address[6] memory, uint256[3] memory)
@@ -33,22 +33,25 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         address[6] memory riskManagementAddresses;
         uint256[3] memory riskManagementValues;
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues,
+            address makerAsset,
+            uint256 makerQuantity,
+            address takerAsset,
+            uint256 takerQuantity
+            ,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         riskManagementAddresses = [
             address(0),
             address(this),
-            orderAddresses[0],
-            orderAddresses[1],
+            makerAsset,
+            takerAsset,
             address(0),
             address(0)
         ];
         riskManagementValues = [
-            orderValues[0],
-            orderValues[1],
-            orderValues[1]
+            makerQuantity,
+            takerQuantity,
+            takerQuantity
         ];
 
         return (riskManagementAddresses, riskManagementValues);
@@ -68,7 +71,8 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         validateAndFinalizeFilledOrder(_targetExchange, _fillData)
     {
         (
-            ,,uint256 identifier
+            , , , ,
+            uint256 identifier
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
@@ -99,14 +103,16 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         returns (address[] memory, uint256[] memory, address[] memory)
     {
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues,
+            address makerAsset,
+            ,
+            address takerAsset,
+            uint256 takerQuantity,
             uint256 identifier
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         address[] memory fillAssets = new address[](2);
-        fillAssets[0] = orderAddresses[0]; // maker asset
-        fillAssets[1] = orderAddresses[1]; // taker asset
+        fillAssets[0] = makerAsset;
+        fillAssets[1] = takerAsset;
 
         (
             uint256 maxMakerQuantity,,uint256 maxTakerQuantity,
@@ -116,9 +122,9 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         fillExpectedAmounts[0] = __calculateRelativeQuantity(
             maxTakerQuantity,
             maxMakerQuantity,
-            orderValues[1]
+            takerQuantity
         ); // maker fill amount
-        fillExpectedAmounts[1] = orderValues[1]; // taker fill amount
+        fillExpectedAmounts[1] = takerQuantity; // taker fill amount
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
@@ -139,8 +145,10 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         override
     {
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues,
+            address decodedMakerAsset,
+            ,
+            address decodedTakerAsset,
+            uint256 takerQuantity,
             uint256 identifier
         ) = __decodeTakeOrderArgs(_encodedArgs);
         (
@@ -151,44 +159,50 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         ) = IOasisDex(_targetExchange).getOffer(uint256(identifier));
 
         require(
-            makerAsset == orderAddresses[0],
+            decodedMakerAsset == makerAsset,
             "__validateTakeOrderParams: Order maker asset does not match the input"
         );
         require(
-            takerAsset == orderAddresses[1],
+            decodedTakerAsset == takerAsset,
             "__validateTakeOrderParams: Order taker asset does not match the input"
         );
+
+        IRegistry registry = __getRegistry();
+        require(registry.assetIsRegistered(
+            makerAsset), 'Maker asset not registered'
+        );
+        require(registry.assetIsRegistered(
+            takerAsset), 'Taker asset not registered'
+        );
+
         require(
-            orderValues[1] <= maxTakerQuantity,
+            takerQuantity <= maxTakerQuantity,
             "__validateTakeOrderParams: Taker fill amount greater than available quantity"
         );
     }
 
     /// @notice Decode the parameters of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return orderAddresses needed addresses for an exchange to take an order
-    /// - [0] Maker asset
-    /// - [1] Taker asset
-    /// @return orderValues needed values for an exchange to take an order
-    /// - [0] Maker asset quantity
-    /// - [1] Taker asset quantity
-    /// @return identifier Order id on Oasis Dex
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        internal
+        public
         pure
         returns (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues,
+            address makerAsset,
+            uint256 makerQuantity,
+            address takerAsset,
+            uint256 takerQuantity,
             uint256 identifier
         )
     {
         return abi.decode(
             _encodedArgs,
             (
-                address[2],
-                uint256[2],
+                address,
+                uint256,
+                address,
+                uint256,
                 uint256
             )
         );
