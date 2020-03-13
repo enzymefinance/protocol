@@ -1,4 +1,6 @@
+import { ENCODING_TYPES } from '~/tests/utils/constants';
 import { padLeft, numberToHex, stringToHex } from 'web3-utils';
+import web3 from '~/deploy/utils/get-web3';
 
 export const numberToBytes = (value, numBytes) =>
   padLeft(numberToHex(value), numBytes * 2);
@@ -13,3 +15,18 @@ export const stringToBytes = (value, numBytes) =>
 //   for (const [key, value] of pairs) stringifiedStruct[key] = value;
 //   return stringifiedStruct;
 // };
+
+export const encodeArgs = (encodingType, args) => {
+  const hex = web3.eth.abi.encodeParameters(encodingType, args);
+  return web3.utils.hexToBytes(hex);
+};
+
+export const encodeTakeOrderArgs = ({
+  makerAsset,
+  makerQuantity,
+  takerAsset,
+  takerQuantity,
+}) => {
+  const args = [makerAsset, makerQuantity, takerAsset, takerQuantity];
+  return encodeArgs(ENCODING_TYPES.MINIMAL, args);
+};

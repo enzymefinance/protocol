@@ -4,12 +4,13 @@ pragma experimental ABIEncoderV2;
 import "../interfaces/IKyberNetworkProxy.sol";
 import "../libs/ExchangeAdapter.sol";
 import "../libs/OrderTaker.sol";
+import "../libs/decoders/MinimalTakeOrderDecoder.sol";
 import "../../dependencies/WETH.sol";
 
 /// @title KyberAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Adapter between Melon and Kyber Network
-contract KyberAdapter is ExchangeAdapter, OrderTaker {
+contract KyberAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses needed addresses for risk management
@@ -34,22 +35,24 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         address[6] memory riskManagementAddresses;
         uint256[3] memory riskManagementValues;
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address makerAsset,
+            uint256 makerQuantity,
+            address takerAsset,
+            uint256 takerQuantity
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         riskManagementAddresses = [
             address(0),
             address(0),
-            orderAddresses[0],
-            orderAddresses[1],
+            makerAsset,
+            takerAsset,
             address(0),
             address(0)
         ];
         riskManagementValues = [
-            orderValues[0],
-            orderValues[1],
-            orderValues[1]
+            makerQuantity,
+            takerQuantity,
+            takerQuantity
         ];
 
         return (riskManagementAddresses, riskManagementValues);
@@ -119,17 +122,19 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
         returns (address[] memory, uint256[] memory, address[] memory)
     {
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address makerAsset,
+            uint256 makerQuantity,
+            address takerAsset,
+            uint256 takerQuantity
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         address[] memory fillAssets = new address[](2);
-        fillAssets[0] = orderAddresses[0]; // maker asset
-        fillAssets[1] = orderAddresses[1]; // taker asset
+        fillAssets[0] = makerAsset;
+        fillAssets[1] = takerAsset;
 
         uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = orderValues[0]; // maker fill amount
-        fillExpectedAmounts[1] = orderValues[1]; // taker fill amount
+        fillExpectedAmounts[0] = makerQuantity;
+        fillExpectedAmounts[1] = takerQuantity;
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
@@ -230,33 +235,6 @@ contract KyberAdapter is ExchangeAdapter, OrderTaker {
             _fillExpectedAmounts[1],
             _fillAssets[0],
             __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
-        );
-    }
-
-    /// @notice Decode the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return orderAddresses needed addresses for an exchange to take an order
-    /// - [0] Maker asset
-    /// - [1] Taker asset
-    /// @return orderValues needed values for an exchange to take an order
-    /// - [0] Maker asset quantity
-    /// - [1] Taker asset quantity
-    function __decodeTakeOrderArgs(
-        bytes memory _encodedArgs
-    )
-        internal
-        pure
-        returns (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
-        )
-    {
-        return abi.decode(
-            _encodedArgs,
-            (
-                address[2],
-                uint256[2]
-            )
         );
     }
 }

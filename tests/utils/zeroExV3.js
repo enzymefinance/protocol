@@ -7,7 +7,8 @@ import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subprovider
 import { providerUtils } from '@0x/utils';
 import { SignatureType } from '@0x/types';
 import web3 from '~/deploy/utils/get-web3';
-import { EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { EMPTY_ADDRESS, ENCODING_TYPES } from '~/tests/utils/constants';
+import { encodeArgs } from '~/tests/utils/formatting';
 
 // TODO: refactor along with zeroExV2 util
 export const createUnsignedZeroExOrder = async (
@@ -79,6 +80,32 @@ const getPrivateKeyProvider = (wallet, signer) => {
 
   return providerEngine;
 }
+
+export const encodeZeroExTakeOrderArgs = (order, fillQuantity) => {
+  const orderAddresses = [];
+  const orderValues = [];
+  const orderData = [];
+
+  orderAddresses[0] = order.makerAddress;
+  orderAddresses[1] = order.takerAddress;
+  orderAddresses[2] = order.feeRecipientAddress;
+  orderAddresses[3] = order.senderAddress;
+  orderValues[0] = order.makerAssetAmount;
+  orderValues[1] = order.takerAssetAmount;
+  orderValues[2] = order.makerFee;
+  orderValues[3] = order.takerFee;
+  orderValues[4] = order.expirationTimeSeconds;
+  orderValues[5] = order.salt;
+  orderValues[6] = fillQuantity;
+  orderData[0] =  order.makerAssetData;
+  orderData[1] = order.takerAssetData;
+  orderData[2] = order.makerFeeAssetData;
+  orderData[3] = order.takerFeeAssetData;
+  const signature = order.signature;
+
+  const args = [orderAddresses, orderValues, orderData, signature];
+  return encodeArgs(ENCODING_TYPES.ZERO_EX_V3, args);
+};
 
 export const signZeroExOrder = async (order, signer) => {
   const signerFormatted = signer.toLowerCase();
