@@ -124,4 +124,5 @@ contract Hub is DSGuard {
     function registry() external view returns (address) { return routes.registry; }
     function fundFactory() external view returns (address) { return routes.fundFactory; }
     function policyManager() external view returns (address) { return routes.policyManager; }
+    function feeManager() external view returns (address) { return routes.feeManager; }
 }

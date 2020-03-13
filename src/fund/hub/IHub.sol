@@ -25,6 +25,7 @@ interface IHub {
 
     // FUNCTIONS
     function accounting() external view returns (address);
+    function feeManager() external view returns (address);
     function participation() external view returns (address);
     function policyManager() external view returns (address);
     function priceSource() external view returns (address);
