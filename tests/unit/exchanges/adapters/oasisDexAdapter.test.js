@@ -116,7 +116,6 @@ describe('takeOrder', () => {
           [
             exchangeIndex,
             takeOrderSignature,
-            '0x0',
             encodedArgs,
           ],
           defaultTxOpts,
@@ -148,7 +147,6 @@ describe('takeOrder', () => {
           [
             exchangeIndex,
             takeOrderSignature,
-            '0x0',
             encodedArgs,
           ],
           defaultTxOpts,

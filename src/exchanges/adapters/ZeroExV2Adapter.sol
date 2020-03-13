@@ -21,11 +21,11 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
-    /// - [2] Fill amount
+    /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
-        bytes calldata _encodedArgs
+        bytes memory _encodedArgs
     )
-        external
+        public
         view
         override
         returns (address[6] memory, uint256[3] memory)
@@ -156,8 +156,19 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
         override
     {
         (
-            ,uint256[7] memory orderValues, ,
+            ,
+            uint256[7] memory orderValues,
+            bytes [2] memory orderData
+            ,
         ) = __decodeTakeOrderArgs(_encodedArgs);
+
+        IRegistry registry = __getRegistry();
+        require(registry.assetIsRegistered(
+            __getAssetAddress(orderData[0])), 'Maker asset not registered'
+        );
+        require(registry.assetIsRegistered(
+            __getAssetAddress(orderData[1])), 'Taker asset not registered'
+        );
 
         require(
             orderValues[6] <= orderValues[1],
@@ -242,7 +253,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        internal
+        public
         pure
         returns (
             address[4] memory orderAddresses,

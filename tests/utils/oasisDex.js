@@ -8,14 +8,6 @@ export const encodeOasisDexTakeOrderArgs = ({
   takerQuantity,
   orderId,
 }) => {
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const args = [orderAddresses, orderValues, orderId];
+  const args = [makerAsset, makerQuantity, takerAsset, takerQuantity, orderId];
   return encodeArgs(ENCODING_TYPES.OASIS_DEX, args);
 };

@@ -18,11 +18,11 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
-    /// - [2] Fill amount
+    /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
-        bytes calldata _encodedArgs
+        bytes memory _encodedArgs
     )
-        external
+        public
         view
         override
         returns (address[6] memory, uint256[3] memory)
@@ -137,6 +137,18 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
         view
         override
     {
+        (
+            address[6] memory orderAddresses,
+            uint256[6] memory orderValues, , , ,
+        ) = __decodeTakeOrderArgs(_encodedArgs);
+
+        IRegistry registry = __getRegistry();
+        require(registry.assetIsRegistered(
+            orderAddresses[1]), 'Maker asset not registered'
+        );
+        require(registry.assetIsRegistered(
+            orderAddresses[3]), 'Taker asset not registered'
+        );
     }
 
     // PRIVATE FUNCTIONS
@@ -216,7 +228,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        private
+        public
         pure
         returns (
             address[6] memory orderAddresses,

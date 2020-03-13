@@ -2,10 +2,12 @@ pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import "./OrderFiller.sol";
+import "../../fund/policies/TradingSignatures.sol";
+import "../../fund/policies/IPolicyManager.sol";
 
 /// @title Order Taker base contract
 /// @author Melonport AG <team@melonport.com>
-abstract contract OrderTaker is OrderFiller {
+abstract contract OrderTaker is OrderFiller, TradingSignatures {
     /// @notice Extract arguments for risk management validations
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses needed addresses for risk management
@@ -18,11 +20,11 @@ abstract contract OrderTaker is OrderFiller {
     /// @return riskManagementValues needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
-    /// - [2] Fill amount
+    /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
-        bytes calldata _encodedArgs
+        bytes memory _encodedArgs
     )
-        external
+        public
         view
         virtual
         returns (address[6] memory, uint256[3] memory);
@@ -40,6 +42,24 @@ abstract contract OrderTaker is OrderFiller {
     )
         public
     {
+        (
+            address[6] memory riskManagementAddresses,
+            uint256[3] memory riskManagementValues
+        ) = extractTakeOrderRiskManagementArgs(_encodedArgs);
+
+        IPolicyManager(__getRoutes().policyManager).preValidate(
+            TAKE_ORDER,
+            [
+                riskManagementAddresses[0],
+                riskManagementAddresses[1],
+                riskManagementAddresses[2],
+                riskManagementAddresses[3],
+                _targetExchange
+            ],
+            riskManagementValues,
+            0x0
+        );
+
         __validateTakeOrderParams(
             _targetExchange,
             _encodedArgs
@@ -58,6 +78,19 @@ abstract contract OrderTaker is OrderFiller {
             _targetExchange,
             _encodedArgs,
             __encodeOrderFillData(fillAssets, fillExpectedAmounts, fillApprovalTargets)
+        );
+
+        IPolicyManager(__getRoutes().policyManager).postValidate(
+            TAKE_ORDER,
+            [
+                riskManagementAddresses[0],
+                riskManagementAddresses[1],
+                riskManagementAddresses[2],
+                riskManagementAddresses[3],
+                _targetExchange
+            ],
+            riskManagementValues,
+            0x0
         );
     }
 

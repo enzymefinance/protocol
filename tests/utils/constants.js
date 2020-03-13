@@ -12,7 +12,7 @@ export const ENCODING_TYPES = {
   ZERO_EX_V2: ['address[4]', 'uint256[7]', 'bytes[2]', 'bytes'],
   ZERO_EX_V3: ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
   AIR_SWAP: ['address[6]', 'uint256[6]', 'bytes4[2]', 'bytes32[2]', 'uint8', 'bytes1'],
-  OASIS_DEX: ['address[2]', 'uint256[2]', 'uint256'],
+  OASIS_DEX: ['address', 'uint256', 'address', 'uint256', 'uint256'],
   MINIMAL: ['address', 'uint256', 'address', 'uint256'], // a general and minimal type
 }
 

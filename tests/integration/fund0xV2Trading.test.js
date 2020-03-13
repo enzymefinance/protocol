@@ -133,7 +133,6 @@ describe('Fund takes an order', () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
@@ -263,7 +262,6 @@ describe('Fund takes an order with a taker fee', () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
