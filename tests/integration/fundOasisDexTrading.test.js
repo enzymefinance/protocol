@@ -7,7 +7,6 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import getAccounts from '~/deploy/utils/getAccounts';
 
@@ -15,6 +14,7 @@ import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
+import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
@@ -119,19 +119,13 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    const orderAddresses = [];
-    const orderValues = [];
-
-    orderAddresses[0] = makerAsset;
-    orderAddresses[1] = takerAsset;
-    orderValues[0] = makerQuantity;
-    orderValues[1] = takerQuantity;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[2]', 'uint256[2]', 'uint256'],
-      [orderAddresses, orderValues, orderId],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeOasisDexTakeOrderArgs({
+      makerAsset,
+      makerQuantity,
+      takerAsset,
+      takerQuantity,
+      orderId,
+    });
 
     await send(
       vault,
@@ -212,19 +206,13 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    const orderAddresses = [];
-    const orderValues = [];
-
-    orderAddresses[0] = makerAsset;
-    orderAddresses[1] = takerAsset;
-    orderValues[0] = makerQuantity;
-    orderValues[1] = takerQuantity;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[2]', 'uint256[2]', 'uint256'],
-      [orderAddresses, orderValues, orderId],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeOasisDexTakeOrderArgs({
+      makerAsset,
+      makerQuantity,
+      takerAsset,
+      takerQuantity,
+      orderId,
+    });
 
     await send(
       vault,

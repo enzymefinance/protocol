@@ -3,13 +3,14 @@ pragma experimental ABIEncoderV2;
 
 import "../libs/ExchangeAdapter.sol";
 import "../libs/OrderTaker.sol";
+import "../libs/decoders/MinimalTakeOrderDecoder.sol";
 import "../../dependencies/WETH.sol";
 import "../../engine/IEngine.sol";
 
 /// @title EngineAdapter Contract
 /// @author Melonport AG <team@melonport.com>
 /// @notice Trading adapter to Melon Engine
-contract EngineAdapter is ExchangeAdapter, OrderTaker {
+contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses needed addresses for risk management
@@ -34,22 +35,24 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
         address[6] memory riskManagementAddresses;
         uint256[3] memory riskManagementValues;
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address makerAsset,
+            uint256 makerQuantity,
+            address takerAsset,
+            uint256 takerQuantity
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         riskManagementAddresses = [
             address(0),
             address(0),
-            orderAddresses[0],
-            orderAddresses[1],
+            makerAsset,
+            takerAsset,
             address(0),
             address(0)
         ];
         riskManagementValues = [
-            orderValues[0],
-            orderValues[1],
-            orderValues[1]
+            makerQuantity,
+            takerQuantity,
+            takerQuantity
         ];
 
         return (riskManagementAddresses, riskManagementValues);
@@ -104,17 +107,19 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
         returns (address[] memory, uint256[] memory, address[] memory)
     {
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address makerAsset,
+            uint256 makerQuantity,
+            address takerAsset,
+            uint256 takerQuantity
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         address[] memory fillAssets = new address[](2);
-        fillAssets[0] = orderAddresses[0]; // maker asset
-        fillAssets[1] = orderAddresses[1]; // taker asset
+        fillAssets[0] = makerAsset;
+        fillAssets[1] = takerAsset;
 
         uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = orderValues[0]; // maker fill amount
-        fillExpectedAmounts[1] = orderValues[1]; // taker fill amount
+        fillExpectedAmounts[0] = makerQuantity;
+        fillExpectedAmounts[1] = takerQuantity;
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
@@ -135,44 +140,19 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker {
         override
     {
         (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
+            address makerAsset,
+            ,
+            address takerAsset
+            ,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         require(
-            orderAddresses[0] == __getNativeAssetAddress(),
+            makerAsset == __getNativeAssetAddress(),
             "__validateTakeOrderParams: maker asset does not match nativeAsset"
         );
         require(
-            orderAddresses[1] == __getMlnTokenAddress(),
+            takerAsset == __getMlnTokenAddress(),
             "__validateTakeOrderParams: taker asset does not match mlnToken"
-        );
-    }
-
-    /// @notice Decode the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return orderAddresses needed addresses for an exchange to take an order
-    /// - [0] Expected min ETH quantity (maker quantity)
-    /// - [1] Expected MLN quantity (taker quantity)
-    /// @return orderValues needed values for an exchange to take an order
-    /// - [0] WETH token (maker asset)
-    /// - [1] MLN token (taker asset)
-    function __decodeTakeOrderArgs(
-        bytes memory _encodedArgs
-    )
-        internal
-        pure
-        returns (
-            address[2] memory orderAddresses,
-            uint256[2] memory orderValues
-        )
-    {
-        return abi.decode(
-            _encodedArgs,
-            (
-                address[2],
-                uint256[2]
-            )
         );
     }
 }

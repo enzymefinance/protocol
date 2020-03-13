@@ -19,6 +19,7 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 import getAccounts from '~/deploy/utils/getAccounts';
 import {
   createUnsignedZeroExOrder,
+  encodeZeroExTakeOrderArgs,
   signZeroExOrder
 } from '~/tests/utils/zeroExV3';
 
@@ -139,7 +140,6 @@ describe('Fund takes an order', () => {
 
   test('Manager takes order through 0x adapter', async () => {
     const { accounting, vault } = fund;
-    const fillQuantity = signedOrder.takerAssetAmount;
 
     const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
       EMPTY_ADDRESS :
@@ -159,31 +159,8 @@ describe('Fund takes an order', () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    const orderAddresses = [];
-    const orderValues = [];
-    const orderData = [];
-
-    orderAddresses[0] = signedOrder.makerAddress;
-    orderAddresses[1] = signedOrder.takerAddress;
-    orderAddresses[2] = signedOrder.feeRecipientAddress;
-    orderAddresses[3] = signedOrder.senderAddress;
-    orderValues[0] = signedOrder.makerAssetAmount;
-    orderValues[1] = signedOrder.takerAssetAmount;
-    orderValues[2] = signedOrder.makerFee;
-    orderValues[3] = signedOrder.takerFee;
-    orderValues[4] = signedOrder.expirationTimeSeconds;
-    orderValues[5] = signedOrder.salt;
-    orderValues[6] = fillQuantity;
-    orderData[0] =  signedOrder.makerAssetData;
-    orderData[1] = signedOrder.takerAssetData;
-    orderData[2] = signedOrder.makerFeeAssetData;
-    orderData[3] = signedOrder.takerFeeAssetData;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
-      [orderAddresses, orderValues, orderData, signedOrder.signature],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const fillQuantity = signedOrder.takerAssetAmount;
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
 
     await send(
       vault,
@@ -281,27 +258,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const orderValues = [];
     const orderData = [];
 
-    orderAddresses[0] = signedOrder.makerAddress;
-    orderAddresses[1] = signedOrder.takerAddress;
-    orderAddresses[2] = signedOrder.feeRecipientAddress;
-    orderAddresses[3] = signedOrder.senderAddress;
-    orderValues[0] = signedOrder.makerAssetAmount;
-    orderValues[1] = signedOrder.takerAssetAmount;
-    orderValues[2] = signedOrder.makerFee;
-    orderValues[3] = signedOrder.takerFee;
-    orderValues[4] = signedOrder.expirationTimeSeconds;
-    orderValues[5] = signedOrder.salt;
-    orderValues[6] = fillQuantity;
-    orderData[0] =  signedOrder.makerAssetData;
-    orderData[1] = signedOrder.takerAssetData;
-    orderData[2] = signedOrder.makerFeeAssetData;
-    orderData[3] = signedOrder.takerFeeAssetData;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
-      [orderAddresses, orderValues, orderData, signedOrder.signature],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
 
     await expect(
       send(
@@ -372,32 +329,9 @@ describe('Fund takes an order with a different taker fee asset', () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    const orderAddresses = [];
-    const orderValues = [];
-    const orderData = [];
     const fillQuantity = signedOrder.takerAssetAmount;
 
-    orderAddresses[0] = signedOrder.makerAddress;
-    orderAddresses[1] = signedOrder.takerAddress;
-    orderAddresses[2] = signedOrder.feeRecipientAddress;
-    orderAddresses[3] = signedOrder.senderAddress;
-    orderValues[0] = signedOrder.makerAssetAmount;
-    orderValues[1] = signedOrder.takerAssetAmount;
-    orderValues[2] = signedOrder.makerFee;
-    orderValues[3] = signedOrder.takerFee;
-    orderValues[4] = signedOrder.expirationTimeSeconds;
-    orderValues[5] = signedOrder.salt;
-    orderValues[6] = fillQuantity;
-    orderData[0] =  signedOrder.makerAssetData;
-    orderData[1] = signedOrder.takerAssetData;
-    orderData[2] = signedOrder.makerFeeAssetData;
-    orderData[3] = signedOrder.takerFeeAssetData;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
-      [orderAddresses, orderValues, orderData, signedOrder.signature],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
 
     await send(
       vault,
@@ -496,8 +430,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
   });
 
   test('Fund with enough taker fee asset and protocol fee takes order', async () => {
-    const { accounting, vault } = fund;
-    const fillQuantity = signedOrder.takerAssetAmount;
+    const { accounting, trading } = fund;
 
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
@@ -510,31 +443,8 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    const orderAddresses = [];
-    const orderValues = [];
-    const orderData = [];
-
-    orderAddresses[0] = signedOrder.makerAddress;
-    orderAddresses[1] = signedOrder.takerAddress;
-    orderAddresses[2] = signedOrder.feeRecipientAddress;
-    orderAddresses[3] = signedOrder.senderAddress;
-    orderValues[0] = signedOrder.makerAssetAmount;
-    orderValues[1] = signedOrder.takerAssetAmount;
-    orderValues[2] = signedOrder.makerFee;
-    orderValues[3] = signedOrder.takerFee;
-    orderValues[4] = signedOrder.expirationTimeSeconds;
-    orderValues[5] = signedOrder.salt;
-    orderValues[6] = fillQuantity;
-    orderData[0] =  signedOrder.makerAssetData;
-    orderData[1] = signedOrder.takerAssetData;
-    orderData[2] = signedOrder.makerFeeAssetData;
-    orderData[3] = signedOrder.takerFeeAssetData;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
-      [orderAddresses, orderValues, orderData, signedOrder.signature],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const fillQuantity = signedOrder.takerAssetAmount;
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
 
     await send(
       vault,
@@ -628,8 +538,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
   });
 
   test('Manager takes order through 0x adapter', async () => {
-    const { accounting, vault } = fund;
-    const fillQuantity = signedOrder.takerAssetAmount;
+    const { accounting, trading } = fund;
 
     const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
       EMPTY_ADDRESS :
@@ -649,31 +558,8 @@ describe('Fund can take an order when protocol fee disabled', () => {
       await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
     );
 
-    const orderAddresses = [];
-    const orderValues = [];
-    const orderData = [];
-
-    orderAddresses[0] = signedOrder.makerAddress;
-    orderAddresses[1] = signedOrder.takerAddress;
-    orderAddresses[2] = signedOrder.feeRecipientAddress;
-    orderAddresses[3] = signedOrder.senderAddress;
-    orderValues[0] = signedOrder.makerAssetAmount;
-    orderValues[1] = signedOrder.takerAssetAmount;
-    orderValues[2] = signedOrder.makerFee;
-    orderValues[3] = signedOrder.takerFee;
-    orderValues[4] = signedOrder.expirationTimeSeconds;
-    orderValues[5] = signedOrder.salt;
-    orderValues[6] = fillQuantity;
-    orderData[0] =  signedOrder.makerAssetData;
-    orderData[1] = signedOrder.takerAssetData;
-    orderData[2] = signedOrder.makerFeeAssetData;
-    orderData[3] = signedOrder.takerFeeAssetData;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
-      [orderAddresses, orderValues, orderData, signedOrder.signature],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const fillQuantity = signedOrder.takerAssetAmount;
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
 
     await send(
       vault,

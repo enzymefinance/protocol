@@ -1,13 +1,17 @@
-const { orders, signatures } = require('@airswap/order-utils');
-const { GANACHE_PROVIDER, ERC20_INTERFACE_ID } = require('@airswap/order-utils').constants;
+const { orders } = require('@airswap/order-utils');
+const { ERC20_INTERFACE_ID } = require('@airswap/order-utils').constants;
 import { BN, toWei } from 'web3-utils';
-import web3 from '~/deploy/utils/get-web3';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import {
+  createUnsignedAirSwapOrder,
+  signAirSwapOrder,
+  encodeAirSwapTakeOrderArgs
+} from '~/tests/utils/airSwap';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
@@ -68,72 +72,25 @@ beforeAll(async () => {
 });
 
 describe('Fund takes an order', () => {
-  let order;
+  let signedOrder;
 
   test('manager takes order through adapter', async () => {
     const { trading, accounting} = fund;
     const makerAssetAmount = toWei('1', 'ether');
-
-    order = await orders.getOrder({
-      signer: {
-        wallet: deployer,
-        token: mln.options.address,
-        amount: makerAssetAmount,
-      },
-    });
-
-    const latestBlock = await web3.eth.getBlock('latest');
-    const duration = 24 * 60 * 60; // 1 day
-    order.expiry = latestBlock.timestamp + duration;
-
     const fillQuantity = toWei('0.05', 'ether');
 
-    order.sender.wallet = trading.options.address;
-    order.sender.token = weth.options.address;
-    order.sender.amount = fillQuantity;
-    order.affiliate.kind = '0x0';
+    const unsignedOrder = await createUnsignedAirSwapOrder({
+      signerWallet: deployer,
+      signerToken: mln.options.address,
+      signerTokenAmount: makerAssetAmount,
+      senderWallet: trading.options.address,
+      senderToken: weth.options.address,
+      senderTokenAmount: fillQuantity,
+    });
 
-    order.signature = await signatures.getWeb3Signature(
-      order,
-      deployer,
-      swapContract.options.address,
-      GANACHE_PROVIDER,
-    );
+    signedOrder = await signAirSwapOrder(unsignedOrder, swapContract.options.address, deployer);
 
-    expect(orders.isValidOrder(order)).toBe(true);
-
-    const orderAddresses = [];
-    const orderValues = [];
-    const tokenKinds = [];
-    const sigBytesComponents = [];
-
-    orderAddresses[0] = order.signer.wallet;
-    orderAddresses[1] = order.signer.token;
-    orderAddresses[2] = order.sender.wallet;
-    orderAddresses[3] = order.sender.token;
-    orderAddresses[4] = order.signature.signatory;
-    orderAddresses[5] = order.signature.validator;
-
-    orderValues[0] = order.nonce;
-    orderValues[1] = order.expiry;
-    orderValues[2] = order.signer.amount;
-    orderValues[3] = order.signer.id;
-    orderValues[4] = order.sender.amount;
-    orderValues[5] = order.sender.id;
-
-    tokenKinds[0] = order.signer.kind;
-    tokenKinds[1] = order.sender.kind;
-    sigBytesComponents[0] = order.signature.r;
-    sigBytesComponents[1] = order.signature.s;
-    const sigUintComponent = order.signature.v;
-    const version = order.signature.version;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[6]', 'uint256[6]', 'bytes4[2]', 'bytes32[2]', 'uint8', 'bytes1'],
-      [orderAddresses, orderValues, tokenKinds, sigBytesComponents, sigUintComponent, version],
-    );
-
-    const encodedParameters = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder);
 
     await send(
       mln,
@@ -158,7 +115,7 @@ describe('Fund takes an order', () => {
         exchangeIndex,
         takeOrderSignature,
         '0x0',
-        encodedParameters,
+        encodedArgs,
       ],
       managerTxOpts,
     );

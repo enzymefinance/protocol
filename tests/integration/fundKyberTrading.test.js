@@ -9,7 +9,6 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import {
@@ -20,6 +19,7 @@ import {
 import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
+import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
@@ -92,19 +92,12 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await send(
     vault,
@@ -166,19 +159,12 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await send(
     vault,
@@ -244,19 +230,12 @@ test('swap MLN directly to EUR without intermediary', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
   );
 
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await send(
     vault,
@@ -316,19 +295,12 @@ test('swap fails if make quantity is too high', async () => {
     new BN(expectedRate.toString()).mul(new BN(2)),
   ).toString();
 
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await expect(
     send(
