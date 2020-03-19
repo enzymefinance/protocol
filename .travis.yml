@@ -13,7 +13,7 @@ cache:
 install:
   - yarn install
 before_script:
-  - yarn download
+  - yarn download-thirdparty
   - make all
   - yarn devchain > ganache.log &
   - until curl 127.0.0.1:8545 -X POST --data '{"method":"net_listening"}' >/dev/null 2>&1; do :; done
