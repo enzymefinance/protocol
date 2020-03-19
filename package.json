@@ -24,6 +24,7 @@
     "deployments/"
   ],
   "scripts": {
+    "download": "node scripts/download-thirdparty.js",
     "deploy": "PRIVATE_KEYS=./keys.json DEPLOY_IN=./deploy_in_testing.json DEPLOY_OUT=./deploy_out_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
     "deploy-kovan": "PRIVATE_KEYS=./kovan_keys.json DEPLOY_IN=./deploy_in_kovan.json DEPLOY_OUT=./deploy_out_kovan.json node deploy/scripts/deploy-system.js ./deploy_in_kovan.json ./deploy_out_kovan.json",
     "devchain": "ganache-cli --gasLimit 0x989680 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis' --networkId=4447 --acctKeys ./keys.json",
