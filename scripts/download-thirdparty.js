@@ -38,6 +38,18 @@ const contractNames = [].concat(
   zeroExV3ContractNames,
 );
 
+function findStringArrayDuplicate(array) {
+  const uniqueItems = {};
+  for (const item of array) {
+    if (typeof item !== 'string') throw new Error(`${item} is not a string.`)
+
+    if (item in uniqueItems) {
+      return item;
+    }
+    uniqueItems[item] = true;
+  }
+}
+
 const requestOptions = (fileExtension) => (contractName) => {
   return {
     uri: `https://raw.githubusercontent.com/melonproject/thirdparty-artifacts/master/thirdparty/${contractName}${fileExtension}`
@@ -64,6 +76,11 @@ async function wrapRequestResult(request, contractName, fileExtension) {
 }
 
 (async () => {
+
+  const duplicate = findStringArrayDuplicate(contractNames);
+  if (duplicate !== undefined) {
+    throw new Error(`${duplicate} is duplicated.`);
+  }
 
   const requests = [];
   for (const cName of contractNames) {
