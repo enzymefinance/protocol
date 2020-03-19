@@ -1,27 +1,42 @@
 const rp = require('request-promise');
 const fs = require('fs');
-
 const thirdpartyDir = './thirdparty';
 
-const contractNames = [
+const kyberContractNames = [
   'ConversionRates',
   'ExpectedRate',
   'FeeBurner',
   'KyberNetwork',
   'KyberNetworkProxy',
   'KyberReserve',
+  'WhiteList',
+];
+const oasisDexContractNames = [
   'OasisDexExchange',
+];
+const uniswapContractNames = [
   'UniswapExchange',
   'UniswapFactory',
-  'WhiteList',
+];
+const zeroExV2ContractNames = [
   'ZeroExV2ERC20Proxy',
   'ZeroExV2Exchange',
+];
+const zeroExV3ContractNames = [
   'ZeroExV3ERC20Proxy',
   'ZeroExV3Exchange',
   'ZeroExV3Staking',
   'ZeroExV3StakingProxy',
   'ZeroExV3ZrxVault'
 ];
+
+const contractNames = [].concat(
+  kyberContractNames,
+  oasisDexContractNames,
+  uniswapContractNames,
+  zeroExV2ContractNames,
+  zeroExV3ContractNames,
+);
 
 const requestOptions = (fileExtension) => (contractName) => {
   return {
