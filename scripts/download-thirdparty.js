@@ -64,11 +64,16 @@ async function wrapRequestResult(request, contractName, fileExtension) {
     }
   }
 
-  const results = await Promise.all(requests);
-  mkdir(thirdpartyDir);
-  for (const result of results) {
-    const { contractName, fileExtension, content } = result;
-    fs.writeFileSync(`${thirdpartyDir}/${contractName}${fileExtension}`, content);
+  try {
+    const results = await Promise.all(requests);
+    mkdir(thirdpartyDir);
+    for (const result of results) {
+      const { contractName, fileExtension, content } = result;
+      fs.writeFileSync(`${thirdpartyDir}/${contractName}${fileExtension}`, content);
+    }
+  }
+  catch (e) {
+    console.log(e)
   }
 
 })();
