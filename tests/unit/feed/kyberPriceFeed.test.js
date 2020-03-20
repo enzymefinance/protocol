@@ -96,7 +96,7 @@ describe('update', () => {
       send(
         kyberPriceFeed,
         'update',
-        [registeredAssets, dummyPrices],
+        [registeredAssets, dummyPrices, false],
         someAccountTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -110,7 +110,7 @@ describe('update', () => {
     let receipt = await send(
       kyberPriceFeed,
       'update',
-      [registeredAssets, dummyPrices],
+      [registeredAssets, dummyPrices, false],
       deployerTxOpts
     );
     const logUpdated = getEventFromLogs(
@@ -126,7 +126,7 @@ describe('update', () => {
       send(
         kyberPriceFeed,
         'update',
-        [registeredAssets, dummyPrices],
+        [registeredAssets, dummyPrices, false],
         updaterTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -141,7 +141,7 @@ describe('update', () => {
     receipt = await send(
       kyberPriceFeed,
       'update',
-      [registeredAssets, dummyPrices],
+      [registeredAssets, dummyPrices, false],
       updaterTxOpts
     );
     const logUpdated = getEventFromLogs(
@@ -170,7 +170,12 @@ describe('update', () => {
         'update',
         [
           registeredAssets,
-          [toWei('1', 'ether'), barelyTooHighMlnPrice.toString(), toWei('1', 'ether')]
+          [
+            toWei('1', 'ether'),
+            barelyTooHighMlnPrice.toString(),
+            toWei('1', 'ether')
+          ],
+          false
         ],
         deployerTxOpts
       )
@@ -181,7 +186,12 @@ describe('update', () => {
       'update',
       [
         registeredAssets,
-        [toWei('1', 'ether'), upperEndValidMlnPrice.toString(), toWei('1', 'ether')]
+        [
+          toWei('1', 'ether'),
+          upperEndValidMlnPrice.toString(),
+          toWei('1', 'ether')
+        ],
+        false
       ],
       deployerTxOpts
     );
@@ -210,7 +220,12 @@ describe('update', () => {
         'update',
         [
           registeredAssets,
-          [toWei('1', 'ether'), barelyTooLowMlnPrice.toString(), toWei('1', 'ether')]
+          [
+            toWei('1', 'ether'),
+            barelyTooLowMlnPrice.toString(),
+            toWei('1', 'ether')
+          ],
+          false
         ],
         deployerTxOpts
       )
@@ -221,7 +236,12 @@ describe('update', () => {
       'update',
       [
         registeredAssets,
-        [toWei('1', 'ether'), lowerEndValidMlnPrice.toString(), toWei('1', 'ether')]
+        [
+          toWei('1', 'ether'),
+          lowerEndValidMlnPrice.toString(),
+          toWei('1', 'ether')
+        ],
+        false
       ],
       deployerTxOpts
     );
@@ -281,7 +301,12 @@ describe('update', () => {
       'update',
       [
         registeredAssets,
-        [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
+        [
+          toWei('1', 'ether'),
+          midpointPrice.toString(),
+          toWei('1', 'ether')
+        ],
+        true
       ],
       deployerTxOpts
     );
@@ -310,12 +335,35 @@ describe('update', () => {
       deployerTxOpts
     );
 
+    // toggling failIfInvalid causes failure with >max spread
+    await expect(
+      send(
+        kyberPriceFeed,
+        'update',
+        [
+          registeredAssets,
+          [
+            toWei('1', 'ether'),
+            midpointPrice.toString(),
+            toWei('1', 'ether')
+          ],
+          true
+        ],
+        deployerTxOpts
+      )
+    ).rejects.toThrowFlexible('update: Aborting due to invalid price');
+
     await send(
       kyberPriceFeed,
       'update',
       [
         registeredAssets,
-        [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
+        [
+          toWei('1', 'ether'),
+          midpointPrice.toString(),
+          toWei('1', 'ether')
+        ],
+        false
       ],
       deployerTxOpts
     );
@@ -375,7 +423,12 @@ describe('getPrice', () => {
       'update',
       [
         registeredAssets,
-        [eurPrice.toString(), mlnPrice.toString(), toWei('1', 'ether')]
+        [
+          eurPrice.toString(),
+          mlnPrice.toString(),
+          toWei('1', 'ether')
+        ],
+        false
       ],
       deployerTxOpts
     );
@@ -423,7 +476,12 @@ describe('getPrice', () => {
       'update',
       [
         registeredAssets,
-        [preEurPrice.price_.toString(), midpointPrice.toString(), toWei('1', 'ether')]
+        [
+          preEurPrice.price_.toString(),
+          midpointPrice.toString(),
+          toWei('1', 'ether')
+        ],
+        false
       ],
       deployerTxOpts
     );
@@ -468,7 +526,12 @@ describe('getPrice', () => {
       'update',
       [
         registeredAssets,
-        [preEurPrice.price_.toString(), midpointPrice, toWei('1', 'ether')]
+        [
+          preEurPrice.price_.toString(),
+          midpointPrice,
+          toWei('1', 'ether')
+        ],
+        false
       ],
       deployerTxOpts
     );
