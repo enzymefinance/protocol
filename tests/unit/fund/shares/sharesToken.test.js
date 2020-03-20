@@ -39,6 +39,14 @@ describe('constructor', () => {
     const sharesName = await call(fund.shares, 'name');
     expect(fundName).toBe(sharesName);
   });
+
+  it('has expected symbols and decimals', async () => {
+    const fundName = await call(fund.hub, 'name');
+    const sharesName = await call(fund.shares, 'name');
+    expect(fundName).toBe(sharesName);
+    await expect(call(fund.shares, 'symbol')).resolves.toBe('MLNF');
+    await expect(call(fund.shares, 'decimals')).resolves.toBe('18');
+  });
 });
 
 describe('createFor', () => {
