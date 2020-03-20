@@ -54,9 +54,11 @@ contract KyberPriceFeed is DSMath {
     /// @dev Stores zero as a convention for invalid price
     /// @param _saneAssets Asset addresses (must match assets array from getRegisteredAssets)
     /// @param _sanePrices Asset price hints (checked against prices from Kyber)
+    /// @param _failIfInvalid Whether to abort the update if an invalid price appears
     function update(
         address[] calldata _saneAssets,
-        uint256[] calldata _sanePrices
+        uint256[] calldata _sanePrices,
+        bool _failIfInvalid
     ) external {
         require(
             msg.sender == registry.owner() || msg.sender == updater,
@@ -82,6 +84,12 @@ contract KyberPriceFeed is DSMath {
                 __priceIsSane(kyberPrice, _sanePrices[i]),
                 "update: Kyber price deviates too much from maxPriceDeviation"
             );
+            if (_failIfInvalid) {
+                require(
+                    isValid,
+                    "update: Aborting due to invalid price"
+                );
+            }
             newPrices[i] = isValid ? kyberPrice : 0;
             prices[_saneAssets[i]] = newPrices[i];
         }
