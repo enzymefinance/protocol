@@ -1,4 +1,4 @@
-import { BN, toWei } from 'web3-utils';
+import { BN, toWei, randomHex } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
@@ -674,6 +674,40 @@ describe('redeemSharesWithConstraints', () => {
         buySharesOpts.txOpts
       )
     ).rejects.toThrowFlexible("_sharesQuatity exceeds sender balance")
+  });
+
+  it('can NOT be called with an asset with a 0 balance', async () => {
+    await expect(
+      send(
+        fund.shares,
+        'redeemSharesWithConstraints',
+        [
+          halfOfShares.toString(),
+          [
+            buySharesOpts.investmentAssetContract.options.address,
+            randomHex(20)
+          ]
+        ],
+        buySharesOpts.txOpts
+      )
+    ).rejects.toThrowFlexible("Requested asset holdings is 0")
+  });
+
+  it('can NOT be called with a duplicate asset', async () => {
+    await expect(
+      send(
+        fund.shares,
+        'redeemSharesWithConstraints',
+        [
+          halfOfShares.toString(),
+          [
+            buySharesOpts.investmentAssetContract.options.address,
+            buySharesOpts.investmentAssetContract.options.address
+          ]
+        ],
+        buySharesOpts.txOpts
+      )
+    ).rejects.toThrowFlexible("Attempted to redeem duplicate asset")
   });
 
   it('succeeds when called by a user with enough shares', async () => {
