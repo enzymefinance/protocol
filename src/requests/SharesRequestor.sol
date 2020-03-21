@@ -130,7 +130,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         delete ownerToRequestByFund[_requestOwner][_hub];
         EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
 
-        // @dev do the asset transfers in a separate step after altering state
+        // Do the asset transfers in a separate step after altering state
         __transferRequestSurplusAssets(
             _requestOwner,
             request.investmentAsset,
@@ -192,7 +192,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
             "requestShares: Actual allowance is less than _maxInvestmentAmount"
         );
 
-        // @dev The initial investment in a fund can skip the request process and settle directly
+        // The initial investment in a fund can skip the request process and settle directly
         if (IShares(IHub(_hub).shares()).totalSupply() == 0) {
             __safeTransferFrom(_investmentAsset, msg.sender, address(this), _maxInvestmentAmount);
             uint256 investmentAmountFilled = __validateAndBuyShares(
@@ -388,7 +388,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         );
 
         // Buy the shares via Shares
-        // @dev We can grant exact approval to Shares rather than using _maxInvestmentAmount
+        // We can grant exact approval to Shares rather than using _maxInvestmentAmount
         // since we use the same function to get the cost
         uint256 costInInvestmentAsset = IAccounting(IHub(_hub).accounting()).getShareCostInAsset(
             _sharesQuantity,

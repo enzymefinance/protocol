@@ -153,7 +153,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
         require(_sharesQuantity > 0, "redeemSharesWithConstraints: _sharesQuantity must be > 0");
         require(
             _sharesQuantity <= balanceOf(msg.sender),
-            "redeemSharesWithConstraints: _sharesQuatity exceeds sender balance"
+            "redeemSharesWithConstraints: _sharesQuantity exceeds sender balance"
         );
 
         IAccounting accounting = IAccounting(routes.accounting);
@@ -161,7 +161,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
         // Reward all fees and calculate remaining shares
         uint256 owedFees = 0;
         if (
-            // @dev Without prices, can't calculate performance fees, so must skip
+            // Without prices, can't calculate performance fees, so must skip
             IPriceSource(priceSource()).hasValidPrices(_assets) &&
             msg.sender != hub.manager()
         ) {
@@ -232,11 +232,11 @@ contract Shares is TokenUser, Spoke, SharesToken {
     {
         uint256 owedFees;
 
-        // @dev Reward management fees because it affects the total supply
+        // Reward management fees because it affects the total supply
         IFeeManager(routes.feeManager).rewardManagementFee();
 
         uint256 totalPerformanceFee = IFeeManager(routes.feeManager).performanceFeeAmount();
-        // @dev The denominator is augmented because performanceFeeAmount() accounts for inflation
+        // The denominator is augmented because performanceFeeAmount() accounts for inflation
         // Since shares are directly transferred, we don't need to account for inflation in this case
         owedFees = mul(
             totalPerformanceFee,
