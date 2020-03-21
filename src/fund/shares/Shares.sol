@@ -52,7 +52,9 @@ contract Shares is TokenUser, Spoke, SharesToken {
         SharesToken(IHub(_hub).name())
     {
         routes.registry = _registry;
-        __enableSharesInvestmentAssets(_defaultAssets);
+        if (_defaultAssets.length > 0) {
+            __enableSharesInvestmentAssets(_defaultAssets);
+        }
     }
 
     // EXTERNAL
@@ -96,6 +98,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
     /// @notice Disable the buying of shares with specific assets
     /// @param _assets The assets for which to disable the buying of shares
     function disableSharesInvestmentAssets(address[] calldata _assets) external auth {
+        require(_assets.length > 0, "disableSharesInvestmentAssets: _assets cannot be empty");
         for (uint256 i = 0; i < _assets.length; i++) {
             EnumerableSet.remove(sharesInvestmentAssets, _assets[i]);
         }
@@ -105,6 +108,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
     /// @notice Enable the buying of shares with specific assets
     /// @param _assets The assets for which to disable the buying of shares
     function enableSharesInvestmentAssets(address[] calldata _assets) external auth {
+        require(_assets.length > 0, "enableSharesInvestmentAssets: _assets cannot be empty");
         __enableSharesInvestmentAssets(_assets);
     }
 
