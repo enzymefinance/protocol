@@ -27,7 +27,6 @@ let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let contracts;
 let dai, mln, weth, priceSource, fundFactory, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
-let exchangeIndex;
 let takeOrderSignature;
 let protocolFeeAmount, chainId;
 let mlnToEthRate, wethToEthRate, daiToEthRate;
@@ -71,8 +70,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [zeroExExchange.options.address],
-    exchangeAdapters: [zeroExAdapter.options.address],
+    integrationAdapters: [zeroExAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('5', 'ether'),
       investor,
@@ -82,12 +80,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory
   });
-
-  // Get 0x exchangeIndex
-  const exchangeInfo = await call(fund.vault, 'getExchangeInfo');
-  exchangeIndex = exchangeInfo[1].findIndex(
-    e => e.toLowerCase() === zeroExAdapter.options.address.toLowerCase(),
-  );
 
   // Set vars - orders
   const protocolFeeMultiplier = new BN(
@@ -164,9 +156,9 @@ describe('Fund takes an order', () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        zeroExAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],
@@ -262,9 +254,9 @@ describe('Fund takes an order with a different taker fee asset', () => {
     await expect(
       send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -333,9 +325,9 @@ describe('Fund takes an order with a different taker fee asset', () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        zeroExAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],
@@ -445,9 +437,9 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        zeroExAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],
@@ -559,9 +551,9 @@ describe('Fund can take an order when protocol fee disabled', () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        zeroExAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],

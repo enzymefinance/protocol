@@ -95,22 +95,16 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
   let fund;
   let assetBlacklist, maxConcentration, maxPositions;
   let priceToleranceVal, maxConcentrationVal;
-  let oasisDexExchangeIndex;
 
   beforeAll(async () => {
     fund = await setupInvestedTestFund(contracts, manager);
     const { policyManager, vault } = fund;
 
-    const exchangeInfo = await call(vault, 'getExchangeInfo');
-    oasisDexExchangeIndex = exchangeInfo[1].findIndex(
-      e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase(),
-    );
-
     assetBlacklist = await deploy(
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [[knc.options.address]]
     );
-    const currentPositions = await call(vault, 'getOwnedAssetsLength');
+    const currentPositions = (await call(vault, 'getOwnedAssets')).length;
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
       [Number(currentPositions) + 2]
@@ -222,9 +216,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -270,9 +264,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -327,9 +321,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -372,9 +366,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -459,9 +453,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -499,9 +493,9 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -520,7 +514,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 describe('Fund 2: Asset whitelist, max positions', () => {
   let fund;
   let assetWhitelist, maxPositions;
-  let oasisDexExchangeIndex;
 
   beforeAll(async () => {
     const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
@@ -529,16 +522,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     fund = await setupInvestedTestFund(contracts, manager);
     const { policyManager, vault } = fund;
 
-    const exchangeInfo = await call(vault, 'getExchangeInfo');
-    oasisDexExchangeIndex = exchangeInfo[1].findIndex(
-      e => e.toLowerCase() === oasisDexAdapter.options.address.toLowerCase(),
-    );
-
     assetWhitelist = await deploy(
       CONTRACT_NAMES.ASSET_WHITELIST,
       [[dai.options.address, mln.options.address, zrx.options.address]]
     );
-    const currentPositions = await call(vault, 'getOwnedAssetsLength');
+    const currentPositions = (await call(vault, 'getOwnedAssets')).length;
     const maxPositionsArg = Number(currentPositions) + 2;
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
@@ -626,9 +614,9 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -674,9 +662,9 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -745,7 +733,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       const maxPositionsVal = await call(maxPositions, 'maxPositions');
 
-      const preOwnedAssetsLength = await call(vault, 'getOwnedAssetsLength');
+      const preOwnedAssetsLength = (await call(vault, 'getOwnedAssets')).length;
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 
       const encodedArgs = encodeOasisDexTakeOrderArgs({
@@ -758,17 +746,17 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          oasisDexExchangeIndex,
+          oasisDexAdapter.options.address,
           takeOrderFunctionSig,
           encodedArgs,
         ],
         managerTxOpts,
       );
 
-      const postOwnedAssetsLength = await call(vault, 'getOwnedAssetsLength');
-      expect(postOwnedAssetsLength).toEqual(maxPositionsVal);
+      const postOwnedAssetsLength = (await call(vault, 'getOwnedAssets')).length;
+      expect(postOwnedAssetsLength).toEqual(Number(maxPositionsVal));
     });
 
     test('Third party makes an order', async () => {
@@ -801,9 +789,9 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -842,9 +830,9 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            oasisDexExchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],

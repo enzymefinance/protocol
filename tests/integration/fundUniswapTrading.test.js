@@ -24,8 +24,7 @@ let contracts;
 let eur, mln, weth, fund;
 let mlnExchange, eurExchange;
 let takeOrderSignature;
-let exchangeIndex;
-let takerAddress;
+let uniswapAdapter;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -48,12 +47,11 @@ beforeAll(async () => {
   const fundFactory = contracts.FundFactory;
 
   const uniswapFactory = contracts.UniswapFactory;
-  const uniswapAdapter = contracts.UniswapAdapter;
+  uniswapAdapter = contracts.UniswapAdapter;
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [uniswapFactory.options.address],
-    exchangeAdapters: [uniswapAdapter.options.address],
+    integrationAdapters: [uniswapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -63,9 +61,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory
   });
-  exchangeIndex = 0;
-
-  takerAddress = fund.vault.options.address;
 
   // Load interfaces for uniswap exchanges of tokens to be traded
   const iUniswapFactory = await fetchContract(
@@ -149,9 +144,9 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      uniswapAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -209,9 +204,9 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      uniswapAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -280,9 +275,9 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      uniswapAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -340,9 +335,9 @@ test('Order fails if maker amount is not satisfied', async () => {
   await expect(
     send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        uniswapAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],

@@ -18,8 +18,7 @@ import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let exchangeIndex;
-let mln, weth, oasisDexExchange, priceSource;
+let mln, weth, oasisDexAdapter, oasisDexExchange, priceSource;
 let takeOrderSignature;
 let fund;
 
@@ -33,10 +32,10 @@ beforeAll(async () => {
 
   mln = contracts.MLN;
   weth = contracts.WETH;
+  oasisDexAdapter = contracts.OasisDexAdapter;
   oasisDexExchange = contracts.OasisDexExchange;
   priceSource = contracts.TestingPriceFeed;
 
-  const oasisDexAdapter = contracts.OasisDexAdapter;
   const fundFactory = contracts.FundFactory;
 
   takeOrderSignature = getFunctionSignature(
@@ -46,8 +45,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [oasisDexExchange.options.address],
-    exchangeAdapters: [oasisDexAdapter.options.address],
+    integrationAdapters: [oasisDexAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -57,7 +55,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory
   });
-  exchangeIndex = 0;
 
   // Set prices to non-constant value (testing uses "1" for every rate)
   const wethRateConstant = toWei('1', 'ether');
@@ -129,9 +126,9 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        oasisDexAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],
@@ -215,9 +212,9 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        oasisDexAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],

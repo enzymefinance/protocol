@@ -121,7 +121,6 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
       [],
       [],
       [],
-      [],
       quoteToken.options.address,
       [baseToken.options.address, quoteToken.options.address]
     ],
@@ -151,7 +150,6 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     'beginSetup',
     [
       `test-fund-${Date.now()}`,
-      [],
       [],
       [],
       [],

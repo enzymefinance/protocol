@@ -42,15 +42,7 @@ beforeAll(async () => {
   await send(
     registry,
     'registerAsset',
-    [
-      maliciousToken.options.address.toLowerCase(),
-      'Malicious',
-      'MLC',
-      '',
-      0,
-      [],
-      [],
-    ],
+    [maliciousToken.options.address],
     defaultTxOpts
   );
 
@@ -70,7 +62,7 @@ beforeAll(async () => {
 test('Trying to avoid performance fee with invalid asset addresses fails', async () => {
   const { shares, vault } = fund;
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  const holdings = await call(vault, 'getAllAssetBalances');
+  const ownedAssets = await call(vault, 'getOwnedAssets');
   const errorMessage = 'Requested asset holdings is 0';
 
   // TODO: convert to iterated tests
@@ -116,7 +108,7 @@ test('Trying to avoid performance fee with invalid asset addresses fails', async
       'redeemSharesWithConstraints',
       [
         preInvestorShares.toString(),
-        [...holdings[0], EMPTY_ADDRESS],
+        [...ownedAssets, EMPTY_ADDRESS],
       ],
       investorTxOpts
     )

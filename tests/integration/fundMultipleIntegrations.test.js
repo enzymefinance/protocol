@@ -1,9 +1,9 @@
 /*
- * @file Tests a fund vault with multiple exchange adapters
+ * @file Tests a fund vault with multiple integration adapters
  *
- * @test A fund can add an exchange adapter after it is created
- * @test A fund can take an order with the newly-added exchange
- * @test TODO: multiple tests for take orders on multiple exchanges
+ * @test A fund can add an integration adapter after it is created
+ * @test A fund can take an order with the newly-added integration
+ * @test TODO: multiple tests for take orders on multiple integrations
  */
 
 import { BN, toWei } from 'web3-utils';
@@ -21,7 +21,7 @@ let defaultTxOpts, managerTxOpts;
 let takeOrderSignature;
 let mln, weth;
 let oasisDexExchange, oasisDexAdapter;
-let kyberNetworkProxy, kyberAdapter, kyberExchangeIndex;
+let kyberNetworkProxy, kyberAdapter;
 let fundFactory, fund;
 
 beforeAll(async () => {
@@ -49,8 +49,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [oasisDexExchange.options.address],
-    exchangeAdapters: [oasisDexAdapter.options.address],
+    integrationAdapters: [oasisDexAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -62,24 +61,23 @@ beforeAll(async () => {
   });
 });
 
-test("add Kyber to fund's allowed exchanges", async () => {
+test("add Kyber to fund's enabled integrations", async () => {
   const { vault } = fund;
 
-  const preAddExchangeCount = (await call(vault, 'getExchangeInfo'))[0].length;
+  const preAddIntegrations = await call(vault, 'getEnabledAdapters');
+  expect(preAddIntegrations).not.toContain(kyberAdapter.options.address);
 
   await send(
     vault,
-    'addExchange',
-    [kyberNetworkProxy.options.address, kyberAdapter.options.address],
+    'enableAdapters',
+    [[kyberAdapter.options.address]],
     managerTxOpts
   );
 
-  const exchangeInfo = await call(vault, 'getExchangeInfo');
-  kyberExchangeIndex = exchangeInfo[1].findIndex(
-    e => e.toLowerCase() === kyberAdapter.options.address.toLowerCase()
-  );
+  const postAddIntegrations = await call(vault, 'getEnabledAdapters');
 
-  expect(kyberExchangeIndex).toBe(preAddExchangeCount);
+  expect(postAddIntegrations.length).toBe(preAddIntegrations.length + 1);
+  expect(postAddIntegrations).toContain(kyberAdapter.options.address);
 });
 
 test('fund takes an order on Kyber', async () => {
@@ -119,9 +117,9 @@ test('fund takes an order on Kyber', async () => {
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      kyberExchangeIndex,
+      kyberAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],

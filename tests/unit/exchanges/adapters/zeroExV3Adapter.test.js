@@ -39,7 +39,6 @@ let priceSource;
 let erc20Proxy, zeroExAdapter, zeroExExchange;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 let defaultProtocolFeeMultiplier, protocolFeeAmount, chainId;
 
 beforeAll(async () => {
@@ -83,12 +82,10 @@ describe('takeOrder', () => {
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('third party makes and validates an off-chain order', async () => {
@@ -138,9 +135,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            zeroExAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],
@@ -164,8 +161,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -174,7 +170,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('third party makes and validates an off-chain order', async () => {
@@ -229,9 +224,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -268,7 +263,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(zeroExExchange.options.address);
+      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -295,8 +290,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -305,7 +299,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('third party makes and validates an off-chain order', async () => {
@@ -366,9 +359,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -408,7 +401,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(zeroExExchange.options.address);
+      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -437,8 +430,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -447,7 +439,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
 
       // Make 2nd investment with MLN to allow taker fee trade
       takerFee = toWei('0.001', 'ether');
@@ -524,9 +515,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -567,7 +558,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(zeroExExchange.options.address);
+      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -597,8 +588,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -607,7 +597,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
 
       // Make 2nd investment with DAI to allow taker fee trade
       takerFee = toWei('1', 'ether');
@@ -701,9 +690,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -746,7 +735,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(zeroExExchange.options.address);
+      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -773,8 +762,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -783,7 +771,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
 
       // Set protocolFeeMultiplier to 0
       await send(zeroExExchange, 'setProtocolFeeMultiplier', [0], defaultTxOpts);
@@ -851,9 +838,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -890,7 +877,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(zeroExExchange.options.address);
+      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -916,8 +903,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [zeroExExchange.options.address],
-        exchangeAdapters: [zeroExAdapter.options.address],
+        integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -926,7 +912,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('third party makes and validates an off-chain order', async () => {
@@ -991,9 +976,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          zeroExAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -1030,7 +1015,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(zeroExExchange.options.address);
+      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(new BN(orderFilled.buyAmount)).bigNumberEq(makerFillQuantity);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);

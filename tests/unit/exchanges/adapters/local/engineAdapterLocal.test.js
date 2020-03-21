@@ -34,7 +34,6 @@ let engine;
 let engineAdapter;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 let mlnPrice;
 
 beforeAll(async () => {
@@ -81,8 +80,7 @@ describe('takeOrder', () => {
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [engine.options.address],
-        exchangeAdapters: [engineAdapter.options.address],
+        integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('100', 'ether'),
           investor: deployer,
@@ -91,7 +89,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
 
       // Thaw frozen eth from fund setup
       await increaseTime(86400 * 32);
@@ -126,9 +123,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          engineAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -165,7 +162,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ENGINE_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(engine.options.address);
+      expect(orderFilled.targetContract).toBe(engine.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -192,8 +189,7 @@ describe('takeOrder', () => {
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [engine.options.address],
-        exchangeAdapters: [engineAdapter.options.address],
+        integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('100', 'ether'),
           investor: deployer,
@@ -202,7 +198,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
 
       // Thaw frozen eth from fund setup
       await increaseTime(86400 * 32);
@@ -237,9 +232,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          engineAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -276,7 +271,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ENGINE_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(engine.options.address);
+      expect(orderFilled.targetContract).toBe(engine.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -303,8 +298,7 @@ describe('takeOrder', () => {
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [engine.options.address],
-        exchangeAdapters: [engineAdapter.options.address],
+        integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('100', 'ether'),
           investor: deployer,
@@ -313,7 +307,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
 
       // Thaw frozen eth from fund setup
       await increaseTime(86400 * 32);
@@ -342,9 +335,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            engineAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],

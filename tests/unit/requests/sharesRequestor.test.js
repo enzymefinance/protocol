@@ -85,7 +85,7 @@ describe('__cancelRequestFor', () => {
     });
   
     it('allows cancellation when a fund is shutdown', async () => {
-      await send(fundFactory, 'shutDownFund', [fund.hub.options.address], defaultTxOpts);
+      await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
 
       await expect(
         send(
@@ -161,7 +161,7 @@ describe('__cancelRequestFor', () => {
       });
 
       it('allows cancellation when a fund is shutdown', async () => {
-        await send(fundFactory, 'shutDownFund', [fund.hub.options.address], defaultTxOpts);
+        await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
   
         await expect(
           send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
@@ -262,7 +262,7 @@ describe('__cancelRequestFor', () => {
       incentiveFee = await call(registry, 'incentive');
 
       // Shut down the fund so cancellation condition passes
-      await send(fundFactory, 'shutDownFund', [fund.hub.options.address], defaultTxOpts);
+      await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
     });
   
     it('succeeds', async () => {  
@@ -681,7 +681,7 @@ describe('requestShares', () => {
     });
 
     it('does NOT allow request for a shutdown fund', async() => {
-      await send(fundFactory, 'shutDownFund', [fund.hub.options.address], defaultTxOpts);
+      await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
       await expect(
         createRequest(fund.hub.options.address, basicRequest)
       ).rejects.toThrowFlexible("Fund is not active");

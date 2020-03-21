@@ -24,7 +24,7 @@ import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let contracts;
-let exchangeIndex, takeOrderSignature;
+let takeOrderSignature;
 let fundFactory, kyberAdapter, kyberNetworkProxy, weth, mln, eur;
 let fund;
 
@@ -45,8 +45,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [kyberNetworkProxy.options.address],
-    exchangeAdapters: [kyberAdapter.options.address],
+    integrationAdapters: [kyberAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -56,8 +55,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory
   });
-
-  exchangeIndex = 0;
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -101,9 +98,9 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      kyberAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -167,9 +164,9 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      kyberAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -237,9 +234,9 @@ test('swap MLN directly to EUR without intermediary', async () => {
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      kyberAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -302,9 +299,9 @@ test('swap fails if make quantity is too high', async () => {
   await expect(
     send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        kyberAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],

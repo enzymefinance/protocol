@@ -34,13 +34,10 @@ beforeAll(async () => {
   weth = contracts.WETH;
   mln = contracts.MLN;
   managementFee = contracts.ManagementFee;
-  const registry = contracts.Registry;
   const fundFactory = contracts.FundFactory;
 
   const managementFeePeriod = 0;
   managementFeeRate = toWei('0.02', 'ether');
-
-  await send(registry, 'registerFees', [[managementFee.options.address]], defaultTxOpts);
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],

@@ -1,7 +1,7 @@
 /*
  * @file Unit tests for vault via the EngineAdapter (input validation only)
  *
- * @dev This file only contains tests for callOnExchange param validation.
+ * @dev This file only contains tests for callOnIntegration param validation.
  * Other tests rely on EVM manipulation not allowed on testnets (only local blockchain).
  * Those tests are in engineAdapterLocal.test.js
  *
@@ -27,7 +27,6 @@ let engine;
 let engineAdapter;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 
 beforeAll(async () => {
   [deployer] = await getAccounts();
@@ -65,8 +64,7 @@ describe('takeOrder', () => {
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [engine.options.address],
-        exchangeAdapters: [engineAdapter.options.address],
+        integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -75,7 +73,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     it('does not allow maker asset other than WETH', async () => {
@@ -91,9 +88,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            engineAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],
@@ -115,9 +112,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            engineAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],
@@ -140,9 +137,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            engineAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],

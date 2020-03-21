@@ -23,10 +23,9 @@ import {
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let contracts;
-let mln, zrx, weth, erc20Proxy, priceSource, zeroExExchange;
+let mln, zrx, weth, erc20Proxy, priceSource, zeroExAdapter, zeroExExchange;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 let mlnToEthRate, wethToEthRate, zrxToEthRate;
 
 beforeAll(async () => {
@@ -45,11 +44,11 @@ beforeAll(async () => {
   zrx = contracts.ZRX;
   weth = contracts.WETH;
   erc20Proxy = contracts.ZeroExV2ERC20Proxy;
-  zeroExExchange = contracts.ZeroExV2Exchange;
   priceSource = contracts.TestingPriceFeed;
+  zeroExAdapter = contracts.ZeroExV2Adapter;
+  zeroExExchange = contracts.ZeroExV2Exchange;
 
   const fundFactory = contracts.FundFactory;
-  const zeroExAdapter = contracts.ZeroExV2Adapter;
 
   wethToEthRate = toWei('1', 'ether');
   mlnToEthRate = toWei('0.5', 'ether');
@@ -66,8 +65,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [zeroExExchange.options.address],
-    exchangeAdapters: [zeroExAdapter.options.address],
+    integrationAdapters: [zeroExAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -77,7 +75,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory
   });
-  exchangeIndex = 0;
 });
 
 describe('Fund takes an order', () => {
@@ -129,9 +126,9 @@ describe('Fund takes an order', () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        zeroExAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],
@@ -258,9 +255,9 @@ describe('Fund takes an order with a taker fee', () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        zeroExAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],
