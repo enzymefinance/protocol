@@ -520,7 +520,7 @@ describe('redeemSharesQuantity', () => {
         [sharesPlusOne],
         defaultBuyShares.txOpts
       )
-    ).rejects.toThrowFlexible("_sharesQuatity exceeds sender balance")
+    ).rejects.toThrowFlexible("_sharesQuantity exceeds sender balance")
   });
 
   it('succeeds when called by a user with shares', async () => {
@@ -673,7 +673,7 @@ describe('redeemSharesWithConstraints', () => {
         [sharesPlusOne, [buySharesOpts.investmentAssetContract.options.address]],
         buySharesOpts.txOpts
       )
-    ).rejects.toThrowFlexible("_sharesQuatity exceeds sender balance")
+    ).rejects.toThrowFlexible("_sharesQuantity exceeds sender balance")
   });
 
   it('can NOT be called with an asset with a 0 balance', async () => {
