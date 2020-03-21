@@ -26,7 +26,7 @@ contract MaxPositions is TradingSignatures {
         // Always allow a trade INTO the quote asset
         address incomingToken = addresses[2];
         if (Shares(hub.shares()).DENOMINATION_ASSET() == incomingToken) return true;
-        return Vault(payable(hub.vault())).getOwnedAssetsLength() <= maxPositions;
+        return Vault(payable(hub.vault())).getOwnedAssets().length <= maxPositions;
     }
 
     function position() external pure returns (Applied) { return Applied.post; }

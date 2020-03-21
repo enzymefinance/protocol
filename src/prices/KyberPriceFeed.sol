@@ -2,7 +2,7 @@ pragma solidity 0.6.4;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
-import "../exchanges/interfaces/IKyberNetworkProxy.sol";
+import "../integrations/interfaces/IKyberNetworkProxy.sol";
 import "../registry/IRegistry.sol";
 import "./IPriceSource.sol";
 

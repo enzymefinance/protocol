@@ -2,6 +2,7 @@ pragma solidity 0.6.4;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
+import "../fund/hub/ISpoke.sol";
 import "../prices/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
@@ -91,8 +92,8 @@ contract Engine is IEngine, DSMath {
 
     function payAmguInEther() external payable override {
         require(
-            registry.isFundFactory(msg.sender) ||
-            registry.isFund(msg.sender) ||
+            registry.fundFactory() == msg.sender ||
+            __isHubOrSpoke(msg.sender) ||
             msg.sender == registry.sharesRequestor(),
             "Sender must be a fund or the factory"
         );
@@ -139,7 +140,7 @@ contract Engine is IEngine, DSMath {
 
     /// @notice MLN must be approved first
     function sellAndBurnMln(uint256 _mlnAmount) external override {
-        require(registry.isFund(msg.sender), "Only funds can use the engine");
+        require(__isHubOrSpoke(msg.sender), "Only funds can use the engine");
         require(
             mlnToken().transferFrom(msg.sender, address(this), _mlnAmount),
             "MLN transferFrom failed"
@@ -171,5 +172,22 @@ contract Engine is IEngine, DSMath {
     {
         return IPriceSource(registry.priceSource());
     }
-}
 
+    /// @notice Helper to check whether an address is either a Hub or a Spoke
+    function __isHubOrSpoke(address _who) private view returns (bool) {
+        // Check if hub
+        if (registry.fundIsRegistered(_who)) return true;
+        // Check if spoke
+        else {
+            // 1. Spoke points to hub
+            // 2. Hub confirms it is a spoke
+            // 3. Fund exists for hub
+            try ISpoke(_who).getHub() returns (IHub hub) {
+                return hub.isSpoke(_who) && registry.fundIsRegistered(address(hub));
+            }
+            catch {
+                return false;
+            }
+        }
+    }
+}

@@ -6,10 +6,10 @@ import "../../dependencies/token/IERC20.sol";
 import "../../fund/hub/SpokeAccessor.sol";
 import "../../registry/IRegistry.sol";
 
-/// @title Exchange Adapter base contract
+/// @title Integration Adapter base contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Provides convenience functions for use in exchange adapters
-abstract contract ExchangeAdapter is DSMath, SpokeAccessor {
+/// @notice Provides convenience functions for use in integration adapters
+abstract contract IntegrationAdapter is DSMath, SpokeAccessor {
     /// @notice Increment allowance of an asset for some target
     /// @dev Checks the actual in-contract assetBalances (as opposed to "holdings")
     function __approveAsset(

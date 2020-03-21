@@ -73,7 +73,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     /// @notice Assure that a hub address is valid
     modifier validHub(address _hub) {
         require(_hub != address(0), "validHub: _hub cannot be empty");
-        require(REGISTRY.isHub(_hub), "validHub: Fund does not exist");
+        require(REGISTRY.fundIsRegistered(_hub), "validHub: Fund does not exist");
         _;
     }
 

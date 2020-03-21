@@ -2,7 +2,6 @@ pragma solidity 0.6.4;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
-import "../factory/IFundFactory.sol";
 import "../prices/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";

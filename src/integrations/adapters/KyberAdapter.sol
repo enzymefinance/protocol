@@ -2,7 +2,6 @@ pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import "../interfaces/IKyberNetworkProxy.sol";
-import "../libs/ExchangeAdapter.sol";
 import "../libs/OrderTaker.sol";
 import "../libs/decoders/MinimalTakeOrderDecoder.sol";
 import "../../dependencies/WETH.sol";
@@ -10,7 +9,7 @@ import "../../dependencies/WETH.sol";
 /// @title KyberAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and Kyber Network
-contract KyberAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
+contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management
