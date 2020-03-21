@@ -9,13 +9,11 @@ import "../fund/vault/IVault.sol";
 import "../engine/AmguConsumer.sol";
 import "../registry/IRegistry.sol";
 import "./Factory.sol";
-import "./IFundFactory.sol";
 
 /// @title FundFactory Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Creates fund routes and links them together
-contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
-
+contract FundFactory is AmguConsumer, Factory, DSAuth {
     event NewFund(
         address indexed manager,
         address indexed hub,
@@ -27,18 +25,19 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
     ISharesFactory public sharesFactory;
     IVaultFactory public vaultFactory;
 
-    address[] public funds;
-    mapping (address => address) public managersToHubs;
-    mapping (address => Hub.Routes) public managersToRoutes;
-    mapping (address => Settings) public managersToSettings;
+    mapping (bytes32 => bool) public fundNameHashIsTaken;
 
-    /// @dev Parameters stored when beginning setup
+    // A manager can only have one pending fund
+    mapping (address => address) public managerToHub;
+    mapping (address => Hub.Routes) public managerToRoutes;
+    mapping (address => Settings) public managerToSettings;
+
+    // Parameters stored when beginning setup
     struct Settings {
         string name;
-        address[] exchanges;
         address[] adapters;
         address denominationAsset;
-        address[] defaultInvestmentAssets;
+        address[] defaultSharesInvestmentAssets;
         address[] fees;
         uint256[] feeRates;
         uint256[] feePeriods;
@@ -62,131 +61,152 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         policyManagerFactory = IPolicyManagerFactory(_policyManagerFactory);
     }
 
-    function componentExists(address _component) internal pure returns (bool) {
-        return _component != address(0);
-    }
-
-    function ensureComponentNotSet(address _component) internal {
+    modifier onlyNonSetComponent(address _component) {
         require(
-            !componentExists(_component),
-            "This step has already been run"
+            !__componentExists(_component),
+            "ensureComponentNotSet: Component has already been set"
         );
+        _;
     }
 
-    function ensureComponentSet(address _component) internal {
+    modifier onlySetComponent(address _component) {
         require(
-            componentExists(_component),
-            "Component preprequisites not met"
+            __componentExists(_component),
+            "ensureComponentNotSet: Component has not been set"
         );
+        _;
     }
 
+    // TODO: change to external (fails on stack error with all the calldata params currently)
+    // TODO: add policies
+    // TODO: fees and policies likely to be set up by directly calling the mandate component with encoded data
     function beginSetup(
         string memory _name,
         address[] memory _fees,
-        uint256[] memory _feeRates,
-        uint256[] memory _feePeriods,
-        address[] memory _exchanges,
+        uint256[] memory _feeRates, // encode?
+        uint256[] memory _feePeriods, // encode?
+        // address[] calldata _policies,
+        // bytes[] calldata _policyData,
         address[] memory _adapters,
         address _denominationAsset,
-        address[] memory _defaultInvestmentAssets
+        address[] memory _defaultSharesInvestmentAssets
     )
         public
+        onlyNonSetComponent(managerToHub[msg.sender])
     {
-        ensureComponentNotSet(managersToHubs[msg.sender]);
-        REGISTRY.reserveFundName(
-            msg.sender,
-            _name
+        require(
+            REGISTRY.assetIsRegistered(_denominationAsset),
+            "beginSetup: Denomination asset must be registered"
+        );
+        require(isValidFundName(_name), "beginSetup: Fund name is not valid");
+        bytes32 nameHash = __hashFundName(_name);
+        require(
+            !fundNameHashIsTaken[nameHash],
+            "beginSetup: Fund name already registered"
         );
 
-        managersToHubs[msg.sender] = address(new Hub(msg.sender, _name));
-        managersToSettings[msg.sender] = Settings(
+        fundNameHashIsTaken[nameHash] = true;
+        managerToHub[msg.sender] = address(new Hub(msg.sender, _name));
+        managerToSettings[msg.sender] = Settings(
             _name,
-            _exchanges,
             _adapters,
             _denominationAsset,
-            _defaultInvestmentAssets,
+            _defaultSharesInvestmentAssets,
             _fees,
             _feeRates,
             _feePeriods
         );
-        managersToRoutes[msg.sender].registry = address(REGISTRY);
-        managersToRoutes[msg.sender].fundFactory = address(this);
+        managerToRoutes[msg.sender].registry = address(REGISTRY);
+        managerToRoutes[msg.sender].fundFactory = address(this); // TODO: Remove if Registry + FundFactory combined
     }
 
-    function _createFeeManagerFor(address _manager)
-        internal
+    function __createFeeManagerFor(address _manager)
+        private
+        onlySetComponent(managerToHub[_manager])
+        onlyNonSetComponent(managerToRoutes[_manager].feeManager)
     {
-        ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].feeManager);
-        managersToRoutes[_manager].feeManager = feeManagerFactory.createInstance(
-            managersToHubs[_manager],
-            managersToSettings[_manager].denominationAsset,
-            managersToSettings[_manager].fees,
-            managersToSettings[_manager].feeRates,
-            managersToSettings[_manager].feePeriods,
-            managersToRoutes[_manager].registry
+        managerToRoutes[_manager].feeManager = feeManagerFactory.createInstance(
+            managerToHub[_manager],
+            managerToSettings[_manager].denominationAsset,
+            managerToSettings[_manager].fees,
+            managerToSettings[_manager].feeRates,
+            managerToSettings[_manager].feePeriods,
+            managerToRoutes[_manager].registry
         );
     }
 
-    function createFeeManagerFor(address _manager) external amguPayable payable { _createFeeManagerFor(_manager); }
-    function createFeeManager() external amguPayable payable { _createFeeManagerFor(msg.sender); }
+    function createFeeManagerFor(address _manager) external amguPayable payable {
+        __createFeeManagerFor(_manager);
+    }
 
-    function _createPolicyManagerFor(address _manager)
-        internal
+    function createFeeManager() external amguPayable payable { __createFeeManagerFor(msg.sender); }
+
+    function __createPolicyManagerFor(address _manager)
+        private
+        onlySetComponent(managerToHub[_manager])
+        onlyNonSetComponent(managerToRoutes[_manager].policyManager)
     {
-        ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].policyManager);
-        managersToRoutes[_manager].policyManager = policyManagerFactory.createInstance(
-            managersToHubs[_manager]
+        managerToRoutes[_manager].policyManager = policyManagerFactory.createInstance(
+            managerToHub[_manager]
         );
     }
 
-    function createPolicyManagerFor(address _manager) external amguPayable payable { _createPolicyManagerFor(_manager); }
-    function createPolicyManager() external amguPayable payable { _createPolicyManagerFor(msg.sender); }
+    function createPolicyManagerFor(address _manager) external amguPayable payable {
+        __createPolicyManagerFor(_manager);
+    }
 
-    function _createSharesFor(address _manager)
-        internal
+    function createPolicyManager() external amguPayable payable {
+        __createPolicyManagerFor(msg.sender);
+    }
+
+    function __createSharesFor(address _manager)
+        private
+        onlySetComponent(managerToHub[_manager])
+        onlyNonSetComponent(managerToRoutes[_manager].shares)
     {
-        ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].shares);
-        managersToRoutes[_manager].shares = sharesFactory.createInstance(
-            managersToHubs[_manager],
-            managersToSettings[_manager].denominationAsset,
-            managersToSettings[_manager].defaultInvestmentAssets,
-            managersToRoutes[_manager].registry
+        managerToRoutes[_manager].shares = sharesFactory.createInstance(
+            managerToHub[_manager],
+            managerToSettings[_manager].denominationAsset,
+            managerToSettings[_manager].defaultSharesInvestmentAssets,
+            managerToRoutes[_manager].registry
         );
     }
 
-    function createSharesFor(address _manager) external amguPayable payable { _createSharesFor(_manager); }
-    function createShares() external amguPayable payable { _createSharesFor(msg.sender); }
+    function createSharesFor(address _manager) external amguPayable payable {
+        __createSharesFor(_manager);
+    }
 
-    function _createVaultFor(address _manager)
-        internal
+    function createShares() external amguPayable payable { __createSharesFor(msg.sender); }
+
+    function __createVaultFor(address _manager)
+        private
+        onlySetComponent(managerToHub[_manager])
+        onlyNonSetComponent(managerToRoutes[_manager].vault)
     {
-        ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].vault);
-        managersToRoutes[_manager].vault = vaultFactory.createInstance(
-            managersToHubs[_manager],
-            managersToSettings[_manager].exchanges,
-            managersToSettings[_manager].adapters,
-            managersToRoutes[_manager].registry
+        managerToRoutes[_manager].vault = vaultFactory.createInstance(
+            managerToHub[_manager],
+            managerToSettings[_manager].adapters,
+            managerToRoutes[_manager].registry
         );
     }
 
-    function createVaultFor(address _manager) external amguPayable payable { _createVaultFor(_manager); }
-    function createVault() external amguPayable payable { _createVaultFor(msg.sender); }
+    function createVaultFor(address _manager) external amguPayable payable {
+        __createVaultFor(_manager);
+    }
 
-    function _completeSetupFor(address _manager) internal {
-        Hub.Routes memory routes = managersToRoutes[_manager];
-        Hub hub = Hub(managersToHubs[_manager]);
-        require(!childExists[address(hub)], "Setup already complete");
+    function createVault() external amguPayable payable { __createVaultFor(msg.sender); }
+
+    function __completeSetupFor(address _manager) private {
+        Hub.Routes memory routes = managerToRoutes[_manager];
+        Hub hub = Hub(managerToHub[_manager]);
+        require(!childExists[address(hub)], "__completeSetupFor: Setup already complete");
         require(
-            componentExists(address(hub)) &&
-            componentExists(routes.feeManager) &&
-            componentExists(routes.policyManager) &&
-            componentExists(routes.shares) &&
-            componentExists(routes.vault),
-            "Components must be set before completing setup"
+            __componentExists(address(hub)) &&
+            __componentExists(routes.feeManager) &&
+            __componentExists(routes.policyManager) &&
+            __componentExists(routes.shares) &&
+            __componentExists(routes.vault),
+            "__completeSetupFor: All components must be set before completing setup"
         );
         childExists[address(hub)] = true;
         hub.initializeAndSetPermissions([
@@ -197,12 +217,12 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
             routes.registry,
             routes.fundFactory
         ]);
-        funds.push(address(hub));
-        REGISTRY.registerFund(
-            address(hub),
-            _manager,
-            managersToSettings[_manager].name
-        );
+        REGISTRY.registerFund(address(hub), _manager);
+
+        // Clear storage for manager's next fund
+        delete managerToHub[_manager];
+        delete managerToRoutes[_manager];
+        delete managerToSettings[_manager];
 
         emit NewFund(
             msg.sender,
@@ -218,22 +238,39 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         );
     }
 
-    function completeSetupFor(address _manager) external amguPayable payable { _completeSetupFor(_manager); }
-    function completeSetup() external amguPayable payable { _completeSetupFor(msg.sender); }
-
-    function getFundById(uint256 _id) external view returns (address) { return funds[_id]; }
-
-    function getLastFundId() external view returns (uint256) { return funds.length - 1; }
-
-    function getExchangesInfo(address _user) public view returns (address[] memory) {
-        return (managersToSettings[_user].exchanges);
+    function completeSetupFor(address _manager) external amguPayable payable {
+        __completeSetupFor(_manager);
     }
 
-    function shutDownFund(address _hub) external override {
-        require(
-            managersToHubs[msg.sender] == _hub,
-            "Conditions not met for fund shutdown"
-        );
-        Hub(_hub).shutDownFund();
+    function completeSetup() external amguPayable payable { __completeSetupFor(msg.sender); }
+
+    /// @notice Check whether a string has only valid characters for use in a fund name
+    /// @param _name The fund name string to check
+    /// @return True if the name is valid for use in a fund
+    function isValidFundName(string memory _name) public pure returns (bool) {
+        bytes memory b = bytes(_name);
+        for (uint256 i; i < b.length; i++) {
+            bytes1 char = b[i];
+            if (
+                !(char >= 0x30 && char <= 0x39) && // 9-0
+                !(char >= 0x41 && char <= 0x5A) && // A-Z
+                !(char >= 0x61 && char <= 0x7A) && // a-z
+                !(char == 0x20 || char == 0x2D) && // space, dash
+                !(char == 0x2E || char == 0x5F) && // period, underscore
+                !(char == 0x2A) // *
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function __componentExists(address _component) private pure returns (bool) {
+        return _component != address(0);
+    }
+
+    /// @notice Helper function to create a bytes32 hash from a fund name string
+    function __hashFundName(string memory _name) private pure returns (bytes32) {
+        return keccak256(bytes(_name));
     }
 }

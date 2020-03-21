@@ -39,7 +39,7 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
     {
         for (uint i = 0; i < _fees.length; i++) {
             require(
-                IRegistry(_registry).isFeeRegistered(_fees[i]),
+                IRegistry(_registry).feeIsRegistered(_fees[i]),
                 "Fee must be known to Registry"
             );
             register(_fees[i], _rates[i], _periods[i], _denominationAsset);

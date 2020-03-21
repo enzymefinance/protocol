@@ -1,16 +1,13 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-import "../libs/ExchangeAdapter.sol";
+import "../interfaces/IOasisDex.sol";
 import "../libs/OrderTaker.sol";
-import "../libs/decoders/MinimalTakeOrderDecoder.sol";
-import "../../dependencies/WETH.sol";
-import "../../engine/IEngine.sol";
 
-/// @title EngineAdapter Contract
+/// @title OasisDexAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Trading adapter to Melon Engine
-contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
+/// @notice Adapter between Melon and OasisDex Matching Market
+contract OasisDexAdapter is OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management
@@ -31,20 +28,18 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
         internal
         view
         override
-        returns (
-            address[6] memory riskManagementAddresses_,
-            uint256[3] memory riskManagementValues_
-        )
+        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
     {
         (
             address makerAsset,
             uint256 makerQuantity,
             address takerAsset,
             uint256 takerQuantity
+            ,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         riskManagementAddresses_ = [
-            __getRegistry().engine(),
+            address(0),
             address(this),
             makerAsset,
             takerAsset,
@@ -58,8 +53,8 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
         ];
     }
 
-    /// @notice Buys Ether from the Melon Engine, selling MLN (takeOrder)
-    /// @param _targetExchange Address of the Melon Engine
+    /// @notice Takes an active order on Oasis Dex (takeOrder)
+    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
@@ -72,31 +67,28 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
         validateAndFinalizeFilledOrder(_targetExchange, _fillData)
     {
         (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts,
-        ) = __decodeOrderFillData(_fillData);
+            , , , ,
+            uint256 identifier
+        ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        // Fill order on Engine
-        uint256 preEthBalance = payable(address(this)).balance;
-        IEngine(_targetExchange).sellAndBurnMln(fillExpectedAmounts[1]);
-        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
+        (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
 
-        // Return ETH to WETH
-        WETH(payable(fillAssets[0])).deposit.value(ethFilledAmount)();
+        // Execute take order on exchange
+        IOasisDex(_targetExchange).buy(uint256(identifier), fillExpectedAmounts[0]);
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of the Melon Engine
+    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
     /// - [1] Taker asset (same as _orderAddresses[3])
     /// @return fillExpectedAmounts_ Asset fill amounts
-    /// - [0] Expected (min) quantity of WETH to receive
-    /// - [1] Expected (max) quantity of MLN to spend
+    /// - [0] Expected (min) quantity of maker asset to receive
+    /// - [1] Expected (max) quantity of taker asset to spend
     /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
-    /// - [1] Melon Engine (_targetExchange)
+    /// - [1] Oasis Dex exchange (_targetExchange)
     function __formatFillTakeOrderArgs(
         address _targetExchange,
         bytes memory _encodedArgs
@@ -108,18 +100,27 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     {
         (
             address makerAsset,
-            uint256 makerQuantity,
+            ,
             address takerAsset,
-            uint256 takerQuantity
+            uint256 takerQuantity,
+            uint256 identifier
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         address[] memory fillAssets = new address[](2);
         fillAssets[0] = makerAsset;
         fillAssets[1] = takerAsset;
 
+        (
+            uint256 maxMakerQuantity,,uint256 maxTakerQuantity,
+        ) = IOasisDex(_targetExchange).getOffer(uint256(identifier));
+
         uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = makerQuantity;
-        fillExpectedAmounts[1] = takerQuantity;
+        fillExpectedAmounts[0] = __calculateRelativeQuantity(
+            maxTakerQuantity,
+            maxMakerQuantity,
+            takerQuantity
+        ); // maker fill amount
+        fillExpectedAmounts[1] = takerQuantity; // taker fill amount
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
@@ -129,7 +130,7 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of the Melon Engine
+    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     function __validateTakeOrderParams(
         address _targetExchange,
@@ -140,19 +141,66 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
         override
     {
         (
-            address makerAsset,
+            address decodedMakerAsset,
             ,
-            address takerAsset
-            ,
+            address decodedTakerAsset,
+            uint256 takerQuantity,
+            uint256 identifier
         ) = __decodeTakeOrderArgs(_encodedArgs);
+        (
+            ,
+            address makerAsset,
+            uint256 maxTakerQuantity,
+            address takerAsset
+        ) = IOasisDex(_targetExchange).getOffer(uint256(identifier));
 
         require(
-            makerAsset == __getNativeAssetAddress(),
-            "__validateTakeOrderParams: maker asset does not match nativeAsset"
+            decodedMakerAsset == makerAsset,
+            "__validateTakeOrderParams: Order maker asset does not match the input"
         );
         require(
-            takerAsset == __getMlnTokenAddress(),
-            "__validateTakeOrderParams: taker asset does not match mlnToken"
+            decodedTakerAsset == takerAsset,
+            "__validateTakeOrderParams: Order taker asset does not match the input"
+        );
+
+        IRegistry registry = __getRegistry();
+        require(registry.assetIsRegistered(
+            makerAsset), 'Maker asset not registered'
+        );
+        require(registry.assetIsRegistered(
+            takerAsset), 'Taker asset not registered'
+        );
+
+        require(
+            takerQuantity <= maxTakerQuantity,
+            "__validateTakeOrderParams: Taker fill amount greater than available quantity"
+        );
+    }
+
+    /// @notice Decode the parameters of a takeOrder call
+    /// @param _encodedArgs Encoded parameters passed from client side
+    function __decodeTakeOrderArgs(
+        bytes memory _encodedArgs
+    )
+        internal
+        pure
+        returns (
+            address makerAsset_,
+            uint256 makerQuantity_,
+            address takerAsset_,
+            uint256 takerQuantity_,
+            uint256 identifier_
+        )
+    {
+        return abi.decode(
+            _encodedArgs,
+            (
+                address,
+                uint256,
+                address,
+                uint256,
+                uint256
+            )
         );
     }
 }

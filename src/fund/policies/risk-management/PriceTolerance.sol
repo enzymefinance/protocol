@@ -3,7 +3,7 @@ pragma solidity 0.6.4;
 import "../TradingSignatures.sol";
 import "../../hub/Spoke.sol";
 import "../../../dependencies/DSMath.sol";
-import "../../../exchanges/interfaces/IOasisDex.sol";
+import "../../../integrations/interfaces/IOasisDex.sol";
 import "../../../prices/IPriceSource.sol";
 
 /// @title PriceTolerance Contract

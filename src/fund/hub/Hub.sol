@@ -35,7 +35,7 @@ contract Hub is IHub, DSGuard {
     }
 
     function shutDownFund() external {
-        require(msg.sender == routes.fundFactory);
+        require(msg.sender == manager, "shutDownFund: Only fund manager can call this function");
         isShutDown = true;
         emit FundShutDown();
     }
@@ -57,15 +57,12 @@ contract Hub is IHub, DSGuard {
         Spoke(routes.shares).initialize(_spokes);
         Spoke(routes.vault).initialize(_spokes);
 
-        permit(manager, routes.shares, bytes4(keccak256('disableSharesInvestmentAssets(address[])')));
-        permit(manager, routes.shares, bytes4(keccak256('enableSharesInvestmentAssets(address[])')));
         permit(
             manager,
             routes.policyManager,
             bytes4(keccak256('batchRegister(bytes4[],address[])'))
         );
         permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
-        permit(manager, routes.vault, bytes4(keccak256('addExchange(address,address)')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
         fundInitialized = true;
     }

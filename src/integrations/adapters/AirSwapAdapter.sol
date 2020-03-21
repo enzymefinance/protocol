@@ -1,14 +1,13 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-import "../libs/ExchangeAdapter.sol";
 import "../interfaces/ISwap.sol";
 import "../libs/OrderTaker.sol";
 
 /// @title AirSwapAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and AirSwap
-contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
+contract AirSwapAdapter is OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management

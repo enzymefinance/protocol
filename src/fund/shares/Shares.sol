@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 import "../../dependencies/TokenUser.sol";
 import "../../dependencies/libs/EnumerableSet.sol";
 import "../../factory/Factory.sol";
+import "../../prices/IDerivativePriceSource.sol";
 import "../../prices/IPriceSource.sol";
 import "../../registry/IRegistry.sol";
 import "../fees/IFeeManager.sol";
@@ -152,31 +153,55 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
 
     // PUBLIC FUNCTIONS
 
+    function calcAssetGav(address _asset) public view returns (uint256) {
+        IRegistry registry = IRegistry(routes.registry);
+        // TODO: Is it a problem if this fails?
+        require(
+            registry.assetIsRegistered(_asset) ||
+            registry.derivativeToPriceSource(_asset) != address(0),
+            "calcAssetGav: _asset has no price source"
+        );
+
+        address gavAsset;
+        uint256 gavAssetAmount;
+        uint256 assetBalance = IVault(routes.vault).assetBalances(_asset);
+
+        // If asset in registry, get asset from priceSource
+        if (registry.assetIsRegistered(_asset)) {
+            gavAsset = _asset;
+            gavAssetAmount = assetBalance;
+        }
+        // Else use derivative oracle to get price
+        else {
+            address derivativePriceSource = registry.derivativeToPriceSource(_asset);
+            uint256 price;
+            (gavAsset, price) = IDerivativePriceSource(derivativePriceSource).getPrice(_asset);
+
+            gavAssetAmount = mul(
+                price,
+                assetBalance
+            ) / 10 ** uint256(ERC20WithFields(_asset).decimals());
+        }
+
+        return IPriceSource(priceSource()).convertQuantity(
+            gavAssetAmount,
+            gavAsset,
+            DENOMINATION_ASSET
+        );
+    }
+
     /// @notice Calculate the overall GAV of the fund
     /// @return gav_ The fund GAV
-    function calcGav() public view returns (uint256 gav_) {
-        (
-            address[] memory assets,
-            uint256[] memory balances
-        ) = IVault(routes.vault).getAllAssetBalances();
-        for (uint256 i = 0; i < assets.length; ++i) {
-            // TODO: remove this? Should never be the case and it's not harmful
-            if (balances[i] == 0) {
-                continue;
-            }
+    function calcGav() public view returns (uint256) {
+        address[] memory assets = IVault(routes.vault).getOwnedAssets();
 
-            // If asset in registry, get asset from priceSource
-
-            // Else, if derivative in registry, use linked oracle to get price
-            gav_ = add(
-                gav_,
-                IPriceSource(priceSource()).convertQuantity(
-                    balances[i],
-                    assets[i],
-                    DENOMINATION_ASSET
-                )
-            );
+        uint256 gav;
+        for (uint256 i = 0; i < assets.length; i++) {
+            // TODO: is this way too expensive b/c up to 20 calls to vault?; 2000n gas?
+            gav = add(gav, calcAssetGav(assets[i]));
         }
+
+        return gav;
     }
 
     /// @notice Calculate the cost for a given number of shares in the fund, in a given asset
@@ -229,7 +254,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     function redeemSharesQuantity(uint256 _sharesQuantity) public {
         require(_sharesQuantity > 0, "redeemSharesQuantity: _sharesQuantity must be > 0");
 
-        (address[] memory assets,) = IVault(routes.vault).getAllAssetBalances();
+        address[] memory assets = IVault(routes.vault).getOwnedAssets();
         redeemSharesWithConstraints(_sharesQuantity, assets);
     }
 
@@ -262,7 +287,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         // Calculate and transfer owed assets to redeemer
         IVault vault = IVault(routes.vault);
         uint256[] memory owedQuantities = new uint256[](_assets.length);
-        for (uint256 i = 0; i < _assets.length; ++i) {
+        for (uint256 i = 0; i < _assets.length; i++) {
             uint256 quantityHeld = vault.assetBalances(_assets[i]);
             require(quantityHeld > 0, "Requested asset holdings is 0");
 
