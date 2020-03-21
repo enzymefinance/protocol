@@ -2,47 +2,53 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../../dependencies/DSAuth.sol";
+import "../../dependencies/libs/EnumerableSet.sol";
 import "../../registry/IRegistry.sol";
 import "../hub/SpokeAccessor.sol";
 import "../policies/IPolicyManager.sol";
 import "../policies/TradingSignatures.sol";
 
 contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    event AdaptersDisabled (address[] adapters);
+
+    event AdaptersEnabled (address[] adapters, address[] exchanges);
+
+    // @dev This seems odd now, but we will have an "integrationType" field when we shift to Integrations
     struct Exchange {
         address exchange;
-        address adapter;
     }
 
-    Exchange[] public exchanges;
-    mapping (address => bool) public adapterIsAdded;
+    EnumerableSet.AddressSet private enabledAdapters;
+    mapping (address => Exchange) public adapterToExchange;
 
+    // TODO: edit constructor order?
     constructor(address[] memory _exchanges, address[] memory _adapters, address _registry)
         public
     {
-        require(_exchanges.length == _adapters.length, "Array lengths unequal");
-        for (uint256 i = 0; i < _exchanges.length; i++) {
-            __addExchange(_exchanges[i], _adapters[i], _registry);
-        }
+        __enableAdapters(_adapters, _exchanges, _registry);
     }
 
     // EXTERNAL FUNCTIONS
 
-    function addExchange(address _exchange, address _adapter) external auth {
-        __addExchange(_exchange, _adapter, __getRoutes().registry);
+    function disableAdapters(address[] calldata _adapters) external auth {
+        for (uint256 i = 0; i < _adapters.length; i++) {
+            EnumerableSet.remove(enabledAdapters, _adapters[i]);
+            delete adapterToExchange[_adapters[i]];
+        }
+        emit AdaptersDisabled(_adapters);
     }
 
-    function getExchangeInfo()
+    function enableAdapters(address[] calldata _adapters, address[] calldata _exchanges)
         external
-        view
-        returns (address[] memory, address[] memory)
+        auth
     {
-        address[] memory ofExchanges = new address[](exchanges.length);
-        address[] memory ofAdapters = new address[](exchanges.length);
-        for (uint256 i = 0; i < exchanges.length; i++) {
-            ofExchanges[i] = exchanges[i].exchange;
-            ofAdapters[i] = exchanges[i].adapter;
-        }
-        return (ofExchanges, ofAdapters);
+        __enableAdapters(_adapters, _exchanges, __getRoutes().registry);
+    }
+
+    function getEnabledAdapters() external view returns (address[] memory) {
+        return EnumerableSet.enumerate(enabledAdapters);
     }
 
     // PUBLIC FUNCTIONS
@@ -133,21 +139,34 @@ contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
         );
     }
 
-    // INTERNAL FUNCTIONS
+    // PRIVATE FUNCTIONS
 
-    function __addExchange(address _exchange, address _adapter, address _registry) internal {
-        require(!adapterIsAdded[_adapter], "Adapter already added");
-        adapterIsAdded[_adapter] = true;
-        IRegistry registry = IRegistry(_registry);
+    function __enableAdapters(
+        address[] memory _adapters,
+        address[] memory _exchanges,
+        address _registry
+    )
+        private
+    {
         require(
-            registry.exchangeAdapterIsRegistered(_adapter),
-            "Adapter is not registered"
+            _exchanges.length == _adapters.length,
+            "__enableAdapters: unequal exchanges and adapters array lengths"
         );
-        require(
-            registry.exchangeForAdapter(_adapter) == _exchange,
-            "Exchange and adapter do not match"
-        );
-        exchanges.push(Exchange(_exchange, _adapter));
+        for (uint256 i = 0; i < _adapters.length; i++) {
+            IRegistry registry = IRegistry(_registry);
+            require(
+                registry.exchangeAdapterIsRegistered(_adapters[i]),
+                "__enableAdapters: Adapter is not registered"
+            );
+            require(
+                registry.exchangeForAdapter(_adapters[i]) == _exchanges[i],
+                "__enableAdapters: Exchange and adapter do not match"
+            );
+
+            EnumerableSet.add(enabledAdapters, _adapters[i]);
+            adapterToExchange[_adapters[i]] = Exchange(_exchanges[i]);
+        }
+        emit AdaptersEnabled(_adapters, _exchanges);
     }
 
     function __validateCallOnExchange(

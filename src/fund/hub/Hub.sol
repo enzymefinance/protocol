@@ -77,7 +77,8 @@ contract Hub is DSGuard {
             bytes4(keccak256('batchRegister(bytes4[],address[])'))
         );
         permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
-        permit(manager, routes.vault, bytes4(keccak256('addExchange(address,address)')));
+        permit(manager, routes.vault, bytes4(keccak256('disableAdapters(address[])')));
+        permit(manager, routes.vault, bytes4(keccak256('enableAdapters(address[],address[])')));
         permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
         permit(
