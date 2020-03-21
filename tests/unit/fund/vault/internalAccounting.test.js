@@ -101,8 +101,8 @@ describe('new investment in fund', () => {
   });
 
   it('adds asset to ownedAssets', async() => {
-    const ownedAssetsLength = await call(fund.vault, 'getOwnedAssetsLength');
-    expect(ownedAssetsLength).toBe("1");
+    const ownedAssets = await call(fund.vault, 'getOwnedAssets');
+    expect(ownedAssets.length).toBe(1);
 
     const ownedAsset = await call(fund.vault, 'ownedAssets', [0]);
     expect(ownedAsset).toBe(weth.options.address);
@@ -113,7 +113,6 @@ describe('vault', () => {
   let preTxBlock;
   let makerAsset, makerQuantity, takerAsset, takerQuantity;
   let preFundMlnHoldings, preFundWethHoldings, postFundMlnHoldings, postFundWethHoldings;
-  let exchangeIndex;
 
   beforeAll(async () => {
     const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
@@ -122,8 +121,7 @@ describe('vault', () => {
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
-      exchanges: [kyberNetworkProxy.options.address],
-      exchangeAdapters: [kyberAdapter.options.address],
+      integrationAdapters: [kyberAdapter.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,
@@ -132,7 +130,6 @@ describe('vault', () => {
       quoteToken: weth.options.address,
       fundFactory
     });
-    exchangeIndex = 0;
 
     makerAsset = mln.options.address;
     takerAsset = weth.options.address;
@@ -159,9 +156,9 @@ describe('vault', () => {
     await expect(
       send(
         fund.vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          kyberAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -190,9 +187,9 @@ describe('vault', () => {
     await expect(
       send(
         fund.vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          kyberAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -286,8 +283,8 @@ describe('vault', () => {
   });
 
   it('adds maker asset to ownedAssets and removes take asset', async() => {
-    const ownedAssetsLength = await call(fund.vault, 'getOwnedAssetsLength');
-    expect(ownedAssetsLength).toBe("1");
+    const ownedAssets = await call(fund.vault, 'getOwnedAssets');
+    expect(ownedAssets.length).toBe(1);
 
     const ownedAsset = await call(fund.vault, 'ownedAssets', [0]);
     expect(ownedAsset).toBe(makerAsset);
@@ -353,7 +350,7 @@ describe('redeem shares', () => {
   });
 
   it('removes asset from ownedAssets', async() => {
-    const ownedAssetsLength = await call(fund.vault, 'getOwnedAssetsLength');
-    expect(ownedAssetsLength).toBe("0");
+    const ownedAssets = await call(fund.vault, 'getOwnedAssets');
+    expect(ownedAssets.length).toBe(0);
   });
 });

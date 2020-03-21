@@ -22,10 +22,10 @@ let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let contracts;
 let performanceFeePeriod, performanceFeeRate;
-let mln, weth, oasisDexExchange, performanceFee, priceSource;
+let mln, weth, oasisDexAdapter, oasisDexExchange, performanceFee, priceSource;
 let fund;
 let mlnToEthRate, wethToEthRate;
-let exchangeIndex, takeOrderSignature;
+let takeOrderSignature;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -38,13 +38,12 @@ beforeAll(async () => {
 
   mln = contracts.MLN;
   weth = contracts.WETH;
+  oasisDexAdapter = contracts.OasisDexAdapter;
   oasisDexExchange = contracts.OasisDexExchange;
   performanceFee = contracts.PerformanceFee;
   priceSource = contracts.TestingPriceFeed;
 
   const managementFee = contracts.ManagementFee;
-  const oasisDexAdapter = contracts.OasisDexAdapter;
-  const registry = contracts.Registry;
   const fundFactory = contracts.FundFactory;
 
   const feeAddresses = [
@@ -53,8 +52,6 @@ beforeAll(async () => {
   ];
   performanceFeePeriod = '2'; // 2 secs
   performanceFeeRate = toWei('.2', 'ether');
-
-  await send(registry, 'registerFees', [feeAddresses], defaultTxOpts);
 
   wethToEthRate = toWei('1', 'ether');
   mlnToEthRate = toWei('0.5', 'ether');
@@ -70,8 +67,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [oasisDexExchange.options.address],
-    exchangeAdapters: [oasisDexAdapter.options.address],
+    integrationAdapters: [oasisDexAdapter.options.address],
     fees: {
       addresses: feeAddresses,
       rates: [0, performanceFeeRate],
@@ -86,7 +82,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory
   });
-  exchangeIndex = 0;
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -192,9 +187,9 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      oasisDexAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],

@@ -16,10 +16,10 @@ import {
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let contracts;
+let airSwapAdapter;
 let mln, weth, swapContract;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
@@ -40,7 +40,7 @@ beforeAll(async () => {
   orders.setVerifyingContract(swapContract.options.address);
 
   const fundFactory = contracts.FundFactory;
-  const airSwapAdapter = contracts.AirSwapAdapter;
+  airSwapAdapter = contracts.AirSwapAdapter;
 
   const erc20TransferHandler = contracts.ERC20TransferHandler;
   const transferHandlerRegistry = contracts.TransferHandlerRegistry;
@@ -56,8 +56,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: [swapContract.options.address],
-    exchangeAdapters: [airSwapAdapter.options.address],
+    integrationAdapters: [airSwapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -67,8 +66,6 @@ beforeAll(async () => {
     quoteToken: weth.options.address,
     fundFactory,
   });
-
-  exchangeIndex = 0;
 });
 
 describe('Fund takes an order', () => {
@@ -110,9 +107,9 @@ describe('Fund takes an order', () => {
 
     await send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        airSwapAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],

@@ -100,8 +100,6 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
 export const setupFundWithParams = async ({
   amguTxValue,
   defaultTokens,
-  exchanges = [],
-  exchangeAdapters = [],
   fees = {
     addresses: [],
     rates: [],
@@ -112,6 +110,7 @@ export const setupFundWithParams = async ({
     investor: undefined,
     tokenContract: undefined
   },
+  integrationAdapters = [],
   manager,
   name = `test-fund-${Date.now()}`,
   quoteToken,
@@ -133,8 +132,7 @@ export const setupFundWithParams = async ({
       fees.addresses,
       fees.rates,
       fees.periods,
-      exchanges,
-      exchangeAdapters,
+      integrationAdapters,
       quoteToken,
       defaultTokens,
     ],
@@ -162,7 +160,7 @@ export const setupFundWithParams = async ({
   return fund;
 }
 
-// Creates a basic fund with all our exchange adapters, fees, and some initial investment
+// Creates a basic fund with all our integration adapters, fees, and some initial investment
 // @dev `contracts` is an object of web3.Contract instances
 export const setupInvestedTestFund = async (contracts, manager, amguTxValue = null) => {
   const [deployer] = await getAccounts();
@@ -178,57 +176,19 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
   const managementFeePeriod = 0;
   const performanceFeePeriod = 60 * 60 * 24 * 90; // 90 days
 
-  let exchangeAddresses = [];
-  let adapterAddresses = [];
-
-  const engineRegistered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.EngineAdapter.options.address]
-  );
-  if (engineRegistered) {
-    exchangeAddresses.push(contracts.Engine.options.address);
-    adapterAddresses.push(contracts.EngineAdapter.options.address);
-  }
-  const kyberRegistered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.KyberAdapter.options.address]
-  );
-  if (kyberRegistered) {
-    exchangeAddresses.push(contracts.KyberNetworkProxy.options.address);
-    adapterAddresses.push(contracts.KyberAdapter.options.address);
-  }
-  const oasisDexRegistered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.OasisDexAdapter.options.address]
-  );
-  if (oasisDexRegistered) {
-    exchangeAddresses.push(contracts.OasisDexExchange.options.address);
-    adapterAddresses.push(contracts.OasisDexAdapter.options.address);
-  }
-  const uniswapRegistered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.UniswapAdapter.options.address]
-  );
-  if (uniswapRegistered) {
-    exchangeAddresses.push(contracts.UniswapFactory.options.address);
-    adapterAddresses.push(contracts.UniswapAdapter.options.address);
-  }
-  const zeroExV2Registered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.ZeroExV2Adapter.options.address]
-  );
-  if (zeroExV2Registered) {
-    exchangeAddresses.push(contracts.ZeroExV2Exchange.options.address);
-    adapterAddresses.push(contracts.ZeroExV2Adapter.options.address);
-  }
-  const zeroExV3Registered = await call(
-    contracts.Registry, 'exchangeAdapterIsRegistered', [contracts.ZeroExV3Adapter.options.address]
-  );
-  if (zeroExV3Registered) {
-    exchangeAddresses.push(contracts.ZeroExV3Exchange.options.address);
-    adapterAddresses.push(contracts.ZeroExV3Adapter.options.address);
-  }
+  let adapterAddresses = [
+    contracts.EngineAdapter.options.address,
+    contracts.KyberAdapter.options.address,
+    contracts.OasisDexAdapter.options.address,
+    contracts.UniswapAdapter.options.address,
+    contracts.ZeroExV2Adapter.options.address,
+    contracts.ZeroExV3Adapter.options.address
+  ];
 
   return setupFundWithParams({
     amguTxValue,
     defaultTokens: [mln.options.address, weth.options.address],
-    exchanges: exchangeAddresses,
-    exchangeAdapters: adapterAddresses,
+    integrationAdapters: adapterAddresses,
     fees: {
       addresses: [managementFee.options.address, performanceFee.options.address],
       rates: [managementFeeRate, performanceFeeRate],

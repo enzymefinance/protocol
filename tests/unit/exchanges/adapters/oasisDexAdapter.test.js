@@ -28,7 +28,6 @@ let dai, mln, weth;
 let oasisDexAdapter, oasisDexExchange;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 
 beforeAll(async () => {
   [deployer] = await getAccounts();
@@ -69,12 +68,10 @@ describe('takeOrder', () => {
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [oasisDexExchange.options.address],
-        exchangeAdapters: [oasisDexAdapter.options.address],
+        integrationAdapters: [oasisDexAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('Third party makes an order', async () => {
@@ -109,9 +106,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],
@@ -134,9 +131,9 @@ describe('takeOrder', () => {
       await expect(
         send(
           vault,
-          'callOnExchange',
+          'callOnIntegration',
           [
-            exchangeIndex,
+            oasisDexAdapter.options.address,
             takeOrderSignature,
             encodedArgs,
           ],
@@ -153,7 +150,7 @@ describe('takeOrder', () => {
       // await expect(
         // send(
           // vault,
-          // 'callOnExchange',
+          // 'callOnIntegration',
           // [
             // exchangeIndex,
             // takeOrderSignature,
@@ -198,8 +195,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [oasisDexExchange.options.address],
-        exchangeAdapters: [oasisDexAdapter.options.address],
+        integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -208,7 +204,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('Third party makes an order', async () => {
@@ -246,9 +241,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          oasisDexAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -285,7 +280,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.OASIS_DEX_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(oasisDexExchange.options.address);
+      expect(orderFilled.targetContract).toBe(oasisDexExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -315,8 +310,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [oasisDexExchange.options.address],
-        exchangeAdapters: [oasisDexAdapter.options.address],
+        integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -325,7 +319,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('Third party makes an order', async () => {
@@ -359,7 +352,7 @@ describe('takeOrder', () => {
 
       // tx = await send(
         // vault,
-        // 'callOnExchange',
+        // 'callOnIntegration',
         // [
           // exchangeIndex,
           // takeOrderSignature,

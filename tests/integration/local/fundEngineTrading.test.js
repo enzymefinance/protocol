@@ -25,7 +25,7 @@ let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let engine, mln, fund, weth, engineAdapter, priceSource, priceTolerance;
 let contracts;
-let exchangeIndex, mlnPrice, makerQuantity, takerQuantity;
+let mlnPrice, makerQuantity, takerQuantity;
 let takeOrderSignature, takeOrderSignatureBytes;
 let mlnToEthRate, wethToEthRate;
 
@@ -88,20 +88,10 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
     [takeOrderSignatureBytes, priceTolerance.options.address],
     managerTxOpts
   );
-
-  const exchangeInfo = await call(vault, 'getExchangeInfo');
-  exchangeIndex = exchangeInfo[1].findIndex(
-    e =>
-      e.toLowerCase() ===
-      engineAdapter.options.address.toLowerCase(),
-  );
 });
 
 test('Invest in fund with enough MLN to buy desired ETH from engine', async () => {
   const { hub, shares } = fund;
-
-  // Enable investment with mln
-  await send(shares, 'enableSharesInvestmentAssets', [[mln.options.address]], managerTxOpts);
 
   const wantedShares = toWei('1', 'ether');
   const amguTxValue = toWei('10', 'ether');
@@ -163,9 +153,9 @@ test('Trade on Melon Engine', async () => {
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      engineAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],
@@ -209,9 +199,9 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
   await expect(
     send(
       vault,
-      'callOnExchange',
+      'callOnIntegration',
       [
-        exchangeIndex,
+        engineAdapter.options.address,
         takeOrderSignature,
         encodedArgs,
       ],

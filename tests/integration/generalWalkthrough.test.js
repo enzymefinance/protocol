@@ -23,7 +23,6 @@ import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let contracts;
-let exchangeIndex;
 let offeredValue, wantedShares, amguAmount;
 let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
 let takeOrderFunctionSig;
@@ -80,7 +79,6 @@ beforeAll(async () => {
     fees.contracts,
     fees.rates,
     fees.periods,
-    [oasisDex.options.address],
     [oasisDexAdapter.options.address],
     weth.options.address,
     [weth.options.address, mln.options.address],
@@ -104,8 +102,6 @@ beforeAll(async () => {
   );
   wantedShares = BNExpDiv(new BN(offeredValue), shareCost).toString();
   amguAmount = toWei('0.1', 'ether');
-
-  exchangeIndex = 0;
 
   takeOrderFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -205,9 +201,9 @@ test('Fund can take an order on Oasis DEX', async () => {
 
   await send(
     vault,
-    'callOnExchange',
+    'callOnIntegration',
     [
-      exchangeIndex,
+      oasisDexAdapter.options.address,
       takeOrderFunctionSig,
       encodedArgs,
     ],
@@ -236,7 +232,7 @@ test('Fund can take an order on Oasis DEX', async () => {
 test('Cannot invest in a shutdown fund', async () => {
   const { hub } = fund;
 
-  await send(fundFactory, 'shutDownFund', [hub.options.address], managerTxOpts);
+  await send(hub, 'shutDownFund', [], managerTxOpts);
   await expect(
     investInFund({
       fundAddress: hub.options.address,

@@ -42,8 +42,7 @@ beforeAll(async () => {
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address, knc.options.address],
-    exchanges: [oasisDexExchange.options.address],
-    exchangeAdapters: [oasisDexAdapter.options.address],
+    integrationAdapters: [oasisDexAdapter.options.address],
     manager,
     quoteToken: knc.options.address,
     fundFactory

@@ -34,7 +34,6 @@ let uniswapAdapter, uniswapFactory;
 let mlnExchange, daiExchange;
 let fund;
 let takeOrderSignature;
-let exchangeIndex;
 
 beforeAll(async () => {
   [deployer] = await getAccounts();
@@ -135,8 +134,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [uniswapFactory.options.address],
-        exchangeAdapters: [uniswapAdapter.options.address],
+        integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -145,7 +143,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('order is filled through the fund', async () => {
@@ -167,9 +164,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          uniswapAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -206,7 +203,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.UNISWAP_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(uniswapFactory.options.address);
+      expect(orderFilled.targetContract).toBe(uniswapFactory.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -239,8 +236,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [uniswapFactory.options.address],
-        exchangeAdapters: [uniswapAdapter.options.address],
+        integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -249,7 +245,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('order is filled through the fund', async () => {
@@ -271,9 +266,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          uniswapAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -310,7 +305,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.UNISWAP_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(uniswapFactory.options.address);
+      expect(orderFilled.targetContract).toBe(uniswapFactory.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -348,8 +343,7 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
-        exchanges: [uniswapFactory.options.address],
-        exchangeAdapters: [uniswapAdapter.options.address],
+        integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -358,7 +352,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory
       });
-      exchangeIndex = 0;
     });
 
     test('order is filled through the fund', async () => {
@@ -380,9 +373,9 @@ describe('takeOrder', () => {
 
       tx = await send(
         vault,
-        'callOnExchange',
+        'callOnIntegration',
         [
-          exchangeIndex,
+          uniswapAdapter.options.address,
           takeOrderSignature,
           encodedArgs,
         ],
@@ -419,7 +412,7 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.UNISWAP_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.exchangeAddress).toBe(uniswapFactory.options.address);
+      expect(orderFilled.targetContract).toBe(uniswapFactory.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);

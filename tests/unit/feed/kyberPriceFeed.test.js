@@ -50,7 +50,7 @@ beforeAll(async () => {
     await send(
       registry,
       'registerAsset',
-      [ addr, '', '', '', '0', [], [] ],
+      [ addr ],
       deployerTxOpts
     );
   }
