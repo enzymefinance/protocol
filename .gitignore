@@ -3,6 +3,7 @@ node_modules/
 
 # ignore built code
 out/
+thirdparty/
 
 # ignore node version manager files
 .nvmrc
