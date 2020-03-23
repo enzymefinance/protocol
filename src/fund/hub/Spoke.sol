@@ -1,13 +1,17 @@
 pragma solidity 0.6.4;
+pragma experimental ABIEncoderV2;
 
 import "./Hub.sol";
+import "./ISpoke.sol";
 import "../../dependencies/DSAuth.sol";
 
 /// @notice Has one Hub
-contract Spoke is DSAuth {
-    Hub public hub;
-    Hub.Routes public routes;
-    bool public initialized;
+contract Spoke is ISpoke, DSAuth {
+
+    IHub.Routes routes;
+
+    Hub hub;
+    bool public override initialized;
 
     modifier onlyInitialized() {
         require(initialized, "Component not yet initialized");
@@ -28,7 +32,7 @@ contract Spoke is DSAuth {
     function initialize(address[7] calldata _spokes) external auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
-        routes = Hub.Routes(
+        routes = IHub.Routes(
             _spokes[0],
             _spokes[1],
             _spokes[2],
@@ -41,6 +45,15 @@ contract Spoke is DSAuth {
         setOwner(address(0));
     }
 
-    function priceSource() public view returns (address) { return hub.priceSource(); }
+    function priceSource() public view override returns (address) { return hub.priceSource(); }
     function fundFactory() public view returns (address) { return routes.fundFactory; }
+    function getHub() public view override returns (IHub) { return IHub(address(hub)); }
+    function getRoutes()
+        public
+        view
+        override
+        returns (IHub.Routes memory)
+    {
+        return routes;
+    }
 }

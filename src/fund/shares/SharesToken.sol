@@ -2,8 +2,9 @@ pragma solidity 0.6.4;
 
 import "../../dependencies/DSAuth.sol";
 import "../../dependencies/token/StandardToken.sol";
+import "./ISharesToken.sol";
 
-contract SharesToken is DSAuth, StandardToken {
+contract SharesToken is ISharesToken, DSAuth, StandardToken {
     string public symbol;
     string public name;
     uint8 public decimals;
@@ -14,12 +15,8 @@ contract SharesToken is DSAuth, StandardToken {
         decimals = 18;
     }
 
-    function createFor(address who, uint amount) external auth {
+    function createFor(address who, uint amount) external override auth {
         _mint(who, amount);
-    }
-
-    function destroyFor(address who, uint amount) external auth {
-        _burn(who, amount);
     }
 
     function transfer(address to, uint amount) public override returns (bool) {

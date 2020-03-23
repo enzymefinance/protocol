@@ -75,30 +75,3 @@ describe('createFor', () => {
     ).rejects.toThrowFlexible("ds-auth-unauthorized")
   });
 });
-
-describe('destroyFor', () => {
-  let fund;
-
-  beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
-    fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
-      quoteToken: weth.options.address,
-      fundFactory
-    });
-  });
-
-  it('can NOT be called by the fund manager', async () => {
-    await expect(
-      send(
-        fund.shares,
-        'destroyFor',
-        [deployer, "1"],
-        defaultTxOpts
-      )
-    ).rejects.toThrowFlexible("ds-auth-unauthorized")
-  });
-});

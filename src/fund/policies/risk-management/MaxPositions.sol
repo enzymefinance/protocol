@@ -18,7 +18,7 @@ contract MaxPositions is TradingSignatures {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).hub()).accounting());
+        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).getHub()).accounting());
         address denominationAsset = accounting.DENOMINATION_ASSET();
         // Always allow a trade INTO the quote asset
         address incomingToken = addresses[2];

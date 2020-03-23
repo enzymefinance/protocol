@@ -1,4 +1,5 @@
 pragma solidity 0.6.4;
+pragma experimental ABIEncoderV2;
 
 import "../dependencies/DSAuth.sol";
 import "../fund/hub/ISpoke.sol";
@@ -11,10 +12,10 @@ contract Registry is DSAuth {
         address indexed asset,
         string name,
         string symbol,
-        uint decimals,
+        uint256 decimals,
         string url,
-        uint reserveMin,
-        uint[] standards,
+        uint256 reserveMin,
+        uint256[] standards,
         bytes4[] sigs
     );
 
@@ -27,7 +28,7 @@ contract Registry is DSAuth {
     event AssetRemoval (address indexed asset);
     event EngineChange(address indexed engine);
     event ExchangeAdapterRemoval (address indexed exchange);
-    event IncentiveChange(uint incentiveAmount);
+    event IncentiveChange(uint256 incentiveAmount);
     event MGMChange(address indexed MGM);
     event MlnTokenChange(address indexed mlnToken);
     event NativeAssetChange(address indexed nativeAsset);
@@ -41,10 +42,10 @@ contract Registry is DSAuth {
         bool exists;
         string name;
         string symbol;
-        uint decimals;
+        uint256 decimals;
         string url;
-        uint reserveMin;
-        uint[] standards;
+        uint256 reserveMin;
+        uint256[] standards;
         bytes4[] sigs;
     }
 
@@ -60,28 +61,25 @@ contract Registry is DSAuth {
     }
 
     // CONSTANTS
-    uint public constant MAX_REGISTERED_ENTITIES = 20;
-    uint public constant MAX_FUND_NAME_BYTES = 66;
+    uint8 public constant MAX_REGISTERED_ENTITIES = 20;
+    uint8 public constant MAX_FUND_NAME_BYTES = 66;
 
     // FIELDS
+
     mapping (address => Asset) public assetInformation;
-    address[] public registeredAssets;
-
-    // Mapping from adapter address to exchange Information (Adapters are unique)
     mapping (address => Exchange) public exchangeInformation;
-    address[] public registeredExchangeAdapters;
-
     mapping (address => FundFactory) public fundFactoryInformation;
+
+    address[] public registeredAssets;
+    address[] public registeredExchangeAdapters;
     address[] public registeredFundFactories;
 
     mapping (address => bool) public isFeeRegistered;
-
     mapping (address => address) public fundsToFundFactories;
     mapping (bytes32 => bool) public fundFactoryNameExists;
     mapping (bytes32 => address) public fundNameHashToOwner;
 
-
-    uint public incentive = 10 finney;
+    uint256 public incentive = 10 finney;
     address public priceSource;
     address public mlnToken;
     address public nativeAsset;
@@ -109,9 +107,9 @@ contract Registry is DSAuth {
     function isValidFundName(string memory _name) public pure returns (bool) {
         bytes memory b = bytes(_name);
         if (b.length > MAX_FUND_NAME_BYTES) return false;
-        for (uint i; i < b.length; i++){
+        for (uint256 i; i < b.length; i++) {
             bytes1 char = b[i];
-            if(
+            if (
                 !(char >= 0x30 && char <= 0x39) && // 9-0
                 !(char >= 0x41 && char <= 0x5A) && // A-Z
                 !(char >= 0x61 && char <= 0x7A) && // a-z
@@ -167,8 +165,8 @@ contract Registry is DSAuth {
         string calldata _name,
         string calldata _symbol,
         string calldata _url,
-        uint _reserveMin,
-        uint[] calldata _standards,
+        uint256 _reserveMin,
+        uint256[] calldata _standards,
         bytes4[] calldata _sigs
     ) external auth {
         require(registeredAssets.length < MAX_REGISTERED_ENTITIES);
@@ -225,7 +223,7 @@ contract Registry is DSAuth {
         emit FundFactoryRegistered(_fundFactory);
     }
 
-    function setIncentive(uint _weiAmount) external auth {
+    function setIncentive(uint256 _weiAmount) external auth {
         incentive = _weiAmount;
         emit IncentiveChange(_weiAmount);
     }
@@ -272,8 +270,8 @@ contract Registry is DSAuth {
         string memory _name,
         string memory _symbol,
         string memory _url,
-        uint _reserveMin,
-        uint[] memory _standards,
+        uint256 _reserveMin,
+        uint256[] memory _standards,
         bytes4[] memory _sigs
     ) public auth {
         require(assetInformation[_asset].exists);
@@ -318,13 +316,13 @@ contract Registry is DSAuth {
     /// @param _asset address for which specific information is requested
     function removeAsset(
         address _asset,
-        uint _assetIndex
+        uint256 _assetIndex
     ) external auth {
         require(assetInformation[_asset].exists);
         require(registeredAssets[_assetIndex] == _asset);
         delete assetInformation[_asset];
         delete registeredAssets[_assetIndex];
-        for (uint i = _assetIndex; i < registeredAssets.length-1; i++) {
+        for (uint256 i = _assetIndex; i < registeredAssets.length-1; i++) {
             registeredAssets[i] = registeredAssets[i+1];
         }
         registeredAssets.pop();
@@ -337,13 +335,13 @@ contract Registry is DSAuth {
     /// @param _adapterIndex index of the exchange in array
     function removeExchangeAdapter(
         address _adapter,
-        uint _adapterIndex
+        uint256 _adapterIndex
     ) external auth {
         require(exchangeInformation[_adapter].exists, "Exchange with adapter doesn't exist");
         require(registeredExchangeAdapters[_adapterIndex] == _adapter, "Incorrect adapter index");
         delete exchangeInformation[_adapter];
         delete registeredExchangeAdapters[_adapterIndex];
-        for (uint i = _adapterIndex; i < registeredExchangeAdapters.length-1; i++) {
+        for (uint256 i = _adapterIndex; i < registeredExchangeAdapters.length-1; i++) {
             registeredExchangeAdapters[i] = registeredExchangeAdapters[i+1];
         }
         registeredExchangeAdapters.pop();
@@ -351,30 +349,45 @@ contract Registry is DSAuth {
     }
 
     function registerFees(address[] calldata _fees) external auth {
-        for (uint i; i < _fees.length; i++) {
+        for (uint256 i; i < _fees.length; i++) {
             isFeeRegistered[_fees[i]] = true;
         }
     }
 
     function deregisterFees(address[] calldata _fees) external auth {
-        for (uint i; i < _fees.length; i++) {
+        for (uint256 i; i < _fees.length; i++) {
             delete isFeeRegistered[_fees[i]];
         }
     }
 
     // PUBLIC VIEW METHODS
 
-    // get asset specific information
+    function getAssetInformation(address _asset) external view returns (Asset memory) {
+        return assetInformation[_asset];
+    }
+
+    function getExchangeInformation(address _exchange) external view returns (Exchange memory) {
+        return exchangeInformation[_exchange];
+    }
+
+    function getFundFactoryInformation(address _fundFactory)
+        external
+        view
+        returns (FundFactory memory)
+    {
+        return fundFactoryInformation[_fundFactory];
+    }
+
     function getName(address _asset) external view returns (string memory) {
         return assetInformation[_asset].name;
     }
     function getSymbol(address _asset) external view returns (string memory) {
         return assetInformation[_asset].symbol;
     }
-    function getDecimals(address _asset) external view returns (uint) {
+    function getDecimals(address _asset) external view returns (uint256) {
         return assetInformation[_asset].decimals;
     }
-    function getReserveMin(address _asset) external view returns (uint) {
+    function getReserveMin(address _asset) external view returns (uint256) {
         return assetInformation[_asset].reserveMin;
     }
     function assetIsRegistered(address _asset) external view returns (bool) {
@@ -389,7 +402,7 @@ contract Registry is DSAuth {
         returns (bool)
     {
         bytes4[] memory signatures = assetInformation[_asset].sigs;
-        for (uint i = 0; i < signatures.length; i++) {
+        for (uint256 i = 0; i < signatures.length; i++) {
             if (signatures[i] == _sig) {
                 return true;
             }
@@ -423,7 +436,7 @@ contract Registry is DSAuth {
         returns (bool)
     {
         bytes4[] memory signatures = exchangeInformation[_adapter].sigs;
-        for (uint i = 0; i < signatures.length; i++) {
+        for (uint256 i = 0; i < signatures.length; i++) {
             if (signatures[i] == _sig) {
                 return true;
             }
@@ -444,7 +457,7 @@ contract Registry is DSAuth {
             // 1. Spoke points to hub
             // 2. Hub confirms it is a spoke
             // 3. Fund exists for hub
-            try ISpoke(_who).hub() returns (IHub hub) {
+            try ISpoke(_who).getHub() returns (IHub hub) {
                 return hub.isSpoke(_who) && fundsToFundFactories[address(hub)] != address(0);
             }
             catch {

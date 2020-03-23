@@ -1,10 +1,12 @@
 pragma solidity 0.6.4;
+pragma experimental ABIEncoderV2;
 
 import "../../factory/Factory.sol";
 import "../hub/Spoke.sol";
 import "./IPolicy.sol";
+import "./IPolicyManager.sol";
 
-contract PolicyManager is Spoke {
+contract PolicyManager is IPolicyManager, Spoke {
 
     event Registration(
         bytes4 indexed sig,
@@ -64,11 +66,27 @@ contract PolicyManager is Spoke {
         postValidate(msg.sig, addresses, values, identifier);
     }
 
-    function preValidate(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) public {
+    function preValidate(
+        bytes4 sig,
+        address[5] memory addresses,
+        uint[3] memory values,
+        bytes32 identifier
+    )
+        public
+        override
+    {
         validate(policies[sig].pre, sig, addresses, values, identifier);
     }
 
-    function postValidate(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) public {
+    function postValidate(
+        bytes4 sig,
+        address[5] memory addresses,
+        uint[3] memory values,
+        bytes32 identifier
+    )
+        public
+        override
+    {
         validate(policies[sig].post, sig, addresses, values, identifier);
     }
 

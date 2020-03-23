@@ -25,7 +25,7 @@ contract MaxConcentration is TradingSignatures, DSMath {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).hub()).accounting());
+        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).getHub()).accounting());
         address denominationAsset = accounting.DENOMINATION_ASSET();
         // Max concentration is only checked for non-quote assets
         address takerToken = addresses[2];

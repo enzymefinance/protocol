@@ -1,21 +1,23 @@
 pragma solidity 0.6.4;
+pragma experimental ABIEncoderV2;
 
-import "./SharesToken.sol";
-import "../accounting/IAccounting.sol";
-import "../fees/IFeeManager.sol";
-import "../hub/Spoke.sol";
-import "../policies/IPolicyManager.sol";
-import "../vault/IVault.sol";
 import "../../dependencies/TokenUser.sol";
 import "../../dependencies/libs/EnumerableSet.sol";
 import "../../factory/Factory.sol";
 import "../../prices/IPriceSource.sol";
 import "../../registry/IRegistry.sol";
+import "../accounting/IAccounting.sol";
+import "../fees/IFeeManager.sol";
+import "../hub/Spoke.sol";
+import "../policies/IPolicyManager.sol";
+import "../vault/IVault.sol";
+import "./IShares.sol";
+import "./SharesToken.sol";
 
 /// @title Shares Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Buy and sell shares for a Melon fund
-contract Shares is TokenUser, Spoke, SharesToken {
+contract Shares is IShares, TokenUser, Spoke, SharesToken {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event SharesBought(
@@ -49,7 +51,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
     constructor(address _hub, address[] memory _defaultAssets, address _registry)
         public
         Spoke(_hub)
-        SharesToken(IHub(_hub).name())
+        SharesToken(IHub(_hub).getName())
     {
         routes.registry = _registry;
         if (_defaultAssets.length > 0) {
@@ -71,6 +73,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
         uint256 _sharesQuantity
     )
         external
+        override
         onlySharesRequestor
         returns (uint256 costInInvestmentAsset_)
     {
@@ -121,7 +124,7 @@ contract Shares is TokenUser, Spoke, SharesToken {
     /// @notice Confirm whether asset can be used to buy shares
     /// @param _asset The asset to confirm
     /// @return True if the asset can be used to buy shares
-    function isSharesInvestmentAsset(address _asset) external view returns (bool) {
+    function isSharesInvestmentAsset(address _asset) external view override returns (bool) {
         return EnumerableSet.contains(sharesInvestmentAssets, _asset);
     }
 

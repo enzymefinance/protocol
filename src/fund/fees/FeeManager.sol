@@ -5,12 +5,12 @@ import "../../dependencies/DSMath.sol";
 import "../../factory/Factory.sol";
 import "../../registry/IRegistry.sol";
 import "../hub/Spoke.sol";
-import "../shares/IShares.sol";
+import "../shares/ISharesToken.sol";
 import "./IFee.sol";
 import "./IFeeManager.sol";
 
 /// @notice Manages and allocates fees for a particular fund
-contract FeeManager is DSMath, Spoke {
+contract FeeManager is IFeeManager, DSMath, Spoke {
 
     event FeeReward(uint shareQuantity);
     event FeeRegistration(address fee);
@@ -24,7 +24,17 @@ contract FeeManager is DSMath, Spoke {
     IFee[] public fees;
     mapping (address => bool) public feeIsRegistered;
 
-    constructor(address _hub, address _denominationAsset, address[] memory _fees, uint[] memory _rates, uint[] memory _periods, address _registry) Spoke(_hub) public {
+    constructor(
+        address _hub,
+        address _denominationAsset,
+        address[] memory _fees,
+        uint[] memory _rates,
+        uint[] memory _periods,
+        address _registry
+    )
+        Spoke(_hub)
+        public
+    {
         for (uint i = 0; i < _fees.length; i++) {
             require(
                 IRegistry(_registry).isFeeRegistered(_fees[i]),
@@ -46,7 +56,14 @@ contract FeeManager is DSMath, Spoke {
         }
     }
 
-    function register(address feeAddress, uint feeRate, uint feePeriod, address denominationAsset) internal {
+    function register(
+        address feeAddress,
+        uint feeRate,
+        uint feePeriod,
+        address denominationAsset
+    )
+        internal
+    {
         require(!feeIsRegistered[feeAddress], "Fee already registered");
         feeIsRegistered[feeAddress] = true;
         fees.push(IFee(feeAddress));
@@ -54,7 +71,7 @@ contract FeeManager is DSMath, Spoke {
         emit FeeRegistration(feeAddress);
     }
 
-    function totalFeeAmount() external returns (uint total) {
+    function totalFeeAmount() external override returns (uint total) {
         for (uint i = 0; i < fees.length; i++) {
             total = add(total, fees[i].feeAmount());
         }
@@ -66,7 +83,7 @@ contract FeeManager is DSMath, Spoke {
         require(feeIsRegistered[address(fee)], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
         fee.updateState();
-        IShares(routes.shares).createFor(hub.manager(), rewardShares);
+        ISharesToken(routes.shares).createFor(hub.manager(), rewardShares);
         emit FeeReward(rewardShares);
     }
 
@@ -77,24 +94,24 @@ contract FeeManager is DSMath, Spoke {
     }
 
     /// @dev Used when calling from other components
-    function rewardAllFees() public auth { _rewardAllFees(); }
+    function rewardAllFees() public override auth { _rewardAllFees(); }
 
     /// @dev Convenience function; anyone can reward management fee any time
     /// @dev Convention that management fee is 0
-    function rewardManagementFee() public {
+    function rewardManagementFee() public override {
         if (fees.length >= 1) _rewardFee(fees[0]);
     }
 
     /// @dev Convenience function
     /// @dev Convention that management fee is 0
-    function managementFeeAmount() external returns (uint) {
+    function managementFeeAmount() external override returns (uint) {
         if (fees.length < 1) return 0;
         return fees[0].feeAmount();
     }
 
     /// @dev Convenience function
     /// @dev Convention that performace fee is 1
-    function performanceFeeAmount() external returns (uint) {
+    function performanceFeeAmount() external override returns (uint) {
         if (fees.length < 2) return 0;
         return fees[1].feeAmount();
     }

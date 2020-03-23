@@ -193,7 +193,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         );
 
         // The initial investment in a fund can skip the request process and settle directly
-        if (IShares(IHub(_hub).shares()).totalSupply() == 0) {
+        if (IERC20(IHub(_hub).shares()).totalSupply() == 0) {
             __safeTransferFrom(_investmentAsset, msg.sender, address(this), _maxInvestmentAmount);
             uint256 investmentAmountFilled = __validateAndBuyShares(
                 _hub,
@@ -286,7 +286,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         if (requestHasExpired(_requestOwner, _hub)) {
             reason_ = "Request has expired";
         }
-        else if (IShares(IHub(_hub).shares()).totalSupply() == 0) {
+        else if (IERC20(IHub(_hub).shares()).totalSupply() == 0) {
             pass_ = true;
         }
         else if (request.timestamp >= IPriceSource(REGISTRY.priceSource()).lastUpdate()) {

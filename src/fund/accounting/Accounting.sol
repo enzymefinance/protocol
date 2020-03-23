@@ -1,13 +1,15 @@
 pragma solidity 0.6.4;
+pragma experimental ABIEncoderV2;
 
+import "../../dependencies/token/IERC20.sol";
+import "../../engine/AmguConsumer.sol";
 import "../../factory/Factory.sol";
 import "../../prices/IPriceSource.sol";
 import "../fees/IFeeManager.sol";
 import "../hub/Spoke.sol";
-import "../shares/IShares.sol";
-import "../../engine/AmguConsumer.sol";
+import "./IAccounting.sol";
 
-contract Accounting is AmguConsumer, Spoke {
+contract Accounting is IAccounting, AmguConsumer, Spoke {
 
     event AssetAddition(address indexed asset);
 
@@ -17,11 +19,11 @@ contract Accounting is AmguConsumer, Spoke {
 
     uint8 constant public MAX_OWNED_ASSETS = 20;
     uint8 constant public SHARES_DECIMALS = 18;
-    uint256 public DEFAULT_SHARE_PRICE;
-    address public DENOMINATION_ASSET;
+    uint256 public override DEFAULT_SHARE_PRICE;
+    address public override DENOMINATION_ASSET;
     address[] public ownedAssets;
 
-    mapping(address => uint256) public assetBalances;
+    mapping(address => uint256) public override assetBalances;
 
     /// @param _hub The fund's primary address
     /// @param _denominationAsset The asset in which to denominate fund metrics and values
@@ -44,7 +46,7 @@ contract Accounting is AmguConsumer, Spoke {
     /// @notice Calculates the GAV for an asset held by the fund
     /// @param _asset The ERC20 token for which to calculate the GAV
     /// @return The GAV of the _asset
-    function calcAssetGav(address _asset) external view returns (uint256) {
+    function calcAssetGav(address _asset) external view override returns (uint256) {
         uint256 quantityHeld = assetBalances[_asset];
         return IPriceSource(priceSource()).convertQuantity(
             quantityHeld, _asset, DENOMINATION_ASSET
@@ -59,6 +61,7 @@ contract Accounting is AmguConsumer, Spoke {
     function getFundHoldings()
         external
         view
+        override
         returns (address[] memory assets_, uint256[] memory balances_)
     {
         (assets_, balances_) = getAllAssetBalances();
@@ -68,13 +71,13 @@ contract Accounting is AmguConsumer, Spoke {
     /// @dev Use this as the canonical function for retrieving a single asset's total balance
     /// @param _asset The asset for which to retrieve the fund's balance
     /// @return The fund's balance of the _asset
-    function getFundHoldingsForAsset(address _asset) external view returns (uint256) {
+    function getFundHoldingsForAsset(address _asset) external view override returns (uint256) {
         return assetBalances[_asset];
     }
 
     /// @notice Retrieves the number of owned assets in this fund
     /// @return The number of owned assets
-    function getOwnedAssetsLength() external view returns (uint256) {
+    function getOwnedAssetsLength() external view override returns (uint256) {
         return ownedAssets.length;
     }
 
@@ -85,6 +88,7 @@ contract Accounting is AmguConsumer, Spoke {
     /// @return The cost of _numShares in the _altAsset
     function getShareCostInAsset(uint256 _numShares, address _altAsset)
         external
+        override
         returns (uint256)
     {
         (,,,,, uint256 gavPerShareNetManagementFee) = calcFundMetrics();
@@ -130,7 +134,7 @@ contract Accounting is AmguConsumer, Spoke {
         )
     {
         gav_ = calcGav();
-        uint256 totalSupply = IShares(routes.shares).totalSupply();
+        uint256 totalSupply = IERC20(routes.shares).totalSupply();
         feesInShares_ = IFeeManager(routes.feeManager).totalFeeAmount();
         feesInDenominationAsset_ = (totalSupply == 0) ?
             0 :
@@ -153,7 +157,7 @@ contract Accounting is AmguConsumer, Spoke {
 
     /// @notice Calculate the overall GAV of the fund
     /// @return The fund GAV
-    function calcGav() public view returns (uint256) {
+    function calcGav() public view override returns (uint256) {
         uint256 gav;
         for (uint256 i = 0; i < ownedAssets.length; ++i) {
             address asset = ownedAssets[i];
@@ -192,7 +196,7 @@ contract Accounting is AmguConsumer, Spoke {
     /// @notice Decreases the balance of an asset in a fund's internal system of account
     /// @param _asset The asset for which to decrease the assetBalance
     /// @param _amount The amount by which to decrease the assetBalance
-    function decreaseAssetBalance(address _asset, uint256 _amount) public auth {
+    function decreaseAssetBalance(address _asset, uint256 _amount) public auth override {
         uint256 oldBalance = assetBalances[_asset];
         require(
             oldBalance >= _amount,
@@ -209,7 +213,7 @@ contract Accounting is AmguConsumer, Spoke {
     /// @notice Increases the balance of an asset in a fund's internal system of account
     /// @param _asset The asset for which to increase the assetBalance
     /// @param _amount The amount by which to increase the assetBalance
-    function increaseAssetBalance(address _asset, uint256 _amount) public auth {
+    function increaseAssetBalance(address _asset, uint256 _amount) public auth override {
         uint256 oldBalance = assetBalances[_asset];
         if (oldBalance == 0) __addAssetToOwnedAssets(_asset);
         uint256 newBalance = add(oldBalance, _amount);
@@ -251,7 +255,12 @@ contract Accounting is AmguConsumer, Spoke {
     /// @param _totalValue The total value of a fund, generally the GAV
     /// @param _numShares The total number of shares of a fund (can include management fee shares)
     /// @return The value per unit of shares (relative to the decimals of shares)
-    function valuePerShare(uint256 _totalValue, uint256 _numShares) public pure returns (uint256) {
+    function valuePerShare(uint256 _totalValue, uint256 _numShares)
+        public
+        pure
+        override
+        returns (uint256)
+    {
         require(_numShares > 0, "No shares to calculate value for");
         return (_totalValue * 10 ** uint256(SHARES_DECIMALS)) / _numShares;
     }

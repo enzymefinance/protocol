@@ -1,5 +1,4 @@
 pragma solidity 0.6.4;
-pragma experimental ABIEncoderV2;
 
 interface IHub {
     struct Routes {
@@ -12,31 +11,13 @@ interface IHub {
         address fundFactory;
     }
 
-    // STORAGE
-    function creationTime() external view returns (uint256);
-    function creator() external view returns (address);
+    function accounting() external view returns (address);
+    function feeManager() external view returns (address);
     function fundInitialized() external view returns (bool);
+    function getName() external view returns (string memory);
     function isShutDown() external view returns (bool);
     function isSpoke(address) external view returns (bool);
     function manager() external view returns (address);
-    function name() external view returns (string memory);
-    function routes() external view returns (Routes memory);
-
-    // FUNCTIONS
-    function accounting() external view returns (address);
-    function feeManager() external view returns (address);
     function policyManager() external view returns (address);
-    function priceSource() external view returns (address);
-    function registry() external view returns (address);
     function shares() external view returns (address);
-    function vault() external view returns (address);
-    function fundFactory() external view returns (address);
-
-    // Caller: Creator only:
-    function setPermissions() external;
-    function setRouting() external;
-    function setSpokes(address[10] calldata _spokes) external;
-
-    // Caller: FundFactory contract only:
-    function shutDownFund() external;
 }
