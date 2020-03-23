@@ -1,4 +1,4 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import "main/fund/hub/Spoke.sol";
