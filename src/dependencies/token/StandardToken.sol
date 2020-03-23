@@ -1,4 +1,4 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.4;
 
 import "./IERC20.sol";
 import "../SafeMath.sol";

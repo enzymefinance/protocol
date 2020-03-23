@@ -1,4 +1,4 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.4;
 
 import "../../factory/Factory.sol";
 import "../../prices/IPriceSource.sol";
