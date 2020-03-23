@@ -4,11 +4,12 @@ import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
 import "../exchanges/interfaces/IKyberNetworkProxy.sol";
 import "../registry/IRegistry.sol";
+import "./IPriceSource.sol";
 
 /// @title Price Feed Template
 /// @author Melonport AG <team@melonport.com>
 /// @notice Routes external prices to smart contracts from Kyber
-contract KyberPriceFeed is DSMath {
+contract KyberPriceFeed is IPriceSource, DSMath {
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
     event MaxSpreadSet(uint256 maxSpread);
     event PricesUpdated(address[] assets, uint256[] prices);
@@ -19,7 +20,7 @@ contract KyberPriceFeed is DSMath {
     uint32 public constant VALIDITY_INTERVAL = 2 days;
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
-    uint256 public lastUpdate;
+    uint256 public override lastUpdate;
     uint256 public maxPriceDeviation; // percent, expressed as a uint256 (fraction of 10^18)
     uint256 public maxSpread;
     address public updater;
@@ -128,6 +129,7 @@ contract KyberPriceFeed is DSMath {
     function getPrices(address[] calldata _assets)
         external
         view
+        override
         returns (uint256[] memory prices_, uint256[] memory timestamps_)
     {
         prices_ = new uint256[](_assets.length);
@@ -144,6 +146,7 @@ contract KyberPriceFeed is DSMath {
     function hasValidPrices(address[] calldata _assets)
         external
         view
+        override
         returns (bool allValid_)
     {
         for (uint256 i; i < _assets.length; i++) {
@@ -166,6 +169,7 @@ contract KyberPriceFeed is DSMath {
     )
         external
         view
+        override
         returns (uint256 orderPrice_)
     {
         orderPrice_ = mul(
@@ -186,6 +190,7 @@ contract KyberPriceFeed is DSMath {
     )
         external
         view
+        override
         returns (uint256 toAssetQuantity_)
     {
         uint256 fromAssetPrice;
@@ -207,6 +212,7 @@ contract KyberPriceFeed is DSMath {
     function getPrice(address _asset)
         public
         view
+        override
         returns (uint256 price_, uint256 timestamp_)
     {
         (price_,) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
@@ -219,6 +225,7 @@ contract KyberPriceFeed is DSMath {
     function hasValidPrice(address _asset)
         public
         view
+        override
         returns (bool isValid_)
     {
         bool isRegistered = registry.assetIsRegistered(_asset);
@@ -235,6 +242,7 @@ contract KyberPriceFeed is DSMath {
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
         public
         view
+        override
         returns (uint256 referencePrice_, uint256 decimals_)
     {
         bool isValid;

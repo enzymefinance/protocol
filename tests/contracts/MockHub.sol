@@ -98,6 +98,7 @@ contract MockHub is DSGuard {
         Spoke(_spoke).initialize(spokes);
     }
 
+    function getName() public view returns (string memory) { return name; }
     function accounting() public view returns (address) { return routes.accounting; }
     function priceSource() public view returns (address) { return IRegistry(routes.registry).priceSource(); }
     function vault() public view returns (address) { return routes.vault; }

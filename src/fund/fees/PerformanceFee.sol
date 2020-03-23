@@ -1,11 +1,10 @@
 pragma solidity 0.6.4;
 
-import "./IFeeManager.sol";
-import "../accounting/IAccounting.sol";
-import "../hub/IHub.sol";
-import "../shares/IShares.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
+import "../accounting/IAccounting.sol";
+import "../hub/IHub.sol";
+import "../hub/ISpoke.sol";
 
 contract PerformanceFee is DSMath {
 
@@ -32,9 +31,9 @@ contract PerformanceFee is DSMath {
 
     /// @notice Assumes management fee is zero
     function feeAmount() external returns (uint feeInShares) {
-        IHub hub = IFeeManager(msg.sender).hub();
+        IHub hub = ISpoke(msg.sender).getHub();
         IAccounting accounting = IAccounting(hub.accounting());
-        IShares shares = IShares(hub.shares());
+        IERC20 shares = IERC20(hub.shares());
         uint gav = accounting.calcGav();
         uint gavPerShare = shares.totalSupply() > 0 ?
             accounting.valuePerShare(gav, shares.totalSupply())
@@ -78,9 +77,9 @@ contract PerformanceFee is DSMath {
             canUpdate(msg.sender),
             "Not within a update window or already updated this period"
         );
-        IHub hub = IFeeManager(msg.sender).hub();
+        IHub hub = ISpoke(msg.sender).getHub();
         IAccounting accounting = IAccounting(hub.accounting());
-        IShares shares = IShares(hub.shares());
+        IERC20 shares = IERC20(hub.shares());
         uint gav = accounting.calcGav();
         uint currentGavPerShare = accounting.valuePerShare(gav, shares.totalSupply());
         require(

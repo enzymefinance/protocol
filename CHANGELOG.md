@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - split amguPayable into amguPayable and amguPayableWithIncentive
 - Vault inherits capabilities from Trading, which is no longer its own component
 - move share buying and redemption logic inside Shares component
+- update to Solidity 0.6.4
+- adjust interfaces to be the minimum needed to interact between components
 
 ### Removed
 

@@ -2,8 +2,10 @@ DIR = ./compile
 SOLC_COMMAND = docker run --rm -i ethereum/solc:0.6.4 --standard-json
 files =
 
-all: clean extract thirdparty_contracts
-thirdparty_contracts: extract
+all: clean extract thirdparty_copy
+thirdparty:
+	yarn download-thirdparty
+thirdparty_copy: extract thirdparty
 	cp thirdparty/* out/
 extract: compile_out.json ok
 	${DIR}/extract_build.js compile_out.json out

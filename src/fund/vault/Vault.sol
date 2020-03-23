@@ -1,12 +1,13 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-import "../hub/Spoke.sol";
-import "./Trading.sol";
 import "../../dependencies/TokenUser.sol";
 import "../../factory/Factory.sol";
+import "../hub/Spoke.sol";
+import "./IVault.sol";
+import "./Trading.sol";
 
-contract Vault is TokenUser, Spoke, Trading {
+contract Vault is IVault, TokenUser, Spoke, Trading {
     constructor(
         address _hub,
         address[] memory _exchanges,
@@ -23,7 +24,7 @@ contract Vault is TokenUser, Spoke, Trading {
     /// @notice Receive ether function (used to receive ETH from WETH)
     receive() external payable {}
 
-    function withdraw(address _token, uint256 _amount) external auth {
+    function withdraw(address _token, uint256 _amount) external override auth {
         __safeTransfer(_token, msg.sender, _amount);
     }
 }

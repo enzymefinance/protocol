@@ -10,9 +10,10 @@ import "../fund/vault/IVault.sol";
 import "../engine/AmguConsumer.sol";
 import "../registry/IRegistry.sol";
 import "./Factory.sol";
+import "./IFundFactory.sol";
 
 /// @notice Creates fund routes and links them together
-contract FundFactory is AmguConsumer, Factory, DSAuth {
+contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
 
     event NewFund(
         address indexed manager,
@@ -39,8 +40,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         address denominationAsset;
         address[] defaultInvestmentAssets;
         address[] fees;
-        uint[] feeRates;
-        uint[] feePeriods;
+        uint256[] feeRates;
+        uint256[] feePeriods;
     }
 
     constructor(
@@ -84,8 +85,8 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     function beginSetup(
         string memory _name,
         address[] memory _fees,
-        uint[] memory _feeRates,
-        uint[] memory _feePeriods,
+        uint256[] memory _feeRates,
+        uint256[] memory _feePeriods,
         address[] memory _exchanges,
         address[] memory _adapters,
         address _denominationAsset,
@@ -243,15 +244,15 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     function completeSetupFor(address _manager) external amguPayable payable { _completeSetupFor(_manager); }
     function completeSetup() external amguPayable payable { _completeSetupFor(msg.sender); }
 
-    function getFundById(uint withId) external view returns (address) { return funds[withId]; }
+    function getFundById(uint256 _id) external view returns (address) { return funds[_id]; }
 
-    function getLastFundId() external view returns (uint) { return funds.length - 1; }
+    function getLastFundId() external view returns (uint256) { return funds.length - 1; }
 
-    function getExchangesInfo(address user) public view returns (address[] memory) {
-        return (managersToSettings[user].exchanges);
+    function getExchangesInfo(address _user) public view returns (address[] memory) {
+        return (managersToSettings[_user].exchanges);
     }
 
-    function shutDownFund(address _hub) external {
+    function shutDownFund(address _hub) external override {
         require(
             managersToHubs[msg.sender] == _hub,
             "Conditions not met for fund shutdown"

@@ -3,42 +3,33 @@ pragma solidity 0.6.4;
 import "../../dependencies/DSGuard.sol";
 import "../../registry/IRegistry.sol";
 import "./Spoke.sol";
+import "./IHub.sol";
 
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
-contract Hub is DSGuard {
+contract Hub is IHub, DSGuard {
 
     event FundShutDown();
 
-    struct Routes {
-        address accounting;
-        address feeManager;
-        address policyManager;
-        address shares;
-        address vault;
-        address registry;
-        address fundFactory;
-    }
-
-    Routes public routes;
-    address public manager;
+    IHub.Routes public routes;
+    address public override manager;
     address public creator;
     string public name;
-    bool public isShutDown;
-    bool public fundInitialized;
+    bool public override isShutDown;
+    bool public override fundInitialized;
     uint public creationTime;
-    mapping (address => bool) public isSpoke;
+    mapping (address => bool) public override isSpoke;
+
+    modifier onlyCreator() {
+        require(msg.sender == creator, "Only creator can do this");
+        _;
+    }
 
     constructor(address _manager, string memory _name) public {
         creator = msg.sender;
         manager = _manager;
         name = _name;
         creationTime = block.timestamp;
-    }
-
-    modifier onlyCreator() {
-        require(msg.sender == creator, "Only creator can do this");
-        _;
     }
 
     function shutDownFund() external {
@@ -101,14 +92,15 @@ contract Hub is DSGuard {
         fundInitialized = true;
     }
 
-    function accounting() external view returns (address) { return routes.accounting; }
+    function getName() external view override returns (string memory) { return name; }
+    function accounting() external view override returns (address) { return routes.accounting; }
     function priceSource() external view returns (address) {
         return IRegistry(routes.registry).priceSource();
     }
     function vault() external view returns (address) { return routes.vault; }
-    function shares() external view returns (address) { return routes.shares; }
+    function shares() external view override returns (address) { return routes.shares; }
     function registry() external view returns (address) { return routes.registry; }
     function fundFactory() external view returns (address) { return routes.fundFactory; }
-    function policyManager() external view returns (address) { return routes.policyManager; }
-    function feeManager() external view returns (address) { return routes.feeManager; }
+    function policyManager() external view override returns (address) { return routes.policyManager; }
+    function feeManager() external view override returns (address) { return routes.feeManager; }
 }
