@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Standardized pipeline for takeOrder (OrderFiller + OrderTaker contracts)
 - OrderFilled event (replaces ExchangeMethodCall)
 - KyberPriceFeed price deviation sanity checks
+- EnumerableSet library
+- SharesRequestor infrastructure level component to handle requests for shares
 
 ### Changed
 
@@ -21,8 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - cancelRequest is no longer amguPayable
 - in Funds, engine and mlnToken are fetched dynamically from registry (no longer in routes)
 - split amguPayable into amguPayable and amguPayableWithIncentive
-
 - Vault inherits capabilities from Trading, which is no longer its own component
+- move share buying and redemption logic inside Shares component
 
 ### Removed
 
@@ -37,6 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - setUpdaterToRegistryOwner
   - getQuoteAsset
   - getLastUpdate
+- Participation component
 
 ## 1.1.2
 
