@@ -6,7 +6,7 @@ abstract contract MinimalTakeOrderDecoder {
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        public
+        internal
         pure
         returns (
             address makerAsset,

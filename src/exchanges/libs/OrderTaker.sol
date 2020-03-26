@@ -22,9 +22,10 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         virtual
         returns (address[6] memory, uint256[3] memory);
@@ -45,7 +46,7 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
         (
             address[6] memory riskManagementAddresses,
             uint256[3] memory riskManagementValues
-        ) = extractTakeOrderRiskManagementArgs(_encodedArgs);
+        ) = extractTakeOrderRiskManagementArgs(_targetExchange, _encodedArgs);
 
         IPolicyManager(__getRoutes().policyManager).preValidate(
             TAKE_ORDER,

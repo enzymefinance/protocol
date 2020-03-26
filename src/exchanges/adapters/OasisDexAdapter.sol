@@ -23,15 +23,14 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         override
-        returns (address[6] memory, uint256[3] memory)
+        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
     {
-        address[6] memory riskManagementAddresses;
-        uint256[3] memory riskManagementValues;
         (
             address makerAsset,
             uint256 makerQuantity,
@@ -53,8 +52,6 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
             takerQuantity,
             takerQuantity
         ];
-
-        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Takes an active order on Oasis Dex (takeOrder)
@@ -186,7 +183,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        public
+        internal
         pure
         returns (
             address makerAsset,

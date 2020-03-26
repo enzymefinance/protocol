@@ -23,15 +23,14 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         override
-        returns (address[6] memory, uint256[3] memory)
+        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
     {
-        address[6] memory riskManagementAddresses;
-        uint256[3] memory riskManagementValues;
         (
             address[4] memory orderAddresses,
             uint256[7] memory orderValues,
@@ -51,8 +50,6 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
             orderValues[1],
             orderValues[6]
         ];
-
-        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Takes an active order on 0x v3 (takeOrder)
@@ -277,7 +274,7 @@ contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        public
+        internal
         pure
         returns (
             address[4] memory orderAddresses,

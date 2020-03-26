@@ -26,15 +26,14 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder 
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         override
-        returns (address[6] memory, uint256[3] memory)
+        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
     {
-        address[6] memory riskManagementAddresses;
-        uint256[3] memory riskManagementValues;
         (
             address makerAsset,
             uint256 makerQuantity,
@@ -55,8 +54,6 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder 
             takerQuantity,
             takerQuantity
         ];
-
-        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Take a market order on Uniswap (takeOrder)

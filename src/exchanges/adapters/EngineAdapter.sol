@@ -25,15 +25,14 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         override
-        returns (address[6] memory, uint256[3] memory)
+        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
     {
-        address[6] memory riskManagementAddresses;
-        uint256[3] memory riskManagementValues;
         (
             address makerAsset,
             uint256 makerQuantity,
@@ -42,8 +41,8 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         riskManagementAddresses = [
-            address(0),
-            address(0),
+            __getRegistry().engine(),
+            address(this),
             makerAsset,
             takerAsset,
             address(0),
@@ -54,8 +53,6 @@ contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
             takerQuantity,
             takerQuantity
         ];
-
-        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Buys Ether from the Melon Engine, selling MLN (takeOrder)

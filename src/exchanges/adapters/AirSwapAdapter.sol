@@ -20,15 +20,14 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         override
-        returns (address[6] memory, uint256[3] memory)
+        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
     {
-        address[6] memory riskManagementAddresses;
-        uint256[3] memory riskManagementValues;
         (
             address[6] memory orderAddresses,
             uint256[6] memory orderValues, , , ,
@@ -47,8 +46,6 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
             orderValues[4],
             orderValues[4]
         ];
-
-        return (riskManagementAddresses, riskManagementValues);
     }
 
     /// @notice Take a market order on AirSwap (takeOrder)
@@ -228,7 +225,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
-        public
+        internal
         pure
         returns (
             address[6] memory orderAddresses,
