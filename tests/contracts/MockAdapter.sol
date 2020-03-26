@@ -19,9 +19,10 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
     function extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
         bytes memory _encodedArgs
     )
-        public
+        internal
         view
         override
         returns (address[6] memory, uint256[3] memory)
