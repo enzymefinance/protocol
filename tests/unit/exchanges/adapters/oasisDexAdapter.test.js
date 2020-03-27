@@ -9,7 +9,6 @@
 import { BN, toWei } from 'web3-utils';
 
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import getAccounts from '~/deploy/utils/getAccounts';
 
@@ -20,6 +19,7 @@ import {
   getEventFromLogs,
   getFunctionSignature
 } from '~/tests/utils/metadata';
+import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 
 let deployer;
 let defaultTxOpts;
@@ -98,16 +98,13 @@ describe('takeOrder', () => {
       const orderAddresses = [];
       const orderValues = [];
 
-      orderAddresses[0] = badAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, orderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: badAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId,
+      });
 
       await expect(
         send(
@@ -126,19 +123,13 @@ describe('takeOrder', () => {
     it('does not allow different taker asset address than actual oasisDex order', async () => {
       const { vault } = fund;
 
-      const orderAddresses = [];
-      const orderValues = [];
-
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = badAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, orderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity,
+        takerAsset: badAsset,
+        takerQuantity,
+        orderId,
+      });
 
       await expect(
         send(
@@ -245,19 +236,13 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
-      const orderAddresses = [];
-      const orderValues = [];
-
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, orderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId,
+      });
 
       tx = await send(
         vault,
@@ -265,7 +250,6 @@ describe('takeOrder', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,

@@ -133,7 +133,6 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
@@ -220,7 +219,6 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,

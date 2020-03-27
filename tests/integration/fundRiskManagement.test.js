@@ -13,7 +13,6 @@ import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupInvestedTestFund } from '~/tests/utils/fund';
@@ -22,6 +21,7 @@ import {
   getEventFromLogs,
   getFunctionSignature
 } from '~/tests/utils/metadata';
+import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 
 let deployer, manager;
 let defaultTxOpts, managerTxOpts;
@@ -209,21 +209,15 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         new BN(takerQuantity),
         wethToMakerAssetRate
       ).toString();
-
-      const orderAddresses = [];
-      const orderValues = [];
-
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
       const orderId = 0;
 
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, orderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId,
+      });
 
       await expect(
         send(
@@ -232,7 +226,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -265,19 +258,14 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Good take order: non-blacklisted maker asset', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
-      orderAddresses[0] = goodMakerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = goodMakerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, goodOrderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: goodMakerAsset,
+        makerQuantity: goodMakerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId: goodOrderId,
+      });
 
       await expect(
         send(
@@ -286,7 +274,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -321,25 +308,21 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Bad take order: slippage just above limit', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
       const badMakerQuantity = BNExpMul(
         new BN(expectedMakerQuantity),
         makerQuantityPercentLimit.sub(makerQuantityPercentShift)
       ).toString();
 
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = badMakerQuantity;
-      orderValues[1] = takerQuantity;
       const orderId = 0;
 
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, orderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity: badMakerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId,
+      });
 
       await expect(
         send(
@@ -348,7 +331,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -378,19 +360,14 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Good take order: slippage just within limit', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = toleratedMakerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, goodOrderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity: toleratedMakerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId: goodOrderId,
+      });
 
       await expect(
         send(
@@ -399,7 +376,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -469,19 +445,14 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Good make order: just under max-concentration', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = goodMakerQuantity;
-      orderValues[1] = goodTakerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, goodOrderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity: goodMakerQuantity,
+        takerAsset,
+        takerQuantity: goodTakerQuantity,
+        orderId: goodOrderId,
+      });
 
       await expect(
         send(
@@ -490,7 +461,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -515,19 +485,14 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Bad make order: max concentration exceeded', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = badMakerQuantity;
-      orderValues[1] = badTakerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, badOrderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset,
+        makerQuantity: badMakerQuantity,
+        takerAsset,
+        takerQuantity: badTakerQuantity,
+        orderId: badOrderId,
+      });
 
       await expect(
         send(
@@ -536,7 +501,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -639,8 +603,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Bad take order: non-whitelisted maker asset', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
       const badMakerAsset = knc.options.address;
       const makerToWethAssetRate = new BN(
@@ -651,17 +613,13 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         makerToWethAssetRate
       ).toString();
 
-      orderAddresses[0] = badMakerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-      const orderId = 0;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, orderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: badMakerAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId: 0,
+      });
 
       await expect(
         send(
@@ -670,7 +628,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -703,18 +660,14 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Good take order: whitelisted maker asset', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
-      orderAddresses[0] = goodMakerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = goodMakerQuantity;
-      orderValues[1] = takerQuantity;
 
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, goodOrderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: goodMakerAsset,
+        makerQuantity: goodMakerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId: goodOrderId,
+      });
 
       await expect(
         send(
@@ -723,7 +676,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -788,24 +740,19 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Good take order 1: final allowed position', async () => {
       const { accounting, vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
       const maxPositionsVal = await call(maxPositions, 'maxPositions');
 
       const preOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 
-      orderAddresses[0] = goodMakerAsset1;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = goodMakerQuantity1;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, goodOrderId1],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: goodMakerAsset1,
+        makerQuantity: goodMakerQuantity1,
+        takerAsset,
+        takerQuantity,
+        orderId: goodOrderId1,
+      });
 
       await send(
         vault,
@@ -813,7 +760,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         [
           oasisDexExchangeIndex,
           takeOrderFunctionSig,
-          '0x0',
           encodedArgs,
         ],
         managerTxOpts,
@@ -841,19 +787,14 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Bad take order: over limit for positions', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
-      orderAddresses[0] = badMakerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = badMakerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, badOrderId],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: badMakerAsset,
+        makerQuantity: badMakerQuantity,
+        takerAsset,
+        takerQuantity,
+        orderId: badOrderId,
+      });
 
       await expect(
         send(
@@ -862,7 +803,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,
@@ -888,19 +828,14 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Good make order 2: add to current position', async () => {
       const { vault } = fund;
-      const orderAddresses = [];
-      const orderValues = [];
 
-      orderAddresses[0] = goodMakerAsset2;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = goodMakerQuantity2;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]', 'uint256'],
-        [orderAddresses, orderValues, goodOrderId2],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeOasisDexTakeOrderArgs({
+        makerAsset: goodMakerAsset2,
+        makerQuantity: goodMakerQuantity2,
+        takerAsset,
+        takerQuantity,
+        orderId: goodOrderId2,
+      });
 
       await expect(
         send(
@@ -909,7 +844,6 @@ describe('Fund 2: Asset whitelist, max positions', () => {
           [
             oasisDexExchangeIndex,
             takeOrderFunctionSig,
-            '0x0',
             encodedArgs,
           ],
           managerTxOpts,

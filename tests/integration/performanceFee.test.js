@@ -9,7 +9,6 @@
 
 import { toWei, BN } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
@@ -17,6 +16,7 @@ import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
+import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
@@ -227,19 +227,14 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   const orderId = logMake.id;
 
   // Fund takes the trade
-  const orderAddresses = [];
-  const orderValues = [];
 
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]', 'uint256'],
-    [orderAddresses, orderValues, orderId],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeOasisDexTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+    orderId,
+  });
 
   await send(
     vault,
@@ -247,7 +242,6 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,

@@ -13,7 +13,6 @@
 import { BN, toWei } from 'web3-utils';
 
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import getAccounts from '~/deploy/utils/getAccounts';
@@ -29,6 +28,7 @@ import {
   getEventFromLogs,
   getFunctionSignature
 } from '~/tests/utils/metadata';
+import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 
 let deployer;
 let defaultTxOpts;
@@ -116,19 +116,12 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
-      const orderAddresses = [];
-      const orderValues = [];
-
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]'],
-        [orderAddresses, orderValues],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeTakeOrderArgs({
+        makerAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+      });
 
       tx = await send(
         vault,
@@ -136,7 +129,6 @@ describe('takeOrder', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,
@@ -233,19 +225,12 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
-      const orderAddresses = [];
-      const orderValues = [];
-
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]'],
-        [orderAddresses, orderValues],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeTakeOrderArgs({
+        makerAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+      });
 
       tx = await send(
         vault,
@@ -253,7 +238,6 @@ describe('takeOrder', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,
@@ -350,19 +334,12 @@ describe('takeOrder', () => {
         await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
       );
 
-      const orderAddresses = [];
-      const orderValues = [];
-
-      orderAddresses[0] = makerAsset;
-      orderAddresses[1] = takerAsset;
-      orderValues[0] = makerQuantity;
-      orderValues[1] = takerQuantity;
-
-      const hex = web3.eth.abi.encodeParameters(
-        ['address[2]', 'uint256[2]'],
-        [orderAddresses, orderValues],
-      );
-      const encodedArgs = web3.utils.hexToBytes(hex);
+      const encodedArgs = encodeTakeOrderArgs({
+        makerAsset,
+        makerQuantity,
+        takerAsset,
+        takerQuantity,
+      });
 
       tx = await send(
         vault,
@@ -370,7 +347,6 @@ describe('takeOrder', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,

@@ -9,12 +9,12 @@
 import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS, KYBER_ETH_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
+import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
@@ -110,19 +110,12 @@ test('fund takes an order on Kyber', async () => {
     await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
   );
 
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await send(
     vault,
