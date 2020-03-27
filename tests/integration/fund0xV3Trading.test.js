@@ -337,7 +337,6 @@ describe('Fund takes an order with a different taker fee asset', () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
@@ -450,7 +449,6 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
@@ -565,7 +563,6 @@ describe('Fund can take an order when protocol fee disabled', () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,

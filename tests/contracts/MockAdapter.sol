@@ -88,6 +88,24 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
         view
         override
     {
+        (
+            address[6] memory orderAddresses,
+            uint256[3] memory orderValues
+        ) = __decodeTakeOrderArgs(_encodedArgs);
+
+        IRegistry registry = IRegistry(__getRoutes().registry);
+        require(registry.assetIsRegistered(
+            orderAddresses[2]), 'Maker asset not registered'
+        );
+        require(registry.assetIsRegistered(
+            orderAddresses[3]), 'Taker asset not registered'
+        );
+        if (orderAddresses[5] != address(0)) {
+            require(
+                registry.assetIsRegistered(orderAddresses[5]),
+                'Taker fee asset not registered'
+            );
+        }
     }
 
     function __decodeTakeOrderArgs(

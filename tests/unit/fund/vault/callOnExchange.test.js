@@ -116,7 +116,6 @@ describe('Asset in Registry', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,
@@ -141,7 +140,6 @@ describe('Asset in Registry', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs1,
         ],
         defaultTxOpts,
@@ -189,7 +187,6 @@ describe('Asset in Registry', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,
@@ -208,12 +205,11 @@ describe('Asset in Registry', () => {
 
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs1,
         ],
         defaultTxOpts,
@@ -261,7 +257,6 @@ describe('Asset in Registry', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,
@@ -282,12 +277,11 @@ describe('Asset in Registry', () => {
     // Take order
     await expect(
       send(
-        trading,
+        vault,
         'callOnExchange',
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs1,
         ],
         defaultTxOpts,

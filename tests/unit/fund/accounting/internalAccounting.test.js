@@ -195,7 +195,6 @@ describe('vault', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,
@@ -247,7 +246,6 @@ describe('vault', () => {
         [
           exchangeIndex,
           takeOrderSignature,
-          '0x0',
           encodedArgs,
         ],
         defaultTxOpts,

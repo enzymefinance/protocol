@@ -17,6 +17,7 @@ import {
   EMPTY_ADDRESS,
 } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
+import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { increaseTime } from '~/tests/utils/rpc';
 import { investInFund, setupInvestedTestFund } from '~/tests/utils/fund';
 
@@ -152,19 +153,13 @@ test('Trade on Melon Engine', async () => {
 
   const makerAsset = weth.options.address;
   const takerAsset = mln.options.address;
-  const orderAddresses = [];
-  const orderValues = [];
 
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await send(
     vault,
@@ -172,7 +167,6 @@ test('Trade on Melon Engine', async () => {
     [
       exchangeIndex,
       takeOrderSignature,
-      '0x0',
       encodedArgs,
     ],
     managerTxOpts,
@@ -205,19 +199,12 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
 
   const makerAsset = weth.options.address;
   const takerAsset = mln.options.address;
-  const orderAddresses = [];
-  const orderValues = [];
-
-  orderAddresses[0] = makerAsset;
-  orderAddresses[1] = takerAsset;
-  orderValues[0] = makerQuantity;
-  orderValues[1] = takerQuantity;
-
-  const hex = web3.eth.abi.encodeParameters(
-    ['address[2]', 'uint256[2]'],
-    [orderAddresses, orderValues],
-  );
-  const encodedArgs = web3.utils.hexToBytes(hex);
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset,
+    makerQuantity,
+    takerAsset,
+    takerQuantity,
+  });
 
   await expect(
     send(
@@ -226,7 +213,6 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,

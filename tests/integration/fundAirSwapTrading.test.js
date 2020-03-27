@@ -114,7 +114,6 @@ describe('Fund takes an order', () => {
       [
         exchangeIndex,
         takeOrderSignature,
-        '0x0',
         encodedArgs,
       ],
       managerTxOpts,
