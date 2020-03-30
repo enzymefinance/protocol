@@ -381,11 +381,4 @@ contract Registry is DSAuth {
         sharesRequestor = _sharesRequestor;
         emit SharesRequestorChanged(_sharesRequestor);
     }
-
-    // TODO: re-implement this or refer to the previous asset price
-    function getReserveMin(address _asset) external view returns (uint256) {
-        // return assetInformation[_asset].reserveMin;
-
-        return 1;
-    }
 }

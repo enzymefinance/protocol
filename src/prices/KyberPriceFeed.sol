@@ -43,6 +43,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         QUOTE_ASSET = _quoteAsset;
         maxPriceDeviation = _maxPriceDeviation;
         updater = registry.owner();
+        // minQuoteAssetForPriceCalc = 1 ether;
     }
 
     modifier onlyRegistryOwner() {
@@ -271,12 +272,12 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         (bidRate,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
             __getKyberMaskAsset(_baseAsset),
             __getKyberMaskAsset(_quoteAsset),
-            registry.getReserveMin(_baseAsset)
+            1
         );
         (bidRateOfReversePair,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
             __getKyberMaskAsset(_quoteAsset),
             __getKyberMaskAsset(_baseAsset),
-            registry.getReserveMin(_quoteAsset)
+            1
         );
 
         if (bidRate == 0 || bidRateOfReversePair == 0) {
