@@ -1,10 +1,13 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import "../libs/ExchangeAdapter.sol";
 import "../interfaces/ISwap.sol";
 import "../libs/OrderTaker.sol";
 
+/// @title AirSwapAdapter Contract
+/// @author Melonport AG <team@melonport.com>
+/// @notice Adapter between Melon and AirSwap
 contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
@@ -49,7 +52,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     }
 
     /// @notice Take a market order on AirSwap (takeOrder)
-    /// @param _targetExchange Address of Uniswap factory contract
+    /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(
@@ -83,7 +86,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of Uniswap factory contract
+    /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return _fillAssets Assets to fill
     /// - [0] Maker asset
@@ -124,7 +127,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of Uniswap factory contract
+    /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
     function __validateTakeOrderParams(
         address _targetExchange,
