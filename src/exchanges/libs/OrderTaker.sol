@@ -48,6 +48,7 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
             uint256[3] memory riskManagementValues
         ) = extractTakeOrderRiskManagementArgs(_targetExchange, _encodedArgs);
 
+        // TODO: OaisDex identifier is  not 0x0
         IPolicyManager(__getRoutes().policyManager).preValidate(
             TAKE_ORDER,
             [
@@ -100,6 +101,7 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
     /// @notice Reserved function for executing a take order on an external exchange
     /// @dev When executing your order, use the values in __fillAssets and __fillExpectedAmounts
     /// @dev Include the `validateAndFinalizeFilledOrder` modifier
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data used by the OrderFiller
     function __fillTakeOrder(
         address _targetExchange,
@@ -111,6 +113,7 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
 
     /// @notice Reserved function for formatting arrays of assets and their expected fill amounts
     /// @dev Pass the returned values as the final args for __fillTakeOrder()
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Addresses of filled assets
     /// @return fillExpectedAmounts_ Expected amounts of asset fills
     /// @return fillApprovalTargets_ Targets to approve() for asset fills
@@ -128,6 +131,7 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
         );
 
     /// @notice Reserved function for validating the parameters of a takeOrder call
+    /// @param _encodedArgs Encoded parameters passed from client side
     /// @dev Use this to perform validation of takeOrder's inputs
     function __validateTakeOrderParams(
         address _targetExchange,
