@@ -11,25 +11,25 @@ import "../libs/OrderTaker.sol";
 contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses needed addresses for risk management
+    /// @return riskManagementAddresses_ needed addresses for risk management
     /// - [0] Maker address
     /// - [1] Taker address
     /// - [2] Maker asset
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return riskManagementValues needed values for risk management
+    /// @return riskManagementValues_ needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function extractTakeOrderRiskManagementArgs(
+    function __extractTakeOrderRiskManagementArgs(
         address _targetExchange,
         bytes memory _encodedArgs
     )
         internal
         view
         override
-        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
+        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
     {
         (
             address makerAsset,
@@ -39,7 +39,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
             ,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        riskManagementAddresses = [
+        riskManagementAddresses_ = [
             address(0),
             address(this),
             makerAsset,
@@ -47,7 +47,7 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
             address(0),
             address(0)
         ];
-        riskManagementValues = [
+        riskManagementValues_ = [
             makerQuantity,
             takerQuantity,
             takerQuantity
@@ -81,13 +81,13 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
     /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return _fillAssets Assets to fill
+    /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
     /// - [1] Taker asset (same as _orderAddresses[3])
-    /// @return _fillExpectedAmounts Asset fill amounts
+    /// @return fillExpectedAmounts_ Asset fill amounts
     /// - [0] Expected (min) quantity of maker asset to receive
     /// - [1] Expected (max) quantity of taker asset to spend
-    /// @return _fillApprovalTargets Recipients of assets in fill order
+    /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
     /// - [1] Oasis Dex exchange (_targetExchange)
     function __formatFillTakeOrderArgs(
@@ -186,11 +186,11 @@ contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
         internal
         pure
         returns (
-            address makerAsset,
-            uint256 makerQuantity,
-            address takerAsset,
-            uint256 takerQuantity,
-            uint256 identifier
+            address makerAsset_,
+            uint256 makerQuantity_,
+            address takerAsset_,
+            uint256 takerQuantity_,
+            uint256 identifier_
         )
     {
         return abi.decode(

@@ -11,25 +11,25 @@ import "../libs/OrderTaker.sol";
 contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses needed addresses for risk management
+    /// @return riskManagementAddresses_ needed addresses for risk management
     /// - [0] Maker address
     /// - [1] Taker address
     /// - [2] Maker asset
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return riskManagementValues needed values for risk management
+    /// @return riskManagementValues_ needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function extractTakeOrderRiskManagementArgs(
+    function __extractTakeOrderRiskManagementArgs(
         address _targetExchange,
         bytes memory _encodedArgs
     )
         internal
         view
         override
-        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
+        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
     {
         (
             address[4] memory orderAddresses,
@@ -39,7 +39,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
 
         address zrxAsset = __getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA());
 
-        riskManagementAddresses = [
+        riskManagementAddresses_ = [
             orderAddresses[0],
             orderAddresses[1],
             __getAssetAddress(orderData[0]),
@@ -47,7 +47,7 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
             zrxAsset,
             zrxAsset
         ];
-        riskManagementValues = [
+        riskManagementValues_ = [
             orderValues[0],
             orderValues[1],
             orderValues[6]
@@ -87,15 +87,15 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
     /// @param _targetExchange Address of 0x v2 exchange
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return _fillAssets Assets to fill
+    /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
     /// - [1] Taker asset (same as _orderAddresses[3])
     /// - [2] Taker Fee asset (ZRX)
-    /// @return _fillExpectedAmounts Asset fill amounts
+    /// @return fillExpectedAmounts_ Asset fill amounts
     /// - [0] Expected (min) quantity of maker asset to receive
     /// - [1] Expected (max) quantity of taker asset to spend
     /// - [2] Expected (max) quantity of taker fee asset (ZRX) to spend
-    /// @return _fillApprovalTargets Recipients of assets in fill order
+    /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
     /// - [1] 0x asset proxy for the taker asset
     /// - [2] 0x asset proxy for the taker fee asset (ZRX)
@@ -232,12 +232,12 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Decode the parameters of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return orderAddresses needed addresses for an exchange to take an order
+    /// @return orderAddresses_ needed addresses for an exchange to take an order
     /// - [0] 0x Order param: makerAddress
     /// - [1] 0x Order param: takerAddress
     /// - [2] 0x Order param: feeRecipientAddress
     /// - [3] 0x Order param: senderAddress
-    /// @return orderValues needed values for an exchange to take an order
+    /// @return orderValues_ needed values for an exchange to take an order
     /// - [0] 0x Order param: makerAssetAmount
     /// - [1] 0x Order param: takerAssetAmount
     /// - [2] 0x Order param: makerFee
@@ -245,20 +245,20 @@ contract ZeroExV2Adapter is ExchangeAdapter, OrderTaker {
     /// - [4] 0x Order param: expirationTimeSeconds
     /// - [5] 0x Order param: salt
     /// - [6] Taker asset fill quantity
-    /// @return orderData Need data for an exchange to take an order
+    /// @return orderData_ Need data for an exchange to take an order
     /// - [0] 0x Order param: makerAssetData
     /// - [1] 0x Order param: takerAssetData
-    /// @return signature Signature of the order
+    /// @return signature_ Signature of the order
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
         internal
         pure
         returns (
-            address[4] memory orderAddresses,
-            uint256[7] memory orderValues,
-            bytes[2] memory orderData,
-            bytes memory signature
+            address[4] memory orderAddresses_,
+            uint256[7] memory orderValues_,
+            bytes[2] memory orderData_,
+            bytes memory signature_
         )
     {
         return abi.decode(
