@@ -7,20 +7,20 @@ abstract contract MinimalTakeOrderDecoder {
 
     /// @notice Decode the parameters of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return makerAsset Maker asset
-    /// @return makerQuantity Maker asset amount
-    /// @return takerAsset Taker asset
-    /// @return takerQuantity Taker asset amount
+    /// @return makerAsset_ Maker asset
+    /// @return makerQuantity_ Maker asset amount
+    /// @return takerAsset_ Taker asset
+    /// @return takerQuantity_ Taker asset amount
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
         internal
         pure
         returns (
-            address makerAsset,
-            uint256 makerQuantity,
-            address takerAsset,
-            uint256 takerQuantity
+            address makerAsset_,
+            uint256 makerQuantity_,
+            address takerAsset_,
+            uint256 takerQuantity_
         )
     {
         return abi.decode(

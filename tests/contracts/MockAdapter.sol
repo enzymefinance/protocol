@@ -14,11 +14,11 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return riskManagementValues needed values for risk management
+    /// @return riskManagementValues_ needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function extractTakeOrderRiskManagementArgs(
+    function __extractTakeOrderRiskManagementArgs(
         address _targetExchange,
         bytes memory _encodedArgs
     )
@@ -114,8 +114,8 @@ contract MockAdapter is ExchangeAdapter, OrderTaker {
         internal
         pure
         returns (
-            address[6] memory orderAddresses,
-            uint256[3] memory orderValues
+            address[6] memory orderAddresses_,
+            uint256[3] memory orderValues_
         )
     {
         return abi.decode(

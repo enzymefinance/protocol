@@ -8,28 +8,6 @@ import "../../fund/policies/IPolicyManager.sol";
 /// @title Order Taker base contract
 /// @author Melonport AG <team@melonport.com>
 abstract contract OrderTaker is OrderFiller, TradingSignatures {
-    /// @notice Extract arguments for risk management validations
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses needed addresses for risk management
-    /// - [0] Maker address
-    /// - [1] Taker address
-    /// - [2] Maker asset
-    /// - [3] Taker asset
-    /// - [4] Maker fee asset
-    /// - [5] Taker fee asset
-    /// @return riskManagementValues needed values for risk management
-    /// - [0] Maker asset amount
-    /// - [1] Taker asset amount
-    /// - [2] Taker asset fill amount
-    function extractTakeOrderRiskManagementArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
-        internal
-        view
-        virtual
-        returns (address[6] memory, uint256[3] memory);
-
     /// @notice Perform a Take Order on a particular exchange
     /// @dev Synchronously handles the responsibilities of takeOrder:
     /// - Validate user inputs
@@ -46,9 +24,9 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
         (
             address[6] memory riskManagementAddresses,
             uint256[3] memory riskManagementValues
-        ) = extractTakeOrderRiskManagementArgs(_targetExchange, _encodedArgs);
+        ) = __extractTakeOrderRiskManagementArgs(_targetExchange, _encodedArgs);
 
-        // TODO: OaisDex identifier is  not 0x0
+        // TODO: OasisDex identifier is not 0x0
         IPolicyManager(__getRoutes().policyManager).preValidate(
             TAKE_ORDER,
             [
@@ -97,6 +75,28 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
     }
 
     // INTERNAL FUNCTIONS
+
+    /// @notice Extract arguments for risk management validations
+    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @return riskManagementAddresses_ needed addresses for risk management
+    /// - [0] Maker address
+    /// - [1] Taker address
+    /// - [2] Maker asset
+    /// - [3] Taker asset
+    /// - [4] Maker fee asset
+    /// - [5] Taker fee asset
+    /// @return riskManagementValues_ needed values for risk management
+    /// - [0] Maker asset amount
+    /// - [1] Taker asset amount
+    /// - [2] Taker asset fill amount
+    function __extractTakeOrderRiskManagementArgs(
+        address _targetExchange,
+        bytes memory _encodedArgs
+    )
+        internal
+        view
+        virtual
+        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_);
 
     /// @notice Reserved function for executing a take order on an external exchange
     /// @dev When executing your order, use the values in __fillAssets and __fillExpectedAmounts

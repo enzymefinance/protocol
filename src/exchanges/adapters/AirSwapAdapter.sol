@@ -11,32 +11,32 @@ import "../libs/OrderTaker.sol";
 contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses needed addresses for risk management
+    /// @return riskManagementAddresses_ needed addresses for risk management
     /// - [0] Maker address
     /// - [1] Taker address
     /// - [2] Maker asset
     /// - [3] Taker asset
     /// - [4] Maker fee asset
     /// - [5] Taker fee asset
-    /// @return riskManagementValues needed values for risk management
+    /// @return riskManagementValues_ needed values for risk management
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function extractTakeOrderRiskManagementArgs(
+    function __extractTakeOrderRiskManagementArgs(
         address _targetExchange,
         bytes memory _encodedArgs
     )
         internal
         view
         override
-        returns (address[6] memory riskManagementAddresses, uint256[3] memory riskManagementValues)
+        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
     {
         (
             address[6] memory orderAddresses,
             uint256[6] memory orderValues, , , ,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        riskManagementAddresses = [
+        riskManagementAddresses_ = [
             orderAddresses[0],
             orderAddresses[2],
             orderAddresses[1],
@@ -44,7 +44,7 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
             address(0),
             address(0)
         ];
-        riskManagementValues = [
+        riskManagementValues_ = [
             orderValues[2],
             orderValues[4],
             orderValues[4]
@@ -88,13 +88,13 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
     /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return _fillAssets Assets to fill
+    /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset
     /// - [1] Taker asset
-    /// @return _fillExpectedAmounts Asset fill amounts
+    /// @return fillExpectedAmounts_ Asset fill amounts
     /// - [0] Expected (min) quantity of maker asset to receive
     /// - [1] Expected (max) quantity of taker asset to spend
-    /// @return _fillApprovalTargets Recipients of assets in fill order
+    /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
     /// - [1] AirSwap exchange of taker asset
     function __formatFillTakeOrderArgs(
@@ -203,40 +203,40 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
 
     /// @notice Decode the parameters of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return orderAddresses
+    /// @return orderAddresses_
     /// - [0] order.signer.wallet
     /// - [1] order.signer.token
     /// - [2] order.sender.wallet
     /// - [3] order.sender.token
     /// - [4] order.signature.signatory
     /// - [5] order.signature.validator
-    /// @return orderValues
+    /// @return orderValues_
     /// - [0] order.nonce
     /// - [1] order.expiry
     /// - [2] order.signer.amount
     /// - [3] order.signer.id
     /// - [4] order.sender.amount
     /// - [5] order.sender.id
-    /// @return tokenKinds
+    /// @return tokenKinds_
     /// - [0] order.signer.kind
     /// - [1] order.sender.kind
-    /// @return sigBytesComponents
+    /// @return sigBytesComponents_
     /// - [0] order.signature.r
     /// - [1] order.signature.s
-    /// @return sigUintComponent order.signature.v
-    /// @return version order.signature.version
+    /// @return sigUintComponent_ order.signature.v
+    /// @return version_ order.signature.version
     function __decodeTakeOrderArgs(
         bytes memory _encodedArgs
     )
         internal
         pure
         returns (
-            address[6] memory orderAddresses,
-            uint256[6] memory orderValues,
-            bytes4[2] memory tokenKinds,
-            bytes32[2] memory sigBytesComponents,
-            uint8 sigUintComponent,
-            bytes1 version
+            address[6] memory orderAddresses_,
+            uint256[6] memory orderValues_,
+            bytes4[2] memory tokenKinds_,
+            bytes32[2] memory sigBytesComponents_,
+            uint8 sigUintComponent_,
+            bytes1 version_
         )
     {
         return abi.decode(
@@ -252,5 +252,3 @@ contract AirSwapAdapter is ExchangeAdapter, OrderTaker {
         );
     }
 }
-
-
