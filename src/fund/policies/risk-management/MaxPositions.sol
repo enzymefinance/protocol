@@ -1,7 +1,8 @@
 pragma solidity 0.6.4;
 
-import "../../accounting/IAccounting.sol";
-import "../../hub/ISpoke.sol";
+import "../../hub/Spoke.sol";
+import "../../shares/Shares.sol";
+import "../../vault/Vault.sol";
 import "../TradingSignatures.sol";
 
 contract MaxPositions is TradingSignatures {
@@ -18,12 +19,11 @@ contract MaxPositions is TradingSignatures {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).getHub()).accounting());
-        address denominationAsset = accounting.DENOMINATION_ASSET();
+        IHub hub = IHub(Spoke(msg.sender).getHub());
         // Always allow a trade INTO the quote asset
         address incomingToken = addresses[2];
-        if (denominationAsset == incomingToken) return true;
-        return accounting.getOwnedAssetsLength() <= maxPositions;
+        if (Shares(hub.shares()).DENOMINATION_ASSET() == incomingToken) return true;
+        return Vault(payable(hub.vault())).getOwnedAssetsLength() <= maxPositions;
     }
 
     function position() external pure returns (Applied) { return Applied.post; }

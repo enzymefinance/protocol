@@ -4,8 +4,8 @@ pragma experimental ABIEncoderV2;
 import "./ExchangeAdapter.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
-import "../../fund/accounting/IAccounting.sol";
 import "../../fund/hub/SpokeAccessor.sol";
+import "../../fund/vault/IVault.sol";
 
 /// @title Order Filler base contract
 /// @author Melonport AG <team@melonport.com>
@@ -62,7 +62,7 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
             balanceDiffs
         );
 
-        // Update assetBalances in Accounting for the assets in the filled order
+        // Update assetBalances for the assets in the filled order
         __updateFillOrderAssetBalances(aggregatedAssets, balanceDiffs);
 
         // Revoke excess ERC20 allowances, if necessary
@@ -344,14 +344,14 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
     )
         private
     {
-        IAccounting accounting = IAccounting(__getRoutes().accounting);
+        IVault vault = IVault(address(this));
 
-        accounting.increaseAssetBalance(_assets[0], _balanceDiffs[0]);
-        accounting.decreaseAssetBalance(_assets[1], _balanceDiffs[1]);
+        vault.increaseAssetBalance(_assets[0], _balanceDiffs[0]);
+        vault.decreaseAssetBalance(_assets[1], _balanceDiffs[1]);
 
         for (uint256 i = 2; i < _assets.length; i++) {
             if (_assets[i] != _assets[0] && _assets[i] != _assets[1]) {
-                accounting.decreaseAssetBalance(_assets[i], _balanceDiffs[i]);
+                vault.decreaseAssetBalance(_assets[i], _balanceDiffs[i]);
             }
         }
     }

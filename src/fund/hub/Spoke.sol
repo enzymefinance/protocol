@@ -29,7 +29,7 @@ contract Spoke is ISpoke, DSAuth {
         setOwner(address(hub)); // temporary, to allow initialization
     }
 
-    function initialize(address[7] calldata _spokes) external auth {
+    function initialize(address[6] calldata _spokes) external auth {
         require(msg.sender == address(hub));
         require(!initialized, "Already initialized");
         routes = IHub.Routes(
@@ -38,8 +38,7 @@ contract Spoke is ISpoke, DSAuth {
             _spokes[2],
             _spokes[3],
             _spokes[4],
-            _spokes[5],
-            _spokes[6]
+            _spokes[5]
         );
         initialized = true;
         setOwner(address(0));

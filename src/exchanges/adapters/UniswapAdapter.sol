@@ -180,7 +180,7 @@ contract UniswapAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder 
         private
     {
         require(
-            __getAccounting().assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
+            IVault(address(this)).assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
             "__swapNativeAssetToToken: insufficient native token assetBalance"
         );
 

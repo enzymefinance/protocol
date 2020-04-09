@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
-import "../../fund/accounting/IAccounting.sol";
 import "../../fund/hub/SpokeAccessor.sol";
 import "../../registry/IRegistry.sol";
 
@@ -41,11 +40,6 @@ abstract contract ExchangeAdapter is DSMath, SpokeAccessor {
         returns (uint256)
     {
         return mul(relativeQuantity1, quantity2) / quantity1;
-    }
-
-    /// @notice Gets an IAccounting instance
-    function __getAccounting() internal view returns (IAccounting) {
-        return IAccounting(__getRoutes().accounting);
     }
 
     /// @notice Gets the canonical WETH address

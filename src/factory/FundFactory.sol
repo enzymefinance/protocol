@@ -1,7 +1,6 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-import "../fund/accounting/IAccounting.sol";
 import "../fund/fees/IFeeManager.sol";
 import "../fund/hub/Hub.sol";
 import "../fund/policies/IPolicyManager.sol";
@@ -18,10 +17,9 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
     event NewFund(
         address indexed manager,
         address indexed hub,
-        address[7] routes
+        address[6] routes
     );
 
-    IAccountingFactory public accountingFactory;
     IFeeManagerFactory public feeManagerFactory;
     IPolicyManagerFactory public policyManagerFactory;
     ISharesFactory public sharesFactory;
@@ -45,7 +43,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
     }
 
     constructor(
-        address _accountingFactory,
         address _feeManagerFactory,
         address _sharesFactory,
         address _vaultFactory,
@@ -57,7 +54,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         public
     {
         setOwner(_postDeployOwner);
-        accountingFactory = IAccountingFactory(_accountingFactory);
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         sharesFactory = ISharesFactory(_sharesFactory);
         vaultFactory = IVaultFactory(_vaultFactory);
@@ -99,10 +95,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
             msg.sender,
             _name
         );
-        require(
-            REGISTRY.assetIsRegistered(_denominationAsset),
-            "Denomination asset must be registered"
-        );
 
         managersToHubs[msg.sender] = address(new Hub(msg.sender, _name));
         managersToSettings[msg.sender] = Settings(
@@ -118,21 +110,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         managersToRoutes[msg.sender].registry = address(REGISTRY);
         managersToRoutes[msg.sender].fundFactory = address(this);
     }
-
-    function _createAccountingFor(address _manager)
-        internal
-    {
-        ensureComponentSet(managersToHubs[_manager]);
-        ensureComponentNotSet(managersToRoutes[_manager].accounting);
-        managersToRoutes[_manager].accounting = accountingFactory.createInstance(
-            managersToHubs[_manager],
-            managersToSettings[_manager].denominationAsset,
-            managersToRoutes[_manager].registry
-        );
-    }
-
-    function createAccountingFor(address _manager) external amguPayable payable { _createAccountingFor(_manager); }
-    function createAccounting() external amguPayable payable { _createAccountingFor(msg.sender); }
 
     function _createFeeManagerFor(address _manager)
         internal
@@ -172,6 +149,7 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         ensureComponentNotSet(managersToRoutes[_manager].shares);
         managersToRoutes[_manager].shares = sharesFactory.createInstance(
             managersToHubs[_manager],
+            managersToSettings[_manager].denominationAsset,
             managersToSettings[_manager].defaultInvestmentAssets,
             managersToRoutes[_manager].registry
         );
@@ -202,7 +180,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         require(!childExists[address(hub)], "Setup already complete");
         require(
             componentExists(address(hub)) &&
-            componentExists(routes.accounting) &&
             componentExists(routes.feeManager) &&
             componentExists(routes.policyManager) &&
             componentExists(routes.shares) &&
@@ -211,7 +188,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
         );
         childExists[address(hub)] = true;
         hub.initializeAndSetPermissions([
-            routes.accounting,
             routes.feeManager,
             routes.policyManager,
             routes.shares,
@@ -230,7 +206,6 @@ contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
             msg.sender,
             address(hub),
             [
-                routes.accounting,
                 routes.feeManager,
                 routes.policyManager,
                 routes.shares,

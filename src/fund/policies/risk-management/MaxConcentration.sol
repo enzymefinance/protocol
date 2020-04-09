@@ -1,8 +1,9 @@
 pragma solidity 0.6.4;
 
 import "../TradingSignatures.sol";
-import "../../accounting/IAccounting.sol";
-import "../../hub/ISpoke.sol";
+import "../../hub/Spoke.sol";
+import "../../shares/Shares.sol";
+import "../../vault/Vault.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../../prices/IPriceSource.sol";
 
@@ -25,24 +26,30 @@ contract MaxConcentration is TradingSignatures, DSMath {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IAccounting accounting = IAccounting(IHub(ISpoke(msg.sender).getHub()).accounting());
-        address denominationAsset = accounting.DENOMINATION_ASSET();
+        IHub hub = IHub(Spoke(msg.sender).getHub());
+        Shares shares = Shares(hub.shares());
+        address denominationAsset = shares.DENOMINATION_ASSET();
         // Max concentration is only checked for non-quote assets
         address takerToken = addresses[2];
         if (denominationAsset == takerToken) { return true; }
 
-        uint totalGav = accounting.calcGav();
-        uint concentration = _calcConcentration(
-            accounting.calcAssetGav(takerToken),
-            totalGav
+        uint totalGav = shares.calcGav();
+
+        uint256 assetGav = IPriceSource(hub.priceSource()).convertQuantity(
+            Vault(payable(hub.vault())).assetBalances(takerToken),
+            takerToken,
+            denominationAsset
         );
+
+        uint concentration = __calcConcentration(assetGav, totalGav);
+
         return concentration <= maxConcentration;
     }
 
     function position() external pure returns (Applied) { return Applied.post; }
     function identifier() external pure returns (string memory) { return 'MaxConcentration'; }
 
-    function _calcConcentration(uint assetGav, uint totalGav) internal returns (uint) {
+    function __calcConcentration(uint assetGav, uint totalGav) internal returns (uint) {
         return mul(assetGav, ONE_HUNDRED_PERCENT) / totalGav;
     }
 }

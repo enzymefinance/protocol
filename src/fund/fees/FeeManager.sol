@@ -82,19 +82,22 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
     function _rewardFee(IFee fee) internal {
         require(feeIsRegistered[address(fee)], "Fee is not registered");
         uint rewardShares = fee.feeAmount();
-        fee.updateState();
-        ISharesToken(routes.shares).createFor(hub.manager(), rewardShares);
-        emit FeeReward(rewardShares);
+        if (rewardShares > 0) {
+            try fee.updateState() {
+                ISharesToken(routes.shares).createFor(hub.manager(), rewardShares);
+                emit FeeReward(rewardShares);
+            }
+            catch {}
+        }
     }
 
-    function _rewardAllFees() internal {
+    /// @notice Reward all fees
+    /// @dev Can be called by anyone
+    function rewardAllFees() external override {
         for (uint i = 0; i < fees.length; i++) {
             _rewardFee(fees[i]);
         }
     }
-
-    /// @dev Used when calling from other components
-    function rewardAllFees() public override auth { _rewardAllFees(); }
 
     /// @dev Convenience function; anyone can reward management fee any time
     /// @dev Convention that management fee is 0
