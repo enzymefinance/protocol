@@ -29,19 +29,17 @@ contract MockHub is DSGuard {
 
     function setShutDownState(bool _state) public { isShutDown = _state; }
 
-    function setSpokes(address[7] memory _spokes) public {
-        routes.accounting = _spokes[0];
-        routes.feeManager = _spokes[1];
-        routes.policyManager = _spokes[2];
-        routes.shares = _spokes[3];
-        routes.vault = _spokes[4];
-        routes.registry = _spokes[5];
-        routes.fundFactory = _spokes[6];
+    function setSpokes(address[6] memory _spokes) public {
+        routes.feeManager = _spokes[0];
+        routes.policyManager = _spokes[1];
+        routes.shares = _spokes[2];
+        routes.vault = _spokes[3];
+        routes.registry = _spokes[4];
+        routes.fundFactory = _spokes[5];
     }
 
     function setRouting() public {
-        address[7] memory spokes = [
-            routes.accounting,
+        address[6] memory spokes = [
             routes.feeManager,
             routes.policyManager,
             routes.shares,
@@ -49,7 +47,6 @@ contract MockHub is DSGuard {
             routes.registry,
             routes.fundFactory
         ];
-        Spoke(routes.accounting).initialize(spokes);
         Spoke(routes.feeManager).initialize(spokes);
         Spoke(routes.policyManager).initialize(spokes);
         Spoke(routes.shares).initialize(spokes);
@@ -67,7 +64,6 @@ contract MockHub is DSGuard {
         permit(routes.vault, routes.accounting, bytes4(keccak256('decreaseAssetBalance(address,uint256)')));
         permit(routes.vault, routes.accounting, bytes4(keccak256('increaseAssetBalance(address,uint256)')));
         permit(routes.vault, routes.accounting, bytes4(keccak256('removeFromOwnedAssets(address)')));
-        permit(routes.accounting, routes.feeManager, bytes4(keccak256('rewardAllFees()')));
         permit(manager, routes.feeManager, bytes4(keccak256('register(address)')));
         permit(manager, routes.feeManager, bytes4(keccak256('batchRegister(address[])')));
         permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
@@ -86,8 +82,7 @@ contract MockHub is DSGuard {
     }
 
     function initializeSpoke(address _spoke) public {
-        address[7] memory spokes = [
-            routes.accounting,
+        address[6] memory spokes = [
             routes.feeManager,
             routes.policyManager,
             routes.shares,
