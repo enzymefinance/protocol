@@ -18,17 +18,25 @@ if (!fs.existsSync(outDir))
 for (filepath of Object.keys(compiledFiles)) {
   const contracts = compiledFiles[filepath];
   for (name of Object.keys(contracts)) {
+    const contract = contracts[name];
+    const { output } = JSON.parse(contract.metadata);
+    const { userdoc, devdoc } = output;
+
+    fs.writeFileSync(
+      `${outDir}/${name}-docs.json`,
+      JSON.stringify({ userdoc, devdoc }, undefined, 2)
+    );
     fs.writeFileSync(
       `${outDir}/${name}.abi`,
-      JSON.stringify(contracts[name].abi)
+      JSON.stringify(contract.abi, undefined, 2)
     );
     fs.writeFileSync(
       `${outDir}/${name}.bin`,
-      contracts[name].evm.bytecode.object + '\n'
+      contract.evm.bytecode.object + "\n"
     );
     fs.writeFileSync(
       `${outDir}/${name}.bin-runtime`,
-      contracts[name].evm.deployedBytecode.object + '\n'
+      contract.evm.deployedBytecode.object + "\n"
     );
   }
 }
