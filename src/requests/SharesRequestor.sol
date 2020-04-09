@@ -6,8 +6,6 @@ import "../dependencies/TokenUser.sol";
 import "../dependencies/token/IERC20.sol";
 import "../dependencies/libs/EnumerableSet.sol";
 import "../engine/AmguConsumer.sol";
-import "../fund/accounting/IAccounting.sol";
-import "../fund/fees/IFeeManager.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/policies/IPolicyManager.sol";
 import "../fund/shares/IShares.sol";
@@ -390,7 +388,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         // Buy the shares via Shares
         // We can grant exact approval to Shares rather than using _maxInvestmentAmount
         // since we use the same function to get the cost
-        uint256 costInInvestmentAsset = IAccounting(IHub(_hub).accounting()).getShareCostInAsset(
+        uint256 costInInvestmentAsset = shares.getSharesCostInAsset(
             _sharesQuantity,
             _investmentAsset
         );
@@ -429,8 +427,9 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         private
     {
         IHub hub = IHub(_hub);
+        IShares shares = IShares(hub.shares());
         require(
-            IShares(hub.shares()).isSharesInvestmentAsset(_investmentAsset),
+            shares.isSharesInvestmentAsset(_investmentAsset),
             "__validateBuySharesRequest: _investmentAsset not allowed"
         );
         require(
@@ -438,11 +437,8 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
             "__validateBuySharesRequest: Fund is not active"
         );
 
-        // Reward management fees owed for accurate shares dilution
-        IFeeManager(hub.feeManager()).rewardManagementFee();
-
         // Ensure enough investment asset
-        uint256 costInInvestmentAsset = IAccounting(hub.accounting()).getShareCostInAsset(
+        uint256 costInInvestmentAsset = shares.getSharesCostInAsset(
             _sharesQuantity,
             _investmentAsset
         );

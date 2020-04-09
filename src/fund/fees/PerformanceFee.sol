@@ -1,10 +1,9 @@
 pragma solidity 0.6.4;
 
 import "../../dependencies/DSMath.sol";
-import "../../dependencies/token/IERC20.sol";
-import "../accounting/IAccounting.sol";
-import "../hub/IHub.sol";
-import "../hub/ISpoke.sol";
+import "../hub/Spoke.sol";
+import "../shares/Shares.sol";
+import "../vault/Vault.sol";
 
 contract PerformanceFee is DSMath {
 
@@ -31,30 +30,20 @@ contract PerformanceFee is DSMath {
 
     /// @notice Assumes management fee is zero
     function feeAmount() external returns (uint feeInShares) {
-        IHub hub = ISpoke(msg.sender).getHub();
-        IAccounting accounting = IAccounting(hub.accounting());
-        IERC20 shares = IERC20(hub.shares());
-        uint gav = accounting.calcGav();
-        uint gavPerShare = shares.totalSupply() > 0 ?
-            accounting.valuePerShare(gav, shares.totalSupply())
-            : accounting.DEFAULT_SHARE_PRICE();
-        if (
-            gavPerShare > highWaterMark[msg.sender] &&
-            shares.totalSupply() != 0 &&
-            gav != 0
-        ) {
-            uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);
-            uint totalGain = mul(sharePriceGain, shares.totalSupply()) / DIVISOR;
-            uint feeInAsset = mul(totalGain, performanceFeeRate[msg.sender]) / DIVISOR;
-            uint preDilutionFee = mul(shares.totalSupply(), feeInAsset) / gav;
-            feeInShares =
-                mul(preDilutionFee, shares.totalSupply()) /
-                sub(shares.totalSupply(), preDilutionFee);
-        }
-        else {
-            feeInShares = 0;
-        }
-        return feeInShares;
+        Shares shares = Shares(IHub(Spoke(msg.sender).getHub()).shares());
+        uint sharesSupply = shares.totalSupply();
+        if (sharesSupply == 0) return 0;
+
+        uint gav = shares.calcGav();
+        uint gavPerShare = mul(gav, 10 ** uint256(shares.decimals())) / sharesSupply;
+        if (gavPerShare <= highWaterMark[msg.sender]) return 0;
+
+        uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);
+        uint totalGain = mul(sharePriceGain, sharesSupply) / DIVISOR;
+        uint feeInAsset = mul(totalGain, performanceFeeRate[msg.sender]) / DIVISOR;
+        uint preDilutionFee = mul(sharesSupply, feeInAsset) / gav;
+
+        return mul(preDilutionFee, sharesSupply) / sub(sharesSupply, preDilutionFee);
     }
 
     function canUpdate(address _who) public view returns (bool) {
@@ -77,11 +66,12 @@ contract PerformanceFee is DSMath {
             canUpdate(msg.sender),
             "Not within a update window or already updated this period"
         );
-        IHub hub = ISpoke(msg.sender).getHub();
-        IAccounting accounting = IAccounting(hub.accounting());
-        IERC20 shares = IERC20(hub.shares());
-        uint gav = accounting.calcGav();
-        uint currentGavPerShare = accounting.valuePerShare(gav, shares.totalSupply());
+        Shares shares = Shares(IHub(Spoke(msg.sender).getHub()).shares());
+
+        uint currentGavPerShare = mul(
+            shares.calcGav(),
+            10 ** uint256(shares.decimals())
+        ) / shares.totalSupply();
         require(
             currentGavPerShare > highWaterMark[msg.sender],
             "Current share price does not pass high water mark"

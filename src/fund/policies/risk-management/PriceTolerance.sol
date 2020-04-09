@@ -1,7 +1,7 @@
 pragma solidity 0.6.4;
 
 import "../TradingSignatures.sol";
-import "../../hub/ISpoke.sol";
+import "../../hub/Spoke.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../../exchanges/interfaces/IOasisDex.sol";
 import "../../../prices/IPriceSource.sol";
@@ -38,7 +38,7 @@ contract PriceTolerance is TradingSignatures, DSMath {
         view
         returns (bool)
     {
-        IPriceSource pricefeed = IPriceSource(ISpoke(msg.sender).priceSource());
+        IPriceSource pricefeed = IPriceSource(Spoke(msg.sender).priceSource());
         uint256 referencePrice;
         (referencePrice,) = pricefeed.getReferencePriceInfo(_takerAsset, _makerAsset);
 
