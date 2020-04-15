@@ -20,7 +20,6 @@ const main = async input => {
   const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], melonAddrs);
   const managementFee = await nab('ManagementFee', [], melonAddrs);
   const performanceFee = await nab('PerformanceFee', [], melonAddrs);
-  const accountingFactory = await nab('AccountingFactory', [], melonAddrs);
   const feeManagerFactory = await nab('FeeManagerFactory', [], melonAddrs);
   const policyManagerFactory = await nab('PolicyManagerFactory', [], melonAddrs);
   const sharesFactory = await nab('SharesFactory', [], melonAddrs);
@@ -139,7 +138,6 @@ const main = async input => {
   }
 
   const fundFactory = await nab('FundFactory', [
-    accountingFactory.options.address,
     feeManagerFactory.options.address,
     sharesFactory.options.address,
     vaultFactory.options.address,
@@ -178,7 +176,6 @@ const main = async input => {
     "EngineAdapter": engineAdapter,
     "PriceTolerance": priceTolerance,
     "UserWhitelist": userWhitelist,
-    "AccountingFactory": accountingFactory,
     "FeeManagerFactory": feeManagerFactory,
     "PolicyManagerFactory": policyManagerFactory,
     "SharesFactory": sharesFactory,
