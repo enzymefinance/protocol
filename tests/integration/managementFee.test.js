@@ -61,7 +61,7 @@ beforeAll(async () => {
 });
 
 test('executing rewardManagementFee distributes management fee shares to manager', async () => {
-  const { accounting, feeManager, shares, vault } = fund;
+  const { feeManager, shares, vault } = fund;
 
   const fundCreationTime = new BN(
     await call(
@@ -73,12 +73,12 @@ test('executing rewardManagementFee distributes management fee shares to manager
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const preFundGav = new BN(await call(accounting, 'calcGav'));
+  const preFundGav = new BN(await call(shares, 'calcGav'));
 
   // Delay 1 sec to ensure block new blocktime
   await delay(1000);
@@ -87,12 +87,12 @@ test('executing rewardManagementFee distributes management fee shares to manager
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   ); 
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundGav = new BN(await call(accounting, 'calcGav'));
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const payoutTime = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
@@ -117,34 +117,34 @@ test('executing rewardManagementFee distributes management fee shares to manager
   expect(postWethManager).bigNumberEq(preWethManager);
 });
 
-test('executing triggerRewardAllFees distributes fee shares to manager', async () => {
-  const { accounting, feeManager, shares, vault } = fund;
+test('executing rewardAllFees distributes fee shares to manager', async () => {
+  const { feeManager, shares, vault } = fund;
 
   const lastFeeConversion = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
   );
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const preFundCalcs = await call(accounting, 'calcFundMetrics');
+  const preFundGav = new BN(await call(shares, 'calcGav'));
 
   // Delay 1 sec to ensure block new blocktime
   await delay(3000);
 
-  await send(accounting, 'triggerRewardAllFees', [], managerTxOpts);
+  await send(feeManager, 'rewardAllFees', [], managerTxOpts);
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundCalcs = await call(accounting, 'calcFundMetrics');
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const payoutTime = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
@@ -155,8 +155,6 @@ test('executing triggerRewardAllFees distributes fee shares to manager', async (
     .div(yearInSeconds);
   const expectedFeeShares = preTotalSupply.mul(expectedPreDilutionFeeShares)
     .div(preTotalSupply.sub(expectedPreDilutionFeeShares));
-  const expectedFeeInDenominationAsset = expectedFeeShares.mul(new BN(preFundCalcs.gav))
-    .div(preTotalSupply.add(expectedFeeShares));
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
 
@@ -166,21 +164,12 @@ test('executing triggerRewardAllFees distributes fee shares to manager', async (
   expect(fundHoldingsWethDiff).bigNumberEq(new BN(0));
   expect(postManagerShares).bigNumberEq(preManagerShares.add(expectedFeeShares));
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(expectedFeeShares));
-  expect(new BN(postFundCalcs.gav)).bigNumberEq(new BN(preFundCalcs.gav));
-  expect(BNExpDiv(new BN(preFundCalcs.nav), preTotalSupply)).bigNumberCloseTo(
-    new BN(preFundCalcs.sharePrice)
-  );
-  expect(BNExpDiv(new BN(postFundCalcs.nav), postTotalSupply)).bigNumberCloseTo(
-    new BN(postFundCalcs.sharePrice)
-  );
+  expect(postFundGav).bigNumberEq(preFundGav);
   expect(postWethManager).bigNumberEq(preWethManager);
-  expect(new BN(preFundCalcs.allocatedFees_)).bigNumberEq(
-    expectedFeeInDenominationAsset
-  );
 });
 
 test('Investor redeems his shares', async () => {
-  const { accounting, feeManager, shares, vault } = fund;
+  const { feeManager, shares, vault } = fund;
 
   const lastFeeConversion = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])
@@ -188,7 +177,7 @@ test('Investor redeems his shares', async () => {
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -201,11 +190,11 @@ test('Investor redeems his shares', async () => {
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundGav = new BN(await call(accounting, 'calcGav'));
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const payoutTime = new BN(
     await call(managementFee, 'lastPayoutTime', [feeManager.options.address])

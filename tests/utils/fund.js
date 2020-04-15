@@ -13,7 +13,6 @@ export const getFundComponents = async hubAddress => {
   const components = {};
   components.hub = fetchContract('Hub', hubAddress);
   const routes = await call(components.hub, 'routes');
-  components.accounting = fetchContract('Accounting', routes.accounting);
   components.feeManager = fetchContract('FeeManager', routes.feeManager);
   components.policyManager = fetchContract('PolicyManager', routes.policyManager);
   components.shares = fetchContract('Shares', routes.shares);
@@ -28,8 +27,8 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
 
   const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress);
   const routes = await call(hub, 'routes');
-  const accounting = fetchContract(CONTRACT_NAMES.ACCOUNTING, routes.accounting);
   const registry = fetchContract(CONTRACT_NAMES.REGISTRY, routes.registry);
+  const shares = fetchContract(CONTRACT_NAMES.SHARES, routes.shares);
   const sharesRequestor = fetchContract(
     CONTRACT_NAMES.SHARES_REQUESTOR,
     await call(registry, 'sharesRequestor')  
@@ -42,11 +41,12 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
   // Calculate amount of shares to buy with contribution
   const shareCost = new BN(
     await call(
-      accounting,
-      'getShareCostInAsset',
+      shares,
+      'getSharesCostInAsset',
       [toWei('1', 'ether'), tokenContract.options.address]
     )
   );
+
   const wantedShares = BNExpDiv(new BN(contribAmount), shareCost).toString();
 
   // Fund investor with contribution token, if necessary
@@ -124,6 +124,7 @@ export const setupFundWithParams = async ({
     amguTxValue = toWei('0.01', 'ether')
   }
   const managerTxOptsWithAmgu = { ...managerTxOpts, value: amguTxValue };
+
   await send(
     fundFactory,
     'beginSetup',
@@ -139,7 +140,7 @@ export const setupFundWithParams = async ({
     ],
     managerTxOpts
   );
-  await send(fundFactory, 'createAccounting', [], managerTxOptsWithAmgu);
+
   await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu);

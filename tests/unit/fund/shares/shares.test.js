@@ -120,8 +120,8 @@ describe('buyShares', () => {
 
     preFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [defaultBuyShares.investmentAssetContract.options.address]
       )
     );
@@ -158,8 +158,8 @@ describe('buyShares', () => {
     buySharesTxBlock = await web3.eth.getBlockNumber();
     postFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [defaultBuyShares.investmentAssetContract.options.address]
       )
     );
@@ -254,7 +254,7 @@ describe('disableSharesInvestmentAssets', () => {
         [tokensToDisable],
         { ...defaultTxOpts, from: thirdParty }
       )
-    ).rejects.toThrowFlexible("ds-auth-unauthorized")
+    ).rejects.toThrowFlexible("Only the fund manager can call this function")
   });
 
   it('succeeds when called by an authorized user', async () => {
@@ -327,7 +327,7 @@ describe('enableSharesInvestmentAssets', () => {
         [tokensToEnable],
         { ...defaultTxOpts, from: thirdParty }
       )
-    ).rejects.toThrowFlexible("ds-auth-unauthorized")
+    ).rejects.toThrowFlexible("Only the fund manager can call this function")
   });
 
   it('succeeds when called by an authorized user', async () => {
@@ -408,8 +408,8 @@ describe('redeemShares', () => {
   it('succeeds when called by a user with shares', async () => {
     preFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [defaultBuyShares.investmentAssetContract.options.address]
       )
     );
@@ -434,8 +434,8 @@ describe('redeemShares', () => {
     redeemTxBlock = await web3.eth.getBlockNumber();
     postFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [defaultBuyShares.investmentAssetContract.options.address]
       )
     );
@@ -526,8 +526,8 @@ describe('redeemSharesQuantity', () => {
   it('succeeds when called by a user with shares', async () => {
     preFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [defaultBuyShares.investmentAssetContract.options.address]
       )
     );
@@ -552,8 +552,8 @@ describe('redeemSharesQuantity', () => {
     redeemTxBlock = await web3.eth.getBlockNumber();
     postFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [defaultBuyShares.investmentAssetContract.options.address]
       )
     );
@@ -713,8 +713,8 @@ describe('redeemSharesWithConstraints', () => {
   it('succeeds when called by a user with enough shares', async () => {
     preFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [buySharesOpts.investmentAssetContract.options.address]
       )
     );
@@ -739,8 +739,8 @@ describe('redeemSharesWithConstraints', () => {
     redeemTxBlock = await web3.eth.getBlockNumber();
     postFundHoldingsInvestmentAsset = new BN(
       await call(
-        fund.accounting,
-        'getFundHoldingsForAsset',
+        fund.vault,
+        'assetBalances',
         [buySharesOpts.investmentAssetContract.options.address]
       )
     );

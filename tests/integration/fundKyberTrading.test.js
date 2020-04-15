@@ -66,7 +66,7 @@ beforeAll(async () => {
 });
 
 test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => {
-  const { accounting, vault } = fund;
+  const { vault } = fund;
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -86,10 +86,10 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
 
   const encodedArgs = encodeTakeOrderArgs({
@@ -113,10 +113,10 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
@@ -132,7 +132,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
 });
 
 test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => {
-  const { accounting, vault } = fund;
+  const { vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -152,10 +152,10 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
 
   const encodedArgs = encodeTakeOrderArgs({
@@ -179,10 +179,10 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
 
   const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
@@ -198,7 +198,7 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
 });
 
 test('swap MLN directly to EUR without intermediary', async () => {
-  const { accounting, vault } = fund;
+  const { vault } = fund;
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -219,13 +219,13 @@ test('swap MLN directly to EUR without intermediary', async () => {
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
   const preFundHoldingsEur = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
+    await call(vault, 'assetBalances', [eur.options.address])
   );
 
   const encodedArgs = encodeTakeOrderArgs({
@@ -250,13 +250,13 @@ test('swap MLN directly to EUR without intermediary', async () => {
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
   const postFundHoldingsEur = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [eur.options.address])
+    await call(vault, 'assetBalances', [eur.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);

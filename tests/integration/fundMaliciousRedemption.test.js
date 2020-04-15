@@ -68,9 +68,9 @@ beforeAll(async () => {
 });
 
 test('Trying to avoid performance fee with invalid asset addresses fails', async () => {
-  const { accounting, shares } = fund;
+  const { shares, vault } = fund;
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  const holdings = await call(accounting, 'getFundHoldings');
+  const holdings = await call(vault, 'getAllAssetBalances');
   const errorMessage = 'Requested asset holdings is 0';
 
   // TODO: convert to iterated tests
@@ -162,19 +162,19 @@ test('General redeem fails in presence of malicious token', async () => {
 });
 
 test(`Redeem with constraints works as expected`, async () => {
-  const { accounting, shares } = fund;
+  const { shares, vault } = fund;
 
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
 
   const preFundHoldingsMaliciousToken = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [maliciousToken.options.address])
+    await call(vault, 'assetBalances', [maliciousToken.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
 
   const investorShares = await call(shares, 'balanceOf', [investor]);
@@ -192,14 +192,14 @@ test(`Redeem with constraints works as expected`, async () => {
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
 
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundGav = new BN(await call(accounting, 'calcGav'));
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const maliciousTokenPrice = new BN(
     (await call(priceSource, 'getPrice', [maliciousToken.options.address]))[0]
