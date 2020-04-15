@@ -98,7 +98,7 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
 });
 
 test('Invest in fund with enough MLN to buy desired ETH from engine', async () => {
-  const { accounting, hub, shares } = fund;
+  const { hub, shares } = fund;
 
   // Enable investment with mln
   await send(shares, 'enableSharesInvestmentAssets', [[mln.options.address]], managerTxOpts);
@@ -107,8 +107,8 @@ test('Invest in fund with enough MLN to buy desired ETH from engine', async () =
   const amguTxValue = toWei('10', 'ether');
 
   const costOfShares = await call(
-      accounting,
-      'getShareCostInAsset',
+    shares,
+      'getSharesCostInAsset',
       [wantedShares, mln.options.address]
   );
 
@@ -135,7 +135,7 @@ test('Invest in fund with enough MLN to buy desired ETH from engine', async () =
 
 // TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
 test('Trade on Melon Engine', async () => {
-  const { accounting, vault } = fund;
+  const { vault } = fund;
 
   // Thaw frozen eth
   await increaseTime(86400 * 32);
@@ -145,10 +145,10 @@ test('Trade on Melon Engine', async () => {
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
 
   const makerAsset = weth.options.address;
@@ -176,10 +176,10 @@ test('Trade on Melon Engine', async () => {
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
 
   const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);

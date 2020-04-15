@@ -15,7 +15,6 @@ import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import { delay } from '~/tests/utils/time';
 
 let deployer, manager, investor, badInvestor;
 let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;
@@ -72,8 +71,8 @@ describe('Fund 1: user whitelist', () => {
     // Investment params
     wantedShares = toWei('1', 'ether');
     offeredValue = await call(
-      fund.accounting,
-      'getShareCostInAsset',
+      fund.shares,
+      'getSharesCostInAsset',
       [wantedShares, weth.options.address]
     );
   });

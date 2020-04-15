@@ -191,13 +191,13 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
 
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
@@ -214,10 +214,10 @@ describe('takeOrder', () => {
       );
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
     });
 
@@ -333,16 +333,16 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
       preFundHoldingsZrx = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [zrx.options.address])
+        await call(vault, 'assetBalances', [zrx.options.address])
       );
 
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
@@ -359,13 +359,13 @@ describe('takeOrder', () => {
       );
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
       postFundHoldingsZrx = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [zrx.options.address])
+        await call(vault, 'assetBalances', [zrx.options.address])
       );
     });
 
@@ -486,20 +486,20 @@ describe('takeOrder', () => {
     });
 
     test('half of the order is filled through the fund', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
       const partialFillDivisor = new BN(2);
       takerFillQuantity = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
       makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
       takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
       preFundHoldingsZrx = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [zrx.options.address])
+        await call(vault, 'assetBalances', [zrx.options.address])
       );
 
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString());
@@ -516,13 +516,13 @@ describe('takeOrder', () => {
       );
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
       postFundHoldingsZrx = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [zrx.options.address])
+        await call(vault, 'assetBalances', [zrx.options.address])
       );
     });
 

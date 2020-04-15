@@ -55,18 +55,18 @@ beforeAll(async () => {
 });
 
 test('Quote asset is KNC', async () => {
-  fundDenominationAsset = await call(fund.accounting, 'DENOMINATION_ASSET');
+  fundDenominationAsset = await call(fund.shares, 'DENOMINATION_ASSET');
   expect(fundDenominationAsset).toBe(knc.options.address);
 });
 
 test('Fund gets non-quote asset from investment', async () => {
-  const { accounting, hub, shares, vault } = fund;
+  const { hub, shares, vault } = fund;
 
   const contribAmount = toWei('1', 'ether');
   const shareCost = new BN(
     await call(
-      accounting,
-      'getShareCostInAsset',
+      shares,
+      'getSharesCostInAsset',
       [toWei('1', 'ether'), weth.options.address]
     )
   );
@@ -86,8 +86,8 @@ test('Fund gets non-quote asset from investment', async () => {
 
   const actualCostOfShares = new BN(
     await call(
-      accounting,
-      'getShareCostInAsset',
+      shares,
+      'getSharesCostInAsset',
       [wantedShares.toString(), weth.options.address]
     )
   );
@@ -106,7 +106,7 @@ test('Fund gets non-quote asset from investment', async () => {
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
 
   await investInFund({
@@ -123,9 +123,9 @@ test('Fund gets non-quote asset from investment', async () => {
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
-  const postFundGav = new BN(await call(accounting, 'calcGav'));
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const wethPriceInKnc = (await call(
     priceSource,
@@ -147,13 +147,13 @@ test('Fund gets non-quote asset from investment', async () => {
 });
 
 test('investor redeems his shares', async () => {
-  const { accounting, shares, vault } = fund;
+  const { shares, vault } = fund;
 
   const investorShares =  new BN(await call(shares, 'balanceOf', [investor]));
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -162,11 +162,11 @@ test('investor redeems his shares', async () => {
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundGav = new BN(await call(accounting, 'calcGav'));
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal 
   expect(postFundHoldingsWeth.sub(preFundHoldingsWeth)).bigNumberEq(
@@ -180,13 +180,13 @@ test('investor redeems his shares', async () => {
 });
 
 test('Fund gets asset from investment that has no pair with the quote asset in the pricefeed', async () => {
-  const { accounting, hub, shares, vault } = fund;
+  const { hub, shares, vault } = fund;
 
   const contribAmount = toWei('1', 'ether');
   const shareCost = new BN(
     await call(
-      accounting,
-      'getShareCostInAsset',
+      shares,
+      'getSharesCostInAsset',
       [toWei('1', 'ether'), mln.options.address]
     )
   );
@@ -202,8 +202,8 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
   const expectedCostOfShares = BNExpMul(wantedShares, kncPriceInMln);
   const actualCostOfShares = new BN(
     await call(
-      accounting,
-      'getShareCostInAsset',
+      shares,
+      'getSharesCostInAsset',
       [wantedShares.toString(), mln.options.address]
     )
   );
@@ -211,11 +211,11 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
 
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const preFundGav = new BN(await call(accounting, 'calcGav'));
+  const preFundGav = new BN(await call(shares, 'calcGav'));
 
   // @dev this works as isInitial because the pre test redeems all of the Shares.totalSupply()
   await investInFund({
@@ -230,11 +230,11 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
 
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsMln = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+    await call(vault, 'assetBalances', [mln.options.address])
   );
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundGav = new BN(await call(accounting, 'calcGav'));
+  const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const mlnPriceInKnc = new BN(
     (await call(

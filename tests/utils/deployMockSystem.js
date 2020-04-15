@@ -11,7 +11,6 @@ import { CONTRACT_NAMES } from '~/tests/utils/constants';
  */
 const deployMockSystem = async (
   {
-    accountingContract = CONTRACT_NAMES.MOCK_ACCOUNTING,
     engineContract = CONTRACT_NAMES.ENGINE,
     feeManagerContract = CONTRACT_NAMES.MOCK_FEE_MANAGER,
     fees = [],
@@ -85,15 +84,6 @@ const deployMockSystem = async (
     .setName('Mock')
     .send(defaultTxOpts);
 
-  const accounting = await deploy(
-    accountingContract,
-    [
-      hub.options.address,
-      quoteToken.options.address,
-      registry.options.address
-    ]
-  );
-
   const feeManager = await deploy(
     feeManagerContract,
     [
@@ -115,6 +105,7 @@ const deployMockSystem = async (
     sharesContract,
     [
       hub.options.address,
+      quoteToken.options.address,
       [quoteToken.options.address, baseToken.options.address],
       registry.options.address,
     ]
@@ -146,7 +137,6 @@ const deployMockSystem = async (
 
   await hub.methods
     .setSpokes([
-      accounting.options.address,
       feeManager.options.address,
       policyManager.options.address,
       shares.options.address,
@@ -157,7 +147,6 @@ const deployMockSystem = async (
     .send(defaultTxOpts);
 
   const toInit = [
-    accounting,
     shares,
     vault,
     feeManager,
@@ -172,7 +161,6 @@ const deployMockSystem = async (
     .send(defaultTxOpts);
 
   const contracts = {
-    accounting,
     engine,
     feeManager,
     hub,

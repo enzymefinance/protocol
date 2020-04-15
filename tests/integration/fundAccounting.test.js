@@ -2,7 +2,7 @@
  * @file Tests fund accounting calculations in a real fund
  *
  * @test initial investment (with quote token)
- * @test sending quote token directly to Trading does not affect fund calcs
+ * @test sending quote token directly to Vault does not affect fund calcs
  */
 
 import { BN, toWei } from 'web3-utils';
@@ -37,7 +37,7 @@ beforeAll(async () => {
 });
 
 test('initial investment (with quote token)', async () => {
-  const { accounting, hub } = fund;
+  const { hub, shares, vault } = fund;
 
   const contribAmount = toWei('1', 'ether');
 
@@ -51,33 +51,46 @@ test('initial investment (with quote token)', async () => {
     }
   });
 
-  const fundWethHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
-  const fundCalculations = await call(accounting, 'calcFundMetrics');
+  const fundWethHoldings = await call(vault, 'assetBalances', [weth.options.address])
+  const fundGav = await call(shares, 'calcGav');
+  const fundSharePrice = await call(
+    shares,
+    'getSharesCostInAsset',
+    [toWei('1', 'ether'), weth.options.address]
+  );
 
   expect(fundWethHoldings).toBe(contribAmount);
-  expect(fundCalculations.gav_).toBe(contribAmount);
-  expect(fundCalculations.feesInDenominationAsset_).toBe('0');
-  expect(fundCalculations.feesInShares_).toBe('0');
-  expect(fundCalculations.nav_).toBe(contribAmount);
-  expect(fundCalculations.sharePrice_).toBe(contribAmount);
+  expect(fundGav).toBe(contribAmount);
+  expect(fundSharePrice).toBe(contribAmount);
 });
 
-test('sending quote token directly to Trading does NOT affect fund calculations', async () => {
-  const { accounting, vault } = fund;
+test('sending quote token directly to Vault does NOT affect fund calculations', async () => {
+  const { shares, vault } = fund;
   const tokenQuantity = toWei('1', 'ether');
 
-  const preFundCalculations = await call(accounting, 'calcFundMetrics');
+  const preFundGav = await call(shares, 'calcGav');
+  const preFundSharePrice = await call(
+    shares,
+    'getSharesCostInAsset',
+    [toWei('1', 'ether'), weth.options.address]
+  );
   const preFundWethHoldings = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
 
   await send(weth, 'transfer', [vault.options.address, tokenQuantity], defaultTxOpts);
 
-  const postFundCalculations = await call(accounting, 'calcFundMetrics');
+  const postFundGav = await call(shares, 'calcGav');
+  const postFundSharePrice = await call(
+    shares,
+    'getSharesCostInAsset',
+    [toWei('1', 'ether'), weth.options.address]
+  );
   const postFundWethHoldings = new BN(
-    await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+    await call(vault, 'assetBalances', [weth.options.address])
   );
   
   expect(postFundWethHoldings).bigNumberEq(preFundWethHoldings);
-  expect(postFundCalculations).toEqual(preFundCalculations);
+  expect(postFundGav).toEqual(preFundGav);
+  expect(postFundSharePrice).toEqual(preFundSharePrice);
 });

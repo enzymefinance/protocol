@@ -1,22 +1,23 @@
-import { encodeFunctionSignature } from 'web3-eth-abi';
-import { BN, randomHex, toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { call, deploy, send } from '~/deploy/utils/deploy-contract';
+import { call, send } from '~/deploy/utils/deploy-contract';
 import getAccounts from '~/deploy/utils/getAccounts';
 import web3 from '~/deploy/utils/get-web3';
 
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { BNExpDiv } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 
 let deployer;
 let defaultTxOpts;
 let weth, mln;
-let fundFactory;
+let fundFactory, priceSource;
 let fund;
 let takeOrderSignature;
-let mockExchangeAddress, mockAdapterAddress;
+let kyberNetworkProxy, kyberAdapter;
 let investmentAmount;
 
 beforeAll(async () => {
@@ -26,29 +27,17 @@ beforeAll(async () => {
   const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
   const contracts = deployed.contracts;
 
-  const registry = contracts[CONTRACT_NAMES.REGISTRY];
   fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+  priceSource = contracts[CONTRACT_NAMES.TESTING_PRICEFEED];
   weth = contracts.WETH;
   mln = contracts.MLN;
 
-  // Register a mock exchange and adapter
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder'
   );
-  mockExchangeAddress = randomHex(20);
-  const mockAdapter = await deploy(CONTRACT_NAMES.MOCK_ADAPTER);
-  mockAdapterAddress = mockAdapter.options.address;
-  await send(
-    registry,
-    'registerExchangeAdapter',
-    [
-      mockExchangeAddress,
-      mockAdapterAddress,
-      [encodeFunctionSignature(takeOrderSignature)]
-    ],
-    defaultTxOpts
-  );
+  kyberAdapter = contracts.KyberAdapter;
+  kyberNetworkProxy = contracts.KyberNetworkProxy;
 
   investmentAmount = toWei('1', 'ether');
 });
@@ -77,9 +66,7 @@ describe('new investment in fund', () => {
   });
 
   it('emits correct AssetBalanceUpdated event', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
+    const events = await fund.vault.getPastEvents(
       'AssetBalanceUpdated',
       {
         fromBlock: Number(preTxBlock)+1,
@@ -94,18 +81,14 @@ describe('new investment in fund', () => {
     expect(eventValues.newBalance).toBe(investmentAmount);
   });
 
-  it('correctly updates accounting', async() => {
-    const { accounting } = fund;
-
-    const fundWethHoldings = await call(accounting, 'assetBalances', [weth.options.address]);
+  it('correctly updates internal accounting', async() => {
+    const fundWethHoldings = await call(fund.vault, 'assetBalances', [weth.options.address]);
     expect(fundWethHoldings).toBe(investmentAmount);
   });
 
-  it('emits correct AssetAddition event', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
-      'AssetAddition',
+  it('emits correct AssetAdded event', async() => {
+    const events = await fund.vault.getPastEvents(
+      'AssetAdded',
       {
         fromBlock: Number(preTxBlock)+1,
         toBlock: 'latest'
@@ -118,12 +101,10 @@ describe('new investment in fund', () => {
   });
 
   it('adds asset to ownedAssets', async() => {
-    const { accounting } = fund;
-
-    const ownedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
+    const ownedAssetsLength = await call(fund.vault, 'getOwnedAssetsLength');
     expect(ownedAssetsLength).toBe("1");
 
-    const ownedAsset = await call(accounting, 'ownedAssets', [0]);
+    const ownedAsset = await call(fund.vault, 'ownedAssets', [0]);
     expect(ownedAsset).toBe(weth.options.address);
   });
 });
@@ -141,8 +122,8 @@ describe('vault', () => {
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
-      exchanges: [mockExchangeAddress],
-      exchangeAdapters: [mockAdapterAddress],
+      exchanges: [kyberNetworkProxy.options.address],
+      exchangeAdapters: [kyberAdapter.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,
@@ -154,43 +135,30 @@ describe('vault', () => {
     exchangeIndex = 0;
 
     makerAsset = mln.options.address;
-    makerQuantity = new BN(investmentAmount).mul(new BN(2)).toString();
     takerAsset = weth.options.address;
     takerQuantity = investmentAmount;
+    const makerToWethAssetRate = new BN(
+      (await call(priceSource, 'getPrice', [makerAsset]))[0]
+    );
+    makerQuantity = BNExpDiv(
+      new BN(takerQuantity),
+      makerToWethAssetRate
+    ).toString();
   });
 
   it('cannot take a trade that decreases an asset balance below 0', async() => {
-    const { vault } = fund;
+    const badTakerQuantity = new BN(takerQuantity).add(new BN(1)).toString();
 
-    const makerAddress = EMPTY_ADDRESS;
-    const takerAddress = EMPTY_ADDRESS;
-    const makerFeeAsset = EMPTY_ADDRESS;
-    const takerFeeAsset = EMPTY_ADDRESS;
-    const badTakerQuantity = new BN(investmentAmount).add(new BN(1)).toString();
-    const fillAmount = badTakerQuantity;
-
-    const orderAddresses = [];
-    const orderValues = [];
-
-    orderAddresses[0] = makerAddress;
-    orderAddresses[1] = takerAddress;
-    orderAddresses[2] = makerAsset;
-    orderAddresses[3] = takerAsset;
-    orderAddresses[4] = makerFeeAsset;
-    orderAddresses[5] = takerFeeAsset;
-    orderValues[0] = makerQuantity;
-    orderValues[1] = badTakerQuantity;
-    orderValues[2] = fillAmount;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[6]', 'uint256[3]'],
-      [orderAddresses, orderValues],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeTakeOrderArgs({
+      makerAsset,
+      makerQuantity,
+      takerAsset,
+      takerQuantity: badTakerQuantity
+    });
 
     await expect(
       send(
-        vault,
+        fund.vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -199,49 +167,29 @@ describe('vault', () => {
         ],
         defaultTxOpts,
       )
-    ).rejects.toThrowFlexible("new balance cannot be less than 0");
+    ).rejects.toThrowFlexible("insufficient native token assetBalance");
   });
 
   it('can take a trade that decreases asset balance to exactly 0', async() => {
-    const { accounting, vault } = fund;
-
     preFundMlnHoldings = new BN(
-      await call(accounting, 'assetBalances', [mln.options.address])
+      await call(fund.vault, 'assetBalances', [mln.options.address])
     );
     preFundWethHoldings = new BN(
-      await call(accounting, 'assetBalances', [weth.options.address])
+      await call(fund.vault, 'assetBalances', [weth.options.address])
     );
 
     preTxBlock = await web3.eth.getBlockNumber();
 
-    const makerAddress = EMPTY_ADDRESS;
-    const takerAddress = EMPTY_ADDRESS;
-    const makerFeeAsset = EMPTY_ADDRESS;
-    const takerFeeAsset = EMPTY_ADDRESS;
-    const fillAmount = takerQuantity;
-
-    const orderAddresses = [];
-    const orderValues = [];
-
-    orderAddresses[0] = makerAddress;
-    orderAddresses[1] = takerAddress;
-    orderAddresses[2] = makerAsset;
-    orderAddresses[3] = takerAsset;
-    orderAddresses[4] = makerFeeAsset;
-    orderAddresses[5] = takerFeeAsset;
-    orderValues[0] = makerQuantity;
-    orderValues[1] = takerQuantity;
-    orderValues[2] = fillAmount;
-
-    const hex = web3.eth.abi.encodeParameters(
-      ['address[6]', 'uint256[3]'],
-      [orderAddresses, orderValues],
-    );
-    const encodedArgs = web3.utils.hexToBytes(hex);
+    const encodedArgs = encodeTakeOrderArgs({
+      makerAsset,
+      makerQuantity,
+      takerAsset,
+      takerQuantity
+    });
 
     await expect(
       send(
-        vault,
+        fund.vault,
         'callOnExchange',
         [
           exchangeIndex,
@@ -253,18 +201,16 @@ describe('vault', () => {
     ).resolves.not.toThrow();
 
     postFundMlnHoldings = new BN(
-      await call(accounting, 'assetBalances', [mln.options.address])
+      await call(fund.vault, 'assetBalances', [mln.options.address])
     );
     postFundWethHoldings = new BN(
-      await call(accounting, 'assetBalances', [weth.options.address])
+      await call(fund.vault, 'assetBalances', [weth.options.address])
     );
     expect(postFundWethHoldings).bigNumberEq(new BN(0));
   })
 
   it('emits correct AssetBalanceUpdated events', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
+    const events = await fund.vault.getPastEvents(
       'AssetBalanceUpdated',
       {
         fromBlock: Number(preTxBlock)+1,
@@ -273,7 +219,7 @@ describe('vault', () => {
     );
     expect(events.length).toBe(2);
 
-    const takerTokenEvents = await accounting.getPastEvents(
+    const takerTokenEvents = await fund.vault.getPastEvents(
       'AssetBalanceUpdated',
       {
         filter: { asset: weth.options.address },
@@ -289,7 +235,7 @@ describe('vault', () => {
       preFundWethHoldings.sub(new BN(takerQuantity))
     );
 
-    const makerTokenEvents = await accounting.getPastEvents(
+    const makerTokenEvents = await fund.vault.getPastEvents(
       'AssetBalanceUpdated',
       {
         filter: { asset: mln.options.address },
@@ -306,16 +252,14 @@ describe('vault', () => {
     );
   });
 
-  it('correctly updates accounting', async() => {
+  it('correctly updates internal accounting', async() => {
     expect(postFundWethHoldings).bigNumberEq(preFundWethHoldings.sub(new BN(takerQuantity)));
     expect(postFundMlnHoldings).bigNumberEq(preFundMlnHoldings.add(new BN(makerQuantity)));
   });
 
-  it('emits correct AssetAddition event', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
-      'AssetAddition',
+  it('emits correct AssetAdded event', async() => {
+    const events = await fund.vault.getPastEvents(
+      'AssetAdded',
       {
         fromBlock: Number(preTxBlock)+1,
         toBlock: 'latest'
@@ -327,11 +271,9 @@ describe('vault', () => {
     expect(eventValues.asset).toBe(makerAsset);
   });
 
-  it('emits correct AssetRemoval event', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
-      'AssetRemoval',
+  it('emits correct AssetRemoved event', async() => {
+    const events = await fund.vault.getPastEvents(
+      'AssetRemoved',
       {
         fromBlock: Number(preTxBlock)+1,
         toBlock: 'latest'
@@ -344,12 +286,10 @@ describe('vault', () => {
   });
 
   it('adds maker asset to ownedAssets and removes take asset', async() => {
-    const { accounting } = fund;
-
-    const ownedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
+    const ownedAssetsLength = await call(fund.vault, 'getOwnedAssetsLength');
     expect(ownedAssetsLength).toBe("1");
 
-    const ownedAsset = await call(accounting, 'ownedAssets', [0]);
+    const ownedAsset = await call(fund.vault, 'ownedAssets', [0]);
     expect(ownedAsset).toBe(makerAsset);
   });
 });
@@ -378,9 +318,7 @@ describe('redeem shares', () => {
   });
 
   it('emits correct AssetBalanceUpdated event', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
+    const events = await fund.vault.getPastEvents(
       'AssetBalanceUpdated',
       {
         fromBlock: Number(preTxBlock)+1,
@@ -395,18 +333,14 @@ describe('redeem shares', () => {
     expect(eventValues.newBalance).toBe("0");
   });
 
-  it('correctly updates accounting', async() => {
-    const { accounting } = fund;
-
-    const fundWethHoldings = await call(accounting, 'assetBalances', [weth.options.address]);
+  it('correctly updates internal accounting', async() => {
+    const fundWethHoldings = await call(fund.vault, 'assetBalances', [weth.options.address]);
     expect(Number(fundWethHoldings)).toBe(0);
   });
 
-  it('emits correct AssetRemoval event', async() => {
-    const { accounting } = fund;
-
-    const events = await accounting.getPastEvents(
-      'AssetRemoval',
+  it('emits correct AssetRemoved event', async() => {
+    const events = await fund.vault.getPastEvents(
+      'AssetRemoved',
       {
         fromBlock: Number(preTxBlock)+1,
         toBlock: 'latest'
@@ -419,9 +353,7 @@ describe('redeem shares', () => {
   });
 
   it('removes asset from ownedAssets', async() => {
-    const { accounting } = fund;
-
-    const ownedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
+    const ownedAssetsLength = await call(fund.vault, 'getOwnedAssetsLength');
     expect(ownedAssetsLength).toBe("0");
   });
 });

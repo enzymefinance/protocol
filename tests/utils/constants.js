@@ -18,8 +18,6 @@ export const ENCODING_TYPES = {
 
 
 export const CONTRACT_NAMES = {
-  ACCOUNTING: 'Accounting',
-  ACCOUNTING_FACTORY: 'AccountingFactory',
   ADDRESS_LIST: 'AddressList',
   AMGU_CONSUMER: 'AmguConsumer',
   ASSET_BLACKLIST: 'AssetBlacklist',
@@ -44,8 +42,6 @@ export const CONTRACT_NAMES = {
   MANAGEMENT_FEE: 'ManagementFee',
   MAX_CONCENTRATION: 'MaxConcentration',
   MAX_POSITIONS: 'MaxPositions',
-  MOCK_ACCOUNTING: 'MockAccounting',
-  MOCK_ADAPTER: 'MockAdapter',
   MOCK_FEE: 'MockFee',
   MOCK_FEE_MANAGER: 'MockFeeManager',
   MOCK_HUB: 'MockHub',

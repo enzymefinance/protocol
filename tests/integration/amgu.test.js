@@ -6,7 +6,6 @@ import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { getFundComponents } from '~/tests/utils/fund';
 import { getEventFromLogs } from '~/tests/utils/metadata';
 
 let deployer;
@@ -129,7 +128,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
     managerTxOpts
   );
 
-  await assertAmguTx(fundFactory, 'createAccounting');
+  await assertAmguTx(fundFactory, 'createShares');
 });
 
 test('set amgu with incentive attatched and check its usage in creating a fund', async () => {
@@ -163,7 +162,6 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     managerTxOpts
   );
 
-  await assertAmguTx(fundFactory, 'createAccounting');
   await assertAmguTx(fundFactory, 'createFeeManager');
   await assertAmguTx(fundFactory, 'createPolicyManager');
   await assertAmguTx(fundFactory, 'createShares');

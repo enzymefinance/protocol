@@ -99,7 +99,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
   beforeAll(async () => {
     fund = await setupInvestedTestFund(contracts, manager);
-    const { accounting, policyManager, vault } = fund;
+    const { policyManager, vault } = fund;
 
     const exchangeInfo = await call(vault, 'getExchangeInfo');
     oasisDexExchangeIndex = exchangeInfo[1].findIndex(
@@ -110,7 +110,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       CONTRACT_NAMES.ASSET_BLACKLIST,
       [[knc.options.address]]
     );
-    const currentPositions = await call(accounting, 'getOwnedAssetsLength');
+    const currentPositions = await call(vault, 'getOwnedAssetsLength');
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
       [Number(currentPositions) + 2]
@@ -391,17 +391,19 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     let badMakerQuantity, badOrderId, badTakerQuantity;
 
     beforeAll(async () => {
-      const { accounting } = fund;
+      const { shares, vault } = fund;
       makerAsset = dai.options.address;
       takerAsset = weth.options.address;
       makerToWethAssetRate = new BN(
         (await call(priceSource, 'getPrice', [makerAsset]))[0]
       );
 
-      const makerAssetGav = new BN(
-        await call(accounting, 'calcAssetGav', [makerAsset])
+      const makerAssetGav = BNExpMul(
+        new BN(await call(vault, 'assetBalances', [makerAsset])),
+        makerToWethAssetRate
       );
-      const fundGav = new BN(await call(accounting, 'calcGav'));
+
+      const fundGav = new BN(await call(shares, 'calcGav'));
       const makerAssetGavPercent = BNExpDiv(makerAssetGav, fundGav);
       const allowedMakerAssetGavPercentage =
         new BN(maxConcentrationVal).sub(makerAssetGavPercent);
@@ -525,7 +527,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     contracts = deployed.contracts;
 
     fund = await setupInvestedTestFund(contracts, manager);
-    const { accounting, policyManager, vault } = fund;
+    const { policyManager, vault } = fund;
 
     const exchangeInfo = await call(vault, 'getExchangeInfo');
     oasisDexExchangeIndex = exchangeInfo[1].findIndex(
@@ -536,7 +538,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       CONTRACT_NAMES.ASSET_WHITELIST,
       [[dai.options.address, mln.options.address, zrx.options.address]]
     );
-    const currentPositions = await call(accounting, 'getOwnedAssetsLength');
+    const currentPositions = await call(vault, 'getOwnedAssetsLength');
     const maxPositionsArg = Number(currentPositions) + 2;
     maxPositions = await deploy(
       CONTRACT_NAMES.MAX_POSITIONS,
@@ -739,11 +741,11 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Good take order 1: final allowed position', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
 
       const maxPositionsVal = await call(maxPositions, 'maxPositions');
 
-      const preOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
+      const preOwnedAssetsLength = await call(vault, 'getOwnedAssetsLength');
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 
       const encodedArgs = encodeOasisDexTakeOrderArgs({
@@ -765,7 +767,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         managerTxOpts,
       );
 
-      const postOwnedAssetsLength = await call(accounting, 'getOwnedAssetsLength');
+      const postOwnedAssetsLength = await call(vault, 'getOwnedAssetsLength');
       expect(postOwnedAssetsLength).toEqual(maxPositionsVal);
     });
 

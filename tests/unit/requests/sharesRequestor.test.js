@@ -406,8 +406,8 @@ describe('executeRequestFor', () => {
 
       expectedSharesCost = new BN(
         await call(
-          fund.accounting,
-          'getShareCostInAsset',
+          fund.shares,
+          'getSharesCostInAsset',
           [request.sharesQuantity, request.investmentAsset]
         )
       );
@@ -516,8 +516,8 @@ describe('executeRequestFor', () => {
 
       expectedSharesCost = new BN(
         await call(
-          fund.accounting,
-          'getShareCostInAsset',
+          fund.shares,
+          'getSharesCostInAsset',
           [request.sharesQuantity, request.investmentAsset]
         )
       );

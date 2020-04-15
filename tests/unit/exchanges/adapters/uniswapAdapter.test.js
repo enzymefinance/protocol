@@ -149,13 +149,13 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
 
       const encodedArgs = encodeTakeOrderArgs({
@@ -177,10 +177,10 @@ describe('takeOrder', () => {
       );
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
     });
 
@@ -253,13 +253,13 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
 
       preFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
 
       const encodedArgs = encodeTakeOrderArgs({
@@ -281,10 +281,10 @@ describe('takeOrder', () => {
       );
 
       postFundHoldingsWeth = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+        await call(vault, 'assetBalances', [weth.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
     });
 
@@ -362,13 +362,13 @@ describe('takeOrder', () => {
     });
 
     test('order is filled through the fund', async () => {
-      const { accounting, vault } = fund;
+      const { vault } = fund;
 
       preFundHoldingsDai = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [dai.options.address])
+        await call(vault, 'assetBalances', [dai.options.address])
       );
       preFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
 
       const encodedArgs = encodeTakeOrderArgs({
@@ -390,10 +390,10 @@ describe('takeOrder', () => {
       );
 
       postFundHoldingsDai = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [dai.options.address])
+        await call(vault, 'assetBalances', [dai.options.address])
       );
       postFundHoldingsMln = new BN(
-        await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+        await call(vault, 'assetBalances', [mln.options.address])
       );
     });
 

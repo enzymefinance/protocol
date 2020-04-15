@@ -75,7 +75,7 @@ describe('Fund takes an order', () => {
   let signedOrder;
 
   test('manager takes order through adapter', async () => {
-    const { vault, accounting} = fund;
+    const { vault } = fund;
     const makerAssetAmount = toWei('1', 'ether');
     const fillQuantity = toWei('0.05', 'ether');
 
@@ -102,10 +102,10 @@ describe('Fund takes an order', () => {
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+      await call(vault, 'assetBalances', [weth.options.address])
     );
     const preFundHoldingsMln = new BN(
-      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+      await call(vault, 'assetBalances', [mln.options.address])
     );
 
     await send(
@@ -122,10 +122,10 @@ describe('Fund takes an order', () => {
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
-      await call(accounting, 'getFundHoldingsForAsset', [weth.options.address])
+      await call(vault, 'assetBalances', [weth.options.address])
     );
     const postFundHoldingsMln = new BN(
-      await call(accounting, 'getFundHoldingsForAsset', [mln.options.address])
+      await call(vault, 'assetBalances', [mln.options.address])
     );
 
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);

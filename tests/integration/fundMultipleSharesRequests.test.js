@@ -90,13 +90,13 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('A user can have only one pending investment request', async () => {
-    const { accounting, hub } = fund;
+    const { hub, shares } = fund;
 
     const offerAsset = weth.options.address;
     const expectedOfferAssetCost = new BN(
       await call(
-        accounting,
-        'getShareCostInAsset',
+        shares,
+        'getSharesCostInAsset',
         [wantedShares1, offerAsset]
       )
     );
@@ -139,13 +139,13 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('Investment request allowed for second user with another default token', async () => {
-    const { accounting, hub } = fund;
+    const { hub, shares } = fund;
 
     const offerAsset = mln.options.address;
     const expectedOfferAssetCost = new BN(
       await call(
-        accounting,
-        'getShareCostInAsset',
+        shares,
+        'getSharesCostInAsset',
         [wantedShares2, offerAsset]
       )
     );
@@ -171,13 +171,13 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('Investment request allowed for third user with approved token', async () => {
-    const { accounting, hub, shares } = fund;
+    const { hub, shares } = fund;
 
     const offerAsset = dai.options.address;
     const expectedOfferAssetCost = new BN(
       await call(
-        accounting,
-        'getShareCostInAsset',
+        shares,
+        'getSharesCostInAsset',
         [wantedShares3, offerAsset]
       )
     );
@@ -263,13 +263,13 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   });
 
   test('Investor 1 buys more shares, with a different asset', async () => {
-    const { accounting, hub, shares } = fund;
+    const { hub, shares } = fund;
 
     const contribAmount = toWei('100', 'ether');
     const shareCost = new BN(
       await call(
-        accounting,
-        'getShareCostInAsset',
+        shares,
+        'getSharesCostInAsset',
         [toWei('1', 'ether'), dai.options.address]
       )
     );

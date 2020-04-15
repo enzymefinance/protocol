@@ -41,7 +41,6 @@ test('continue setup of a fund', async () => {
   const amguTxValue = toWei('0.01', 'ether')
   const userTxOptsWithAmgu = { ...userTxOpts, value: amguTxValue };
   
-  await send(fundFactory, 'createAccountingFor', [manager], userTxOptsWithAmgu);
   await send(fundFactory, 'createFeeManagerFor', [manager], userTxOptsWithAmgu);
   await send(fundFactory, 'createPolicyManagerFor', [manager], userTxOptsWithAmgu);
   await send(fundFactory, 'createSharesFor', [manager], userTxOptsWithAmgu);

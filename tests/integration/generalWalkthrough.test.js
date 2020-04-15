@@ -85,7 +85,6 @@ beforeAll(async () => {
     weth.options.address,
     [weth.options.address, mln.options.address],
   ], managerTxOpts);
-  await send(fundFactory, 'createAccounting', [], managerTxOpts);
   await send(fundFactory, 'createFeeManager', [], managerTxOpts);
   await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
   await send(fundFactory, 'createShares', [], managerTxOpts);
@@ -98,8 +97,8 @@ beforeAll(async () => {
   offeredValue = toWei('1', 'ether');
   const shareCost = new BN(
     await call(
-      fund.accounting,
-      'getShareCostInAsset',
+      fund.shares,
+      'getSharesCostInAsset',
       [toWei('1', 'ether'), weth.options.address]
     )
   );
@@ -178,7 +177,7 @@ test('Buying shares (initial investment) succeeds for whitelisted user with allo
 });
 
 test('Fund can take an order on Oasis DEX', async () => {
-  const { accounting, vault } = fund;
+  const { vault } = fund;
 
   const makerQuantity = toWei('2', 'ether');
   const makerAsset = mln.options.address;
@@ -193,8 +192,8 @@ test('Fund can take an order on Oasis DEX', async () => {
   const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
   const orderId = logMake.id;
 
-  const preMlnFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [mln.options.address]);
-  const preWethFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address]);
+  const preMlnFundHoldings = await call(vault, 'assetBalances', [mln.options.address]);
+  const preWethFundHoldings = await call(vault, 'assetBalances', [weth.options.address]);
 
   const encodedArgs = encodeOasisDexTakeOrderArgs({
     makerAsset,
@@ -215,8 +214,8 @@ test('Fund can take an order on Oasis DEX', async () => {
     managerTxOpts,
   );
 
-  const postMlnFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [mln.options.address]);
-  const postWethFundHoldings = await call(accounting, 'getFundHoldingsForAsset', [weth.options.address]);
+  const postMlnFundHoldings = await call(vault, 'assetBalances', [mln.options.address]);
+  const postWethFundHoldings = await call(vault, 'assetBalances', [weth.options.address]);
 
   expect(
     new BN(postMlnFundHoldings.toString()).eq(
