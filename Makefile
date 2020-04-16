@@ -6,7 +6,7 @@ all: clean extract thirdparty_copy
 thirdparty:
 	yarn download-thirdparty
 thirdparty_copy: extract thirdparty
-	cp thirdparty/* out/
+	cp -r thirdparty/* out/
 extract: compile_out.json ok
 	${DIR}/extract_build.js compile_out.json out
 ok: compile_out.json
