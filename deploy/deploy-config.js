@@ -4,5 +4,14 @@ module.exports = {
   ],
   initialWethDepositAmount: '1000000000000000000000000',
   oasisDexCloseTime: '99999999999999',
-  zeroExV3ProtocolFeeMultiplier: 150000
+  zeroExV3ProtocolFeeMultiplier: 150000,
+  kyberRateDuration: 500000,
+  kyberMinimalRecordResolution: 2,
+  kyberMaxPerBlockImbalance: '100000000000000000000000000000',
+  kyberMaxTotalImbalance: '1200000000000000000000000000000',
+  kyberTokensToTransfer: '100000000000000000000000',
+  kyberInitialReserveAmount: '1000000000000000000',
+  kyberTokensPerEther: '1000000000000000000',
+  kyberEthersPerToken: '1000000000000000000',
+  kyberCategoryCap: '1000000000000000000000000000',
 };
