@@ -2,72 +2,84 @@ const rp = require('request-promise');
 const fs = require('fs');
 const thirdpartyDir = './thirdparty';
 
+const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
+const commitHash = '0484d5a3ac51f25f7f8bcd639dfeb0ecbd000fb0';
+
+// per-project mapping of actual contract names to the names we use
 const artifacts = {
-  kyber: [
-    'ConversionRates',
-    'ExpectedRate',
-    'FeeBurner',
-    'KyberNetwork',
-    'KyberNetworkProxy',
-    'KyberReserve',
-    'WhiteList',
-  ],
-  oasis: [
-    'MatchingMarket',
-  ],
-  zeroExV2: [
-    'ERC20Proxy',
-    'Exchange',
-  ],
-  zeroExV3: [
-    'Exchange',
-    'Staking',
-    'StakingProxy',
-    'ZrxVault'
-  ],
-  airSwap: [
-    'Swap',
-    'Types',
-    'ERC20TransferHandler',
-    'TransferHandlerRegistry'
-  ]
+  kyber: {
+    'ConversionRates': 'ConversionRates',
+    'ExpectedRate': 'ExpectedRate',
+    'FeeBurner': 'FeeBurner',
+    'KyberNetwork': 'KyberNetwork',
+    'KyberNetworkProxy': 'KyberNetworkProxy',
+    'KyberReserve': 'KyberReserve',
+    'WhiteList': 'KyberWhiteList',
+  },
+  oasis: {
+    'MatchingMarket': 'OasisDexExchange',
+  },
+  zeroExV2: {
+    'ERC20Proxy': 'ZeroExV2ERC20Proxy',
+    'Exchange': 'ZeroExV2Exchange',
+  },
+  zeroExV3: {
+    'Exchange': 'ZeroExV3Exchange',
+    'Staking': 'ZeroExV3Staking',
+    'StakingProxy': 'ZeroExV3StakingProxy',
+    'ZrxVault': 'ZeroExV3ZrxVault'
+  },
+  airSwap: {
+    'Swap': 'AirSwapSwap',
+    'Types': 'AirSwapTypes',
+    'ERC20TransferHandler': 'AirSwapERC20TransferHandler',
+    'TransferHandlerRegistry': 'AirSwapTransferHandlerRegistry'
+  }
 }
+
+const mkdir = dir => !fs.existsSync(dir) && fs.mkdirSync(dir);
 
 const request = (projectName, contractName) => {
   const options =  {
-    uri: `https://raw.githubusercontent.com/melonproject/thirdparty-artifacts/0484d5a3ac51f25f7f8bcd639dfeb0ecbd000fb0/artifacts/${projectName}/${contractName}.json`
+    uri: `${baseUrl}/${commitHash}/artifacts/${projectName}/${contractName}.json`
   }
   return rp(options);
 };
 
-function mkdir(dir) {
-  if (!fs.existsSync(dir)){
-      fs.mkdirSync(dir);
-  }
-}
-
-async function wrapRequest(request, projectName, contractName) {
-  return { projectName, contractName, content: (await request(projectName, contractName)) };
+const wrapRequest = async (
+  request,
+  projectName,
+  originalContractName,
+  outputContractName
+) => {
+  return {
+    projectName,
+    outputContractName,
+    content: (await request(projectName, originalContractName))
+  };
 }
 
 (async () => {
   const requests = Object.entries(artifacts)
-    .map(([projectName, contractNames]) => (
-      contractNames.map(name => wrapRequest(request, projectName, name))
-    ))
-    .reduce((a, b) => a.concat(b), []);
+    .map(([projectName, contractNameMappings]) => (
+      Object.entries(contractNameMappings).map(
+        ([originalName, outputName]) => wrapRequest(
+          request, projectName, originalName, outputName
+        )
+      )
+    )
+  ).reduce((a,b) => a.concat(b), []);
 
   try {
-    const results = await Promise.all(requests);
     mkdir(thirdpartyDir);
+    const results = await Promise.all(requests);
     for (const result of results) {
-      const { projectName, contractName, content } = result;
+      const { outputContractName, content } = result;
 
-      mkdir(`${thirdpartyDir}/${projectName}`);
-      fs.writeFileSync(`${thirdpartyDir}/${projectName}/${contractName}.json`, content);
+      fs.writeFileSync(`${thirdpartyDir}/${outputContractName}.json`, content);
     }
   }
   catch (e) {
-    console.log(e)
+    console.error(e)
   }
 })();
