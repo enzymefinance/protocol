@@ -10,7 +10,7 @@ const KyberNetwork = artifacts.require('KyberNetwork');
 const KyberNetworkProxy = artifacts.require('KyberNetworkProxy');
 const KyberReserve = artifacts.require('KyberReserve');
 const KyberWhiteList = artifacts.require('KyberWhiteList');
-const FeeBurner = artifacts.require('KyberWhiteList');
+const FeeBurner = artifacts.require('FeeBurner');
 const ExpectedRate = artifacts.require('ExpectedRate');
 
 module.exports = async (deployer, _, accounts) => {

@@ -8,7 +8,8 @@ const KNC = artifacts.require('KNC');
 const ZRX = artifacts.require('ZRX');
 
 module.exports = async (deployer, _, accounts) => {
-  const weth = await deployer.deploy(WETH);
+  await deployer.deploy(WETH);
+  const weth = await WETH.deployed();
   await deployer.deploy(MLN);
   await deployer.deploy(DAI);
   await deployer.deploy(EUR);

@@ -11,12 +11,12 @@ module.exports = async deployer => {
   const uniswapExchangeTemplate = await deployer.deploy(UniswapExchange);
   const uniswapFactory = await deployer.deploy(UniswapFactory);
 
-  await uniswapFactory.initializeFactory(uniswapExchangeTemplate.options.address);
+  await uniswapFactory.initializeFactory(uniswapExchangeTemplate.address);
 
-  await uniswapFactory.createExchange(WETH.deployed().options.address);
-  await uniswapFactory.createExchange(MLN.deployed().options.address);
-  await uniswapFactory.createExchange(DAI.deployed().options.address);
-  await uniswapFactory.createExchange(EUR.deployed().options.address);
-  await uniswapFactory.createExchange(KNC.deployed().options.address);
-  await uniswapFactory.createExchange(ZRX.deployed().options.address);
+  await uniswapFactory.createExchange((await WETH.deployed()).address);
+  await uniswapFactory.createExchange((await MLN.deployed()).address);
+  await uniswapFactory.createExchange((await DAI.deployed()).address);
+  await uniswapFactory.createExchange((await EUR.deployed()).address);
+  await uniswapFactory.createExchange((await KNC.deployed()).address);
+  await uniswapFactory.createExchange((await ZRX.deployed()).address);
 }
