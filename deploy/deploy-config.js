@@ -1,4 +1,5 @@
 module.exports = {
+  track: 'TESTING',
   accounts: [
     '0xC0c82081f2Ad248391cd1483ae211d56c280887a'
   ],
@@ -14,4 +15,39 @@ module.exports = {
   kyberTokensPerEther: '1000000000000000000',
   kyberEthersPerToken: '1000000000000000000',
   kyberCategoryCap: '1000000000000000000000000000',
+  melonPriceTolerance: 10,
+  melonUserWhitelist: ['0xc0c82081f2ad248391cd1483ae211d56c280887a'],
+  melonRegistryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
+  melonEngineDelay: 2592000,
+  melonMaxSpread: '100000000000000000',
+  melonFundFactoryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
+  melonInitialMGM: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
+  melonVersionName: 'Fakename',
+  tokens: {
+    WETH: {
+      name: 'Wrapped ether',
+      decimals: 18,
+      initialDepositAmount: '1000000000000000000000000'
+    },
+    MLN: {
+      name: 'Melon Token',
+      decimals: 18
+    },
+    DAI: {
+      name: 'Dai',
+      decimals: 18
+    },
+    EUR: {
+      name: 'Euro Token',
+      decimals: 18
+    },
+    KNC: {
+      name: 'Kyber Network',
+      decimals: 18
+    },
+    ZRX: {
+      name: '0x protocol token',
+      decimals: 18
+    }
+  }
 };

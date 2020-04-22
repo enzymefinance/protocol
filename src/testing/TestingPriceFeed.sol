@@ -1,7 +1,7 @@
 pragma solidity 0.6.4;
 
-import "main/dependencies/token/IERC20.sol";
-import "main/dependencies/DSMath.sol";
+import "../dependencies/token/IERC20.sol";
+import "../dependencies/DSMath.sol";
 
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
