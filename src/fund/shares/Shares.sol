@@ -116,7 +116,12 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// @param _assets The assets for which to disable the buying of shares
     function disableSharesInvestmentAssets(address[] calldata _assets) external onlyManager {
         require(_assets.length > 0, "disableSharesInvestmentAssets: _assets cannot be empty");
+
         for (uint256 i = 0; i < _assets.length; i++) {
+            require(
+                isSharesInvestmentAsset(_assets[i]),
+                "disableSharesInvestmentAssets: Asset is not enabled"
+            );
             EnumerableSet.remove(sharesInvestmentAssets, _assets[i]);
         }
         emit SharesInvestmentAssetsDisabled(_assets);
@@ -133,13 +138,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// @return The assets that can be used to buy shares
     function getSharesInvestmentAssets() external view returns (address[] memory) {
         return EnumerableSet.enumerate(sharesInvestmentAssets);
-    }
-
-    /// @notice Confirm whether asset can be used to buy shares
-    /// @param _asset The asset to confirm
-    /// @return True if the asset can be used to buy shares
-    function isSharesInvestmentAsset(address _asset) external view override returns (bool) {
-        return EnumerableSet.contains(sharesInvestmentAssets, _asset);
     }
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
@@ -166,6 +164,10 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             if (balances[i] == 0) {
                 continue;
             }
+
+            // If asset in registry, get asset from priceSource
+
+            // Else, if derivative in registry, use linked oracle to get price
             gav_ = add(
                 gav_,
                 IPriceSource(priceSource()).convertQuantity(
@@ -212,6 +214,13 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         }
 
         return denominationAssetQuantity;
+    }
+
+    /// @notice Confirm whether asset can be used to buy shares
+    /// @param _asset The asset to confirm
+    /// @return True if the asset can be used to buy shares
+    function isSharesInvestmentAsset(address _asset) public view override returns (bool) {
+        return EnumerableSet.contains(sharesInvestmentAssets, _asset);
     }
 
     /// @notice Redeem a specified quantity of the sender's shares
@@ -287,6 +296,10 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// @notice Enable assets with which to buy shares
     function __enableSharesInvestmentAssets (address[] memory _assets) private {
         for (uint256 i = 0; i < _assets.length; i++) {
+            require(
+                !isSharesInvestmentAsset(_assets[i]),
+                "__enableSharesInvestmentAssets: Asset is already enabled"
+            );
             require(
                 IRegistry(routes.registry).assetIsRegistered(_assets[i]),
                 "__enableSharesInvestmentAssets: Asset not in Registry"
