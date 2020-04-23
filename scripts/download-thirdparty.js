@@ -3,7 +3,7 @@ const fs = require('fs');
 const thirdpartyDir = './thirdparty';
 
 const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
-const commitHash = '0484d5a3ac51f25f7f8bcd639dfeb0ecbd000fb0';
+const commitHash = '1413a3c64a5c649bff01c1275f6acc5ad092a5c5';
 
 // per-project mapping of actual contract names to the names we use
 const artifacts = {
@@ -34,6 +34,10 @@ const artifacts = {
     'Types': 'AirSwapTypes',
     'ERC20TransferHandler': 'AirSwapERC20TransferHandler',
     'TransferHandlerRegistry': 'AirSwapTransferHandlerRegistry'
+  },
+  uniswap: {
+    'UniswapExchange': 'UniswapExchange',
+    'UniswapFactory': 'UniswapFactory'
   }
 }
 

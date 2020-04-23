@@ -7,16 +7,18 @@ const ZRX = artifacts.require('ZRX');
 const UniswapExchange = artifacts.require('UniswapExchange');
 const UniswapFactory = artifacts.require('UniswapFactory');
 
-module.exports = async deployer => {
-  const uniswapExchangeTemplate = await deployer.deploy(UniswapExchange);
-  const uniswapFactory = await deployer.deploy(UniswapFactory);
+module.exports = deployer => {
+  deployer.then(async () => {
+    const uniswapExchangeTemplate = await deployer.deploy(UniswapExchange);
+    const uniswapFactory = await deployer.deploy(UniswapFactory);
 
-  await uniswapFactory.initializeFactory(uniswapExchangeTemplate.address);
+    await uniswapFactory.initializeFactory(uniswapExchangeTemplate.address);
 
-  await uniswapFactory.createExchange((await WETH.deployed()).address);
-  await uniswapFactory.createExchange((await MLN.deployed()).address);
-  await uniswapFactory.createExchange((await DAI.deployed()).address);
-  await uniswapFactory.createExchange((await EUR.deployed()).address);
-  await uniswapFactory.createExchange((await KNC.deployed()).address);
-  await uniswapFactory.createExchange((await ZRX.deployed()).address);
+    await uniswapFactory.createExchange((await WETH.deployed()).address);
+    await uniswapFactory.createExchange((await MLN.deployed()).address);
+    await uniswapFactory.createExchange((await DAI.deployed()).address);
+    await uniswapFactory.createExchange((await EUR.deployed()).address);
+    await uniswapFactory.createExchange((await KNC.deployed()).address);
+    await uniswapFactory.createExchange((await ZRX.deployed()).address);
+  })
 }
