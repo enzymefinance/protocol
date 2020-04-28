@@ -28,6 +28,19 @@ const main = async input => {
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
   const sharesRequestor = await nab('SharesRequestor', [registry.options.address], melonAddrs);
 
+  const fundFactory = await nab('FundFactory', [
+    feeManagerFactory.options.address,
+    sharesFactory.options.address,
+    vaultFactory.options.address,
+    policyManagerFactory.options.address,
+    registry.options.address,
+    melonConf.fundFactoryOwner
+  ], melonAddrs);
+  const previousRegisteredFundFactory = await call(registry, 'fundFactory');
+  if (`${previousRegisteredFundFactory}`.toLowerCase() !== fundFactory.options.address.toLowerCase()) {
+    await send(registry, 'setFundFactory', [fundFactory.options.address]);
+  }
+
   let priceSource;
   if (conf.track === 'KYBER_PRICE') {
     priceSource = await nab('KyberPriceFeed', [
@@ -37,11 +50,11 @@ const main = async input => {
   } else if (conf.track === 'TESTING') {
     priceSource = await nab('TestingPriceFeed', [tokenAddrs.WETH, input.tokens.conf.WETH.decimals], melonAddrs);
   }
-
   const previousRegisteredPriceSource = await call(registry, 'priceSource');
   if (`${previousRegisteredPriceSource}`.toLowerCase() !== priceSource.options.address.toLowerCase()) {
     await send(registry, 'setPriceSource', [priceSource.options.address]);
   }
+
   const previousRegisteredNativeAsset = await call(registry, 'nativeAsset');
   if (`${previousRegisteredNativeAsset}`.toLowerCase() !== tokenAddrs.WETH.toLowerCase()) {
     await send(registry, 'setNativeAsset', [tokenAddrs.WETH]);
@@ -62,72 +75,73 @@ const main = async input => {
   if (`${previousRegisteredSharesRequestor}`.toLowerCase() !== sharesRequestor.options.address.toLowerCase()) {
     await send(registry, 'setSharesRequestor', [sharesRequestor.options.address]);
   }
-  await send(registry, 'registerFees', [[ managementFee.options.address, performanceFee.options.address]]);
 
-  const exchanges = {};
-  exchanges.engine = {
-    exchange: engine.options.address,
-    adapter: engineAdapter.options.address
+  const integrations = {};
+  integrations.engine = {
+    gateway: engine.options.address,
+    adapter: engineAdapter.options.address,
+    integrationType: 0,
   };
   if (input.airSwap) {
-    exchanges.airSwap = {
-      exchange: input.airSwap.addr.Swap,
-      adapter: airSwapAdapter.options.address
+    integrations.airSwap = {
+      gateway: input.airSwap.addr.Swap,
+      adapter: airSwapAdapter.options.address,
+      integrationType: 1
     };
   }
   if (input.kyber) {
-    exchanges.kyber = {
-      exchange: input.kyber.addr.KyberNetworkProxy,
-      adapter: kyberAdapter.options.address
+    integrations.kyber = {
+      gateway: input.kyber.addr.KyberNetworkProxy,
+      adapter: kyberAdapter.options.address,
+      integrationType: 1
     };
   }
   if (input.oasis) {
-    exchanges.oasis = {
-      exchange: input.oasis.addr.OasisDexExchange,
-      adapter: oasisDexAdapter.options.address
+    integrations.oasis = {
+      gateway: input.oasis.addr.OasisDexExchange,
+      adapter: oasisDexAdapter.options.address,
+      integrationType: 1
     };
   }
   if (input.uniswap) {
-    exchanges.uniswap = {
-      exchange: input.uniswap.addr.UniswapFactory,
-      adapter: uniswapAdapter.options.address
+    integrations.uniswap = {
+      gateway: input.uniswap.addr.UniswapFactory,
+      adapter: uniswapAdapter.options.address,
+      integrationType: 1
     };
   }
   if (input.zeroExV2) {
-    exchanges.zeroExV2 = {
-      exchange: input.zeroExV2.addr.ZeroExV2Exchange,
-      adapter: zeroExV2Adapter.options.address
+    integrations.zeroExV2 = {
+      gateway: input.zeroExV2.addr.ZeroExV2Exchange,
+      adapter: zeroExV2Adapter.options.address,
+      integrationType: 1
     };
   }
   if (input.zeroExV3) {
-    exchanges.zeroExV3 = {
-      exchange: input.zeroExV3.addr.ZeroExV3Exchange,
-      adapter: zeroExV3Adapter.options.address
+    integrations.zeroExV3 = {
+      gateway: input.zeroExV3.addr.ZeroExV3Exchange,
+      adapter: zeroExV3Adapter.options.address,
+      integrationType: 1
     };
   }
 
-  // TODO: lift metadata.js and constants.js from tests/utils into a shared utils file in root
-  const takeOrderSignature = 'takeOrder(address,bytes)';
-  const sigs = [web3.eth.abi.encodeFunctionSignature(takeOrderSignature)];
+  const fees = [managementFee.options.address, performanceFee.options.address];
+  for (const fee of fees) {
+    if (!(await call(registry, 'feeIsRegistered', [fee]))) {
+      await send(registry, 'registerFee', [fee]);
+    }
+  }
 
-  for (const info of Object.values(exchanges)) {
-    const isRegistered = await call(registry, 'exchangeAdapterIsRegistered', [info.adapter]);
-    // TODO: check here if we actually need to update as well
-    if (isRegistered) {
-      await send(registry, 'updateExchangeAdapter', [info.exchange, info.adapter, sigs]);
-    } else {
-      await send(registry, 'registerExchangeAdapter', [info.exchange, info.adapter, sigs]);
+  for (const info of Object.values(integrations)) {
+    if (!(await call(registry, 'integrationAdapterIsRegistered', [info.adapter]))) {
+      await send(registry, 'registerIntegrationAdapter', [info.adapter, info.gateway, info.integrationType]);
     }
   }
 
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
-    const assetInfo = await call(registry, 'assetInformation', [tokenAddress]);
-    const reserveMin = info.reserveMin || '0';
-    if (!assetInfo.exists) {
-      await send(registry, 'registerAsset', [tokenAddress, info.name, sym, '', reserveMin, [], []]);
-    } else {
-      await send(registry, 'updateAsset', [tokenAddress, info.name, sym, '', reserveMin, [], []]);
+    if (!(await call(registry, 'assetIsRegistered', [tokenAddress]))) {
+      await send(registry, 'registerAsset', [tokenAddress]);
     }
     if (conf.track === 'TESTING') {
       const previousDecimals = await call(priceSource, 'assetsToDecimals', [tokenAddress]);
@@ -135,27 +149,6 @@ const main = async input => {
         await send(priceSource, 'setDecimals', [tokenAddress, info.decimals]);
       }
     }
-  }
-
-  const fundFactory = await nab('FundFactory', [
-    feeManagerFactory.options.address,
-    sharesFactory.options.address,
-    vaultFactory.options.address,
-    policyManagerFactory.options.address,
-    registry.options.address,
-    melonConf.fundFactoryOwner
-  ], melonAddrs);
-
-  const fundFactoryInformation = await call(registry, 'fundFactoryInformation', [fundFactory.options.address]);
-
-  if (!fundFactoryInformation.exists) {
-    let fundFactoryName;
-    if (conf.track === 'TESTING') {
-      fundFactoryName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64);
-    } else {
-      fundFactoryName = web3.utils.padLeft(web3.utils.toHex(melonConf.versionName), 64);
-    }
-    await send(registry, 'registerFundFactory', [ fundFactory.options.address, fundFactoryName ]);
   }
 
   if (conf.track === 'KYBER_PRICE')
