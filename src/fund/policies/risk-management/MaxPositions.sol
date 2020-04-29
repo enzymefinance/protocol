@@ -5,6 +5,9 @@ import "../../shares/Shares.sol";
 import "../../vault/Vault.sol";
 import "../TradingSignatures.sol";
 
+/// @title MaxPositions Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Validates the allowed number of owned assets of a particular fund
 contract MaxPositions is TradingSignatures {
     enum Applied { pre, post }
 

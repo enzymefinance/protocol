@@ -1,5 +1,7 @@
 pragma solidity 0.6.4;
 
+/// @title PriceSource Interface
+/// @author Melon Council DAO <security@meloncoucil.io>
 interface IPriceSource {
     function convertQuantity(uint256, address, address) external view returns (uint256);
     function getOrderPriceInfo(address, uint256, uint256) external view returns (uint256);

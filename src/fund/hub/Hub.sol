@@ -5,6 +5,8 @@ import "../../registry/IRegistry.sol";
 import "./Spoke.sol";
 import "./IHub.sol";
 
+/// @title Hub Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
 contract Hub is IHub, DSGuard {

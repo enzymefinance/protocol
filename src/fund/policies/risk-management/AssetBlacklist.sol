@@ -3,6 +3,8 @@ pragma solidity 0.6.4;
 import "../AddressList.sol";
 import "../TradingSignatures.sol";
 
+/// @title AssetBlacklist Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Assets can be added but not removed from blacklist
 contract AssetBlacklist is TradingSignatures, AddressList {
     enum Applied { pre, post }

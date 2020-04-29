@@ -8,7 +8,7 @@ import "../../dependencies/WETH.sol";
 import "../../engine/IEngine.sol";
 
 /// @title EngineAdapter Contract
-/// @author Melonport AG <team@melonport.com>
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Extract arguments for risk management validations of a takeOrder call

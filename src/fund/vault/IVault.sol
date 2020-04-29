@@ -1,5 +1,7 @@
 pragma solidity 0.6.4;
 
+/// @title Vault Interface
+/// @author Melon Council DAO <security@meloncoucil.io>
 interface IVault {
     function assetBalances(address) external view returns (uint256);
     function decreaseAssetBalance(address, uint256) external;
@@ -10,6 +12,8 @@ interface IVault {
     function withdraw(address, uint256) external;
 }
 
+/// @title VaultFactory Interface
+/// @author Melon Council DAO <security@meloncoucil.io>
 interface IVaultFactory {
      function createInstance(
         address,

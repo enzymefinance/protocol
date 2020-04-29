@@ -1,5 +1,7 @@
 pragma solidity 0.6.4;
 
+/// @title Registry Interface
+/// @author Melon Council DAO <security@meloncoucil.io>
 interface IRegistry {
     function MGM() external view returns(address);
     function adapterMethodIsAllowed(address, bytes4) external view returns (bool);

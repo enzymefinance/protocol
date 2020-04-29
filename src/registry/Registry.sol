@@ -5,6 +5,9 @@ import "../dependencies/DSAuth.sol";
 import "../fund/hub/ISpoke.sol";
 import "../dependencies/token/IERC20.sol";
 
+/// @title Registry Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Highest-level (protocol-level) contract for managing all versions and setups of Melon protocol
 contract Registry is DSAuth {
 
     // EVENTS

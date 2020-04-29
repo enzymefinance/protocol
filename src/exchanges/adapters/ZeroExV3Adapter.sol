@@ -6,7 +6,7 @@ import "../libs/ExchangeAdapter.sol";
 import "../libs/OrderTaker.sol";
 
 /// @title ZeroExV3Adapter Contract
-/// @author Melonport AG <team@melonport.com>
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter to 0xV3 Exchange Contract
 contract ZeroExV3Adapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations

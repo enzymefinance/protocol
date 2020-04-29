@@ -9,7 +9,7 @@ import "../interfaces/IUniswapExchange.sol";
 import "../../dependencies/WETH.sol";
 
 /// @title UniswapAdapter Contract
-/// @author Melonport AG <team@melonport.com>
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and Uniswap
 contract UniswapAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Extract arguments for risk management validations of a takeOrder call

@@ -11,6 +11,8 @@ import "../registry/IRegistry.sol";
 import "./Factory.sol";
 import "./IFundFactory.sol";
 
+/// @title FundFactory Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Creates fund routes and links them together
 contract FundFactory is IFundFactory, AmguConsumer, Factory, DSAuth {
 

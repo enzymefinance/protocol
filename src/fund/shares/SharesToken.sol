@@ -4,6 +4,9 @@ import "../../dependencies/DSAuth.sol";
 import "../../dependencies/token/StandardToken.sol";
 import "./ISharesToken.sol";
 
+/// @title SharesToken Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Implementation of a share
 contract SharesToken is ISharesToken, DSAuth, StandardToken {
     string public symbol;
     string public name;

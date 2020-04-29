@@ -7,8 +7,9 @@ import "../../dependencies/token/IERC20.sol";
 import "../../fund/hub/SpokeAccessor.sol";
 import "../../fund/vault/IVault.sol";
 
-/// @title Order Filler base contract
-/// @author Melonport AG <team@melonport.com>
+/// @title OrderFiller Base Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Base contract for standardizing the filled amounts of assets
 abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
     event OrderFilled(
         address indexed exchangeAddress,
@@ -88,7 +89,7 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
     /// - [2:end] The approve() targets for fee assets
     function __decodeOrderFillData(bytes memory _fillData)
         internal
-        pure 
+        pure
         returns (address[] memory, uint256[] memory, address[] memory)
     {
         return abi.decode(_fillData, (address[], uint256[], address[]));
@@ -110,7 +111,7 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
         address[] memory _approvalTargets
     )
         internal
-        pure 
+        pure
         returns (bytes memory)
     {
         return abi.encode(_assets, _expectedAmounts, _approvalTargets);
@@ -120,7 +121,7 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
 
     /// @notice Approves allowances of sell and fee assets in the order fill
     /// @param _fillData Encoded data used by the OrderFiller
-    /// @return originalAllowances_ The original allowances for the assets involved in the fill 
+    /// @return originalAllowances_ The original allowances for the assets involved in the fill
     function __approveFillOrderAssets(bytes memory _fillData) private returns (uint256[] memory) {
         (
             address[] memory assets,
@@ -315,7 +316,7 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
             uint256[] memory expectedAmounts,
             address[] memory approvalTargets
         ) = __decodeOrderFillData(_fillData);
-    
+
         // Skip first asset, as the "buy" side is always the fund
         for (uint i = 1; i < assets.length; i++) {
             // Same as __approveFillOrderAssets, but also check current vs original allowance
@@ -333,7 +334,7 @@ abstract contract OrderFiller is DSMath, SpokeAccessor, ExchangeAdapter {
     }
 
     /// @notice Updates a fund's assetBalances, for a list of assets
-    /// @dev This function assumes that _assets[0] should always be added, 
+    /// @dev This function assumes that _assets[0] should always be added,
     /// and that _assets[1:end] should always be subtracted. We could also pass a _balanceDiffSign
     /// @dev __formatFillOrderInputs will have already set _balanceDiffs to 0 for duplicate assets
     /// @param _assets The assets to update

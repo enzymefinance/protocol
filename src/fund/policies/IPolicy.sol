@@ -1,5 +1,7 @@
 pragma solidity 0.6.4;
 
+/// @title Policy Interface
+/// @author Melon Council DAO <security@meloncoucil.io>
 interface IPolicy {
     enum Applied { pre, post }
 

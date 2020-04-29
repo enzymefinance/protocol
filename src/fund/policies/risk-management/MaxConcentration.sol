@@ -7,6 +7,9 @@ import "../../vault/Vault.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../../prices/IPriceSource.sol";
 
+/// @title MaxConcentration Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Validates concentration limitations per asset for its equity of a particular fund
 contract MaxConcentration is TradingSignatures, DSMath {
     enum Applied { pre, post }
 

@@ -2,6 +2,8 @@ pragma solidity 0.6.4;
 
 import "../../dependencies/DSAuth.sol";
 
+/// @title AddressList Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Generic AddressList
 contract AddressList is DSAuth {
 

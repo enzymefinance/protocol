@@ -1,8 +1,9 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-/// @title Base contract for exchange adapters sharing the same decoder
-/// @author Melonport AG <team@melonport.com>
+/// @title MinimalTakeOrderDecoder Base Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Base contract for exchange adapters sharing the same decoder
 abstract contract MinimalTakeOrderDecoder {
 
     /// @notice Decode the parameters of a takeOrder call

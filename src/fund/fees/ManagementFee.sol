@@ -4,6 +4,9 @@ import "../../dependencies/DSMath.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 
+/// @title ManagementFee Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Calculates the management fee for a particular fund
 contract ManagementFee is DSMath {
 
     uint public DIVISOR = 10 ** 18;
