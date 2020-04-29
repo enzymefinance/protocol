@@ -3,6 +3,8 @@ pragma solidity 0.6.4;
 import "../AddressList.sol";
 import "../TradingSignatures.sol";
 
+/// @title AssetWhitelist Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Assets can be removed from but not added to whitelist
 contract AssetWhitelist is TradingSignatures, AddressList {
     enum Applied { pre, post }

@@ -2,6 +2,9 @@ pragma solidity 0.6.4;
 
 import "../../../dependencies/DSAuth.sol";
 
+/// @title UserWhitelist Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Investors can be added and removed from whitelist
 contract UserWhitelist is DSAuth {
     enum Applied { pre, post }
 

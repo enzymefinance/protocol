@@ -61,7 +61,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     mapping (address => mapping(address => Request)) public ownerToRequestByFund;
     mapping (address => EnumerableSet.AddressSet) private ownerToFundsRequestedSet;
 
-    /// @notice Assure that a request exists for a particular fund and owner 
+    /// @notice Assure that a request exists for a particular fund and owner
     modifier onlyExistingRequest(address _requestOwner, address _hub) {
         require(
             requestExists(_requestOwner, _hub),
@@ -261,7 +261,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     /// @return True if the shares request has expired
     function requestHasExpired(address _requestOwner, address _hub)
         public
-        view 
+        view
         returns (bool)
     {
         return block.timestamp > add(
@@ -372,7 +372,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     {
         // Validate the actual buyShares call
         __validateBuySharesRequest(_hub, _investmentAsset, _maxInvestmentAmount, _sharesQuantity);
-        
+
         IShares shares = IShares(IHub(_hub).shares());
         IPolicyManager policyManager = IPolicyManager(IHub(_hub).policyManager());
 

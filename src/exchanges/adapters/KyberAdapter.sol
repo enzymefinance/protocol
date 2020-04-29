@@ -8,7 +8,7 @@ import "../libs/decoders/MinimalTakeOrderDecoder.sol";
 import "../../dependencies/WETH.sol";
 
 /// @title KyberAdapter Contract
-/// @author Melonport AG <team@melonport.com>
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and Kyber Network
 contract KyberAdapter is ExchangeAdapter, OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Extract arguments for risk management validations of a takeOrder call

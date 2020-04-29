@@ -9,6 +9,8 @@ import "../shares/ISharesToken.sol";
 import "./IFee.sol";
 import "./IFeeManager.sol";
 
+/// @title FeeManager Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages and allocates fees for a particular fund
 contract FeeManager is IFeeManager, DSMath, Spoke {
 

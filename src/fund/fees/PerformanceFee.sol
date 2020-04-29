@@ -5,6 +5,9 @@ import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../vault/Vault.sol";
 
+/// @title PerformanceFee Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Calculates the performace fee for a particular fund
 contract PerformanceFee is DSMath {
 
     event HighWaterMarkUpdate(address indexed feeManager, uint indexed hwm);

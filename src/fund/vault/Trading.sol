@@ -9,6 +9,9 @@ import "../policies/TradingSignatures.sol";
 import "../../exchanges/libs/ExchangeAdapter.sol";
 import "../../exchanges/libs/OrderTaker.sol";
 
+/// @title Trading Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Manages and interacts with exchanges
 contract Trading is DSAuth, SpokeAccessor, TradingSignatures {
     struct Exchange {
         address exchange;

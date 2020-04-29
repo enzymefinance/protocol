@@ -6,8 +6,9 @@ import "../exchanges/interfaces/IKyberNetworkProxy.sol";
 import "../registry/IRegistry.sol";
 import "./IPriceSource.sol";
 
-/// @title Price Feed Template
-/// @author Melonport AG <team@melonport.com>
+
+/// @title KyberPriceFeed Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Routes external prices to smart contracts from Kyber
 contract KyberPriceFeed is IPriceSource, DSMath {
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
@@ -201,7 +202,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
             fromAssetPrice
         ) / (10 ** uint256(fromAssetDecimals));
     }
-    
+
     // PUBLIC FUNCTIONS
 
     /// @notice Gets price of an asset times 10^assetDecimals

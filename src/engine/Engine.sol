@@ -6,6 +6,8 @@ import "../prices/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
 
+/// @title Engine Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Liquidity contract and token sink
 contract Engine is IEngine, DSMath {
 

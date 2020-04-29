@@ -1,5 +1,7 @@
 pragma solidity 0.6.4;
 
+/// @title Hub Interface
+/// @author Melon Council DAO <security@meloncoucil.io>
 interface IHub {
     struct Routes {
         address feeManager;

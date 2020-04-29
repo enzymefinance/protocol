@@ -6,7 +6,7 @@ import "../libs/ExchangeAdapter.sol";
 import "../libs/OrderTaker.sol";
 
 /// @title OasisDexAdapter Contract
-/// @author Melonport AG <team@melonport.com>
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and OasisDex Matching Market
 contract OasisDexAdapter is ExchangeAdapter, OrderTaker {
     /// @notice Extract arguments for risk management validations of a takeOrder call

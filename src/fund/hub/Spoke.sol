@@ -5,6 +5,8 @@ import "./Hub.sol";
 import "./ISpoke.sol";
 import "../../dependencies/DSAuth.sol";
 
+/// @title Spoke Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Has one Hub
 contract Spoke is ISpoke, DSAuth {
 

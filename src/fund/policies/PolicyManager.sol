@@ -6,6 +6,9 @@ import "../hub/Spoke.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
 
+/// @title PolicyManager Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Manages policies by registering and validating policies
 contract PolicyManager is IPolicyManager, Spoke {
 
     event Registration(

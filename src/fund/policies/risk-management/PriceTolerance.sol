@@ -6,6 +6,9 @@ import "../../../dependencies/DSMath.sol";
 import "../../../exchanges/interfaces/IOasisDex.sol";
 import "../../../prices/IPriceSource.sol";
 
+/// @title PriceTolerance Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Validate the price tolerance of a trade
 contract PriceTolerance is TradingSignatures, DSMath {
     enum Applied { pre, post }
 

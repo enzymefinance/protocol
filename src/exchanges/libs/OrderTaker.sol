@@ -5,8 +5,9 @@ import "./OrderFiller.sol";
 import "../../fund/policies/TradingSignatures.sol";
 import "../../fund/policies/IPolicyManager.sol";
 
-/// @title Order Taker base contract
-/// @author Melonport AG <team@melonport.com>
+/// @title OrderTaker Base Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Base contract for taking an order on a particular exchange
 abstract contract OrderTaker is OrderFiller, TradingSignatures {
     /// @notice Perform a Take Order on a particular exchange
     /// @dev Synchronously handles the responsibilities of takeOrder:

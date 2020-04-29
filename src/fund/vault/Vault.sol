@@ -7,6 +7,9 @@ import "../hub/Spoke.sol";
 import "./IVault.sol";
 import "./Trading.sol";
 
+/// @title Vault Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Manages internal accounting and store fund assets
 contract Vault is IVault, TokenUser, Spoke, Trading {
     event AssetAdded(address asset);
 

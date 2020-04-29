@@ -3,6 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "./Spoke.sol";
 
+/// @title SpokeAccessor Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Inherit this contract to have access to the current Spoke
 contract SpokeAccessor {
     modifier spokeInitialized() {
         require(ISpoke(address(this)).initialized(), "Spoke is not initialized");

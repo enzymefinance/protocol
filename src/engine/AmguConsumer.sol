@@ -7,6 +7,8 @@ import "../prices/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
 
+/// @title AmguConsumer Base Contract
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Inherit this to pay AMGU on a function call
 abstract contract AmguConsumer is DSMath {
 
