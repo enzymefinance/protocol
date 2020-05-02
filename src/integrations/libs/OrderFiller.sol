@@ -56,9 +56,6 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
             balanceDiffs
         );
 
-        // Update assetBalances for the assets in the filled order
-        __updateFillOrderAssetBalances(aggregatedAssets, balanceDiffs);
-
         // Revoke excess ERC20 allowances, if necessary
         // @dev Don't use aggregated fill data for this step, as we need targets for approvals
         __resetFillOrderAssetAllowances(originalAllowances, _fillData);
@@ -322,30 +319,6 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
             )
             {
                 IERC20(assets[i]).approve(approvalTargets[i], _originalAllowances[i]);
-            }
-        }
-    }
-
-    /// @notice Updates a fund's assetBalances, for a list of assets
-    /// @dev This function assumes that _assets[0] should always be added,
-    /// and that _assets[1:end] should always be subtracted. We could also pass a _balanceDiffSign
-    /// @dev __formatFillOrderInputs will have already set _balanceDiffs to 0 for duplicate assets
-    /// @param _assets The assets to update
-    /// @param _balanceDiffs The differences in pre- and post-fill balanceOf _assets, for the fund
-    function __updateFillOrderAssetBalances(
-        address[] memory _assets,
-        uint256[] memory _balanceDiffs
-    )
-        private
-    {
-        IVault vault = IVault(address(this));
-
-        vault.increaseAssetBalance(_assets[0], _balanceDiffs[0]);
-        vault.decreaseAssetBalance(_assets[1], _balanceDiffs[1]);
-
-        for (uint256 i = 2; i < _assets.length; i++) {
-            if (_assets[i] != _assets[0] && _assets[i] != _assets[1]) {
-                vault.decreaseAssetBalance(_assets[i], _balanceDiffs[i]);
             }
         }
     }

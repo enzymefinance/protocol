@@ -24,45 +24,24 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
         return "UNISWAP_V1";
     }
 
-    /// @notice Extract arguments for risk management validations of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses_ needed addresses for risk management
-    /// - [0] Maker address
-    /// - [1] Taker address
-    /// - [2] Maker asset
-    /// - [3] Taker asset
-    /// - [4] Maker fee asset
-    /// - [5] Taker fee asset
-    /// @return riskManagementValues_ needed values for risk management
-    /// - [0] Maker asset amount
-    /// - [1] Taker asset amount
-    /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(bytes memory _encodedArgs)
-        internal
+    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @param _selector The function selector for the callOnIntegration
+    /// @param _encodedArgs The encoded parameters for the callOnIntegration
+    /// @return incomingAssets_ The assets to receive
+    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
+        external
         view
         override
-        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
+        returns (address[] memory incomingAssets_)
     {
-        (
-            address makerAsset,
-            uint256 makerQuantity,
-            address takerAsset,
-            uint256 takerQuantity
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        riskManagementAddresses_ = [
-            address(0),
-            address(this),
-            makerAsset,
-            takerAsset,
-            address(0),
-            address(0)
-        ];
-        riskManagementValues_ = [
-            makerQuantity,
-            takerQuantity,
-            takerQuantity
-        ];
+        if (_selector == TAKE_ORDER_SELECTOR) {
+            (address makerAsset,,,) = __decodeTakeOrderArgs(_encodedArgs);
+            incomingAssets_ = new address[](1);
+            incomingAssets_[0] = makerAsset;
+        }
+        else {
+            revert("parseIncomingAssets: _selector invalid");
+        }
     }
 
     /// @notice Take a market order on Uniswap (takeOrder)
@@ -136,22 +115,7 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
         internal
         view
         override
-    {
-        (
-            address makerAsset,
-            ,
-            address takerAsset
-            ,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        IRegistry registry = __getRegistry();
-        require(registry.primitiveIsRegistered(
-            makerAsset), 'Maker asset not registered'
-        );
-        require(registry.primitiveIsRegistered(
-            takerAsset), 'Taker asset not registered'
-        );
-    }
+    {}
 
     // PRIVATE FUNCTIONS
 

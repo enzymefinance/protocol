@@ -21,46 +21,25 @@ contract ZeroExV2Adapter is OrderTaker {
         return "ZERO_EX_V2";
     }
 
-    /// @notice Extract arguments for risk management validations of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses_ needed addresses for risk management
-    /// - [0] Maker address
-    /// - [1] Taker address
-    /// - [2] Maker asset
-    /// - [3] Taker asset
-    /// - [4] Maker fee asset
-    /// - [5] Taker fee asset
-    /// @return riskManagementValues_ needed values for risk management
-    /// - [0] Maker asset amount
-    /// - [1] Taker asset amount
-    /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(bytes memory _encodedArgs)
-        internal
+    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @param _selector The function selector for the callOnIntegration
+    /// @param _encodedArgs The encoded parameters for the callOnIntegration
+    /// @return incomingAssets_ The assets to receive
+    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
+        external
         view
         override
-        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
+        returns (address[] memory incomingAssets_)
     {
-        (
-            address[4] memory orderAddresses,
-            uint256[7] memory orderValues,
-            bytes[2] memory orderData,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
+        if (_selector == TAKE_ORDER_SELECTOR) {
+            (,,bytes[2] memory orderData,) = __decodeTakeOrderArgs(_encodedArgs);
 
-        address zrxAsset = __getAssetAddress(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA());
-
-        riskManagementAddresses_ = [
-            orderAddresses[0],
-            orderAddresses[1],
-            __getAssetAddress(orderData[0]),
-            __getAssetAddress(orderData[1]),
-            zrxAsset,
-            zrxAsset
-        ];
-        riskManagementValues_ = [
-            orderValues[0],
-            orderValues[1],
-            orderValues[6]
-        ];
+            incomingAssets_ = new address[](1);
+            incomingAssets_[0] = __getAssetAddress(orderData[0]);
+        }
+        else {
+            revert("parseIncomingAssets: _selector invalid");
+        }
     }
 
     /// @notice Takes an active order on 0x v2 (takeOrder)
@@ -149,20 +128,7 @@ contract ZeroExV2Adapter is OrderTaker {
         view
         override
     {
-        (
-            ,
-            uint256[7] memory orderValues,
-            bytes [2] memory orderData
-            ,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        IRegistry registry = __getRegistry();
-        require(registry.primitiveIsRegistered(
-            __getAssetAddress(orderData[0])), 'Maker asset not registered'
-        );
-        require(registry.primitiveIsRegistered(
-            __getAssetAddress(orderData[1])), 'Taker asset not registered'
-        );
+        (,uint256[7] memory orderValues,,) = __decodeTakeOrderArgs(_encodedArgs);
 
         require(
             orderValues[6] <= orderValues[1],

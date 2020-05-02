@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../dependencies/libs/EnumerableSet.sol";
 import "../../dependencies/TokenUser.sol";
+import "../../integrations/libs/IIntegrationAdapter.sol";
 import "../hub/Spoke.sol";
 import "./IVault.sol";
 
@@ -23,19 +24,19 @@ contract Vault is IVault, TokenUser, Spoke {
 
     event AssetRemoved(address asset);
 
+    event CallOnIntegrationExecuted(
+        address adapter,
+        address[] incomingAssets,
+        uint256[] incomingAssetAmounts,
+        address[] outgoingAssets,
+        uint256[] outgoingAssetAmounts
+    );
+
     uint8 constant public MAX_OWNED_ASSETS = 20; // TODO: Keep this?
     address[] public ownedAssets;
     mapping(address => uint256) public override assetBalances;
 
     EnumerableSet.AddressSet private enabledAdapters;
-
-    modifier onlyDelegated() {
-        require(
-            msg.sender == address(this),
-            "Only a delegated contract can make this call"
-        );
-        _;
-    }
 
     constructor(address _hub, address[] memory _adapters) public Spoke(_hub) {
         if (_adapters.length > 0) {
@@ -47,20 +48,6 @@ contract Vault is IVault, TokenUser, Spoke {
 
     /// @notice Receive ether function (used to receive ETH in intermediary adapter steps)
     receive() external payable {}
-
-    /// @notice Decrease an asset balance
-    /// @dev Only available within this contract's context, i.e., adapters that are delegatecalled
-    /// Can NOT check _amount against the actual ERC20 balance because any arbitrary amount
-    /// of the ERC20 token could have been transferred to the Vault in another tx
-    /// @param _asset The asset for which to decrease the assetBalance
-    /// @param _amount The amount by which to decrease the assetBalance
-    function decreaseAssetBalance(address _asset, uint256 _amount)
-        external
-        override
-        onlyDelegated
-    {
-        __decreaseAssetBalance(_asset, _amount);
-    }
 
     /// @notice Deposits an asset into the Vault
     /// @dev Only the Shares contract can call this function
@@ -101,24 +88,6 @@ contract Vault is IVault, TokenUser, Spoke {
         return ownedAssets;
     }
 
-    /// @notice Increase an asset balance
-    /// @dev Only available within this contract's context, i.e., adapters that are delegatecalled.
-    /// Checks _amount against assetBalances[_asset] and the actual ERC20 balance.
-    /// @param _asset The asset for which to increase the assetBalance
-    /// @param _amount The amount by which to increase the assetBalance
-    function increaseAssetBalance(address _asset, uint256 _amount)
-        external
-        override
-        onlyDelegated
-    {
-        require(
-            IERC20(_asset).balanceOf(address(this)) >= add(assetBalances[_asset], _amount),
-            "increaseAssetBalance: Actual ERC20 balance is lower than new asset balance"
-        );
-
-        __increaseAssetBalance(_asset, _amount);
-    }
-
     /// @notice Withdraw an asset from the Vault
     /// @dev Only the Shares contract can call this function
     /// @param _asset The asset to withdraw
@@ -151,16 +120,55 @@ contract Vault is IVault, TokenUser, Spoke {
             __adapterIsEnabled(_adapter),
             "callOnIntegration: Adapter is not enabled for fund"
         );
+        bytes4 selector = bytes4(keccak256(bytes(_methodSignature)));
 
-        // TODO: add PolicyManager().preValidate(_adapter, _integrationType, _sendAssets, _receiveAssets, _thirdParties)
-        // Get ^this info from virtual adapter function
-
-        (bool success, bytes memory returnData) = _adapter.delegatecall(
-            abi.encodeWithSignature(_methodSignature, _encodedArgs)
+        // Pre-validate against fund policies
+        IPolicyManager policyManager = __getPolicyManager();
+        policyManager.preValidatePolicy(
+            IPolicyManager.PolicyHook.CallOnIntegration,
+            abi.encode(selector, _adapter)
         );
-        require(success, string(returnData));
 
-        // TODO: add PolicyManager().postValidate...
+        // Get balances for assets to compare with post-call balances
+        address[] memory monitoredAssets = __getCoIMonitoredAssets(
+            IIntegrationAdapter(_adapter).parseIncomingAssets(selector, _encodedArgs)
+        );
+        uint256[] memory preCallMonitoredAssetBalances = getAssetBalances(monitoredAssets);
+
+        // Execute call on integration adapter
+        __executeCoI(_adapter, _methodSignature, _encodedArgs);
+
+        // Update assetBalances and parse incoming and outgoing asset info
+        (
+            address[] memory incomingAssets,
+            uint256[] memory incomingAssetAmounts,
+            address[] memory outgoingAssets,
+            uint256[] memory outgoingAssetAmounts
+        ) = __updatePostCoIBalances(
+            monitoredAssets,
+            preCallMonitoredAssetBalances
+        );
+
+        // Post-validate against fund policies
+        policyManager.postValidatePolicy(
+            IPolicyManager.PolicyHook.CallOnIntegration,
+            abi.encode(
+                selector,
+                _adapter,
+                incomingAssets,
+                incomingAssetAmounts,
+                outgoingAssets,
+                outgoingAssetAmounts
+            )
+        );
+
+        emit CallOnIntegrationExecuted(
+            _adapter,
+            incomingAssets,
+            incomingAssetAmounts,
+            outgoingAssets,
+            outgoingAssetAmounts
+        );
     }
 
     function getAssetBalances(address[] memory _assets)
@@ -176,12 +184,12 @@ contract Vault is IVault, TokenUser, Spoke {
     } 
 
     // PRIVATE FUNCTIONS
-    /// @notice Check is an adapter is enabled for the fund
+    /// @dev Helper to check if an adapter is enabled for the fund
     function __adapterIsEnabled(address _adapter) private view returns (bool) {
         return EnumerableSet.contains(enabledAdapters, _adapter);
     }
 
-    /// @notice Adds an asset to a fund's ownedAssets
+    /// @dev Helper to add an asset to a fund's ownedAssets
     function __addAssetToOwnedAssets(address _asset) private {
         require(
             ownedAssets.length < MAX_OWNED_ASSETS,
@@ -191,7 +199,7 @@ contract Vault is IVault, TokenUser, Spoke {
         emit AssetAdded(_asset);
     }
 
-    /// @notice Decreases the balance of an asset in a fund's internal system of account
+    /// @dev Helper to decrease the assetBalance of an asset
     function __decreaseAssetBalance(address _asset, uint256 _amount) private {
         require(_amount > 0, "__decreaseAssetBalance: _amount must be > 0");
         require(_asset != address(0), "__decreaseAssetBalance: _asset cannot be empty");
@@ -209,9 +217,8 @@ contract Vault is IVault, TokenUser, Spoke {
         emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
     }
 
-    /// @notice Enable adapters for use in the fund
-    /// @dev Fails if an already-enabled adapter is passed;
-    /// important to assure Integration Info is not unintentionally updated from Registry
+    /// @dev Helper to enable adapters for use in the fund.
+    /// Fails if an already-enabled adapter is passed.
     function __enableAdapters(address[] memory _adapters) private {
         IRegistry registry = __getRegistry();
         for (uint256 i = 0; i < _adapters.length; i++) {
@@ -231,7 +238,52 @@ contract Vault is IVault, TokenUser, Spoke {
         }
     }
 
-    /// @notice Increases the balance of an asset in a fund's internal system of account
+    /// @dev Helper to execute a delegatecall to an integration.
+    /// @dev Avoids stack-too-deep error
+    function __executeCoI(
+        address _adapter,
+        string memory _methodSignature,
+        bytes memory _encodedArgs
+    )
+        private
+    {
+        (bool success, bytes memory returnData) = _adapter.delegatecall(
+            abi.encodeWithSignature(_methodSignature, _encodedArgs)
+        );
+        require(success, string(returnData));
+    }
+
+    // TODO: can check uniqueness of incoming assets also
+    /// @dev Helper to get an array of assets to track balances of during a call-on-integration.
+    /// Combining ownedAssets and new incoming assets is necessary because some asset might
+    /// have an ERC20 balance but not an assetBalance (e.g., if someone sends assets directly to a vault
+    /// to try and game performance metrics)
+    function __getCoIMonitoredAssets(address[] memory expectedIncomingAssets)
+        private
+        view
+        returns (address[] memory monitoredAssets_)
+    {
+        // Get count of untracked incoming assets
+        uint256 newIncomingAssetsCount;
+        for (uint256 i = 0; i < expectedIncomingAssets.length; i++) {
+            if (assetBalances[expectedIncomingAssets[i]] == 0) {
+                newIncomingAssetsCount++;
+            }
+        }
+        // Create an array of ownedAssets + untracked incoming assets
+        monitoredAssets_ = new address[](ownedAssets.length + newIncomingAssetsCount);
+        for (uint256 i = 0; i < ownedAssets.length; i++) {
+            monitoredAssets_[i] = ownedAssets[i];
+        }
+
+        for (uint256 i = 0; i < expectedIncomingAssets.length; i++) {
+            if (assetBalances[expectedIncomingAssets[i]] == 0) {
+                monitoredAssets_[ownedAssets.length + i] = expectedIncomingAssets[i];
+            }
+        }
+    }
+
+    /// @dev Helper to Increase the assetBalance of an asset
     function __increaseAssetBalance(address _asset, uint256 _amount) private {
         require(_amount > 0, "__increaseAssetBalance: _amount must be > 0");
         require(_asset != address(0), "__increaseAssetBalance: _asset cannot be empty");
@@ -244,7 +296,17 @@ contract Vault is IVault, TokenUser, Spoke {
         emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
     }
 
-    /// @notice Removes an asset from a fund's ownedAssets
+    /// @dev Helper to confirm whether an asset is receivable via an integration
+    function __isReceivableAsset(address _asset) private view returns (bool) {
+        IRegistry registry = __getRegistry();
+        if (
+            registry.primitiveIsRegistered(_asset) ||
+            registry.derivativeToPriceSource(_asset) != address(0)
+        ) return true;
+        return false;
+    }
+
+    /// @dev Helper to remove an asset from a fund's ownedAssets
     function __removeFromOwnedAssets(address _asset) private {
         for (uint256 i; i < ownedAssets.length; i++) {
             if (ownedAssets[i] == _asset) {
@@ -254,6 +316,70 @@ contract Vault is IVault, TokenUser, Spoke {
             }
         }
         emit AssetRemoved(_asset);
+    }
+
+    // TODO: assert uniqueness of each item in assets, or protect against this earlier
+    /// @dev Helper to update assetBalances post-callOnIntegration, and to construct arrays of
+    /// the incoming and outgoing assets and asset amounts for use in policy management and events
+    function __updatePostCoIBalances(
+        address[] memory _assets,
+        uint256[] memory _initialBalances
+    )
+        private
+        returns (
+            address[] memory incomingAssets_,
+            uint256[] memory incomingAssetAmounts_,
+            address[] memory outgoingAssets_,
+            uint256[] memory outgoingAssetAmounts_
+        )
+    {
+        // 1. Get counts of outgoing assets and incoming assets,
+        // along with storing balances diffs in memory
+        uint256[] memory balanceDiffs = new uint256[](_assets.length);
+        bool[] memory balancesIncreased = new bool[](_assets.length);
+        uint256 outgoingAssetsCount;
+        uint256 incomingAssetsCount;
+
+        for (uint256 i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
+            uint256 oldBalance = _initialBalances[i];
+            uint256 newBalance = IERC20(asset).balanceOf(address(this));
+            if (newBalance < oldBalance) {
+                balanceDiffs[i] = sub(oldBalance, newBalance);
+                outgoingAssetsCount++;
+            }
+            else if (newBalance > oldBalance) {
+                require(__isReceivableAsset(asset), "__updatePostCoIBalances: unreceivable asset detected");
+                balanceDiffs[i] = sub(newBalance, oldBalance);
+                balancesIncreased[i] = true;
+                incomingAssetsCount++;
+            }
+        }
+
+        // 2. Construct arrays of incoming and outgoing assets
+        incomingAssets_ = new address[](incomingAssetsCount);
+        incomingAssetAmounts_ = new uint256[](incomingAssetsCount);
+        outgoingAssets_ = new address[](outgoingAssetsCount);
+        outgoingAssetAmounts_ = new uint256[](outgoingAssetsCount);
+        uint256 incomingAssetIndex;
+        uint256 outgoingAssetIndex;
+
+        for (uint256 i = 0; i < _assets.length; i++) {
+            if (balanceDiffs[i] > 0) {
+                if (balancesIncreased[i]) {
+                    incomingAssets_[incomingAssetIndex] = _assets[i];
+                    incomingAssetAmounts_[incomingAssetIndex] = balanceDiffs[i];
+                    incomingAssetIndex++;
+                    __increaseAssetBalance(_assets[i], balanceDiffs[i]);
+                }
+                else {
+                    outgoingAssets_[outgoingAssetIndex] = _assets[i];
+                    outgoingAssetAmounts_[outgoingAssetIndex] = balanceDiffs[i];
+                    outgoingAssetIndex++;
+                    __decreaseAssetBalance(_assets[i], balanceDiffs[i]);
+                }
+            }
+        }
     }
 }
 
