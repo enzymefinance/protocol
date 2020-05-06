@@ -49,7 +49,7 @@ contract Vault is IVault, TokenUser, Spoke {
     modifier onlyManager() {
         require(
             msg.sender == hub.manager(),
-            "Only the Shares contract can make this call"
+            "Only the fund manager can make this call"
         );
         _;
     }
