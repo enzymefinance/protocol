@@ -2,6 +2,7 @@ pragma solidity 0.6.4;
 
 import "./token/IERC20.sol";
 import "./DSMath.sol";
+import "./token/IERC20Flexible.sol";
 
 /// @title TokenUser Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -22,10 +23,7 @@ contract TokenUser is DSMath {
             allowance >= _value,
             "__decreaseApproval: cannot decrease by a value greater than allowance"
         );
-        require(
-            IERC20(_token).approve(_to, sub(allowance, _value)),
-            "__decreaseApproval: approval failed"
-        );
+        IERC20Flexible(_token).approve(_to, sub(allowance, _value));
     }
 
     /// @notice Increase allowance for an ERC20 token
@@ -38,16 +36,13 @@ contract TokenUser is DSMath {
         internal
     {
         uint256 allowance = IERC20(_token).allowance(address(this), _to);
-        require(
-            IERC20(_token).approve(_to, add(allowance, _value)),
-            "__increaseApproval: approval failed"
-        );
+        IERC20Flexible(_token).approve(_to, add(allowance, _value));
     }
 
     /// @notice Helper to transfer ERC20 tokens from the msg.sender to a recipient
     function __safeTransfer(address _token, address _to, uint256 _value) internal {
         uint256 receiverPreBalance = IERC20(_token).balanceOf(_to);
-        IERC20(_token).transfer(_to, _value);
+        IERC20Flexible(_token).transfer(_to, _value);
         uint256 receiverPostBalance = IERC20(_token).balanceOf(_to);
         require(
             add(receiverPreBalance, _value) == receiverPostBalance,
@@ -60,7 +55,7 @@ contract TokenUser is DSMath {
         internal
     {
         uint256 receiverPreBalance = IERC20(_token).balanceOf(_to);
-        IERC20(_token).transferFrom(_from, _to, _value);
+        IERC20Flexible(_token).transferFrom(_from, _to, _value);
         uint256 receiverPostBalance = IERC20(_token).balanceOf(_to);
         require(
             add(receiverPreBalance, _value) == receiverPostBalance,
