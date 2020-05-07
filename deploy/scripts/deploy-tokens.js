@@ -13,6 +13,7 @@ const main = async input => {
   const mkr = await nab('PreminedToken', ['MKR', 18, ''], tokenAddrs, 'MKR');
   const rep = await nab('PreminedToken', ['REP', 18, ''], tokenAddrs, 'REP');
   const zrx = await nab('PreminedToken', ['ZRX', 18, ''], tokenAddrs, 'ZRX');
+  const omg = await nab('BadERC20Token', ['OMG', 18, ''], tokenAddrs, 'OMG');
 
   const initialWeth = input.tokens.conf.WETH.initialDepositAmount;
   const wethAlreadyOwned = await call(weth, 'balanceOf', [web3.eth.accounts.wallet[0].address]);
@@ -31,6 +32,7 @@ const main = async input => {
     "MKR": mkr,
     "REP": rep,
     "ZRX": zrx,
+    "OMG": omg,
   };
 }
 

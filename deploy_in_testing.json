@@ -107,6 +107,7 @@
   },
   "tokens": {
     "addr": {
+      "OMG": "",
       "WETH": "",
       "MLN": "",
       "BAT": "",
@@ -118,6 +119,10 @@
       "ZRX": ""
     },
     "conf": {
+      "OMG": {
+        "name": "OmiseGo Token",
+        "decimals": 18
+      },
       "WETH": {
         "name": "Wrapped ether",
         "decimals": 18,
