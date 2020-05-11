@@ -53,49 +53,49 @@ const partialRedeploy = async (contractsToRedeploy=[], forcePartial=false) => {
 const deploySystem = async input => {
   const deployOut = Object.assign({}, input);
   let contracts = {};
-  if (input.tokens) {
-    const tokens = await deployTokens(input);
-    deployOut.tokens.addr = getAllAddrs(tokens);
-    contracts = Object.assign(contracts, tokens);
-  }
-  if (input.oasis) {
-    const oasis = await deployOasis(input);
-    deployOut.oasis.addr = getAllAddrs(oasis);
-    contracts = Object.assign(contracts, oasis);
-  }
-  if (input.zeroExV2) {
-    const zeroExV2 = await deployZeroExV2(input);
-    deployOut.zeroExV2.addr = getAllAddrs(zeroExV2);
-    contracts = Object.assign(contracts, zeroExV2);
-  }
-  if (input.zeroExV3) {
-    const zeroExV3 = await deployZeroExV3(input);
-    deployOut.zeroExV3.addr = getAllAddrs(zeroExV3);
-    contracts = Object.assign(contracts, zeroExV3);
-  }
-  if (input.uniswap) {
-    const uniswap = await deployUniswap(input);
-    deployOut.uniswap.addr = getAllAddrs(uniswap);
-    contracts = Object.assign(contracts, uniswap);
-  }
-  if (input.kyber) {
-    const kyber = await deployKyber(input);
-    deployOut.kyber.addr = getAllAddrs(kyber);
-    contracts = Object.assign(contracts, kyber);
-  }
-  if (input.airSwap) {
-    const airSwap = await deployAirSwap(input);
-    deployOut.airSwap.addr = getAllAddrs(airSwap);
-    contracts = Object.assign(contracts, airSwap);
-  }
-  if (input.melon) {
-    const melon = await deployMelon(input);
-    deployOut.melon.addr = getAllAddrs(melon);
-    contracts = Object.assign(contracts, melon);
-  }
-  if (input.postDeployment) {
-    await postDeployment(input, deployOut);
-  }
+  // if (input.tokens) {
+  //   const tokens = await deployTokens(input);
+  //   deployOut.tokens.addr = getAllAddrs(tokens);
+  //   contracts = Object.assign(contracts, tokens);
+  // }
+  // if (input.oasis) {
+  //   const oasis = await deployOasis(input);
+  //   deployOut.oasis.addr = getAllAddrs(oasis);
+  //   contracts = Object.assign(contracts, oasis);
+  // }
+  // if (input.zeroExV2) {
+  //   const zeroExV2 = await deployZeroExV2(input);
+  //   deployOut.zeroExV2.addr = getAllAddrs(zeroExV2);
+  //   contracts = Object.assign(contracts, zeroExV2);
+  // }
+  // if (input.zeroExV3) {
+  //   const zeroExV3 = await deployZeroExV3(input);
+  //   deployOut.zeroExV3.addr = getAllAddrs(zeroExV3);
+  //   contracts = Object.assign(contracts, zeroExV3);
+  // }
+  // if (input.uniswap) {
+  //   const uniswap = await deployUniswap(input);
+  //   deployOut.uniswap.addr = getAllAddrs(uniswap);
+  //   contracts = Object.assign(contracts, uniswap);
+  // }
+  // if (input.kyber) {
+  //   const kyber = await deployKyber(input);
+  //   deployOut.kyber.addr = getAllAddrs(kyber);
+  //   contracts = Object.assign(contracts, kyber);
+  // }
+  // if (input.airSwap) {
+  //   const airSwap = await deployAirSwap(input);
+  //   deployOut.airSwap.addr = getAllAddrs(airSwap);
+  //   contracts = Object.assign(contracts, airSwap);
+  // }
+  // if (input.melon) {
+  //   const melon = await deployMelon(input);
+  //   deployOut.melon.addr = getAllAddrs(melon);
+  //   contracts = Object.assign(contracts, melon);
+  // }
+  // if (input.postDeployment) {
+  //   await postDeployment(input, deployOut);
+  // }
   return {contracts, deployOut};
 }
 

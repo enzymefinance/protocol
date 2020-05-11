@@ -1,20 +1,19 @@
 const fs = require('fs');
 const path = require('path');
-const web3 = require('./get-web3');
 const web3Utils = require('web3-utils');
 
 const outdir = path.resolve(`${__dirname}/../../out`);
 
 const defaultOptions = {
-  gas: web3.utils.toHex(10000000),
-  gasPrice: web3.utils.toHex(5000000000),
-  value: web3.utils.toHex(0),
+  gas: web3Utils.toHex(10000000),
+  gasPrice: web3Utils.toHex(5000000000),
+  value: web3Utils.toHex(0),
   data: null,
 };
 
 // takes a web3 account object and gets the next nonce
 // we manually track the nonce, since remote nodes tend to get out of sync
-const getNextNonce = async account => {
+const getNextNonce = async (account, web3) => {
   const nonceFromTxPool = await web3.eth.getTransactionCount(account.address, 'pending');
   if (process.env.LOCAL_CHAIN) {
     return nonceFromTxPool;
@@ -58,7 +57,7 @@ const call = async (contract, method=undefined, args=[], opts={}) => {
   return result;
 }
 
-const send = async (contract, method=undefined, args=[], opts={}) => {
+const send = async (contract, method=undefined, args=[], opts={}, web3) => {
   stdout(
     `Sending${
         (method) ? ` ${method}` : ''
@@ -104,18 +103,18 @@ const send = async (contract, method=undefined, args=[], opts={}) => {
       tx.gas = boostedGasEstimation;
     }
   }
-  const receipt = await signAndSend(tx, account.privateKey);
+  const receipt = await signAndSend(tx, account.privateKey, web3);
   return receipt;
 }
 
-const signAndSend = async (tx, pkey) => {
+const signAndSend = async (tx, pkey, web3) => {
   const signed = await web3.eth.accounts.signTransaction(tx, pkey);
   return web3.eth.sendSignedTransaction(signed.rawTransaction);
 }
 
 // TODO: factor out common code between deploy and send
 // deploy a contract with some args
-const deploy = async (name, args=[], overrideOpts={}, libs=[]) => {
+const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
   let account;
   if (overrideOpts.from) {
     account = web3.eth.accounts.wallet[overrideOpts.from];
@@ -153,14 +152,14 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[]) => {
   );
   const tx = Object.assign(normalOpts, overrideOpts);
   stdout(`Deploying ${name}${(args.length) ? ` with args [${args}]` : '' }`);
-  const receipt = await signAndSend(tx, account.privateKey);
+  const receipt = await signAndSend(tx, account.privateKey, web3);
   contract.options.address = receipt.contractAddress;
   stdout(`Deployed ${name} at ${contract.options.address}`);
   return contract;
 }
 
 // get a contract with some address
-const fetchContract = (name, address) => {
+const fetchContract = (name, address, web3) => {
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
   stdout(`Fetching ${name} at ${address}`);
   const contract = new web3.eth.Contract(abi, address);

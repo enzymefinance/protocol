@@ -30,12 +30,18 @@ const MatchingMarket = artifacts.require('MatchingMarket');
 const ZeroExV2Exchange = artifacts.require('ZeroExV2Exchange');
 const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
 // const AirSwapSwap = artifacts.require('AirSwapSwap');
-// const UniswapFactory = artifacts.require('UniswapFactory');
+const UniswapFactory = artifacts.require('UniswapFactory');
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 // TODO: split this file into multiple migrations
 module.exports = async deployer => {
-  const weth = await WETH.deployed();
-  const mln = await MLN.deployed();
+  const weth = await WETH.at(mainnetAddrs.tokens.WETH);
+  const mln = await MLN.at(mainnetAddrs.tokens.MLN);
+  const kyberNetworkProxy = await KyberNetworkProxy.at(mainnetAddrs.kyber.KyberNetworkProxy);
+  const matchingMarket = await MatchingMarket.at(mainnetAddrs.oasis.OasisDexExchange);
+  const uniswapFactory = await UniswapFactory.at(mainnetAddrs.uniswap.UniswapFactory);
+  const zeroExV2Exchange = await ZeroExV2Exchange.at(mainnetAddrs.zeroExV2.ZeroExV2Exchange);
+  const zeroExV3Exchange = await ZeroExV3Exchange.at(mainnetAddrs.zeroExV3.ZeroExV3Exchange);
 
   await deployer.deploy(KyberAdapter);
   await deployer.deploy(OasisDexAdapter);
@@ -63,7 +69,7 @@ module.exports = async deployer => {
     priceSource = await deployer.deploy(
       KyberPriceFeed,
       registry.address,
-      (await KyberNetworkProxy.deployed()).address,
+      kyberNetworkProxy.address,
       conf.melonMaxSpread,
       weth.address,
       conf.melonInitialUpdater
@@ -78,93 +84,97 @@ module.exports = async deployer => {
   await registry.setEngine(engine.address);
   await registry.setMGM(conf.melonInitialMGM);
   await registry.setSharesRequestor(sharesRequestor.address);
-  await registry.registerFees(
-    [
-      managementFee.address,
-      performanceFee.address
-    ]
-  );
+  await registry.registerFee(managementFee.address);
+  await registry.registerFee(performanceFee.address);
 
   // TODO: lift metadata.js and constants.js from tests/utils into a shared utils file in root
   const takeOrderSignature = 'takeOrder(address,address[8],uint256[8],bytes[4],bytes32,bytes)';
   const sigs = [web3.eth.abi.encodeFunctionSignature(takeOrderSignature)];
 
-  let exchanges = {};
+//   let exchanges = {};
 
-  exchanges.engine = {
-    exchange: (await Engine.deployed()).address,
-    adapter: (await EngineAdapter.deployed()).address
+//   exchanges.engine = {
+//     exchange: (await Engine.deployed()).address,
+//     adapter: (await EngineAdapter.deployed()).address
+//   };
+//   // exchanges.airSwap = {
+//   //   exchange: (await AirSwapSwap.deployed()).address,
+//   //   adapter: (await AirSwapAdapter.deployed()).address
+//   // };
+//   exchanges.kyber = {
+//     exchange: kyberNetworkProxy.address,
+//     adapter: (await KyberAdapter.deployed()).address
+//   };
+//   exchanges.oasis = {
+//     exchange: matchingMarket.address,
+//     adapter: (await OasisDexAdapter.deployed()).address
+//   };
+//   // TODO
+//   exchanges.uniswap = {
+//     exchange: uniswapFactory.address,
+//     adapter: (await UniswapAdapter.deployed()).address
+//   };
+//   exchanges.zeroExV2 = {
+//     exchange: zeroExV2Exchange.address,
+//     adapter: (await ZeroExV2Adapter.deployed()).address
+//   };
+//   exchanges.zeroExV3 = {
+//     exchange: zeroExV3Exchange.address,
+//     adapter: (await ZeroExV3Adapter.deployed()).address
+//   };
+
+  const integrations = {};
+  integrations.engine = {
+    gateway: (await Engine.deployed()).address,
+    adapter: (await EngineAdapter.deployed()).address,
+    integrationType: 0,
   };
-  // exchanges.airSwap = {
-  //   exchange: (await AirSwapSwap.deployed()).address,
-  //   adapter: (await AirSwapAdapter.deployed()).address
+  // integrations.airSwap = {
+  //   gateway: input.airSwap.addr.Swap,
+  //   adapter: airSwapAdapter.options.address,
+  //   integrationType: 1
   // };
-  exchanges.kyber = {
-    exchange: (await KyberNetworkProxy.deployed()).address,
-    adapter: (await KyberAdapter.deployed()).address
+  integrations.kyber = {
+    gateway: kyberNetworkProxy.address,
+    adapter: (await KyberAdapter.deployed()).address,
+    integrationType: 1
   };
-  exchanges.oasis = {
-    exchange: (await MatchingMarket.deployed()).address,
-    adapter: (await OasisDexAdapter.deployed()).address
+  integrations.oasis = {
+    gateway: matchingMarket.address,
+    adapter: (await OasisDexAdapter.deployed()).address,
+    integrationType: 1
   };
-  // TODO
-  // exchanges.uniswap = {
-  //   exchange: (await UniswapFactory.deployed()).address,
-  //   adapter: (await UniswapAdapter.deployed()).address
-  // };
-  exchanges.zeroExV2 = {
-    exchange: (await ZeroExV2Exchange.deployed()).address,
-    adapter: (await ZeroExV2Adapter.deployed()).address
+  integrations.uniswap = {
+    gateway: uniswapFactory.address,
+    adapter: (await UniswapAdapter.deployed()).address,
+    integrationType: 1
   };
-  exchanges.zeroExV3 = {
-    exchange: (await ZeroExV3Exchange.deployed()).address,
-    adapter: (await ZeroExV3Adapter.deployed()).address
+  integrations.zeroExV2 = {
+    gateway: zeroExV2Exchange.address,
+    adapter: (await ZeroExV2Adapter.deployed()).address,
+    integrationType: 1
+  };
+  integrations.zeroExV3 = {
+    gateway: zeroExV3Exchange.address,
+    adapter: (await ZeroExV3Adapter.deployed()).address,
+    integrationType: 1
   };
 
-
-  for (const info of Object.values(exchanges)) {
-    const isRegistered = await registry.exchangeAdapterIsRegistered(info.adapter);
-    // TODO: check here if we actually need to update as well
-    if (isRegistered) {
-      await registry.updateExchangeAdapter(info.exchange, info.adapter, sigs);
-    } else {
-      await registry.registerExchangeAdapter(info.exchange, info.adapter, sigs)
+  for (const info of Object.values(integrations)) {
+    if (!(await registry.integrationAdapterIsRegistered(info.adapter))) {
+      await registry.registerIntegrationAdapter(info.adapter, info.gateway, info.integrationType);
     }
   }
 
-  for (const [sym, info] of Object.entries(conf.tokens)) {
-    const tokenAddress = tokenAddrs[sym];
-    const assetInfo = await registry.assetInformation(tokenAddress);
-    const reserveMin = info.reserveMin || '0';
-    if (!assetInfo.exists) {
-      await registry.registerAsset(
-        tokenAddress,
-        info.name,
-        sym,
-        '',
-        reserveMin,
-        [],
-        []
-      );
-    } else {
-      await registry.updateAsset(
-        tokenAddress,
-        info.name,
-        sym,
-        '',
-        reserveMin,
-        [],
-        []
-      );
-    }
-    if (conf.track === 'TESTING') {
-      await priceSource.setDecimals(tokenAddress, info.decimals);
+  for (const tokenAddress of Object.values(mainnetAddrs.tokens)) {
+    const alreadyRegistered = await registry.assetIsRegistered(tokenAddress);
+    if (!alreadyRegistered) {
+      await registry.registerAsset(tokenAddress);
     }
   }
 
   const fundFactory = await deployer.deploy(
     FundFactory,
-    accountingFactory.address,
     feeManagerFactory.address,
     sharesFactory.address,
     vaultFactory.address,
@@ -173,23 +183,13 @@ module.exports = async deployer => {
     conf.melonFundFactoryOwner
   );
 
-  const fundFactoryInformation = await registry.fundFactoryInformation(fundFactory.address);
-
-  if (!fundFactoryInformation.exists) {
-    let fundFactoryName;
-    if (conf.track === 'TESTING') {
-      fundFactoryName = web3.utils.padLeft(web3.utils.toHex(`${Date.now()}`), 64);
-    } else {
-      fundFactoryName = web3.utils.padLeft(web3.utils.toHex(conf.melonVersionName), 64);
-    }
-    await registry.registerFundFactory(fundFactory.address, fundFactoryName);
-  }
+  await registry.setFundFactory(fundFactory.address);
 
   if (conf.track === 'KYBER_PRICE')
     await priceSource.update();
   else if (conf.track === 'TESTING') {
-    // TODO: get actual prices
-    const fakePrices = Object.values(tokenAddrs).map(() => (new BN('10')).pow(new BN('18')).toString());
-    await priceSource.update(Object.values(tokenAddrs), fakePrices);
+    // // TODO: get actual prices
+    // const fakePrices = Object.values(tokenAddrs).map(() => (new BN('10')).pow(new BN('18')).toString());
+    // await priceSource.update(Object.values(tokenAddrs), fakePrices);
   }
 }
