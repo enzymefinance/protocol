@@ -29,7 +29,7 @@
     "deploy": "PRIVATE_KEYS=./keys.json DEPLOY_IN=./deploy_in_testing.json DEPLOY_OUT=./deploy_out_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
     "deploy-truffle": "truffle migrate",
     "deploy-kovan": "PRIVATE_KEYS=./kovan_keys.json DEPLOY_IN=./deploy_in_kovan.json DEPLOY_OUT=./deploy_out_kovan.json node deploy/scripts/deploy-system.js ./deploy_in_kovan.json ./deploy_out_kovan.json",
-    "devchain": "ganache-cli --gasLimit 0x989680 --defaultBalanceEther 10000000000000 -m 'exhibit now news planet fame thank swear reform tilt accident bitter axis' --networkId=4447 --acctKeys ./keys.json",
+    "devchain": "node ./tests/utils/test-chain.js",
     "lint": "solhint src/**/*.sol",
     "test": "LOCAL_CHAIN=true PRIVATE_KEYS=./keys.json REDEPLOY_ALL=true DEPLOY_IN=./deploy_in_testing.json DEPLOY_OUT=./deploy_out_testing.json yarn jest --runInBand --detectOpenHandles",
     "test-kovan": "PRIVATE_KEYS=./kovan_keys.json REDEPLOY_ALL=false DEPLOY_IN=./deploy_in_kovan.json DEPLOY_OUT=./deploy_out_kovan.json yarn jest --testPathIgnorePatterns '/(local|tests/mock|tests/thirdparty)/' --runInBand"
@@ -56,6 +56,7 @@
     "web3-utils": "1.2.4"
   },
   "dependencies": {
+    "ganache-core": "^2.10.2",
     "truffle": "^5.1.22"
   }
 }

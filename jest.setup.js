@@ -1,7 +1,37 @@
 import { BN } from 'web3-utils';
 import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
+const ganache = require('ganache-core');
+const Web3 = require('web3');
+
 // Default timeout interval for tests and before/after hooks
 jest.setTimeout(1200000); // 20 mins
+
+// TODO: factor these keys into one place
+const PRIV_KEY_1 = '0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721';
+const PRIV_KEY_2 = '0x9cc70449981c6df178133db4c075c408876e8be3b147fa11f8ee947faa0b0011';
+const PRIV_KEY_3 = '0x53f76b9ee429500aacf3730228ab4fdc72683e952b48a8c4a923c04203d93a56';
+
+global.startChain = async () => {
+  // const startingBalance = Web3.utils.toWei('1000', 'ether');
+  const provider = ganache.provider({
+    fork: 'http://127.0.0.1:8545',
+    // network_id: 1,
+    // accounts: [
+    //   {
+    //     secretKey: PRIV_KEY_1,
+    //     balance: startingBalance,
+    //   }, {
+    //     secretKey: PRIV_KEY_2,
+    //     balance: startingBalance,
+    //   }, {
+    //     secretKey: PRIV_KEY_3,
+    //     balance: startingBalance,
+    //   },
+    // ],
+  });
+
+  return new Web3(provider, null, { transactionConfirmationBlocks: 1 });
+}
 
 expect.extend({
   bigNumberCloseTo(received, expected, margin = new BN(100)) {
