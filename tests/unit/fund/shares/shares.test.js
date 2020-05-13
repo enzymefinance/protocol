@@ -56,7 +56,7 @@ describe('constructor', () => {
       defaultTokens,
       quoteToken: weth.options.address,
       fundFactory
-    }); 
+    });
   });
 
   it('enables _defaultAssets as investment assets', async () => {
@@ -192,14 +192,14 @@ describe('buyShares', () => {
     // 2. Investment asset transferred
     expect(preCallerInvestmentAsset.sub(postCallerInvestmentAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
-    ); 
+    );
     expect(postVaultInvestmentAsset.sub(preVaultInvestmentAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
-    ); 
+    );
     // 3. Fund internal accounting increased
     expect(postFundHoldingsInvestmentAsset.sub(preFundHoldingsInvestmentAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
-    ); 
+    );
   });
 
   it('emits correct SharesBought event', async () => {
@@ -243,7 +243,7 @@ describe('disableSharesInvestmentAssets', () => {
       defaultTokens,
       quoteToken: weth.options.address,
       fundFactory
-    }); 
+    });
   });
 
   it('can NOT be called by an unauthorized user', async () => {
@@ -316,7 +316,7 @@ describe('enableSharesInvestmentAssets', () => {
       defaultTokens,
       quoteToken: weth.options.address,
       fundFactory
-    }); 
+    });
   });
 
   it('can NOT be called by an unauthorized user', async () => {
@@ -597,192 +597,5 @@ describe('redeemSharesQuantity', () => {
       [defaultBuyShares.investmentAssetContract.options.address]
     );
     expect(eventValues.receivedAssetQuantities).toEqual([halfOfInvestmentAsset.toString()]);
-  });
-});
-
-// 2 investors with equal shares, Investor B redeems for 1/2 shares quantity and only 1 of 2 fund assets
-// Expected: Investor B gets 1/4 of the fund's holdings for an asset
-describe('redeemSharesWithConstraints', () => {
-  let fund;
-  let buySharesOpts;
-  let halfOfShares, quarterOfInvestmentAsset;
-  let redeemTxBlock;
-  let preFundHoldingsInvestmentAsset, postFundHoldingsInvestmentAsset;
-  let preRedeemerInvestmentAsset, postRedeemerInvestmentAsset, preRedeemerShares, postRedeemerShares;
-
-  beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
-    const tokenAddresses = [weth.options.address, mln.options.address];
-    const tokenPrices = [toWei('1', 'ether'), toWei('0.5', 'ether')];
-
-    // Set expected prices
-    await send(
-      priceSource,
-      'update',
-      [tokenAddresses, tokenPrices],
-      defaultTxOpts
-    );
-
-    // 1st investment in weth
-    fund = await setupFundWithParams({
-      defaultTokens: tokenAddresses,
-      initialInvestment: {
-        contribAmount: toWei('1', 'ether'),
-        investor: deployer,
-        tokenContract: weth
-      },
-      quoteToken: weth.options.address,
-      fundFactory
-    });
-
-    buySharesOpts = {
-      ...defaultBuyShares,
-      investmentAssetContract: mln,
-      investmentAmount: toWei('2', 'ether')
-    };
-
-    // 2nd investment in mln
-    await investInFund({
-      fundAddress: fund.hub.options.address,
-      investment: {
-        contribAmount: buySharesOpts.investmentAmount,
-        investor,
-        tokenContract: mln
-      },
-      tokenPriceData: {
-        priceSource,
-        tokenAddresses,
-        tokenPrices
-      }
-    });
-
-    halfOfShares = new BN(buySharesOpts.sharesQuantity).div(new BN(2));
-    quarterOfInvestmentAsset = new BN(buySharesOpts.investmentAmount).div(new BN(4));
-  });
-
-  it('can NOT be called by a user without enough shares', async () => {
-    const sharesPlusOne = new BN(buySharesOpts.sharesQuantity).add(new BN(1)).toString();
-
-    await expect(
-      send(
-        fund.shares,
-        'redeemSharesWithConstraints',
-        [sharesPlusOne, [buySharesOpts.investmentAssetContract.options.address]],
-        buySharesOpts.txOpts
-      )
-    ).rejects.toThrowFlexible("_sharesQuantity exceeds sender balance")
-  });
-
-  it('can NOT be called with an asset with a 0 balance', async () => {
-    await expect(
-      send(
-        fund.shares,
-        'redeemSharesWithConstraints',
-        [
-          halfOfShares.toString(),
-          [
-            buySharesOpts.investmentAssetContract.options.address,
-            randomHex(20)
-          ]
-        ],
-        buySharesOpts.txOpts
-      )
-    ).rejects.toThrowFlexible("Requested asset holdings is 0")
-  });
-
-  it('can NOT be called with a duplicate asset', async () => {
-    await expect(
-      send(
-        fund.shares,
-        'redeemSharesWithConstraints',
-        [
-          halfOfShares.toString(),
-          [
-            buySharesOpts.investmentAssetContract.options.address,
-            buySharesOpts.investmentAssetContract.options.address
-          ]
-        ],
-        buySharesOpts.txOpts
-      )
-    ).rejects.toThrowFlexible("Attempted to redeem duplicate asset")
-  });
-
-  it('succeeds when called by a user with enough shares', async () => {
-    preFundHoldingsInvestmentAsset = new BN(
-      await call(
-        fund.vault,
-        'assetBalances',
-        [buySharesOpts.investmentAssetContract.options.address]
-      )
-    );
-    preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [buySharesOpts.buyer]));
-    preRedeemerInvestmentAsset = new BN(
-      await call(
-        buySharesOpts.investmentAssetContract,
-        'balanceOf',
-        [buySharesOpts.buyer]
-      )
-    );
-
-    await expect(
-      send(
-        fund.shares,
-        'redeemSharesWithConstraints',
-        [halfOfShares.toString(), [buySharesOpts.investmentAssetContract.options.address]],
-        buySharesOpts.txOpts
-      )
-    ).resolves.not.toThrow()
-
-    redeemTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsInvestmentAsset = new BN(
-      await call(
-        fund.vault,
-        'assetBalances',
-        [buySharesOpts.investmentAssetContract.options.address]
-      )
-    );
-    postRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [buySharesOpts.buyer]));
-    postRedeemerInvestmentAsset = new BN(
-      await call(
-        buySharesOpts.investmentAssetContract,
-        'balanceOf',
-        [buySharesOpts.buyer]
-      )
-    );
-  });
-
-  it('correctly updates state', async () => {
-    // 1. Shares destroyed
-    expect(preRedeemerShares.sub(postRedeemerShares)).bigNumberEq(halfOfShares);
-    // 2. Asset returned to investor (1/4 of amount)
-    expect(postRedeemerInvestmentAsset.sub(preRedeemerInvestmentAsset)).bigNumberEq(
-      quarterOfInvestmentAsset
-    );
-    // 3. Fund internal accounting decreased (1/4 of amount)
-    expect(preFundHoldingsInvestmentAsset.sub(postFundHoldingsInvestmentAsset)).bigNumberEq(
-      quarterOfInvestmentAsset
-    );
-  });
-
-  it('emits correct SharesRedeemed event', async () => {
-    const events = await fund.shares.getPastEvents(
-      'SharesRedeemed',
-      {
-        fromBlock: redeemTxBlock,
-        toBlock: 'latest'
-      }
-    );
-    expect(events.length).toBe(1);
-
-    const eventValues = events[0].returnValues;
-    expect(eventValues.redeemer).toBe(buySharesOpts.buyer);
-    expect(eventValues.sharesQuantity).toBe(halfOfShares.toString());
-    expect(eventValues.receivedAssets).toEqual(
-      [buySharesOpts.investmentAssetContract.options.address]
-    );
-    expect(eventValues.receivedAssetQuantities).toEqual([quarterOfInvestmentAsset.toString()]);
   });
 });

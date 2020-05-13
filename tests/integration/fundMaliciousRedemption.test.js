@@ -1,9 +1,9 @@
 /*
  * @file Tests fund's ability to handle a malicious redemption attempts
  *
- * @test Redeem fails when malicious token is present
- * @test Redemption with non-registered assets does not succeed
- * @test redeemSharesWithConstraints succeeds to withdraw specific assets only
+ * @test Fund receives Malicious token
+ * @test redeemShares fails
+ * @test redeemSharesEmergency succeeds
  */
 
 import { BN, toWei, randomHex } from 'web3-utils';
@@ -59,64 +59,8 @@ beforeAll(async () => {
   });
 });
 
-test('Trying to avoid performance fee with invalid asset addresses fails', async () => {
-  const { shares, vault } = fund;
-  const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  const ownedAssets = await call(vault, 'getOwnedAssets');
-  const errorMessage = 'Requested asset holdings is 0';
-
-  // TODO: convert to iterated tests
-  await expect(
-    send(
-      shares,
-      'redeemSharesWithConstraints',
-      [
-        preInvestorShares.toString(),
-        [randomHex(20), EMPTY_ADDRESS],
-      ],
-      investorTxOpts
-    )
-  ).rejects.toThrowFlexible(errorMessage);
-
-  await expect(
-    send(
-      shares,
-      'redeemSharesWithConstraints',
-      [
-        preInvestorShares.toString(),
-        [EMPTY_ADDRESS],
-      ],
-      investorTxOpts
-    )
-  ).rejects.toThrowFlexible(errorMessage);
-
-  await expect(
-    send(
-      shares,
-      'redeemSharesWithConstraints',
-      [
-        preInvestorShares.toString(),
-        [randomHex(20)],
-      ],
-      investorTxOpts
-    )
-  ).rejects.toThrowFlexible(errorMessage);
-
-  await expect(
-    send(
-      shares,
-      'redeemSharesWithConstraints',
-      [
-        preInvestorShares.toString(),
-        [...ownedAssets, EMPTY_ADDRESS],
-      ],
-      investorTxOpts
-    )
-  ).rejects.toThrowFlexible(errorMessage);
-});
-
-test('General redeem fails in presence of malicious token', async () => {
-  const { hub, shares } = fund;
+test('Fund receives Malicious token', async () => {
+  const { hub } = fund;
   const maliciousTokenAmount = toWei('1', 'ether');
 
   const tokenAddresses = [maliciousToken.options.address];
@@ -147,13 +91,17 @@ test('General redeem fails in presence of malicious token', async () => {
 
   // Activate malicious token
   await send(maliciousToken, 'startReverting', [], defaultTxOpts);
-  
+});
+
+test('redeemShares fails in presence of malicious token', async () => {
+  const { shares } = fund;
+
   await expect(
     send(shares, 'redeemShares', [], investorTxOpts)
   ).rejects.toThrowFlexible();
 });
 
-test(`Redeem with constraints works as expected`, async () => {
+test('redeemSharesEmergency succeeds in presence of malicious token', async () => {
   const { shares, vault } = fund;
 
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
@@ -172,13 +120,9 @@ test(`Redeem with constraints works as expected`, async () => {
   const investorShares = await call(shares, 'balanceOf', [investor]);
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
-
-  await send(
-    shares,
-    'redeemSharesWithConstraints',
-    [investorShares, [weth.options.address]],
-    investorTxOpts
-  );
+  await expect(
+    send(shares, 'redeemSharesEmergency', [], investorTxOpts)
+  ).resolves.not.toThrow();
 
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));

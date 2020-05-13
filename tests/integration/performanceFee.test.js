@@ -276,7 +276,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
   const redeemQuantity = preInvestorShares.div(new BN(2));
 
   await send(shares, 'redeemSharesQuantity', [redeemQuantity.toString()], investorTxOpts);
-  
+
   const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
