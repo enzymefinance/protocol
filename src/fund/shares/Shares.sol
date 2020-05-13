@@ -147,8 +147,22 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         // Duplicates logic further down call stack, but need to assure all outstanding shares are
         // assigned for fund manager (and potentially other fee recipients in the future)
         IFeeManager(routes.feeManager).rewardAllFees();
+        __redeemShares(balanceOf(msg.sender), false);
+    }
 
-        redeemSharesQuantity(balanceOf(msg.sender));
+    /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
+    /// @dev _bypassFailure is set to true, the user will lose their claim to any assets for
+    /// which the transfer function fails.
+    function redeemSharesEmergency() external {
+        IFeeManager(routes.feeManager).rewardAllFees();
+        __redeemShares(balanceOf(msg.sender), true);
+    }
+
+    /// @notice Redeem a specified quantity of the sender's shares
+    /// for a proportionate slice of the fund's assets
+    /// @param _sharesQuantity Number of shares
+    function redeemSharesQuantity(uint256 _sharesQuantity) external {
+        __redeemShares(_sharesQuantity, false);
     }
 
     // PUBLIC FUNCTIONS
@@ -248,75 +262,57 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         return EnumerableSet.contains(sharesInvestmentAssets, _asset);
     }
 
+    // PRIVATE FUNCTIONS
+
     /// @notice Redeem a specified quantity of the sender's shares
     /// for a proportionate slice of the fund's assets
+    /// @dev If _bypassFailure is set to true, the user will lose their claim to any assets for
+    /// which the transfer function fails. This should always be false unless explicitly intended
     /// @param _sharesQuantity The amount of shares to redeem
-    function redeemSharesQuantity(uint256 _sharesQuantity) public {
-        require(_sharesQuantity > 0, "redeemSharesQuantity: _sharesQuantity must be > 0");
-
-        address[] memory assets = IVault(routes.vault).getOwnedAssets();
-        redeemSharesWithConstraints(_sharesQuantity, assets);
-    }
-
-    /// @notice Redeem a specified quantity of the sender's shares
-    /// for ONLY SPECIFIC ASSETS in the fund, forfeiting the remaining assets
-    /// @dev Do not call directly, unless an asset throws preventing redemption.
-    /// Calling directly with a limited set of assets will result in the sender
-    /// losing claim to the remaining assets for their shares. It is intended as
-    /// a last resort for users to directly redeem their assets.
-    /// @dev Rewards all fees prior to redemption
-    /// @param _sharesQuantity The amount of shares to redeem
-    /// @param _assets The assets to receive from the redemption
-    function redeemSharesWithConstraints(uint256 _sharesQuantity, address[] memory _assets)
-        public
-    {
-        require(_assets.length > 0, "redeemSharesWithConstraints: _assets cannot be empty");
-        require(_sharesQuantity > 0, "redeemSharesWithConstraints: _sharesQuantity must be > 0");
-
-        IFeeManager(routes.feeManager).rewardAllFees();
-
+    /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
+    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private {
+        require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
         require(
             _sharesQuantity <= balanceOf(msg.sender),
-            "redeemSharesWithConstraints: _sharesQuantity exceeds sender balance"
+            "__redeemShares: _sharesQuantity exceeds sender balance"
         );
+
+        IVault vault = IVault(routes.vault);
+        address[] memory payoutAssets = vault.getOwnedAssets();
+        require(payoutAssets.length > 0, "__redeemShares: payoutAssets is empty");
+
+        IFeeManager(routes.feeManager).rewardAllFees();
 
         // Destroy the shares
         uint256 sharesSupply = totalSupply();
         _burn(msg.sender, _sharesQuantity);
 
-        // Calculate and transfer owed assets to redeemer
-        IVault vault = IVault(routes.vault);
-        uint256[] memory owedQuantities = new uint256[](_assets.length);
-        for (uint256 i = 0; i < _assets.length; i++) {
-            uint256 quantityHeld = vault.assetBalances(_assets[i]);
-            require(quantityHeld > 0, "Requested asset holdings is 0");
-
-            // Confirm asset has not already been transfered
-            for (uint256 j = 0; j < i; j++) {
-                require(
-                    _assets[i] != _assets[j],
-                    "Attempted to redeem duplicate asset"
-                );
-            }
-
+        // Calculate and transfer payout assets to redeemer
+        uint256[] memory payoutQuantities = new uint256[](payoutAssets.length);
+        for (uint256 i = 0; i < payoutAssets.length; i++) {
+            uint256 quantityHeld = vault.assetBalances(payoutAssets[i]);
             // Redeemer's ownership percentage of asset holdings
-            owedQuantities[i] = mul(quantityHeld, _sharesQuantity) / sharesSupply;
-            if (owedQuantities[i] == 0) continue;
+            payoutQuantities[i] = mul(quantityHeld, _sharesQuantity) / sharesSupply;
 
-            // Transfer owed asset to redeemer
-            vault.withdraw(_assets[i], owedQuantities[i]);
-            __safeTransfer(_assets[i], msg.sender, owedQuantities[i]);
+            // Transfer payout asset to redeemer
+            try vault.withdraw(payoutAssets[i], payoutQuantities[i]) {}
+            catch {}
+
+            try IERC20Flexible(payoutAssets[i]).transfer(msg.sender, payoutQuantities[i]) {}
+            catch {
+                if (!_bypassFailure) {
+                    revert("__redeemShares: Token transfer failed");
+                }
+            }
         }
 
         emit SharesRedeemed(
             msg.sender,
             _sharesQuantity,
-            _assets,
-            owedQuantities
+            payoutAssets,
+            payoutQuantities
         );
     }
-
-    // PRIVATE FUNCTIONS
 
     /// @notice Enable assets with which to buy shares
     function __enableSharesInvestmentAssets (address[] memory _assets) private {
