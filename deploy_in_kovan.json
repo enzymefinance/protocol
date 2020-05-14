@@ -16,8 +16,6 @@
       "ZeroExV2Adapter": "",
       "ZeroExV3Adapter": "",
       "EngineAdapter": "",
-      "PriceTolerance": "",
-      "UserWhitelist": "",
       "ManagementFee": "",
       "PerformanceFee": "",
       "FeeManagerFactory": "",
@@ -28,11 +26,15 @@
       "SharesRequestor": "",
       "ValueInterpreter": "",
       "Registry": "",
-      "FundFactory": ""
+      "FundFactory": "",
+      "AssetBlacklist": "",
+      "AssetWhitelist": "",
+      "MaxConcentration": "",
+      "MaxPositions": "",
+      "PriceTolerance": "",
+      "UserWhitelist": ""
     },
     "conf": {
-      "priceTolerance": 10,
-      "userWhitelist": ["0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9"],
       "registryOwner": "0x3030d1c51D9f008A753b6Ca6B3b941C3DA559aB9",
       "engineDelay": 2592000,
       "maxSpread": "150000000000000000",
