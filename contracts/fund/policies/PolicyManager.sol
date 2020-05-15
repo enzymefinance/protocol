@@ -25,12 +25,8 @@ contract PolicyManager is IPolicyManager, Spoke {
     function enablePolicies(address[] calldata _policies, bytes[] calldata _encodedSettings)
         external
         override
+        onlyFundFactory
     {
-        // Access
-        require(
-            msg.sender == __getHub().FUND_FACTORY(),
-            "Only FundFactory can make this call"
-        );
         // Sanity check
         require(_policies.length > 0, "enablePolicies: _policies cannot be empty");
         require(

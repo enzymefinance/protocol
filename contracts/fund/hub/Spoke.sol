@@ -19,6 +19,21 @@ abstract contract Spoke is ISpoke, FundRouterMixin {
     // TODO: set as immutable upon solidity upgrade
     address public override HUB;
 
+    modifier onlyActiveFund() {
+        require(IHub(HUB).status() == IHub.FundStatus.Active, "Only an active fund can use this function");
+        _;
+    }
+
+    modifier onlyFeeManager() {
+        require(msg.sender == address(__getFeeManager()), "Only FeeManager can call this function");
+        _;
+    }
+
+    modifier onlyFundFactory() {
+        require(msg.sender == IHub(HUB).FUND_FACTORY(), "Only FundFactory can call this function");
+        _;
+    }
+
     modifier onlyManager() {
         require(msg.sender == IHub(HUB).MANAGER(), "Only the fund manager can call this function");
         _;

@@ -48,8 +48,7 @@ contract FundFactory is AmguConsumer {
         address[] adapters;
         address denominationAsset;
         address[] fees;
-        uint256[] feeRates;
-        uint256[] feePeriods;
+        bytes[] feeSettings;
         address[] policies;
         bytes[] policySettings;
     }
@@ -81,15 +80,15 @@ contract FundFactory is AmguConsumer {
     /// @notice The first action in setting up a fund, where the parameters of a fund are defined
     /// @param _name The fund's name
     /// @param _fees The Fee contract addresses to use in the fund
-    /// @param _feeRates The rates to use with each Fee contracts
-    /// @param _feePeriods The period to use in each Fee contracts
+    /// @param _feeSettings The encoded settings to use with each fee contract
+    /// @param _policies The Policy contract addresses to use in the fund
+    /// @param _policySettings The encoded settings to use with each policy contract
     /// @param _adapters The integration adapters to use to interact with external protocols
     /// @param _denominationAsset The asset in which to denominate share price and measure fund performance
     function beginFundSetup(
         string memory _name,
         address[] memory _fees,
-        uint256[] memory _feeRates, // encode?
-        uint256[] memory _feePeriods, // encode?
+        bytes[] memory _feeSettings,
         address[] memory _policies,
         bytes[] memory _policySettings,
         address[] memory _adapters,
@@ -120,8 +119,7 @@ contract FundFactory is AmguConsumer {
             _adapters,
             _denominationAsset,
             _fees,
-            _feeRates,
-            _feePeriods,
+            _feeSettings,
             _policies,
             _policySettings
         );
@@ -248,17 +246,20 @@ contract FundFactory is AmguConsumer {
         require(hub.feeManager() == address(0), "__createFeeManagerFor: feeManager already set");
 
         // Deploy
-        address feeManager = feeManagerFactory.createInstance(
-            address(hub),
-            managerToPendingFundSettings[_manager].denominationAsset,
-            managerToPendingFundSettings[_manager].fees,
-            managerToPendingFundSettings[_manager].feeRates,
-            managerToPendingFundSettings[_manager].feePeriods
-        );
+        address feeManager = feeManagerFactory.createInstance(address(hub));
         emit FeeManagerCreated(msg.sender, address(hub), feeManager);
 
         // Add to Hub
         hub.setFeeManager(feeManager);
+
+        // Add config
+        address[] memory fees = managerToPendingFundSettings[_manager].fees;
+        if (fees.length > 0) {
+            IFeeManager(feeManager).enableFees(
+                fees,
+                managerToPendingFundSettings[_manager].feeSettings
+            );
+        }
     }
 
     /// @notice Helper to create a PolicyManger component for a specified manager

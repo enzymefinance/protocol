@@ -62,6 +62,7 @@ contract Vault is IVault, Spoke {
     )
         external
         onlyManager
+        onlyActiveFund
     {
         bytes4 selector = bytes4(keccak256(bytes(_methodSignature)));
 

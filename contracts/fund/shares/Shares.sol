@@ -59,58 +59,68 @@ contract Shares is IShares, Spoke, SharesToken {
 
     // EXTERNAL
 
+    /// @notice Burn shares
+    /// @param _target The account from which to burn
+    /// @param _amount The amount of shares to burn
+    function burn(address _target, uint256 _amount) external override onlyFeeManager {
+        _burn(_target, _amount);
+    }
+
     /// @notice Buy shares on behalf of a specified user
     /// @dev Only callable by the SharesRequestor associated with the Registry
     /// @param _buyer The for which to buy shares
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
-    /// @return sharesBought_ The amount of shares bought
-    function buyShares(
-        address _buyer,
-        uint256 _investmentAmount,
-        uint256 _minSharesQuantity
-    )
+    /// @return The amount of shares bought
+    function buyShares(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
         external
         override
         onlySharesRequestor
-        returns (uint256 sharesBought_)
+        onlyActiveFund
+        returns (uint256)
     {
-        __getFeeManager().rewardAllFees();
+        IFeeManager feeManager = __getFeeManager();
 
-        // Calculate shares quantity
-        sharesBought_ = _investmentAmount.mul(10 ** uint256(ERC20(DENOMINATION_ASSET).decimals())).div(calcSharePrice());
-        require(sharesBought_ >= _minSharesQuantity, "buyShares: minimum shares quantity not met");
+        // Calculate full shares quantity for investment amount after updating continuous fees
+        feeManager.settleFees(IFeeManager.FeeHook.Continuous, '');
+        uint256 sharesQuantity = _investmentAmount.mul(10 ** uint256(ERC20(DENOMINATION_ASSET).decimals())).div(calcSharePrice());
 
-        // Issue shares and transfer investment asset to vault
+        // This is inefficient to mint, and then allow the feeManager to burn/mint to settle the fee,
+        // but we need the FeeManager to handle minting/burning of shares if we want to move
+        // to a modular system.
+        uint256 prevBuyerShares = balanceOf(_buyer);
+        _mint(_buyer, sharesQuantity);
+
+        // Post-buy actions
+        feeManager.settleFees(
+            IFeeManager.FeeHook.BuyShares,
+            abi.encode(_buyer, _investmentAmount, sharesQuantity)
+        );
+        uint256 sharesBought = balanceOf(_buyer).sub(prevBuyerShares);
+        require(sharesBought >= _minSharesQuantity, "buyShares: minimum shares quantity not met");
+
+        // Transfer investment asset
+        // TODO: This is inefficient, two unnecessary steps now that we don't use internal accounting.
+        // Revisit after we have upgradable funds implemented.
         address vaultAddress = address(__getVault());
-        _mint(_buyer, sharesBought_);
         ERC20(DENOMINATION_ASSET).safeTransferFrom(msg.sender, address(this), _investmentAmount);
         ERC20(DENOMINATION_ASSET).safeIncreaseAllowance(vaultAddress, _investmentAmount);
         IVault(vaultAddress).deposit(DENOMINATION_ASSET, _investmentAmount);
 
-        emit SharesBought(
-            _buyer,
-            sharesBought_,
-            _investmentAmount
-        );
+        emit SharesBought(_buyer, sharesBought, _investmentAmount);
+
+        return sharesBought;
     }
 
-    // TODO: remove this after FeeManager arch changes
-    function createFor(address _who, uint256 _amount) external override {
-        require(
-            msg.sender == address(__getFeeManager()),
-            "Only FeeManager can call this function"
-        );
-
-        _mint(_who, _amount);
+    /// @notice Mint shares
+    /// @param _target The account from which to burn
+    /// @param _amount The amount of shares to burn
+    function mint(address _target, uint256 _amount) external override onlyFeeManager {
+        _mint(_target, _amount);
     }
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
-    /// @dev Rewards all fees prior to redemption
     function redeemShares() external {
-        // Duplicates logic further down call stack, but need to assure all outstanding shares are
-        // assigned for fund manager (and potentially other fee recipients in the future)
-        __getFeeManager().rewardAllFees();
         __redeemShares(balanceOf(msg.sender), false);
     }
 
@@ -118,7 +128,6 @@ contract Shares is IShares, Spoke, SharesToken {
     /// @dev _bypassFailure is set to true, the user will lose their claim to any assets for
     /// which the transfer function fails.
     function redeemSharesEmergency() external {
-        __getFeeManager().rewardAllFees();
         __redeemShares(balanceOf(msg.sender), true);
     }
 
@@ -180,6 +189,13 @@ contract Shares is IShares, Spoke, SharesToken {
     /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
     function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private {
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
+
+        // Attempt to settle fees, but don't allow an error to block redemption
+        // This also handles a rejection from onlyActiveFund when the fund is shutdown
+        try __getFeeManager().settleFees(IFeeManager.FeeHook.Continuous, '') {}
+        catch {}
+
+        // Check the shares quantity against the user's balance after settling fees
         require(
             _sharesQuantity <= balanceOf(msg.sender),
             "__redeemShares: _sharesQuantity exceeds sender balance"
@@ -188,8 +204,6 @@ contract Shares is IShares, Spoke, SharesToken {
         IVault vault = __getVault();
         address[] memory payoutAssets = vault.getOwnedAssets();
         require(payoutAssets.length > 0, "__redeemShares: payoutAssets is empty");
-
-        __getFeeManager().rewardAllFees();
 
         // Destroy the shares
         uint256 sharesSupply = totalSupply();
