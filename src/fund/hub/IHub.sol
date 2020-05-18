@@ -3,23 +3,13 @@ pragma solidity 0.6.4;
 /// @title Hub Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IHub {
-    struct Routes {
-        address feeManager;
-        address policyManager;
-        address shares;
-        address vault;
-        address registry;
-        address fundFactory;
-    }
+    enum FundStatus { Draft, Active, Inactive }
 
     function feeManager() external view returns (address);
-    function fundInitialized() external view returns (bool);
-    function getName() external view returns (string memory);
-    function isShutDown() external view returns (bool);
-    function isSpoke(address) external view returns (bool);
-    function manager() external view returns (address);
+    function MANAGER() external view returns (address);
     function policyManager() external view returns (address);
-    function priceSource() external view returns (address);
+    function REGISTRY() external view returns (address);
     function shares() external view returns (address);
+    function status() external view returns (FundStatus);
     function vault() external view returns (address);
 }

@@ -1,6 +1,5 @@
 pragma solidity 0.6.4;
 
-import "../../dependencies/DSGuard.sol";
 import "../../registry/IRegistry.sol";
 import "./Spoke.sol";
 import "./IHub.sol";
@@ -9,72 +8,95 @@ import "./IHub.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
-contract Hub is IHub, DSGuard {
+contract Hub is IHub {
+    event FeeManagerSet(address);
 
-    event FundShutDown();
+    event PolicyManagerSet(address);
 
-    IHub.Routes public routes;
-    address public override manager;
-    address public creator;
-    string public name;
-    bool public override isShutDown;
-    bool public override fundInitialized;
-    uint public creationTime;
-    mapping (address => bool) public override isSpoke;
+    event SharesSet(address);
 
-    modifier onlyCreator() {
-        require(msg.sender == creator, "Only creator can do this");
+    event VaultSet(address);
+
+    event StatusUpdated(FundStatus);
+
+    // Fund vars
+    address public override MANAGER;
+    string public NAME;
+    FundStatus public override status;
+
+    // Infrastruture
+    address public override REGISTRY;
+
+    // Components
+    address public override feeManager;
+    address public override policyManager;
+    address public override shares;
+    address public override vault;
+
+    modifier onlyFundFactory() {
+        require(
+            msg.sender == IRegistry(REGISTRY).fundFactory(),
+            "Only FundFactory can make this call"
+        );
         _;
     }
 
-    constructor(address _manager, string memory _name) public {
-        creator = msg.sender;
-        manager = _manager;
-        name = _name;
-        creationTime = block.timestamp;
+    constructor(address _registry, address _manager, string memory _name) public {
+        MANAGER = _manager;
+        NAME = _name;
+        REGISTRY = _registry;
     }
 
+    /// @notice Initializes a fund (actives it)
+    function initializeFund() external onlyFundFactory {
+        require(status == FundStatus.Draft, "initialize: Fund already initialized");
+
+        status = FundStatus.Active;
+        emit StatusUpdated(status);
+    }
+
+    /// @notice Sets the feeManager address for the fund
+    /// @param _feeManager The FeeManager component for the fund
+    function setFeeManager(address _feeManager) external onlyFundFactory {
+        require(feeManager == address(0), "setFeeManager: Already set");
+
+        feeManager = _feeManager;
+        emit FeeManagerSet(feeManager);
+    }
+
+    /// @notice Sets the policyManager address for the fund
+    /// @param _policyManager The PolicyManager component for the fund
+    function setPolicyManager(address _policyManager) external onlyFundFactory {
+        require(policyManager == address(0), "setPolicyManager: Already set");
+
+        policyManager = _policyManager;
+        emit PolicyManagerSet(policyManager);
+    }
+
+    /// @notice Sets the shares address for the fund
+    /// @param _shares The Shares component for the fund
+    function setShares(address _shares) external onlyFundFactory {
+        require(shares == address(0), "setShares: Already set");
+
+        shares =_shares;
+        emit SharesSet(shares);
+    }
+
+    /// @notice Sets the vault address for the fund
+    /// @param _vault The Vault component for the fund
+    function setVault(address _vault) external onlyFundFactory {
+        require(vault == address(0), "setVault: Already set");
+
+        vault =_vault;
+        emit VaultSet(vault);
+    }
+
+    /// @notice Shut down the fund
     function shutDownFund() external {
-        require(msg.sender == manager, "shutDownFund: Only fund manager can call this function");
-        isShutDown = true;
-        emit FundShutDown();
+        require(msg.sender == MANAGER, "shutDownFund: Only fund manager can call this function");
+        require(status == FundStatus.Active, "shutDownFund: Fund is not active");
+
+        status = FundStatus.Inactive;
+        emit StatusUpdated(status);
     }
-
-    function initializeAndSetPermissions(address[6] calldata _spokes) external onlyCreator {
-        require(!fundInitialized, "Fund is already initialized");
-        for (uint i = 0; i < _spokes.length; i++) {
-            isSpoke[_spokes[i]] = true;
-        }
-        routes.feeManager = _spokes[0];
-        routes.policyManager = _spokes[1];
-        routes.shares = _spokes[2];
-        routes.vault = _spokes[3];
-        routes.registry = _spokes[4];
-        routes.fundFactory = _spokes[5];
-
-        Spoke(routes.feeManager).initialize(_spokes);
-        Spoke(routes.policyManager).initialize(_spokes);
-        Spoke(routes.shares).initialize(_spokes);
-        Spoke(routes.vault).initialize(_spokes);
-
-        permit(
-            manager,
-            routes.policyManager,
-            bytes4(keccak256('batchRegister(bytes4[],address[])'))
-        );
-        permit(manager, routes.policyManager, bytes4(keccak256('register(bytes4,address)')));
-        permit(routes.feeManager, routes.shares, bytes4(keccak256('createFor(address,uint256)')));
-        fundInitialized = true;
-    }
-
-    function getName() external view override returns (string memory) { return name; }
-    function priceSource() external view override returns (address) {
-        return IRegistry(routes.registry).priceSource();
-    }
-    function vault() external view override returns (address) { return routes.vault; }
-    function shares() external view override returns (address) { return routes.shares; }
-    function registry() external view returns (address) { return routes.registry; }
-    function fundFactory() external view returns (address) { return routes.fundFactory; }
-    function policyManager() external view override returns (address) { return routes.policyManager; }
-    function feeManager() external view override returns (address) { return routes.feeManager; }
 }

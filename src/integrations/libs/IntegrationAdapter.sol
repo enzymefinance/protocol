@@ -3,13 +3,14 @@ pragma experimental ABIEncoderV2;
 
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
-import "../../fund/hub/SpokeAccessor.sol";
+import "../../fund/hub/IHub.sol";
+import "../../fund/hub/ISpoke.sol";
 import "../../registry/IRegistry.sol";
 
 /// @title Integration Adapter base contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Provides convenience functions for use in integration adapters
-abstract contract IntegrationAdapter is DSMath, SpokeAccessor {
+abstract contract IntegrationAdapter is DSMath {
     /// @notice Increment allowance of an asset for some target
     /// @dev Checks the actual in-contract assetBalances (as opposed to "holdings")
     function __approveAsset(
@@ -56,6 +57,6 @@ abstract contract IntegrationAdapter is DSMath, SpokeAccessor {
 
     /// @notice Gets an IRegistry instance
     function __getRegistry() internal view returns (IRegistry) {
-        return IRegistry(__getRoutes().registry);
+        return IRegistry(IHub(ISpoke(address(this)).HUB()).REGISTRY());
     }
 }

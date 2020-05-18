@@ -33,7 +33,7 @@ contract PerformanceFee is DSMath {
 
     /// @notice Assumes management fee is zero
     function feeAmount() external returns (uint feeInShares) {
-        Shares shares = Shares(IHub(Spoke(msg.sender).getHub()).shares());
+        Shares shares = Shares(IHub(Spoke(msg.sender).HUB()).shares());
         uint sharesSupply = shares.totalSupply();
         if (sharesSupply == 0) return 0;
 
@@ -69,7 +69,7 @@ contract PerformanceFee is DSMath {
             canUpdate(msg.sender),
             "Not within a update window or already updated this period"
         );
-        Shares shares = Shares(IHub(Spoke(msg.sender).getHub()).shares());
+        Shares shares = Shares(IHub(Spoke(msg.sender).HUB()).shares());
 
         uint currentGavPerShare = mul(
             shares.calcGav(),

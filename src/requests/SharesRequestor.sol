@@ -330,7 +330,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
 
     /// @notice Helper to check whether a fund is not shutdown and has been initialized
     function __fundIsActive(address _hub) private view returns (bool) {
-        return !IHub(_hub).isShutDown() && IHub(_hub).fundInitialized();
+        return IHub(_hub).status() == IHub.FundStatus.Active;
     }
 
     /// @notice Helper to transfer surplus investment asset back to the buyer and incentive to the caller

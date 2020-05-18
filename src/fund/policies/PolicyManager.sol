@@ -1,7 +1,6 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-import "../../factory/Factory.sol";
 import "../hub/Spoke.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
@@ -26,7 +25,7 @@ contract PolicyManager is IPolicyManager, Spoke {
 
     constructor (address _hub) public Spoke(_hub) {}
 
-    function register(bytes4 sig, address _policy) public auth {
+    function register(bytes4 sig, address _policy) public onlyManager {
         IPolicy.Applied position = IPolicy(_policy).position();
         if (position == IPolicy.Applied.pre) {
             policies[sig].pre.push(IPolicy(_policy));
@@ -38,7 +37,7 @@ contract PolicyManager is IPolicyManager, Spoke {
         emit Registration(sig, position, _policy);
     }
 
-    function batchRegister(bytes4[] memory sig, address[] memory _policies) public auth {
+    function batchRegister(bytes4[] memory sig, address[] memory _policies) public onlyManager {
         require(sig.length == _policies.length, "Arrays lengths unequal");
         for (uint i = 0; i < sig.length; i++) {
             register(sig[i], _policies[i]);
@@ -103,11 +102,8 @@ contract PolicyManager is IPolicyManager, Spoke {
     }
 }
 
-contract PolicyManagerFactory is Factory {
+contract PolicyManagerFactory {
     function createInstance(address _hub) external returns (address) {
-        address policyManager = address(new PolicyManager(_hub));
-        childExists[policyManager] = true;
-        emit NewInstance(_hub, policyManager);
-        return policyManager;
+        return address(new PolicyManager(_hub));
     }
 }

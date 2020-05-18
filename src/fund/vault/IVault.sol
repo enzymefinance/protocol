@@ -14,9 +14,5 @@ interface IVault {
 /// @title VaultFactory Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IVaultFactory {
-     function createInstance(
-        address,
-        address[] calldata,
-        address
-    ) external returns (address);
+     function createInstance(address, address[] calldata) external returns (address);
 }

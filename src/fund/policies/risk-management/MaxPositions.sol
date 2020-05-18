@@ -22,7 +22,7 @@ contract MaxPositions is TradingSignatures {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IHub hub = IHub(Spoke(msg.sender).getHub());
+        IHub hub = IHub(Spoke(msg.sender).HUB());
         // Always allow a trade INTO the quote asset
         address incomingToken = addresses[2];
         if (Shares(hub.shares()).DENOMINATION_ASSET() == incomingToken) return true;

@@ -1,13 +1,11 @@
 pragma solidity 0.6.4;
 
-import "../../dependencies/DSAuth.sol";
 import "../../dependencies/token/StandardToken.sol";
-import "./ISharesToken.sol";
 
 /// @title SharesToken Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Implementation of a share
-contract SharesToken is ISharesToken, DSAuth, StandardToken {
+contract SharesToken is StandardToken {
     string public symbol;
     string public name;
     uint8 public decimals;
@@ -16,10 +14,6 @@ contract SharesToken is ISharesToken, DSAuth, StandardToken {
         name = _name;
         symbol = "MLNF";
         decimals = 18;
-    }
-
-    function createFor(address who, uint amount) external override auth {
-        _mint(who, amount);
     }
 
     function transfer(address to, uint amount) public override returns (bool) {

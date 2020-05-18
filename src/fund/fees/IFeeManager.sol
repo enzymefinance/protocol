@@ -18,7 +18,6 @@ interface IFeeManagerFactory {
         address,
         address[] calldata,
         uint[] calldata,
-        uint[] calldata,
-        address
+        uint[] calldata
     ) external returns (address);
 }

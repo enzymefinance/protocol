@@ -41,7 +41,9 @@ contract PriceTolerance is TradingSignatures, DSMath {
         view
         returns (bool)
     {
-        IPriceSource pricefeed = IPriceSource(Spoke(msg.sender).priceSource());
+        IPriceSource pricefeed = IPriceSource(
+            IRegistry(IHub(Spoke(msg.sender).HUB()).REGISTRY()).priceSource()
+        );
         uint256 referencePrice;
         (referencePrice,) = pricefeed.getReferencePriceInfo(_takerAsset, _makerAsset);
 

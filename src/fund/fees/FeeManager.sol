@@ -2,10 +2,7 @@ pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import "../../dependencies/DSMath.sol";
-import "../../factory/Factory.sol";
-import "../../registry/IRegistry.sol";
 import "../hub/Spoke.sol";
-import "../shares/ISharesToken.sol";
 import "./IFee.sol";
 import "./IFeeManager.sol";
 
@@ -31,15 +28,14 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
         address _denominationAsset,
         address[] memory _fees,
         uint[] memory _rates,
-        uint[] memory _periods,
-        address _registry
+        uint[] memory _periods
     )
         Spoke(_hub)
         public
     {
         for (uint i = 0; i < _fees.length; i++) {
             require(
-                IRegistry(_registry).feeIsRegistered(_fees[i]),
+                IRegistry(IHub(_hub).REGISTRY()).feeIsRegistered(_fees[i]),
                 "Fee must be known to Registry"
             );
             register(_fees[i], _rates[i], _periods[i], _denominationAsset);
@@ -86,7 +82,7 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
         uint rewardShares = fee.feeAmount();
         if (rewardShares > 0) {
             try fee.updateState() {
-                ISharesToken(routes.shares).createFor(hub.manager(), rewardShares);
+                __getShares().createFor(IHub(HUB).MANAGER(), rewardShares);
                 emit FeeReward(rewardShares);
             }
             catch {}
@@ -122,20 +118,16 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
     }
 }
 
-contract FeeManagerFactory is Factory {
+contract FeeManagerFactory {
     function createInstance(
         address _hub,
         address _denominationAsset,
-        address[] memory _fees,
-        uint[] memory _feeRates,
-        uint[] memory _feePeriods,
-        address _registry
-    ) public returns (address) {
-        address feeManager = address(
-            new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods, _registry)
+        address[] calldata _fees,
+        uint256[] calldata _feeRates,
+        uint256[] calldata _feePeriods
+    ) external returns (address) {
+        return address(
+            new FeeManager(_hub, _denominationAsset, _fees, _feeRates, _feePeriods)
         );
-        childExists[feeManager] = true;
-        emit NewInstance(_hub, feeManager);
-        return feeManager;
     }
 }
