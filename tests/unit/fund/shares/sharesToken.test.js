@@ -35,43 +35,13 @@ describe('constructor', () => {
   });
 
   it('assigns fund name as shares name', async () => {
-    const fundName = await call(fund.hub, 'name');
+    const fundName = await call(fund.hub, 'NAME');
     const sharesName = await call(fund.shares, 'name');
     expect(fundName).toBe(sharesName);
   });
 
   it('has expected symbols and decimals', async () => {
-    const fundName = await call(fund.hub, 'name');
-    const sharesName = await call(fund.shares, 'name');
-    expect(fundName).toBe(sharesName);
     await expect(call(fund.shares, 'symbol')).resolves.toBe('MLNF');
     await expect(call(fund.shares, 'decimals')).resolves.toBe('18');
-  });
-});
-
-describe('createFor', () => {
-  let fund;
-
-  beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
-    fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
-      quoteToken: weth.options.address,
-      fundFactory
-    });
-  });
-
-  it('can NOT be called by the fund manager', async () => {
-    await expect(
-      send(
-        fund.shares,
-        'createFor',
-        [deployer, "1"],
-        defaultTxOpts
-      )
-    ).rejects.toThrowFlexible("ds-auth-unauthorized")
   });
 });

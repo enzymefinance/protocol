@@ -108,7 +108,7 @@ describe('disableAdapters', () => {
           [adaptersToDisable],
           { ...defaultTxOpts, from: maliciousUser }
         )
-      ).rejects.toThrowFlexible("Only the fund manager can make this call");
+      ).rejects.toThrowFlexible("Only the fund manager can call this function");
     });
   
     it('does NOT allow a disabled (non-existant) integration', async () => {
@@ -201,7 +201,7 @@ describe('enableAdapters', () => {
           [adaptersToEnable],
           { ...defaultTxOpts, from: maliciousUser }
         )
-      ).rejects.toThrowFlexible("Only the fund manager can make this call");
+      ).rejects.toThrowFlexible("Only the fund manager can call this function");
     });
   
     it('does NOT allow a previously-added adapter', async () => {

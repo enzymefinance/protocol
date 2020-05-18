@@ -74,7 +74,7 @@ beforeAll(async () => {
     periods: [0, 7776000], // 0 and 90 days
   };
   const fundName = stringToBytes(`Test fund ${Date.now()}`, 32);
-  await send(fundFactory, 'beginSetup', [
+  await send(fundFactory, 'beginFundSetup', [
     fundName,
     fees.contracts,
     fees.rates,
@@ -87,8 +87,12 @@ beforeAll(async () => {
   await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
   await send(fundFactory, 'createShares', [], managerTxOpts);
   await send(fundFactory, 'createVault', [], managerTxOpts);
-  const res = await send(fundFactory, 'completeSetup', [], managerTxOpts);
-  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
+  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOpts);
+  const hubAddress = getEventFromLogs(
+    res.logs,
+    CONTRACT_NAMES.FUND_FACTORY,
+    'FundSetupCompleted'
+  ).hub;
 
   fund = await getFundComponents(hubAddress);
 

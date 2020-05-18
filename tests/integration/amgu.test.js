@@ -114,7 +114,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
 
   await send(
     fundFactory,
-    'beginSetup',
+    'beginFundSetup',
     [
       `test-fund-${Date.now()}`,
       [],
@@ -147,7 +147,7 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
 
   await send(
     fundFactory,
-    'beginSetup',
+    'beginFundSetup',
     [
       `test-fund-${Date.now()}`,
       [],
@@ -164,9 +164,13 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   await assertAmguTx(fundFactory, 'createPolicyManager');
   await assertAmguTx(fundFactory, 'createShares');
   await assertAmguTx(fundFactory, 'createVault');
-  const res = await assertAmguTx(fundFactory, 'completeSetup');
+  const res = await assertAmguTx(fundFactory, 'completeFundSetup');
 
-  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
+  const hubAddress = getEventFromLogs(
+    res.logs,
+    CONTRACT_NAMES.FUND_FACTORY,
+    'FundSetupCompleted'
+  ).hub;
 
   const requestedShares = toWei('100', 'ether');
   const investmentAmount = toWei('100', 'ether');
