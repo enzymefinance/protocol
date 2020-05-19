@@ -2,8 +2,8 @@ pragma solidity 0.6.4;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
-import "../fund/hub/Hub.sol";
-import "../fund/hub/Spoke.sol";
+import "../fund/hub/IHub.sol";
+import "../fund/hub/ISpoke.sol";
 import "../prices/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
@@ -179,8 +179,8 @@ contract Engine is IEngine, DSMath {
         // 1. Spoke points to hub
         // 2. Hub is valid
         // 3. Hub points to vault
-        try Spoke(_who).HUB() returns (address hubAddress) {
-            return registry.fundIsRegistered(hubAddress) && Hub(hubAddress).vault() == _who;
+        try ISpoke(_who).HUB() returns (address hubAddress) {
+            return registry.fundIsRegistered(hubAddress) && IHub(hubAddress).vault() == _who;
         }
         catch {
             return false;
