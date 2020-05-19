@@ -9,15 +9,15 @@ import "./IHub.sol";
 /// @notice Router for communication between components
 /// @notice Has one or more Spokes
 contract Hub is IHub {
-    event FeeManagerSet(address);
+    event FeeManagerSet(address feeManager);
 
-    event PolicyManagerSet(address);
+    event PolicyManagerSet(address policyManager);
 
-    event SharesSet(address);
+    event SharesSet(address shares);
 
-    event VaultSet(address);
+    event VaultSet(address vault);
 
-    event StatusUpdated(FundStatus);
+    event StatusUpdated(FundStatus indexed status);
 
     // Fund vars
     address public override MANAGER;
@@ -47,9 +47,9 @@ contract Hub is IHub {
         REGISTRY = _registry;
     }
 
-    /// @notice Initializes a fund (actives it)
+    /// @notice Initializes a fund (activates it)
     function initializeFund() external onlyFundFactory {
-        require(status == FundStatus.Draft, "initialize: Fund already initialized");
+        require(status == FundStatus.Draft, "initializeFund: Fund already initialized");
 
         status = FundStatus.Active;
         emit StatusUpdated(status);
