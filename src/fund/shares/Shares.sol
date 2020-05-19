@@ -55,7 +55,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         SharesToken(_tokenName)
     {
         require(
-            IRegistry(IHub(_hub).REGISTRY()).assetIsRegistered(_denominationAsset),
+            __getRegistry().assetIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
         DENOMINATION_ASSET = _denominationAsset;

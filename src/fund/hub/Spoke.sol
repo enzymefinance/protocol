@@ -1,5 +1,4 @@
 pragma solidity 0.6.4;
-pragma experimental ABIEncoderV2;
 
 import "../../registry/IRegistry.sol";
 import "../../prices/IPriceSource.sol";
@@ -9,11 +8,12 @@ import "../shares/IShares.sol";
 import "../vault/IVault.sol";
 import "./IHub.sol";
 import "./ISpoke.sol";
+import "./FundRouterMixin.sol";
 
 /// @title Spoke Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A component of a fund connected to a hub
-contract Spoke is ISpoke {
+abstract contract Spoke is ISpoke, FundRouterMixin {
     // TODO: set as immutable upon solidity upgrade
     address public override HUB;
 
@@ -32,7 +32,7 @@ contract Spoke is ISpoke {
     }
 
     function __getFeeManager() internal view returns (IFeeManager) {
-        return IFeeManager(__getHub().feeManager());
+        return IFeeManager(__getFeeManager(HUB));
     }
 
     function __getHub() internal view returns (IHub) {
@@ -40,22 +40,22 @@ contract Spoke is ISpoke {
     }
 
     function __getPolicyManager() internal view returns (IPolicyManager) {
-        return IPolicyManager(__getHub().policyManager());
+        return IPolicyManager(__getPolicyManager(HUB));
     }
 
     function __getPriceSource() internal view returns (IPriceSource) {
-        return IPriceSource(__getRegistry().priceSource());
+        return IPriceSource(__getPriceSource(HUB));
     }
 
     function __getRegistry() internal view returns (IRegistry) {
-        return IRegistry(__getHub().REGISTRY());
+        return IRegistry(__getRegistry(HUB));
     }
 
     function __getShares() internal view returns (IShares) {
-        return IShares(__getHub().shares());
+        return IShares(__getShares(HUB));
     }
 
     function __getVault() internal view returns (IVault) {
-        return IVault(__getHub().vault());
+        return IVault(__getVault(HUB));
     }
 }
