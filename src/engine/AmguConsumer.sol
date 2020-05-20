@@ -3,7 +3,7 @@ pragma solidity 0.6.8;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
-import "../prices/IPriceSource.sol";
+import "../prices/IValueInterpreter.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
 
@@ -64,9 +64,9 @@ abstract contract AmguConsumer is DSMath {
         uint256 mlnPerAmgu = IEngine(REGISTRY.engine()).getAmguPrice();
         if (mlnPerAmgu > 0) {
             uint256 mlnQuantity = mul(mlnPerAmgu, _gasUsed);
-            ethCharged_ = IPriceSource(REGISTRY.priceSource()).convertQuantity(
-                mlnQuantity,
+            (ethCharged_,) = IValueInterpreter(REGISTRY.valueInterpreter()).calcCanonicalAssetValue(
                 REGISTRY.mlnToken(),
+                mlnQuantity,
                 REGISTRY.nativeAsset()
             );
             require(

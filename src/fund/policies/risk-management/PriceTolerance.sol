@@ -4,6 +4,7 @@ pragma solidity 0.6.8;
 import "../TradingSignatures.sol";
 import "../../hub/Spoke.sol";
 import "../../../dependencies/DSMath.sol";
+import "../../../dependencies/token/IERC20.sol";
 import "../../../integrations/interfaces/IOasisDex.sol";
 import "../../../prices/IPriceSource.sol";
 
@@ -46,13 +47,12 @@ contract PriceTolerance is TradingSignatures, DSMath {
             IRegistry(IHub(Spoke(msg.sender).HUB()).REGISTRY()).priceSource()
         );
         uint256 referencePrice;
-        (referencePrice,) = pricefeed.getReferencePriceInfo(_takerAsset, _makerAsset);
+        (referencePrice,) = pricefeed.getLiveRate(_takerAsset, _makerAsset);
 
-        uint256 orderPrice = pricefeed.getOrderPriceInfo(
-            _takerAsset,
-            _fillTakerQuantity,
-            _fillMakerQuantity
-        );
+        uint256 orderPrice = mul(
+            _fillMakerQuantity,
+            10 ** uint256(ERC20WithFields(_takerAsset).decimals())
+        ) / _fillTakerQuantity;
 
         return orderPrice >= sub(
             referencePrice,
