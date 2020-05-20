@@ -30,6 +30,8 @@ contract Registry is DSAuth {
 
     event FeeRemoved (address fee);
 
+    event FundAdded (address indexed manager, address hub, bytes32 hashedName);
+
     event FundFactoryChanged (address fundFactory);
 
     event IncentiveChanged (uint256 incentiveAmount);
@@ -63,8 +65,12 @@ contract Registry is DSAuth {
     // Derivatives (tokens representing underlying assets, e.g,. cDai)
     mapping (address => address) public derivativeToPriceSource;
 
+    // Fund Factories
+    mapping (address => bool) public fundFactoryIsRegistered;
+
     // Funds
     mapping (address => bool) public fundIsRegistered;
+    mapping (bytes32 => bool) public fundNameHashIsTaken;
     mapping (address => address[]) public managerToFunds;
 
     address public engine;
@@ -172,15 +178,19 @@ contract Registry is DSAuth {
     /// @notice Add a fund to the Registry
     /// @param _hub The Hub for the fund
     /// @param _manager The manager of the fund
-    function registerFund(address _hub, address _manager) external {
+    function registerFund(address _hub, address _manager, bytes32 _hashedName) external {
         require(
-            msg.sender == fundFactory,
+            fundFactoryIsRegistered[msg.sender],
             "registerFund: Only fundFactory can call this function"
         );
         require(!fundIsRegistered[_hub], "registerFund: Fund is already registered");
+        require(!fundNameHashIsTaken[_hashedName], "registerFund: Fund name is already taken");
 
         fundIsRegistered[_hub] = true;
+        fundNameHashIsTaken[_hashedName] = true;
         managerToFunds[_manager].push(_hub);
+
+        emit FundAdded(_manager, _hub, _hashedName);
     }
 
     // POLICIES
@@ -291,6 +301,7 @@ contract Registry is DSAuth {
     /// @param _fundFactory The FundFactory contract to set
     function setFundFactory(address _fundFactory) external auth {
         fundFactory = _fundFactory;
+        fundFactoryIsRegistered[_fundFactory] = true;
         emit FundFactoryChanged(_fundFactory);
     }
 

@@ -27,6 +27,6 @@ interface IRegistry {
     function nativeAsset() external view returns(address);
     function owner() external view returns(address);
     function priceSource() external view returns(address);
-    function registerFund(address _fund, address _owner) external;
+    function registerFund(address, address, bytes32) external;
     function sharesRequestor() external view returns(address);
 }
