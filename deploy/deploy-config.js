@@ -1,5 +1,5 @@
 module.exports = {
-  track: 'TESTING',
+  track: 'KYBER_PRICE',
   accounts: [
     '0xC0c82081f2Ad248391cd1483ae211d56c280887a'
   ],
@@ -20,6 +20,7 @@ module.exports = {
   melonRegistryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
   melonEngineDelay: 2592000,
   melonMaxSpread: '100000000000000000',
+  melonMaxPriceDeviation: '100000000000000000',
   melonFundFactoryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
   melonInitialMGM: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
   melonVersionName: 'Fakename',

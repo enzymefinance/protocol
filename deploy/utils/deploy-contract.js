@@ -66,12 +66,16 @@ const send = async (contract, method=undefined, args=[], opts={}, web3) => {
     }`
   );
   let account;
+  const accounts = await web3.eth.getAccounts(); // TODO: needed?
   if (opts.from) {
     account = web3.eth.accounts.wallet[opts.from];
   } else { // default to first account
+    // const accounts = await web3.eth.getAccounts();
+    // console.log(accounts)
+    // account = accounts[0];
     account = web3.eth.accounts.wallet['0'];
   }
-  const nonce = await getNextNonce(account);
+  const nonce = await getNextNonce(account, web3);
   const clonedDefaults = Object.assign({}, defaultOptions);
 
   let txFunction;
@@ -119,6 +123,8 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
   if (overrideOpts.from) {
     account = web3.eth.accounts.wallet[overrideOpts.from];
   } else { // default to first account
+    // const accounts = await web3.eth.getAccounts();
+    // account = accounts[0];
     account = web3.eth.accounts.wallet['0'];
   }
   const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
@@ -138,7 +144,7 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
     gas = overrideOpts.gas;
   }
   const input = await txFunction.encodeABI();
-  const nonce = await getNextNonce(account);
+  const nonce = await getNextNonce(account, web3);
   const clonedDefaults = Object.assign({}, defaultOptions);
   const normalOpts = Object.assign(
     clonedDefaults,
@@ -160,7 +166,7 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
 
 // get a contract with some address
 const fetchContract = (name, address, web3) => {
-  const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.abi`, 'utf8'));
+  const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.json`, 'utf8')).abi;
   stdout(`Fetching ${name} at ${address}`);
   const contract = new web3.eth.Contract(abi, address);
   return contract;
@@ -169,16 +175,15 @@ const fetchContract = (name, address, web3) => {
 // get address from deploy input if we have one
 // otherwise deploy it with args
 // TODO: better document
-const nab = async (name, args, input, explicitKey=null, libs=[]) => {
+const nab = async (name, args, input, explicitKey=null, libs=[], web3) => {
   let contract;
   const key = explicitKey || name;
   if (input[key] === '' || input[key] === undefined) {
     contract = await deploy(name, args, {}, libs);
   } else {
-    contract = fetchContract(name, input[key]);
+    contract = fetchContract(name, input[key], web3);
   }
   return contract;
 }
 
 module.exports = { call, send, deploy, fetchContract, nab };
-

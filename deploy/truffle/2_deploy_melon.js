@@ -1,5 +1,7 @@
+const web3Utils =  require('web3-utils');
+const BN = web3Utils.BN;
+const toWei = web3Utils.toWei;
 const conf = require('../deploy-config.js');
-const BN = web3.utils.BN;
 
 const KyberAdapter = artifacts.require('KyberAdapter');
 const OasisDexAdapter = artifacts.require('OasisDexAdapter');
@@ -32,6 +34,64 @@ const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
 // const AirSwapSwap = artifacts.require('AirSwapSwap');
 const UniswapFactory = artifacts.require('UniswapFactory');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+// TODO: put in own module
+const updateFeed = async (feed, web3) => {
+  const quoteAsset = await call(feed, 'QUOTE_ASSET', [], {}, web3);
+  const registryAddress = await call(feed, 'registry', [], {}, web3);
+  const registry = getDeployed('Registry', registryAddress, web3);
+  const tokens = await call(registry, 'getRegisteredAssets', [], {}, web3);
+  const prices = []; // TODO: convert to promise.all
+  for (const token of tokens) {
+    console.log(`For ${token}`)
+    let tokenPrice;
+    if (token.toLowerCase() === quoteAsset.toLowerCase())
+      tokenPrice = toWei('1', 'ether');
+    else
+      tokenPrice = (await call(feed, 'getKyberPrice', [token, quoteAsset], {}, web3)).kyberPrice_
+    console.log(tokenPrice);
+    prices.push(tokenPrice);
+  }
+  await send(feed, 'update', [tokens, prices], {}, web3);
+}
+
+/////////
+const updateFeedTruffle = async (feed, registry) => {
+  const quoteAsset = await feed.QUOTE_ASSET();
+  const tokens = await registry.getRegisteredAssets();
+  console.log(tokens)
+  const prices = []; // TODO: convert to promise.all
+  prices = [
+    '1000000000000000000',
+    '15493827448525507',
+    '7155317708731349',
+    '0',
+    '0',
+    '3493602270127730',
+    '0',
+    '0',
+    '0',
+    '0',
+    '413146688368029',
+    '0',
+    '0',
+    '5255018519617450',
+    '46814674803388154855',
+    '0'
+  ];
+  // for (const token of tokens) {
+  //   console.log(`For ${token}`)
+  //   let tokenPrice;
+  //   if (token.toLowerCase() === quoteAsset.toLowerCase())
+  //     tokenPrice = toWei('1', 'ether');
+  //   else
+  //     tokenPrice = (await feed.getKyberPrice(token, quoteAsset)).kyberPrice_;
+  //   console.log(tokenPrice);
+  //   prices.push(tokenPrice.toString());
+  // }
+  console.log(prices);
+  await feed.update(tokens, prices);
+}
 
 // TODO: split this file into multiple migrations
 module.exports = async deployer => {
@@ -72,7 +132,7 @@ module.exports = async deployer => {
       kyberNetworkProxy.address,
       conf.melonMaxSpread,
       weth.address,
-      conf.melonInitialUpdater
+      conf.melonMaxPriceDeviation
     );
   } else if (conf.track === 'TESTING') {
     priceSource = await deployer.deploy(TestingPriceFeed, weth.address, 18);
@@ -185,11 +245,17 @@ module.exports = async deployer => {
 
   await registry.setFundFactory(fundFactory.address);
 
-  if (conf.track === 'KYBER_PRICE')
-    await priceSource.update();
-  else if (conf.track === 'TESTING') {
+  await updateFeedTruffle(priceSource, registry);
+
+  // if (conf.track === 'KYBER_PRICE')
+  //   await priceSource.update();
+  // else if (conf.track === 'TESTING') {
     // // TODO: get actual prices
     // const fakePrices = Object.values(tokenAddrs).map(() => (new BN('10')).pow(new BN('18')).toString());
     // await priceSource.update(Object.values(tokenAddrs), fakePrices);
-  }
+  // }
+
+  // TODO: own file
+  // post-deploy step to get tokens
+  // await weth.deposit({value: toWei('10000', 'ether')});
 }
