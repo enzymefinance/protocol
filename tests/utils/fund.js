@@ -9,39 +9,36 @@ import { getEventFromLogs } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
 import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 
-export const getFundComponents = async hubAddress => {
+export const getFundComponents = async (hubAddress, web3) => {
   const components = {};
-  components.hub = fetchContract('Hub', hubAddress);
-  components.feeManager = fetchContract(
-    'FeeManager',
-    await call(components.hub, 'feeManager')
-  );
-  components.policyManager = fetchContract(
-    'PolicyManager',
-    await call(components.hub, 'policyManager')
-  );
-  components.shares = fetchContract(
-    'Shares',
-    await call(components.hub, 'shares')
-  );
-  components.vault = fetchContract(
-    'Vault',
-    await call(components.hub, 'vault')
-  );
 
+  components.hub = fetchContract('Hub', hubAddress, web3);
+  const routes = await call(components.hub, 'routes');
+  components.feeManager = fetchContract('FeeManager', routes.feeManager, web3);
+  components.policyManager = fetchContract('PolicyManager', routes.policyManager, web3);
+  components.shares = fetchContract('Shares', routes.shares, web3);
+  components.vault = fetchContract('Vault', routes.vault, web3);
   return components;
 }
 
-export const investInFund = async ({ fundAddress, investment, amguTxValue, tokenPriceData }) => {
+export const investInFund = async ({
+  fundAddress,
+  investment,
+  amguTxValue,
+  tokenPriceData,
+  web3
+}) => {
   const { contribAmount, tokenContract, investor, isInitial = false } = investment;
   const investorTxOpts = { from: investor, gas: 8000000 };
 
-  const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress);
-  const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'));
-  const shares = fetchContract(CONTRACT_NAMES.SHARES,  await call(hub, 'shares'));
+  const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress, web3);
+  const routes = await call(hub, 'routes');
+  const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'), web3);
+  const shares = fetchContract(CONTRACT_NAMES.SHARES,  await call(hub, 'shares'), web3);
   const sharesRequestor = fetchContract(
     CONTRACT_NAMES.SHARES_REQUESTOR,
-    await call(registry, 'sharesRequestor')  
+    await call(registry, 'sharesRequestor'),
+    web3
   );
   // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
   if (!amguTxValue) {
@@ -69,11 +66,15 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
   );
   const investorTokenShortfall =
     new BN(contribAmount).sub(investorTokenBalance);
+  console.log(investorTokenShortfall.toString())
+  console.log(tokenContract.options.address)
   if (investorTokenShortfall.gt(new BN(0))) {
     await send(
       tokenContract,
       'transfer',
-      [investor, investorTokenShortfall.toString()]
+      [investor, investorTokenShortfall.toString()],
+      investorTxOpts,
+      web3
     )
   }
   // Invest in fund
@@ -81,13 +82,15 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
     tokenContract,
     'approve',
     [sharesRequestor.options.address, contribAmount],
-    investorTxOpts
+    investorTxOpts,
+    web3
   )
   await send(
     sharesRequestor,
     'requestShares',
     [hub.options.address, tokenContract.options.address, contribAmount, wantedShares],
-    { ...investorTxOpts, value: amguTxValue }
+    { ...investorTxOpts, value: amguTxValue },
+    web3
   );
 
   // Update prices and executes reqeust if not initial investment
@@ -102,7 +105,8 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
       sharesRequestor,
       'executeRequestFor',
       [investor, hub.options.address],
-      { ...investorTxOpts, value: amguTxValue }
+      { ...investorTxOpts, value: amguTxValue },
+      web3
     );
   }
 }
@@ -124,7 +128,8 @@ export const setupFundWithParams = async ({
   manager,
   name = `test-fund-${Date.now()}`,
   quoteToken,
-  fundFactory
+  fundFactory,
+  web3
 }) => {
   const managerTxOpts = { from: manager, gas: 8000000 };
 
@@ -146,21 +151,22 @@ export const setupFundWithParams = async ({
       quoteToken,
       defaultTokens,
     ],
-    managerTxOpts
+    managerTxOpts,
+    web3
   );
 
-  await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu);
-  await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu);
-  await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu);
-  await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu);
-  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu, web3);
+  await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu, web3);
+  await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu, web3);
+  await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu, web3);
+  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOptsWithAmgu, web3);
 
   const hubAddress = getEventFromLogs(
     res.logs,
     CONTRACT_NAMES.FUND_FACTORY,
     'FundSetupCompleted'
   ).hub;
-  const fund = await getFundComponents(hubAddress);
+  const fund = await getFundComponents(hubAddress, web3);
 
   // Make initial investment, if applicable
   if (new BN(initialInvestment.contribAmount).gt(new BN(0))) {
@@ -168,6 +174,7 @@ export const setupFundWithParams = async ({
       amguTxValue,
       fundAddress: fund.hub.options.address,
       investment: { ...initialInvestment, isInitial: true },
+      web3
     });
   }
 

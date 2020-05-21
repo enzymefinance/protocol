@@ -2,7 +2,7 @@ import web3EthAbi from 'web3-eth-abi';
 import { readFileSync } from 'fs';
 
 export const getABI = contractName =>
-  JSON.parse(readFileSync(`out/${contractName}.abi`, "utf8"));
+  JSON.parse(readFileSync(`out/${contractName}.json`, "utf8")).abi;
 
 export const getEventFromReceipt = (receiptEvents, contractName, eventName) => {
   const abi = getABI(contractName);
