@@ -368,7 +368,7 @@ describe('executeRequestFor', () => {
           basicRequest,
           { ...basicTokenPriceData, tokenPrices: ["0", toWei('2', 'ether')] }
         )        
-      ).rejects.toThrowFlexible("Price not valid");      
+      ).rejects.toThrowFlexible("No valid price available for asset");      
     });
   });
 
