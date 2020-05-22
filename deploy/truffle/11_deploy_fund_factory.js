@@ -1,8 +1,9 @@
 const conf = require('../deploy-config.js');
 
-const Registry = artifacts.require('Registry');
 const FeeManagerFactory = artifacts.require('FeeManagerFactory');
+const FundFactory = artifacts.require('FundFactory');
 const PolicyManagerFactory = artifacts.require('PolicyManagerFactory');
+const Registry = artifacts.require('Registry');
 const SharesFactory = artifacts.require('SharesFactory');
 const VaultFactory = artifacts.require('VaultFactory');
 
