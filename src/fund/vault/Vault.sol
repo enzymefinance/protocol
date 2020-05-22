@@ -3,8 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../dependencies/libs/EnumerableSet.sol";
 import "../../dependencies/TokenUser.sol";
-import "../../factory/Factory.sol";
-import "../../registry/IRegistry.sol";
 import "../hub/Spoke.sol";
 import "./IVault.sol";
 
@@ -46,31 +44,7 @@ contract Vault is IVault, TokenUser, Spoke {
         _;
     }
 
-    modifier onlyManager() {
-        require(
-            msg.sender == hub.manager(),
-            "Only the fund manager can make this call"
-        );
-        _;
-    }
-
-    modifier onlyShares() {
-        require(
-            msg.sender == hub.shares(),
-            "Only the Shares contract can make this call"
-        );
-        _;
-    }
-
-    constructor(
-        address _hub,
-        address[] memory _adapters,
-        address _registry
-    )
-        public
-        Spoke(_hub)
-    {
-        routes.registry = _registry;
+    constructor(address _hub, address[] memory _adapters) public Spoke(_hub) {
         if (_adapters.length > 0) {
             __enableAdapters(_adapters);
         }
@@ -174,15 +148,11 @@ contract Vault is IVault, TokenUser, Spoke {
         bytes memory _encodedArgs
     )
         public // TODO: leaving as public because it will need this for multiCallOnIntegration
-        onlyInitialized
+        onlyManager
     {
         require(
-            hub.manager() == msg.sender,
-            "callOnIntegration: Only fund manager can call this function"
-        );
-        require(
-            !hub.isShutDown(),
-            "callOnIntegration: Hub must not be shut down"
+            __getHub().status() == IHub.FundStatus.Active,
+            "callOnIntegration: Hub must be active"
         );
         require(
             __adapterIsEnabled(_adapter),
@@ -242,7 +212,7 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @dev Fails if an already-enabled adapter is passed;
     /// important to assure Integration Info is not unintentionally updated from Registry
     function __enableAdapters(address[] memory _adapters) private {
-        IRegistry registry = IRegistry(routes.registry);
+        IRegistry registry = __getRegistry();
         for (uint256 i = 0; i < _adapters.length; i++) {
             require(
                 registry.integrationAdapterIsRegistered(_adapters[i]),
@@ -289,28 +259,11 @@ contract Vault is IVault, TokenUser, Spoke {
     }
 }
 
-contract VaultFactory is Factory {
-    event NewInstance(
-        address indexed hub,
-        address indexed instance,
-        address[] adapters
-    );
-
-    function createInstance(
-        address _hub,
-        address[] memory _adapters,
-        address _registry
-    )
-        public
+contract VaultFactory {
+    function createInstance(address _hub, address[] calldata _adapters)
+        external
         returns (address)
     {
-        address vault = address(new Vault(_hub, _adapters, _registry));
-        childExists[vault] = true;
-        emit NewInstance(
-            _hub,
-            vault,
-            _adapters
-        );
-        return vault;
+        return address(new Vault(_hub, _adapters));
     }
 }

@@ -33,8 +33,7 @@ const main = async input => {
     sharesFactory.options.address,
     vaultFactory.options.address,
     policyManagerFactory.options.address,
-    registry.options.address,
-    melonConf.fundFactoryOwner
+    registry.options.address
   ], melonAddrs);
   const previousRegisteredFundFactory = await call(registry, 'fundFactory');
   if (`${previousRegisteredFundFactory}`.toLowerCase() !== fundFactory.options.address.toLowerCase()) {

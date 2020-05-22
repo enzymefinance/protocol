@@ -28,7 +28,8 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
         ) = __extractTakeOrderRiskManagementArgs(_targetExchange, _encodedArgs);
 
         // TODO: OasisDex identifier is not 0x0
-        IPolicyManager(__getRoutes().policyManager).preValidate(
+        address policyManagerAddress = IHub(ISpoke(address(this)).HUB()).policyManager();
+        IPolicyManager(policyManagerAddress).preValidate(
             TAKE_ORDER,
             [
                 riskManagementAddresses[0],
@@ -61,7 +62,7 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
             __encodeOrderFillData(fillAssets, fillExpectedAmounts, fillApprovalTargets)
         );
 
-        IPolicyManager(__getRoutes().policyManager).postValidate(
+        IPolicyManager(policyManagerAddress).postValidate(
             TAKE_ORDER,
             [
                 riskManagementAddresses[0],

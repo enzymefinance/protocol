@@ -22,7 +22,7 @@ beforeAll(async () => {
   
   await send(
     fundFactory,
-    'beginSetup',
+    'beginFundSetup',
     [
       `test-fund-${Date.now()}`,
       [],
@@ -44,6 +44,6 @@ test('continue setup of a fund', async () => {
   await send(fundFactory, 'createPolicyManagerFor', [manager], userTxOptsWithAmgu);
   await send(fundFactory, 'createSharesFor', [manager], userTxOptsWithAmgu);
   await send(fundFactory, 'createVaultFor', [manager], userTxOptsWithAmgu);
-  const res = await send(fundFactory, 'completeSetupFor', [manager], userTxOptsWithAmgu);
+  const res = await send(fundFactory, 'completeFundSetupFor', [manager], userTxOptsWithAmgu);
   expect(res).toBeTruthy();
 });

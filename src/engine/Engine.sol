@@ -2,6 +2,7 @@ pragma solidity 0.6.4;
 
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
+import "../fund/hub/IHub.sol";
 import "../fund/hub/ISpoke.sol";
 import "../prices/IPriceSource.sol";
 import "../registry/IRegistry.sol";
@@ -92,10 +93,9 @@ contract Engine is IEngine, DSMath {
 
     function payAmguInEther() external payable override {
         require(
-            registry.fundFactory() == msg.sender ||
-            __isHubOrSpoke(msg.sender) ||
+            msg.sender == registry.fundFactory() ||
             msg.sender == registry.sharesRequestor(),
-            "Sender must be a fund or the factory"
+            "Sender must be FundFactory or SharesRequestor"
         );
         uint256 mlnPerAmgu = getAmguPrice();
         uint256 ethPerMln;
@@ -139,8 +139,9 @@ contract Engine is IEngine, DSMath {
     }
 
     /// @notice MLN must be approved first
+    /// @dev Only Vault can call this function (via EngineAdapter)
     function sellAndBurnMln(uint256 _mlnAmount) external override {
-        require(__isHubOrSpoke(msg.sender), "Only funds can use the engine");
+        require(__isValidVault(msg.sender), "Only fund vault can use the engine");
         require(
             mlnToken().transferFrom(msg.sender, address(this), _mlnAmount),
             "MLN transferFrom failed"
@@ -173,21 +174,16 @@ contract Engine is IEngine, DSMath {
         return IPriceSource(registry.priceSource());
     }
 
-    /// @notice Helper to check whether an address is either a Hub or a Spoke
-    function __isHubOrSpoke(address _who) private view returns (bool) {
-        // Check if hub
-        if (registry.fundIsRegistered(_who)) return true;
-        // Check if spoke
-        else {
-            // 1. Spoke points to hub
-            // 2. Hub confirms it is a spoke
-            // 3. Fund exists for hub
-            try ISpoke(_who).getHub() returns (IHub hub) {
-                return hub.isSpoke(_who) && registry.fundIsRegistered(address(hub));
-            }
-            catch {
-                return false;
-            }
+    /// @notice Helper to check whether an address is a valid fund Vault
+    function __isValidVault(address _who) private view returns (bool) {
+        // 1. Spoke points to hub
+        // 2. Hub is valid
+        // 3. Hub points to vault
+        try ISpoke(_who).HUB() returns (address hubAddress) {
+            return registry.fundIsRegistered(hubAddress) && IHub(hubAddress).vault() == _who;
+        }
+        catch {
+            return false;
         }
     }
 }

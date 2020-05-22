@@ -4,13 +4,12 @@ pragma experimental ABIEncoderV2;
 import "./IntegrationAdapter.sol";
 import "../../dependencies/DSMath.sol";
 import "../../dependencies/token/IERC20.sol";
-import "../../fund/hub/SpokeAccessor.sol";
 import "../../fund/vault/IVault.sol";
 
 /// @title OrderFiller Base Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Base contract for standardizing the filled amounts of assets
-abstract contract OrderFiller is DSMath, SpokeAccessor, IntegrationAdapter {
+abstract contract OrderFiller is DSMath, IntegrationAdapter {
     event OrderFilled(
         address indexed targetContract,
         address buyAsset,

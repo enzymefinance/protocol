@@ -12,11 +12,22 @@ import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
 export const getFundComponents = async hubAddress => {
   const components = {};
   components.hub = fetchContract('Hub', hubAddress);
-  const routes = await call(components.hub, 'routes');
-  components.feeManager = fetchContract('FeeManager', routes.feeManager);
-  components.policyManager = fetchContract('PolicyManager', routes.policyManager);
-  components.shares = fetchContract('Shares', routes.shares);
-  components.vault = fetchContract('Vault', routes.vault);
+  components.feeManager = fetchContract(
+    'FeeManager',
+    await call(components.hub, 'feeManager')
+  );
+  components.policyManager = fetchContract(
+    'PolicyManager',
+    await call(components.hub, 'policyManager')
+  );
+  components.shares = fetchContract(
+    'Shares',
+    await call(components.hub, 'shares')
+  );
+  components.vault = fetchContract(
+    'Vault',
+    await call(components.hub, 'vault')
+  );
 
   return components;
 }
@@ -26,9 +37,8 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
   const investorTxOpts = { from: investor, gas: 8000000 };
 
   const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress);
-  const routes = await call(hub, 'routes');
-  const registry = fetchContract(CONTRACT_NAMES.REGISTRY, routes.registry);
-  const shares = fetchContract(CONTRACT_NAMES.SHARES, routes.shares);
+  const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'));
+  const shares = fetchContract(CONTRACT_NAMES.SHARES,  await call(hub, 'shares'));
   const sharesRequestor = fetchContract(
     CONTRACT_NAMES.SHARES_REQUESTOR,
     await call(registry, 'sharesRequestor')  
@@ -126,7 +136,7 @@ export const setupFundWithParams = async ({
 
   await send(
     fundFactory,
-    'beginSetup',
+    'beginFundSetup',
     [
       name,
       fees.addresses,
@@ -143,9 +153,13 @@ export const setupFundWithParams = async ({
   await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu);
   await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu);
-  const res = await send(fundFactory, 'completeSetup', [], managerTxOptsWithAmgu);
+  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOptsWithAmgu);
 
-  const hubAddress = getEventFromLogs(res.logs, CONTRACT_NAMES.FUND_FACTORY, 'NewFund').hub;
+  const hubAddress = getEventFromLogs(
+    res.logs,
+    CONTRACT_NAMES.FUND_FACTORY,
+    'FundSetupCompleted'
+  ).hub;
   const fund = await getFundComponents(hubAddress);
 
   // Make initial investment, if applicable

@@ -8,17 +8,31 @@ import "../fund/shares/IShares.sol";
 import "../fund/vault/IVault.sol";
 import "../engine/AmguConsumer.sol";
 import "../registry/IRegistry.sol";
-import "./Factory.sol";
 
 /// @title FundFactory Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Creates fund routes and links them together
-contract FundFactory is AmguConsumer, Factory, DSAuth {
-    event NewFund(
+contract FundFactory is AmguConsumer {
+     // TODO: Add PendingFundSettings if we keep them
+    event FundSetupBegun(address indexed manager, address hub);
+
+    event FundSetupCompleted(address indexed manager, address indexed hub);
+
+    event HubCreated(address indexed manager, address hub);
+
+    event FeeManagerCreated(address indexed manager, address indexed hub, address feeManager);
+
+    event PolicyManagerCreated(
         address indexed manager,
         address indexed hub,
-        address[6] routes
+        address policyManager
     );
+
+    event SharesCreated(address indexed manager, address indexed hub, address shares);
+
+    event VaultCreated(address indexed manager, address indexed hub, address vault);
+
+    event FundNameTaken(address indexed manager, string name);
 
     IFeeManagerFactory public feeManagerFactory;
     IPolicyManagerFactory public policyManagerFactory;
@@ -28,12 +42,11 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
     mapping (bytes32 => bool) public fundNameHashIsTaken;
 
     // A manager can only have one pending fund
-    mapping (address => address) public managerToHub;
-    mapping (address => Hub.Routes) public managerToRoutes;
-    mapping (address => Settings) public managerToSettings;
+    mapping (address => address) public managerToPendingFundHub;
+    mapping (address => PendingFundSettings) public managerToPendingFundSettings;
 
     // Parameters stored when beginning setup
-    struct Settings {
+    struct PendingFundSettings {
         string name;
         address[] adapters;
         address denominationAsset;
@@ -48,39 +61,35 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         address _sharesFactory,
         address _vaultFactory,
         address _policyManagerFactory,
-        address _registry,
-        address _postDeployOwner
+        address _registry
     )
         AmguConsumer(_registry)
         public
     {
-        setOwner(_postDeployOwner);
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         sharesFactory = ISharesFactory(_sharesFactory);
         vaultFactory = IVaultFactory(_vaultFactory);
         policyManagerFactory = IPolicyManagerFactory(_policyManagerFactory);
     }
 
-    modifier onlyNonSetComponent(address _component) {
-        require(
-            !__componentExists(_component),
-            "ensureComponentNotSet: Component has already been set"
-        );
+    modifier onlyHasPendingFund(address _manager) {
+        require(__hasPendingFund(_manager), "No pending fund for manager");
         _;
     }
 
-    modifier onlySetComponent(address _component) {
-        require(
-            __componentExists(_component),
-            "ensureComponentNotSet: Component has not been set"
-        );
-        _;
-    }
+    // EXTERNAL FUNCTIONS
 
-    // TODO: change to external (fails on stack error with all the calldata params currently)
     // TODO: add policies
     // TODO: fees and policies likely to be set up by directly calling the mandate component with encoded data
-    function beginSetup(
+    /// @notice The first action in setting up a fund, where the parameters of a fund are defined
+    /// @param _name The fund's name
+    /// @param _fees The Fee contract addresses to use in the fund
+    /// @param _feeRates The rates to use with each Fee contracts
+    /// @param _feePeriods The period to use in each Fee contracts
+    /// @param _adapters The integration adapters to use to interact with external protocols
+    /// @param _denominationAsset The asset in which to denominate share price and measure fund performance
+    /// @param _defaultSharesInvestmentAssets The initial assets with which and investor can invest
+    function beginFundSetup(
         string memory _name,
         address[] memory _fees,
         uint256[] memory _feeRates, // encode?
@@ -91,23 +100,27 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         address _denominationAsset,
         address[] memory _defaultSharesInvestmentAssets
     )
-        public
-        onlyNonSetComponent(managerToHub[msg.sender])
+        public // TODO: change to `external` in future solidity version (calldata fails on stack error)
     {
+        require(!__hasPendingFund(msg.sender), "beginFundSetup: Sender has another fund pending");
         require(
             REGISTRY.assetIsRegistered(_denominationAsset),
-            "beginSetup: Denomination asset must be registered"
-        );
-        require(isValidFundName(_name), "beginSetup: Fund name is not valid");
-        bytes32 nameHash = __hashFundName(_name);
-        require(
-            !fundNameHashIsTaken[nameHash],
-            "beginSetup: Fund name already registered"
+            "beginFundSetup: Denomination asset must be registered"
         );
 
-        fundNameHashIsTaken[nameHash] = true;
-        managerToHub[msg.sender] = address(new Hub(msg.sender, _name));
-        managerToSettings[msg.sender] = Settings(
+        // Validate and reserve name
+        __takeFundName(_name);
+
+        // Create Hub
+        address hubAddress = address(new Hub(address(REGISTRY), msg.sender, _name));
+        emit HubCreated(msg.sender, hubAddress);
+
+        // Add Pending Fund
+        managerToPendingFundHub[msg.sender] = hubAddress;
+        emit FundSetupBegun(msg.sender, hubAddress);
+
+        // Store settings for the remaining steps
+        managerToPendingFundSettings[msg.sender] = PendingFundSettings(
             _name,
             _adapters,
             _denominationAsset,
@@ -116,137 +129,69 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
             _feeRates,
             _feePeriods
         );
-        managerToRoutes[msg.sender].registry = address(REGISTRY);
-        managerToRoutes[msg.sender].fundFactory = address(this); // TODO: Remove if Registry + FundFactory combined
     }
 
-    function __createFeeManagerFor(address _manager)
-        private
-        onlySetComponent(managerToHub[_manager])
-        onlyNonSetComponent(managerToRoutes[_manager].feeManager)
-    {
-        managerToRoutes[_manager].feeManager = feeManagerFactory.createInstance(
-            managerToHub[_manager],
-            managerToSettings[_manager].denominationAsset,
-            managerToSettings[_manager].fees,
-            managerToSettings[_manager].feeRates,
-            managerToSettings[_manager].feePeriods,
-            managerToRoutes[_manager].registry
-        );
-    }
-
+    /// @notice Creates a FeeManager component for a particular fund manager's fund
+    /// @param _manager The fund manager for whom the component should be created
     function createFeeManagerFor(address _manager) external amguPayable payable {
         __createFeeManagerFor(_manager);
     }
 
-    function createFeeManager() external amguPayable payable { __createFeeManagerFor(msg.sender); }
-
-    function __createPolicyManagerFor(address _manager)
-        private
-        onlySetComponent(managerToHub[_manager])
-        onlyNonSetComponent(managerToRoutes[_manager].policyManager)
-    {
-        managerToRoutes[_manager].policyManager = policyManagerFactory.createInstance(
-            managerToHub[_manager]
-        );
+    /// @notice Creates a FeeManager component for the sender's fund
+    function createFeeManager() external amguPayable payable {
+        __createFeeManagerFor(msg.sender);
     }
 
+    /// @notice Creates a PolicyManager component for a particular fund manager's fund
+    /// @param _manager The fund manager for whom the component should be created
     function createPolicyManagerFor(address _manager) external amguPayable payable {
         __createPolicyManagerFor(_manager);
     }
 
+    /// @notice Creates a PolicyManager component for the sender's fund
     function createPolicyManager() external amguPayable payable {
         __createPolicyManagerFor(msg.sender);
     }
 
-    function __createSharesFor(address _manager)
-        private
-        onlySetComponent(managerToHub[_manager])
-        onlyNonSetComponent(managerToRoutes[_manager].shares)
-    {
-        managerToRoutes[_manager].shares = sharesFactory.createInstance(
-            managerToHub[_manager],
-            managerToSettings[_manager].denominationAsset,
-            managerToSettings[_manager].defaultSharesInvestmentAssets,
-            managerToRoutes[_manager].registry
-        );
-    }
-
+    /// @notice Creates a Shares component for a particular fund manager's fund
+    /// @param _manager The fund manager for whom the component should be created
     function createSharesFor(address _manager) external amguPayable payable {
         __createSharesFor(_manager);
     }
 
-    function createShares() external amguPayable payable { __createSharesFor(msg.sender); }
-
-    function __createVaultFor(address _manager)
-        private
-        onlySetComponent(managerToHub[_manager])
-        onlyNonSetComponent(managerToRoutes[_manager].vault)
-    {
-        managerToRoutes[_manager].vault = vaultFactory.createInstance(
-            managerToHub[_manager],
-            managerToSettings[_manager].adapters,
-            managerToRoutes[_manager].registry
-        );
+    /// @notice Creates a Shares component for the sender's fund
+    function createShares() external amguPayable payable {
+        __createSharesFor(msg.sender);
     }
 
+    /// @notice Creates a Vault component for a particular fund manager's fund
+    /// @param _manager The fund manager for whom the component should be created
     function createVaultFor(address _manager) external amguPayable payable {
         __createVaultFor(_manager);
     }
 
-    function createVault() external amguPayable payable { __createVaultFor(msg.sender); }
-
-    function __completeSetupFor(address _manager) private {
-        Hub.Routes memory routes = managerToRoutes[_manager];
-        Hub hub = Hub(managerToHub[_manager]);
-        require(!childExists[address(hub)], "__completeSetupFor: Setup already complete");
-        require(
-            __componentExists(address(hub)) &&
-            __componentExists(routes.feeManager) &&
-            __componentExists(routes.policyManager) &&
-            __componentExists(routes.shares) &&
-            __componentExists(routes.vault),
-            "__completeSetupFor: All components must be set before completing setup"
-        );
-        childExists[address(hub)] = true;
-        hub.initializeAndSetPermissions([
-            routes.feeManager,
-            routes.policyManager,
-            routes.shares,
-            routes.vault,
-            routes.registry,
-            routes.fundFactory
-        ]);
-        REGISTRY.registerFund(address(hub), _manager);
-
-        // Clear storage for manager's next fund
-        delete managerToHub[_manager];
-        delete managerToRoutes[_manager];
-        delete managerToSettings[_manager];
-
-        emit NewFund(
-            msg.sender,
-            address(hub),
-            [
-                routes.feeManager,
-                routes.policyManager,
-                routes.shares,
-                routes.vault,
-                routes.registry,
-                routes.fundFactory
-            ]
-        );
+    /// @notice Creates a Vault component for the sender's fund
+    function createVault() external amguPayable payable {
+        __createVaultFor(msg.sender);
     }
 
-    function completeSetupFor(address _manager) external amguPayable payable {
-        __completeSetupFor(_manager);
+    /// @notice Complete setup for a particular fund manager's fund
+    /// @param _manager The fund manager for whom the fund setup should be completed
+    function completeFundSetupFor(address _manager) external amguPayable payable {
+        __completeFundSetupFor(_manager);
     }
 
-    function completeSetup() external amguPayable payable { __completeSetupFor(msg.sender); }
+    /// @notice Complete setup for the sender's fund
+    function completeFundSetup() external amguPayable payable {
+        __completeFundSetupFor(msg.sender);
+    }
+
+    // PUBLIC FUNCTIONS
 
     /// @notice Check whether a string has only valid characters for use in a fund name
     /// @param _name The fund name string to check
     /// @return True if the name is valid for use in a fund
+    /// @dev Needed to provide clean url slugs for the frontend
     function isValidFundName(string memory _name) public pure returns (bool) {
         bytes memory b = bytes(_name);
         for (uint256 i; i < b.length; i++) {
@@ -265,12 +210,148 @@ contract FundFactory is AmguConsumer, Factory, DSAuth {
         return true;
     }
 
-    function __componentExists(address _component) private pure returns (bool) {
-        return _component != address(0);
+    // PRIVATE FUNCTIONS
+
+    /// @notice Helper to complete a fund's setup (activate the fund)
+    function __completeFundSetupFor(address _manager) private onlyHasPendingFund(_manager) {
+        Hub hub = Hub(managerToPendingFundHub[_manager]);
+
+        // Assert all components have been created
+        require(
+            hub.feeManager() != address(0),
+            "__completeFundSetup: feeManager has not been created"
+        );
+        require(
+            hub.policyManager() != address(0),
+            "__completeFundSetup: policyManager has not been created"
+        );
+        require(
+            hub.shares() != address(0),
+            "__completeFundSetup: shares has not been created"
+        );
+        require(
+            hub.vault() != address(0),
+            "__completeFundSetup: vault has not been created"
+        );
+
+        // Initialize and register fund
+        hub.initializeFund();
+        REGISTRY.registerFund(address(hub), _manager);
+        emit FundSetupCompleted(_manager, address(hub));
+
+        // Clear storage for manager's next fund
+        delete managerToPendingFundHub[_manager];
+        delete managerToPendingFundSettings[_manager];
+    }
+
+    /// @notice Helper to create a FeeManger component for a specified manager
+    function __createFeeManagerFor(address _manager)
+        private
+        onlyHasPendingFund(_manager)
+    {
+        Hub hub = Hub(managerToPendingFundHub[_manager]);
+        require(hub.feeManager() == address(0), "__createFeeManagerFor: feeManager already set");
+
+        // Deploy
+        address feeManager = feeManagerFactory.createInstance(
+            managerToPendingFundHub[_manager],
+            managerToPendingFundSettings[_manager].denominationAsset,
+            managerToPendingFundSettings[_manager].fees,
+            managerToPendingFundSettings[_manager].feeRates,
+            managerToPendingFundSettings[_manager].feePeriods
+        );
+        emit FeeManagerCreated(msg.sender, address(hub), feeManager);
+
+        // Add to Hub
+        hub.setFeeManager(feeManager);
+    }
+
+    /// @notice Helper to create a PolicyManger component for a specified manager
+    function __createPolicyManagerFor(address _manager)
+        private
+        onlyHasPendingFund(_manager)
+    {
+        Hub hub = Hub(managerToPendingFundHub[_manager]);
+        require(
+            hub.policyManager() == address(0),
+            "__createPolicyManagerFor: policyManager already set"
+        );
+
+        // Deploy
+        address policyManager = policyManagerFactory.createInstance(
+            managerToPendingFundHub[_manager]
+        );
+        emit PolicyManagerCreated(msg.sender, address(hub), policyManager);
+
+        // Add to Hub
+        hub.setPolicyManager(policyManager);
+    }
+
+    /// @notice Helper to create a Shares component for a specified manager
+    function __createSharesFor(address _manager)
+        private
+        onlyHasPendingFund(_manager)
+    {
+        Hub hub = Hub(managerToPendingFundHub[_manager]);
+        require(
+            hub.shares() == address(0),
+            "__createSharesFor: shares already set"
+        );
+
+        // Deploy
+        address shares = sharesFactory.createInstance(
+            managerToPendingFundHub[_manager],
+            managerToPendingFundSettings[_manager].denominationAsset,
+            managerToPendingFundSettings[_manager].defaultSharesInvestmentAssets,
+            managerToPendingFundSettings[_manager].name
+        );
+        emit SharesCreated(msg.sender, address(hub), shares);
+
+        // Add to Hub
+        hub.setShares(shares);
+    }
+
+    function __createVaultFor(address _manager)
+        private
+        onlyHasPendingFund(_manager)
+    {
+        Hub hub = Hub(managerToPendingFundHub[_manager]);
+        require(
+            hub.vault() == address(0),
+            "__createVaultFor: vault already set"
+        );
+
+        // Deploy
+        address vault = vaultFactory.createInstance(
+            managerToPendingFundHub[_manager],
+            managerToPendingFundSettings[_manager].adapters
+        );
+        emit VaultCreated(msg.sender, address(hub), vault);
+
+        // Add to Hub
+        hub.setVault(vault);
     }
 
     /// @notice Helper function to create a bytes32 hash from a fund name string
     function __hashFundName(string memory _name) private pure returns (bytes32) {
         return keccak256(bytes(_name));
+    }
+
+    /// @notice Helper to confirm if a manager has a pending fund
+    function __hasPendingFund(address _manager) private view returns (bool) {
+        return managerToPendingFundHub[_manager] != address(0);
+    }
+
+    /// @notice Helper to confirm if a fund name has already been taken
+    function __takeFundName(string memory _name) private {
+        require(isValidFundName(_name), "beginSetup: Fund name is not valid");
+
+        bytes32 nameHash = __hashFundName(_name);
+        require(
+            !fundNameHashIsTaken[nameHash],
+            "beginFundSetup: Fund name already registered"
+        );
+        fundNameHashIsTaken[nameHash] = true;
+        emit FundNameTaken(msg.sender, _name);
     }
 }

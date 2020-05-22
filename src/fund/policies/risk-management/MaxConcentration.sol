@@ -29,7 +29,7 @@ contract MaxConcentration is TradingSignatures, DSMath {
         returns (bool)
     {
         if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IHub hub = IHub(Spoke(msg.sender).getHub());
+        IHub hub = IHub(Spoke(msg.sender).HUB());
         Shares shares = Shares(hub.shares());
         address denominationAsset = shares.DENOMINATION_ASSET();
         // Max concentration is only checked for non-quote assets
@@ -38,7 +38,7 @@ contract MaxConcentration is TradingSignatures, DSMath {
 
         uint totalGav = shares.calcGav();
 
-        uint256 assetGav = IPriceSource(hub.priceSource()).convertQuantity(
+        uint256 assetGav = IPriceSource(IRegistry(hub.REGISTRY()).priceSource()).convertQuantity(
             Vault(payable(hub.vault())).assetBalances(takerToken),
             takerToken,
             denominationAsset

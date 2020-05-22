@@ -3,13 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "../../dependencies/TokenUser.sol";
 import "../../dependencies/libs/EnumerableSet.sol";
-import "../../factory/Factory.sol";
 import "../../prices/IDerivativePriceSource.sol";
 import "../../prices/IPriceSource.sol";
-import "../../registry/IRegistry.sol";
-import "../fees/IFeeManager.sol";
 import "../hub/Spoke.sol";
-import "../vault/IVault.sol";
 import "./IShares.sol";
 import "./SharesToken.sol";
 
@@ -40,17 +36,9 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     address public DENOMINATION_ASSET;
     EnumerableSet.AddressSet private sharesInvestmentAssets;
 
-    modifier onlyManager() {
-        require(
-            msg.sender == hub.manager(),
-            "Only the fund manager can call this function"
-        );
-        _;
-    }
-
     modifier onlySharesRequestor() {
         require(
-            msg.sender == IRegistry(routes.registry).sharesRequestor(),
+            msg.sender == __getRegistry().sharesRequestor(),
             "Only SharesRequestor can call this function"
         );
         _;
@@ -60,19 +48,18 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         address _hub,
         address _denominationAsset,
         address[] memory _defaultAssets,
-        address _registry
+        string memory _tokenName
     )
         public
         Spoke(_hub)
-        SharesToken(IHub(_hub).getName())
+        SharesToken(_tokenName)
     {
         require(
-            IRegistry(_registry).assetIsRegistered(_denominationAsset),
+            __getRegistry().assetIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
         DENOMINATION_ASSET = _denominationAsset;
 
-        routes.registry = _registry;
         if (_defaultAssets.length > 0) {
             __enableSharesInvestmentAssets(_defaultAssets);
         }
@@ -100,10 +87,11 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         costInInvestmentAsset_ = getSharesCostInAsset(_sharesQuantity, _investmentAsset);
 
         // Issue shares and transfer investment asset to vault
+        address vaultAddress = address(__getVault());
         _mint(_buyer, _sharesQuantity);
         __safeTransferFrom(_investmentAsset, msg.sender, address(this), costInInvestmentAsset_);
-        __increaseApproval(_investmentAsset, routes.vault, costInInvestmentAsset_);
-        IVault(routes.vault).deposit(_investmentAsset, costInInvestmentAsset_);
+        __increaseApproval(_investmentAsset, vaultAddress, costInInvestmentAsset_);
+        IVault(vaultAddress).deposit(_investmentAsset, costInInvestmentAsset_);
 
         emit SharesBought(
             _buyer,
@@ -111,6 +99,16 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             _investmentAsset,
             costInInvestmentAsset_
         );
+    }
+
+    // TODO: remove this after FeeManager arch changes
+    function createFor(address _who, uint256 _amount) external override {
+        require(
+            msg.sender == address(__getFeeManager()),
+            "Only FeeManager can call this function"
+        );
+
+        _mint(_who, _amount);
     }
 
     /// @notice Disable the buying of shares with specific assets
@@ -146,7 +144,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     function redeemShares() external {
         // Duplicates logic further down call stack, but need to assure all outstanding shares are
         // assigned for fund manager (and potentially other fee recipients in the future)
-        IFeeManager(routes.feeManager).rewardAllFees();
+        __getFeeManager().rewardAllFees();
         __redeemShares(balanceOf(msg.sender), false);
     }
 
@@ -154,7 +152,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// @dev _bypassFailure is set to true, the user will lose their claim to any assets for
     /// which the transfer function fails.
     function redeemSharesEmergency() external {
-        IFeeManager(routes.feeManager).rewardAllFees();
+        __getFeeManager().rewardAllFees();
         __redeemShares(balanceOf(msg.sender), true);
     }
 
@@ -168,7 +166,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     // PUBLIC FUNCTIONS
 
     function calcAssetGav(address _asset) public view returns (uint256) {
-        IRegistry registry = IRegistry(routes.registry);
+        IRegistry registry = __getRegistry();
         // TODO: Is it a problem if this fails?
         require(
             registry.assetIsRegistered(_asset) ||
@@ -178,7 +176,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
 
         address gavAsset;
         uint256 gavAssetAmount;
-        uint256 assetBalance = IVault(routes.vault).assetBalances(_asset);
+        uint256 assetBalance = __getVault().assetBalances(_asset);
 
         // If asset in registry, get asset from priceSource
         if (registry.assetIsRegistered(_asset)) {
@@ -197,7 +195,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             ) / 10 ** uint256(ERC20WithFields(_asset).decimals());
         }
 
-        return IPriceSource(priceSource()).convertQuantity(
+        return __getPriceSource().convertQuantity(
             gavAssetAmount,
             gavAsset,
             DENOMINATION_ASSET
@@ -207,7 +205,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// @notice Calculate the overall GAV of the fund
     /// @return gav_ The fund GAV
     function calcGav() public view returns (uint256) {
-        address[] memory assets = IVault(routes.vault).getOwnedAssets();
+        address[] memory assets = __getVault().getOwnedAssets();
 
         uint256 gav;
         for (uint256 i = 0; i < assets.length; i++) {
@@ -228,7 +226,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         override
         returns (uint256)
     {
-        IFeeManager(routes.feeManager).rewardAllFees();
+        __getFeeManager().rewardAllFees();
 
         uint256 denominatedSharePrice;
         // TODO: Confirm that this is correct behavior when shares go above 0 and then return to 0 (all shares cashed out)
@@ -247,7 +245,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         ) / 10 ** uint256(decimals);
 
         if (_asset != DENOMINATION_ASSET) {
-            return IPriceSource(priceSource()).convertQuantity(
+            return __getPriceSource().convertQuantity(
                 denominationAssetQuantity, DENOMINATION_ASSET, _asset
             );
         }
@@ -262,8 +260,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         return EnumerableSet.contains(sharesInvestmentAssets, _asset);
     }
 
-    // PRIVATE FUNCTIONS
-
     /// @notice Redeem a specified quantity of the sender's shares
     /// for a proportionate slice of the fund's assets
     /// @dev If _bypassFailure is set to true, the user will lose their claim to any assets for
@@ -277,11 +273,11 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             "__redeemShares: _sharesQuantity exceeds sender balance"
         );
 
-        IVault vault = IVault(routes.vault);
+        IVault vault = __getVault();
         address[] memory payoutAssets = vault.getOwnedAssets();
         require(payoutAssets.length > 0, "__redeemShares: payoutAssets is empty");
 
-        IFeeManager(routes.feeManager).rewardAllFees();
+        __getFeeManager().rewardAllFees();
 
         // Destroy the shares
         uint256 sharesSupply = totalSupply();
@@ -322,7 +318,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
                 "__enableSharesInvestmentAssets: Asset is already enabled"
             );
             require(
-                IRegistry(routes.registry).assetIsRegistered(_assets[i]),
+                __getRegistry().assetIsRegistered(_assets[i]),
                 "__enableSharesInvestmentAssets: Asset not in Registry"
             );
             EnumerableSet.add(sharesInvestmentAssets, _assets[i]);
@@ -331,29 +327,16 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     }
 }
 
-contract SharesFactory is Factory {
-    event NewInstance(
-        address indexed hub,
-        address indexed instance,
-        address denominationAsset,
-        address[] defaultAssets,
-        address registry
-    );
-
+contract SharesFactory {
     function createInstance(
         address _hub,
         address _denominationAsset,
         address[] calldata _defaultAssets,
-        address _registry
+        string calldata _tokenName
     )
         external
         returns (address)
     {
-        address shares = address(
-            new Shares(_hub, _denominationAsset, _defaultAssets, _registry)
-        );
-        childExists[shares] = true;
-        emit NewInstance(_hub, shares, _denominationAsset, _defaultAssets, _registry);
-        return shares;
+        return address(new Shares(_hub, _denominationAsset, _defaultAssets, _tokenName));
     }
 }

@@ -41,6 +41,6 @@ describe('withdraw', () => {
         [weth.options.address, "1"],
         defaultTxOpts
       )
-    ).rejects.toThrowFlexible("Only the Shares contract can make this call")
+    ).rejects.toThrowFlexible("Only Shares can call this function")
   });
 });

@@ -1,60 +1,61 @@
 pragma solidity 0.6.4;
-pragma experimental ABIEncoderV2;
 
-import "./Hub.sol";
+import "../../registry/IRegistry.sol";
+import "../../prices/IPriceSource.sol";
+import "../fees/IFeeManager.sol";
+import "../policies/IPolicyManager.sol";
+import "../shares/IShares.sol";
+import "../vault/IVault.sol";
+import "./IHub.sol";
 import "./ISpoke.sol";
-import "../../dependencies/DSAuth.sol";
+import "./FundRouterMixin.sol";
 
 /// @title Spoke Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Has one Hub
-contract Spoke is ISpoke, DSAuth {
+/// @notice A component of a fund connected to a hub
+abstract contract Spoke is ISpoke, FundRouterMixin {
+    // TODO: set as immutable upon solidity upgrade
+    address public override HUB;
 
-    IHub.Routes routes;
-
-    Hub hub;
-    bool public override initialized;
-
-    modifier onlyInitialized() {
-        require(initialized, "Component not yet initialized");
+    modifier onlyManager() {
+        require(msg.sender == IHub(HUB).MANAGER(), "Only the fund manager can call this function");
         _;
     }
 
-    modifier notShutDown() {
-        require(!hub.isShutDown(), "Hub is shut down");
-        _;
+    modifier onlyShares() {
+        require(msg.sender == address(__getShares()), "Only Shares can call this function");
+        _; 
     }
 
     constructor(address _hub) public {
-        hub = Hub(_hub);
-        setAuthority(hub);
-        setOwner(address(hub)); // temporary, to allow initialization
+        HUB = _hub;
     }
 
-    function initialize(address[6] calldata _spokes) external auth {
-        require(msg.sender == address(hub));
-        require(!initialized, "Already initialized");
-        routes = IHub.Routes(
-            _spokes[0],
-            _spokes[1],
-            _spokes[2],
-            _spokes[3],
-            _spokes[4],
-            _spokes[5]
-        );
-        initialized = true;
-        setOwner(address(0));
+    function __getFeeManager() internal view returns (IFeeManager) {
+        return IFeeManager(__getFeeManager(HUB));
     }
 
-    function priceSource() public view override returns (address) { return hub.priceSource(); }
-    function fundFactory() public view returns (address) { return routes.fundFactory; }
-    function getHub() public view override returns (IHub) { return IHub(address(hub)); }
-    function getRoutes()
-        public
-        view
-        override
-        returns (IHub.Routes memory)
-    {
-        return routes;
+    function __getHub() internal view returns (IHub) {
+        return IHub(HUB);
+    }
+
+    function __getPolicyManager() internal view returns (IPolicyManager) {
+        return IPolicyManager(__getPolicyManager(HUB));
+    }
+
+    function __getPriceSource() internal view returns (IPriceSource) {
+        return IPriceSource(__getPriceSource(HUB));
+    }
+
+    function __getRegistry() internal view returns (IRegistry) {
+        return IRegistry(__getRegistry(HUB));
+    }
+
+    function __getShares() internal view returns (IShares) {
+        return IShares(__getShares(HUB));
+    }
+
+    function __getVault() internal view returns (IVault) {
+        return IVault(__getVault(HUB));
     }
 }
