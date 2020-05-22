@@ -58,7 +58,7 @@ contract Hub is IHub {
     /// @notice Sets the feeManager address for the fund
     /// @param _feeManager The FeeManager component for the fund
     function setFeeManager(address _feeManager) external onlyFundFactory {
-        require(feeManager == address(0), "setFeeManager: Already set");
+        require(feeManager == address(0), "setFeeManager: feeMangaer is already set");
 
         feeManager = _feeManager;
         emit FeeManagerSet(feeManager);
@@ -67,7 +67,7 @@ contract Hub is IHub {
     /// @notice Sets the policyManager address for the fund
     /// @param _policyManager The PolicyManager component for the fund
     function setPolicyManager(address _policyManager) external onlyFundFactory {
-        require(policyManager == address(0), "setPolicyManager: Already set");
+        require(policyManager == address(0), "setPolicyManager: policyManager is already set");
 
         policyManager = _policyManager;
         emit PolicyManagerSet(policyManager);
@@ -76,7 +76,7 @@ contract Hub is IHub {
     /// @notice Sets the shares address for the fund
     /// @param _shares The Shares component for the fund
     function setShares(address _shares) external onlyFundFactory {
-        require(shares == address(0), "setShares: Already set");
+        require(shares == address(0), "setShares: shares is already set");
 
         shares =_shares;
         emit SharesSet(shares);
@@ -85,7 +85,7 @@ contract Hub is IHub {
     /// @notice Sets the vault address for the fund
     /// @param _vault The Vault component for the fund
     function setVault(address _vault) external onlyFundFactory {
-        require(vault == address(0), "setVault: Already set");
+        require(vault == address(0), "setVault: vault is already set");
 
         vault =_vault;
         emit VaultSet(vault);
