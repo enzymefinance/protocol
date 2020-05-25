@@ -66,8 +66,6 @@ export const investInFund = async ({
   );
   const investorTokenShortfall =
     new BN(contribAmount).sub(investorTokenBalance);
-  console.log(investorTokenShortfall.toString())
-  console.log(tokenContract.options.address)
   if (investorTokenShortfall.gt(new BN(0))) {
     await send(
       tokenContract,

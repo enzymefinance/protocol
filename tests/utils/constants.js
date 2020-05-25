@@ -41,6 +41,7 @@ export const CONTRACT_NAMES = {
   MANAGEMENT_FEE: 'ManagementFee',
   MAX_CONCENTRATION: 'MaxConcentration',
   MAX_POSITIONS: 'MaxPositions',
+  MLN: 'MLN',
   OASIS_DEX_ADAPTER: 'OasisDexAdapter',
   OASIS_DEX_EXCHANGE: 'OasisDexExchange',
   ORDER_TAKER: 'OrderTaker',
