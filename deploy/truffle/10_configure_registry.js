@@ -19,7 +19,7 @@ const ZeroExV2Exchange = artifacts.require('ZeroExV2Exchange');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
 
-// TODO: move to own module
+// TODO: move to own module (if still needed as we progress)
 /////////
 // const updateFeed = async (feed, web3) => {
 //   const quoteAsset = await call(feed, 'QUOTE_ASSET', [], {}, web3);
@@ -28,24 +28,22 @@ const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
 //   const tokens = await call(registry, 'getRegisteredAssets', [], {}, web3);
 //   const prices = []; // TODO: convert to promise.all
 //   for (const token of tokens) {
-//     console.log(`For ${token}`)
 //     let tokenPrice;
 //     if (token.toLowerCase() === quoteAsset.toLowerCase())
-//       tokenPrice = toWei('1', 'ether');
+//       tokenPrice = web3.utils.toWei('1', 'ether');
 //     else
 //       tokenPrice = (await call(feed, 'getKyberPrice', [token, quoteAsset], {}, web3)).kyberPrice_
-//     console.log(tokenPrice);
 //     prices.push(tokenPrice);
 //   }
 //   await send(feed, 'update', [tokens, prices], {}, web3);
 // }
-/////////
 /////////
 
 const updateFeedTruffle = async (feed, registry) => {
   const quoteAsset = await feed.QUOTE_ASSET();
 
   // TODO: select even fewer tokens if possible
+  // TODO: avoid hardcoding these addresses
   const deregisterAssetList = [
     // '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     // '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892',
@@ -66,52 +64,46 @@ const updateFeedTruffle = async (feed, registry) => {
   ];
 
   for (const asset of deregisterAssetList) {
-    console.log(asset)
     await registry.deregisterAsset(asset);
   }
-
   const tokens = await registry.getRegisteredAssets();
-  console.log(tokens)
 
 
 
-  // TODO: remove (see below)
-  const prices = [
-    '1000000000000000000',
-    '15493827448525507',
-    // '7155317708731349',
-    // '0',
-    // '0',
-    // '3493602270127730',
-    // '0',
-    // '0',
-    // '0',
-    // '0',
-    // '413146688368029',
-    // '0',
-    // '0',
-    // '5255018519617450',
-    // '46814674803388154855',
-    // '0'
-  ];
+  // TODO: remove after tests pass (see below)
+  // const prices = [
+  //   '1000000000000000000',
+  //   '15493827448525507',
+  //   // '7155317708731349',
+  //   // '0',
+  //   // '0',
+  //   // '3493602270127730',
+  //   // '0',
+  //   // '0',
+  //   // '0',
+  //   // '0',
+  //   // '413146688368029',
+  //   // '0',
+  //   // '0',
+  //   // '5255018519617450',
+  //   // '46814674803388154855',
+  //   // '0'
+  // ];
 
 
-  // // TODO: re-enable; don't use above hardcoding of course
-  // const prices = []; // TODO: convert to promise.all
-  // for (const token of tokens) {
-  //   console.log(`For ${token}`)
-  //   let tokenPrice;
-  //   if (token.toLowerCase() === quoteAsset.toLowerCase())
-  //     tokenPrice = toWei('1', 'ether');
-  //   else
-  //     tokenPrice = (await feed.getKyberPrice(token, quoteAsset)).kyberPrice_;
-  //   console.log(tokenPrice);
-  //   prices.push(tokenPrice.toString());
-  // }
+  // TODO: re-enable; don't use above hardcoding of course
+  const prices = []; // TODO: convert to promise.all
+  for (const token of tokens) {
+    let tokenPrice;
+    if (token.toLowerCase() === quoteAsset.toLowerCase())
+      tokenPrice = web3.utils.toWei('1', 'ether');
+    else
+      tokenPrice = (await feed.getKyberPrice(token, quoteAsset)).kyberPrice_;
+    prices.push(tokenPrice.toString());
+  }
 
 
   await feed.update(tokens, prices);
-  console.log('Post-update');
 }
 /////////
 
