@@ -16,8 +16,8 @@ import { getDeployed } from '~/tests/utils/getDeployed';
 
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
-let web3; // TODO: hoist to jest setup
 const yearInSeconds = new BN(31536000);
+let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let managementFeeRate;
