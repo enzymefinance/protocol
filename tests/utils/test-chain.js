@@ -15,6 +15,7 @@ const server = ganache.server({
   port: PORT,
   fork: MAINNET_NODE_URL,
   network_id: 1,
+  unlocked_accounts: [ '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d' ],
   accounts: [
     {
       secretKey: PRIV_KEY_1,

@@ -107,7 +107,7 @@ const updateFeedTruffle = async (feed, registry) => {
 }
 /////////
 
-module.exports = async deployer => {
+module.exports = async _ => {
   const registry = await Registry.deployed();
   const kyberNetworkProxy = await KyberNetworkProxy.at(mainnetAddrs.kyber.KyberNetworkProxy);
   const matchingMarket = await MatchingMarket.at(mainnetAddrs.oasis.OasisDexExchange);
