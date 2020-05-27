@@ -3,6 +3,8 @@ import path from 'path';
 
 const outDir = './out';
 
+// TODO: own file?
+// or merge with 'deploy-contract'
 const getArtifact = contractName => {
   return JSON.parse(
     fs.readFileSync(path.join(outDir, `${contractName}.json`))

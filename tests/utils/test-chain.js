@@ -12,6 +12,7 @@ const startingBalance = Web3.utils.toWei('10000000000000', 'ether');
 
 // fork off mainnet with a specific account preloaded with 1000 ETH
 const server = ganache.server({
+  logger: console,
   port: PORT,
   fork: MAINNET_NODE_URL,
   network_id: 1,
@@ -33,6 +34,8 @@ const server = ganache.server({
 server.listen(PORT, (err, chain) => {
   if (err)
     throw err;
+  if (MAINNET_NODE_URL === undefined)
+    throw new Error('Node to fork from not specified');
   console.log(`Forked from ${MAINNET_NODE_URL} at block ${chain.blockchain.forkBlockNumber}\n`);
   console.log(`\nTest chain started on port ${PORT}, listening...`);
 });
