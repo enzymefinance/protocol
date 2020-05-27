@@ -23,6 +23,7 @@ const pkeys = [
   '0x2760966c32dd5179176ab8066895148f2bdfa3072427b9904660a0555d1c32e7'
 ];
 
+// TODO: can all of this config be hoisted to the first fork?
 global.startChain = async () => {
   const startingBalance = Web3.utils.toWei('10000000', 'ether');
   const provider = ganache.provider({

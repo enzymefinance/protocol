@@ -8,49 +8,49 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+let web3
 let deployer, manager, investor;
 let defaultTxOpts, investorTxOpts;
 let fundDenominationAsset;
-let contracts, deployOut;
-let knc, mln, weth, oasisDexExchange, fundFactory, priceSource;
+let knc, mln, weth, fundFactory, priceSource;
 let fund;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
 
-  contracts = deployed.contracts;
-  deployOut = deployed.deployOut;
-  fundFactory = contracts.FundFactory;
-  knc = contracts.KNC;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  priceSource = contracts.TestingPriceFeed;
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  knc = getDeployed(CONTRACT_NAMES.KNC, web3, mainnetAddrs.tokens.KNC);
 
-  const oasisDexAdapter = contracts.OasisDexAdapter;
-  oasisDexExchange = contracts.OasisDexExchange;
+  const oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address, knc.options.address],
     integrationAdapters: [oasisDexAdapter.options.address],
     manager,
     quoteToken: knc.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 
   // Seed investor with MLN and WETH
-  await send(mln, 'transfer', [investor, toWei('1', 'ether')], defaultTxOpts);
-  await send(weth, 'transfer', [investor, toWei('1', 'ether')], defaultTxOpts);
+  await send(mln, 'transfer', [investor, toWei('1', 'ether')], defaultTxOpts, web3);
+  await send(weth, 'transfer', [investor, toWei('1', 'ether')], defaultTxOpts, web3);
 });
 
 test('Quote asset is KNC', async () => {
@@ -92,14 +92,16 @@ test('Fund gets non-quote asset from investment', async () => {
   );
   expect(expectedCostOfShares).bigNumberEq(actualCostOfShares);
 
-  // TODO: use less fake prices
-  const fakePrices = Object.values(deployOut.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
-  await send(
-    priceSource,
-    'update',
-    [Object.values(deployOut.tokens.addr), fakePrices],
-    defaultTxOpts
-  );
+  await updateKyberPriceFeed(priceSource, web3);
+  // // TODO: use less fake prices
+  // const fakePrices = Object.values(deployOut.tokens.addr).map(() => (new BN('10')).pow(new BN('18')).toString());
+  // await send(
+  //   priceSource,
+  //   'update',
+  //   [Object.values(deployOut.tokens.addr), fakePrices],
+  //   defaultTxOpts,
+  //   web3
+  // );
 
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -115,7 +117,8 @@ test('Fund gets non-quote asset from investment', async () => {
       investor,
       isInitial: true,
       tokenContract: weth
-    }
+    },
+    web3
   });
 
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
@@ -157,7 +160,7 @@ test('investor redeems his shares', async () => {
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
-  await send(shares, 'redeemShares', [], investorTxOpts);
+  await send(shares, 'redeemShares', [], investorTxOpts, web3);
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
@@ -224,7 +227,8 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
       investor,
       isInitial: true,
       tokenContract: mln
-    }
+    },
+    web3
   });
 
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));

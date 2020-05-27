@@ -19,38 +19,18 @@ const ZeroExV2Exchange = artifacts.require('ZeroExV2Exchange');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
 
-// TODO: move to own module (if still needed as we progress)
-/////////
-// const updateFeed = async (feed, web3) => {
-//   const quoteAsset = await call(feed, 'QUOTE_ASSET', [], {}, web3);
-//   const registryAddress = await call(feed, 'registry', [], {}, web3);
-//   const registry = getDeployed('Registry', registryAddress, web3);
-//   const tokens = await call(registry, 'getRegisteredAssets', [], {}, web3);
-//   const prices = []; // TODO: convert to promise.all
-//   for (const token of tokens) {
-//     let tokenPrice;
-//     if (token.toLowerCase() === quoteAsset.toLowerCase())
-//       tokenPrice = web3.utils.toWei('1', 'ether');
-//     else
-//       tokenPrice = (await call(feed, 'getKyberPrice', [token, quoteAsset], {}, web3)).kyberPrice_
-//     prices.push(tokenPrice);
-//   }
-//   await send(feed, 'update', [tokens, prices], {}, web3);
-// }
-/////////
-
 const updateFeedTruffle = async (feed, registry) => {
   const quoteAsset = await feed.QUOTE_ASSET();
 
   // TODO: select even fewer tokens if possible
   // TODO: avoid hardcoding these addresses
   const deregisterAssetList = [
-    // '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-    // '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892',
+    // '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+    // '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892', // MLN
     '0x960b236A07cf122663c4303350609A66A7B288C0',
     '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
     '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-    '0xdd974D5C2e2928deA5F71b9825b8b646686BD200',
+    // '0xdd974D5C2e2928deA5F71b9825b8b646686BD200', // KNC
     '0x514910771AF9Ca656af840dff83E8264EcF986CA',
     '0x0F5D2fB29fb7d3CFeE444a200298f468908cC942',
     '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',

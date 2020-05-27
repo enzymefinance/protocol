@@ -31,6 +31,7 @@ export const CONTRACT_NAMES = {
   FUND_FACTORY: 'FundFactory',
   HUB: 'Hub',
   INTEGRATION_ADAPTER: 'IntegrationAdapter',
+  KNC: 'KNC',
   KYBER_ADAPTER: 'KyberAdapter',
   KYBER_EXCHANGE: 'KyberNetwork',
   KYBER_NETWORK_PROXY: 'KyberNetworkProxy',
