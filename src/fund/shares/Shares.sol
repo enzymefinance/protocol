@@ -294,7 +294,14 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             try vault.withdraw(payoutAssets[i], payoutQuantities[i]) {}
             catch {}
 
-            try IERC20Flexible(payoutAssets[i]).transfer(msg.sender, payoutQuantities[i]) {}
+            uint256 receiverPreBalance = IERC20(payoutAssets[i]).balanceOf(msg.sender);
+            try IERC20Flexible(payoutAssets[i]).transfer(msg.sender, payoutQuantities[i]) {
+                uint256 receiverPostBalance = IERC20(payoutAssets[i]).balanceOf(msg.sender);
+                require(
+                    add(receiverPreBalance, payoutQuantities[i]) == receiverPostBalance,
+                    "__redeemShares: Receiver did not receive tokens in transfer"
+                );
+            }
             catch {
                 if (!_bypassFailure) {
                     revert("__redeemShares: Token transfer failed");
