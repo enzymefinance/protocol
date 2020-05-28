@@ -7,10 +7,10 @@ const PerformanceFee = artifacts.require('PerformanceFee');
 const WETH = artifacts.require('WETH');
 const MLN = artifacts.require('MLN');
 
-module.exports = async deployer => {
+module.exports = async (deployer, _, accounts) => {
   const weth = await WETH.at(mainnetAddrs.tokens.WETH);
   const mln = await MLN.at(mainnetAddrs.tokens.MLN);
-  const registry = await deployer.deploy(Registry, conf.melonRegistryOwner);
+  const registry = await deployer.deploy(Registry, accounts[0]);
   await registry.setMGM(conf.melonInitialMGM);
   await registry.registerFee((await ManagementFee.deployed()).address);
   await registry.registerFee((await PerformanceFee.deployed()).address);

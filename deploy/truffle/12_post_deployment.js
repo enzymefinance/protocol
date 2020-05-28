@@ -1,4 +1,7 @@
+const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+const Registry = artifacts.require('Registry');
 const WETH = artifacts.require('WETH');
 const MLN = artifacts.require('MLN');
 const KNC = artifacts.require('KNC');
@@ -7,6 +10,7 @@ const ZRX = artifacts.require('ZRX');
 module.exports = async _ => {
   const [primary, manager, investor] = await web3.eth.getAccounts();
 
+  // TODO: get account addresses from config somewhere
   // TODO: change how we send these tokens in
   // case balance changes (e.g. buy from uniswap or mint)
   const mlnWhale = '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d';
@@ -42,4 +46,7 @@ module.exports = async _ => {
   await zrx.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: zrxWhale});
   await zrx.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: zrxWhale});
   await zrx.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: zrxWhale});
+
+  // finally set Registry owner
+  await (await Registry.deployed()).setOwner(conf.melonRegistryOwner);
 }

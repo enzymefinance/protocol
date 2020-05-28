@@ -31,6 +31,14 @@ global.startChain = async () => {
     mnemonic: 'exhibit now news planet fame thank swear reform tilt accident bitter axis',
     network_id: 1,
     gasLimit: '0x989680',
+    // TODO: make less redundant with test-chain.js
+    unlocked_accounts: [
+      '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d', // MLN whale
+      '0x3eb01b3391ea15ce752d01cf3d3f09dec596f650', // KNC whale
+      '0xa57bd00134b2850b2a1c55860c9e9ea100fdd6cf', // ZRX reserve operator
+      '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8', // ZRX whale
+      '0x7D3455421BbC5Ed534a83c88FD80387dc8271392', // ZRX Governor contract
+    ],
     accounts: [
       {
         secretKey: pkeys[0],

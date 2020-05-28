@@ -67,9 +67,14 @@ const call = async (contract, method=undefined, args=[], opts={}) => {
   return result;
 }
 
-const signAndSendRawTx = async (tx, pkey, web3) => {
-  const signed = await web3.eth.accounts.signTransaction(tx, pkey);
-  return web3.eth.sendSignedTransaction(signed.rawTransaction);
+// `account` is object of shape {address: x, privateKey: y}
+const signAndSendRawTx = async (tx, account, web3) => {
+  if (account.privateKey === undefined) {
+    return web3.eth.sendTransaction(tx);
+  } else {
+    const signed = await web3.eth.accounts.signTransaction(tx, account.privateKey);
+    return web3.eth.sendSignedTransaction(signed.rawTransaction);
+  }
 }
 
 const send = async (contract, method=undefined, args=[], overrideOpts={}, web3) => {
@@ -84,6 +89,13 @@ const send = async (contract, method=undefined, args=[], overrideOpts={}, web3) 
   let account;
   if (overrideOpts.from) {
     account = web3.eth.accounts.wallet[overrideOpts.from];
+    // handle case of unlocked account with no private key (ganache)
+    if (account === undefined) {
+      account = {
+        address: overrideOpts.from,
+        privateKey: undefined
+      }
+    }
   } else { // default to first account
     account = web3.eth.accounts.wallet['0'];
   }
@@ -108,7 +120,7 @@ const send = async (contract, method=undefined, args=[], overrideOpts={}, web3) 
 
     tx.gas = overrideOpts.gas || await estimateGas(txFunction, tx.from);
   }
-  const receipt = await signAndSendRawTx(tx, account.privateKey, web3);
+  const receipt = await signAndSendRawTx(tx, account, web3);
   return receipt;
 }
 
@@ -150,7 +162,7 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
 
   stdout(`Deploying ${name}${(args.length) ? ` with args [${args}]` : '' }`);
   console.log('Before signAndSend') // TODO: remove
-  const receipt = await signAndSendRawTx(tx, account.privateKey, web3);
+  const receipt = await signAndSendRawTx(tx, account, web3);
   console.log('After signAndSend') // TODO: remove
   contract.options.address = receipt.contractAddress;
   stdout(`Deployed ${name} at ${contract.options.address}`);

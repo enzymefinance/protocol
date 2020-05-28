@@ -27,7 +27,7 @@ let defaultTxOpts, managerTxOpts;
 let mln, zrx, weth, erc20Proxy, priceSource, zeroExAdapter, zeroExExchange;
 let fund;
 let takeOrderSignature;
-let mlnToEthRate, wethToEthRate, zrxToEthRate;
+let zrxToEthRate;
 
 beforeAll(async () => {
   web3 = await startChain();
@@ -49,20 +49,7 @@ beforeAll(async () => {
   zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-  wethToEthRate = toWei('1', 'ether');
-  mlnToEthRate = toWei('0.5', 'ether');
-  zrxToEthRate = toWei('0.25', 'ether');
   zrxToEthRate = await call(priceSource, 'getPrice', [zrx.options.address]);
-  // await send(
-  //   priceSource,
-  //   'update',
-  //   [
-  //     [weth.options.address, mln.options.address, zrx.options.address],
-  //     [wethToEthRate, mlnToEthRate, zrxToEthRate],
-  //   ],
-  //   defaultTxOpts,
-  //   web3
-  // );
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],

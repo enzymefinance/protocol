@@ -23,7 +23,8 @@ module.exports = {
     'ZeroExV3ERC20Proxy': '0x95e6f48254609a6ee006f7d493c8e5fb97094cef',
     'ZeroExV3Staking': '0x2a17c35ff147b32f13f19f2e311446eeb02503f3 ',
     'ZeroExV3StakingProxy': '0xa26e80e7dea86279c6d778d702cc413e6cffa777',
-    'ZeroExV3ZrxVault': '0xba7f8b5fb1b19c1211c5d49550fcd149177a5eaf'
+    'ZeroExV3ZrxVault': '0xba7f8b5fb1b19c1211c5d49550fcd149177a5eaf',
+    'ZeroExGovernor': '0x7D3455421BbC5Ed534a83c88FD80387dc8271392'
   },
   'tokens': {
     'WETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',

@@ -1,3 +1,4 @@
+const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 // const AirSwapSwap = artifacts.require('AirSwapSwap');
