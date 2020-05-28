@@ -1,20 +1,22 @@
 // TODO: make this into unit tests
 
 import { toWei, BN } from 'web3-utils';
-import web3 from '~/deploy/utils/get-web3';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getEventFromLogs } from '~/tests/utils/metadata';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+const amguPrice = toWei('1', 'gwei');
+
+let web3;
 let deployer;
 let defaultTxOpts, managerTxOpts;
 let baseToken, quoteToken;
 let engine, fundFactory, priceSource, registry, sharesRequestor;
-let amguPrice;
 
-async function assertAmguTx(contract, method, args = []) {
+const assertAmguTx = async (contract, method, args=[]) => {
   const arbitraryEthAmount = toWei('1', 'ether');
   const preUserBalance = new BN(await web3.eth.getBalance(deployer));
   const gasPrice = await web3.eth.getGasPrice();
@@ -22,7 +24,8 @@ async function assertAmguTx(contract, method, args = []) {
     contract,
     method,
     args,
-    { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice }
+    { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice },
+    web3
   );
 
   const {
@@ -62,55 +65,38 @@ async function assertAmguTx(contract, method, args = []) {
   return result;
 }
 
-beforeAll(async () => {
-  [deployer] = await getAccounts();
+beforeEach(async () => {
+  web3 = await startChain();
+
+  [deployer] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
 
-  amguPrice = toWei('1', 'gwei');
-})
+  engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
 
-beforeEach(async () => {
-  const deployed = await partialRedeploy([
-    CONTRACT_NAMES.FUND_FACTORY
-  ]);
-  const contracts = deployed.contracts;
-
-  engine = contracts.Engine;
-  fundFactory = contracts.FundFactory;
-  registry = contracts.Registry;
-  priceSource = contracts.TestingPriceFeed;
-  sharesRequestor = contracts.SharesRequestor;
-
-  quoteToken = contracts.WETH;
-  baseToken = contracts.MLN;
+  quoteToken = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  baseToken = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
 });
 
 // Reset amgu and incentive after all tests so as not to affect other tests in suite
 afterEach(async () => {
-  await send(engine, 'setAmguPrice', [0], defaultTxOpts);
+  await send(engine, 'setAmguPrice', [0], defaultTxOpts, web3);
   const resetAmguPrice = await call(engine, 'getAmguPrice');
   expect(resetAmguPrice).toBe('0');
 
   const incentivePrice = toWei('0.01', 'ether');
-  await send(registry, 'setIncentive', [incentivePrice], defaultTxOpts);
+  await send(registry, 'setIncentive', [incentivePrice], defaultTxOpts, web3);
   const resetIncentive = await call(registry, 'incentive');
   expect(resetIncentive).toBe(incentivePrice);
 });
 
 test('Set amgu and check its usage in single amguPayable function', async () => {
-  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
+  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts, web3);
   const newAmguPrice = await call(engine, 'getAmguPrice');
   expect(newAmguPrice).toBe(amguPrice);
-
-  const newInputBaseTokenPrice = toWei('2', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [[baseToken.options.address], [newInputBaseTokenPrice]],
-    defaultTxOpts
-  );
-  const newBaseTokenPrice = await call(priceSource, 'getPrice', [baseToken.options.address]);
-  expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
   await send(
     fundFactory,
@@ -124,26 +110,17 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
       quoteToken.options.address,
       [baseToken.options.address, quoteToken.options.address]
     ],
-    managerTxOpts
+    managerTxOpts,
+    web3
   );
 
   await assertAmguTx(fundFactory, 'createShares');
 });
 
-test('set amgu with incentive attatched and check its usage in creating a fund', async () => {
-  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
+test('Set amgu with incentive attatched and check its usage in creating a fund', async () => {
+  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts, web3);
   const newAmguPrice = await call(engine, 'getAmguPrice');
   expect(newAmguPrice).toBe(amguPrice);
-
-  const newInputBaseTokenPrice = toWei('2', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [[baseToken.options.address], [newInputBaseTokenPrice]],
-    defaultTxOpts
-  );
-  const newBaseTokenPrice = await call(priceSource, 'getPrice', [baseToken.options.address]);
-  expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
   await send(
     fundFactory,
@@ -157,7 +134,8 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
       quoteToken.options.address,
       [baseToken.options.address, quoteToken.options.address]
     ],
-    managerTxOpts
+    managerTxOpts,
+    web3
   );
 
   await assertAmguTx(fundFactory, 'createFeeManager');
@@ -179,11 +157,12 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     quoteToken,
     'approve',
     [sharesRequestor.options.address, investmentAmount],
-    defaultTxOpts
+    defaultTxOpts,
+    web3
   );
 
   const incentiveInputAmount = toWei('100', 'ether');
-  await send(registry, 'setIncentive', [incentiveInputAmount], defaultTxOpts);
+  await send(registry, 'setIncentive', [incentiveInputAmount], defaultTxOpts, web3);
   const newIncentiveAmount = await call(registry, 'incentive');
   expect(newIncentiveAmount).toBe(incentiveInputAmount);
 
@@ -199,7 +178,8 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
       investmentAmount,
       requestedShares
     ],
-    { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
+    { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice },
+    web3
   );
 
   const {
