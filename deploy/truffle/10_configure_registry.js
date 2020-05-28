@@ -1,4 +1,3 @@
-const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 // const AirSwapSwap = artifacts.require('AirSwapSwap');
@@ -19,8 +18,30 @@ const ZeroExV2Exchange = artifacts.require('ZeroExV2Exchange');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
 
-const updateFeedTruffle = async (feed, registry) => {
+const ConversionRates = artifacts.require('ConversionRates');
+
+const updateKyberFeedTruffle = async (feed, registry) => {
   const quoteAsset = await feed.QUOTE_ASSET();
+
+  // TODO: move account loading somewhere else most likely; maybe a pre-deploy script
+  /////////////////////////////////
+  const zrxReserveAdmin = '0xa57bd00134b2850b2a1c55860c9e9ea100fdd6cf';
+
+  // Load account with eth TODO: move this somewhere else?
+  const [primary] = await web3.eth.getAccounts();
+  await web3.eth.sendTransaction({
+    from: primary,
+    to: zrxReserveAdmin,
+    value: web3.utils.toWei('100', 'ether')
+  });
+
+  const zrxConversionRates = await ConversionRates.at('0xfb80bfa19cae9e00f28b0f7e1023109deeb10483');
+  await zrxConversionRates.setValidRateDurationInBlocks(
+    '10000000000000000000000',
+    {from: zrxReserveAdmin}
+  );
+  
+  /////////////////////////////////
 
   // TODO: select even fewer tokens if possible
   // TODO: avoid hardcoding these addresses
@@ -40,61 +61,43 @@ const updateFeedTruffle = async (feed, registry) => {
     '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359',
     '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
-    '0xE41d2489571d322189246DaFA5ebDe1F4699F498'
+    // '0xE41d2489571d322189246DaFA5ebDe1F4699F498', // ZRX
   ];
 
-  for (const asset of deregisterAssetList) {
-    await registry.deregisterAsset(asset);
-  }
+  await Promise.all(
+    deregisterAssetList.map(
+      asset => registry.deregisterAsset(asset)
+    )
+  );
+
   const tokens = await registry.getRegisteredAssets();
 
+  const prices = {}; // TODO: convert to promise.all
 
+  await Promise.all(tokens.map(
+    async token => {
+      let tokenPrice;
+      if (token.toLowerCase() === quoteAsset.toLowerCase())
+        tokenPrice = web3.utils.toWei('1', 'ether');
+      else
+        tokenPrice = (await feed.getKyberPrice(token, quoteAsset)).kyberPrice_;
+      prices[token] = tokenPrice.toString();
+    }
+  ));
 
-  // TODO: remove after tests pass (see below)
-  // const prices = [
-  //   '1000000000000000000',
-  //   '15493827448525507',
-  //   // '7155317708731349',
-  //   // '0',
-  //   // '0',
-  //   // '3493602270127730',
-  //   // '0',
-  //   // '0',
-  //   // '0',
-  //   // '0',
-  //   // '413146688368029',
-  //   // '0',
-  //   // '0',
-  //   // '5255018519617450',
-  //   // '46814674803388154855',
-  //   // '0'
-  // ];
-
-
-  // TODO: re-enable; don't use above hardcoding of course
-  const prices = []; // TODO: convert to promise.all
-  for (const token of tokens) {
-    let tokenPrice;
-    if (token.toLowerCase() === quoteAsset.toLowerCase())
-      tokenPrice = web3.utils.toWei('1', 'ether');
-    else
-      tokenPrice = (await feed.getKyberPrice(token, quoteAsset)).kyberPrice_;
-    prices.push(tokenPrice.toString());
-  }
-
-
-  await feed.update(tokens, prices);
+  const orderedPrices = tokens.map(token => prices[token]);
+  await feed.update(tokens, orderedPrices);
 }
 /////////
 
 module.exports = async _ => {
   const registry = await Registry.deployed();
+  const priceSource = await KyberPriceFeed.deployed();
   const kyberNetworkProxy = await KyberNetworkProxy.at(mainnetAddrs.kyber.KyberNetworkProxy);
   const matchingMarket = await MatchingMarket.at(mainnetAddrs.oasis.OasisDexExchange);
   const uniswapFactory = await UniswapFactory.at(mainnetAddrs.uniswap.UniswapFactory);
   const zeroExV2Exchange = await ZeroExV2Exchange.at(mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   const zeroExV3Exchange = await ZeroExV3Exchange.at(mainnetAddrs.zeroExV3.ZeroExV3Exchange);
-  const priceSource = await KyberPriceFeed.deployed();
 
   await registry.setPriceSource(priceSource.address);
   await registry.setEngine((await Engine.deployed()).address);
@@ -156,5 +159,5 @@ module.exports = async _ => {
     }
   }
 
-  await updateFeedTruffle(priceSource, registry);
+  await updateKyberFeedTruffle(priceSource, registry);
 }

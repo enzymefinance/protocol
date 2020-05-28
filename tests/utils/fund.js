@@ -7,7 +7,7 @@ import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import getAccounts from '~/deploy/utils/getAccounts';
 import { getEventFromLogs } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
-import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
 
 export const getFundComponents = async (hubAddress, web3) => {
   const components = {};
@@ -94,11 +94,7 @@ export const investInFund = async ({
   // Update prices and executes reqeust if not initial investment
   if (isInitial !== true) {
     await delay(1000);
-    await updateTestingPriceFeed(
-      tokenPriceData.priceSource,
-      tokenPriceData.tokenAddresses,
-      tokenPriceData.tokenPrices
-    );
+    await updateKyberPriceFeed(tokenPriceData.priceSource, web3);
     await send(
       sharesRequestor,
       'executeRequestFor',

@@ -7,11 +7,9 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpDiv } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import {
   createUnsignedZeroExOrder,
@@ -19,49 +17,52 @@ import {
   isValidZeroExSignatureOffChain,
   signZeroExOrder
 } from '~/tests/utils/zeroExV2';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let contracts;
 let mln, zrx, weth, erc20Proxy, priceSource, zeroExAdapter, zeroExExchange;
 let fund;
 let takeOrderSignature;
 let mlnToEthRate, wethToEthRate, zrxToEthRate;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  mln = contracts.MLN;
-  zrx = contracts.ZRX;
-  weth = contracts.WETH;
-  erc20Proxy = contracts.ZeroExV2ERC20Proxy;
-  priceSource = contracts.TestingPriceFeed;
-  zeroExAdapter = contracts.ZeroExV2Adapter;
-  zeroExExchange = contracts.ZeroExV2Exchange;
-
-  const fundFactory = contracts.FundFactory;
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  erc20Proxy = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ERC20_PROXY, web3, mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy);
+  zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   wethToEthRate = toWei('1', 'ether');
   mlnToEthRate = toWei('0.5', 'ether');
   zrxToEthRate = toWei('0.25', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address, zrx.options.address],
-      [wethToEthRate, mlnToEthRate, zrxToEthRate],
-    ],
-    defaultTxOpts
-  );
+  zrxToEthRate = await call(priceSource, 'getPrice', [zrx.options.address]);
+  // await send(
+  //   priceSource,
+  //   'update',
+  //   [
+  //     [weth.options.address, mln.options.address, zrx.options.address],
+  //     [wethToEthRate, mlnToEthRate, zrxToEthRate],
+  //   ],
+  //   defaultTxOpts,
+  //   web3
+  // );
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
@@ -73,14 +74,15 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 });
 
 describe('Fund takes an order', () => {
   let signedOrder;
 
-  test('third party makes and validates an off-chain order', async () => {
+  test('Third party makes and validates an off-chain order', async () => {
     const makerAddress = deployer;
     const makerAssetAmount = toWei('1', 'Ether');
     const takerAssetAmount = toWei('0.05', 'Ether');
@@ -96,7 +98,7 @@ describe('Fund takes an order', () => {
       },
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
     signedOrder = await signZeroExOrder(unsignedOrder, deployer);
     const signatureValid = await isValidZeroExSignatureOffChain(
       unsignedOrder,
@@ -107,7 +109,7 @@ describe('Fund takes an order', () => {
     expect(signatureValid).toBeTruthy();
   });
 
-  test('manager takes order through adapter', async () => {
+  test('Manager takes order through adapter', async () => {
     const { vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
@@ -133,6 +135,7 @@ describe('Fund takes an order', () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
@@ -165,7 +168,7 @@ describe('Fund takes an order', () => {
 describe('Fund takes an order with a taker fee', () => {
   let signedOrder;
 
-  test('third party makes and validates an off-chain order', async () => {
+  test('Third party makes and validates an off-chain order', async () => {
     const makerAddress = deployer;
     const takerFee = new BN(toWei('0.0001', 'ether'));
 
@@ -185,7 +188,7 @@ describe('Fund takes an order with a taker fee', () => {
       },
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
     signedOrder = await signZeroExOrder(unsignedOrder, deployer);
     const signatureValid = await isValidZeroExSignatureOffChain(
       unsignedOrder,
@@ -200,7 +203,7 @@ describe('Fund takes an order with a taker fee', () => {
     const { hub, shares } = fund;
 
     // Enable investment with zrx
-    await send(shares, 'enableSharesInvestmentAssets', [[zrx.options.address]], managerTxOpts);
+    await send(shares, 'enableSharesInvestmentAssets', [[zrx.options.address]], managerTxOpts, web3);
 
     const contribAmount = toWei('1', 'ether');
     const shareCost = new BN(
@@ -225,14 +228,15 @@ describe('Fund takes an order with a taker fee', () => {
         priceSource,
         tokenAddresses: [zrx.options.address],
         tokenPrices: [zrxToEthRate]
-      }
+      },
+      web3
     });
 
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
     expect(postInvestorShares).bigNumberEq(preInvestorShares.add(wantedShares));
   });
 
-  test('fund with enough ZRX takes order', async () => {
+  test('Fund with enough ZRX takes order', async () => {
     const { vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
@@ -262,6 +266,7 @@ describe('Fund takes an order with a taker fee', () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));

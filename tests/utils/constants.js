@@ -76,5 +76,6 @@ export const CONTRACT_NAMES = {
   ZERO_EX_V3_EXCHANGE: 'ZeroExV3Exchange',
   ZERO_EX_V3_STAKING: 'ZeroExV3Staking',
   ZERO_EX_V3_STAKING_PROXY: 'ZeroExV3StakingProxy',
-  ZERO_EX_V3_ZRX_VAULT: 'ZeroExV3ZrxVault'
+  ZERO_EX_V3_ZRX_VAULT: 'ZeroExV3ZrxVault',
+  ZRX: 'ZRX'
 }
