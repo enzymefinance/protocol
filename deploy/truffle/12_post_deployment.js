@@ -14,13 +14,11 @@ module.exports = async _ => {
   const zrxWhale = '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8';
 
   // load whales with eth
-  console.log('pre')
   await web3.eth.sendTransaction({
     from: primary,
     to: zrxWhale,
     value: web3.utils.toWei('100', 'ether')
   });
-  console.log('post')
 
 
   const weth = await WETH.at(mainnetAddrs.tokens.WETH);
