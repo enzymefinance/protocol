@@ -6,6 +6,7 @@ import "../dependencies/DSAuth.sol";
 import "../dependencies/libs/EnumerableSet.sol";
 import "../fund/hub/ISpoke.sol";
 import "../dependencies/token/IERC20.sol";
+import "../integrations/libs/IIntegrationAdapter.sol";
 
 /// @title Registry Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -33,17 +34,9 @@ contract Registry is DSAuth {
 
     event IncentiveChanged (uint256 incentiveAmount);
 
-    event IntegrationAdapterAdded (
-        address adapter,
-        address exchange,
-        uint256 typeIndex
-    );
+    event IntegrationAdapterAdded (address indexed adapter, string indexed identifier);
 
-    event IntegrationAdapterRemoved (
-        address indexed adapter,
-        address exchange,
-        uint256 typeIndex
-    );
+    event IntegrationAdapterRemoved (address indexed adapter, string indexed identifier);
 
     event MGMChanged (address MGM);
 
@@ -60,9 +53,12 @@ contract Registry is DSAuth {
     event SharesRequestorChanged(address sharesRequestor);
 
     EnumerableSet.AddressSet private assets;
+
+    // Plugins
     EnumerableSet.AddressSet private fees;
     EnumerableSet.AddressSet private integrationAdapters;
     EnumerableSet.AddressSet private policies;
+    mapping (bytes32 => bool) private integrationAdapterIdentifierIsRegistered;
 
     // Derivatives (tokens representing underlying assets, e.g,. cDai)
     mapping (address => address) public derivativeToPriceSource;
@@ -70,14 +66,6 @@ contract Registry is DSAuth {
     // Funds
     mapping (address => bool) public fundIsRegistered;
     mapping (address => address[]) public managerToFunds;
-
-    // Vault Integrations
-    struct IntegrationInfo {
-        address gateway;
-        uint256 typeIndex;
-    }
-    mapping (address => IntegrationInfo) public adapterToIntegrationInfo;
-    string[] public integrationTypes;
 
     address public engine;
     address public fundFactory;
@@ -90,9 +78,6 @@ contract Registry is DSAuth {
 
     constructor(address _postDeployOwner) public {
         incentive = 10 finney;
-        integrationTypes.push("none");
-        integrationTypes.push("trading");
-        integrationTypes.push("lending");
         setOwner(_postDeployOwner);
     }
 
@@ -235,13 +220,6 @@ contract Registry is DSAuth {
 
     // INTEGRATIONS
 
-    /// @notice Add an integration type to the Registry
-    /// @dev Cannot remove integration types; used like an extendable enum
-    /// @param _name Human-readable name for the integration type
-    function addIntegrationType(string calldata _name) external auth {
-        integrationTypes.push(_name);
-    }
-
     /// @notice Remove an integration adapter from the Registry
     /// @param _adapter The address of the adapter to remove
     function deregisterIntegrationAdapter(address _adapter) external auth {
@@ -249,16 +227,13 @@ contract Registry is DSAuth {
             integrationAdapterIsRegistered(_adapter),
             "deregisterIntegrationAdapter: Adapter already disabled"
         );
+
+        string memory identifier = IIntegrationAdapter(_adapter).identifier();
+        integrationAdapterIdentifierIsRegistered[keccak256(bytes(identifier))] = false;
+
         EnumerableSet.remove(integrationAdapters, _adapter);
 
-        IntegrationInfo memory integrationInfo = adapterToIntegrationInfo[_adapter];
-        delete(adapterToIntegrationInfo[_adapter]);
-
-        emit IntegrationAdapterRemoved(
-            _adapter,
-            integrationInfo.gateway,
-            integrationInfo.typeIndex
-        );
+        emit IntegrationAdapterRemoved(_adapter, identifier);
     }
 
     /// @notice Get all registered integration adapters
@@ -270,52 +245,37 @@ contract Registry is DSAuth {
     /// @notice Register an integration adapter with its associated external contract and type
     /// @dev Adapters are unique. There may be different adapters for same exchange (0x / Ethfinex)
     /// @param _adapter Address of integration adapter contract
-    /// @param _gateway Address of the external contract with which the _adapter interacts
-    /// @param _typeIndex Index of the type of integration in the integrationTypes storage variable
-    function registerIntegrationAdapter(
-        address _adapter,
-        address _gateway,
-        uint256 _typeIndex
-    )
-        external
-        auth
-    {
+    function registerIntegrationAdapter(address _adapter) external auth {
         require(
             _adapter != address(0),
             "registerIntegrationAdapter: _adapter cannot be empty"
         );
         require(
-            _gateway != address(0),
-            "registerIntegrationAdapter: _gateway cannot be empty"
-        );
-        require(
-            integrationTypes.length > _typeIndex,
-            "registerIntegrationAdapter: _typeIndex does not exist"
-        );
-
-        require(
             !integrationAdapterIsRegistered(_adapter),
             "registerIntegrationAdapter: Adapter already registered"
         );
 
-        EnumerableSet.add(integrationAdapters, _adapter);
-        adapterToIntegrationInfo[_adapter] = IntegrationInfo({
-            gateway: _gateway,
-            typeIndex: _typeIndex
-        });
-
-        emit IntegrationAdapterAdded(
-            _adapter,
-            _gateway,
-            _typeIndex
+        // Plugins should only have their latest version registered
+        string memory identifier = IIntegrationAdapter(_adapter).identifier();
+        require(
+            bytes(identifier).length != 0,
+            "registerIntegrationAdapter: Identifier must be defined in the adapter"
         );
-    }
+        bytes32 identifierHash = keccak256(bytes(identifier));
+        require(
+            !integrationAdapterIdentifierIsRegistered[identifierHash],
+            string(abi.encodePacked(
+                "registerIntegrationAdapter: Adapter with identifier exists: ",
+                identifier
+            ))
+        );
 
-    /// @notice Update the human-readable name for an integration type
-    /// @param _index The position index of the item in the integration types array
-    /// @param _name The human-readable name string
-    function updateIntegrationTypeName(uint256 _index, string calldata _name) external auth {
-        integrationTypes[_index] = _name;
+        EnumerableSet.add(policies, _adapter);
+        integrationAdapterIdentifierIsRegistered[identifierHash] = true;
+
+        EnumerableSet.add(integrationAdapters, _adapter);
+
+        emit IntegrationAdapterAdded(_adapter, identifier);
     }
 
     /// @notice Check if an integration adapter is on the Registry

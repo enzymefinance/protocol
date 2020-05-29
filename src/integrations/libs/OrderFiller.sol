@@ -12,7 +12,6 @@ import "../../fund/vault/IVault.sol";
 /// @notice Base contract for standardizing the filled amounts of assets
 abstract contract OrderFiller is DSMath, IntegrationAdapter {
     event OrderFilled(
-        address indexed targetContract,
         address buyAsset,
         uint256 buyAmount,
         address sellAsset,
@@ -23,15 +22,10 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
 
     /// @notice Wraps an on-chain order execution to validate received values,
     /// update fund asset ammounts, and emit an event
-    /// @param _targetContract Integration where order filled (only needed for event emission)
     /// @param _fillData Encoded data used by the OrderFiller
-    modifier validateAndFinalizeFilledOrder(
-        address _targetContract,
-        bytes memory _fillData
-    )
-    {
+    modifier validateAndFinalizeFilledOrder(bytes memory _fillData) {
         // Validate params
-        __validateFillOrderInputs(_targetContract, _fillData);
+        __validateFillOrderInputs(_fillData);
 
         // Approve ERC20s to-be-filled, storing original allowances
         // @dev Don't use aggregated fill data for this step, as we need targets for approvals
@@ -57,7 +51,6 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
         // Validate whether the actual fill amounts are at least as beneficial for the fund as the expected amounts
         // Emit event in this step with the actual fill amounts for each asset
         __validateAndEmitOrderFillResults(
-            _targetContract,
             aggregatedAssets,
             aggregatedExpectedAmounts,
             balanceDiffs
@@ -360,12 +353,10 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
     /// @notice Validates the spent/received amounts from the fill, and emits an OrderFill event
     /// @dev Since a fee asset can be the same as a buy/sell asset,
     /// this takes that into account in calculating the actual fill amounts
-    /// @param _targetContract The integration address where the fill was executed
     /// @param _assets The assets that were filled
     /// @param _expectedAmounts The expected fill amounts of _assets
     /// @param _balanceDiffs The differences in pre- and post-fill balanceOf of _assets, for the fund
     function __validateAndEmitOrderFillResults(
-        address _targetContract,
         address[] memory _assets,
         uint256[] memory _expectedAmounts,
         uint256[] memory _balanceDiffs
@@ -413,7 +404,6 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
         );
 
         emit OrderFilled(
-            _targetContract,
             _assets[0],
             buyAmountFilled,
             _assets[1],
@@ -424,24 +414,13 @@ abstract contract OrderFiller is DSMath, IntegrationAdapter {
     }
 
     /// @notice Validates the args passed by an integration adapter
-    /// @param _targetContract The integration address where the fill will be executed
     /// @param _fillData Encoded data used by the OrderFiller
-    function __validateFillOrderInputs(
-        address _targetContract,
-        bytes memory _fillData
-    )
-        private
-        pure
-    {
+    function __validateFillOrderInputs(bytes memory _fillData) private pure {
         (
             address[] memory assets,
             uint256[] memory expectedAmounts,
             address[] memory assetReceipients
         ) = __decodeOrderFillData(_fillData);
-        require(
-            _targetContract != address(0),
-            "__validateFillOrderInputs: _targetContract cannot be empty"
-        );
         require(
             assets.length == expectedAmounts.length,
             "__validateFillOrderInputs: assets and expectedAmounts lengths not equal"

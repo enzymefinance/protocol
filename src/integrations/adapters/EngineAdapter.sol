@@ -11,6 +11,18 @@ import "../../engine/IEngine.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
+    address immutable public EXCHANGE;
+
+    constructor(address _exchange) public {
+        EXCHANGE = _exchange;
+    }
+
+    /// @notice Provides a constant string identifier for an adapter
+    /// @return An identifier string
+    function identifier() external pure override returns (string memory) {
+        return "MELON_ENGINE";
+    }
+
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management
@@ -24,10 +36,7 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __extractTakeOrderRiskManagementArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -59,17 +68,12 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
     }
 
     /// @notice Buys Ether from the Melon Engine, selling MLN (takeOrder)
-    /// @param _targetExchange Address of the Melon Engine
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(
-        address _targetExchange,
-        bytes memory _encodedArgs,
-        bytes memory _fillData
-    )
+    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
         internal
         override
-        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
+        validateAndFinalizeFilledOrder(_fillData)
     {
         (
             address[] memory fillAssets,
@@ -78,7 +82,7 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
 
         // Fill order on Engine
         uint256 preEthBalance = payable(address(this)).balance;
-        IEngine(_targetExchange).sellAndBurnMln(fillExpectedAmounts[1]);
+        IEngine(EXCHANGE).sellAndBurnMln(fillExpectedAmounts[1]);
         uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
         // Return ETH to WETH
@@ -86,7 +90,6 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of the Melon Engine
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
@@ -96,11 +99,8 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// - [1] Expected (max) quantity of MLN to spend
     /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
-    /// - [1] Melon Engine (_targetExchange)
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    /// - [1] Melon Engine (EXCHANGE)
+    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -123,18 +123,14 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = _targetExchange; // Oasis Dex exchange
+        fillApprovalTargets[1] = EXCHANGE; // Oasis Dex exchange
 
         return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of the Melon Engine
     /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __validateTakeOrderParams(bytes memory _encodedArgs)
         internal
         view
         override

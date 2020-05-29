@@ -9,6 +9,18 @@ import "../libs/OrderTaker.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and OasisDex Matching Market
 contract OasisDexAdapter is OrderTaker {
+    address immutable public EXCHANGE;
+
+    constructor(address _exchange) public {
+        EXCHANGE = _exchange;
+    }
+
+    /// @notice Provides a constant string identifier for an adapter
+    /// @return An identifier string
+    function identifier() external pure override returns (string memory) {
+        return "OASIS_DEX";
+    }
+
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management
@@ -22,10 +34,7 @@ contract OasisDexAdapter is OrderTaker {
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __extractTakeOrderRiskManagementArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -55,17 +64,12 @@ contract OasisDexAdapter is OrderTaker {
     }
 
     /// @notice Takes an active order on Oasis Dex (takeOrder)
-    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(
-        address _targetExchange,
-        bytes memory _encodedArgs,
-        bytes memory _fillData
-    )
+    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
         internal
         override
-        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
+        validateAndFinalizeFilledOrder(_fillData)
     {
         (
             , , , ,
@@ -75,11 +79,10 @@ contract OasisDexAdapter is OrderTaker {
         (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
 
         // Execute take order on exchange
-        IOasisDex(_targetExchange).buy(uint256(identifier), fillExpectedAmounts[0]);
+        IOasisDex(EXCHANGE).buy(uint256(identifier), fillExpectedAmounts[0]);
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
@@ -89,11 +92,8 @@ contract OasisDexAdapter is OrderTaker {
     /// - [1] Expected (max) quantity of taker asset to spend
     /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
-    /// - [1] Oasis Dex exchange (_targetExchange)
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    /// - [1] Oasis Dex exchange ()
+    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -113,7 +113,7 @@ contract OasisDexAdapter is OrderTaker {
 
         (
             uint256 maxMakerQuantity,,uint256 maxTakerQuantity,
-        ) = IOasisDex(_targetExchange).getOffer(uint256(identifier));
+        ) = IOasisDex(EXCHANGE).getOffer(uint256(identifier));
 
         uint256[] memory fillExpectedAmounts = new uint256[](2);
         fillExpectedAmounts[0] = __calculateRelativeQuantity(
@@ -125,18 +125,14 @@ contract OasisDexAdapter is OrderTaker {
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = _targetExchange; // Oasis Dex exchange
+        fillApprovalTargets[1] = EXCHANGE; // Oasis Dex exchange
 
         return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of the Oasis Dex exchange
     /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __validateTakeOrderParams(bytes memory _encodedArgs)
         internal
         view
         override
@@ -153,7 +149,7 @@ contract OasisDexAdapter is OrderTaker {
             address makerAsset,
             uint256 maxTakerQuantity,
             address takerAsset
-        ) = IOasisDex(_targetExchange).getOffer(uint256(identifier));
+        ) = IOasisDex(EXCHANGE).getOffer(uint256(identifier));
 
         require(
             decodedMakerAsset == makerAsset,
