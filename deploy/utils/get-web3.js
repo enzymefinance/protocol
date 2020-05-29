@@ -1,3 +1,4 @@
+// TODO: delete this when no longer used (migration to truffle)
 const fs = require('fs');
 const Web3 = require('web3');
 const deployIn = require('./get-deploy-input');

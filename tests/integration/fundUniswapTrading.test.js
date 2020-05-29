@@ -9,45 +9,44 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { call, send } from '~/deploy/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let contracts;
-let eur, mln, weth, fund;
-let mlnExchange, eurExchange;
+let zrx, mln, weth, fund;
+let mlnExchange, zrxExchange;
 let takeOrderSignature;
 let uniswapAdapter;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-
-  const deployed = await partialRedeploy(
-    [CONTRACT_NAMES.FUND_FACTORY, CONTRACT_NAMES.UNISWAP_EXCHANGE]
-  );
-  contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  eur = contracts.EUR;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  const fundFactory = contracts.FundFactory;
-
-  const uniswapFactory = contracts.UniswapFactory;
-  uniswapAdapter = contracts.UniswapAdapter;
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  const uniswapFactory = getDeployed(
+    CONTRACT_NAMES.UNISWAP_FACTORY,
+    web3,
+    mainnetAddrs.uniswap.UniswapFactory
+  );
+  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
@@ -59,59 +58,23 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 
   // Load interfaces for uniswap exchanges of tokens to be traded
-  const iUniswapFactory = await fetchContract(
-    "IUniswapFactory",
-    contracts.UniswapFactory.options.address
-  );
-  const mlnExchangeAddress = await call(iUniswapFactory, 'getExchange', [mln.options.address]);
-  mlnExchange = await fetchContract(
-    "IUniswapExchange",
+  const mlnExchangeAddress = await call(uniswapFactory, 'getExchange', [mln.options.address]);
+  mlnExchange = await getDeployed(
+    CONTRACT_NAMES.UNISWAP_EXCHANGE,
+    web3,
     mlnExchangeAddress
   );
-  const eurExchangeAddress = await call(uniswapFactory, 'getExchange', [eur.options.address]);
-  eurExchange = await fetchContract(
-    "IUniswapExchange",
-    eurExchangeAddress
+  const zrxExchangeAddress = await call(uniswapFactory, 'getExchange', [zrx.options.address]);
+  zrxExchange = await getDeployed(
+    CONTRACT_NAMES.UNISWAP_EXCHANGE,
+    web3,
+    zrxExchangeAddress
   );
-
-  // Seed uniswap exchanges with liquidity
-  const ethLiquidityAmount = toWei('1', 'ether');
-  const eurLiquidityAmount = toWei('100', 'ether');
-  const mlnLiquidityAmount = toWei('2', 'ether');
-
-  const minLiquidity = 0; // For first liquidity provider
-  const deadline = (await web3.eth.getBlock('latest')).timestamp + 300 // Arbitrary
-
-  await send(
-    mln,
-    'approve',
-    [mlnExchange.options.address, mlnLiquidityAmount],
-    defaultTxOpts
-  );
-  await send(
-    mlnExchange,
-    'addLiquidity',
-    [minLiquidity, mlnLiquidityAmount, deadline],
-    { ...defaultTxOpts, value: ethLiquidityAmount }
-  );
-
-  await send(
-    eur,
-    'approve',
-    [eurExchange.options.address, eurLiquidityAmount],
-    defaultTxOpts
-  );
-  await send(
-    eurExchange,
-    'addLiquidity',
-    [minLiquidity, eurLiquidityAmount, deadline],
-    { ...defaultTxOpts, value: ethLiquidityAmount }
-  );
-
 });
 
 test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
@@ -151,6 +114,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -211,6 +175,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -239,7 +204,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = eur.options.address;
+  const makerAsset = zrx.options.address;
   const makerQuantity = "1";
 
   const intermediateEth = await call(
@@ -248,14 +213,14 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     [takerQuantity]
   );
   const expectedMakerQuantity = await call(
-    eurExchange,
+    zrxExchange,
     'getEthToTokenInputPrice',
     [intermediateEth]
   );
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );
@@ -263,7 +228,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     await call(vault, 'assetBalances', [mln.options.address])
   );
   const preFundHoldingsEur = new BN(
-    await call(vault, 'assetBalances', [eur.options.address])
+    await call(vault, 'assetBalances', [zrx.options.address])
   );
 
   const encodedArgs = encodeTakeOrderArgs({
@@ -282,11 +247,12 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );
@@ -294,7 +260,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     await call(vault, 'assetBalances', [mln.options.address])
   );
   const postFundHoldingsEur = new BN(
-    await call(vault, 'assetBalances', [eur.options.address])
+    await call(vault, 'assetBalances', [zrx.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
@@ -342,6 +308,7 @@ test('Order fails if maker amount is not satisfied', async () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     )
   ).rejects.toThrow(); // No specific message, fails at Uniswap level
 });
