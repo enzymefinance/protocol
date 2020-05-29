@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 
 /// @dev Minimal interface for our interactions with OasisDex MatchingMarket
 interface IOasisDex {

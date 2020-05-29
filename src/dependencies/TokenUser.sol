@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 
 import "./token/IERC20.sol";
 import "./DSMath.sol";

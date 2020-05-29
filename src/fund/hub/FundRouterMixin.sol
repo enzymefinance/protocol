@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 
 import "../../registry/IRegistry.sol";
 import "./IHub.sol";

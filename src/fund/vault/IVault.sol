@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 
 /// @title Vault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
