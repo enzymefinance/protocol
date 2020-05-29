@@ -280,7 +280,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.OASIS_DEX_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(oasisDexExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);

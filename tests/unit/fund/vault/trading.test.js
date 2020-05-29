@@ -16,7 +16,7 @@ import { setupFundWithParams } from '~/tests/utils/fund';
 
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, maliciousUser;
-let oasisDexAdapter, oasisDexExchange, uniswapAdapter, uniswapFactory;
+let kyberAdapter, oasisDexAdapter, oasisDexExchange, uniswapAdapter, uniswapFactory;
 let engine, engineAdapter, registry;
 let weth, mln;
 
@@ -33,6 +33,7 @@ beforeAll(async () => {
 
   engine = contracts.Engine;
   engineAdapter = contracts.EngineAdapter;
+  kyberAdapter = contracts.KyberAdapter;
   oasisDexExchange = contracts.OasisDexExchange;
   oasisDexAdapter = contracts.OasisDexAdapter;
   registry = contracts.Registry;
@@ -76,7 +77,7 @@ describe('constructor', async () => {
 describe('disableAdapters', () => {
   let fund;
   let initialAdapters, adaptersToDisable
-  let disableAdaptersTxBlock;
+  let disableAdapterTxBlock;
 
   beforeAll(async () => {
     const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
@@ -132,13 +133,13 @@ describe('disableAdapters', () => {
       await expect(
         send(fund.vault, 'disableAdapters', [adaptersToDisable], managerTxOpts)
       ).resolves.not.toThrow();
-      disableAdaptersTxBlock = await web3.eth.getBlockNumber();
+      disableAdapterTxBlock = await web3.eth.getBlockNumber();
 
       postEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
     });
   
     it('correctly updates state', async () => {
-      // 1. Returns correct disabledAdapters length
+      // 1. Returns correct disabled adapters length
       expect(postEnabledAdapters.length).toEqual(
         preEnabledAdapters.length - adaptersToDisable.length
       );
@@ -148,28 +149,27 @@ describe('disableAdapters', () => {
       };
     });
   
-    it('emits correct AdaptersDisabled event', async () => {
+    it('emits correct AdapterDisabled events', async () => {
       const events = await fund.vault.getPastEvents(
-        'AdaptersDisabled',
+        'AdapterDisabled',
         {
-          fromBlock: disableAdaptersTxBlock,
+          fromBlock: disableAdapterTxBlock,
           toBlock: 'latest'
         }
       );
-      expect(events.length).toBe(1);
-  
-      const eventValues = events[0].returnValues;
-      expect(eventValues.adapters[0]).toBe(adaptersToDisable[0]);
-      expect(eventValues.adapters[1]).toBe(adaptersToDisable[1]);
+      expect(events.length).toBe(2);
+
+      for (let i = 0; i < events.length; i++) {
+        expect(events[i].returnValues.adapter).toBe(adaptersToDisable[i]);
+      };
     });
   })
 });
 
 describe('enableAdapters', () => {
   let fund;
-  let newAdapter, newExchange;
   let initialAdapters, adaptersToEnable
-  let enableAdaptersTxBlock;
+  let enableAdapterTxBlock;
 
   beforeAll(async () => {
     const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
@@ -177,11 +177,7 @@ describe('enableAdapters', () => {
     const fundFactory = contracts.FundFactory;
 
     initialAdapters = [oasisDexAdapter.options.address];
-
-    newExchange = randomHex(20);
-    newAdapter = randomHex(20);
-
-    adaptersToEnable = [uniswapAdapter.options.address, newAdapter];
+    adaptersToEnable = [uniswapAdapter.options.address, kyberAdapter.options.address];
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
@@ -190,6 +186,14 @@ describe('enableAdapters', () => {
       quoteToken: weth.options.address,
       fundFactory
     });
+
+    // De-register KyberAdapter from registry to re-register it later
+    await send(
+      registry,
+      'deregisterIntegrationAdapter',
+      [kyberAdapter.options.address],
+      defaultTxOpts
+    );
   });
 
   describe('Bad actions', () => {
@@ -227,10 +231,11 @@ describe('enableAdapters', () => {
     let preEnabledAdapters, postEnabledAdapters;
 
     it('allows an authenticated user to add registered adapters', async () => {  
+      // Re-register KyberAdapter
       await send(
         registry,
         'registerIntegrationAdapter',
-        [newAdapter, newExchange, 1],
+        [kyberAdapter.options.address],
         defaultTxOpts
       );
 
@@ -239,7 +244,7 @@ describe('enableAdapters', () => {
       await expect(
         send(fund.vault, 'enableAdapters', [adaptersToEnable], managerTxOpts)
       ).resolves.not.toThrow();
-      enableAdaptersTxBlock = await web3.eth.getBlockNumber();
+      enableAdapterTxBlock = await web3.eth.getBlockNumber();
 
       postEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
     });
@@ -251,26 +256,23 @@ describe('enableAdapters', () => {
       );
       // 2. Returns correct enabledAdapters
       for (let i = 0; i < adaptersToEnable.length; i++) {
-        // Annoying syntax, but need lowercase to match randomHex() output
-        expect(adaptersToEnable[i].toLowerCase()).toBe(
-          postEnabledAdapters.slice(-2)[i].toLowerCase()
-        );
+        expect(adaptersToEnable[i]).toBe(postEnabledAdapters.slice(-2)[i]);
       };
     });
   
-    it('emits correct AdaptersEnabled event', async () => {
+    it('emits correct AdapterEnabled events', async () => {
       const events = await fund.vault.getPastEvents(
-        'AdaptersEnabled',
+        'AdapterEnabled',
         {
-          fromBlock: enableAdaptersTxBlock,
+          fromBlock: enableAdapterTxBlock,
           toBlock: 'latest'
         }
       );
-      expect(events.length).toBe(1);
+      expect(events.length).toBe(2);
   
-      const eventValues = events[0].returnValues;
-      expect(eventValues.adapters[0]).toBe(adaptersToEnable[0]);
-      expect(eventValues.adapters[1].toLowerCase()).toBe(adaptersToEnable[1]);
+      for (let i = 0; i < events.length; i++) {
+        expect(events[i].returnValues.adapter).toBe(adaptersToEnable[i]);
+      };
     });
   })
 });

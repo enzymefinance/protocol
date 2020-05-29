@@ -162,7 +162,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ENGINE_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(engine.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -271,7 +270,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ENGINE_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(engine.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
