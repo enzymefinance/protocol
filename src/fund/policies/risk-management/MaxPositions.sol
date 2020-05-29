@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 
 import "../../hub/Spoke.sol";
 import "../../shares/Shares.sol";

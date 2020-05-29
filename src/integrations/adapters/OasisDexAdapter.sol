@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../interfaces/IOasisDex.sol";

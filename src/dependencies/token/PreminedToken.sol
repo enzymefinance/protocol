@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.8;
 
 import "./StandardToken.sol";
 
