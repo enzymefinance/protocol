@@ -14,7 +14,7 @@ import { BN, toWei } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul, BNExpDiv } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupInvestedTestFund } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
 import {

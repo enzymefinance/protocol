@@ -191,7 +191,11 @@ export const setupFundWithParams = async ({
 
 // Creates a basic fund with all our integration adapters, fees, and some initial investment
 // @dev `contracts` is an object of web3.Contract instances
-export const setupInvestedTestFund = async (contracts, manager, amguTxValue = null) => {
+export const setupInvestedTestFund = async (
+  contracts,
+  manager,
+  amguTxValue = null
+) => {
   const [deployer] = await getAccounts();
 
   const weth = contracts.WETH;

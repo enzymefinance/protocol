@@ -9,23 +9,24 @@
 import { encodeFunctionSignature } from 'web3-eth-abi';
 import { toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { deploy } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+let web3;
 let deployer, manager, investor, badInvestor;
-let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;
+let defaultTxOpts, managerTxOpts;
 let buySharesFunctionSig;
 
 beforeAll(async () => {
-  [deployer, manager, investor, badInvestor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  investorTxOpts = { ...defaultTxOpts, from: investor };
-  badInvestorTxOpts = { ...defaultTxOpts, from: badInvestor };
 
   buySharesFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.SHARES,
@@ -39,15 +40,20 @@ describe('Fund 1: user whitelist', () => {
   let fund;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-    const contracts = deployed.contracts;
+    mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+    weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-    mln = contracts.MLN;
-    weth = contracts.WETH;
-    priceSource = contracts.TestingPriceFeed;
-    const fundFactory = contracts.FundFactory;
-
-    userWhitelist = await deploy(CONTRACT_NAMES.USER_WHITELIST, [[investor]]);
+    // TODO: this will change very soon (global deployment of policy)
+    console.log(defaultTxOpts)
+    userWhitelist = await deploy(
+      CONTRACT_NAMES.USER_WHITELIST,
+      [[investor]],
+      defaultTxOpts,
+      [],
+      web3
+    );
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
@@ -58,14 +64,16 @@ describe('Fund 1: user whitelist', () => {
       },
       manager,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      web3
     });
 
     await send(
       fund.policyManager,
       'register',
       [encodeFunctionSignature(buySharesFunctionSig), userWhitelist.options.address],
-      managerTxOpts
+      managerTxOpts,
+      web3
     );
 
     // Investment params
