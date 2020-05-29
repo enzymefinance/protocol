@@ -16,7 +16,6 @@ module.exports = async deployer => {
     (await VaultFactory.deployed()).address,
     (await PolicyManagerFactory.deployed()).address,
     registry.address,
-    conf.melonFundFactoryOwner
   );
 
   await registry.setFundFactory(fundFactory.address);

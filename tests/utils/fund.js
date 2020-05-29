@@ -11,13 +11,28 @@ import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
 
 export const getFundComponents = async (hubAddress, web3) => {
   const components = {};
-
   components.hub = fetchContract('Hub', hubAddress, web3);
-  const routes = await call(components.hub, 'routes');
-  components.feeManager = fetchContract('FeeManager', routes.feeManager, web3);
-  components.policyManager = fetchContract('PolicyManager', routes.policyManager, web3);
-  components.shares = fetchContract('Shares', routes.shares, web3);
-  components.vault = fetchContract('Vault', routes.vault, web3);
+  components.feeManager = fetchContract(
+    'FeeManager',
+    await call(components.hub, 'feeManager'),
+    web3
+  );
+  components.policyManager = fetchContract(
+    'PolicyManager',
+    await call(components.hub, 'policyManager'),
+    web3
+  );
+  components.shares = fetchContract(
+    'Shares',
+    await call(components.hub, 'shares'),
+    web3
+  );
+  components.vault = fetchContract(
+    'Vault',
+    await call(components.hub, 'vault'),
+    web3
+  );
+
   return components;
 }
 
@@ -32,7 +47,6 @@ export const investInFund = async ({
   const investorTxOpts = { from: investor, gas: 8000000 };
 
   const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress, web3);
-  const routes = await call(hub, 'routes');
   const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'), web3);
   const shares = fetchContract(CONTRACT_NAMES.SHARES,  await call(hub, 'shares'), web3);
   const sharesRequestor = fetchContract(
