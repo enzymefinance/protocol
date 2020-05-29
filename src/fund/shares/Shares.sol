@@ -237,7 +237,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             denominatedSharePrice = calcGav() * 10 ** uint256(decimals) / totalSupply();
         }
 
-        // TOOD: does it matter if we do: cost of 1 share x quantity vs. GAV x shares / supply (b/c rounding)?
+        // TODO: does it matter if we do: cost of 1 share x quantity vs. GAV x shares / supply (b/c rounding)?
         // Because 1 share will be rounded down, and then multiplied, which could yield a slightly smaller number
         uint256 denominationAssetQuantity = mul(
             _sharesQuantity,
