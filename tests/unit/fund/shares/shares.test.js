@@ -1,36 +1,32 @@
-import { BN, toWei, randomHex } from 'web3-utils';
-
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-import web3 from '~/deploy/utils/get-web3';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { setupFundWithParams } from '~/tests/utils/fund';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer, investor, thirdParty;
-let defaultTxOpts, investorTxOpts, gasPrice;
+let web3;
+let deployer, manager, investor, thirdParty;
+let defaultTxOpts, investorTxOpts, managerTxOpts, gasPrice;
 let dai, mln, weth, zrx;
-let priceSource, registry, sharesRequestor;
+let registry, sharesRequestor;
 let defaultBuyShares;
 
 beforeAll(async () => {
-  [deployer, investor, thirdParty] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   gasPrice = toWei('2', 'gwei');
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
 
-  priceSource = contracts[CONTRACT_NAMES.TESTING_PRICEFEED];
-  registry = contracts[CONTRACT_NAMES.REGISTRY];
-  sharesRequestor = contracts[CONTRACT_NAMES.SHARES_REQUESTOR];
-
-  dai = contracts.DAI;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  zrx = contracts.ZRX;
+  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
 
   defaultBuyShares = {
     buyer: investor,
@@ -47,15 +43,15 @@ describe('constructor', () => {
   let defaultTokens;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     defaultTokens = [weth.options.address, mln.options.address];
     fund = await setupFundWithParams({
       defaultTokens,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
   });
 
@@ -79,19 +75,25 @@ describe('buyShares', () => {
   let preVaultInvestmentAsset, postVaultInvestmentAsset;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     fund = await setupFundWithParams({
       defaultTokens: [weth.options.address],
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
   });
 
   afterAll(async () => {
-    await send(registry, 'setSharesRequestor', [sharesRequestor.options.address]);
+    await send(
+      registry,
+      'setSharesRequestor',
+      [sharesRequestor.options.address],
+      defaultTxOpts,
+      web3
+    );
   });
 
   it('can NOT be called by deployer or fund manager', async () => {
@@ -99,7 +101,8 @@ describe('buyShares', () => {
       defaultBuyShares.investmentAssetContract,
       'approve',
       [fund.shares.options.address, defaultBuyShares.investmentAmount],
-      defaultTxOpts
+      defaultTxOpts,
+      web3
     );
     await expect(
       send(
@@ -110,13 +113,14 @@ describe('buyShares', () => {
           defaultBuyShares.investmentAssetContract.options.address,
           defaultBuyShares.sharesQuantity
         ],
-        defaultTxOpts
+        defaultTxOpts,
+        web3
       )
     ).rejects.toThrowFlexible("Only SharesRequestor can call this function")
   });
 
   it('succeeds when called by sharesRequestor', async () => {
-    await send(registry, 'setSharesRequestor', [deployer]);
+    await send(registry, 'setSharesRequestor', [deployer], defaultTxOpts, web3);
 
     preFundHoldingsInvestmentAsset = new BN(
       await call(
@@ -151,7 +155,8 @@ describe('buyShares', () => {
           defaultBuyShares.investmentAssetContract.options.address,
           defaultBuyShares.sharesQuantity
         ],
-        defaultTxOpts
+        defaultTxOpts,
+        web3
       )
     ).resolves.not.toThrow()
 
@@ -229,9 +234,7 @@ describe('disableSharesInvestmentAssets', () => {
   let disableInvestmentAssetsTxBlock;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     tokensToDisable = [dai.options.address, zrx.options.address];
     defaultTokens = [
@@ -242,7 +245,9 @@ describe('disableSharesInvestmentAssets', () => {
     fund = await setupFundWithParams({
       defaultTokens,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
   });
 
@@ -252,7 +257,8 @@ describe('disableSharesInvestmentAssets', () => {
         fund.shares,
         'disableSharesInvestmentAssets',
         [tokensToDisable],
-        { ...defaultTxOpts, from: thirdParty }
+        { ...defaultTxOpts, from: thirdParty },
+        web3
       )
     ).rejects.toThrowFlexible("Only the fund manager can call this function")
   });
@@ -265,7 +271,8 @@ describe('disableSharesInvestmentAssets', () => {
         fund.shares,
         'disableSharesInvestmentAssets',
         [tokensToDisable],
-        defaultTxOpts
+        managerTxOpts,
+        web3
       )
     ).resolves.not.toThrow()
 
@@ -303,9 +310,7 @@ describe('enableSharesInvestmentAssets', () => {
   let enableInvestmentAssetsTxBlock;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     tokensToEnable = [dai.options.address, zrx.options.address];
     defaultTokens = [
@@ -315,7 +320,9 @@ describe('enableSharesInvestmentAssets', () => {
     fund = await setupFundWithParams({
       defaultTokens,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
   });
 
@@ -325,7 +332,8 @@ describe('enableSharesInvestmentAssets', () => {
         fund.shares,
         'enableSharesInvestmentAssets',
         [tokensToEnable],
-        { ...defaultTxOpts, from: thirdParty }
+        { ...defaultTxOpts, from: thirdParty },
+        web3
       )
     ).rejects.toThrowFlexible("Only the fund manager can call this function")
   });
@@ -338,7 +346,8 @@ describe('enableSharesInvestmentAssets', () => {
         fund.shares,
         'enableSharesInvestmentAssets',
         [tokensToEnable],
-        defaultTxOpts
+        managerTxOpts,
+        web3
       )
     ).resolves.not.toThrow()
 
@@ -377,9 +386,7 @@ describe('redeemShares', () => {
   let preRedeemerInvestmentAsset, postRedeemerInvestmentAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
@@ -390,7 +397,9 @@ describe('redeemShares', () => {
         investor: defaultBuyShares.buyer,
         tokenContract: defaultBuyShares.investmentAssetContract
       },
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
   });
 
@@ -400,7 +409,8 @@ describe('redeemShares', () => {
         fund.shares,
         'redeemShares',
         [],
-        { ...defaultTxOpts, from: thirdParty }
+        { ...defaultTxOpts, from: thirdParty },
+        web3
       )
     ).rejects.toThrowFlexible("_sharesQuantity must be > 0")
   });
@@ -427,7 +437,8 @@ describe('redeemShares', () => {
         fund.shares,
         'redeemShares',
         [],
-        defaultBuyShares.txOpts
+        defaultBuyShares.txOpts,
+        web3
       )
     ).resolves.not.toThrow()
 
@@ -490,9 +501,7 @@ describe('redeemSharesQuantity', () => {
   let preRedeemerInvestmentAsset, postRedeemerInvestmentAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
@@ -503,7 +512,9 @@ describe('redeemSharesQuantity', () => {
         investor: defaultBuyShares.buyer,
         tokenContract: defaultBuyShares.investmentAssetContract
       },
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
 
     halfOfShares = new BN(defaultBuyShares.sharesQuantity).div(new BN(2));
@@ -518,7 +529,8 @@ describe('redeemSharesQuantity', () => {
         fund.shares,
         'redeemSharesQuantity',
         [sharesPlusOne],
-        defaultBuyShares.txOpts
+        defaultBuyShares.txOpts,
+        web3
       )
     ).rejects.toThrowFlexible("_sharesQuantity exceeds sender balance")
   });
@@ -545,7 +557,8 @@ describe('redeemSharesQuantity', () => {
         fund.shares,
         'redeemSharesQuantity',
         [halfOfShares.toString()],
-        defaultBuyShares.txOpts
+        defaultBuyShares.txOpts,
+        web3
       )
     ).resolves.not.toThrow()
 

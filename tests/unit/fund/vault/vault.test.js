@@ -1,46 +1,46 @@
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-
+import { getDeployed } from '~/tests/utils/getDeployed';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
+let web3;
+let deployer, manager;
 let defaultTxOpts;
 let weth;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
 
-  weth = contracts.WETH;
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
 });
 
 describe('withdraw', () => {
   let fund;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     fund = await setupFundWithParams({
       defaultTokens: [weth.options.address],
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
   });
 
-  it('can NOT be called by the fund manager', async () => {
+  test('can NOT be called by the fund manager', async () => {
     await expect(
       send(
         fund.vault,
         'withdraw',
-        [weth.options.address, "1"],
-        defaultTxOpts
+        [weth.options.address, '1'],
+        defaultTxOpts,
+        web3
       )
-    ).rejects.toThrowFlexible("Only Shares can call this function")
+    ).rejects.toThrowFlexible('Only Shares can call this function')
   });
 });
