@@ -9,43 +9,36 @@
  */
 
 import { toWei } from 'web3-utils';
-
 import { send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import getAccounts from '~/deploy/utils/getAccounts';
-
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
-let defaultTxOpts;
-let contracts;
-let dai, mln, weth;
-let engine;
-let engineAdapter;
+let web3
+let deployer, manager;
+let dai, mln, weth, engineAdapter, fundFactory;
+let managerTxOpts;
 let fund;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
-  defaultTxOpts = { from: deployer, gas: 8000000 };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
+  managerTxOpts = { from: manager, gas: 8000000 };
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  dai = contracts.DAI;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-
-  engine = contracts[CONTRACT_NAMES.ENGINE];
-  engineAdapter = contracts[CONTRACT_NAMES.ENGINE_ADAPTER];
+  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 });
 
 describe('takeOrder', () => {
@@ -61,7 +54,6 @@ describe('takeOrder', () => {
       badAsset = dai.options.address;
 
       // Set up fund
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [engineAdapter.options.address],
@@ -71,7 +63,9 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -94,7 +88,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).rejects.toThrowFlexible("maker asset does not match nativeAsset")
     });
@@ -118,7 +113,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).rejects.toThrowFlexible("taker asset does not match mlnToken")
     });
@@ -143,7 +139,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).rejects.toThrowFlexible("Not enough liquid ether to send")
     });

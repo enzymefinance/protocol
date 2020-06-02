@@ -7,7 +7,6 @@
  */
 
 import { randomHex } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
@@ -17,8 +16,8 @@ import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 let web3
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, maliciousUser;
-let oasisDexAdapter, oasisDexExchange, uniswapAdapter, uniswapFactory;
-let engine, engineAdapter, registry;
+let oasisDexAdapter, uniswapAdapter;
+let engineAdapter, registry;
 let weth, mln;
 let fundFactory;
 
@@ -30,11 +29,8 @@ beforeAll(async () => {
 
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
   engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
-  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
   oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
-  uniswapFactory = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.uniswap.UniswapFactory);
   uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
   registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
