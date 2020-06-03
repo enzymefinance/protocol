@@ -18,9 +18,9 @@ abstract contract OrderTaker is OrderFiller, TradingSignatures {
     /// @param _encodedArgs Encoded parameters passed from client side
     function takeOrder (
         address _targetExchange,
-        bytes memory _encodedArgs
+        bytes calldata _encodedArgs
     )
-        public
+        external
     {
         (
             address[6] memory riskManagementAddresses,
