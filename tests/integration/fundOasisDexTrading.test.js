@@ -7,15 +7,13 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-
 import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 import { getDeployed } from '~/tests/utils/getDeployed';
-
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
 let deployer, manager, investor;
