@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
 import "main/dependencies/token/IERC20.sol";
