@@ -1,13 +1,11 @@
 import { BN, toWei } from 'web3-utils';
-
 import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
-
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { getEventFromLogs } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
 import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
 export const getFundComponents = async (hubAddress, web3) => {
   const components = {};
@@ -192,40 +190,57 @@ export const setupFundWithParams = async ({
 // Creates a basic fund with all our integration adapters, fees, and some initial investment
 // @dev `contracts` is an object of web3.Contract instances
 export const setupInvestedTestFund = async (
-  contracts,
+  mainnetAddrs,
   manager,
-  amguTxValue = null
+  amguTxValue = null,
+  web3
 ) => {
-  const [deployer] = await getAccounts();
+  const [deployer] = await web3.eth.getAccounts();
 
-  const weth = contracts.WETH;
-  const mln = contracts.MLN;
-  const fundFactory = contracts.FundFactory;
-  const performanceFee = contracts.PerformanceFee;
-  const managementFee = contracts.ManagementFee;
+  const weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  const mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  const performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE, web3);
+  const managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
+  const engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
+  const kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  const oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
+  const uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
+  const zeroExV2Adapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
+  const zeroExV3Adapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
 
   const managementFeeRate = toWei('.02', 'ether');
   const performanceFeeRate = toWei('.2', 'ether');
   const managementFeePeriod = 0;
   const performanceFeePeriod = 60 * 60 * 24 * 90; // 90 days
 
-  let adapterAddresses = [
-    contracts.EngineAdapter.options.address,
-    contracts.KyberAdapter.options.address,
-    contracts.OasisDexAdapter.options.address,
-    contracts.UniswapAdapter.options.address,
-    contracts.ZeroExV2Adapter.options.address,
-    contracts.ZeroExV3Adapter.options.address
-  ];
-
   return setupFundWithParams({
     amguTxValue,
-    defaultTokens: [mln.options.address, weth.options.address],
-    integrationAdapters: adapterAddresses,
+    defaultTokens: [
+      mln.options.address,
+      weth.options.address
+    ],
+    integrationAdapters: [
+      engineAdapter.options.address,
+      kyberAdapter.options.address,
+      oasisDexAdapter.options.address,
+      uniswapAdapter.options.address,
+      zeroExV2Adapter.options.address,
+      zeroExV3Adapter.options.address,
+    ],
     fees: {
-      addresses: [managementFee.options.address, performanceFee.options.address],
-      rates: [managementFeeRate, performanceFeeRate],
-      periods: [managementFeePeriod, performanceFeePeriod],
+      addresses: [
+        managementFee.options.address,
+        performanceFee.options.address
+      ],
+      rates: [
+        managementFeeRate,
+        performanceFeeRate
+      ],
+      periods: [
+        managementFeePeriod,
+        performanceFeePeriod
+      ],
     },
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
@@ -234,6 +249,7 @@ export const setupInvestedTestFund = async (
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 };

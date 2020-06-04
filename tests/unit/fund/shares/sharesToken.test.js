@@ -1,36 +1,26 @@
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-
+import { call } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
-let defaultTxOpts;
-let weth;
+let web3, weth, fundFactory;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
-  defaultTxOpts = { from: deployer, gas: 8000000 };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
-
-  weth = contracts.WETH;
+  web3 = await startChain();
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 });
 
 describe('constructor', () => {
   let fund;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
     fund = await setupFundWithParams({
       defaultTokens: [weth.options.address],
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      web3
     }); 
   });
 

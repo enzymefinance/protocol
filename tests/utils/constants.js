@@ -24,6 +24,7 @@ export const CONTRACT_NAMES = {
   ASSET_WHITELIST: 'AssetWhitelist',
   BURNABLE_TOKEN: 'BurnableToken',
   CONVERSION_RATES: 'ConversionRates',
+  DAI: 'DAI',
   ENGINE: 'Engine',
   ENGINE_ADAPTER: 'EngineAdapter',
   FEE_MANAGER: 'FeeManager',
