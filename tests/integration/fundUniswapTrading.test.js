@@ -15,8 +15,7 @@ import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { getDeployed } from '~/tests/utils/getDeployed';
-
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+import { mainnetAddrs } from '~/mainnet_thirdparty_contracts';
 
 let web3;
 let deployer, manager, investor;
