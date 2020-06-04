@@ -34,7 +34,9 @@ beforeAll(async () => {
   );
 });
 
-describe('Fund 1: user whitelist', () => {
+
+// TODO: re-enable when we have global policy deployments
+describe.skip('Fund 1: user whitelist', () => {
   let offeredValue, wantedShares;
   let mln, weth, priceSource, userWhitelist;
   let fund;
@@ -45,7 +47,6 @@ describe('Fund 1: user whitelist', () => {
     priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-    // TODO: this will change very soon (global deployment of policy)
     console.log(defaultTxOpts)
     userWhitelist = await deploy(
       CONTRACT_NAMES.USER_WHITELIST,

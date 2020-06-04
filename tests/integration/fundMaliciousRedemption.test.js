@@ -6,44 +6,52 @@
  * @test redeemSharesEmergency succeeds
  */
 
-import { BN, toWei, randomHex } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { BN, toWei } from 'web3-utils';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 
+let web3;
 let defaultTxOpts, investorTxOpts;
 let deployer, manager, investor;
-let contracts;
 let fund, weth, mln, priceSource, maliciousToken;
 
+// TODO: run this test when we can successfully deploy contracts on secondary forked chain
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
-  weth = contracts.WETH;
-  mln = contracts.MLN;
-  priceSource = contracts.TestingPriceFeed;
-  const registry = contracts.Registry;
-  const fundFactory = contracts.FundFactory;
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   maliciousToken = await deploy(
     CONTRACT_NAMES.MALICIOUS_TOKEN,
-    ['MLC', 18, 'Malicious']
+    ['MLC', 18, 'Malicious'],
+    {},
+    [],
+    web3
   );
 
-  await send(priceSource, 'setDecimals', [maliciousToken.options.address, 18], defaultTxOpts);
+  await send(
+    priceSource,
+    'setDecimals',
+    [maliciousToken.options.address, 18],
+    defaultTxOpts,
+    web3
+  );
 
   await send(
     registry,
     'registerAsset',
     [maliciousToken.options.address],
-    defaultTxOpts
+    defaultTxOpts,
+    web3
   );
 
   fund = await setupFundWithParams({
@@ -55,7 +63,8 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 });
 
@@ -71,7 +80,8 @@ test('Fund receives Malicious token', async () => {
     priceSource,
     'update',
     [tokenAddresses, tokenPrices],
-    defaultTxOpts
+    defaultTxOpts,
+    web3
   );
 
   // Buy shares with malicious token
@@ -86,18 +96,19 @@ test('Fund receives Malicious token', async () => {
       priceSource,
       tokenAddresses,
       tokenPrices
-    }
+    },
+    web3
   });
 
   // Activate malicious token
-  await send(maliciousToken, 'startReverting', [], defaultTxOpts);
+  await send(maliciousToken, 'startReverting', [], defaultTxOpts, web3);
 });
 
 test('redeemShares fails in presence of malicious token', async () => {
   const { shares } = fund;
 
   await expect(
-    send(shares, 'redeemShares', [], investorTxOpts)
+    send(shares, 'redeemShares', [], investorTxOpts, web3)
   ).rejects.toThrowFlexible();
 });
 
@@ -121,7 +132,7 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
   await expect(
-    send(shares, 'redeemSharesEmergency', [], investorTxOpts)
+    send(shares, 'redeemSharesEmergency', [], investorTxOpts, web3)
   ).resolves.not.toThrow();
 
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));

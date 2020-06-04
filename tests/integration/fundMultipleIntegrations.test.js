@@ -7,45 +7,41 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES, EMPTY_ADDRESS, KYBER_ETH_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES, KYBER_ETH_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let takeOrderSignature;
 let mln, weth;
-let oasisDexExchange, oasisDexAdapter;
+let oasisDexAdapter;
 let kyberNetworkProxy, kyberAdapter;
 let fundFactory, fund;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  mln = contracts.MLN;
-  fundFactory = contracts.FundFactory;
-  weth = contracts.WETH;
-
-  oasisDexExchange = contracts.OasisDexExchange;
-  oasisDexAdapter = contracts.OasisDexAdapter;
-
-  kyberNetworkProxy = contracts.KyberNetworkProxy;
-  kyberAdapter = contracts.KyberAdapter;
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
@@ -57,7 +53,8 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 });
 
@@ -71,7 +68,8 @@ test("add Kyber to fund's enabled integrations", async () => {
     vault,
     'enableAdapters',
     [[kyberAdapter.options.address]],
-    managerTxOpts
+    managerTxOpts,
+    web3
   );
 
   const postAddIntegrations = await call(vault, 'getEnabledAdapters');
@@ -124,6 +122,7 @@ test('fund takes an order on Kyber', async () => {
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
