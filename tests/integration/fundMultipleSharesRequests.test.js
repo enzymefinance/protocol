@@ -9,25 +9,28 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { delay } from '~/tests/utils/time';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3;
 let deployer, manager, investor1, investor2, investor3;
 let defaultTxOpts, managerTxOpts;
 let investor1TxOpts, investor2TxOpts, investor3TxOpts;
 
 beforeAll(async () => {
+  web3 = await startChain();
   [
     deployer,
     manager,
     investor1,
     investor2,
     investor3
-  ] = await getAccounts();
+  ] = await web3.eth.getAccounts();
 
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
@@ -38,37 +41,30 @@ beforeAll(async () => {
 
 describe('Fund 1: Multiple investors buying shares with different tokens', () => {
   let amguAmount, shareSlippageTolerance;
-  let dai, mln, weth;
+  let zrx, mln, weth;
   let priceSource, sharesRequestor; 
   let wantedShares1, wantedShares2, wantedShares3;
   let tokenPrices;
   let fund;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-    const contracts = deployed.contracts;
-    dai = contracts.DAI;
-    mln = contracts.MLN;
-    weth = contracts.WETH;
-    priceSource = contracts.TestingPriceFeed;
-    sharesRequestor = contracts.SharesRequestor;
-    const fundFactory = contracts.FundFactory;
+    zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
+    weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+    mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+    sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     // Set initial prices to be predictably the same as prices when updated again later
     const wethToEthRate = toWei('1', 'ether');
     const mlnToEthRate = toWei('0.5', 'ether');
-    const daiToEthRate = toWei('0.005', 'ether');
+    const zrxToEthRate = toWei('0.005', 'ether');
     tokenPrices = {
-      addresses: [weth.options.address, mln.options.address, dai.options.address],
-      prices: [wethToEthRate, mlnToEthRate, daiToEthRate]
+      addresses: [weth.options.address, mln.options.address, zrx.options.address],
+      prices: [wethToEthRate, mlnToEthRate, zrxToEthRate]
     };
   
-    await send(
-      priceSource,
-      'update',
-      [tokenPrices.addresses, tokenPrices.prices],
-      defaultTxOpts
-    );
+    await updateKyberPriceFeed(priceSource, web3);
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],
@@ -79,7 +75,8 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       },
       manager,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      web3
     });
 
     amguAmount = toWei('.01', 'ether');
@@ -106,34 +103,38 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     ).toString();
 
     // Investor 1 - weth
-    await send(weth, 'transfer', [investor1, offerAssetMaxQuantity], defaultTxOpts);
+    await send(weth, 'transfer', [investor1, offerAssetMaxQuantity], defaultTxOpts, web3);
     await send(
       weth,
       'approve',
       [sharesRequestor.options.address, offerAssetMaxQuantity],
-      investor1TxOpts
+      investor1TxOpts,
+      web3
     );
     await send(
       sharesRequestor,
       'requestShares',
       [hub.options.address, weth.options.address, offerAssetMaxQuantity, wantedShares1],
-      { ...investor1TxOpts, value: amguAmount }
+      { ...investor1TxOpts, value: amguAmount },
+      web3
     );
 
     // Investor 1 - weth
-    await send(weth, 'transfer', [investor1, offerAssetMaxQuantity], defaultTxOpts);
+    await send(weth, 'transfer', [investor1, offerAssetMaxQuantity], defaultTxOpts, web3);
     await send(
       weth,
       'approve',
       [sharesRequestor.options.address, offerAssetMaxQuantity],
-      investor1TxOpts
+      investor1TxOpts,
+      web3
     );
     await expect(
       send(
         sharesRequestor,
         'requestShares',
         [hub.options.address, weth.options.address, offerAssetMaxQuantity, wantedShares1],
-        { ...investor1TxOpts, value: amguAmount }
+        { ...investor1TxOpts, value: amguAmount },
+        web3
       )
     ).rejects.toThrowFlexible('Only one request can exist (per fund)');
   });
@@ -155,25 +156,27 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     ).toString();
 
     // Investor 2 - mln
-    await send(mln, 'transfer', [investor2, offerAssetMaxQuantity], defaultTxOpts);
+    await send(mln, 'transfer', [investor2, offerAssetMaxQuantity], defaultTxOpts, web3);
     await send(
       mln,
       'approve',
       [sharesRequestor.options.address, offerAssetMaxQuantity],
-      investor2TxOpts
+      investor2TxOpts,
+      web3
     );
     await send(
       sharesRequestor,
       'requestShares',
       [hub.options.address, mln.options.address, offerAssetMaxQuantity, wantedShares2],
-      { ...investor2TxOpts, value: amguAmount }
+      { ...investor2TxOpts, value: amguAmount },
+      web3
     );
   });
 
   test('Investment request allowed for third user with approved token', async () => {
     const { hub, shares } = fund;
 
-    const offerAsset = dai.options.address;
+    const offerAsset = zrx.options.address;
     const expectedOfferAssetCost = new BN(
       await call(
         shares,
@@ -186,13 +189,14 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       new BN(toWei('1', 'ether')).add(shareSlippageTolerance)
     ).toString();
 
-    // Investor 3 - dai
-    await send(dai, 'transfer', [investor3, offerAssetMaxQuantity], defaultTxOpts);
+    // Investor 3 - zrx
+    await send(zrx, 'transfer', [investor3, offerAssetMaxQuantity], defaultTxOpts, web3);
     await send(
-      dai,
+      zrx,
       'approve',
       [sharesRequestor.options.address, offerAssetMaxQuantity],
-      investor3TxOpts
+      investor3TxOpts,
+      web3
     );
 
     // Investment asset must be enabled
@@ -201,17 +205,19 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
         sharesRequestor,
         'requestShares',
         [hub.options.address, offerAsset, offerAssetMaxQuantity, wantedShares3],
-        { ...investor3TxOpts, value: amguAmount }
+        { ...investor3TxOpts, value: amguAmount },
+        web3
       )
     ).rejects.toThrowFlexible("_investmentAsset not allowed");
 
-    await send(shares, 'enableSharesInvestmentAssets', [[offerAsset]], managerTxOpts);
+    await send(shares, 'enableSharesInvestmentAssets', [[offerAsset]], managerTxOpts, web3);
 
     await send(
       sharesRequestor,
       'requestShares',
       [hub.options.address, offerAsset, offerAssetMaxQuantity, wantedShares3],
-      { ...investor3TxOpts, value: amguAmount }
+      { ...investor3TxOpts, value: amguAmount },
+      web3
     );
   });
 
@@ -220,20 +226,15 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
 
     // Need price update before sharesRequest executed
     await delay(1000);
-
-    await send(
-      priceSource,
-      'update',
-      [tokenPrices.addresses, tokenPrices.prices],
-      defaultTxOpts
-    );
+    await updateKyberPriceFeed(priceSource, web3);
 
     // investor1
     await send(
       sharesRequestor,
       'executeRequestFor',
       [investor1, hub.options.address],
-      investor1TxOpts
+      investor1TxOpts,
+      web3
     );
 
     const investor1Shares = await call(shares, 'balanceOf', [investor1]);
@@ -244,7 +245,8 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       sharesRequestor,
       'executeRequestFor',
       [investor2, hub.options.address],
-      investor2TxOpts
+      investor2TxOpts,
+      web3
     );
   
     const investor2Shares = await call(shares, 'balanceOf', [investor2]);
@@ -255,7 +257,8 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       sharesRequestor,
       'executeRequestFor',
       [investor3, hub.options.address],
-      investor3TxOpts
+      investor3TxOpts,
+      web3
     );
   
     const investor3Shares = await call(shares, 'balanceOf', [investor3]);
@@ -270,12 +273,12 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       await call(
         shares,
         'getSharesCostInAsset',
-        [toWei('1', 'ether'), dai.options.address]
+        [toWei('1', 'ether'), zrx.options.address]
       )
     );
     const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
 
-    // Investor 1 - dai
+    // Investor 1 - zrx
     const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));
 
     await investInFund({
@@ -283,13 +286,14 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       investment: {
         contribAmount,
         investor: investor1,
-        tokenContract: dai
+        tokenContract: zrx
       },
       tokenPriceData: {
         priceSource,
         tokenAddresses: tokenPrices.addresses,
         tokenPrices: tokenPrices.prices
-      }
+      },
+      web3
     });
 
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));
