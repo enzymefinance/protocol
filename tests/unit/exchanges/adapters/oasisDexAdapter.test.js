@@ -112,7 +112,7 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
           web3
         )
       ).rejects.toThrowFlexible("Order maker asset does not match the input")
@@ -298,8 +298,6 @@ describe('takeOrder', () => {
 
   describe('Fill Order 2: partial amount', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let orderId;
-    let tx;
 
     beforeAll(async () => {
       makerAsset = mln.options.address;
@@ -330,7 +328,7 @@ describe('takeOrder', () => {
         defaultTxOpts,
         web3
       );
-      const res = await send(
+      await send(
         oasisDexExchange,
         'offer',
         [
@@ -340,8 +338,6 @@ describe('takeOrder', () => {
         web3
       );
 
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      orderId = logMake.id;
     });
 
     // TODO

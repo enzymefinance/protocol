@@ -30,7 +30,6 @@ let priceTolerance, sharesRequestor, userWhitelist;
 let managementFee, performanceFee;
 let fund;
 
-// TODO: continue fixing this test and run it when we can deploy contracts in test files
 beforeAll(async () => {
   web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
@@ -58,17 +57,6 @@ beforeAll(async () => {
     await send(weth, 'transfer', [investor, wethToSend.toString()], defaultTxOpts, web3);
   }
   await send(mln, 'transfer', [investor, toWei('10', 'ether')], defaultTxOpts, web3);
-
-  // await send(
-  //   priceSource,
-  //   'update',
-  //   [
-  //     [weth.options.address, mln.options.address],
-  //     [toWei('1', 'ether'), toWei('0.5', 'ether')],
-  //   ],
-  //   defaultTxOpts,
-  //   web3
-  // );
 
   const fees = {
     contracts: [
