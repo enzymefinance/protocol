@@ -40,15 +40,12 @@ contract FundFactory is AmguConsumer {
     ISharesFactory public sharesFactory;
     IVaultFactory public vaultFactory;
 
-    mapping (bytes32 => bool) public fundNameHashIsTaken;
-
     // A manager can only have one pending fund
     mapping (address => address) public managerToPendingFundHub;
     mapping (address => PendingFundSettings) public managerToPendingFundSettings;
 
     // Parameters stored when beginning setup
     struct PendingFundSettings {
-        string name;
         address[] adapters;
         address denominationAsset;
         address[] defaultSharesInvestmentAssets;
@@ -108,9 +105,9 @@ contract FundFactory is AmguConsumer {
             REGISTRY.assetIsRegistered(_denominationAsset),
             "beginFundSetup: Denomination asset must be registered"
         );
-
-        // Validate and reserve name
-        __takeFundName(_name);
+        require(isValidFundName(_name), "beginSetup: Fund name is not valid");
+        bytes32 hashedName = keccak256(bytes(_name));
+        require(!REGISTRY.fundNameHashIsTaken(hashedName), "beginSetup: Fund name is taken");
 
         // Create Hub
         address hubAddress = address(new Hub(address(REGISTRY), msg.sender, _name));
@@ -118,11 +115,11 @@ contract FundFactory is AmguConsumer {
 
         // Add Pending Fund
         managerToPendingFundHub[msg.sender] = hubAddress;
+        REGISTRY.registerFund(hubAddress, msg.sender, hashedName);
         emit FundSetupBegun(msg.sender, hubAddress);
 
         // Store settings for the remaining steps
         managerToPendingFundSettings[msg.sender] = PendingFundSettings(
-            _name,
             _adapters,
             _denominationAsset,
             _defaultSharesInvestmentAssets,
@@ -235,9 +232,8 @@ contract FundFactory is AmguConsumer {
             "__completeFundSetup: vault has not been created"
         );
 
-        // Initialize and register fund
+        // Initialize fund
         hub.initializeFund();
-        REGISTRY.registerFund(address(hub), _manager);
         emit FundSetupCompleted(_manager, address(hub));
 
         // Clear storage for manager's next fund
@@ -255,7 +251,7 @@ contract FundFactory is AmguConsumer {
 
         // Deploy
         address feeManager = feeManagerFactory.createInstance(
-            managerToPendingFundHub[_manager],
+            address(hub),
             managerToPendingFundSettings[_manager].denominationAsset,
             managerToPendingFundSettings[_manager].fees,
             managerToPendingFundSettings[_manager].feeRates,
@@ -301,10 +297,10 @@ contract FundFactory is AmguConsumer {
 
         // Deploy
         address shares = sharesFactory.createInstance(
-            managerToPendingFundHub[_manager],
+            address(hub),
             managerToPendingFundSettings[_manager].denominationAsset,
             managerToPendingFundSettings[_manager].defaultSharesInvestmentAssets,
-            managerToPendingFundSettings[_manager].name
+            hub.NAME()
         );
         emit SharesCreated(msg.sender, address(hub), shares);
 
@@ -324,7 +320,7 @@ contract FundFactory is AmguConsumer {
 
         // Deploy
         address vault = vaultFactory.createInstance(
-            managerToPendingFundHub[_manager],
+            address(hub),
             managerToPendingFundSettings[_manager].adapters
         );
         emit VaultCreated(msg.sender, address(hub), vault);
@@ -333,26 +329,8 @@ contract FundFactory is AmguConsumer {
         hub.setVault(vault);
     }
 
-    /// @notice Helper function to create a bytes32 hash from a fund name string
-    function __hashFundName(string memory _name) private pure returns (bytes32) {
-        return keccak256(bytes(_name));
-    }
-
     /// @notice Helper to confirm if a manager has a pending fund
     function __hasPendingFund(address _manager) private view returns (bool) {
         return managerToPendingFundHub[_manager] != address(0);
-    }
-
-    /// @notice Helper to confirm if a fund name has already been taken
-    function __takeFundName(string memory _name) private {
-        require(isValidFundName(_name), "beginSetup: Fund name is not valid");
-
-        bytes32 nameHash = __hashFundName(_name);
-        require(
-            !fundNameHashIsTaken[nameHash],
-            "beginFundSetup: Fund name already registered"
-        );
-        fundNameHashIsTaken[nameHash] = true;
-        emit FundNameTaken(msg.sender, _name);
     }
 }
