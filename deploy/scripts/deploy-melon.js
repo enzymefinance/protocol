@@ -9,13 +9,6 @@ const main = async input => {
   const melonAddrs = input.melon.addr;
   const tokenAddrs = input.tokens.addr;
 
-  const airSwapAdapter = await nab('AirSwapAdapter', [], melonAddrs);
-  const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
-  const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
-  const uniswapAdapter = await nab('UniswapAdapter', [], melonAddrs);
-  const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
-  const zeroExV3Adapter = await nab('ZeroExV3Adapter', [], melonAddrs);
-  const engineAdapter = await nab('EngineAdapter', [], melonAddrs);
   const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
   const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], melonAddrs);
   const managementFee = await nab('ManagementFee', [], melonAddrs);
@@ -27,6 +20,15 @@ const main = async input => {
   const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
   const sharesRequestor = await nab('SharesRequestor', [registry.options.address], melonAddrs);
+
+  // Adapters
+  const airSwapAdapter = await nab('AirSwapAdapter', [input.airSwap.addr.Swap], melonAddrs);
+  const kyberAdapter = await nab('KyberAdapter', [input.kyber.addr.KyberNetworkProxy], melonAddrs);
+  const oasisDexAdapter = await nab('OasisDexAdapter', [input.oasis.addr.OasisDexExchange], melonAddrs);
+  const uniswapAdapter = await nab('UniswapAdapter', [input.uniswap.addr.UniswapFactory], melonAddrs);
+  const zeroExV2Adapter = await nab('ZeroExV2Adapter', [input.zeroExV2.addr.ZeroExV2Exchange], melonAddrs);
+  const zeroExV3Adapter = await nab('ZeroExV3Adapter', [input.zeroExV3.addr.ZeroExV3Exchange], melonAddrs);
+  const engineAdapter = await nab('EngineAdapter', [engine.options.address], melonAddrs);
 
   const fundFactory = await nab('FundFactory', [
     feeManagerFactory.options.address,
@@ -75,55 +77,6 @@ const main = async input => {
     await send(registry, 'setSharesRequestor', [sharesRequestor.options.address]);
   }
 
-  const integrations = {};
-  integrations.engine = {
-    gateway: engine.options.address,
-    adapter: engineAdapter.options.address,
-    integrationType: 0,
-  };
-  if (input.airSwap) {
-    integrations.airSwap = {
-      gateway: input.airSwap.addr.Swap,
-      adapter: airSwapAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.kyber) {
-    integrations.kyber = {
-      gateway: input.kyber.addr.KyberNetworkProxy,
-      adapter: kyberAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.oasis) {
-    integrations.oasis = {
-      gateway: input.oasis.addr.OasisDexExchange,
-      adapter: oasisDexAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.uniswap) {
-    integrations.uniswap = {
-      gateway: input.uniswap.addr.UniswapFactory,
-      adapter: uniswapAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.zeroExV2) {
-    integrations.zeroExV2 = {
-      gateway: input.zeroExV2.addr.ZeroExV2Exchange,
-      adapter: zeroExV2Adapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.zeroExV3) {
-    integrations.zeroExV3 = {
-      gateway: input.zeroExV3.addr.ZeroExV3Exchange,
-      adapter: zeroExV3Adapter.options.address,
-      integrationType: 1
-    };
-  }
-
   const fees = [managementFee.options.address, performanceFee.options.address];
   for (const fee of fees) {
     if (!(await call(registry, 'feeIsRegistered', [fee]))) {
@@ -131,9 +84,18 @@ const main = async input => {
     }
   }
 
-  for (const info of Object.values(integrations)) {
-    if (!(await call(registry, 'integrationAdapterIsRegistered', [info.adapter]))) {
-      await send(registry, 'registerIntegrationAdapter', [info.adapter, info.gateway, info.integrationType]);
+  const integrationAdapters = [
+    engineAdapter.options.address,
+    airSwapAdapter.options.address,
+    kyberAdapter.options.address,
+    oasisDexAdapter.options.address,
+    uniswapAdapter.options.address,
+    zeroExV2Adapter.options.address,
+    zeroExV3Adapter.options.address
+  ];
+  for (const adapter of integrationAdapters) {
+    if (!(await call(registry, 'integrationAdapterIsRegistered', [adapter]))) {
+      await send(registry, 'registerIntegrationAdapter', [adapter]);
     }
   }
 

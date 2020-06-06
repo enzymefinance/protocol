@@ -12,6 +12,18 @@ import "../../dependencies/WETH.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and Uniswap
 contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
+    address immutable public EXCHANGE;
+
+    constructor(address _exchange) public {
+        EXCHANGE = _exchange;
+    }
+
+    /// @notice Provides a constant string identifier for an adapter
+    /// @return An identifier string
+    function identifier() external pure override returns (string memory) {
+        return "UNISWAP_V1";
+    }
+
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management
@@ -25,10 +37,7 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __extractTakeOrderRiskManagementArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -57,17 +66,12 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
     }
 
     /// @notice Take a market order on Uniswap (takeOrder)
-    /// @param _targetExchange Address of Uniswap factory contract
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(
-        address _targetExchange,
-        bytes memory _encodedArgs,
-        bytes memory _fillData
-    )
+    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
         internal
         override
-        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
+        validateAndFinalizeFilledOrder(_fillData)
     {
         (
             address[] memory fillAssets,
@@ -75,30 +79,17 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
         ) = __decodeOrderFillData(_fillData);
 
         if (fillAssets[1] == __getNativeAssetAddress()) {
-            __swapNativeAssetToToken(
-                _targetExchange,
-                fillAssets,
-                fillExpectedAmounts
-            );
+            __swapNativeAssetToToken(fillAssets, fillExpectedAmounts);
         }
         else if (fillAssets[0] == __getNativeAssetAddress()) {
-            __swapTokenToNativeAsset(
-                _targetExchange,
-                fillAssets,
-                fillExpectedAmounts
-            );
+            __swapTokenToNativeAsset(fillAssets, fillExpectedAmounts);
         }
         else {
-            __swapTokenToToken(
-                _targetExchange,
-                fillAssets,
-                fillExpectedAmounts
-            );
+            __swapTokenToToken(fillAssets, fillExpectedAmounts);
         }
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of Uniswap factory contract
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
@@ -109,10 +100,7 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
     /// - [1] Uniswap exchange of taker asset
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -137,18 +125,14 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
         fillApprovalTargets[1] = fillAssets[1] == __getNativeAssetAddress() ?
             address(0) :
-            IUniswapFactory(_targetExchange).getExchange(fillAssets[1]); // Uniswap exchange of taker asset
+            IUniswapFactory(EXCHANGE).getExchange(fillAssets[1]); // Uniswap exchange of taker asset
 
         return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of Uniswap factory contract
     /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __validateTakeOrderParams(bytes memory _encodedArgs)
         internal
         view
         override
@@ -173,7 +157,6 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
 
     /// @notice Executes a swap of ETH (taker) to ERC20 (maker)
     function __swapNativeAssetToToken(
-        address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
@@ -188,7 +171,7 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
         WETH(payable(_fillAssets[1])).withdraw(_fillExpectedAmounts[1]);
 
         // Swap tokens
-        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[0]);
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[0]);
         IUniswapExchange(tokenExchange).ethToTokenSwapInput.value(
             _fillExpectedAmounts[1]
         )
@@ -200,13 +183,12 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
 
     /// @notice Executes a swap of ERC20 (taker) to ETH (maker)
     function __swapTokenToNativeAsset(
-        address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
         private
     {
-        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[1]);
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[1]);
         uint256 preEthBalance = payable(address(this)).balance;
         IUniswapExchange(tokenExchange).tokenToEthSwapInput(
             _fillExpectedAmounts[1],
@@ -221,13 +203,12 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
 
     /// @notice Executes a swap of ERC20 (taker) to ERC20 (maker)
     function __swapTokenToToken(
-        address _targetExchange,
         address[] memory _fillAssets,
         uint256[] memory _fillExpectedAmounts
     )
         private
     {
-        address tokenExchange = IUniswapFactory(_targetExchange).getExchange(_fillAssets[1]);
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[1]);
         IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
             _fillExpectedAmounts[1],
             _fillExpectedAmounts[0],

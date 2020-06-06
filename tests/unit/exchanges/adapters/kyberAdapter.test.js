@@ -161,7 +161,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.KYBER_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(kyberNetworkProxy.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -268,7 +267,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.KYBER_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(kyberNetworkProxy.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -375,7 +373,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.KYBER_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(kyberNetworkProxy.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);

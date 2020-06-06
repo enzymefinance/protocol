@@ -9,6 +9,18 @@ import "../libs/OrderTaker.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter to 0xV2 Exchange Contract
 contract ZeroExV2Adapter is OrderTaker {
+    address immutable public EXCHANGE;
+
+    constructor(address _exchange) public {
+        EXCHANGE = _exchange;
+    }
+
+    /// @notice Provides a constant string identifier for an adapter
+    /// @return An identifier string
+    function identifier() external pure override returns (string memory) {
+        return "ZERO_EX_V2";
+    }
+
     /// @notice Extract arguments for risk management validations of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return riskManagementAddresses_ needed addresses for risk management
@@ -22,10 +34,7 @@ contract ZeroExV2Adapter is OrderTaker {
     /// - [0] Maker asset amount
     /// - [1] Taker asset amount
     /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __extractTakeOrderRiskManagementArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -37,7 +46,7 @@ contract ZeroExV2Adapter is OrderTaker {
             bytes[2] memory orderData,
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
-        address zrxAsset = __getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA());
+        address zrxAsset = __getAssetAddress(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA());
 
         riskManagementAddresses_ = [
             orderAddresses[0],
@@ -55,17 +64,12 @@ contract ZeroExV2Adapter is OrderTaker {
     }
 
     /// @notice Takes an active order on 0x v2 (takeOrder)
-    /// @param _targetExchange Address of 0x v2 exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(
-        address _targetExchange,
-        bytes memory _encodedArgs,
-        bytes memory _fillData
-    )
+    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
         internal
         override
-        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
+        validateAndFinalizeFilledOrder(_fillData)
     {
         (
             address[4] memory orderAddresses,
@@ -77,7 +81,7 @@ contract ZeroExV2Adapter is OrderTaker {
         (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
 
         // Execute take order on exchange
-        IZeroExV2(_targetExchange).fillOrder(
+        IZeroExV2(EXCHANGE).fillOrder(
             __constructOrderStruct(orderAddresses, orderValues, orderData),
             fillExpectedAmounts[1],
             signature
@@ -85,7 +89,6 @@ contract ZeroExV2Adapter is OrderTaker {
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of 0x v2 exchange
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset (same as _orderAddresses[2])
@@ -99,10 +102,7 @@ contract ZeroExV2Adapter is OrderTaker {
     /// - [0] Taker (fund), set to address(0)
     /// - [1] 0x asset proxy for the taker asset
     /// - [2] 0x asset proxy for the taker fee asset (ZRX)
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -117,7 +117,7 @@ contract ZeroExV2Adapter is OrderTaker {
         address[] memory fillAssets = new address[](3);
         fillAssets[0] = __getAssetAddress(orderData[0]); // maker asset
         fillAssets[1] = __getAssetAddress(orderData[1]); // taker asset
-        fillAssets[2] = __getAssetAddress(IZeroExV2(_targetExchange).ZRX_ASSET_DATA()); // taker fee asset
+        fillAssets[2] = __getAssetAddress(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA()); // taker fee asset
 
         uint256[] memory fillExpectedAmounts = new uint256[](3);
         fillExpectedAmounts[0] = __calculateRelativeQuantity(
@@ -134,22 +134,17 @@ contract ZeroExV2Adapter is OrderTaker {
 
         address[] memory fillApprovalTargets = new address[](3);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = __getAssetProxy(_targetExchange, orderData[1]); // 0x asset proxy for taker asset
-        fillApprovalTargets[2] = __getAssetProxy(
-            _targetExchange,
-            IZeroExV2(_targetExchange).ZRX_ASSET_DATA()
-        ); // 0x asset proxy for taker fee asset (ZRX)
+        // 0x asset proxy for taker asset
+        fillApprovalTargets[1] = __getAssetProxy(orderData[1]);
+        // 0x asset proxy for taker fee asset (ZRX)
+        fillApprovalTargets[2] = __getAssetProxy(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA());
 
         return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of 0x v2 exchange
     /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __validateTakeOrderParams(bytes memory _encodedArgs)
         internal
         view
         override
@@ -204,7 +199,7 @@ contract ZeroExV2Adapter is OrderTaker {
     }
 
     /// @notice Gets the 0x assetProxy address for an ERC20 token
-    function __getAssetProxy(address _targetExchange, bytes memory _assetData)
+    function __getAssetProxy(bytes memory _assetData)
         private
         view
         returns (address assetProxy_)
@@ -216,7 +211,7 @@ contract ZeroExV2Adapter is OrderTaker {
                 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
             )
         }
-        assetProxy_ = IZeroExV2(_targetExchange).getAssetProxy(assetProxyId);
+        assetProxy_ = IZeroExV2(EXCHANGE).getAssetProxy(assetProxyId);
     }
 
     /// @notice Parses the asset address from 0x assetData

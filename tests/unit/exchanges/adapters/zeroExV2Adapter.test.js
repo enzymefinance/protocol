@@ -238,7 +238,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -387,7 +386,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -536,7 +534,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(new BN(orderFilled.buyAmount)).bigNumberEq(makerFillQuantity);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);

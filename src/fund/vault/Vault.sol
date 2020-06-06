@@ -13,9 +13,9 @@ import "./IVault.sol";
 contract Vault is IVault, TokenUser, Spoke {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event AdaptersDisabled (address[] adapters);
+    event AdapterDisabled (address indexed adapter);
 
-    event AdaptersEnabled (address[] adapters);
+    event AdapterEnabled (address indexed adapter);
 
     event AssetAdded(address asset);
 
@@ -23,19 +23,11 @@ contract Vault is IVault, TokenUser, Spoke {
 
     event AssetRemoved(address asset);
 
-    // This info is pulled from Registry
-    // Better for fund to maintain its own copy in case the info changes on the Registry
-    struct IntegrationInfo {
-        address gateway;
-        uint256 typeIndex;
-    }
-
     uint8 constant public MAX_OWNED_ASSETS = 20; // TODO: Keep this?
     address[] public ownedAssets;
     mapping(address => uint256) public override assetBalances;
 
     EnumerableSet.AddressSet private enabledAdapters;
-    mapping (address => IntegrationInfo) public adapterToIntegrationInfo;
 
     modifier onlyDelegated() {
         require(
@@ -83,11 +75,11 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @param _adapters The adapters to disable
     function disableAdapters(address[] calldata _adapters) external onlyManager {
         for (uint256 i = 0; i < _adapters.length; i++) {
-            require(__adapterIsEnabled(_adapters[i]), "disableAdapters: adapter already disabled");
-            EnumerableSet.remove(enabledAdapters, _adapters[i]);
-            delete adapterToIntegrationInfo[_adapters[i]];
+            address adapter = _adapters[i];
+            require(__adapterIsEnabled(adapter), "disableAdapters: adapter already disabled");
+            EnumerableSet.remove(enabledAdapters, adapter);
+            emit AdapterDisabled(adapter);
         }
-        emit AdaptersDisabled(_adapters);
     }
 
     /// @notice Enable integration adapters from use in the fund
@@ -164,11 +156,7 @@ contract Vault is IVault, TokenUser, Spoke {
         // Get ^this info from virtual adapter function
 
         (bool success, bytes memory returnData) = _adapter.delegatecall(
-            abi.encodeWithSignature(
-                _methodSignature,
-                adapterToIntegrationInfo[_adapter].gateway,
-                _encodedArgs
-            )
+            abi.encodeWithSignature(_methodSignature, _encodedArgs)
         );
         require(success, string(returnData));
 
@@ -215,23 +203,20 @@ contract Vault is IVault, TokenUser, Spoke {
     function __enableAdapters(address[] memory _adapters) private {
         IRegistry registry = __getRegistry();
         for (uint256 i = 0; i < _adapters.length; i++) {
+            address adapter = _adapters[i];
             require(
-                registry.integrationAdapterIsRegistered(_adapters[i]),
+                registry.integrationAdapterIsRegistered(adapter),
                 "__enableAdapters: Adapter is not on Registry"
             );
             require(
-                !__adapterIsEnabled(_adapters[i]),
+                !__adapterIsEnabled(adapter),
                 "__enableAdapters: Adapter is already enabled"
             );
 
-            // Pull adapter info from registry
-            adapterToIntegrationInfo[_adapters[i]] = IntegrationInfo({
-                gateway: registry.adapterToIntegrationInfo(_adapters[i]).gateway,
-                typeIndex: registry.adapterToIntegrationInfo(_adapters[i]).typeIndex
-            });
-            EnumerableSet.add(enabledAdapters, _adapters[i]);
+            EnumerableSet.add(enabledAdapters, adapter);
+
+            emit AdapterEnabled(adapter);
         }
-        emit AdaptersEnabled(_adapters);
     }
 
     /// @notice Increases the balance of an asset in a fund's internal system of account
