@@ -29,6 +29,7 @@ global.startChain = async () => {
   const provider = ganache.provider({
     fork: 'http://127.0.0.1:8545',
     mnemonic: 'exhibit now news planet fame thank swear reform tilt accident bitter axis',
+    // vmErrorsOnRPCResponse: true,
     network_id: 1,
     gasLimit: '0x989680',
     // TODO: make less redundant with test-chain.js

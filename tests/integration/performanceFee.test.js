@@ -16,17 +16,19 @@ import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
 import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 import { getDeployed } from '~/tests/utils/getDeployed';
-
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let performanceFeePeriod, performanceFeeRate;
-let mln, weth, oasisDexAdapter, oasisDexExchange, performanceFee, priceSource;
+let mln, weth, oasisDexAdapter, oasisDexExchange;
+let performanceFee, managementFee, priceSource;
 let fund;
 let mlnToEthRate, wethToEthRate;
 let takeOrderSignature;
+let kyberProxy;
 
 beforeAll(async () => {
   web3 = await startChain();
@@ -39,8 +41,10 @@ beforeAll(async () => {
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
   oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
+  managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
   performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE, web3);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  kyberProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   const feeAddresses = [
@@ -52,16 +56,6 @@ beforeAll(async () => {
 
   wethToEthRate = toWei('1', 'ether');
   mlnToEthRate = toWei('0.5', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address],
-      [wethToEthRate, mlnToEthRate],
-    ],
-    defaultTxOpts,
-    web3
-  );
 
   fund = await setupFundWithParams({
     defaultTokens: [mln.options.address, weth.options.address],
@@ -198,27 +192,33 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     web3
   );
 
-  // Update prices with higher MLN/WETH price
+  const mlnPricePreSwap = new BN(
+    (await call(priceSource, 'getPrice', [mln.options.address]))[0]
+  );
   const preMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
-    new BN((await call(priceSource, 'getPrice', [mln.options.address]))[0])
+    mlnPricePreSwap
   );
-  const newMlnToEthRate = toWei('0.75', 'ether');
+
+  // third party makes swap on kyber to influence MLN price
   await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address],
-      [wethToEthRate, newMlnToEthRate],
-    ],
-    defaultTxOpts,
+    kyberProxy,
+    'swapEtherToToken',
+    [mln.options.address, '1'],
+    {from: deployer, gas: 8000000, value: toWei('1', 'ether')},
     web3
+  );
+  await updateKyberPriceFeed(priceSource, web3);
+
+  const mlnPricePostSwap = new BN(
+    (await call(priceSource, 'getPrice', [mln.options.address]))[0]
   );
   const postMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
-    new BN(newMlnToEthRate)
+    mlnPricePostSwap
   );
 
+  expect(mlnPricePostSwap).bigNumberGt(mlnPricePreSwap);
   expect(postMlnGav).bigNumberGt(preMlnGav);
 });
 
@@ -263,6 +263,7 @@ test(`performance fee is calculated correctly`, async () => {
   const expectedFeeShares = currentTotalSupply
     .mul(expectedFeeSharesPreDilution)
     .div(currentTotalSupply.sub(expectedFeeSharesPreDilution));
+  // XXX: below not passing (off by one)
   expect(performanceFeeOwed).bigNumberEq(expectedFeeShares);
 });
 
@@ -327,15 +328,15 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   );
   const newMlnToEthRate = toWei('1', 'ether');
   await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address],
-      [wethToEthRate, newMlnToEthRate],
-    ],
-    defaultTxOpts,
+    kyberProxy,
+    'swapEtherToToken',
+    [mln.options.address, '1'],
+    {from: deployer, value: toWei('100', 'ether')},
     web3
   );
+  console.log(((await call(priceSource, 'getPrice', [mln.options.address]))[0]).toString())
+  await updateKyberPriceFeed(priceSource, web3);
+  console.log(((await call(priceSource, 'getPrice', [mln.options.address]))[0]).toString())
   const postMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
     new BN(newMlnToEthRate)

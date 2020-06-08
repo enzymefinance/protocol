@@ -164,7 +164,7 @@ describe('takeOrder', () => {
     });
   });
 
-  describe('Fill Order 2: token to eth', () => {
+  describe.only('Fill Order 2: token to eth', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
@@ -217,7 +217,7 @@ describe('takeOrder', () => {
         takerQuantity,
       });
 
-      // TODO: this is the tx that fails now
+      // TODO: this is the tx that fails now (just with revert, no message)
       tx = await send(
         vault,
         'callOnIntegration',

@@ -154,16 +154,14 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
       data: await txFunction.encodeABI(),
       from: account.address,
       nonce: await getNextNonce(account, web3),
-      // to: null
+      to: null
     }, overrideOpts)
   );
 
   tx.gas = overrideOpts.gas || await estimateGas(txFunction, tx.from);
 
   stdout(`Deploying ${name}${(args.length) ? ` with args [${args}]` : '' }`);
-  console.log('Before signAndSend') // TODO: remove
   const receipt = await signAndSendRawTx(tx, account, web3);
-  console.log('After signAndSend') // TODO: remove
   contract.options.address = receipt.contractAddress;
   stdout(`Deployed ${name} at ${contract.options.address}`);
   return contract;
