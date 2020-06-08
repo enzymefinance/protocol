@@ -76,70 +76,71 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         // Check if registered _asset first
         // TODO: Consider checking against IPriceSource instead of Registry
         if (registry.assetIsRegistered(_baseAsset)) {
-            uint256 rate;
-            (rate, isValid_) = __getAssetRate(_baseAsset, _quoteAsset, _useLiveRate);
-
-            if (rate == 0) return (0, false);
-
-            value_ = __calcConversionAmount(_baseAsset, _amount, rate);
+            return __calcPrimitiveValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 
         // Else use derivative oracle to get value via underlying assets
         else if (registry.derivativeToPriceSource(_baseAsset) != address(0)) {
-            (
-                address underlying,
-                uint256 rate
-            ) = __getDerivativeRateToUnderlying(_baseAsset, _useLiveRate);
-
-            // TODO: What does isValid mean in this context?
-            if (rate == 0) return (0, false);
-
-            uint256 underlyingAmount = __calcConversionAmount(underlying, _amount, rate);
-            uint256 underlyingRate;
-            (underlyingRate, isValid_) = __getAssetRate(underlying, _quoteAsset, _useLiveRate);
-
-            value_ = __calcConversionAmount(underlying, underlyingAmount, rate);
+            return __calcDerivativeValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 
         // If not in Registry as an asset or derivative
         else return (0, false);
     }
 
-    /// @notice Helper to calculate the rate of an asset in the Registry
-    function __getAssetRate(address _baseAsset, address _quoteAsset, bool _useLiveRate)
+    /// @dev Helper to calculate the value of a primitive (an asset that has a price
+    /// in the primary pricefeed) in an arbitrary asset.
+    function __calcPrimitiveValue(
+        address _primitive,
+        uint256 _amount,
+        address _quoteAsset,
+        bool _useLiveRate
+    )
         private
         view
-        returns (uint256 rate_, bool isValid_)
+        returns (uint256 value_, bool isValid_)
     {
-        // If/when we allow choice in price source, we can get this per fund
         IPriceSource priceSource = IPriceSource(IRegistry(REGISTRY).priceSource());
 
+        uint256 rate;
         if (_useLiveRate) {
-            (rate_, isValid_) = priceSource.getLiveRate(_baseAsset, _quoteAsset);
+            (rate, isValid_) = priceSource.getLiveRate(_primitive, _quoteAsset);
         }
         else {
-            (rate_, isValid_, ) = priceSource.getCanonicalRate(_baseAsset, _quoteAsset);
+            (rate, isValid_,) = priceSource.getCanonicalRate(_primitive, _quoteAsset);
         }
+
+        value_ = __calcConversionAmount(_primitive, _amount, rate);
     }
 
-    /// @notice Helper to calculate the rate of a derivative in the Registry
-    // TODO: 2 key updates need to be made for this to work with many more derivatives:
-    // 1. Underlying assets that are also derivatives (how to handle recursion)
-    // 2. Assets that have multiple Underlying assets (e.g., Uniswap and Balancer pool tokens)
-    function __getDerivativeRateToUnderlying(address _derivative, bool _useLiveRate)
+    /// @dev Helper to calculate the value of a derivative in an arbitrary asset.
+    /// Handles multiple underlying assets (e.g., Uniswap and Balancer pool tokens).
+    /// Handles underlying assets that are also derivatives (e.g., a cDAI-ETH LP)
+    function __calcDerivativeValue(
+        address _derivative,
+        uint256 _amount,
+        address _quoteAsset,
+        bool _useLiveRate
+    )
         private
         view
-        returns (address underlying_, uint256 rate_)
+        returns (uint256 value_, bool isValid_)
     {
-        IDerivativePriceSource derivativePriceSource = IDerivativePriceSource(
-            IRegistry(REGISTRY).derivativeToPriceSource(_derivative)
-        );
+        address derivativePriceSource = IRegistry(REGISTRY).derivativeToPriceSource(_derivative);
+        (
+            address[] memory underlyings,
+            uint256[] memory rates
+        ) = IDerivativePriceSource(derivativePriceSource).getRatesToUnderlyings(_derivative);
 
-        if (_useLiveRate) {
-            (underlying_, rate_) = derivativePriceSource.getLiveRateToUnderlying(_derivative);
-        }
-        else {
-            (underlying_, rate_) = derivativePriceSource.getCanonicalRateToUnderlying(_derivative);
+        for (uint256 i = 0; i < underlyings.length; i++) {
+            uint256 underlyingAmount = __calcConversionAmount(underlyings[i], _amount, rates[i]);
+            (
+                uint256 underlyingValue,
+                bool underlyingIsValid
+            ) = __calcAssetValue(underlyings[i], underlyingAmount, _quoteAsset, _useLiveRate);
+
+            if (isValid_ && !underlyingIsValid) isValid_ = false;
+            add(value_, underlyingValue);
         }
     }
 
