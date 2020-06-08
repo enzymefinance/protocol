@@ -129,7 +129,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
     /// @param _baseAsset Address of base asset from the pair
     /// @param _quoteAsset Address of quote asset from the pair
     /// @return rate_ The price of _baseAsset in terms of _quoteAsset
-    /// @return isValid_ True if the rate for this pair is passes validation checks
+    /// @return isValid_ True if the rate for this pair passes validation checks
     /// @return timestamp_ The time of the asset's most recent price update
     function getCanonicalRate(address _baseAsset, address _quoteAsset)
         external
