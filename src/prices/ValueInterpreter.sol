@@ -132,6 +132,8 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
             uint256[] memory rates
         ) = IDerivativePriceSource(derivativePriceSource).getRatesToUnderlyings(_derivative);
 
+        // Let validity be negated if any of the underlying value caculations are invalid.
+        isValid_ = true;
         for (uint256 i = 0; i < underlyings.length; i++) {
             uint256 underlyingAmount = __calcConversionAmount(underlyings[i], _amount, rates[i]);
             (
@@ -139,7 +141,7 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
                 bool underlyingIsValid
             ) = __calcAssetValue(underlyings[i], underlyingAmount, _quoteAsset, _useLiveRate);
 
-            if (isValid_ && !underlyingIsValid) isValid_ = false;
+            if (!underlyingIsValid) isValid_ = false;
             add(value_, underlyingValue);
         }
     }
