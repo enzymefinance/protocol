@@ -88,29 +88,13 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         else return (0, false);
     }
 
-    /// @dev Helper to calculate the value of a primitive (an asset that has a price
-    /// in the primary pricefeed) in an arbitrary asset.
-    function __calcPrimitiveValue(
-        address _primitive,
-        uint256 _amount,
-        address _quoteAsset,
-        bool _useLiveRate
-    )
+    /// @notice Helper to covert from one asset to another with a given conversion rate
+    function __calcConversionAmount(address _asset, uint256 _amount, uint256 _rate)
         private
         view
-        returns (uint256 value_, bool isValid_)
+        returns (uint256)
     {
-        IPriceSource priceSource = IPriceSource(IRegistry(REGISTRY).priceSource());
-
-        uint256 rate;
-        if (_useLiveRate) {
-            (rate, isValid_) = priceSource.getLiveRate(_primitive, _quoteAsset);
-        }
-        else {
-            (rate, isValid_,) = priceSource.getCanonicalRate(_primitive, _quoteAsset);
-        }
-
-        value_ = __calcConversionAmount(_primitive, _amount, rate);
+        return mul(_rate, _amount) / 10 ** uint256(ERC20WithFields(_asset).decimals());
     }
 
     /// @dev Helper to calculate the value of a derivative in an arbitrary asset.
@@ -146,12 +130,28 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         }
     }
 
-    /// @notice Helper to covert from one asset to another with a given conversion rate
-    function __calcConversionAmount(address _asset, uint256 _amount, uint256 _rate)
+    /// @dev Helper to calculate the value of a primitive (an asset that has a price
+    /// in the primary pricefeed) in an arbitrary asset.
+    function __calcPrimitiveValue(
+        address _primitive,
+        uint256 _amount,
+        address _quoteAsset,
+        bool _useLiveRate
+    )
         private
         view
-        returns (uint256)
+        returns (uint256 value_, bool isValid_)
     {
-        return mul(_rate, _amount) / 10 ** uint256(ERC20WithFields(_asset).decimals());
+        IPriceSource priceSource = IPriceSource(IRegistry(REGISTRY).priceSource());
+
+        uint256 rate;
+        if (_useLiveRate) {
+            (rate, isValid_) = priceSource.getLiveRate(_primitive, _quoteAsset);
+        }
+        else {
+            (rate, isValid_,) = priceSource.getCanonicalRate(_primitive, _quoteAsset);
+        }
+
+        value_ = __calcConversionAmount(_primitive, _amount, rate);
     }
 }
