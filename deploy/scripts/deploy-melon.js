@@ -106,8 +106,8 @@ const main = async input => {
 
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
-    if (!(await call(registry, 'assetIsRegistered', [tokenAddress]))) {
-      await send(registry, 'registerAsset', [tokenAddress]);
+    if (!(await call(registry, 'primitiveIsRegistered', [tokenAddress]))) {
+      await send(registry, 'registerPrimitive', [tokenAddress]);
     }
     if (conf.track === 'TESTING') {
       const previousDecimals = await call(priceSource, 'assetsToDecimals', [tokenAddress]);
