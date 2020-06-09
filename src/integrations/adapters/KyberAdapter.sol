@@ -145,10 +145,10 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         IRegistry registry = __getRegistry();
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             makerAsset), 'Maker asset not registered'
         );
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             takerAsset), 'Taker asset not registered'
         );
     }

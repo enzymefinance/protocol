@@ -158,17 +158,17 @@ contract ZeroExV3Adapter is OrderTaker {
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         IRegistry registry = __getRegistry();
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             __getAssetAddress(orderData[0])), 'Maker asset not registered'
         );
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             __getAssetAddress(orderData[1])), 'Taker asset not registered'
         );
 
         address takerFeeAsset = __getAssetAddress(orderData[3]);
         if (takerFeeAsset != address(0)) {
             require(
-                registry.assetIsRegistered(takerFeeAsset),
+                registry.primitiveIsRegistered(takerFeeAsset),
                 'Taker fee asset not registered'
             );
         }

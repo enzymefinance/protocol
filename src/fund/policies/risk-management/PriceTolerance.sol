@@ -6,7 +6,7 @@ import "../../hub/Spoke.sol";
 import "../../../dependencies/DSMath.sol";
 import "../../../dependencies/token/IERC20.sol";
 import "../../../integrations/interfaces/IOasisDex.sol";
-import "../../../prices/IPriceSource.sol";
+import "../../../prices/primitives/IPriceSource.sol";
 
 /// @title PriceTolerance Contract
 /// @author Melon Council DAO <security@meloncoucil.io>

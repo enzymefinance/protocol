@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "./IDerivativePriceSource.sol";
-import "./IPriceSource.sol";
+import "./derivatives/IDerivativePriceSource.sol";
+import "./primitives/IPriceSource.sol";
 import "./IValueInterpreter.sol";
 import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
@@ -75,7 +76,7 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
 
         // Check if registered _asset first
         // TODO: Consider checking against IPriceSource instead of Registry
-        if (registry.assetIsRegistered(_baseAsset)) {
+        if (registry.primitiveIsRegistered(_baseAsset)) {
             return __calcPrimitiveValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 

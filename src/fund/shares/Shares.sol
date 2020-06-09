@@ -55,7 +55,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         SharesToken(_tokenName)
     {
         require(
-            __getRegistry().assetIsRegistered(_denominationAsset),
+            __getRegistry().primitiveIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
         DENOMINATION_ASSET = _denominationAsset;
@@ -301,7 +301,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
                 "__enableSharesInvestmentAssets: Asset is already enabled"
             );
             require(
-                __getRegistry().assetIsRegistered(_assets[i]),
+                __getRegistry().primitiveIsRegistered(_assets[i]),
                 "__enableSharesInvestmentAssets: Asset not in Registry"
             );
             EnumerableSet.add(sharesInvestmentAssets, _assets[i]);

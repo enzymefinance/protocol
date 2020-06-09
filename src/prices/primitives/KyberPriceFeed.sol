@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../dependencies/DSMath.sol";
-import "../dependencies/token/IERC20.sol";
-import "../integrations/interfaces/IKyberNetworkProxy.sol";
-import "../registry/IRegistry.sol";
+import "../../dependencies/DSMath.sol";
+import "../../dependencies/token/IERC20.sol";
+import "../../integrations/interfaces/IKyberNetworkProxy.sol";
+import "../../registry/IRegistry.sol";
 import "./IPriceSource.sol";
 
 
@@ -56,7 +56,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
 
     /// @notice Update prices for registered assets
     /// @dev Stores zero as a convention for invalid price
-    /// @param _saneAssets Asset addresses (must match assets array from getRegisteredAssets)
+    /// @param _saneAssets Asset addresses (must match assets array from getRegisteredPrimitives)
     /// @param _sanePrices Asset price hints (checked against prices from Kyber)
     function update(
         address[] calldata _saneAssets,
@@ -66,7 +66,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
             msg.sender == registry.owner() || msg.sender == updater,
             "update: Only registry owner or updater can call"
         );
-        address[] memory registeredAssets = registry.getRegisteredAssets();
+        address[] memory registeredAssets = registry.getRegisteredPrimitives();
         require(
             keccak256(abi.encodePacked(_saneAssets)) ==
             keccak256(abi.encodePacked(registeredAssets)),
@@ -239,7 +239,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         override
         returns (bool isValid_)
     {
-        bool isRegistered = registry.assetIsRegistered(_asset);
+        bool isRegistered = registry.primitiveIsRegistered(_asset);
         bool isFresh = block.timestamp < add(lastUpdate, VALIDITY_INTERVAL);
         isValid_ = prices[_asset] != 0 && isRegistered && isFresh;
     }

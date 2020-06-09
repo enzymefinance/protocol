@@ -5,7 +5,7 @@ import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/hub/ISpoke.sol";
-import "../prices/IPriceSource.sol";
+import "../prices/primitives/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
 
