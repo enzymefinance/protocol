@@ -41,7 +41,7 @@ beforeAll(async () => {
 
   await send(
     registry,
-    'registerAsset',
+    'registerPrimitive',
     [maliciousToken.options.address],
     defaultTxOpts
   );

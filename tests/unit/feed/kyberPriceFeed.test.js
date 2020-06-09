@@ -25,7 +25,7 @@ import web3 from '~/deploy/utils/get-web3';
 let deployer, updater, someAccount;
 let deployerTxOpts, updaterTxOpts, someAccountTxOpts;
 let conversionRates, kyberNetworkProxy, registry;
-let eur, mln, weth, registeredAssets;
+let eur, mln, weth, registeredPrimitives;
 
 beforeAll(async () => {
   const accounts = await web3.eth.getAccounts();
@@ -49,13 +49,13 @@ beforeAll(async () => {
   for (const addr of [eur.options.address, mln.options.address, weth.options.address]) {
     await send(
       registry,
-      'registerAsset',
+      'registerPrimitive',
       [ addr ],
       deployerTxOpts
     );
   }
 
-  registeredAssets = await call(registry, 'getRegisteredAssets');
+  registeredPrimitives = await call(registry, 'getRegisteredPrimitives');
 });
 
 describe('update', () => {
@@ -98,7 +98,7 @@ describe('update', () => {
       send(
         kyberPriceFeed,
         'update',
-        [registeredAssets, dummyPrices],
+        [registeredPrimitives, dummyPrices],
         someAccountTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -112,14 +112,14 @@ describe('update', () => {
     let receipt = await send(
       kyberPriceFeed,
       'update',
-      [registeredAssets, dummyPrices],
+      [registeredPrimitives, dummyPrices],
       deployerTxOpts
     );
     const logUpdated = getEventFromLogs(
         receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
     );
 
-    expect(logUpdated.assets).toEqual(registeredAssets);
+    expect(logUpdated.assets).toEqual(registeredPrimitives);
     expect(logUpdated.prices).toEqual(dummyPrices);
   });
 
@@ -128,7 +128,7 @@ describe('update', () => {
       send(
         kyberPriceFeed,
         'update',
-        [registeredAssets, dummyPrices],
+        [registeredPrimitives, dummyPrices],
         updaterTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -143,14 +143,14 @@ describe('update', () => {
     receipt = await send(
       kyberPriceFeed,
       'update',
-      [registeredAssets, dummyPrices],
+      [registeredPrimitives, dummyPrices],
       updaterTxOpts
     );
     const logUpdated = getEventFromLogs(
         receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
     );
 
-    expect(logUpdated.assets).toEqual(registeredAssets);
+    expect(logUpdated.assets).toEqual(registeredPrimitives);
     expect(logUpdated.prices).toEqual(dummyPrices);
 
     const hasValidMlnPrice = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
@@ -175,7 +175,7 @@ describe('update', () => {
         kyberPriceFeed,
         'update',
         [
-          registeredAssets,
+          registeredPrimitives,
           [toWei('1', 'ether'), barelyTooHighMlnPrice.toString(), toWei('1', 'ether')]
         ],
         deployerTxOpts
@@ -186,7 +186,7 @@ describe('update', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [toWei('1', 'ether'), upperEndValidMlnPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts
@@ -196,7 +196,7 @@ describe('update', () => {
         receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
     );
 
-    expect(logUpdated.assets).toEqual(registeredAssets);
+    expect(logUpdated.assets).toEqual(registeredPrimitives);
     expect(logUpdated.prices).toEqual(dummyPrices);
   });
 
@@ -215,7 +215,7 @@ describe('update', () => {
         kyberPriceFeed,
         'update',
         [
-          registeredAssets,
+          registeredPrimitives,
           [toWei('1', 'ether'), barelyTooLowMlnPrice.toString(), toWei('1', 'ether')]
         ],
         deployerTxOpts
@@ -226,7 +226,7 @@ describe('update', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [toWei('1', 'ether'), lowerEndValidMlnPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts
@@ -236,7 +236,7 @@ describe('update', () => {
         receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
     );
 
-    expect(logUpdated.assets).toEqual(registeredAssets);
+    expect(logUpdated.assets).toEqual(registeredPrimitives);
     expect(logUpdated.prices).toEqual(dummyPrices);
   });
 
@@ -286,7 +286,7 @@ describe('update', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts
@@ -324,7 +324,7 @@ describe('update', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts
@@ -386,7 +386,7 @@ describe('getCanonicalRate', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [eurPrice.toString(), mlnPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts
@@ -446,7 +446,7 @@ describe('getCanonicalRate', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [preEurPrice.toString(), midpointPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts
@@ -499,7 +499,7 @@ describe('getCanonicalRate', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [preEurPrice, midpointPrice, toWei('1', 'ether')]
       ],
       deployerTxOpts
