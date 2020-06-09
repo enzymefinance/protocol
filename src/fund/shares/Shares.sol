@@ -167,7 +167,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
 
     /// @notice Calculate the overall GAV of the fund
     /// @return gav_ The fund GAV
-    function calcGav() public view returns (uint256) {
+    function calcGav() public returns (uint256) {
         IVault vault = __getVault();
         IValueInterpreter valueInterpreter = __getValueInterpreter();
         address[] memory assets = vault.getOwnedAssets();

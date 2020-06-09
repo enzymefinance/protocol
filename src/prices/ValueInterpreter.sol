@@ -31,7 +31,6 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         address _quoteAsset
     )
         external
-        view
         override
         returns (uint256 value_, bool isValid_)
     {
@@ -51,7 +50,6 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         address _quoteAsset
     )
         external
-        view
         override
         returns (uint256 value_, bool isValid_)
     {
@@ -69,7 +67,6 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         bool _useLiveRate
     )
         private
-        view
         returns (uint256 value_, bool isValid_)
     {
         IRegistry registry = IRegistry(REGISTRY);
@@ -108,7 +105,6 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         bool _useLiveRate
     )
         private
-        view
         returns (uint256 value_, bool isValid_)
     {
         address derivativePriceSource = IRegistry(REGISTRY).derivativeToPriceSource(_derivative);

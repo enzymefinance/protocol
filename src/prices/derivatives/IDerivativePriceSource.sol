@@ -7,6 +7,5 @@ pragma solidity 0.6.8;
 interface IDerivativePriceSource {
     function getRatesToUnderlyings(address _derivative)
         external
-        view
         returns (address[] memory underlyings, uint256[] memory rates);
 }
