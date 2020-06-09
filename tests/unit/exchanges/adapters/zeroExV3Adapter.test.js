@@ -597,6 +597,8 @@ describe('takeOrder', () => {
 
       // Make 2nd investment with DAI to allow taker fee trade
       takerFee = toWei('1', 'ether');
+      const contribAmount = toWei('2', 'ether');
+
       await send(
         fund.shares,
         'enableSharesInvestmentAssets',
@@ -607,7 +609,7 @@ describe('takeOrder', () => {
       await investInFund({
         fundAddress: fund.hub.options.address,
         investment: {
-          contribAmount: takerFee,
+          contribAmount,
           investor: deployer,
           tokenContract: zrx
         },
@@ -619,7 +621,6 @@ describe('takeOrder', () => {
         },
         web3
       });
-      console.log('after invest')
 
       // Set protocolFeeMultiplier to 0
       await send(
@@ -629,7 +630,6 @@ describe('takeOrder', () => {
         governorTxOpts,
         web3
       );
-      console.log('after setmult')
     });
 
     afterAll(async () => {
@@ -668,7 +668,13 @@ describe('takeOrder', () => {
         },
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      await send(
+        mln,
+        'approve',
+        [erc20Proxy.options.address, makerAssetAmount],
+        defaultTxOpts,
+        web3
+      );
       signedOrder = await signZeroExOrder(unsignedOrder, deployer);
       const signatureValid = await call(
         zeroExExchange,
@@ -681,13 +687,6 @@ describe('takeOrder', () => {
 
     test('order is filled through the fund', async () => {
       const { vault } = fund;
-
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
 
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
