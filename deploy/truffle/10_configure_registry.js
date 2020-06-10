@@ -27,6 +27,12 @@ const updateKyberFeedTruffle = async (feed, registry) => {
   // TODO: move account loading somewhere else most likely; maybe a pre-deploy script
   /////////////////////////////////
   const zrxReserveAdmin = '0xa57bd00134b2850b2a1c55860c9e9ea100fdd6cf';
+  const zrxConversionRatesAddress = '0xfb80bfa19cae9e00f28b0f7e1023109deeb10483'
+  // const mlnReserveAdmin = '0x2Fd6181541bEbe30D17CF3a5d9f40eBceCbdBA43';
+  // const mlnConversionRatesAddress = '0x56e69afad3a92394cedc02cfee821f1c05e86c47';
+
+  const zrxConversionRates = await ConversionRates.at(zrxConversionRatesAddress);
+  // const mlnConversionRates = await ConversionRates.at(mlnConversionRatesAddress);
 
   // Load account with eth TODO: move this somewhere else?
   const [primary] = await web3.eth.getAccounts();
@@ -35,13 +41,23 @@ const updateKyberFeedTruffle = async (feed, registry) => {
     to: zrxReserveAdmin,
     value: web3.utils.toWei('100', 'ether')
   });
+  // await web3.eth.sendTransaction({
+  //   from: primary,
+  //   to: mlnReserveAdmin,
+  //   value: web3.utils.toWei('100', 'ether')
+  // });
 
-  const zrxConversionRates = await ConversionRates.at('0xfb80bfa19cae9e00f28b0f7e1023109deeb10483');
   await zrxConversionRates.setValidRateDurationInBlocks(
     '10000000000000000000000',
     {from: zrxReserveAdmin}
   );
-  
+  // console.log('before conv set')
+  // await mlnConversionRates.setValidRateDurationInBlocks(
+  //   '10000000000000000000000',
+  //   {from: mlnReserveAdmin}
+  // );
+  // console.log('after conv set')
+
   /////////////////////////////////
 
   // TODO: select even fewer tokens if possible
@@ -51,7 +67,7 @@ const updateKyberFeedTruffle = async (feed, registry) => {
     // '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892', // MLN
     '0x960b236A07cf122663c4303350609A66A7B288C0',
     '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
-    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+    // '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
     // '0xdd974D5C2e2928deA5F71b9825b8b646686BD200', // KNC
     '0x514910771AF9Ca656af840dff83E8264EcF986CA',
     '0x0F5D2fB29fb7d3CFeE444a200298f468908cC942',
