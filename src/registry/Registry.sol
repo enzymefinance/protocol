@@ -4,8 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/DSAuth.sol";
 import "../dependencies/libs/EnumerableSet.sol";
-import "../fund/hub/ISpoke.sol";
-import "../dependencies/token/IERC20.sol";
 import "../integrations/libs/IIntegrationAdapter.sol";
 
 /// @title Registry Contract
@@ -18,9 +16,9 @@ import "../integrations/libs/IIntegrationAdapter.sol";
 contract Registry is DSAuth {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event AssetAdded (address asset);
+    event PrimitiveAdded (address primitive);
 
-    event AssetRemoved (address asset);
+    event PrimitiveRemoved (address primitive);
 
     event DerivativePriceSourceUpdated(address derivative, address priceSource);
 
@@ -54,16 +52,19 @@ contract Registry is DSAuth {
 
     event SharesRequestorChanged(address sharesRequestor);
 
-    EnumerableSet.AddressSet private assets;
+    event ValueInterpreterChanged(address valueInterpreter);
+
+    // Assets
+    // Primitives are tokens that have an explicit value based on our primary pricefeed, e.g., Dai
+    EnumerableSet.AddressSet private primitives;
+    // Derivatives are tokens representing underlying assets, e.g,. cDai
+    mapping (address => address) public derivativeToPriceSource;
 
     // Plugins
     EnumerableSet.AddressSet private fees;
     EnumerableSet.AddressSet private integrationAdapters;
     EnumerableSet.AddressSet private policies;
     mapping (bytes32 => bool) private integrationAdapterIdentifierIsRegistered;
-
-    // Derivatives (tokens representing underlying assets, e.g,. cDai)
-    mapping (address => address) public derivativeToPriceSource;
 
     // Fund Factories
     mapping (address => bool) public fundFactoryIsRegistered;
@@ -81,6 +82,7 @@ contract Registry is DSAuth {
     address public mlnToken;
     address public nativeAsset;
     address public sharesRequestor;
+    address public valueInterpreter;
 
     constructor(address _postDeployOwner) public {
         incentive = 10 finney;
@@ -89,30 +91,36 @@ contract Registry is DSAuth {
 
     // ASSETS
 
-    /// @notice Remove an asset from the list of registered assets
-    /// @param _asset The address of the asset to remove
-    function deregisterAsset(address _asset) external auth {
-        require(assetIsRegistered(_asset), "deregisterAsset: _asset is not registered");
+    /// @notice Remove a primitive from the list of registered primitives
+    /// @param _primitive The address of the primitive to remove
+    function deregisterPrimitive(address _primitive) external auth {
+        require(
+            primitiveIsRegistered(_primitive),
+            "deregisterPrimitive: _primitive is not registered"
+        );
 
-        EnumerableSet.remove(assets, _asset);
+        EnumerableSet.remove(primitives, _primitive);
 
-        emit AssetRemoved(_asset);
+        emit PrimitiveRemoved(_primitive);
     }
 
-    /// @notice Get all registered assets
-    /// @return A list of all registered asset addresses
-    function getRegisteredAssets() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(assets);
+    /// @notice Get all registered primitives
+    /// @return A list of all registered primitive addresses
+    function getRegisteredPrimitives() external view returns (address[] memory) {
+        return EnumerableSet.enumerate(primitives);
     }
 
-    /// @notice Add an asset to the Registry
-    /// @param _asset Address of asset to be registered
-    function registerAsset(address _asset) external auth {
-        require(!assetIsRegistered(_asset), "registerAsset: _asset already registered");
+    /// @notice Add a primitive to the Registry
+    /// @param _primitive Address of primitive to be registered
+    function registerPrimitive(address _primitive) external auth {
+        require(
+            !primitiveIsRegistered(_primitive),
+            "registerPrimitive: _primitive already registered"
+        );
 
-        EnumerableSet.add(assets, _asset);
+        EnumerableSet.add(primitives, _primitive);
 
-        emit AssetAdded(_asset);
+        emit PrimitiveAdded(_primitive);
     }
 
     /// @notice Add or update a price source for a derivative
@@ -131,11 +139,11 @@ contract Registry is DSAuth {
         emit DerivativePriceSourceUpdated(_derivative, _priceSource);
     }
 
-    /// @notice Check whether an asset is registered
-    /// @param _asset The address of the asset to check
-    /// @return True if the asset is registered
-    function assetIsRegistered(address _asset) public view returns (bool) {
-        return EnumerableSet.contains(assets, _asset);
+    /// @notice Check whether a primitive is registered
+    /// @param _primitive The address of the primitive to check
+    /// @return True if the primitive is registered
+    function primitiveIsRegistered(address _primitive) public view returns (bool) {
+        return EnumerableSet.contains(primitives, _primitive);
     }
 
     // FEES
@@ -352,5 +360,12 @@ contract Registry is DSAuth {
     function setSharesRequestor(address _sharesRequestor) external auth {
         sharesRequestor = _sharesRequestor;
         emit SharesRequestorChanged(_sharesRequestor);
+    }
+
+    /// @notice Set the valueInterpreter storage var
+    /// @param _valueInterpreter The ValueInterpreter contract to set
+    function setValueInterpreter(address _valueInterpreter) external auth {
+        valueInterpreter = _valueInterpreter;
+        emit ValueInterpreterChanged(_valueInterpreter);
     }
 }

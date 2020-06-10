@@ -98,7 +98,7 @@ describe('Fund takes an order', () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const wethToTakerAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [takerTokenAddress]))[0]
+      (await call(priceSource, 'getLiveRate', [takerTokenAddress, weth.options.address]))[0]
     );
     const takerAssetAmount = BNExpDiv(
       new BN(makerAssetAmount),
@@ -203,7 +203,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const wethToTakerAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [takerTokenAddress]))[0]
+      (await call(priceSource, 'getLiveRate', [takerTokenAddress, weth.options.address]))[0]
     );
     const takerAssetAmount = BNExpDiv(
       new BN(makerAssetAmount),
@@ -380,7 +380,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const makerAssetAmount = toWei('0.5', 'Ether');
     const takerTokenAddress = weth.options.address;
     const wethToTakerAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [takerTokenAddress]))[0]
+      (await call(priceSource, 'getLiveRate', [takerTokenAddress, weth.options.address]))[0]
     );
     const takerAssetAmount = BNExpDiv(
       new BN(makerAssetAmount),
@@ -493,7 +493,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
     const makerAssetAmount = toWei('1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const wethToTakerAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [takerTokenAddress]))[0]
+      (await call(priceSource, 'getLiveRate', [takerTokenAddress, weth.options.address]))[0]
     );
     const takerAssetAmount = BNExpDiv(
       new BN(makerAssetAmount),

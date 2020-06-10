@@ -5,7 +5,7 @@ pragma solidity 0.6.8;
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Simple interface for derivative price source oracle implementations
 interface IDerivativePriceSource {
-    function getPrice(address _derivative) external view returns (address, uint256);
-    function lastUpdated() external view returns (uint256);
-    function update() external;
+    function getRatesToUnderlyings(address _derivative)
+        external
+        returns (address[] memory underlyings, uint256[] memory rates);
 }

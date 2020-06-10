@@ -11,7 +11,7 @@ import { getEventFromLogs } from '~/tests/utils/metadata';
 let deployer;
 let defaultTxOpts, managerTxOpts;
 let baseToken, quoteToken;
-let engine, fundFactory, priceSource, registry, sharesRequestor;
+let engine, fundFactory, priceSource, registry, sharesRequestor, valueInterpreter;
 let amguPrice;
 
 async function assertAmguTx(contract, method, args = []) {
@@ -44,11 +44,11 @@ async function assertAmguTx(contract, method, args = []) {
   const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
-    await call(
-      priceSource,
-      'convertQuantity',
-      [mlnAmguAmount.toString(), mlnAddress, wethAddress]
-    )
+    (await call(
+      valueInterpreter,
+      'calcCanonicalAssetValue',
+      [mlnAddress, mlnAmguAmount.toString(), wethAddress]
+    ))[0]
   );
   const txCostInWei = new BN(gasPrice).mul(new BN(result.gasUsed));
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
@@ -80,6 +80,7 @@ beforeEach(async () => {
   registry = contracts.Registry;
   priceSource = contracts.TestingPriceFeed;
   sharesRequestor = contracts.SharesRequestor;
+  valueInterpreter = contracts.ValueInterpreter;
 
   quoteToken = contracts.WETH;
   baseToken = contracts.MLN;
@@ -109,7 +110,11 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
     [[baseToken.options.address], [newInputBaseTokenPrice]],
     defaultTxOpts
   );
-  const newBaseTokenPrice = await call(priceSource, 'getPrice', [baseToken.options.address]);
+  const newBaseTokenPrice = await call(
+    priceSource,
+    'getCanonicalRate',
+    [baseToken.options.address, quoteToken.options.address]
+  );
   expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
   await send(
@@ -142,7 +147,11 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     [[baseToken.options.address], [newInputBaseTokenPrice]],
     defaultTxOpts
   );
-  const newBaseTokenPrice = await call(priceSource, 'getPrice', [baseToken.options.address]);
+  const newBaseTokenPrice = await call(
+    priceSource,
+    'getCanonicalRate',
+    [baseToken.options.address, quoteToken.options.address]
+  );
   expect(newBaseTokenPrice[0]).toBe(newInputBaseTokenPrice);
 
   await send(
@@ -226,11 +235,11 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
   const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
-    await call(
-      priceSource,
-      'convertQuantity',
-      [mlnAmguAmount.toString(), mlnAddress, wethAddress]
-    )
+    (await call(
+      valueInterpreter,
+      'calcCanonicalAssetValue',
+      [mlnAddress, mlnAmguAmount.toString(), wethAddress]
+    ))[0]
   );
 
   const txCostInWei = new BN(gasPrice).mul(new BN(requestSharesRes.gasUsed));

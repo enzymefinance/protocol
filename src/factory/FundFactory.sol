@@ -102,7 +102,7 @@ contract FundFactory is AmguConsumer {
     {
         require(!__hasPendingFund(msg.sender), "beginFundSetup: Sender has another fund pending");
         require(
-            REGISTRY.assetIsRegistered(_denominationAsset),
+            REGISTRY.primitiveIsRegistered(_denominationAsset),
             "beginFundSetup: Denomination asset must be registered"
         );
         require(isValidFundName(_name), "beginSetup: Fund name is not valid");

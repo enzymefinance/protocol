@@ -80,7 +80,7 @@ describe('Fund can take an order (buy MLN with WETH)', async () => {
     takerAsset = weth.options.address;
 
     const makerToWethAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [makerAsset]))[0]
+      (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
     );
 
     takerQuantity = BNExpMul(
@@ -167,7 +167,7 @@ describe('Fund can take an order (buy WETH with MLN)', async () => {
     takerAsset = mln.options.address;
 
     const takerToWethAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      (await call(priceSource, 'getLiveRate', [takerAsset, weth.options.address]))[0]
     );
     takerQuantity = BNExpDiv(
       new BN(makerQuantity),

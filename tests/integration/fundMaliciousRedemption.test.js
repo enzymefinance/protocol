@@ -41,7 +41,7 @@ beforeAll(async () => {
 
   await send(
     registry,
-    'registerAsset',
+    'registerPrimitive',
     [maliciousToken.options.address],
     defaultTxOpts
   );
@@ -138,7 +138,7 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const maliciousTokenPrice = new BN(
-    (await call(priceSource, 'getPrice', [maliciousToken.options.address]))[0]
+    (await call(priceSource, 'getLiveRate', [maliciousToken.options.address, weth.options.address]))[0]
   );
   const fundMaliciousTokenValue = BNExpMul(preFundHoldingsMaliciousToken, maliciousTokenPrice);
 

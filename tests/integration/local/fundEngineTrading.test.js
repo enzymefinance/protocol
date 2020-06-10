@@ -65,7 +65,7 @@ beforeAll(async () => {
   );
 
   mlnPrice = (await priceSource.methods
-    .getPrice(mln.options.address)
+    .getCanonicalRate(mln.options.address, weth.options.address)
     .call())[0];
   takerQuantity = toWei('0.001', 'ether'); // Mln sell qty
   makerQuantity = BNExpMul(

@@ -161,10 +161,10 @@ contract OasisDexAdapter is OrderTaker {
         );
 
         IRegistry registry = __getRegistry();
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             makerAsset), 'Maker asset not registered'
         );
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             takerAsset), 'Taker asset not registered'
         );
 

@@ -139,10 +139,10 @@ contract AirSwapAdapter is OrderTaker {
         ) = __decodeTakeOrderArgs(_encodedArgs);
 
         IRegistry registry = __getRegistry();
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             orderAddresses[1]), 'Maker asset not registered'
         );
-        require(registry.assetIsRegistered(
+        require(registry.primitiveIsRegistered(
             orderAddresses[3]), 'Taker asset not registered'
         );
     }

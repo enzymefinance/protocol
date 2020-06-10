@@ -163,6 +163,18 @@ contract Vault is IVault, TokenUser, Spoke {
         // TODO: add PolicyManager().postValidate...
     }
 
+    function getAssetBalances(address[] memory _assets)
+        public
+        view
+        override
+        returns (uint256[] memory balances_)
+    {
+        balances_ = new uint256[](_assets.length);
+        for (uint256 i = 0; i < _assets.length; i++) {
+            balances_[i] = assetBalances[_assets[i]];
+        }
+    } 
+
     // PRIVATE FUNCTIONS
     /// @notice Check is an adapter is enabled for the fund
     function __adapterIsEnabled(address _adapter) private view returns (bool) {

@@ -10,7 +10,7 @@ import "../engine/AmguConsumer.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/policies/IPolicyManager.sol";
 import "../fund/shares/IShares.sol";
-import "../prices/IPriceSource.sol";
+import "../prices/primitives/IPriceSource.sol";
 
 /// @title SharesRequestor Contract
 /// @author Melon Council DAO <security@meloncoucil.io>

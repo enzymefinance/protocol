@@ -27,6 +27,7 @@
       "VaultFactory": "",
       "Engine": "",
       "SharesRequestor": "",
+      "ValueInterpreter": "",
       "Registry": "",
       "FundFactory": ""
     },

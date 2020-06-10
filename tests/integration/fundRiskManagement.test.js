@@ -197,7 +197,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
       const makerAsset = knc.options.address;
       const wethToMakerAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [makerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
       );
       const makerQuantity = BNExpDiv(
         new BN(takerQuantity),
@@ -229,7 +229,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Third party makes an order', async () => {
       const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [goodMakerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
       );
       goodMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
@@ -288,7 +288,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       takerQuantity = toWei('0.01', 'ether');
 
       const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [makerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
       );
       expectedMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
@@ -389,7 +389,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       makerAsset = dai.options.address;
       takerAsset = weth.options.address;
       makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [makerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
       );
 
       const makerAssetGav = BNExpMul(
@@ -583,7 +583,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       goodMakerAsset = zrx.options.address;
       const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [goodMakerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
       );
       goodMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
@@ -596,7 +596,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       const badMakerAsset = knc.options.address;
       const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [badMakerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
       );
       const makerQuantity = BNExpDiv(
         new BN(takerQuantity),
@@ -627,7 +627,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
     test('Third party makes an order', async () => {
       const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getPrice', [goodMakerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
       );
       goodMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
@@ -686,7 +686,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       goodMakerAsset1 = mln.options.address;
       const makerToWethAssetRate1 = new BN(
-        (await call(priceSource, 'getPrice', [goodMakerAsset1]))[0]
+        (await call(priceSource, 'getLiveRate', [goodMakerAsset1, weth.options.address]))[0]
       );
       goodMakerQuantity1 = BNExpDiv(
         new BN(takerQuantity),
@@ -695,7 +695,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       goodMakerAsset2 = mln.options.address;
       const makerToWethAssetRate2 = new BN(
-        (await call(priceSource, 'getPrice', [goodMakerAsset2]))[0]
+        (await call(priceSource, 'getLiveRate', [goodMakerAsset2, weth.options.address]))[0]
       );
       goodMakerQuantity2 = BNExpDiv(
         new BN(takerQuantity),
@@ -704,7 +704,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
 
       badMakerAsset = dai.options.address;
       const makerToWethAssetRate3 = new BN(
-        (await call(priceSource, 'getPrice', [badMakerAsset]))[0]
+        (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
       );
       badMakerQuantity = BNExpDiv(
         new BN(takerQuantity),

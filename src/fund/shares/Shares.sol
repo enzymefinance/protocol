@@ -4,8 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../dependencies/TokenUser.sol";
 import "../../dependencies/libs/EnumerableSet.sol";
-import "../../prices/IDerivativePriceSource.sol";
-import "../../prices/IPriceSource.sol";
+import "../../prices/IValueInterpreter.sol";
 import "../hub/Spoke.sol";
 import "./IShares.sol";
 import "./SharesToken.sol";
@@ -56,7 +55,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         SharesToken(_tokenName)
     {
         require(
-            __getRegistry().assetIsRegistered(_denominationAsset),
+            __getRegistry().primitiveIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
         );
         DENOMINATION_ASSET = _denominationAsset;
@@ -166,52 +165,27 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
 
     // PUBLIC FUNCTIONS
 
-    function calcAssetGav(address _asset) public view returns (uint256) {
-        IRegistry registry = __getRegistry();
-        // TODO: Is it a problem if this fails?
-        require(
-            registry.assetIsRegistered(_asset) ||
-            registry.derivativeToPriceSource(_asset) != address(0),
-            "calcAssetGav: _asset has no price source"
-        );
-
-        address gavAsset;
-        uint256 gavAssetAmount;
-        uint256 assetBalance = __getVault().assetBalances(_asset);
-
-        // If asset in registry, get asset from priceSource
-        if (registry.assetIsRegistered(_asset)) {
-            gavAsset = _asset;
-            gavAssetAmount = assetBalance;
-        }
-        // Else use derivative oracle to get price
-        else {
-            address derivativePriceSource = registry.derivativeToPriceSource(_asset);
-            uint256 price;
-            (gavAsset, price) = IDerivativePriceSource(derivativePriceSource).getPrice(_asset);
-
-            gavAssetAmount = mul(
-                price,
-                assetBalance
-            ) / 10 ** uint256(ERC20WithFields(_asset).decimals());
-        }
-
-        return __getPriceSource().convertQuantity(
-            gavAssetAmount,
-            gavAsset,
-            DENOMINATION_ASSET
-        );
-    }
-
     /// @notice Calculate the overall GAV of the fund
     /// @return gav_ The fund GAV
-    function calcGav() public view returns (uint256) {
-        address[] memory assets = __getVault().getOwnedAssets();
+    function calcGav() public returns (uint256) {
+        IVault vault = __getVault();
+        IValueInterpreter valueInterpreter = __getValueInterpreter();
+        address[] memory assets = vault.getOwnedAssets();
+        uint256[] memory balances = vault.getAssetBalances(assets);
 
         uint256 gav;
         for (uint256 i = 0; i < assets.length; i++) {
-            // TODO: is this way too expensive b/c up to 20 calls to vault?; 2000n gas?
-            gav = add(gav, calcAssetGav(assets[i]));
+            (
+                uint256 assetGav,
+                bool isValid
+            ) = valueInterpreter.calcCanonicalAssetValue(
+                assets[i],
+                balances[i],
+                DENOMINATION_ASSET
+            );
+            require(assetGav > 0 && isValid, "calcGav: No valid price available for asset");
+
+            gav = add(gav, assetGav);
         }
 
         return gav;
@@ -245,13 +219,14 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             denominatedSharePrice
         ) / 10 ** uint256(decimals);
 
-        if (_asset != DENOMINATION_ASSET) {
-            return __getPriceSource().convertQuantity(
-                denominationAssetQuantity, DENOMINATION_ASSET, _asset
-            );
-        }
+        if (_asset == DENOMINATION_ASSET) return denominationAssetQuantity;
 
-        return denominationAssetQuantity;
+        (uint256 assetQuantity,) = __getValueInterpreter().calcCanonicalAssetValue(
+            DENOMINATION_ASSET,
+            denominationAssetQuantity,
+            _asset
+        );
+        return assetQuantity;
     }
 
     /// @notice Confirm whether asset can be used to buy shares
@@ -326,7 +301,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
                 "__enableSharesInvestmentAssets: Asset is already enabled"
             );
             require(
-                __getRegistry().assetIsRegistered(_assets[i]),
+                __getRegistry().primitiveIsRegistered(_assets[i]),
                 "__enableSharesInvestmentAssets: Asset not in Registry"
             );
             EnumerableSet.add(sharesInvestmentAssets, _assets[i]);

@@ -63,6 +63,7 @@ export const CONTRACT_NAMES = {
   UNISWAP_EXCHANGE: 'UniswapFactory',
   UNISWAP_EXCHANGE_TEMPLATE: 'UniswapExchangeTemplate',
   USER_WHITELIST: 'UserWhitelist',
+  VALUE_INTERPRETER: 'ValueInterpreter',
   VAULT: 'Vault',
   VAULT_FACTORY: 'VaultFactory',
   WETH: 'WETH',

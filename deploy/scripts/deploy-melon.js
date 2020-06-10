@@ -20,6 +20,7 @@ const main = async input => {
   const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
   const sharesRequestor = await nab('SharesRequestor', [registry.options.address], melonAddrs);
+  const valueInterpreter = await nab('ValueInterpreter', [registry.options.address], melonAddrs);
 
   // Adapters
   const airSwapAdapter = await nab('AirSwapAdapter', [input.airSwap.addr.Swap], melonAddrs);
@@ -76,6 +77,10 @@ const main = async input => {
   if (`${previousRegisteredSharesRequestor}`.toLowerCase() !== sharesRequestor.options.address.toLowerCase()) {
     await send(registry, 'setSharesRequestor', [sharesRequestor.options.address]);
   }
+  const previousRegisteredValueInterpreter = await call(registry, 'valueInterpreter');
+  if (`${previousRegisteredValueInterpreter}`.toLowerCase() !== valueInterpreter.options.address.toLowerCase()) {
+    await send(registry, 'setValueInterpreter', [valueInterpreter.options.address]);
+  }
 
   const fees = [managementFee.options.address, performanceFee.options.address];
   for (const fee of fees) {
@@ -101,8 +106,8 @@ const main = async input => {
 
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
-    if (!(await call(registry, 'assetIsRegistered', [tokenAddress]))) {
-      await send(registry, 'registerAsset', [tokenAddress]);
+    if (!(await call(registry, 'primitiveIsRegistered', [tokenAddress]))) {
+      await send(registry, 'registerPrimitive', [tokenAddress]);
     }
     if (conf.track === 'TESTING') {
       const previousDecimals = await call(priceSource, 'assetsToDecimals', [tokenAddress]);
@@ -139,6 +144,7 @@ const main = async input => {
     "Registry": registry,
     "Engine": engine,
     "SharesRequestor": sharesRequestor,
+    "ValueInterpreter": valueInterpreter,
     "FundFactory": fundFactory
   };
 

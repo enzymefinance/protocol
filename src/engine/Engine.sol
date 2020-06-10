@@ -5,7 +5,7 @@ import "../dependencies/DSMath.sol";
 import "../dependencies/token/BurnableToken.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/hub/ISpoke.sol";
-import "../prices/IPriceSource.sol";
+import "../prices/primitives/IPriceSource.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
 
@@ -100,7 +100,7 @@ contract Engine is IEngine, DSMath {
         );
         uint256 mlnPerAmgu = getAmguPrice();
         uint256 ethPerMln;
-        (ethPerMln,) = priceSource().getPrice(address(mlnToken()));
+        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.nativeAsset());
         uint256 amguConsumed;
         if (mlnPerAmgu > 0 && ethPerMln > 0) {
             amguConsumed = (mul(msg.value, 10 ** uint256(MLN_DECIMALS))) / (mul(ethPerMln, mlnPerAmgu));
@@ -130,7 +130,7 @@ contract Engine is IEngine, DSMath {
     /// @return ETH per MLN including premium
     function enginePrice() public view returns (uint256) {
         uint256 ethPerMln;
-        (ethPerMln, ) = priceSource().getPrice(address(mlnToken()));
+        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.nativeAsset());
         uint256 premium = (mul(ethPerMln, premiumPercent()) / 100);
         return add(ethPerMln, premium);
     }

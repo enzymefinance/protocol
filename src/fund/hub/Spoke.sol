@@ -2,7 +2,8 @@
 pragma solidity 0.6.8;
 
 import "../../registry/IRegistry.sol";
-import "../../prices/IPriceSource.sol";
+import "../../prices/primitives/IPriceSource.sol";
+import "../../prices/IValueInterpreter.sol";
 import "../fees/IFeeManager.sol";
 import "../policies/IPolicyManager.sol";
 import "../shares/IShares.sol";
@@ -54,6 +55,10 @@ abstract contract Spoke is ISpoke, FundRouterMixin {
 
     function __getShares() internal view returns (IShares) {
         return IShares(__getShares(HUB));
+    }
+
+    function __getValueInterpreter() internal view returns (IValueInterpreter) {
+        return IValueInterpreter(__getValueInterpreter(HUB));
     }
 
     function __getVault() internal view returns (IVault) {

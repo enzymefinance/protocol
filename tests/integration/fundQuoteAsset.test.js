@@ -74,7 +74,7 @@ test('Fund gets non-quote asset from investment', async () => {
   // Calculate share cost
   const kncPriceInWeth = (await call(
     priceSource,
-    'getReferencePriceInfo',
+    'getCanonicalRate',
     [fundDenominationAsset, weth.options.address]
   ))[0];
 
@@ -128,7 +128,7 @@ test('Fund gets non-quote asset from investment', async () => {
 
   const wethPriceInKnc = (await call(
     priceSource,
-    'getReferencePriceInfo',
+    'getCanonicalRate',
     [weth.options.address, fundDenominationAsset]
   ))[0];
 
@@ -194,7 +194,7 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
   const kncPriceInMln = new BN(
     (await call(
       priceSource,
-      'getReferencePriceInfo',
+      'getCanonicalRate',
       [fundDenominationAsset, mln.options.address]
     ))[0]
   );
@@ -238,7 +238,7 @@ test('Fund gets asset from investment that has no pair with the quote asset in t
   const mlnPriceInKnc = new BN(
     (await call(
       priceSource,
-      'getReferencePriceInfo',
+      'getCanonicalRate',
       [mln.options.address, fundDenominationAsset]
     ))[0]
   );

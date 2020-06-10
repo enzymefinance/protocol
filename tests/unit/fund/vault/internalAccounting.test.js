@@ -135,7 +135,7 @@ describe('vault', () => {
     takerAsset = weth.options.address;
     takerQuantity = investmentAmount;
     const makerToWethAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [makerAsset]))[0]
+      (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
     );
     makerQuantity = BNExpDiv(
       new BN(takerQuantity),

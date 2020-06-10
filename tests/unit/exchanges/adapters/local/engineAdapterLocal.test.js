@@ -56,7 +56,7 @@ beforeAll(async () => {
 
   const priceSource = contracts.TestingPriceFeed;
   mlnPrice = (await priceSource.methods
-    .getPrice(mln.options.address)
+    .getCanonicalRate(mln.options.address, weth.options.address)
     .call())[0];
 });
 
