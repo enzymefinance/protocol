@@ -18,7 +18,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     event SharesBought(
         address indexed buyer,
         uint256 sharesQuantity,
-        address denominationAsset,
         uint256 investmentAmount
     );
 
@@ -29,7 +28,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         uint256[] receivedAssetQuantities
     );
 
-    address immutable public DENOMINATION_ASSET;
+    address immutable public override DENOMINATION_ASSET;
 
     modifier onlySharesRequestor() {
         require(
@@ -59,33 +58,42 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
 
     /// @notice Buy shares on behalf of a specified user
     /// @dev Only callable by the SharesRequestor associated with the Registry
-    /// @dev Rewards all fees via getSharesCostInAsset
     /// @param _buyer The for which to buy shares
-    /// @param _sharesQuantity The desired amount of shares
-    /// @return costInDenominationAsset The amount of investment asset used to buy the desired shares
+    /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
+    /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
+    /// @return sharesBought_ The amount of shares bought
     function buyShares(
         address _buyer,
-        uint256 _sharesQuantity
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
     )
         external
         override
         onlySharesRequestor
-        returns (uint256 costInDenominationAsset)
+        returns (uint256 sharesBought_)
     {
-        costInDenominationAsset = getSharesCostInAsset(_sharesQuantity, DENOMINATION_ASSET);
+        address denominationAsset = DENOMINATION_ASSET;
+
+        __getFeeManager().rewardAllFees();
+
+        // Calculate shares quantity
+        sharesBought_ = mul(
+            _investmentAmount, 
+            10 ** uint256(ERC20WithFields(denominationAsset).decimals())
+        ) / calcSharePrice();
+        require(sharesBought_ >= _minSharesQuantity, "buyShares: minimum shares quantity not met");
 
         // Issue shares and transfer investment asset to vault
         address vaultAddress = address(__getVault());
-        _mint(_buyer, _sharesQuantity);
-        __safeTransferFrom(DENOMINATION_ASSET, msg.sender, address(this), costInDenominationAsset);
-        __increaseApproval(DENOMINATION_ASSET, vaultAddress, costInDenominationAsset);
-        IVault(vaultAddress).deposit(DENOMINATION_ASSET, costInDenominationAsset);
+        _mint(_buyer, sharesBought_);
+        __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
+        __increaseApproval(denominationAsset, vaultAddress, _investmentAmount);
+        IVault(vaultAddress).deposit(denominationAsset, _investmentAmount);
 
         emit SharesBought(
             _buyer,
-            _sharesQuantity,
-            DENOMINATION_ASSET,
-            costInDenominationAsset
+            sharesBought_,
+            _investmentAmount
         );
     }
 
@@ -151,42 +159,17 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         return gav;
     }
 
-    /// @notice Calculate the cost for a given number of shares in the fund, in a given asset
-    /// @dev Rewards all fees prior to calculations
-    /// @param _sharesQuantity Number of shares
-    /// @param _asset Asset in which to calculate share cost
-    /// @return The amount of the asset required to buy the quantity of shares
-    function getSharesCostInAsset(uint256 _sharesQuantity, address _asset)
-        public
-        override
-        returns (uint256)
-    {
-        __getFeeManager().rewardAllFees();
-
-        uint256 denominatedSharePrice;
-        // TODO: Confirm that this is correct behavior when shares go above 0 and then return to 0 (all shares cashed out)
+    /// @notice Calculates the cost of 1 unit of shares in the fund's denomination asset
+    /// @return The amount of the denomination asset required to buy 1 unit of shares
+    /// @dev Does not account for fees.
+    /// Rounding favors the investor (rounds the price down).
+    function calcSharePrice() public returns (uint256) {
         if (totalSupply() == 0) {
-            denominatedSharePrice = 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
+            return 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
         }
         else {
-            denominatedSharePrice = calcGav() * 10 ** uint256(decimals) / totalSupply();
+            return calcGav() * 10 ** uint256(decimals) / totalSupply();
         }
-
-        // TOOD: does it matter if we do: cost of 1 share x quantity vs. GAV x shares / supply (b/c rounding)?
-        // Because 1 share will be rounded down, and then multiplied, which could yield a slightly smaller number
-        uint256 denominationAssetQuantity = mul(
-            _sharesQuantity,
-            denominatedSharePrice
-        ) / 10 ** uint256(decimals);
-
-        if (_asset == DENOMINATION_ASSET) return denominationAssetQuantity;
-
-        (uint256 assetQuantity,) = __getValueInterpreter().calcCanonicalAssetValue(
-            DENOMINATION_ASSET,
-            denominationAssetQuantity,
-            _asset
-        );
-        return assetQuantity;
     }
 
     // PRIVATE FUNCTIONS

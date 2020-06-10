@@ -11,7 +11,6 @@ import "../fund/hub/IHub.sol";
 import "../fund/policies/IPolicyManager.sol";
 import "../fund/shares/IShares.sol";
 import "../prices/primitives/IPriceSource.sol";
-import "../fund/shares/Shares.sol";
 
 /// @title SharesRequestor Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -21,39 +20,36 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
 
     event RequestCancelled (
         address caller,
-        address requestOwner,
+        address indexed requestOwner,
         address indexed hub,
-        address denominationAsset,
-        uint256 maxInvestmentAmount,
-        uint256 sharesQuantity,
+        uint256 investmentAmount,
+        uint256 minSharesQuantity,
         uint256 createdTimestamp,
         uint256 incentiveFee
     );
 
     event RequestExecuted (
         address caller,
-        address requestOwner,
+        address indexed requestOwner,
         address indexed hub,
-        address denominationAsset,
-        uint256 investmentAmountFilled,
-        uint256 sharesQuantity,
+        uint256 investmentAmount,
+        uint256 minSharesQuantity,
         uint256 createdTimestamp,
-        uint256 incentiveFee
+        uint256 incentiveFee,
+        uint256 sharesBought
     );
 
     event RequestCreated (
-        address requestOwner,
+        address indexed requestOwner,
         address indexed hub,
-        address denominationAsset,
-        uint256 maxInvestmentAmount,
-        uint256 sharesQuantity,
+        uint256 investmentAmount,
+        uint256 minSharesQuantity,
         uint256 incentiveFee
     );
 
     struct Request {
-        address denominationAsset;
-        uint256 maxInvestmentAmount;
-        uint256 sharesQuantity;
+        uint256 investmentAmount;
+        uint256 minSharesQuantity;
         uint256 timestamp;
         uint256 incentiveFee;
     }
@@ -104,10 +100,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     /// @notice Execute shares request for a particular fund (for a specified user)
     /// @param _requestOwner The owner of the pending shares request
     /// @param _hub The fund for which to execute the request
-    function executeRequestFor(address _requestOwner, address _hub)
-        external
-        onlyExistingRequest(_requestOwner, _hub)
-    {
+    function executeRequestFor(address _requestOwner, address _hub) external {
         (
             bool isExecutable,
             string memory notExecutableReason
@@ -116,36 +109,29 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
 
         Request memory request = ownerToRequestByFund[_requestOwner][_hub];
 
-        uint256 investmentAmountFilled = __validateAndBuyShares(
+        uint256 sharesBought = __validateAndBuyShares(
             _hub,
             _requestOwner,
-            request.denominationAsset,
-            request.maxInvestmentAmount,
-            request.sharesQuantity
+            request.investmentAmount,
+            request.minSharesQuantity
         );
 
         // Remove the Request
         delete ownerToRequestByFund[_requestOwner][_hub];
         EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
 
-        // Do the asset transfers in a separate step after altering state
-        __transferRequestSurplusDenominationAsset(
-            _requestOwner,
-            request.denominationAsset,
-            request.maxInvestmentAmount,
-            investmentAmountFilled,
-            request.incentiveFee
-        );
+        // Reward sender with incentive
+        msg.sender.transfer(request.incentiveFee);
 
         emit RequestExecuted(
             msg.sender,
             _requestOwner,
             _hub,
-            request.denominationAsset,
-            investmentAmountFilled,
-            request.sharesQuantity,
+            request.investmentAmount,
+            request.minSharesQuantity,
             request.timestamp,
-            request.incentiveFee
+            request.incentiveFee,
+            sharesBought
         );
     }
 
@@ -158,86 +144,70 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
 
     /// @notice Add a shares requests for the sender
     /// @param _hub The fund for which to buy shares
-    /// @param _maxInvestmentAmount The max amount of the denomination asset
-    /// with which to buy the desired amount of shares
-    /// @param _sharesQuantity The desired amount of shares
-    /// @return True if successful
+    /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
+    /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
     function requestShares(
         address _hub,
-        uint256 _maxInvestmentAmount,
-        uint256 _sharesQuantity
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
     )
         external
         payable
         validHub(_hub)
         amguPayableWithIncentive
-        returns (bool)
     {
         // Sanity checks
-        require(_maxInvestmentAmount > 0, "requestShares: _maxInvestmentAmount must be > 0");
-        require(_sharesQuantity > 0, "requestShares: _sharesQuantity must be > 0");
+        require(_hub != address(0), "requestShares: _hub cannot be empty");
+        require(_investmentAmount > 0, "requestShares: _investmentAmount must be > 0");
 
         // State checks
         require(
             !requestExists(msg.sender, _hub),
             "requestShares: Only one request can exist (per fund)"
         );
-
-        address denominationAsset = Shares(IHub(_hub).shares()).DENOMINATION_ASSET();
-
         require(
-            IERC20(denominationAsset).allowance(msg.sender, address(this)) >= _maxInvestmentAmount,
-            "requestShares: Actual allowance is less than _maxInvestmentAmount"
+            __fundIsActive(_hub),
+            "requestShares: Fund is not active"
+        );
+        address denominationAsset = IShares(IHub(_hub).shares()).DENOMINATION_ASSET();
+        require(
+            IERC20(denominationAsset).allowance(msg.sender, address(this)) >= _investmentAmount,
+            "requestShares: Actual allowance is less than _investmentAmount"
         );
 
         // The initial investment in a fund can skip the request process and settle directly
         if (IERC20(IHub(_hub).shares()).totalSupply() == 0) {
-            __safeTransferFrom(denominationAsset, msg.sender, address(this), _maxInvestmentAmount);
-            uint256 investmentAmountFilled = __validateAndBuyShares(
+            __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
+            __validateAndBuyShares(
                 _hub,
                 msg.sender,
-                denominationAsset,
-                _maxInvestmentAmount,
-                _sharesQuantity
-            );
-            __transferRequestSurplusDenominationAsset(
-                msg.sender,
-                denominationAsset,
-                _maxInvestmentAmount,
-                investmentAmountFilled,
-                REGISTRY.incentive()
+                _investmentAmount,
+                _minSharesQuantity
             );
 
-            return true;
+            // Return incentive to sender
+            msg.sender.transfer(REGISTRY.incentive());
         }
+        // Create the Request and take custody of investment asset
+        else {
+            Request memory request = Request({
+                investmentAmount: _investmentAmount,
+                minSharesQuantity: _minSharesQuantity,
+                timestamp: block.timestamp,
+                incentiveFee: REGISTRY.incentive()
+            });
+            ownerToRequestByFund[msg.sender][_hub] = request;
+            EnumerableSet.add(ownerToFundsRequestedSet[msg.sender], _hub);
+            __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
 
-        // Validate the actual buyShares call
-        __validateBuySharesRequest(_hub, denominationAsset, _maxInvestmentAmount, _sharesQuantity);
-
-        // TODO: can check the fund policies here as well?
-
-        // Create the Request and take custody of denomination asset
-        Request memory request = Request({
-            denominationAsset: denominationAsset,
-            maxInvestmentAmount: _maxInvestmentAmount,
-            sharesQuantity: _sharesQuantity,
-            timestamp: block.timestamp,
-            incentiveFee: REGISTRY.incentive()
-        });
-        ownerToRequestByFund[msg.sender][_hub] = request;
-        EnumerableSet.add(ownerToFundsRequestedSet[msg.sender], _hub);
-        __safeTransferFrom(denominationAsset, msg.sender, address(this), _maxInvestmentAmount);
-
-        emit RequestCreated(
-            msg.sender,
-            _hub,
-            request.denominationAsset,
-            request.maxInvestmentAmount,
-            request.sharesQuantity,
-            request.incentiveFee
-        );
-
-        return true;
+            emit RequestCreated(
+                msg.sender,
+                _hub,
+                request.investmentAmount,
+                request.minSharesQuantity,
+                request.incentiveFee
+            );
+        }
     }
 
     // PUBLIC FUNCTIONS
@@ -252,7 +222,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         view
         returns (bool)
     {
-        return ownerToRequestByFund[_requestOwner][_hub].denominationAsset != address(0);
+        return ownerToRequestByFund[_requestOwner][_hub].timestamp > 0;
     }
 
     /// @notice Check if a specific shares request has expired
@@ -281,12 +251,9 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         returns (bool pass_, string memory reason_)
     {
         Request memory request = ownerToRequestByFund[_requestOwner][_hub];
-        if (requestHasExpired(_requestOwner, _hub)) {
-            reason_ = "Request has expired";
-        }
-        else if (IERC20(IHub(_hub).shares()).totalSupply() == 0) {
-            pass_ = true;
-        }
+        if (request.timestamp == 0) reason_ = "Request does not exist";
+        else if (!__fundIsActive(_hub)) reason_ = "Fund is not active";
+        else if (requestHasExpired(_requestOwner, _hub)) reason_ = "Request has expired";
         else if (request.timestamp >= IPriceSource(REGISTRY.priceSource()).lastUpdate()) {
             reason_ = "Price has not updated since request";
         }
@@ -303,26 +270,29 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         onlyExistingRequest(_requestOwner, _hub)
     {
         Request memory request = ownerToRequestByFund[_requestOwner][_hub];
+        address denominationAsset = IShares(IHub(_hub).shares()).DENOMINATION_ASSET();
+
         require(
-            !IPriceSource(REGISTRY.priceSource()).hasValidPrice(request.denominationAsset) ||
+            !IPriceSource(REGISTRY.priceSource()).hasValidPrice(denominationAsset) ||
             requestHasExpired(_requestOwner, _hub) ||
             !__fundIsActive(_hub),
             "__cancelRequestFor: No cancellation condition was met"
         );
-        // Delete the request, then send the incentive and return the denomination asset
+
+        // Cancel the request
         delete ownerToRequestByFund[_requestOwner][_hub];
         EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
 
+        // Send incentive to caller and investment asset back to request owner
         msg.sender.transfer(request.incentiveFee);
-        __safeTransfer(request.denominationAsset, _requestOwner, request.maxInvestmentAmount);
+        __safeTransfer(denominationAsset, _requestOwner, request.investmentAmount);
 
         emit RequestCancelled(
             msg.sender,
             _requestOwner,
             _hub,
-            request.denominationAsset,
-            request.maxInvestmentAmount,
-            request.sharesQuantity,
+            request.investmentAmount,
+            request.minSharesQuantity,
             request.timestamp,
             request.incentiveFee
         );
@@ -333,113 +303,44 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         return IHub(_hub).status() == IHub.FundStatus.Active;
     }
 
-    /// @notice Helper to transfer surplus denomination asset back to the buyer and incentive to the caller
-    function __transferRequestSurplusDenominationAsset(
-        address _buyer,
-        address _denominationAsset,
-        uint256 _maxInvestmentAmount,
-        uint256 _investmentAmountFilled,
-        uint256 _incentiveFee
-    )
-        private
-    {
-        // Send unused denominationAsset back to buyer and revoke asset approval
-        uint256 investmentAmountOverspend = sub(
-            _maxInvestmentAmount,
-            _investmentAmountFilled
-        );
-        if (investmentAmountOverspend > 0) {
-            __safeTransfer(_denominationAsset, _buyer, investmentAmountOverspend);
-        }
-
-        // Reward sender with incentive
-        msg.sender.transfer(_incentiveFee);
-    }
-
     /// @notice Helper to buy shares from fund
     /// @dev Does not depend on the Request at all, so it can be used to bypass creating a request
     /// when the totalSupply of shares is 0
-    /// @return investmentAmountFilled_ The amount of the denominationAsset that was used to fill the order
     function __validateAndBuyShares(
         address _hub,
         address _buyer,
-        address _denominationAsset,
-        uint256 _maxInvestmentAmount,
-        uint256 _sharesQuantity
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
     )
         private
-        returns (uint256 investmentAmountFilled_)
+        returns (uint256 sharesBought_)
     {
-        // Validate the actual buyShares call
-        __validateBuySharesRequest(_hub, _denominationAsset, _maxInvestmentAmount, _sharesQuantity);
-
-        IShares shares = IShares(IHub(_hub).shares());
+        // Pre-validate against fund policies
         IPolicyManager policyManager = IPolicyManager(IHub(_hub).policyManager());
-
-        // Validate against fund policies
         // TODO: pass in all relevant values to buying shares
         policyManager.preValidate(
-            bytes4(keccak256("buyShares(address,address,uint256)")),
-            [_buyer, address(0), address(0), _denominationAsset, address(0)],
+            bytes4(keccak256("buyShares(address,uint256,uint256)")),
+            [_buyer, address(0), address(0), address(0), address(0)],
             [uint256(0), uint256(0), uint256(0)],
             bytes32(0)
         );
 
         // Buy the shares via Shares
-        // We can grant exact approval to Shares rather than using _maxInvestmentAmount
-        // since we use the same function to get the cost
-        uint256 costInDenominationAsset = shares.getSharesCostInAsset(
-            _sharesQuantity,
-            _denominationAsset
-        );
+        IShares shares = IShares(IHub(_hub).shares());
         __increaseApproval(
-            _denominationAsset,
+            shares.DENOMINATION_ASSET(),
             address(shares),
-            costInDenominationAsset
+            _investmentAmount
         );
-        investmentAmountFilled_ = shares.buyShares(
-          _buyer,
-          _sharesQuantity
-        );
-        require(
-            costInDenominationAsset == investmentAmountFilled_,
-            "__validateAndBuyShares: Used more denominationAsset than expected"
-        );
+        sharesBought_ = shares.buyShares(_buyer, _investmentAmount, _minSharesQuantity);
 
+        // Post-validate against fund policies
         // TODO: pass in all relevant values to buying shares
         policyManager.postValidate(
-            bytes4(keccak256("buyShares(address,address,uint256)")),
-            [_buyer, address(0), address(0), _denominationAsset, address(0)],
+            bytes4(keccak256("buyShares(address,uint256,uint256)")),
+            [_buyer, address(0), address(0), address(0), address(0)],
             [uint256(0), uint256(0), uint256(0)],
             bytes32(0)
-        );
-    }
-
-    /// @notice Helper to validate a buy shares request is valid
-    /// @dev Does not check the fund's policies
-    function __validateBuySharesRequest(
-        address _hub,
-        address _denominationAsset,
-        uint256 _maxInvestmentAmount,
-        uint256 _sharesQuantity
-    )
-        private
-    {
-        IHub hub = IHub(_hub);
-        IShares shares = IShares(hub.shares());
-        require(
-            __fundIsActive(_hub),
-            "__validateBuySharesRequest: Fund is not active"
-        );
-
-        // Ensure enough denomination asset
-        uint256 costInDenominationAsset = shares.getSharesCostInAsset(
-            _sharesQuantity,
-            _denominationAsset
-        );
-        require(
-            costInDenominationAsset <= _maxInvestmentAmount,
-            "__validateBuySharesRequest: _maxInvestmentAmount is too low"
         );
     }
 }
