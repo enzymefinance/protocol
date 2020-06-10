@@ -95,7 +95,7 @@ describe.only('takeOrder', () => {
       takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(mlnPrice)
-      ).toString();
+      ).add(new BN(1)).toString(); // adding 1 protects against rounding error (i.e. gives :ceiling")
     });
 
     test('order is filled through the fund', async () => {
@@ -114,9 +114,6 @@ describe.only('takeOrder', () => {
         takerAsset,
         takerQuantity,
       });
-      // TODO: fix; the amounts do not pass validation after the swap
-      console.log(makerQuantity)
-      console.log(takerQuantity)
 
       await updateKyberPriceFeed(priceSource, web3);
 
