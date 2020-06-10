@@ -107,8 +107,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     function executeRequestFor(address _requestOwner, address _hub)
         external
         onlyExistingRequest(_requestOwner, _hub)
-        amguPayable
-        payable
     {
         (
             bool isExecutable,
