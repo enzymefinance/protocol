@@ -29,7 +29,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         uint256[] receivedAssetQuantities
     );
 
-    address public DENOMINATION_ASSET;
+    address immutable public DENOMINATION_ASSET;
 
     modifier onlySharesRequestor() {
         require(
