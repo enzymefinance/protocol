@@ -47,8 +47,7 @@ describe('new investment in fund', () => {
 
   beforeAll(async () => {
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
-      quoteToken: weth.options.address,
+      denominationAssetToken: weth,
       fundFactory
     });
 
@@ -60,8 +59,8 @@ describe('new investment in fund', () => {
         contribAmount: investmentAmount,
         investor: deployer,
         isInitial: true,
-        tokenContract: weth
-      }
+      },
+      denominationAssetToken: weth
     });
   });
 
@@ -120,14 +119,12 @@ describe('vault', () => {
     fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       integrationAdapters: [kyberAdapter.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,
-        tokenContract: weth
       },
-      quoteToken: weth.options.address,
+      denominationAssetToken: weth,
       fundFactory
     });
 
@@ -299,13 +296,11 @@ describe('redeem shares', () => {
     const contracts = deployed.contracts;
     fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,
-        tokenContract: weth
       },
-      quoteToken: weth.options.address,
+      denominationAssetToken: weth,
       fundFactory
     });
     const { shares } = fund;

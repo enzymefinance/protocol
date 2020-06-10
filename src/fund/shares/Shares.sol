@@ -18,13 +18,9 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     event SharesBought(
         address indexed buyer,
         uint256 sharesQuantity,
-        address investmentAsset,
+        address denominationAsset,
         uint256 investmentAmount
     );
-
-    event SharesInvestmentAssetsDisabled (address[] assets);
-
-    event SharesInvestmentAssetsEnabled (address[] assets);
 
     event SharesRedeemed(
         address indexed redeemer,
@@ -34,7 +30,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     );
 
     address public DENOMINATION_ASSET;
-    EnumerableSet.AddressSet private sharesInvestmentAssets;
 
     modifier onlySharesRequestor() {
         require(
@@ -47,7 +42,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     constructor(
         address _hub,
         address _denominationAsset,
-        address[] memory _defaultAssets,
         string memory _tokenName
     )
         public
@@ -59,10 +53,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             "Denomination asset must be registered"
         );
         DENOMINATION_ASSET = _denominationAsset;
-
-        if (_defaultAssets.length > 0) {
-            __enableSharesInvestmentAssets(_defaultAssets);
-        }
     }
 
     // EXTERNAL
@@ -71,33 +61,31 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// @dev Only callable by the SharesRequestor associated with the Registry
     /// @dev Rewards all fees via getSharesCostInAsset
     /// @param _buyer The for which to buy shares
-    /// @param _investmentAsset The asset with which to buy shares
     /// @param _sharesQuantity The desired amount of shares
-    /// @return costInInvestmentAsset_ The amount of investment asset used to buy the desired shares
+    /// @return costInDenominationAsset The amount of investment asset used to buy the desired shares
     function buyShares(
         address _buyer,
-        address _investmentAsset,
         uint256 _sharesQuantity
     )
         external
         override
         onlySharesRequestor
-        returns (uint256 costInInvestmentAsset_)
+        returns (uint256 costInDenominationAsset)
     {
-        costInInvestmentAsset_ = getSharesCostInAsset(_sharesQuantity, _investmentAsset);
+        costInDenominationAsset = getSharesCostInAsset(_sharesQuantity, DENOMINATION_ASSET);
 
         // Issue shares and transfer investment asset to vault
         address vaultAddress = address(__getVault());
         _mint(_buyer, _sharesQuantity);
-        __safeTransferFrom(_investmentAsset, msg.sender, address(this), costInInvestmentAsset_);
-        __increaseApproval(_investmentAsset, vaultAddress, costInInvestmentAsset_);
-        IVault(vaultAddress).deposit(_investmentAsset, costInInvestmentAsset_);
+        __safeTransferFrom(DENOMINATION_ASSET, msg.sender, address(this), costInDenominationAsset);
+        __increaseApproval(DENOMINATION_ASSET, vaultAddress, costInDenominationAsset);
+        IVault(vaultAddress).deposit(DENOMINATION_ASSET, costInDenominationAsset);
 
         emit SharesBought(
             _buyer,
             _sharesQuantity,
-            _investmentAsset,
-            costInInvestmentAsset_
+            DENOMINATION_ASSET,
+            costInDenominationAsset
         );
     }
 
@@ -109,34 +97,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         );
 
         _mint(_who, _amount);
-    }
-
-    /// @notice Disable the buying of shares with specific assets
-    /// @param _assets The assets for which to disable the buying of shares
-    function disableSharesInvestmentAssets(address[] calldata _assets) external onlyManager {
-        require(_assets.length > 0, "disableSharesInvestmentAssets: _assets cannot be empty");
-
-        for (uint256 i = 0; i < _assets.length; i++) {
-            require(
-                isSharesInvestmentAsset(_assets[i]),
-                "disableSharesInvestmentAssets: Asset is not enabled"
-            );
-            EnumerableSet.remove(sharesInvestmentAssets, _assets[i]);
-        }
-        emit SharesInvestmentAssetsDisabled(_assets);
-    }
-
-    /// @notice Enable the buying of shares with specific assets
-    /// @param _assets The assets for which to disable the buying of shares
-    function enableSharesInvestmentAssets(address[] calldata _assets) external onlyManager {
-        require(_assets.length > 0, "enableSharesInvestmentAssets: _assets cannot be empty");
-        __enableSharesInvestmentAssets(_assets);
-    }
-
-    /// @notice Get all assets that can be used to buy shares
-    /// @return The assets that can be used to buy shares
-    function getSharesInvestmentAssets() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(sharesInvestmentAssets);
     }
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
@@ -229,12 +189,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         return assetQuantity;
     }
 
-    /// @notice Confirm whether asset can be used to buy shares
-    /// @param _asset The asset to confirm
-    /// @return True if the asset can be used to buy shares
-    function isSharesInvestmentAsset(address _asset) public view override returns (bool) {
-        return EnumerableSet.contains(sharesInvestmentAssets, _asset);
-    }
+    // PRIVATE FUNCTIONS
 
     /// @notice Redeem a specified quantity of the sender's shares
     /// for a proportionate slice of the fund's assets
@@ -292,34 +247,17 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             payoutQuantities
         );
     }
-
-    /// @notice Enable assets with which to buy shares
-    function __enableSharesInvestmentAssets (address[] memory _assets) private {
-        for (uint256 i = 0; i < _assets.length; i++) {
-            require(
-                !isSharesInvestmentAsset(_assets[i]),
-                "__enableSharesInvestmentAssets: Asset is already enabled"
-            );
-            require(
-                __getRegistry().primitiveIsRegistered(_assets[i]),
-                "__enableSharesInvestmentAssets: Asset not in Registry"
-            );
-            EnumerableSet.add(sharesInvestmentAssets, _assets[i]);
-        }
-        emit SharesInvestmentAssetsEnabled(_assets);
-    }
 }
 
 contract SharesFactory {
     function createInstance(
         address _hub,
         address _denominationAsset,
-        address[] calldata _defaultAssets,
         string calldata _tokenName
     )
         external
         returns (address)
     {
-        return address(new Shares(_hub, _denominationAsset, _defaultAssets, _tokenName));
+        return address(new Shares(_hub, _denominationAsset, _tokenName));
     }
 }
