@@ -140,6 +140,31 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         );
     }
 
+    /// @notice Execute pending shares requests for specified funds and users
+    /// @param _requestOwners The owners of the pending shares requests
+    /// @param _hubs The funds for which to execute the requests
+    /// @param successes_ True for executed requests
+    /// @dev Each index in the param and return arrays represents a single pending request
+    function executeRequestsFor(address[] calldata _requestOwners, address[] calldata _hubs)
+        external
+        returns (bool[] memory successes_)
+    {
+        // Sanity checks
+        require(_requestOwners.length > 0, "executeRequests: no requests input");
+        require(
+            _requestOwners.length == _hubs.length,
+            "executeRequests: _requestOwners and _hubs must be same length"
+        );
+
+        // Execute requests
+        for (uint256 i = 0; i < _requestOwners.length; i++) {
+            try this.executeRequestFor(_requestOwners[i], _hubs[i]) {
+                successes_[i] = true;
+            }
+            catch {}
+        }
+    }
+
     /// @notice Fetch fund addresses of all pending shares requests for a specified user
     /// @param _requestOwner The owner of the pending shares request
     /// @return An array of fund addresses
