@@ -7,6 +7,7 @@ import "../dependencies/TokenUser.sol";
 import "../dependencies/token/IERC20.sol";
 import "../dependencies/libs/EnumerableSet.sol";
 import "../engine/AmguConsumer.sol";
+import "../fund/hub/FundRouterMixin.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/policies/IPolicyManager.sol";
 import "../fund/shares/IShares.sol";
@@ -15,7 +16,7 @@ import "../prices/primitives/IPriceSource.sol";
 /// @title SharesRequestor Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Entry point for users to buy shares in funds
-contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
+contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event RequestCanceled (
@@ -88,7 +89,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
 
         // Send incentive to caller and investment asset back to request owner
         msg.sender.transfer(request.incentiveFee);
-        address denominationAsset = IShares(IHub(_hub).shares()).DENOMINATION_ASSET();
+        address denominationAsset = IShares(__getShares(_hub)).DENOMINATION_ASSET();
 
         __safeTransfer(denominationAsset, msg.sender, request.investmentAmount);
 
@@ -199,14 +200,15 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
             __fundIsActive(_hub),
             "requestShares: Fund is not active"
         );
-        address denominationAsset = IShares(IHub(_hub).shares()).DENOMINATION_ASSET();
+        address shares = __getShares(_hub);
+        address denominationAsset = IShares(shares).DENOMINATION_ASSET();
         require(
             IERC20(denominationAsset).allowance(msg.sender, address(this)) >= _investmentAmount,
             "requestShares: Actual allowance is less than _investmentAmount"
         );
 
         // The initial investment in a fund can skip the request process and settle directly
-        if (IERC20(IHub(_hub).shares()).totalSupply() == 0) {
+        if (IERC20(shares).totalSupply() == 0) {
             __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
             __validateAndBuyShares(
                 _hub,
@@ -314,7 +316,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         returns (uint256 sharesBought_)
     {
         // Pre-validate against fund policies
-        IPolicyManager policyManager = IPolicyManager(IHub(_hub).policyManager());
+        IPolicyManager policyManager = IPolicyManager(__getPolicyManager(_hub));
         // TODO: pass in all relevant values to buying shares
         policyManager.preValidate(
             bytes4(keccak256("buyShares(address,uint256,uint256)")),
@@ -324,7 +326,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         );
 
         // Buy the shares via Shares
-        IShares shares = IShares(IHub(_hub).shares());
+        IShares shares = IShares(__getShares(_hub));
         __increaseApproval(
             shares.DENOMINATION_ASSET(),
             address(shares),
