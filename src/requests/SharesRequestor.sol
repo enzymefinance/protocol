@@ -58,15 +58,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     mapping (address => mapping(address => Request)) public ownerToRequestByFund;
     mapping (address => EnumerableSet.AddressSet) private ownerToFundsRequestedSet;
 
-    /// @notice Assure that a request exists for a particular fund and owner
-    modifier onlyExistingRequest(address _requestOwner, address _hub) {
-        require(
-            requestExists(_requestOwner, _hub),
-            "onlyExistingRequest: No request exists for fund"
-        );
-        _;
-    }
-
     /// @notice Assure that a hub address is valid
     modifier validHub(address _hub) {
         require(_hub != address(0), "validHub: _hub cannot be empty");
@@ -176,7 +167,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
 
         // State checks
         require(
-            !requestExists(msg.sender, _hub),
+            ownerToRequestByFund[msg.sender][_hub].timestamp == 0,
             "requestShares: Only one request can exist (per fund)"
         );
         require(
@@ -225,19 +216,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     }
 
     // PUBLIC FUNCTIONS
-
-    /// @notice Helper to check whether a request exists for a fund and user
-    /// @dev Doesn't use EnumerableSet.contains() because the canonical Request is ownerToRequestByFund
-    /// @param _requestOwner The owner of the pending shares request
-    /// @param _hub The fund for the pending shares request
-    /// @return True if the shares request exists
-    function requestExists(address _requestOwner, address _hub)
-        public
-        view
-        returns (bool)
-    {
-        return ownerToRequestByFund[_requestOwner][_hub].timestamp > 0;
-    }
 
     /// @notice Check if a specific shares request is cancelable
     /// @param _requestOwner The owner of the pending shares request
