@@ -35,19 +35,14 @@ beforeAll(async () => {
 });
 
 
-// TODO: re-enable when we have global policy deployments
+// TODO: we're changing how policies like this are deployed/managed shortly, so no
+// need to fix this test right now
 describe.skip('Fund 1: user whitelist', () => {
   let offeredValue, wantedShares;
   let mln, weth, priceSource, userWhitelist;
   let fund;
 
   beforeAll(async () => {
-    mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
-    weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-
-    console.log(defaultTxOpts)
     userWhitelist = await deploy(
       CONTRACT_NAMES.USER_WHITELIST,
       [[investor]],
@@ -55,6 +50,13 @@ describe.skip('Fund 1: user whitelist', () => {
       [],
       web3
     );
+
+    mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+    weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+
+    console.log(defaultTxOpts)
 
     fund = await setupFundWithParams({
       defaultTokens: [mln.options.address, weth.options.address],

@@ -27,7 +27,7 @@ const pkeys = [
 global.startChain = async () => {
   const startingBalance = Web3.utils.toWei('10000000', 'ether');
   const provider = ganache.provider({
-    fork: 'http://127.0.0.1:8545',
+    fork: 'http://127.0.0.1:8545', // TODO: get from config
     mnemonic: 'exhibit now news planet fame thank swear reform tilt accident bitter axis',
     // vmErrorsOnRPCResponse: true,
     network_id: 1,

@@ -1,6 +1,6 @@
 pragma solidity 0.6.4;
 
-import "main/dependencies/SafeMath.sol";
+import "../dependencies/SafeMath.sol";
 
 // A 'BadERC20Token' token is one that uses an old version of the ERC20 standard,
 // as described here https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca

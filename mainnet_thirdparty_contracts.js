@@ -1,4 +1,7 @@
 module.exports = {
+  'airswap': {
+    'Swap': '0x4572f2554421Bd64Bef1c22c8a81840E8D496BeA'
+  },
   'kyber': {
     'ConversionRates': '0x798AbDA6Cc246D0EDbA912092A2a3dBd3d11191B',
     'KyberReserve': '0x63825c174ab367968EC60f061753D3bbD36A0D8F',

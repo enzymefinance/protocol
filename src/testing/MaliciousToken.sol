@@ -1,6 +1,6 @@
 pragma solidity 0.6.4;
 
-import "main/dependencies/token/PreminedToken.sol";
+import "../dependencies/token/PreminedToken.sol";
 
 contract MaliciousToken is PreminedToken {
 

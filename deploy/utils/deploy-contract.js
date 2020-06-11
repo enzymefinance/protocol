@@ -143,6 +143,13 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
   let account;
   if (overrideOpts.from) {
     account = web3.eth.accounts.wallet[overrideOpts.from];
+    // handle case of unlocked account with no private key (ganache)
+    if (account === undefined) {
+      account = {
+        address: overrideOpts.from,
+        privateKey: undefined
+      }
+    }
   } else { // default to first account
     account = web3.eth.accounts.wallet['0'];
   }

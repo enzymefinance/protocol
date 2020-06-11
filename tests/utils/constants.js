@@ -19,6 +19,7 @@ export const ENCODING_TYPES = {
 
 export const CONTRACT_NAMES = {
   ADDRESS_LIST: 'AddressList',
+  AIR_SWAP_ADAPTER: 'AirSwapAdapter',
   AMGU_CONSUMER: 'AmguConsumer',
   ASSET_BLACKLIST: 'AssetBlacklist',
   ASSET_WHITELIST: 'AssetWhitelist',
@@ -27,6 +28,7 @@ export const CONTRACT_NAMES = {
   DAI: 'DAI',
   ENGINE: 'Engine',
   ENGINE_ADAPTER: 'EngineAdapter',
+  ERC20_TRANSFER_HANDLER: 'ERC20TransferHandler',
   FEE_MANAGER: 'FeeManager',
   FEE_MANAGER_FACTORY: 'FeeManagerFactory',
   FUND_FACTORY: 'FundFactory',
@@ -62,6 +64,7 @@ export const CONTRACT_NAMES = {
   STANDARD_TOKEN: 'StandardToken',
   TESTING_PRICEFEED: 'TestingPriceFeed',
   TRADING: 'Trading',
+  TRANSFER_HANDLER_REGISTRY: 'TransferHandlerRegistry',
   UNISWAP_ADAPTER: 'UniswapAdapter',
   UNISWAP_FACTORY: 'UniswapFactory',
   UNISWAP_EXCHANGE: 'UniswapExchange',

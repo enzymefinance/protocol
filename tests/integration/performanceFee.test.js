@@ -263,7 +263,7 @@ test(`performance fee is calculated correctly`, async () => {
   const expectedFeeShares = currentTotalSupply
     .mul(expectedFeeSharesPreDilution)
     .div(currentTotalSupply.sub(expectedFeeSharesPreDilution));
-  // XXX: below not passing (off by one)
+  // TODO:: below not passing (expectedFeeShares is one wei too small)
   expect(performanceFeeOwed).bigNumberEq(expectedFeeShares);
 });
 
