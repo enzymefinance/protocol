@@ -8,12 +8,14 @@ import "main/prices/primitives/IPriceSource.sol";
 /// @notice Intended for testing purposes only
 /// @notice Updates and exposes price information
 contract TestingPriceFeed is DSMath, IPriceSource {
-    event PricesUpdated(address[] assets, uint256[] pricest);
+    event PricesUpdated(address[] assets, uint256[] prices);
 
     struct Data {
         uint256 price;
         uint256 timestamp;
     }
+
+    uint256 public constant override VALIDITY_INTERVAL = 2 days;
 
     address public QUOTE_ASSET;
     mapping(address => uint256) public assetsToDecimals;

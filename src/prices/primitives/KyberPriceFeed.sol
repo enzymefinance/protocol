@@ -18,8 +18,8 @@ contract KyberPriceFeed is IPriceSource, DSMath {
     event RegistrySet(address newRegistry);
     event UpdaterSet(address updater);
 
-    uint8 public constant KYBER_PRECISION = 18;
-    uint32 public constant VALIDITY_INTERVAL = 2 days;
+    uint256 public constant KYBER_PRECISION = 18;
+    uint256 public constant override VALIDITY_INTERVAL = 2 days;
     address public KYBER_NETWORK_PROXY;
     address public PRICEFEED_QUOTE_ASSET;
 
@@ -205,7 +205,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
             return (0, false);
         }
 
-        uint256 askRate = 10 ** (uint256(KYBER_PRECISION) * 2) / bidRateOfReversePair;
+        uint256 askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
         /**
           Average the bid/ask prices:
           avgPriceFromKyber = (bidRate + askRate) / 2
@@ -216,7 +216,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         rate_ = mul(
             add(bidRate, askRate),
             10 ** uint256(ERC20WithFields(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
-        ) / mul(2, 10 ** uint256(KYBER_PRECISION));
+        ) / mul(2, 10 ** KYBER_PRECISION);
 
         // Rate is valid if deviation between buy and ask rates is less than threshold
         // Ignores crossed condition where bidRate > askRate
@@ -224,7 +224,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         if (bidRate < askRate) {
             spreadFromKyber = mul(
                 sub(askRate, bidRate),
-                10 ** uint256(KYBER_PRECISION)
+                10 ** KYBER_PRECISION
             ) / askRate;
         }
         isValid_ = spreadFromKyber <= maxSpread && bidRate != 0 && askRate != 0;
@@ -269,6 +269,6 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         } else {
             deviation = sub(_sanePrice, _priceFromKyber);
         }
-        return mul(deviation, 10 ** uint256(KYBER_PRECISION)) / _sanePrice <= maxPriceDeviation;
+        return mul(deviation, 10 ** KYBER_PRECISION) / _sanePrice <= maxPriceDeviation;
     }
 }

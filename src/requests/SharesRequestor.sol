@@ -18,8 +18,7 @@ import "../prices/primitives/IPriceSource.sol";
 contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event RequestCancelled (
-        address caller,
+    event RequestCanceled (
         address indexed requestOwner,
         address indexed hub,
         uint256 investmentAmount,
@@ -54,7 +53,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         uint256 incentiveFee;
     }
 
-    uint32 constant private REQUEST_LIFESPAN = 1 days;
+    uint256 constant private CANCELLATION_BUFFER = 1 hours;
 
     mapping (address => mapping(address => Request)) public ownerToRequestByFund;
     mapping (address => EnumerableSet.AddressSet) private ownerToFundsRequestedSet;
@@ -82,19 +81,34 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     // @dev Needed for Amgu / incentive
     receive() external payable {}
 
-    /// @notice Cancel shares request for a particular fund (for the sender)
-    /// @dev Can only cancel when no price, request expired or fund shut down
+    /// @notice Cancels a shares request for a particular fund (for the sender)
     /// @param _hub The fund for which to cancel the request
+    /// @dev See cancellation conditions in requestIsCancelable
     function cancelRequest(address _hub) external {
-        __cancelRequestFor(msg.sender, _hub);
-    }
+        require(
+            requestIsCancelable(msg.sender, _hub),
+            "__cancelRequestFor: No cancellation condition was met"
+        );
 
-    /// @notice Cancel shares request for a particular fund (for a specified user)
-    /// @dev Can only cancel when no price, request expired or fund shut down
-    /// @param _requestOwner The owner of the pending shares request
-    /// @param _hub The fund for which to cancel the request
-    function cancelRequestFor(address _requestOwner, address _hub) external {
-        __cancelRequestFor(_requestOwner, _hub);
+        // Cancel the request
+        Request memory request = ownerToRequestByFund[msg.sender][_hub];
+        delete ownerToRequestByFund[msg.sender][_hub];
+        EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
+
+        // Send incentive to caller and investment asset back to request owner
+        msg.sender.transfer(request.incentiveFee);
+        address denominationAsset = IShares(IHub(_hub).shares()).DENOMINATION_ASSET();
+
+        __safeTransfer(denominationAsset, msg.sender, request.investmentAmount);
+
+        emit RequestCanceled(
+            msg.sender,
+            _hub,
+            request.investmentAmount,
+            request.minSharesQuantity,
+            request.timestamp,
+            request.incentiveFee
+        );
     }
 
     /// @notice Execute shares request for a particular fund (for a specified user)
@@ -225,19 +239,35 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         return ownerToRequestByFund[_requestOwner][_hub].timestamp > 0;
     }
 
-    /// @notice Check if a specific shares request has expired
+    /// @notice Check if a specific shares request is cancelable
     /// @param _requestOwner The owner of the pending shares request
     /// @param _hub The fund for the pending shares request
-    /// @return True if the shares request has expired
-    function requestHasExpired(address _requestOwner, address _hub)
-        public
-        view
-        returns (bool)
-    {
-        return block.timestamp > add(
-            ownerToRequestByFund[_requestOwner][_hub].timestamp,
-            REQUEST_LIFESPAN
-        );
+    /// @return True if the shares request is cancelable
+    /// @dev One of three conditions must be met:
+    /// A) The fund is inactive
+    /// B) An entire "validity interval" (the max time between price updates)
+    /// has passed for the price feed since the request was made.
+    /// C) The price feed has been updated since the request was made,
+    /// and a "cancellation buffer" has passed since the update.
+    /// This assures that requests older than the reasonable expected interval of price updates
+    /// are always cancelable, while newer requests always have a buffer between
+    /// price update and cancellation, which eliminates frontrunning attempts to essentially
+    /// get free "call options" on share price.
+    function requestIsCancelable(address _requestOwner, address _hub) public view returns (bool) {
+        uint256 requestTimestamp = ownerToRequestByFund[_requestOwner][_hub].timestamp;
+        require(requestTimestamp > 0, "requestIsCancelable: Request does not exist");
+
+        // Fund is inactive
+        if (!__fundIsActive(_hub)) return true;
+
+        // Price feed's validity interval has expired
+        IPriceSource priceSource = IPriceSource(REGISTRY.priceSource());
+        if (now >= add(requestTimestamp, priceSource.VALIDITY_INTERVAL())) return true;
+
+        // Cancellation buffer has passed after a price feed update
+        uint256 lastPriceSourceUpdate = priceSource.lastUpdate();
+        return requestTimestamp < lastPriceSourceUpdate &&
+            now >= add(lastPriceSourceUpdate, CANCELLATION_BUFFER);
     }
 
     /// @notice Check if a pending shares request is able to be executed
@@ -253,7 +283,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
         Request memory request = ownerToRequestByFund[_requestOwner][_hub];
         if (request.timestamp == 0) reason_ = "Request does not exist";
         else if (!__fundIsActive(_hub)) reason_ = "Fund is not active";
-        else if (requestHasExpired(_requestOwner, _hub)) reason_ = "Request has expired";
         else if (request.timestamp >= IPriceSource(REGISTRY.priceSource()).lastUpdate()) {
             reason_ = "Price has not updated since request";
         }
@@ -263,40 +292,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer {
     }
 
     // PRIVATE FUNCTIONS
-
-    /// @notice Cancel a given shares request
-    function __cancelRequestFor(address _requestOwner, address _hub)
-        private
-        onlyExistingRequest(_requestOwner, _hub)
-    {
-        Request memory request = ownerToRequestByFund[_requestOwner][_hub];
-        address denominationAsset = IShares(IHub(_hub).shares()).DENOMINATION_ASSET();
-
-        require(
-            !IPriceSource(REGISTRY.priceSource()).hasValidPrice(denominationAsset) ||
-            requestHasExpired(_requestOwner, _hub) ||
-            !__fundIsActive(_hub),
-            "__cancelRequestFor: No cancellation condition was met"
-        );
-
-        // Cancel the request
-        delete ownerToRequestByFund[_requestOwner][_hub];
-        EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
-
-        // Send incentive to caller and investment asset back to request owner
-        msg.sender.transfer(request.incentiveFee);
-        __safeTransfer(denominationAsset, _requestOwner, request.investmentAmount);
-
-        emit RequestCancelled(
-            msg.sender,
-            _requestOwner,
-            _hub,
-            request.investmentAmount,
-            request.minSharesQuantity,
-            request.timestamp,
-            request.incentiveFee
-        );
-    }
 
     /// @notice Helper to check whether a fund is not shutdown and has been initialized
     function __fundIsActive(address _hub) private view returns (bool) {
