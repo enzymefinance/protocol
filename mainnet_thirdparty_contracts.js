@@ -26,6 +26,10 @@ module.exports = {
     'ZeroExV3ZrxVault': '0xba7f8b5fb1b19c1211c5d49550fcd149177a5eaf',
     'ZeroExGovernor': '0x7D3455421BbC5Ed534a83c88FD80387dc8271392'
   },
+  'airSwap': {
+    'AirSwapSwap': '0x4572f2554421Bd64Bef1c22c8a81840E8D496BeA',
+    'AirSwapTypes': '0xa42d613D8B8B6cB9507F46A5dd3FD98276570FD7',
+  },
   'tokens': {
     'WETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     'MLN': '0xec67005c4e498ec7f55e092bd1d35cbc47c91892',

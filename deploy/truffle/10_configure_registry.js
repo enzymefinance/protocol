@@ -1,8 +1,8 @@
 const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
-// const AirSwapSwap = artifacts.require('AirSwapSwap');
-const AirSwapAdapter = artifacts.require('AirSwapSwap');
+const AirSwapSwap = artifacts.require('AirSwapSwap');
+const AirSwapAdapter = artifacts.require('AirSwapAdapter');
 const Engine = artifacts.require('Engine');
 const EngineAdapter = artifacts.require('EngineAdapter');
 const KyberAdapter = artifacts.require('KyberAdapter');
@@ -121,6 +121,7 @@ module.exports = async _ => {
   const uniswapFactory = await UniswapFactory.at(mainnetAddrs.uniswap.UniswapFactory);
   const zeroExV2Exchange = await ZeroExV2Exchange.at(mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   const zeroExV3Exchange = await ZeroExV3Exchange.at(mainnetAddrs.zeroExV3.ZeroExV3Exchange);
+  const airSwapSwap = await AirSwapSwap.at(mainnetAddrs.airSwap.AirSwapSwap);
 
   await registry.setPriceSource(priceSource.address);
   await registry.setEngine((await Engine.deployed()).address);
@@ -132,11 +133,11 @@ module.exports = async _ => {
     adapter: (await EngineAdapter.deployed()).address,
     integrationType: 0,
   };
-  // integrations.airSwap = {
-  //   gateway: input.airSwap.addr.Swap,
-  //   adapter: airSwapAdapter.options.address,
-  //   integrationType: 1
-  // };
+  integrations.airSwap = {
+    gateway: airSwapSwap.address,
+    adapter: (await AirSwapAdapter.deployed()).address,
+    integrationType: 1
+  };
   integrations.kyber = {
     gateway: kyberNetworkProxy.address,
     adapter: (await KyberAdapter.deployed()).address,

@@ -4,7 +4,7 @@ const UniswapAdapter = artifacts.require('UniswapAdapter');
 const ZeroExV2Adapter = artifacts.require('ZeroExV2Adapter');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 const EngineAdapter = artifacts.require('EngineAdapter');
-const AirSwapAdapter = artifacts.require('AirSwapSwap');
+const AirSwapAdapter = artifacts.require('AirSwapAdapter');
 
 module.exports = async deployer => {
   await deployer.deploy(KyberAdapter);
@@ -12,6 +12,6 @@ module.exports = async deployer => {
   await deployer.deploy(UniswapAdapter);
   await deployer.deploy(ZeroExV2Adapter);
   await deployer.deploy(ZeroExV3Adapter);
-  // await deployer.deploy(AirSwapAdapter); // TODO
+  await deployer.deploy(AirSwapAdapter);
   await deployer.deploy(EngineAdapter);
 }
