@@ -18,7 +18,7 @@ contract MaliciousToken is PreminedToken {
 
     function transfer(address _to, uint256 _value) public override returns (bool) {
         require(!isReverting, "I'm afraid I can't do that, Dave");
-        super.transfer(_to, _value);
+        return super.transfer(_to, _value);
     }
 
     function transferFrom(
@@ -31,6 +31,6 @@ contract MaliciousToken is PreminedToken {
         returns (bool)
     {
         require(!isReverting, "I'm afraid I can't do that, Dave");
-        super.transferFrom(_from, _to, _value);
+        return super.transferFrom(_from, _to, _value);
     }
 }
