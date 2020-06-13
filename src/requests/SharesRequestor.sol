@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "../dependencies/DSMath.sol";
 import "../dependencies/TokenUser.sol";
 import "../dependencies/token/IERC20.sol";
-import "../dependencies/libs/EnumerableSet.sol";
 import "../engine/AmguConsumer.sol";
 import "../fund/hub/FundRouterMixin.sol";
 import "../fund/hub/IHub.sol";
@@ -17,8 +16,6 @@ import "../prices/primitives/IPriceSource.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Entry point for users to buy shares in funds
 contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
     event RequestCanceled (
         address indexed requestOwner,
         address indexed hub,
@@ -57,7 +54,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
     uint256 constant private CANCELLATION_BUFFER = 1 hours;
 
     mapping (address => mapping(address => Request)) public ownerToRequestByFund;
-    mapping (address => EnumerableSet.AddressSet) private ownerToFundsRequestedSet;
 
     /// @notice Assure that a hub address is valid
     modifier validHub(address _hub) {
@@ -85,7 +81,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
         // Cancel the request
         Request memory request = ownerToRequestByFund[msg.sender][_hub];
         delete ownerToRequestByFund[msg.sender][_hub];
-        EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
 
         // Send incentive to caller and investment asset back to request owner
         msg.sender.transfer(request.incentiveFee);
@@ -124,7 +119,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
 
         // Remove the Request
         delete ownerToRequestByFund[_requestOwner][_hub];
-        EnumerableSet.remove(ownerToFundsRequestedSet[msg.sender], _hub);
 
         // Reward sender with incentive
         msg.sender.transfer(request.incentiveFee);
@@ -164,13 +158,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
             }
             catch {}
         }
-    }
-
-    /// @notice Fetch fund addresses of all pending shares requests for a specified user
-    /// @param _requestOwner The owner of the pending shares request
-    /// @return An array of fund addresses
-    function getFundsRequestedSet(address _requestOwner) external view returns (address[] memory) {
-        return EnumerableSet.enumerate(ownerToFundsRequestedSet[_requestOwner]);
     }
 
     /// @notice Add a shares requests for the sender
@@ -229,7 +216,6 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
                 incentiveFee: REGISTRY.incentive()
             });
             ownerToRequestByFund[msg.sender][_hub] = request;
-            EnumerableSet.add(ownerToFundsRequestedSet[msg.sender], _hub);
             __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
 
             emit RequestCreated(
@@ -285,6 +271,8 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
         view
         returns (bool pass_, string memory reason_)
     {
+        // Confirm valid price for denomination asset?
+
         Request memory request = ownerToRequestByFund[_requestOwner][_hub];
         if (request.timestamp == 0) reason_ = "Request does not exist";
         else if (!__fundIsActive(_hub)) reason_ = "Fund is not active";
