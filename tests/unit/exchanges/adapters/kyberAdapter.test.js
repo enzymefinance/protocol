@@ -91,7 +91,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [kyberAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -170,6 +169,7 @@ describe('takeOrder', () => {
     });
   });
 
+  // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 2: token to eth', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
@@ -197,14 +197,13 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [kyberAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory
       });
     });
@@ -276,6 +275,7 @@ describe('takeOrder', () => {
     });
   });
 
+  // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 3: token to token', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsEur, postFundHoldingsMln, postFundHoldingsEur;
@@ -303,14 +303,13 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [kyberAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory
       });
     });

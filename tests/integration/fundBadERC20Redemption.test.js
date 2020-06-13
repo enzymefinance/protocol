@@ -12,6 +12,7 @@ let weth, omg, priceSource, zeroExExchange;
 let fund;
 let wethToEthRate, omgToEthRate;
 
+// @dev Set fund denomination asset to OMG so it can receive OMG as investment
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
@@ -42,7 +43,6 @@ beforeAll(async () => {
   );
 
   fund = await setupFundWithParams({
-    defaultTokens: [weth.options.address, omg.options.address],
     exchanges: [zeroExExchange.options.address],
     exchangeAdapters: [zeroExAdapter.options.address],
     initialInvestment: {
@@ -51,7 +51,7 @@ beforeAll(async () => {
       tokenContract: omg,
     },
     manager,
-    quoteToken: weth.options.address,
+    quoteToken: omg.options.address,
     fundFactory
   });
 });

@@ -48,7 +48,6 @@ beforeAll(async () => {
   kyberAdapter = contracts.KyberAdapter;
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [oasisDexAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

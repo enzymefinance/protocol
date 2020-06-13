@@ -67,7 +67,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [oasisDexAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory
@@ -194,7 +193,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -308,7 +306,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),

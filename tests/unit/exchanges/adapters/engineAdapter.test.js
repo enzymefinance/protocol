@@ -4,7 +4,8 @@
  * @dev This file only contains tests for callOnIntegration param validation.
  * Other tests rely on EVM manipulation not allowed on testnets (only local blockchain).
  * Those tests are in engineAdapterLocal.test.js
- *
+ * All funds are denominated in MLN so that funds can receive MLN as investment
+ * 
  * @test takeOrder: __validateTakeOrderParams
  */
 
@@ -63,14 +64,13 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory
       });
     });

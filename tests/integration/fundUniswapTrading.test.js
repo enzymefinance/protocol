@@ -50,7 +50,6 @@ beforeAll(async () => {
   uniswapAdapter = contracts.UniswapAdapter;
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [uniswapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

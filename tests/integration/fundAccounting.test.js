@@ -29,7 +29,6 @@ beforeAll(async () => {
   const fundFactory = contracts.FundFactory;
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     manager,
     quoteToken: weth.options.address,
     fundFactory
@@ -53,11 +52,7 @@ test('initial investment (with quote token)', async () => {
 
   const fundWethHoldings = await call(vault, 'assetBalances', [weth.options.address])
   const fundGav = await call(shares, 'calcGav');
-  const fundSharePrice = await call(
-    shares,
-    'getSharesCostInAsset',
-    [toWei('1', 'ether'), weth.options.address]
-  );
+  const fundSharePrice = await call(shares, 'calcSharePrice');
 
   expect(fundWethHoldings).toBe(contribAmount);
   expect(fundGav).toBe(contribAmount);
@@ -69,11 +64,7 @@ test('sending quote token directly to Vault does NOT affect fund calculations', 
   const tokenQuantity = toWei('1', 'ether');
 
   const preFundGav = await call(shares, 'calcGav');
-  const preFundSharePrice = await call(
-    shares,
-    'getSharesCostInAsset',
-    [toWei('1', 'ether'), weth.options.address]
-  );
+  const preFundSharePrice = await call(shares, 'calcSharePrice');
   const preFundWethHoldings = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );
@@ -81,11 +72,7 @@ test('sending quote token directly to Vault does NOT affect fund calculations', 
   await send(weth, 'transfer', [vault.options.address, tokenQuantity], defaultTxOpts);
 
   const postFundGav = await call(shares, 'calcGav');
-  const postFundSharePrice = await call(
-    shares,
-    'getSharesCostInAsset',
-    [toWei('1', 'ether'), weth.options.address]
-  );
+  const postFundSharePrice = await call(shares, 'calcSharePrice');
   const postFundWethHoldings = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );

@@ -5,6 +5,7 @@ import { call, send } from '~/deploy/utils/deploy-contract';
 import getAccounts from '~/deploy/utils/getAccounts';
 import web3 from '~/deploy/utils/get-web3';
 
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 
@@ -36,7 +37,7 @@ beforeAll(async () => {
     buyer: investor,
     denominationAssetToken: weth,
     investmentAmount: toWei('1', 'ether'),
-    sharesQuantity: toWei('1', 'ether'),
+    minSharesQuantity: 0,
     txOpts: investorTxOpts,
   };
 });
@@ -51,8 +52,8 @@ describe('constructor', () => {
     const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
     fund = await setupFundWithParams({
-      denominationAssetToken: weth,
-      fundFactory
+      fundFactory,
+      quoteToken: weth.options.address
     });
   });
 });
@@ -60,6 +61,7 @@ describe('constructor', () => {
 describe('buyShares', () => {
   let fund;
   let buySharesTxBlock;
+  let expectedShares;
   let preBuyerShares, postBuyerShares, preTotalShares, postTotalShares;
   let preCallerDenominationAsset, postCallerDenominationAsset;
   let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
@@ -71,8 +73,8 @@ describe('buyShares', () => {
     const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
     fund = await setupFundWithParams({
-      denominationAssetToken: weth,
-      fundFactory
+      fundFactory,
+      quoteToken: weth.options.address,
     });
   });
 
@@ -93,7 +95,8 @@ describe('buyShares', () => {
         'buyShares',
         [
           defaultBuyShares.buyer,
-          defaultBuyShares.sharesQuantity
+          defaultBuyShares.investmentAmount,
+          defaultBuyShares.minSharesQuantity
         ],
         defaultTxOpts
       )
@@ -127,13 +130,16 @@ describe('buyShares', () => {
       )
     );
 
+    const sharePrice = new BN(await call(fund.shares, 'calcSharePrice'));
+    expectedShares = BNExpDiv(new BN(defaultBuyShares.investmentAmount), sharePrice);
     await expect(
       send(
         fund.shares,
         'buyShares',
         [
           defaultBuyShares.buyer,
-          defaultBuyShares.sharesQuantity
+          defaultBuyShares.investmentAmount,
+          defaultBuyShares.minSharesQuantity
         ],
         defaultTxOpts
       )
@@ -167,12 +173,8 @@ describe('buyShares', () => {
 
   it('correctly updates state', async () => {
     // 1. Shares created
-    expect(postBuyerShares.sub(preBuyerShares)).bigNumberEq(
-      new BN(defaultBuyShares.sharesQuantity)
-    );
-    expect(postTotalShares.sub(preTotalShares)).bigNumberEq(
-      new BN(defaultBuyShares.sharesQuantity)
-    );
+    expect(postBuyerShares.sub(preBuyerShares)).bigNumberEq(expectedShares);
+    expect(postTotalShares.sub(preTotalShares)).bigNumberEq(expectedShares);
     // 2. Investment asset transferred
     expect(preCallerDenominationAsset.sub(postCallerDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
@@ -198,10 +200,7 @@ describe('buyShares', () => {
 
     const eventValues = events[0].returnValues;
     expect(eventValues.buyer).toBe(defaultBuyShares.buyer);
-    expect(eventValues.sharesQuantity).toBe(defaultBuyShares.sharesQuantity);
-    expect(eventValues.denominationAsset).toBe(
-      defaultBuyShares.denominationAssetToken.options.address
-    );
+    expect(eventValues.sharesQuantity).toBe(expectedShares.toString());
     expect(eventValues.investmentAmount).toBe(defaultBuyShares.investmentAmount);
   });
 });
@@ -220,12 +219,13 @@ describe('redeemShares', () => {
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
-      denominationAssetToken: weth,
+      fundFactory,
       initialInvestment: {
         contribAmount: defaultBuyShares.investmentAmount,
         investor: defaultBuyShares.buyer,
+        tokenContract: weth
       },
-      fundFactory
+      quoteToken: weth.options.address
     });
   });
 
@@ -309,7 +309,7 @@ describe('redeemShares', () => {
 
     const eventValues = events[0].returnValues;
     expect(eventValues.redeemer).toBe(defaultBuyShares.buyer);
-    expect(eventValues.sharesQuantity).toBe(defaultBuyShares.sharesQuantity);
+    expect(eventValues.sharesQuantity).toBe(preRedeemerShares.toString());
     expect(eventValues.receivedAssets).toEqual(
       [defaultBuyShares.denominationAssetToken.options.address]
     );
@@ -319,7 +319,7 @@ describe('redeemShares', () => {
 
 describe('redeemSharesQuantity', () => {
   let fund;
-  let halfOfShares, halfOfDenominationAsset;
+  let halfOfDenominationAsset, halfOfShares;
   let redeemTxBlock;
   let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
   let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
@@ -331,20 +331,21 @@ describe('redeemSharesQuantity', () => {
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
-      denominationAssetToken: weth,
+      fundFactory,
       initialInvestment: {
         contribAmount: defaultBuyShares.investmentAmount,
         investor: defaultBuyShares.buyer,
+        tokenContract: weth
       },
-      fundFactory
+      quoteToken: weth.options.address,
     });
 
-    halfOfShares = new BN(defaultBuyShares.sharesQuantity).div(new BN(2));
     halfOfDenominationAsset = new BN(defaultBuyShares.investmentAmount).div(new BN(2));
+    preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
   });
 
   it('can NOT be called by a user without enough shares', async () => {
-    const sharesPlusOne = new BN(defaultBuyShares.sharesQuantity).add(new BN(1)).toString();
+    const sharesPlusOne = preRedeemerShares.add(new BN(1)).toString();
 
     await expect(
       send(
@@ -364,7 +365,6 @@ describe('redeemSharesQuantity', () => {
         [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
-    preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
     preRedeemerDenominationAsset = new BN(
       await call(
         defaultBuyShares.denominationAssetToken,
@@ -373,6 +373,7 @@ describe('redeemSharesQuantity', () => {
       )
     );
 
+    halfOfShares = preRedeemerShares.div(new BN(2));
     await expect(
       send(
         fund.shares,

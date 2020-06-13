@@ -7,10 +7,12 @@
  */
 
 import { encodeFunctionSignature } from 'web3-eth-abi';
-import { toWei } from 'web3-utils';
+import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { deploy } from '~/deploy/utils/deploy-contract';
+
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import getAccounts from '~/deploy/utils/getAccounts';
@@ -34,7 +36,7 @@ beforeAll(async () => {
 });
 
 describe('Fund 1: user whitelist', () => {
-  let offeredValue, wantedShares;
+  let offeredValue;
   let mln, weth, priceSource, userWhitelist;
   let fund;
 
@@ -50,7 +52,6 @@ describe('Fund 1: user whitelist', () => {
     userWhitelist = await deploy(CONTRACT_NAMES.USER_WHITELIST, [[investor]]);
 
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       initialInvestment: {
         contribAmount: toWei('1', 'ether'),
         investor: manager,
@@ -69,12 +70,7 @@ describe('Fund 1: user whitelist', () => {
     );
 
     // Investment params
-    wantedShares = toWei('1', 'ether');
-    offeredValue = await call(
-      fund.shares,
-      'getSharesCostInAsset',
-      [wantedShares, weth.options.address]
-    );
+    offeredValue = toWei('1', 'ether');
   });
 
   test('Confirm policies have been set', async () => {
@@ -118,6 +114,9 @@ describe('Fund 1: user whitelist', () => {
   test('Good request investment: user is whitelisted', async () => {
     const { hub, shares } = fund;
 
+    const sharePrice = new BN(await call(shares, 'calcSharePrice'));
+    const expectedShares = BNExpDiv(new BN(offeredValue), sharePrice);
+
     await investInFund({
       fundAddress: hub.options.address,
       investment: {
@@ -132,7 +131,7 @@ describe('Fund 1: user whitelist', () => {
       }
     })
 
-    const investorShares = await call(shares, 'balanceOf', [investor]);
-    expect(investorShares).toEqual(wantedShares);
+    const investorShares = new BN(await call(shares, 'balanceOf', [investor]));
+    expect(investorShares).bigNumberEq(expectedShares);
   });
 });

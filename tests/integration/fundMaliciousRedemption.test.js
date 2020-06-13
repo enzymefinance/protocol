@@ -9,19 +9,29 @@
 import { BN, toWei, randomHex } from 'web3-utils';
 import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
+import getAccounts from '~/deploy/utils/getAccounts';
+
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
+import { getFunctionSignature } from '~/tests/utils/metadata';
+import {
+  createUnsignedZeroExOrder,
+  encodeZeroExTakeOrderArgs,
+  signZeroExOrder
+} from '~/tests/utils/zeroExV3';
 
-let defaultTxOpts, investorTxOpts;
+let defaultTxOpts, managerTxOpts, investorTxOpts;
 let deployer, manager, investor;
 let contracts;
 let fund, weth, mln, priceSource, maliciousToken;
+let zeroExAdapter, zeroExExchange, erc20Proxy;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
   const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
@@ -29,6 +39,10 @@ beforeAll(async () => {
   weth = contracts.WETH;
   mln = contracts.MLN;
   priceSource = contracts.TestingPriceFeed;
+  zeroExExchange = contracts.ZeroExV3Exchange;
+  zeroExAdapter = contracts.ZeroExV3Adapter;
+  erc20Proxy = contracts.ZeroExV3ERC20Proxy;
+
   const registry = contracts.Registry;
   const fundFactory = contracts.FundFactory;
 
@@ -47,54 +61,62 @@ beforeAll(async () => {
   );
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address, maliciousToken.options.address],
+    integrationAdapters: [zeroExAdapter.options.address],
     initialInvestment: {
-      contribAmount: toWei('1', 'ether'),
-      investor, // Buy all shares with investor to make calcs simpler
+      contribAmount: toWei('10', 'ether'),
+      investor,
       tokenContract: weth
     },
     manager,
     quoteToken: weth.options.address,
     fundFactory
   });
-});
-
-test('Fund receives Malicious token', async () => {
-  const { hub } = fund;
-  const maliciousTokenAmount = toWei('1', 'ether');
-
-  const tokenAddresses = [maliciousToken.options.address];
-  const tokenPrices = [toWei('1', 'ether')];
 
   // Set price for Malicious Token
   await send(
     priceSource,
     'update',
-    [tokenAddresses, tokenPrices],
+    [[maliciousToken.options.address], [toWei('1', 'ether')]],
     defaultTxOpts
   );
+});
 
-  // Buy shares with malicious token
-  await investInFund({
-    fundAddress: hub.options.address,
-    investment: {
-      contribAmount: maliciousTokenAmount,
-      investor,
-      tokenContract: maliciousToken
+test('Fund receives Malicious token via 0x order', async () => {
+  const { vault } = fund;
+
+  const makerAssetAmount = toWei('1', 'ether');
+  const unsignedOrder = await createUnsignedZeroExOrder(
+    zeroExExchange.options.address,
+    await web3.eth.net.getId(),
+    {
+      makerAddress: deployer,
+      makerTokenAddress: maliciousToken.options.address,
+      makerAssetAmount,
+      takerTokenAddress: weth.options.address,
+      takerAssetAmount: toWei('0.5', 'Ether')
     },
-    tokenPriceData: {
-      priceSource,
-      tokenAddresses,
-      tokenPrices
-    }
-  });
+  );
 
-  // Activate malicious token
-  await send(maliciousToken, 'startReverting', [], defaultTxOpts);
+  await send(maliciousToken, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+  const signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+
+  await send(
+    vault,
+    'callOnIntegration',
+    [
+      zeroExAdapter.options.address,
+      getFunctionSignature(CONTRACT_NAMES.ORDER_TAKER, 'takeOrder'),
+      encodeZeroExTakeOrderArgs(signedOrder, signedOrder.takerAssetAmount),
+    ],
+    managerTxOpts,
+  );
 });
 
 test('redeemShares fails in presence of malicious token', async () => {
   const { shares } = fund;
+
+  // Activate malicious token
+  await send(maliciousToken, 'startReverting', [], defaultTxOpts);
 
   await expect(
     send(shares, 'redeemShares', [], investorTxOpts)

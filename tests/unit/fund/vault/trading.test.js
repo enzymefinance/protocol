@@ -54,7 +54,6 @@ describe('constructor', async () => {
     integrationAdapters = [oasisDexAdapter.options.address, uniswapAdapter.options.address];
 
     fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
       integrationAdapters,
       quoteToken: weth.options.address,
       fundFactory
@@ -92,7 +91,6 @@ describe('disableAdapters', () => {
     ];
 
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       integrationAdapters: initialAdapters,
       manager,
       quoteToken: weth.options.address,
@@ -180,7 +178,6 @@ describe('enableAdapters', () => {
     adaptersToEnable = [uniswapAdapter.options.address, kyberAdapter.options.address];
 
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       integrationAdapters: initialAdapters,
       manager,
       quoteToken: weth.options.address,

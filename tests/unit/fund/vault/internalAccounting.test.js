@@ -47,8 +47,8 @@ describe('new investment in fund', () => {
 
   beforeAll(async () => {
     fund = await setupFundWithParams({
-      denominationAssetToken: weth,
-      fundFactory
+      fundFactory,
+      quoteToken: weth.options.address
     });
 
     preTxBlock = await web3.eth.getBlockNumber()
@@ -59,8 +59,9 @@ describe('new investment in fund', () => {
         contribAmount: investmentAmount,
         investor: deployer,
         isInitial: true,
+        tokenContract: weth
       },
-      denominationAssetToken: weth
+      quoteToken: weth.options.address
     });
   });
 
@@ -119,13 +120,14 @@ describe('vault', () => {
     fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
     fund = await setupFundWithParams({
+      fundFactory,
       integrationAdapters: [kyberAdapter.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,
+        tokenContract: weth
       },
-      denominationAssetToken: weth,
-      fundFactory
+      quoteToken: weth.options.address
     });
 
     makerAsset = mln.options.address;
@@ -299,9 +301,10 @@ describe('redeem shares', () => {
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,
+        tokenContract: weth
       },
-      denominationAssetToken: weth,
-      fundFactory
+      fundFactory,
+      quoteToken: weth.options.address
     });
     const { shares } = fund;
 

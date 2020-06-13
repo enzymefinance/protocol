@@ -3,6 +3,7 @@
  *
  * @dev This file contains tests that will only work locally because of EVM manipulation.
  * Input validation tests are in engineAdapter.test.js
+ * All funds are denominated in MLN so that funds can receive MLN as investment
  *
  * @test takeOrder: Order 1: full amount of liquid eth
  * @test takeOrder: Order 2: arbitrary amount of liquid eth
@@ -79,14 +80,13 @@ describe('takeOrder', () => {
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('100', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory
       });
 
@@ -187,14 +187,13 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('100', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory
       });
 
@@ -295,14 +294,13 @@ describe('takeOrder', () => {
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('100', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory
       });
 

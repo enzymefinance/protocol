@@ -23,7 +23,7 @@ import { investInFund, setupInvestedTestFund } from '~/tests/utils/fund';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
-let engine, mln, fund, weth, engineAdapter, priceSource, priceTolerance;
+let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource;
 let contracts;
 let mlnPrice, makerQuantity, takerQuantity;
 let takeOrderSignature, takeOrderSignatureBytes;
@@ -38,8 +38,8 @@ beforeAll(async () => {
   contracts = deployed.contracts;
   engine = contracts.Engine;
   engineAdapter = contracts.EngineAdapter;
+  kyberAdapter = contracts.KyberAdapter;
   priceSource = contracts.TestingPriceFeed;
-  priceTolerance = contracts.PriceTolerance;
   mln = contracts.MLN;
   weth = contracts.WETH;
 
@@ -80,47 +80,31 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
   // TODO: Need to calculate this in fund.js
   const amguTxValue = toWei('10', 'ether');
   fund = await setupInvestedTestFund(contracts, manager, amguTxValue);
-  const { policyManager, vault } = fund;
-
-  await send(
-    policyManager,
-    'register',
-    [takeOrderSignatureBytes, priceTolerance.options.address],
-    managerTxOpts
-  );
 });
 
-test('Invest in fund with enough MLN to buy desired ETH from engine', async () => {
-  const { hub, shares } = fund;
+test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async () => {
+  const { vault } = fund;
 
-  const wantedShares = toWei('1', 'ether');
-  const amguTxValue = toWei('10', 'ether');
-
-  const costOfShares = await call(
-    shares,
-      'getSharesCostInAsset',
-      [wantedShares, mln.options.address]
-  );
-
-  const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-
-  await investInFund({
-    fundAddress: hub.options.address,
-    investment: {
-      contribAmount: costOfShares,
-      investor,
-      tokenContract: mln
-    },
-    amguTxValue,
-    tokenPriceData: {
-      priceSource,
-      tokenAddresses: [mln.options.address],
-      tokenPrices: [mlnToEthRate]
-    }
+  const minMakerQuantity = toWei('0.1', 'ether');
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset: mln.options.address,
+    makerQuantity: minMakerQuantity,
+    takerAsset: weth.options.address,
+    takerQuantity: toWei('0.1', 'ether'),
   });
 
-  const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  expect(postInvestorShares).bigNumberEq(preInvestorShares.add(new BN(wantedShares)));
+  await expect(
+    send(
+      vault,
+      'callOnIntegration',
+      [
+        kyberAdapter.options.address,
+        takeOrderSignature,
+        encodedArgs,
+      ],
+      managerTxOpts,
+    )
+  ).resolves.not.toThrow()
 });
 
 // TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)

@@ -23,7 +23,7 @@ import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let contracts;
-let offeredValue, wantedShares, amguAmount;
+let offeredValue, amguAmount;
 let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
 let takeOrderFunctionSig;
 let priceTolerance, sharesRequestor, userWhitelist;
@@ -80,8 +80,7 @@ beforeAll(async () => {
     fees.rates,
     fees.periods,
     [oasisDexAdapter.options.address],
-    weth.options.address,
-    [weth.options.address, mln.options.address],
+    weth.options.address
   ], managerTxOpts);
   await send(fundFactory, 'createFeeManager', [], managerTxOpts);
   await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
@@ -97,14 +96,6 @@ beforeAll(async () => {
   fund = await getFundComponents(hubAddress);
 
   offeredValue = toWei('1', 'ether');
-  const shareCost = new BN(
-    await call(
-      fund.shares,
-      'getSharesCostInAsset',
-      [toWei('1', 'ether'), weth.options.address]
-    )
-  );
-  wantedShares = BNExpDiv(new BN(offeredValue), shareCost).toString();
   amguAmount = toWei('0.1', 'ether');
 
   takeOrderFunctionSig = getFunctionSignature(
@@ -133,7 +124,7 @@ test('Request shares fails for whitelisted user with no allowance', async () => 
     send(
       sharesRequestor,
       'requestShares',
-      [hub.options.address, weth.options.address, offeredValue, wantedShares],
+      [hub.options.address, offeredValue, "0"],
       { ...defaultTxOpts, value: amguAmount }
     )
   ).rejects.toThrowFlexible();
@@ -153,7 +144,7 @@ test('Buying shares (initial investment) fails for user not on whitelist', async
     send(
       sharesRequestor,
       'requestShares',
-      [hub.options.address, weth.options.address, offeredValue, wantedShares],
+      [hub.options.address, offeredValue, "0"],
       { ...investorTxOpts, value: amguAmount }
     )
   ).rejects.toThrowFlexible("Rule evaluated to false: UserWhitelist");
@@ -164,16 +155,19 @@ test('Buying shares (initial investment) succeeds for whitelisted user with allo
 
   await send(userWhitelist, 'addToWhitelist', [investor], defaultTxOpts);
 
+  const sharePrice = new BN(await call(shares, 'calcSharePrice'));
+  const expectedShares = BNExpDiv(new BN(offeredValue), sharePrice);
+
   await send(
     sharesRequestor,
     'requestShares',
-    [hub.options.address, weth.options.address, offeredValue, wantedShares],
+    [hub.options.address, offeredValue, "0"],
     { ...investorTxOpts, value: amguAmount }
   );
 
   const investorShares = await call(shares, 'balanceOf', [investor]);
 
-  expect(investorShares.toString()).toEqual(wantedShares.toString());
+  expect(investorShares).toEqual(expectedShares.toString());
 });
 
 test('Fund can take an order on Oasis DEX', async () => {
