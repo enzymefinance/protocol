@@ -66,7 +66,6 @@ beforeAll(async () => {
   );
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [oasisDexAdapter.options.address],
     fees: {
       addresses: feeAddresses,
@@ -93,14 +92,8 @@ test(`fund gets weth from (non-initial) investor`, async () => {
   const { hub, shares } = fund;
 
   const contribAmount = toWei('1', 'ether');
-  const shareCost = new BN(
-    await call(
-      shares,
-      'getSharesCostInAsset',
-      [toWei('1', 'ether'), weth.options.address]
-    )
-  );
-  const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
+  const sharePrice = new BN(await call(shares, 'calcSharePrice'));
+  const expectedShares = BNExpDiv(new BN(contribAmount), sharePrice);
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
@@ -119,7 +112,7 @@ test(`fund gets weth from (non-initial) investor`, async () => {
   });
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  expect(postTotalSupply).bigNumberEq(preTotalSupply.add(new BN(wantedShares)));
+  expect(postTotalSupply).bigNumberEq(preTotalSupply.add(expectedShares));
 });
 
 test(`can NOT artificially inflate share price by transfering weth to Vault`, async () => {
@@ -129,17 +122,13 @@ test(`can NOT artificially inflate share price by transfering weth to Vault`, as
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundGav = new BN(await call(shares, 'calcGav'));
-  const preFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
+  const preFundSharePrice = new BN(await call(shares, 'calcSharePrice'));
 
   await send(weth, 'transfer', [vault.options.address, inflationAmount], defaultTxOpts);
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(shares, 'calcGav'));
-  const postFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
+  const postFundSharePrice = new BN(await call(shares, 'calcSharePrice'));
   expect(postTotalSupply).bigNumberEq(preTotalSupply);
   expect(postFundSharePrice).bigNumberEq(preFundSharePrice);
   expect(postFundGav).bigNumberEq(preFundGav);
@@ -278,9 +267,6 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundGav = new BN(await call(shares, 'calcGav'));
   const preFundGavPerShare = BNExpDiv(preFundGav, preTotalSupply);
-  const preFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
 
   const performanceFeeOwed = new BN(await call(feeManager, 'performanceFeeAmount'));
   expect(performanceFeeOwed).bigNumberGt(new BN(0));
@@ -292,12 +278,8 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
   const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  const postFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
 
   expect(postHWM).bigNumberEq(preFundGavPerShare);
-  expect(postFundSharePrice).bigNumberCloseTo(preFundSharePrice);
   expect(postInvestorShares).bigNumberEq(preInvestorShares.sub(redeemQuantity));
   expect(postManagerShares).bigNumberEq(preManagerShares.add(performanceFeeOwed));
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(performanceFeeOwed).sub(redeemQuantity));

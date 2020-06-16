@@ -18,13 +18,8 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     event SharesBought(
         address indexed buyer,
         uint256 sharesQuantity,
-        address investmentAsset,
         uint256 investmentAmount
     );
-
-    event SharesInvestmentAssetsDisabled (address[] assets);
-
-    event SharesInvestmentAssetsEnabled (address[] assets);
 
     event SharesRedeemed(
         address indexed redeemer,
@@ -33,8 +28,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         uint256[] receivedAssetQuantities
     );
 
-    address public DENOMINATION_ASSET;
-    EnumerableSet.AddressSet private sharesInvestmentAssets;
+    address immutable public override DENOMINATION_ASSET;
 
     modifier onlySharesRequestor() {
         require(
@@ -47,7 +41,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     constructor(
         address _hub,
         address _denominationAsset,
-        address[] memory _defaultAssets,
         string memory _tokenName
     )
         public
@@ -59,45 +52,46 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             "Denomination asset must be registered"
         );
         DENOMINATION_ASSET = _denominationAsset;
-
-        if (_defaultAssets.length > 0) {
-            __enableSharesInvestmentAssets(_defaultAssets);
-        }
     }
 
     // EXTERNAL
 
     /// @notice Buy shares on behalf of a specified user
     /// @dev Only callable by the SharesRequestor associated with the Registry
-    /// @dev Rewards all fees via getSharesCostInAsset
     /// @param _buyer The for which to buy shares
-    /// @param _investmentAsset The asset with which to buy shares
-    /// @param _sharesQuantity The desired amount of shares
-    /// @return costInInvestmentAsset_ The amount of investment asset used to buy the desired shares
+    /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
+    /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
+    /// @return sharesBought_ The amount of shares bought
     function buyShares(
         address _buyer,
-        address _investmentAsset,
-        uint256 _sharesQuantity
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
     )
         external
         override
         onlySharesRequestor
-        returns (uint256 costInInvestmentAsset_)
+        returns (uint256 sharesBought_)
     {
-        costInInvestmentAsset_ = getSharesCostInAsset(_sharesQuantity, _investmentAsset);
+        __getFeeManager().rewardAllFees();
+
+        // Calculate shares quantity
+        sharesBought_ = mul(
+            _investmentAmount, 
+            10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals())
+        ) / calcSharePrice();
+        require(sharesBought_ >= _minSharesQuantity, "buyShares: minimum shares quantity not met");
 
         // Issue shares and transfer investment asset to vault
         address vaultAddress = address(__getVault());
-        _mint(_buyer, _sharesQuantity);
-        __safeTransferFrom(_investmentAsset, msg.sender, address(this), costInInvestmentAsset_);
-        __increaseApproval(_investmentAsset, vaultAddress, costInInvestmentAsset_);
-        IVault(vaultAddress).deposit(_investmentAsset, costInInvestmentAsset_);
+        _mint(_buyer, sharesBought_);
+        __safeTransferFrom(DENOMINATION_ASSET, msg.sender, address(this), _investmentAmount);
+        __increaseApproval(DENOMINATION_ASSET, vaultAddress, _investmentAmount);
+        IVault(vaultAddress).deposit(DENOMINATION_ASSET, _investmentAmount);
 
         emit SharesBought(
             _buyer,
-            _sharesQuantity,
-            _investmentAsset,
-            costInInvestmentAsset_
+            sharesBought_,
+            _investmentAmount
         );
     }
 
@@ -109,34 +103,6 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         );
 
         _mint(_who, _amount);
-    }
-
-    /// @notice Disable the buying of shares with specific assets
-    /// @param _assets The assets for which to disable the buying of shares
-    function disableSharesInvestmentAssets(address[] calldata _assets) external onlyManager {
-        require(_assets.length > 0, "disableSharesInvestmentAssets: _assets cannot be empty");
-
-        for (uint256 i = 0; i < _assets.length; i++) {
-            require(
-                isSharesInvestmentAsset(_assets[i]),
-                "disableSharesInvestmentAssets: Asset is not enabled"
-            );
-            EnumerableSet.remove(sharesInvestmentAssets, _assets[i]);
-        }
-        emit SharesInvestmentAssetsDisabled(_assets);
-    }
-
-    /// @notice Enable the buying of shares with specific assets
-    /// @param _assets The assets for which to disable the buying of shares
-    function enableSharesInvestmentAssets(address[] calldata _assets) external onlyManager {
-        require(_assets.length > 0, "enableSharesInvestmentAssets: _assets cannot be empty");
-        __enableSharesInvestmentAssets(_assets);
-    }
-
-    /// @notice Get all assets that can be used to buy shares
-    /// @return The assets that can be used to buy shares
-    function getSharesInvestmentAssets() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(sharesInvestmentAssets);
     }
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
@@ -191,50 +157,20 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         return gav;
     }
 
-    /// @notice Calculate the cost for a given number of shares in the fund, in a given asset
-    /// @dev Rewards all fees prior to calculations
-    /// @param _sharesQuantity Number of shares
-    /// @param _asset Asset in which to calculate share cost
-    /// @return The amount of the asset required to buy the quantity of shares
-    function getSharesCostInAsset(uint256 _sharesQuantity, address _asset)
-        public
-        override
-        returns (uint256)
-    {
-        __getFeeManager().rewardAllFees();
-
-        uint256 denominatedSharePrice;
-        // TODO: Confirm that this is correct behavior when shares go above 0 and then return to 0 (all shares cashed out)
+    /// @notice Calculates the cost of 1 unit of shares in the fund's denomination asset
+    /// @return The amount of the denomination asset required to buy 1 unit of shares
+    /// @dev Does not account for fees.
+    /// Rounding favors the investor (rounds the price down).
+    function calcSharePrice() public returns (uint256) {
         if (totalSupply() == 0) {
-            denominatedSharePrice = 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
+            return 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
         }
         else {
-            denominatedSharePrice = calcGav() * 10 ** uint256(decimals) / totalSupply();
+            return calcGav() * 10 ** uint256(decimals) / totalSupply();
         }
-
-        // TOOD: does it matter if we do: cost of 1 share x quantity vs. GAV x shares / supply (b/c rounding)?
-        // Because 1 share will be rounded down, and then multiplied, which could yield a slightly smaller number
-        uint256 denominationAssetQuantity = mul(
-            _sharesQuantity,
-            denominatedSharePrice
-        ) / 10 ** uint256(decimals);
-
-        if (_asset == DENOMINATION_ASSET) return denominationAssetQuantity;
-
-        (uint256 assetQuantity,) = __getValueInterpreter().calcCanonicalAssetValue(
-            DENOMINATION_ASSET,
-            denominationAssetQuantity,
-            _asset
-        );
-        return assetQuantity;
     }
 
-    /// @notice Confirm whether asset can be used to buy shares
-    /// @param _asset The asset to confirm
-    /// @return True if the asset can be used to buy shares
-    function isSharesInvestmentAsset(address _asset) public view override returns (bool) {
-        return EnumerableSet.contains(sharesInvestmentAssets, _asset);
-    }
+    // PRIVATE FUNCTIONS
 
     /// @notice Redeem a specified quantity of the sender's shares
     /// for a proportionate slice of the fund's assets
@@ -292,34 +228,17 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             payoutQuantities
         );
     }
-
-    /// @notice Enable assets with which to buy shares
-    function __enableSharesInvestmentAssets (address[] memory _assets) private {
-        for (uint256 i = 0; i < _assets.length; i++) {
-            require(
-                !isSharesInvestmentAsset(_assets[i]),
-                "__enableSharesInvestmentAssets: Asset is already enabled"
-            );
-            require(
-                __getRegistry().primitiveIsRegistered(_assets[i]),
-                "__enableSharesInvestmentAssets: Asset not in Registry"
-            );
-            EnumerableSet.add(sharesInvestmentAssets, _assets[i]);
-        }
-        emit SharesInvestmentAssetsEnabled(_assets);
-    }
 }
 
 contract SharesFactory {
     function createInstance(
         address _hub,
         address _denominationAsset,
-        address[] calldata _defaultAssets,
         string calldata _tokenName
     )
         external
         returns (address)
     {
-        return address(new Shares(_hub, _denominationAsset, _defaultAssets, _tokenName));
+        return address(new Shares(_hub, _denominationAsset, _tokenName));
     }
 }

@@ -38,7 +38,6 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
 
   const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress);
   const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'));
-  const shares = fetchContract(CONTRACT_NAMES.SHARES,  await call(hub, 'shares'));
   const sharesRequestor = fetchContract(
     CONTRACT_NAMES.SHARES_REQUESTOR,
     await call(registry, 'sharesRequestor')  
@@ -47,17 +46,6 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
   if (!amguTxValue) {
     amguTxValue = toWei('0.01', 'ether');
   }
-
-  // Calculate amount of shares to buy with contribution
-  const shareCost = new BN(
-    await call(
-      shares,
-      'getSharesCostInAsset',
-      [toWei('1', 'ether'), tokenContract.options.address]
-    )
-  );
-
-  const wantedShares = BNExpDiv(new BN(contribAmount), shareCost).toString();
 
   // Fund investor with contribution token, if necessary
   const investorTokenBalance = new BN(
@@ -86,11 +74,11 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
   await send(
     sharesRequestor,
     'requestShares',
-    [hub.options.address, tokenContract.options.address, contribAmount, wantedShares],
+    [hub.options.address, contribAmount, 0],
     { ...investorTxOpts, value: amguTxValue }
   );
 
-  // Update prices and executes reqeust if not initial investment
+  // Update prices and executes request if not initial investment
   if (isInitial !== true) {
     await delay(1000);
     await updateTestingPriceFeed(
@@ -102,14 +90,13 @@ export const investInFund = async ({ fundAddress, investment, amguTxValue, token
       sharesRequestor,
       'executeRequestFor',
       [investor, hub.options.address],
-      { ...investorTxOpts, value: amguTxValue }
+      investorTxOpts
     );
   }
 }
 
 export const setupFundWithParams = async ({
   amguTxValue,
-  defaultTokens,
   fees = {
     addresses: [],
     rates: [],
@@ -143,8 +130,7 @@ export const setupFundWithParams = async ({
       fees.rates,
       fees.periods,
       integrationAdapters,
-      quoteToken,
-      defaultTokens,
+      quoteToken
     ],
     managerTxOpts
   );
@@ -201,7 +187,6 @@ export const setupInvestedTestFund = async (contracts, manager, amguTxValue = nu
 
   return setupFundWithParams({
     amguTxValue,
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: adapterAddresses,
     fees: {
       addresses: [managementFee.options.address, performanceFee.options.address],

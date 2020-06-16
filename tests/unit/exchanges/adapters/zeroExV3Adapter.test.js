@@ -81,7 +81,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory
@@ -160,7 +159,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -288,7 +286,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -427,7 +424,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -436,23 +432,6 @@ describe('takeOrder', () => {
         },
         quoteToken: weth.options.address,
         fundFactory
-      });
-
-      // Make 2nd investment with MLN to allow taker fee trade
-      takerFee = toWei('0.001', 'ether');
-      await investInFund({
-        fundAddress: fund.hub.options.address,
-        investment: {
-          contribAmount: takerFee,
-          investor: deployer,
-          tokenContract: mln
-        },
-        tokenPriceData: {
-          priceSource,
-          tokenAddresses: [
-            mln.options.address
-          ]
-        }
       });
     });
 
@@ -465,6 +444,7 @@ describe('takeOrder', () => {
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
+      takerFee = toWei('0.01', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -584,7 +564,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -593,24 +572,6 @@ describe('takeOrder', () => {
         },
         quoteToken: weth.options.address,
         fundFactory
-      });
-
-      // Make 2nd investment with DAI to allow taker fee trade
-      takerFee = toWei('1', 'ether');
-      await send(fund.shares, 'enableSharesInvestmentAssets', [[dai.options.address]], defaultTxOpts);
-      await investInFund({
-        fundAddress: fund.hub.options.address,
-        investment: {
-          contribAmount: takerFee,
-          investor: deployer,
-          tokenContract: dai
-        },
-        tokenPriceData: {
-          priceSource,
-          tokenAddresses: [
-            dai.options.address
-          ]
-        }
       });
 
       // Set protocolFeeMultiplier to 0
@@ -627,6 +588,46 @@ describe('takeOrder', () => {
       );
     });
 
+    test('third party makes and fund takes an order for DAI (to be used as fees)', async () => {
+      const { vault } = fund;
+
+      const makerAddress = deployer;
+      const makerAssetAmount = toWei('1', 'Ether');
+      const takerAssetAmount = toWei('0.005', 'Ether');
+      const makerTokenAddress = dai.options.address;
+      const takerTokenAddress = weth.options.address;
+      const fillQuantity = takerAssetAmount;
+
+      const unsignedOrder = await createUnsignedZeroExOrder(
+        zeroExExchange.options.address,
+        chainId,
+        {
+          makerAddress,
+          makerTokenAddress,
+          makerAssetAmount,
+          takerTokenAddress,
+          takerAssetAmount,
+        },
+      );
+
+      await send(dai, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      await expect(
+        send(
+          vault,
+          'callOnIntegration',
+          [
+            zeroExAdapter.options.address,
+            takeOrderSignature,
+            encodedArgs,
+          ],
+          defaultTxOpts,
+        )
+      ).resolves.not.toThrow();
+    });
+
     test('third party makes and validates an off-chain order', async () => {
       const makerAddress = deployer;
       const makerAssetAmount = toWei('1', 'Ether');
@@ -636,6 +637,7 @@ describe('takeOrder', () => {
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
+      takerFee = toWei('1', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -757,7 +759,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -897,7 +898,6 @@ describe('takeOrder', () => {
       // Set up fund
       const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),

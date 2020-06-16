@@ -126,8 +126,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
       [],
       [],
       [],
-      quoteToken.options.address,
-      [baseToken.options.address, quoteToken.options.address]
+      quoteToken.options.address
     ],
     managerTxOpts
   );
@@ -163,8 +162,7 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
       [],
       [],
       [],
-      quoteToken.options.address,
-      [baseToken.options.address, quoteToken.options.address]
+      quoteToken.options.address
     ],
     managerTxOpts
   );
@@ -181,7 +179,6 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     'FundSetupCompleted'
   ).hub;
 
-  const requestedShares = toWei('100', 'ether');
   const investmentAmount = toWei('100', 'ether');
 
   await send(
@@ -204,9 +201,8 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     'requestShares',
     [
       hubAddress,
-      quoteToken.options.address,
       investmentAmount,
-      requestedShares
+      "0"
     ],
     { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
   );

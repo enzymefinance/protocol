@@ -55,7 +55,6 @@ beforeAll(async () => {
   );
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [airSwapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

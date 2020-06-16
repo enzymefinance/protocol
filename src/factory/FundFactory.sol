@@ -48,7 +48,6 @@ contract FundFactory is AmguConsumer {
     struct PendingFundSettings {
         address[] adapters;
         address denominationAsset;
-        address[] defaultSharesInvestmentAssets;
         address[] fees;
         uint256[] feeRates;
         uint256[] feePeriods;
@@ -86,7 +85,6 @@ contract FundFactory is AmguConsumer {
     /// @param _feePeriods The period to use in each Fee contracts
     /// @param _adapters The integration adapters to use to interact with external protocols
     /// @param _denominationAsset The asset in which to denominate share price and measure fund performance
-    /// @param _defaultSharesInvestmentAssets The initial assets with which and investor can invest
     function beginFundSetup(
         string memory _name,
         address[] memory _fees,
@@ -95,8 +93,7 @@ contract FundFactory is AmguConsumer {
         // address[] calldata _policies,
         // bytes[] calldata _policyData,
         address[] memory _adapters,
-        address _denominationAsset,
-        address[] memory _defaultSharesInvestmentAssets
+        address _denominationAsset
     )
         public // TODO: change to `external` in future solidity version (calldata fails on stack error)
     {
@@ -122,7 +119,6 @@ contract FundFactory is AmguConsumer {
         managerToPendingFundSettings[msg.sender] = PendingFundSettings(
             _adapters,
             _denominationAsset,
-            _defaultSharesInvestmentAssets,
             _fees,
             _feeRates,
             _feePeriods
@@ -299,7 +295,6 @@ contract FundFactory is AmguConsumer {
         address shares = sharesFactory.createInstance(
             address(hub),
             managerToPendingFundSettings[_manager].denominationAsset,
-            managerToPendingFundSettings[_manager].defaultSharesInvestmentAssets,
             hub.NAME()
         );
         emit SharesCreated(msg.sender, address(hub), shares);
