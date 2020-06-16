@@ -72,23 +72,21 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         onlySharesRequestor
         returns (uint256 sharesBought_)
     {
-        address denominationAsset = DENOMINATION_ASSET;
-
         __getFeeManager().rewardAllFees();
 
         // Calculate shares quantity
         sharesBought_ = mul(
             _investmentAmount, 
-            10 ** uint256(ERC20WithFields(denominationAsset).decimals())
+            10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals())
         ) / calcSharePrice();
         require(sharesBought_ >= _minSharesQuantity, "buyShares: minimum shares quantity not met");
 
         // Issue shares and transfer investment asset to vault
         address vaultAddress = address(__getVault());
         _mint(_buyer, sharesBought_);
-        __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
-        __increaseApproval(denominationAsset, vaultAddress, _investmentAmount);
-        IVault(vaultAddress).deposit(denominationAsset, _investmentAmount);
+        __safeTransferFrom(DENOMINATION_ASSET, msg.sender, address(this), _investmentAmount);
+        __increaseApproval(DENOMINATION_ASSET, vaultAddress, _investmentAmount);
+        IVault(vaultAddress).deposit(DENOMINATION_ASSET, _investmentAmount);
 
         emit SharesBought(
             _buyer,
