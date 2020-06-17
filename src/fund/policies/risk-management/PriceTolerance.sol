@@ -27,7 +27,6 @@ contract PriceTolerance is DSMath, PolicyBase, CallOnIntegrationPostValidatePoli
     /// @dev Only called once, on PolicyManager.enablePolicies()
     function addFundSettings(bytes calldata _encodedSettings) external override onlyPolicyManager {
         uint256 priceTolerance = abi.decode(_encodedSettings, (uint256));
-        require(priceTolerance > 0, "addFundSettings: priceTolerance must be greater than 0");
         require(
             priceTolerance <= ONE_HUNDRED_PERCENT,
             "addFundSettings: priceTolerance cannot exceed 100%"
