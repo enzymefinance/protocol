@@ -126,7 +126,9 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
       [],
       [],
       [],
-      quoteToken.options.address
+      [],
+      [],
+      quoteToken.options.address,
     ],
     managerTxOpts
   );
@@ -134,7 +136,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
   await assertAmguTx(fundFactory, 'createShares');
 });
 
-test('set amgu with incentive attatched and check its usage in creating a fund', async () => {
+test('set amgu with incentive attached and check its usage in creating a fund', async () => {
   await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
   const newAmguPrice = await call(engine, 'getAmguPrice');
   expect(newAmguPrice).toBe(amguPrice);
@@ -158,6 +160,8 @@ test('set amgu with incentive attatched and check its usage in creating a fund',
     'beginFundSetup',
     [
       `test-fund-${Date.now()}`,
+      [],
+      [],
       [],
       [],
       [],

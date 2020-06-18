@@ -1,39 +1,46 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../AddressList.sol";
-import "../TradingSignatures.sol";
+import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
+import "../utils/AddressListPolicyMixin.sol";
 
 /// @title AssetWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Assets can be removed from but not added to whitelist
-contract AssetWhitelist is TradingSignatures, AddressList {
-    enum Applied { pre, post }
+/// @notice A whitelist of assets to add to a fund's vault
+/// @dev Assets can be removed but not added from whitelist
+contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListPolicyMixin {
+    constructor(address _registry) public PolicyBase(_registry) {}
 
-    constructor(address[] memory _assets) public AddressList(_assets) {}
+    // EXTERNAL FUNCTIONS
 
-    function removeFromWhitelist(address _asset) external auth {
-        require(isMember(_asset), "Asset not in whitelist");
-        delete list[_asset];
-        uint i = getAssetIndex(_asset);
-        for (i; i < mirror.length-1; i++){
-            mirror[i] = mirror[i+1];
+    /// @notice Add the initial policy settings for a fund
+    /// @param _encodedSettings Encoded settings to apply to a fund
+    /// @dev A fund's PolicyManager is always the sender
+    /// @dev Only called once, on PolicyManager.enablePolicies()
+    function addFundSettings(bytes calldata _encodedSettings) external override onlyPolicyManager {
+        __addToList(abi.decode(_encodedSettings, (address[])));
+    }
+
+    /// @notice Provides a constant string identifier for a policy
+    function identifier() external pure override returns (string memory) {
+        return "ASSET_WHITELIST";
+    }
+
+    /// @notice Apply the rule with specified paramters, in the context of a fund
+    /// @param _encodedArgs Encoded args with which to validate the rule
+    /// @return True if the rule passes
+    /// @dev A fund's PolicyManager is always the sender
+    function validateRule(bytes calldata _encodedArgs)
+        external
+        override
+        onlyPolicyManager
+        returns (bool)
+    {
+        (,,address[] memory incomingAssets,,,) = __decodeRuleArgs(_encodedArgs);
+        for (uint256 i = 0; i < incomingAssets.length; i++) {
+            if (!isInList(msg.sender, incomingAssets[i])) return false;
         }
-        mirror.pop();
-    }
 
-    function getAssetIndex(address _asset) public view returns (uint) {
-        for (uint i = 0; i < mirror.length; i++) {
-            if (mirror[i] == _asset) { return i; }
-        }
+        return true;
     }
-
-    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {
-        if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        address incomingToken = addresses[2];
-        return isMember(incomingToken);
-    }
-
-    function position() external pure returns (Applied) { return Applied.pre; }
-    function identifier() external pure returns (string memory) { return 'AssetWhitelist'; }
 }

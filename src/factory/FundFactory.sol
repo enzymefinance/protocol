@@ -51,6 +51,8 @@ contract FundFactory is AmguConsumer {
         address[] fees;
         uint256[] feeRates;
         uint256[] feePeriods;
+        address[] policies;
+        bytes[] policySettings;
     }
 
     constructor(
@@ -76,7 +78,6 @@ contract FundFactory is AmguConsumer {
 
     // EXTERNAL FUNCTIONS
 
-    // TODO: add policies
     // TODO: fees and policies likely to be set up by directly calling the mandate component with encoded data
     /// @notice The first action in setting up a fund, where the parameters of a fund are defined
     /// @param _name The fund's name
@@ -90,8 +91,8 @@ contract FundFactory is AmguConsumer {
         address[] memory _fees,
         uint256[] memory _feeRates, // encode?
         uint256[] memory _feePeriods, // encode?
-        // address[] calldata _policies,
-        // bytes[] calldata _policyData,
+        address[] memory _policies,
+        bytes[] memory _policySettings,
         address[] memory _adapters,
         address _denominationAsset
     )
@@ -107,7 +108,7 @@ contract FundFactory is AmguConsumer {
         require(!REGISTRY.fundNameHashIsTaken(hashedName), "beginSetup: Fund name is taken");
 
         // Create Hub
-        address hubAddress = address(new Hub(address(REGISTRY), msg.sender, _name));
+        address hubAddress = address(new Hub(address(REGISTRY), address(this), msg.sender, _name));
         emit HubCreated(msg.sender, hubAddress);
 
         // Add Pending Fund
@@ -121,7 +122,9 @@ contract FundFactory is AmguConsumer {
             _denominationAsset,
             _fees,
             _feeRates,
-            _feePeriods
+            _feePeriods,
+            _policies,
+            _policySettings
         );
     }
 
@@ -271,13 +274,20 @@ contract FundFactory is AmguConsumer {
         );
 
         // Deploy
-        address policyManager = policyManagerFactory.createInstance(
-            managerToPendingFundHub[_manager]
-        );
+        address policyManager = policyManagerFactory.createInstance(address(hub));
         emit PolicyManagerCreated(msg.sender, address(hub), policyManager);
 
         // Add to Hub
         hub.setPolicyManager(policyManager);
+
+        // Add config
+        address[] memory policies = managerToPendingFundSettings[_manager].policies;
+        if (policies.length > 0) {
+            IPolicyManager(policyManager).enablePolicies(
+                policies,
+                managerToPendingFundSettings[_manager].policySettings
+            );
+        }
     }
 
     /// @notice Helper to create a Shares component for a specified manager

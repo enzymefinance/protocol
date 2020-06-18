@@ -303,14 +303,12 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
         private
         returns (uint256 sharesBought_)
     {
-        // Pre-validate against fund policies
         IPolicyManager policyManager = IPolicyManager(__getPolicyManager(_hub));
-        // TODO: pass in all relevant values to buying shares
-        policyManager.preValidate(
-            bytes4(keccak256("buyShares(address,uint256,uint256)")),
-            [_buyer, address(0), address(0), address(0), address(0)],
-            [uint256(0), uint256(0), uint256(0)],
-            bytes32(0)
+
+        // Pre-validate against fund policies
+        policyManager.preValidatePolicy(
+            IPolicyManager.PolicyHook.BuyShares,
+            abi.encode(_buyer, _investmentAmount, _minSharesQuantity)
         );
 
         // Buy the shares via Shares
@@ -323,12 +321,9 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
         sharesBought_ = shares.buyShares(_buyer, _investmentAmount, _minSharesQuantity);
 
         // Post-validate against fund policies
-        // TODO: pass in all relevant values to buying shares
-        policyManager.postValidate(
-            bytes4(keccak256("buyShares(address,uint256,uint256)")),
-            [_buyer, address(0), address(0), address(0), address(0)],
-            [uint256(0), uint256(0), uint256(0)],
-            bytes32(0)
+        policyManager.postValidatePolicy(
+            IPolicyManager.PolicyHook.BuyShares,
+            abi.encode(_buyer, _investmentAmount, sharesBought_)
         );
     }
 }

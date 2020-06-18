@@ -12,14 +12,11 @@ import { call, send } from '~/deploy/utils/deploy-contract';
 import getAccounts from '~/deploy/utils/getAccounts';
 
 import { BNExpMul } from '~/tests/utils/BNmath';
-import {
-  CONTRACT_NAMES,
-  EMPTY_ADDRESS,
-} from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { increaseTime } from '~/tests/utils/rpc';
-import { investInFund, setupInvestedTestFund } from '~/tests/utils/fund';
+import { setupInvestedTestFund } from '~/tests/utils/fund';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
@@ -115,7 +112,7 @@ test('Trade on Melon Engine', async () => {
   await increaseTime(86400 * 32);
   await send(engine, 'thaw');
 
-  const preliquidEther = new BN(await call(engine, 'liquidEther'));
+  const preLiquidEther = new BN(await call(engine, 'liquidEther'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
@@ -146,7 +143,7 @@ test('Trade on Melon Engine', async () => {
     managerTxOpts,
   );
 
-  const postliquidEther = new BN(await call(engine, 'liquidEther'));
+  const postLiquidEther = new BN(await call(engine, 'liquidEther'));
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
@@ -163,7 +160,7 @@ test('Trade on Melon Engine', async () => {
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
 
   expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundHoldingsWethDiff).bigNumberEq(preliquidEther.sub(postliquidEther));
+  expect(fundHoldingsWethDiff).bigNumberEq(preLiquidEther.sub(postLiquidEther));
 });
 
 test('Maker quantity as minimum returned WETH is respected', async () => {

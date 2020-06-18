@@ -7,6 +7,7 @@ interface IHub {
     enum FundStatus { Draft, Active, Inactive }
 
     function feeManager() external view returns (address);
+    function FUND_FACTORY() external view returns (address);
     function MANAGER() external view returns (address);
     function policyManager() external view returns (address);
     function REGISTRY() external view returns (address);

@@ -9,8 +9,6 @@ const main = async input => {
   const melonAddrs = input.melon.addr;
   const tokenAddrs = input.tokens.addr;
 
-  const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
-  const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], melonAddrs);
   const managementFee = await nab('ManagementFee', [], melonAddrs);
   const performanceFee = await nab('PerformanceFee', [], melonAddrs);
   const feeManagerFactory = await nab('FeeManagerFactory', [], melonAddrs);
@@ -30,6 +28,14 @@ const main = async input => {
   const zeroExV2Adapter = await nab('ZeroExV2Adapter', [input.zeroExV2.addr.ZeroExV2Exchange], melonAddrs);
   const zeroExV3Adapter = await nab('ZeroExV3Adapter', [input.zeroExV3.addr.ZeroExV3Exchange], melonAddrs);
   const engineAdapter = await nab('EngineAdapter', [engine.options.address], melonAddrs);
+
+  // Policies
+  const assetBlacklist = await nab('AssetBlacklist', [registry.options.address], melonAddrs);
+  const assetWhitelist = await nab('AssetWhitelist', [registry.options.address], melonAddrs);
+  const maxConcentration = await nab('MaxConcentration', [registry.options.address], melonAddrs);
+  const maxPositions = await nab('MaxPositions', [registry.options.address], melonAddrs);
+  const priceTolerance = await nab('PriceTolerance', [registry.options.address], melonAddrs);
+  const userWhitelist = await nab('UserWhitelist', [registry.options.address], melonAddrs);
 
   const fundFactory = await nab('FundFactory', [
     feeManagerFactory.options.address,
@@ -104,6 +110,20 @@ const main = async input => {
     }
   }
 
+  const policies = [
+    assetBlacklist.options.address,
+    assetWhitelist.options.address,
+    maxConcentration.options.address,
+    maxPositions.options.address,
+    priceTolerance.options.address,
+    userWhitelist.options.address,
+  ];
+  for (const policy of policies) {
+    if (!(await call(registry, 'policyIsRegistered', [policy]))) {
+      await send(registry, 'registerPolicy', [policy]);
+    }
+  }
+
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
     if (!(await call(registry, 'primitiveIsRegistered', [tokenAddress]))) {
@@ -133,8 +153,6 @@ const main = async input => {
     "ZeroExV2Adapter": zeroExV2Adapter,
     "ZeroExV3Adapter": zeroExV3Adapter,
     "EngineAdapter": engineAdapter,
-    "PriceTolerance": priceTolerance,
-    "UserWhitelist": userWhitelist,
     "FeeManagerFactory": feeManagerFactory,
     "PolicyManagerFactory": policyManagerFactory,
     "SharesFactory": sharesFactory,
@@ -145,7 +163,13 @@ const main = async input => {
     "Engine": engine,
     "SharesRequestor": sharesRequestor,
     "ValueInterpreter": valueInterpreter,
-    "FundFactory": fundFactory
+    "FundFactory": fundFactory,
+    "AssetBlacklist": assetBlacklist,
+    "AssetWhitelist": assetWhitelist,
+    "MaxConcentration": maxConcentration,
+    "MaxPositions": maxPositions,
+    "PriceTolerance": priceTolerance,
+    "UserWhitelist": userWhitelist
   };
 
   if (conf.track === 'KYBER_PRICE') {

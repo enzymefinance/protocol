@@ -16,7 +16,6 @@ export const ENCODING_TYPES = {
   MINIMAL: ['address', 'uint256', 'address', 'uint256'], // a general and minimal type
 }
 
-
 export const CONTRACT_NAMES = {
   ADDRESS_LIST: 'AddressList',
   AMGU_CONSUMER: 'AmguConsumer',
