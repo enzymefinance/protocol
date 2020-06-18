@@ -1,5 +1,10 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
+import getAccounts from '~/deploy/utils/getAccounts';
+import web3 from '~/deploy/utils/get-web3';
+import getAccounts from '~/deploy/utils/getAccounts';
+import web3 from '~/deploy/utils/get-web3';
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { delay } from '~/tests/utils/time';
@@ -30,300 +35,89 @@ beforeAll(async () => {
   registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
   sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
 
-  // Send a surplus of maxInvestmentAmount to ensure refund
   basicRequest = {
     owner: investor,
     investmentAssetContract: weth,
-    maxInvestmentAmount: toWei('1.1', 'ether'),
-    sharesQuantity: toWei('1', 'ether'),
+    investmentAmount: toWei('1', 'ether'),
+    minSharesQuantity: "0",
     txOpts: investorTxOpts,
     amguValue: toWei('0.1', 'ether')
   };
 });
 
-describe('__cancelRequestFor', () => {
-  describe('cancelRequestFor (third party)', () => {
-    let fund;
-  
-    beforeAll(async () => {
-      // @dev include initial investment so test doesn't bypass Request creation
-      fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
-        initialInvestment: {
-          contribAmount: toWei('1', 'ether'),
-          investor: deployer,
-          tokenContract: weth
-        },
-        quoteToken: weth.options.address,
-        fundFactory,
-        manager: deployer,
-        web3
-      });
-  
-      await createRequest(fund.hub.options.address, basicRequest);
+describe('cancelRequest', () => {
+  let fundFactory;
+  let fund;
+  let incentiveFee;
+  let requestTxBlock, cancelTxBlock;
+
+  beforeAll(async () => {
+    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
+    const contracts = deployed.contracts;
+    fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
+
+    // @dev include initial investment so test doesn't bypass Request creation
+    fund = await setupFundWithParams({
+      initialInvestment: {
+        contribAmount: toWei('1', 'ether'),
+        investor: deployer,
+        tokenContract: weth
+      },
+      quoteToken: weth.options.address,
+      fundFactory
     });
 
-    it('does NOT allow cancellation when no cancellation condition is met', async () => {
-      await expect(
-        send(
-          sharesRequestor,
-          'cancelRequestFor',
-          [basicRequest.owner, fund.hub.options.address],
-          { ...defaultTxOpts, from: thirdPartyCaller },
-          web3
-        )
-      ).rejects.toThrowFlexible('No cancellation condition was met');
-    });
-  
-    it('allows cancellation when a fund is shutdown', async () => {
-      await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
+    await createRequest(fund.hub.options.address, basicRequest);
+    requestTxBlock = await web3.eth.getBlockNumber();
 
-      await expect(
-        send(
-          sharesRequestor,
-          'cancelRequestFor',
-          [basicRequest.owner, fund.hub.options.address],
-          { ...defaultTxOpts, from: thirdPartyCaller },
-          web3
-        )
-      ).resolves.not.toThrow();
-    });
+    incentiveFee = await call(registry, 'incentive');
   });
 
-  describe('cancellation condition', () => {
-    describe('healthy fund', () => {
-      let fund;
-    
-      beforeAll(async () => {
-        // @dev include initial investment so test doesn't bypass Request creation
-        fund = await setupFundWithParams({
-          defaultTokens: [weth.options.address],
-          initialInvestment: {
-            contribAmount: toWei('1', 'ether'),
-            investor: deployer,
-            tokenContract: weth
-          },
-          quoteToken: weth.options.address,
-          fundFactory,
-          web3
-        });
-    
-        await createRequest(fund.hub.options.address, basicRequest);
-      });
-
-      it('does NOT allow cancellation when a cancellation condition is not met', async () => {
-        await expect(
-          send(
-            sharesRequestor,
-            'cancelRequest',
-            [fund.hub.options.address],
-            basicRequest.txOpts,
-            web3
-          )
-        ).rejects.toThrowFlexible('No cancellation condition was met');
-      });
-    });
-  
-    describe('fund shutdown', () => {
-      let fund;
-    
-      beforeAll(async () => {
-        // @dev include initial investment so test doesn't bypass Request creation
-        fund = await setupFundWithParams({
-          defaultTokens: [weth.options.address],
-          initialInvestment: {
-            contribAmount: toWei('1', 'ether'),
-            investor: deployer,
-            tokenContract: weth
-          },
-          quoteToken: weth.options.address,
-          fundFactory,
-          manager: deployer,
-          web3
-        });
-    
-        await createRequest(fund.hub.options.address, basicRequest);
-      });
-
-      it('does NOT allow cancellation when a cancellation condition is not met', async () => {
-        await expect(
-          send(
-            sharesRequestor,
-            'cancelRequest',
-            [fund.hub.options.address],
-            basicRequest.txOpts,
-            web3
-          )
-        ).rejects.toThrowFlexible("No cancellation condition was met");
-      });
-
-      it('allows cancellation when a fund is shutdown', async () => {
-        await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
-  
-        await expect(
-          send(
-            sharesRequestor,
-            'cancelRequest',
-            [fund.hub.options.address],
-            basicRequest.txOpts,
-            web3
-          )
-        ).resolves.not.toThrow();
-      });  
-    })
-
-    describe('invalid price of investment asset', () => {
-      let fund;
-    
-      beforeAll(async () => {
-        // @dev include initial investment so test doesn't bypass Request creation
-        fund = await setupFundWithParams({
-          defaultTokens: [weth.options.address, mln.options.address],
-          initialInvestment: {
-            contribAmount: toWei('1', 'ether'),
-            investor: deployer,
-            tokenContract: weth
-          },
-          quoteToken: weth.options.address,
-          fundFactory,
-          manager: deployer,
-          web3
-        });
-    
-        await createRequest(fund.hub.options.address, basicRequest);
-      });
-
-      it('does NOT allow cancellation when a cancellation condition is not met', async () => {
-        await expect(
-          send(
-            sharesRequestor,
-            'cancelRequest',
-            [fund.hub.options.address],
-            basicRequest.txOpts,
-            web3
-          )
-        ).rejects.toThrowFlexible("No cancellation condition was met");
-      });
-
-      it('does NOT allow cancellation when a NON-investmentAsset has an invalid price', async () => {
-        await updateKyberPriceFeed(priceSource, web3);
-        await expect(
-          send(
-            sharesRequestor,
-            'cancelRequest',
-            [fund.hub.options.address],
-            basicRequest.txOpts,
-            web3
-          )
-        ).rejects.toThrowFlexible("No cancellation condition was met");
-      });
-
-      it.only('allows cancellation when an investmentAsset has an invalid price', async () => {
-        // TODO: set an invalid price here
-        await send(
-          kyberProxy,
-          'swapEtherToToken',
-          [mln.options.address, '1'],
-          { ...defaultTxOpts, value: toWei('10', 'ether'), gas: 8000000 },
-          web3
-        );
-        await updateKyberPriceFeed(priceSource, web3);
-        await expect(
-          send(
-            sharesRequestor,
-            'cancelRequest',
-            [fund.hub.options.address],
-            basicRequest.txOpts,
-            web3
-          )
-        ).resolves.not.toThrow();
-      });
-    })
+  it('does NOT allow cancellation when a cancellation condition is not met', async () => {
+    await expect(
+      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
+    ).rejects.toThrowFlexible("No cancellation condition was met");
   });
 
-  describe('cancelRequest for self', () => {
-    let fund;
-    let incentiveFee;
-    let requestTxBlock, cancelTxBlock;
-  
-    beforeAll(async () => {
-      // @dev include initial investment so test doesn't bypass Request creation
-      fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
-        initialInvestment: {
-          contribAmount: toWei('1', 'ether'),
-          investor: deployer,
-          tokenContract: weth
-        },
-        quoteToken: weth.options.address,
-        fundFactory,
-        manager: deployer,
-        web3
-      });
-  
-      await createRequest(fund.hub.options.address, basicRequest);
-      requestTxBlock = await web3.eth.getBlockNumber();
+  it('succeeds when cancellation condition is met', async () => {
+    // Shut down the fund so cancellation condition passes
+    await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
 
-      incentiveFee = await call(registry, 'incentive');
+    await expect(
+      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
+    ).resolves.not.toThrow();
 
-      // Shut down the fund so cancellation condition passes
-      await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
-    });
-  
-    it('succeeds', async () => {  
-      await expect(
-        send(
-          sharesRequestor,
-          'cancelRequest',
-          [fund.hub.options.address],
-          basicRequest.txOpts,
-          web3
-        )
-      ).resolves.not.toThrow();
+    cancelTxBlock = await web3.eth.getBlockNumber();
+  });
 
-      cancelTxBlock = await web3.eth.getBlockNumber();
-    });
-  
-    it('removes request from state', async () => {
-      const requestInMapping = await call(
-        sharesRequestor,
-        'ownerToRequestByFund',
-        [basicRequest.owner, fund.hub.options.address]
-      );
-      expect(requestInMapping.investmentAsset).toBe(EMPTY_ADDRESS);
+  it('removes request from state', async () => {
+    const request = await call(
+      sharesRequestor,
+      'ownerToRequestByFund',
+      [basicRequest.owner, fund.hub.options.address]
+    );
+    expect(request.timestamp).toBe("0");
+  });
 
-      const requestInSet = await call(
-        sharesRequestor,
-        'requestExists',
-        [basicRequest.owner, fund.hub.options.address]
-      );
-      expect(requestInSet).toBe(false);
-    });
+  it('emits correct RequestCanceled event', async() => {
+    const events = await sharesRequestor.getPastEvents(
+      'RequestCanceled',
+      {
+        fromBlock: cancelTxBlock,
+        toBlock: 'latest'
+      }
+    );
+    expect(events.length).toBe(1);
 
-    it('emits correct RequestCancelled event', async() => {
-      const events = await sharesRequestor.getPastEvents(
-        'RequestCancelled',
-        {
-          fromBlock: cancelTxBlock,
-          toBlock: 'latest'
-        }
-      );
-      expect(events.length).toBe(1);
-
-      const eventValues = events[0].returnValues;
-      expect(eventValues.caller).toBe(basicRequest.owner);
-      expect(eventValues.requestOwner).toBe(basicRequest.owner);
-      expect(eventValues.hub).toBe(fund.hub.options.address);
-      expect(eventValues.investmentAsset).toBe(
-        basicRequest.investmentAssetContract.options.address
-      );
-      expect(eventValues.maxInvestmentAmount).toBe(basicRequest.maxInvestmentAmount);
-      expect(eventValues.sharesQuantity).toBe(basicRequest.sharesQuantity);
-      expect(Number(eventValues.createdTimestamp)).toBe(
-        Number((await web3.eth.getBlock(requestTxBlock)).timestamp)
-      );
-      expect(eventValues.incentiveFee).toBe(incentiveFee);
-    });
+    const eventValues = events[0].returnValues;
+    expect(eventValues.requestOwner).toBe(basicRequest.owner);
+    expect(eventValues.hub).toBe(fund.hub.options.address);
+    expect(eventValues.investmentAmount).toBe(basicRequest.investmentAmount);
+    expect(eventValues.minSharesQuantity).toBe(basicRequest.minSharesQuantity);
+    expect(Number(eventValues.createdTimestamp)).toBe(
+      Number((await web3.eth.getBlock(requestTxBlock)).timestamp)
+    );
+    expect(eventValues.incentiveFee).toBe(incentiveFee);
   });
 });
 
@@ -333,7 +127,6 @@ describe('executeRequestFor', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         quoteToken: weth.options.address,
         fundFactory,
         initialInvestment: {
@@ -352,10 +145,10 @@ describe('executeRequestFor', () => {
           sharesRequestor,
           'executeRequestFor',
           [basicRequest.owner, fund.hub.options.address],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue },
+          basicRequest.txOpts,
           web3
         )
-      ).rejects.toThrowFlexible('No request exists for fund');
+      ).rejects.toThrowFlexible("Request does not exist");
     });
 
     it('does NOT allow request execution without a price update', async () => {
@@ -366,34 +159,23 @@ describe('executeRequestFor', () => {
           sharesRequestor,
           'executeRequestFor',
           [basicRequest.owner, fund.hub.options.address],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue },
+          basicRequest.txOpts,
           web3
         )
       ).rejects.toThrowFlexible('Price has not updated since request');      
-    });
-
-    it('does NOT allow request execution when investment asset price is 0', async () => {
-      // TODO: set price of investment asset to zero
-      await expect(
-        executeRequest(
-          fund.hub.options.address,
-          basicRequest
-        )        
-      ).rejects.toThrowFlexible('Price not valid');      
     });
   });
 
   describe('executeRequestFor (third party)', () => {
     let fund;
     let request, txReceipt;
-    let expectedSharesCost;
+    let expectedShares;
     let preTxBlock, preCallerEth, postCallerEth, preOwnerShares, postOwnerShares;
     let preOwnerInvestmentAssetBalance, postOwnerInvestmentAssetBalance;
 
     beforeAll(async () => {
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -413,13 +195,8 @@ describe('executeRequestFor', () => {
         [basicRequest.owner, fund.hub.options.address]
       );
 
-      expectedSharesCost = new BN(
-        await call(
-          fund.shares,
-          'getSharesCostInAsset',
-          [request.sharesQuantity, request.investmentAsset]
-        )
-      );
+      const sharePrice = new BN(await call(fund.shares, 'calcSharePrice'));
+      expectedShares = BNExpDiv(new BN(request.investmentAmount), sharePrice);
     });
 
     it('succeeds', async() => {
@@ -444,21 +221,17 @@ describe('executeRequestFor', () => {
       postOwnerShares = new BN(await call(fund.shares, 'balanceOf', [basicRequest.owner]));
     });
 
-    it('returns surplus investment asset to request owner', async() => {
-      const surplus = new BN(request.maxInvestmentAmount).sub(expectedSharesCost);
-      expect(surplus).bigNumberEq(
-        postOwnerInvestmentAssetBalance.sub(preOwnerInvestmentAssetBalance)
-      );
-    });
-
     it('issues correct shares to request owner', async() => {
-      expect(postOwnerShares.sub(preOwnerShares)).bigNumberEq(new BN(request.sharesQuantity));
+      expect(postOwnerShares.sub(preOwnerShares)).bigNumberEq(expectedShares);
     });
 
     it('removes Request', async() => {
-      await expect(
-        call(sharesRequestor, 'requestExists', [basicRequest.owner, fund.hub.options.address])
-      ).resolves.toBeFalsy();
+      const request = await call(
+        sharesRequestor,
+        'ownerToRequestByFund',
+        [basicRequest.owner, fund.hub.options.address]
+      );
+      expect(request.timestamp).toBe("0");
     });
 
     // @dev This works right now because amgu is set to 0
@@ -482,25 +255,24 @@ describe('executeRequestFor', () => {
       const eventValues = events[0].returnValues;
       expect(eventValues.caller).toBe(thirdPartyCaller);
       expect(eventValues.requestOwner).toBe(basicRequest.owner);
-      expect(eventValues.investmentAsset).toBe(request.investmentAsset);
-      expect(eventValues.investmentAmountFilled).toBe(expectedSharesCost.toString());
-      expect(eventValues.sharesQuantity).toBe(request.sharesQuantity);
+      expect(eventValues.investmentAmount).toBe(request.investmentAmount);
+      expect(eventValues.minSharesQuantity).toBe(request.minSharesQuantity);
       expect(eventValues.createdTimestamp).toBe(request.timestamp);
       expect(eventValues.incentiveFee).toBe(request.incentiveFee);
+      expect(eventValues.sharesBought).toBe(expectedShares.toString());
     });
   });
 
   describe('executeRequestFor (self)', () => {
     let fund;
     let request, txReceipt;
-    let expectedSharesCost;
+    let expectedShares;
     let preTxBlock, preOwnerEth, postOwnerEth, preOwnerShares, postOwnerShares;
     let preOwnerInvestmentAssetBalance, postOwnerInvestmentAssetBalance;
 
     beforeAll(async () => {
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -520,13 +292,8 @@ describe('executeRequestFor', () => {
         [basicRequest.owner, fund.hub.options.address]
       );
 
-      expectedSharesCost = new BN(
-        await call(
-          fund.shares,
-          'getSharesCostInAsset',
-          [request.sharesQuantity, request.investmentAsset]
-        )
-      );
+      const sharePrice = new BN(await call(fund.shares, 'calcSharePrice'));
+      expectedShares = BNExpDiv(new BN(request.investmentAmount), sharePrice);
     });
 
     it('succeeds', async() => {
@@ -549,21 +316,17 @@ describe('executeRequestFor', () => {
       postOwnerShares = new BN(await call(fund.shares, 'balanceOf', [basicRequest.owner]));
     });
 
-    it('returns surplus investment asset to request owner', async() => {
-      const surplus = new BN(request.maxInvestmentAmount).sub(expectedSharesCost);
-      expect(surplus).bigNumberEq(
-        postOwnerInvestmentAssetBalance.sub(preOwnerInvestmentAssetBalance)
-      );
-    });
-
     it('issues correct shares to request owner', async() => {
-      expect(postOwnerShares.sub(preOwnerShares)).bigNumberEq(new BN(request.sharesQuantity));
+      expect(postOwnerShares.sub(preOwnerShares)).bigNumberEq(expectedShares);
     });
 
     it('removes Request', async() => {
-      await expect(
-        call(sharesRequestor, 'requestExists', [basicRequest.owner, fund.hub.options.address])
-      ).resolves.toBeFalsy();
+      const request = await call(
+        sharesRequestor,
+        'ownerToRequestByFund',
+        [basicRequest.owner, fund.hub.options.address]
+      );
+      expect(request.timestamp).toBe("0");
     });
 
     // @dev This works right now because amgu is set to 0
@@ -587,11 +350,11 @@ describe('executeRequestFor', () => {
       const eventValues = events[0].returnValues;
       expect(eventValues.caller).toBe(basicRequest.owner);
       expect(eventValues.requestOwner).toBe(basicRequest.owner);
-      expect(eventValues.investmentAsset).toBe(request.investmentAsset);
-      expect(eventValues.investmentAmountFilled).toBe(expectedSharesCost.toString());
-      expect(eventValues.sharesQuantity).toBe(request.sharesQuantity);
+      expect(eventValues.investmentAmount).toBe(request.investmentAmount);
+      expect(eventValues.minSharesQuantity).toBe(request.minSharesQuantity);
       expect(eventValues.createdTimestamp).toBe(request.timestamp);
       expect(eventValues.incentiveFee).toBe(request.incentiveFee);
+      expect(eventValues.sharesBought).toBe(expectedShares.toString());
     });
   });
 });
@@ -602,7 +365,6 @@ describe('requestShares', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         quoteToken: weth.options.address,
         fundFactory,
         manager: deployer,
@@ -611,8 +373,7 @@ describe('requestShares', () => {
     });
 
     it('does NOT allow empty param values', async() => {
-      const badRequestMaxInvestmentAmount = { ...basicRequest, maxInvestmentAmount: "0" };
-      const badRequestSharesQuantity = { ...basicRequest, sharesQuantity: "0" };
+      const badRequestInvestmentAmount = { ...basicRequest, investmentAmount: "0" };
 
       // Empty hub
       await expect(
@@ -621,41 +382,21 @@ describe('requestShares', () => {
           'requestShares',
           [
             EMPTY_ADDRESS,
-            basicRequest.investmentAssetContract.options.address,
-            basicRequest.maxInvestmentAmount,
-            basicRequest.sharesQuantity
+            basicRequest.investmentAmount,
+            basicRequest.minSharesQuantity
           ],
           { ...basicRequest.txOpts, value: basicRequest.amguValue },
           web3
         )
       ).rejects.toThrowFlexible("_hub cannot be empty");
 
-      // Empty investment asset
       await expect(
-        send(
-          sharesRequestor,
-          'requestShares',
-          [
-            fund.hub.options.address,
-            EMPTY_ADDRESS,
-            basicRequest.maxInvestmentAmount,
-            basicRequest.sharesQuantity
-          ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue },
-          web3
-        )
-      ).rejects.toThrowFlexible("_investmentAsset cannot be empty");
-
-      await expect(
-        createRequest(fund.hub.options.address, badRequestMaxInvestmentAmount)
-      ).rejects.toThrowFlexible("_maxInvestmentAmount must be > 0");
-      await expect(
-        createRequest(fund.hub.options.address, badRequestSharesQuantity)
-      ).rejects.toThrowFlexible("_sharesQuantity must be > 0");
+        createRequest(fund.hub.options.address, badRequestInvestmentAmount)
+      ).rejects.toThrowFlexible("_investmentAmount must be > 0");
     });
 
     it('does NOT allow request with insufficient token allowance', async() => {
-      const badApprovalAmount = new BN(basicRequest.maxInvestmentAmount).sub(new BN(1)).toString();
+      const badApprovalAmount = new BN(basicRequest.investmentAmount).sub(new BN(1)).toString();
       await send(
         basicRequest.investmentAssetContract,
         'approve',
@@ -669,21 +410,13 @@ describe('requestShares', () => {
           'requestShares',
           [
             fund.hub.options.address,
-            basicRequest.investmentAssetContract.options.address,
-            basicRequest.maxInvestmentAmount,
-            basicRequest.sharesQuantity
+            basicRequest.investmentAmount,
+            basicRequest.minSharesQuantity
           ],
           { ...basicRequest.txOpts, value: basicRequest.amguValue },
           web3
         )
       ).rejects.toThrow();
-    });
-
-    it('does NOT allow request for an unallowed investment asset', async() => {
-      const request = { ...basicRequest, investmentAssetContract: mln };
-      await expect(
-        createRequest(fund.hub.options.address, request)
-      ).rejects.toThrowFlexible("_investmentAsset not allowed");
     });
 
     it('does NOT allow request for a shutdown fund', async() => {
@@ -694,8 +427,6 @@ describe('requestShares', () => {
     });
   });
 
-  // describe('Good Request: initial investment', () => {})
-
   describe('Good Request: nth investment', () => {
     let fund;
     let incentiveFee;
@@ -704,7 +435,6 @@ describe('requestShares', () => {
     beforeAll(async () => {
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -723,9 +453,8 @@ describe('requestShares', () => {
       await send(
         basicRequest.investmentAssetContract,
         'approve',
-        [sharesRequestor.options.address, basicRequest.maxInvestmentAmount],
-        basicRequest.txOpts,
-        web3
+        [sharesRequestor.options.address, basicRequest.investmentAmount],
+        basicRequest.txOpts
       );
 
       preTxBlock = await web3.eth.getBlockNumber();
@@ -738,9 +467,8 @@ describe('requestShares', () => {
           'requestShares',
           [
             fund.hub.options.address,
-            basicRequest.investmentAssetContract.options.address,
-            basicRequest.maxInvestmentAmount,
-            basicRequest.sharesQuantity
+            basicRequest.investmentAmount,
+            basicRequest.minSharesQuantity
           ],
           { ...basicRequest.txOpts, value: basicRequest.amguValue },
           web3
@@ -756,9 +484,8 @@ describe('requestShares', () => {
         'ownerToRequestByFund',
         [basicRequest.owner, fund.hub.options.address]
       );
-      expect(request.investmentAsset).toBe(basicRequest.investmentAssetContract.options.address);
-      expect(request.maxInvestmentAmount).toBe(basicRequest.maxInvestmentAmount);
-      expect(request.sharesQuantity).toBe(basicRequest.sharesQuantity);
+      expect(request.investmentAmount).toBe(basicRequest.investmentAmount);
+      expect(request.minSharesQuantity).toBe(basicRequest.minSharesQuantity);
       expect(Number(request.timestamp)).toBe((await web3.eth.getBlock('latest')).timestamp);
       expect(request.incentiveFee).toBe(incentiveFee);
     });
@@ -781,23 +508,18 @@ describe('requestShares', () => {
       const eventValues = events[0].returnValues;
       expect(eventValues.requestOwner).toBe(basicRequest.owner);
       expect(eventValues.hub).toBe(fund.hub.options.address);
-      expect(eventValues.investmentAsset).toBe(
-        basicRequest.investmentAssetContract.options.address
-      );
-      expect(eventValues.maxInvestmentAmount).toBe(basicRequest.maxInvestmentAmount);
-      expect(eventValues.sharesQuantity).toBe(basicRequest.sharesQuantity);
+      expect(eventValues.investmentAmount).toBe(basicRequest.investmentAmount);
+      expect(eventValues.minSharesQuantity).toBe(basicRequest.minSharesQuantity);
       expect(eventValues.incentiveFee).toBe(incentiveFee);
     });
   });
 
   describe('Multiple requests', () => {
     let fund;
-    let preRequestCount;
 
     beforeAll(async () => {
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -809,7 +531,6 @@ describe('requestShares', () => {
         web3
       });
 
-      preRequestCount = (await call(sharesRequestor, 'getFundsRequestedSet', [basicRequest.owner])).length;
       await createRequest(fund.hub.options.address, basicRequest);
     });
 
@@ -821,7 +542,6 @@ describe('requestShares', () => {
 
     it('allows requests for multiple funds', async() => {
       const fund2 = await setupFundWithParams({
-        defaultTokens: [weth.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
@@ -836,11 +556,6 @@ describe('requestShares', () => {
       await expect(
         createRequest(fund2.hub.options.address, basicRequest)
       ).resolves.not.toThrow();
-
-      const requestCount = (
-        await call(sharesRequestor, 'getFundsRequestedSet', [basicRequest.owner])
-      ).length;
-      expect(Number(requestCount)).toBe(Number(preRequestCount) + 2);
     });
   });
 });
@@ -855,7 +570,7 @@ const createRequest = async (fundAddress, request) => {
     )
   );
   const investorTokenShortfall =
-    new BN(request.maxInvestmentAmount).sub(investorTokenBalance);
+    new BN(request.investmentAmount).sub(investorTokenBalance);
   if (investorTokenShortfall.gt(new BN(0))) {
     await send(
       request.investmentAssetContract,
@@ -871,6 +586,8 @@ const createRequest = async (fundAddress, request) => {
     request.investmentAssetContract,
     'approve',
     [sharesRequestor.options.address, request.maxInvestmentAmount],
+    request.txOpts
+    [sharesRequestor.options.address, request.investmentAmount],
     request.txOpts,
     web3
   );
@@ -879,9 +596,8 @@ const createRequest = async (fundAddress, request) => {
     'requestShares',
     [
       fundAddress,
-      request.investmentAssetContract.options.address,
-      request.maxInvestmentAmount,
-      request.sharesQuantity
+      request.investmentAmount,
+      request.minSharesQuantity
     ],
     { ...request.txOpts, value: request.amguValue },
     web3
@@ -895,7 +611,7 @@ const executeRequest = async (fundAddress, request) => {
     sharesRequestor,
     'executeRequestFor',
     [request.owner, fundAddress],
-    { ...request.txOpts, value: request.amguValue },
+    request.txOpts,
     web3
   );
 };

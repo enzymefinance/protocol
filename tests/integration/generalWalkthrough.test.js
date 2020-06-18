@@ -8,12 +8,13 @@
  * @test TODO: Redeem shares?
  */
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
+import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { BNExpDiv } from '~/tests/utils/BNmath';
+import getAccounts from '~/deploy/utils/getAccounts';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { stringToBytes } from '~/tests/utils/formatting';
+import { encodeArgs, stringToBytes } from '~/tests/utils/formatting';
 import { investInFund, getFundComponents } from '~/tests/utils/fund';
 import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
@@ -23,10 +24,11 @@ import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
-let offeredValue, wantedShares, amguAmount;
+let contracts;
+let offeredValue, amguAmount;
 let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
 let takeOrderFunctionSig;
-let priceTolerance, sharesRequestor, userWhitelist;
+let sharesRequestor, userWhitelist;
 let managementFee, performanceFee;
 let fund;
 
@@ -36,7 +38,6 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
-
 
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
@@ -66,27 +67,28 @@ beforeAll(async () => {
     rates: [toWei('0.02', 'ether'), toWei('0.2', 'ether')],
     periods: [0, 7776000], // 0 and 90 days
   };
+
+  const policies = {
+    contracts: [userWhitelist.options.address],
+    encodedSettings: [encodeArgs(['address[]'], [[deployer]])]
+  };
+
   const fundName = stringToBytes(`Test fund ${Date.now()}`, 32);
-  await send(
-    fundFactory,
-    'beginFundSetup',
-    [
-      fundName,
-      fees.contracts,
-      fees.rates,
-      fees.periods,
-      [oasisDexAdapter.options.address],
-      weth.options.address,
-      [weth.options.address, mln.options.address],
-    ],
-    managerTxOpts,
-    web3
-  );
-  await send(fundFactory, 'createFeeManager', [], managerTxOpts, web3);
-  await send(fundFactory, 'createPolicyManager', [], managerTxOpts, web3);
-  await send(fundFactory, 'createShares', [], managerTxOpts, web3);
-  await send(fundFactory, 'createVault', [], managerTxOpts, web3);
-  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOpts, web3);
+  await send(fundFactory, 'beginFundSetup', [
+    fundName,
+    fees.contracts,
+    fees.rates,
+    fees.periods,
+    policies.contracts,
+    policies.encodedSettings,
+    [oasisDexAdapter.options.address],
+    weth.options.address
+  ], managerTxOpts, web3);
+  await send(fundFactory, 'createFeeManager', [], managerTxOpts);
+  await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
+  await send(fundFactory, 'createShares', [], managerTxOpts);
+  await send(fundFactory, 'createVault', [], managerTxOpts);
+  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOpts);
   const hubAddress = getEventFromLogs(
     res.logs,
     CONTRACT_NAMES.FUND_FACTORY,
@@ -96,44 +98,11 @@ beforeAll(async () => {
   fund = await getFundComponents(hubAddress, web3);
 
   offeredValue = toWei('1', 'ether');
-  const shareCost = new BN(
-    await call(
-      fund.shares,
-      'getSharesCostInAsset',
-      [toWei('1', 'ether'), weth.options.address]
-    )
-  );
-  wantedShares = BNExpDiv(new BN(offeredValue), shareCost).toString();
   amguAmount = toWei('0.1', 'ether');
 
   takeOrderFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
-  );
-  await send(
-    fund.policyManager,
-    'register',
-    [
-      encodeFunctionSignature(takeOrderFunctionSig),
-      priceTolerance.options.address,
-    ],
-    managerTxOpts,
-    web3
-  );
-
-  const buySharesFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.SHARES,
-    'buyShares',
-  );
-  await send(
-    fund.policyManager,
-    'register',
-    [
-      encodeFunctionSignature(buySharesFunctionSig),
-      userWhitelist.options.address,
-    ],
-    managerTxOpts,
-    web3
   );
 });
 
@@ -144,7 +113,7 @@ test('Request shares fails for whitelisted user with no allowance', async () => 
     send(
       sharesRequestor,
       'requestShares',
-      [hub.options.address, weth.options.address, offeredValue, wantedShares],
+      [hub.options.address, offeredValue, "0"],
       { ...defaultTxOpts, value: amguAmount },
       web3
     )
@@ -166,29 +135,38 @@ test('Buying shares (initial investment) fails for user not on whitelist', async
     send(
       sharesRequestor,
       'requestShares',
-      [hub.options.address, weth.options.address, offeredValue, wantedShares],
+      [hub.options.address, offeredValue, "0"],
       { ...investorTxOpts, value: amguAmount },
       web3
     )
-  ).rejects.toThrowFlexible("Rule evaluated to false: UserWhitelist");
+  ).rejects.toThrowFlexible("Rule evaluated to false: USER_WHITELIST");
 });
 
 test('Buying shares (initial investment) succeeds for whitelisted user with allowance', async () => {
-  const { hub, shares } = fund;
+  const { hub, policyManager, shares } = fund;
 
-  await send(userWhitelist, 'addToWhitelist', [investor], defaultTxOpts, web3);
+  const encodedUserWhitelistArgs = encodeArgs(['address[]', 'address[]'], [[investor], []]);
+  await send(
+    policyManager,
+    'updatePolicySettings',
+    [userWhitelist.options.address, encodedUserWhitelistArgs],
+    managerTxOpts
+  );
+
+  const sharePrice = new BN(await call(shares, 'calcSharePrice'));
+  const expectedShares = BNExpDiv(new BN(offeredValue), sharePrice);
 
   await send(
     sharesRequestor,
     'requestShares',
-    [hub.options.address, weth.options.address, offeredValue, wantedShares],
+    [hub.options.address, offeredValue, "0"],
     { ...investorTxOpts, value: amguAmount },
     web3
   );
 
   const investorShares = await call(shares, 'balanceOf', [investor]);
 
-  expect(investorShares.toString()).toEqual(wantedShares.toString());
+  expect(investorShares).toEqual(expectedShares.toString());
 });
 
 test('Fund can take an order on Oasis DEX', async () => {

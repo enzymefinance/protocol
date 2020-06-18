@@ -17,7 +17,6 @@ describe('constructor', () => {
 
   beforeAll(async () => {
     fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
       quoteToken: weth.options.address,
       fundFactory,
       web3

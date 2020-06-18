@@ -61,7 +61,6 @@ describe('takeOrder', () => {
       badAsset = dai.options.address;
 
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [oasisDexAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory,
@@ -190,7 +189,6 @@ describe('takeOrder', () => {
       takerQuantity = toWei('0.01', 'ether');
 
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -286,7 +284,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.OASIS_DEX_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(oasisDexExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -306,7 +303,6 @@ describe('takeOrder', () => {
       takerQuantity = toWei('0.01', 'ether');
 
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),

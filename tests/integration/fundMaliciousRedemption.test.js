@@ -8,6 +8,9 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
+import web3 from '~/deploy/utils/get-web3';
+import getAccounts from '~/deploy/utils/getAccounts';
+
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
@@ -16,12 +19,14 @@ let web3;
 let defaultTxOpts, investorTxOpts;
 let deployer, manager, investor;
 let fund, weth, mln, priceSource, maliciousToken;
+let zeroExAdapter, zeroExExchange, erc20Proxy;
 
 // TODO: run this test when we can successfully deploy contracts on secondary forked chain
 beforeAll(async () => {
   web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
+  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
@@ -48,17 +53,17 @@ beforeAll(async () => {
 
   await send(
     registry,
-    'registerAsset',
+    'registerPrimitive',
     [maliciousToken.options.address],
     defaultTxOpts,
     web3
   );
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address, maliciousToken.options.address],
+    integrationAdapters: [zeroExAdapter.options.address],
     initialInvestment: {
-      contribAmount: toWei('1', 'ether'),
-      investor, // Buy all shares with investor to make calcs simpler
+      contribAmount: toWei('10', 'ether'),
+      investor,
       tokenContract: weth
     },
     manager,
@@ -66,14 +71,6 @@ beforeAll(async () => {
     fundFactory,
     web3
   });
-});
-
-test('Fund receives Malicious token', async () => {
-  const { hub } = fund;
-  const maliciousTokenAmount = toWei('1', 'ether');
-
-  const tokenAddresses = [maliciousToken.options.address];
-  const tokenPrices = [toWei('1', 'ether')];
 
   // Set price for Malicious Token
   await send(
@@ -83,14 +80,21 @@ test('Fund receives Malicious token', async () => {
     defaultTxOpts,
     web3
   );
+});
 
-  // Buy shares with malicious token
-  await investInFund({
-    fundAddress: hub.options.address,
-    investment: {
-      contribAmount: maliciousTokenAmount,
-      investor,
-      tokenContract: maliciousToken
+test('Fund receives Malicious token via 0x order', async () => {
+  const { vault } = fund;
+
+  const makerAssetAmount = toWei('1', 'ether');
+  const unsignedOrder = await createUnsignedZeroExOrder(
+    zeroExExchange.options.address,
+    await web3.eth.net.getId(),
+    {
+      makerAddress: deployer,
+      makerTokenAddress: maliciousToken.options.address,
+      makerAssetAmount,
+      takerTokenAddress: weth.options.address,
+      takerAssetAmount: toWei('0.5', 'Ether')
     },
     tokenPriceData: {
       priceSource,
@@ -99,13 +103,15 @@ test('Fund receives Malicious token', async () => {
     },
     web3
   });
-
   // Activate malicious token
   await send(maliciousToken, 'startReverting', [], defaultTxOpts, web3);
 });
 
 test('redeemShares fails in presence of malicious token', async () => {
   const { shares } = fund;
+
+  // Activate malicious token
+  await send(maliciousToken, 'startReverting', [], defaultTxOpts);
 
   await expect(
     send(shares, 'redeemShares', [], investorTxOpts, web3)
@@ -149,7 +155,7 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const postFundGav = new BN(await call(shares, 'calcGav'));
 
   const maliciousTokenPrice = new BN(
-    (await call(priceSource, 'getPrice', [maliciousToken.options.address]))[0]
+    (await call(priceSource, 'getLiveRate', [maliciousToken.options.address, weth.options.address]))[0]
   );
   const fundMaliciousTokenValue = BNExpMul(preFundHoldingsMaliciousToken, maliciousTokenPrice);
 

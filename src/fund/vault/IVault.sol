@@ -1,13 +1,13 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 
 /// @title Vault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IVault {
     function assetBalances(address) external view returns (uint256);
-    function decreaseAssetBalance(address, uint256) external;
     function deposit(address, uint256) external;
+    function getAssetBalances(address[] calldata) external view returns (uint256[] memory);
     function getOwnedAssets() external view returns (address[] memory);
-    function increaseAssetBalance(address, uint256) external;
     function withdraw(address, uint256) external;
 }
 

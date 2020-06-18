@@ -1,18 +1,15 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
+
+import "./IPolicyManager.sol";
 
 /// @title Policy Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IPolicy {
-    enum Applied { pre, post }
-
-    function identifier() external view returns (string memory);
-    function position() external view returns (Applied);
-
-    // In Trading context:
-    // addresses: Order maker, Order taker, Order maker asset, Order taker asset, Exchange address
-    // values: Maker token quantity, Taker token quantity, Fill Taker Quantity
-
-    // In Participation context:
-    // address[0]: Investor address, address[3]: Investment asset
-    function rule(bytes4, address[5] calldata, uint[3] calldata, bytes32) external returns (bool);
+    function addFundSettings(bytes calldata) external;
+    function identifier() external pure returns (string memory);
+    function policyHook() external view returns (IPolicyManager.PolicyHook);
+    function policyHookExecutionTime() external view returns (IPolicyManager.PolicyHookExecutionTime);
+    function updateFundSettings(bytes calldata) external;
+    function validateRule(bytes calldata) external returns (bool);
 }

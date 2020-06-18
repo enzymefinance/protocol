@@ -1,10 +1,11 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../dependencies/DSAuth.sol";
 import "../dependencies/libs/EnumerableSet.sol";
-import "../fund/hub/ISpoke.sol";
-import "../dependencies/token/IERC20.sol";
+import "../fund/policies/IPolicy.sol";
+import "../integrations/libs/IIntegrationAdapter.sol";
 
 /// @title Registry Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -16,9 +17,9 @@ import "../dependencies/token/IERC20.sol";
 contract Registry is DSAuth {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event AssetAdded (address asset);
+    event PrimitiveAdded (address primitive);
 
-    event AssetRemoved (address asset);
+    event PrimitiveRemoved (address primitive);
 
     event DerivativePriceSourceUpdated(address derivative, address priceSource);
 
@@ -28,21 +29,15 @@ contract Registry is DSAuth {
 
     event FeeRemoved (address fee);
 
+    event FundAdded (address indexed manager, address hub, bytes32 hashedName);
+
     event FundFactoryChanged (address fundFactory);
 
     event IncentiveChanged (uint256 incentiveAmount);
 
-    event IntegrationAdapterAdded (
-        address adapter,
-        address exchange,
-        uint256 typeIndex
-    );
+    event IntegrationAdapterAdded (address indexed adapter, string indexed identifier);
 
-    event IntegrationAdapterRemoved (
-        address indexed adapter,
-        address exchange,
-        uint256 typeIndex
-    );
+    event IntegrationAdapterRemoved (address indexed adapter, string indexed identifier);
 
     event MGMChanged (address MGM);
 
@@ -50,33 +45,36 @@ contract Registry is DSAuth {
 
     event NativeAssetChanged (address nativeAsset);
 
-    event PolicyAdded (address policy);
+    event PolicyAdded (address indexed policy, string indexed identifier);
 
-    event PolicyRemoved (address policy);
+    event PolicyRemoved (address indexed policy, string indexed identifier);
 
     event PriceSourceChanged (address priceSource);
 
     event SharesRequestorChanged(address sharesRequestor);
 
-    EnumerableSet.AddressSet private assets;
+    event ValueInterpreterChanged(address valueInterpreter);
+
+    // Assets
+    // Primitives are tokens that have an explicit value based on our primary pricefeed, e.g., Dai
+    EnumerableSet.AddressSet private primitives;
+    // Derivatives are tokens representing underlying assets, e.g,. cDai
+    mapping (address => address) public derivativeToPriceSource;
+
+    // Plugins
     EnumerableSet.AddressSet private fees;
     EnumerableSet.AddressSet private integrationAdapters;
     EnumerableSet.AddressSet private policies;
+    mapping (bytes32 => bool) private integrationAdapterIdentifierIsRegistered;
+    mapping (bytes32 => bool) private policyIdentifierIsRegistered;
 
-    // Derivatives (tokens representing underlying assets, e.g,. cDai)
-    mapping (address => address) public derivativeToPriceSource;
+    // Fund Factories
+    mapping (address => bool) public fundFactoryIsRegistered;
 
     // Funds
     mapping (address => bool) public fundIsRegistered;
+    mapping (bytes32 => bool) public fundNameHashIsTaken;
     mapping (address => address[]) public managerToFunds;
-
-    // Vault Integrations
-    struct IntegrationInfo {
-        address gateway;
-        uint256 typeIndex;
-    }
-    mapping (address => IntegrationInfo) public adapterToIntegrationInfo;
-    string[] public integrationTypes;
 
     address public engine;
     address public fundFactory;
@@ -86,41 +84,45 @@ contract Registry is DSAuth {
     address public mlnToken;
     address public nativeAsset;
     address public sharesRequestor;
+    address public valueInterpreter;
 
     constructor(address _postDeployOwner) public {
         incentive = 10 finney;
-        integrationTypes.push("none");
-        integrationTypes.push("trading");
-        integrationTypes.push("lending");
         setOwner(_postDeployOwner);
     }
 
     // ASSETS
 
-    /// @notice Remove an asset from the list of registered assets
-    /// @param _asset The address of the asset to remove
-    function deregisterAsset(address _asset) external auth {
-        require(assetIsRegistered(_asset), "deregisterAsset: _asset is not registered");
+    /// @notice Remove a primitive from the list of registered primitives
+    /// @param _primitive The address of the primitive to remove
+    function deregisterPrimitive(address _primitive) external auth {
+        require(
+            primitiveIsRegistered(_primitive),
+            "deregisterPrimitive: _primitive is not registered"
+        );
 
-        EnumerableSet.remove(assets, _asset);
+        EnumerableSet.remove(primitives, _primitive);
 
-        emit AssetRemoved(_asset);
+        emit PrimitiveRemoved(_primitive);
     }
 
-    /// @notice Get all registered assets
-    /// @return A list of all registered asset addresses
-    function getRegisteredAssets() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(assets);
+    /// @notice Get all registered primitives
+    /// @return A list of all registered primitive addresses
+    function getRegisteredPrimitives() external view returns (address[] memory) {
+        return EnumerableSet.enumerate(primitives);
     }
 
-    /// @notice Add an asset to the Registry
-    /// @param _asset Address of asset to be registered
-    function registerAsset(address _asset) external auth {
-        require(!assetIsRegistered(_asset), "registerAsset: _asset already registered");
+    /// @notice Add a primitive to the Registry
+    /// @param _primitive Address of primitive to be registered
+    function registerPrimitive(address _primitive) external auth {
+        require(
+            !primitiveIsRegistered(_primitive),
+            "registerPrimitive: _primitive already registered"
+        );
 
-        EnumerableSet.add(assets, _asset);
+        EnumerableSet.add(primitives, _primitive);
 
-        emit AssetAdded(_asset);
+        emit PrimitiveAdded(_primitive);
     }
 
     /// @notice Add or update a price source for a derivative
@@ -139,11 +141,11 @@ contract Registry is DSAuth {
         emit DerivativePriceSourceUpdated(_derivative, _priceSource);
     }
 
-    /// @notice Check whether an asset is registered
-    /// @param _asset The address of the asset to check
-    /// @return True if the asset is registered
-    function assetIsRegistered(address _asset) public view returns (bool) {
-        return EnumerableSet.contains(assets, _asset);
+    /// @notice Check whether a primitive is registered
+    /// @param _primitive The address of the primitive to check
+    /// @return True if the primitive is registered
+    function primitiveIsRegistered(address _primitive) public view returns (bool) {
+        return EnumerableSet.contains(primitives, _primitive);
     }
 
     // FEES
@@ -186,15 +188,19 @@ contract Registry is DSAuth {
     /// @notice Add a fund to the Registry
     /// @param _hub The Hub for the fund
     /// @param _manager The manager of the fund
-    function registerFund(address _hub, address _manager) external {
+    function registerFund(address _hub, address _manager, bytes32 _hashedName) external {
         require(
-            msg.sender == fundFactory,
+            fundFactoryIsRegistered[msg.sender],
             "registerFund: Only fundFactory can call this function"
         );
         require(!fundIsRegistered[_hub], "registerFund: Fund is already registered");
+        require(!fundNameHashIsTaken[_hashedName], "registerFund: Fund name is already taken");
 
         fundIsRegistered[_hub] = true;
+        fundNameHashIsTaken[_hashedName] = true;
         managerToFunds[_manager].push(_hub);
+
+        emit FundAdded(_manager, _hub, _hashedName);
     }
 
     // POLICIES
@@ -204,9 +210,12 @@ contract Registry is DSAuth {
     function deregisterPolicy(address _policy) external auth {
         require(policyIsRegistered(_policy), "deregisterPolicy: _policy is not registered");
 
-        EnumerableSet.remove(policies, _policy);
+        string memory identifier = IPolicy(_policy).identifier();
 
-        emit PolicyRemoved(_policy);
+        EnumerableSet.remove(policies, _policy);
+        policyIdentifierIsRegistered[keccak256(bytes(identifier))] = false;
+
+        emit PolicyRemoved(_policy, identifier);
     }
 
     /// @notice Get all registered policies
@@ -220,9 +229,32 @@ contract Registry is DSAuth {
     function registerPolicy(address _policy) external auth {
         require(!policyIsRegistered(_policy), "registerPolicy: _policy already registered");
 
-        EnumerableSet.add(policies, _policy);
+        IPolicy policy = IPolicy(_policy);
+        require(
+            policy.policyHook() != IPolicyManager.PolicyHook.None,
+            "registerPolicy: PolicyHook must be defined in the policy"
+        );
+        require(
+            policy.policyHookExecutionTime() != IPolicyManager.PolicyHookExecutionTime.None,
+            "registerPolicy: PolicyHookExecutionTime must be defined in the policy"
+        );
 
-        emit PolicyAdded(_policy);
+        // Plugins should only have their latest version registered
+        string memory identifier = policy.identifier();
+        require(
+            bytes(identifier).length != 0,
+            "registerPolicy: Identifier must be defined in the policy"
+        );
+        bytes32 identifierHash = keccak256(bytes(identifier));
+        require(
+            !policyIdentifierIsRegistered[identifierHash],
+            string(abi.encodePacked("registerPolicy: Policy with identifier exists: ", identifier))
+        );
+
+        EnumerableSet.add(policies, _policy);
+        policyIdentifierIsRegistered[identifierHash] = true;
+
+        emit PolicyAdded(_policy, identifier);
     }
 
     /// @notice Check whether a policy is registered
@@ -234,13 +266,6 @@ contract Registry is DSAuth {
 
     // INTEGRATIONS
 
-    /// @notice Add an integration type to the Registry
-    /// @dev Cannot remove integration types; used like an extendable enum
-    /// @param _name Human-readable name for the integration type
-    function addIntegrationType(string calldata _name) external auth {
-        integrationTypes.push(_name);
-    }
-
     /// @notice Remove an integration adapter from the Registry
     /// @param _adapter The address of the adapter to remove
     function deregisterIntegrationAdapter(address _adapter) external auth {
@@ -248,16 +273,13 @@ contract Registry is DSAuth {
             integrationAdapterIsRegistered(_adapter),
             "deregisterIntegrationAdapter: Adapter already disabled"
         );
+
+        string memory identifier = IIntegrationAdapter(_adapter).identifier();
+        integrationAdapterIdentifierIsRegistered[keccak256(bytes(identifier))] = false;
+
         EnumerableSet.remove(integrationAdapters, _adapter);
 
-        IntegrationInfo memory integrationInfo = adapterToIntegrationInfo[_adapter];
-        delete(adapterToIntegrationInfo[_adapter]);
-
-        emit IntegrationAdapterRemoved(
-            _adapter,
-            integrationInfo.gateway,
-            integrationInfo.typeIndex
-        );
+        emit IntegrationAdapterRemoved(_adapter, identifier);
     }
 
     /// @notice Get all registered integration adapters
@@ -269,52 +291,37 @@ contract Registry is DSAuth {
     /// @notice Register an integration adapter with its associated external contract and type
     /// @dev Adapters are unique. There may be different adapters for same exchange (0x / Ethfinex)
     /// @param _adapter Address of integration adapter contract
-    /// @param _gateway Address of the external contract with which the _adapter interacts
-    /// @param _typeIndex Index of the type of integration in the integrationTypes storage variable
-    function registerIntegrationAdapter(
-        address _adapter,
-        address _gateway,
-        uint256 _typeIndex
-    )
-        external
-        auth
-    {
+    function registerIntegrationAdapter(address _adapter) external auth {
         require(
             _adapter != address(0),
             "registerIntegrationAdapter: _adapter cannot be empty"
         );
         require(
-            _gateway != address(0),
-            "registerIntegrationAdapter: _gateway cannot be empty"
-        );
-        require(
-            integrationTypes.length > _typeIndex,
-            "registerIntegrationAdapter: _typeIndex does not exist"
-        );
-
-        require(
             !integrationAdapterIsRegistered(_adapter),
             "registerIntegrationAdapter: Adapter already registered"
         );
 
-        EnumerableSet.add(integrationAdapters, _adapter);
-        adapterToIntegrationInfo[_adapter] = IntegrationInfo({
-            gateway: _gateway,
-            typeIndex: _typeIndex
-        });
-
-        emit IntegrationAdapterAdded(
-            _adapter,
-            _gateway,
-            _typeIndex
+        // Plugins should only have their latest version registered
+        string memory identifier = IIntegrationAdapter(_adapter).identifier();
+        require(
+            bytes(identifier).length != 0,
+            "registerIntegrationAdapter: Identifier must be defined in the adapter"
         );
-    }
+        bytes32 identifierHash = keccak256(bytes(identifier));
+        require(
+            !integrationAdapterIdentifierIsRegistered[identifierHash],
+            string(abi.encodePacked(
+                "registerIntegrationAdapter: Adapter with identifier exists: ",
+                identifier
+            ))
+        );
 
-    /// @notice Update the human-readable name for an integration type
-    /// @param _index The position index of the item in the integration types array
-    /// @param _name The human-readable name string
-    function updateIntegrationTypeName(uint256 _index, string calldata _name) external auth {
-        integrationTypes[_index] = _name;
+        EnumerableSet.add(policies, _adapter);
+        integrationAdapterIdentifierIsRegistered[identifierHash] = true;
+
+        EnumerableSet.add(integrationAdapters, _adapter);
+
+        emit IntegrationAdapterAdded(_adapter, identifier);
     }
 
     /// @notice Check if an integration adapter is on the Registry
@@ -330,6 +337,7 @@ contract Registry is DSAuth {
     /// @param _fundFactory The FundFactory contract to set
     function setFundFactory(address _fundFactory) external auth {
         fundFactory = _fundFactory;
+        fundFactoryIsRegistered[_fundFactory] = true;
         emit FundFactoryChanged(_fundFactory);
     }
 
@@ -380,5 +388,12 @@ contract Registry is DSAuth {
     function setSharesRequestor(address _sharesRequestor) external auth {
         sharesRequestor = _sharesRequestor;
         emit SharesRequestorChanged(_sharesRequestor);
+    }
+
+    /// @notice Set the valueInterpreter storage var
+    /// @param _valueInterpreter The ValueInterpreter contract to set
+    function setValueInterpreter(address _valueInterpreter) external auth {
+        valueInterpreter = _valueInterpreter;
+        emit ValueInterpreterChanged(_valueInterpreter);
     }
 }

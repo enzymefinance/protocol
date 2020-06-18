@@ -13,16 +13,13 @@ import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { increaseTime } from '~/tests/utils/rpc';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
-
-const mainnetAddrs = require('../../../mainnet_thirdparty_contracts');
+import { setupInvestedTestFund } from '~/tests/utils/fund';
 
 let web3;
 let deployer, manager, investor;
-let defaultTxOpts, managerTxOpts;
-let engine, mln, fund, weth, engineAdapter, priceSource, priceTolerance;
+let defaultTxOpts, managerTxOpts, investorTxOpts;
+let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource;
+let contracts;
 let mlnPrice, makerQuantity, takerQuantity;
 let takeOrderSignature, takeOrderSignatureBytes;
 let mlnToEthRate;
@@ -50,7 +47,7 @@ beforeAll(async () => {
     takeOrderSignature
   );
   mlnPrice = (await priceSource.methods
-    .getPrice(mln.options.address)
+    .getCanonicalRate(mln.options.address, weth.options.address)
     .call())[0];
   takerQuantity = toWei('0.001', 'ether'); // Mln sell qty
   makerQuantity = BNExpMul(
@@ -77,49 +74,34 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
     web3
   });
 
-  const { policyManager } = fund;
-
-  await send(
-    policyManager,
-    'register',
-    [takeOrderSignatureBytes, priceTolerance.options.address],
-    managerTxOpts,
-    web3
-  );
+  // TODO: Need to calculate this in fund.js
+  const amguTxValue = toWei('10', 'ether');
+  fund = await setupInvestedTestFund(contracts, manager, amguTxValue);
 });
 
-test('Invest in fund with enough MLN to buy desired ETH from engine', async () => {
-  const { hub, shares } = fund;
+test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async () => {
+  const { vault } = fund;
 
-  const wantedShares = toWei('1', 'ether');
-  const amguTxValue = toWei('10', 'ether');
-
-  const costOfShares = await call(
-    shares,
-      'getSharesCostInAsset',
-      [wantedShares, mln.options.address]
-  );
-
-  const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-
-  await investInFund({
-    fundAddress: hub.options.address,
-    investment: {
-      contribAmount: costOfShares,
-      investor,
-      tokenContract: mln
-    },
-    amguTxValue,
-    tokenPriceData: {
-      priceSource,
-      tokenAddresses: [mln.options.address],
-      tokenPrices: [mlnToEthRate]
-    },
-    web3
+  const minMakerQuantity = toWei('0.1', 'ether');
+  const encodedArgs = encodeTakeOrderArgs({
+    makerAsset: mln.options.address,
+    makerQuantity: minMakerQuantity,
+    takerAsset: weth.options.address,
+    takerQuantity: toWei('0.1', 'ether'),
   });
 
-  const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-  expect(postInvestorShares).bigNumberEq(preInvestorShares.add(new BN(wantedShares)));
+  await expect(
+    send(
+      vault,
+      'callOnIntegration',
+      [
+        kyberAdapter.options.address,
+        takeOrderSignature,
+        encodedArgs,
+      ],
+      managerTxOpts,
+    )
+  ).resolves.not.toThrow()
 });
 
 test('Trade on Melon Engine', async () => {
@@ -129,7 +111,7 @@ test('Trade on Melon Engine', async () => {
   await increaseTime(86400 * 32, web3);
   await send(engine, 'thaw', [], defaultTxOpts, web3);
 
-  const preliquidEther = new BN(await call(engine, 'liquidEther'));
+  const preLiquidEther = new BN(await call(engine, 'liquidEther'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
@@ -164,7 +146,7 @@ test('Trade on Melon Engine', async () => {
     web3
   );
 
-  const postliquidEther = new BN(await call(engine, 'liquidEther'));
+  const postLiquidEther = new BN(await call(engine, 'liquidEther'));
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
@@ -181,7 +163,7 @@ test('Trade on Melon Engine', async () => {
   expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
 
   expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundHoldingsWethDiff).bigNumberEq(preliquidEther.sub(postliquidEther));
+  expect(fundHoldingsWethDiff).bigNumberEq(preLiquidEther.sub(postLiquidEther));
 });
 
 test('Maker quantity as minimum returned WETH is respected', async () => {

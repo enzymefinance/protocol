@@ -14,7 +14,8 @@ let web3;
 let deployer;
 let defaultTxOpts, managerTxOpts;
 let baseToken, quoteToken;
-let engine, fundFactory, priceSource, registry, sharesRequestor;
+let amguPrice;
+let engine, fundFactory, priceSource, registry, sharesRequestor, valueInterpreter;
 
 const assertAmguTx = async (contract, method, args=[]) => {
   const arbitraryEthAmount = toWei('1', 'ether');
@@ -47,11 +48,11 @@ const assertAmguTx = async (contract, method, args=[]) => {
   const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
-    await call(
-      priceSource,
-      'convertQuantity',
-      [mlnAmguAmount.toString(), mlnAddress, wethAddress]
-    )
+    (await call(
+      valueInterpreter,
+      'calcCanonicalAssetValue',
+      [mlnAddress, mlnAmguAmount.toString(), wethAddress]
+    ))[0]
   );
   const txCostInWei = new BN(gasPrice).mul(new BN(result.gasUsed));
   const estimatedTotalUserCost = ethAmguAmount.add(txCostInWei);
@@ -107,8 +108,9 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
       [],
       [],
       [],
+      [],
+      [],
       quoteToken.options.address,
-      [baseToken.options.address, quoteToken.options.address]
     ],
     managerTxOpts,
     web3
@@ -117,7 +119,7 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
   await assertAmguTx(fundFactory, 'createShares');
 });
 
-test('Set amgu with incentive attatched and check its usage in creating a fund', async () => {
+test('set amgu with incentive attached and check its usage in creating a fund', async () => {
   await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts, web3);
   const newAmguPrice = await call(engine, 'getAmguPrice');
   expect(newAmguPrice).toBe(amguPrice);
@@ -131,8 +133,9 @@ test('Set amgu with incentive attatched and check its usage in creating a fund',
       [],
       [],
       [],
-      quoteToken.options.address,
-      [baseToken.options.address, quoteToken.options.address]
+      [],
+      [],
+      quoteToken.options.address
     ],
     managerTxOpts,
     web3
@@ -150,7 +153,6 @@ test('Set amgu with incentive attatched and check its usage in creating a fund',
     'FundSetupCompleted'
   ).hub;
 
-  const requestedShares = toWei('100', 'ether');
   const investmentAmount = toWei('100', 'ether');
 
   await send(
@@ -174,9 +176,8 @@ test('Set amgu with incentive attatched and check its usage in creating a fund',
     'requestShares',
     [
       hubAddress,
-      quoteToken.options.address,
       investmentAmount,
-      requestedShares
+      "0"
     ],
     { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice },
     web3
@@ -206,11 +207,11 @@ test('Set amgu with incentive attatched and check its usage in creating a fund',
   const mlnAddress = await call(registry, 'mlnToken');
   const mlnAmguAmount = new BN(amguPrice).mul(new BN(amguChargableGas));
   const ethAmguAmount = new BN(
-    await call(
-      priceSource,
-      'convertQuantity',
-      [mlnAmguAmount.toString(), mlnAddress, wethAddress]
-    )
+    (await call(
+      valueInterpreter,
+      'calcCanonicalAssetValue',
+      [mlnAddress, mlnAmguAmount.toString(), wethAddress]
+    ))[0]
   );
 
   const txCostInWei = new BN(gasPrice).mul(new BN(requestSharesRes.gasUsed));

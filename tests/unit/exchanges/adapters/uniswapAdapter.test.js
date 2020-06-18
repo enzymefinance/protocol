@@ -87,7 +87,6 @@ describe('takeOrder', () => {
       );
 
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -160,7 +159,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.UNISWAP_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(uniswapFactory.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -170,6 +168,7 @@ describe('takeOrder', () => {
     });
   });
 
+  // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 2: token to eth', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
@@ -187,14 +186,13 @@ describe('takeOrder', () => {
       );
 
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory,
         manager,
         web3
@@ -260,7 +258,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.UNISWAP_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(uniswapFactory.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);
@@ -270,6 +267,7 @@ describe('takeOrder', () => {
     });
   });
 
+  // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 3: token to token', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsDai, postFundHoldingsMln, postFundHoldingsDai;
@@ -292,14 +290,13 @@ describe('takeOrder', () => {
       );
 
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
-        quoteToken: weth.options.address,
+        quoteToken: mln.options.address,
         fundFactory,
         manager,
         web3
@@ -365,7 +362,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.UNISWAP_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(uniswapFactory.options.address);
       expect(orderFilled.buyAsset).toBe(makerAsset);
       expect(orderFilled.buyAmount).toBe(makerQuantity);
       expect(orderFilled.sellAsset).toBe(takerAsset);

@@ -83,7 +83,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory,
@@ -160,7 +159,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -266,7 +264,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -287,7 +284,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -402,7 +398,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -425,7 +420,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -435,24 +429,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory,
         manager,
-        web3
-      });
-
-      // Make 2nd investment with MLN to allow taker fee trade
-      takerFee = toWei('0.001', 'ether');
-      await investInFund({
-        fundAddress: fund.hub.options.address,
-        investment: {
-          contribAmount: takerFee,
-          investor: deployer,
-          tokenContract: mln
-        },
-        tokenPriceData: {
-          priceSource,
-          tokenAddresses: [
-            mln.options.address
-          ]
-        },
         web3
       });
     });
@@ -466,6 +442,7 @@ describe('takeOrder', () => {
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
+      takerFee = toWei('0.01', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -558,7 +535,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -582,7 +558,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -592,33 +567,6 @@ describe('takeOrder', () => {
         quoteToken: weth.options.address,
         fundFactory,
         manager,
-        web3
-      });
-
-      // Make 2nd investment with DAI to allow taker fee trade
-      takerFee = toWei('1', 'ether');
-      const contribAmount = toWei('2', 'ether');
-
-      await send(
-        fund.shares,
-        'enableSharesInvestmentAssets',
-        [[zrx.options.address]],
-        managerTxOpts,
-        web3
-      );
-      await investInFund({
-        fundAddress: fund.hub.options.address,
-        investment: {
-          contribAmount,
-          investor: deployer,
-          tokenContract: zrx
-        },
-        tokenPriceData: {
-          priceSource,
-          tokenAddresses: [
-            zrx.options.address
-          ]
-        },
         web3
       });
 
@@ -643,6 +591,46 @@ describe('takeOrder', () => {
       );
     });
 
+    test('third party makes and fund takes an order for DAI (to be used as fees)', async () => {
+      const { vault } = fund;
+
+      const makerAddress = deployer;
+      const makerAssetAmount = toWei('1', 'Ether');
+      const takerAssetAmount = toWei('0.005', 'Ether');
+      const makerTokenAddress = dai.options.address;
+      const takerTokenAddress = weth.options.address;
+      const fillQuantity = takerAssetAmount;
+
+      const unsignedOrder = await createUnsignedZeroExOrder(
+        zeroExExchange.options.address,
+        chainId,
+        {
+          makerAddress,
+          makerTokenAddress,
+          makerAssetAmount,
+          takerTokenAddress,
+          takerAssetAmount,
+        },
+      );
+
+      await send(dai, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      await expect(
+        send(
+          vault,
+          'callOnIntegration',
+          [
+            zeroExAdapter.options.address,
+            takeOrderSignature,
+            encodedArgs,
+          ],
+          defaultTxOpts,
+        )
+      ).resolves.not.toThrow();
+    });
+
     test('third party makes and validates an off-chain order', async () => {
       const makerAddress = deployer;
       const makerAssetAmount = toWei('1', 'Ether');
@@ -652,6 +640,7 @@ describe('takeOrder', () => {
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
+      takerFee = toWei('1', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -748,7 +737,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -769,7 +757,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -889,7 +876,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -909,7 +895,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -1025,7 +1010,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(new BN(orderFilled.buyAmount)).bigNumberEq(makerFillQuantity);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);

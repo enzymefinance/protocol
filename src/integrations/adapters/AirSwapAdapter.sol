@@ -1,4 +1,5 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../interfaces/ISwap.sol";
@@ -8,60 +9,45 @@ import "../libs/OrderTaker.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and AirSwap
 contract AirSwapAdapter is OrderTaker {
-    /// @notice Extract arguments for risk management validations of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return riskManagementAddresses_ needed addresses for risk management
-    /// - [0] Maker address
-    /// - [1] Taker address
-    /// - [2] Maker asset
-    /// - [3] Taker asset
-    /// - [4] Maker fee asset
-    /// - [5] Taker fee asset
-    /// @return riskManagementValues_ needed values for risk management
-    /// - [0] Maker asset amount
-    /// - [1] Taker asset amount
-    /// - [2] Taker asset fill amount
-    function __extractTakeOrderRiskManagementArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
-        internal
+    address immutable public EXCHANGE;
+
+    constructor(address _exchange) public {
+        EXCHANGE = _exchange;
+    }
+
+    /// @notice Provides a constant string identifier for an adapter
+    /// @return An identifier string
+    function identifier() external pure override returns (string memory) {
+        return "AIRSWAP";
+    }
+
+    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @param _selector The function selector for the callOnIntegration
+    /// @param _encodedArgs The encoded parameters for the callOnIntegration
+    /// @return incomingAssets_ The assets to receive
+    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
+        external
         view
         override
-        returns (address[6] memory riskManagementAddresses_, uint256[3] memory riskManagementValues_)
+        returns (address[] memory incomingAssets_)
     {
-        (
-            address[6] memory orderAddresses,
-            uint256[6] memory orderValues, , , ,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        riskManagementAddresses_ = [
-            orderAddresses[0],
-            orderAddresses[2],
-            orderAddresses[1],
-            orderAddresses[3],
-            address(0),
-            address(0)
-        ];
-        riskManagementValues_ = [
-            orderValues[2],
-            orderValues[4],
-            orderValues[4]
-        ];
+        if (_selector == TAKE_ORDER_SELECTOR) {
+            (address[6] memory orderAddresses,,,,,) = __decodeTakeOrderArgs(_encodedArgs);
+            incomingAssets_ = new address[](1);
+            incomingAssets_[0] = orderAddresses[1];
+        }
+        else {
+            revert("parseIncomingAssets: _selector invalid");
+        }
     }
 
     /// @notice Take a market order on AirSwap (takeOrder)
-    /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(
-        address _targetExchange,
-        bytes memory _encodedArgs,
-        bytes memory _fillData
-    )
+    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
         internal
         override
-        validateAndFinalizeFilledOrder(_targetExchange, _fillData)
+        validateAndFinalizeFilledOrder(_fillData)
     {
         (
             address[6] memory orderAddresses,
@@ -81,11 +67,10 @@ contract AirSwapAdapter is OrderTaker {
             version
         );
 
-        ISwap(_targetExchange).swap(order);
+        ISwap(EXCHANGE).swap(order);
     }
 
     /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @return fillAssets_ Assets to fill
     /// - [0] Maker asset
@@ -96,10 +81,7 @@ contract AirSwapAdapter is OrderTaker {
     /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
     /// - [1] AirSwap exchange of taker asset
-    function __formatFillTakeOrderArgs(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
         internal
         view
         override
@@ -120,35 +102,18 @@ contract AirSwapAdapter is OrderTaker {
 
         address[] memory fillApprovalTargets = new address[](2);
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = _targetExchange;
+        fillApprovalTargets[1] = EXCHANGE;
 
         return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
 
     /// @notice Validate the parameters of a takeOrder call
-    /// @param _targetExchange Address of AirSwap exchange contract
     /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(
-        address _targetExchange,
-        bytes memory _encodedArgs
-    )
+    function __validateTakeOrderParams(bytes memory _encodedArgs)
         internal
         view
         override
-    {
-        (
-            address[6] memory orderAddresses,
-            uint256[6] memory orderValues, , , ,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        IRegistry registry = __getRegistry();
-        require(registry.assetIsRegistered(
-            orderAddresses[1]), 'Maker asset not registered'
-        );
-        require(registry.assetIsRegistered(
-            orderAddresses[3]), 'Taker asset not registered'
-        );
-    }
+    {}
 
     // PRIVATE FUNCTIONS
 

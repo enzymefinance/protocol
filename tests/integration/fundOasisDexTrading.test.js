@@ -42,7 +42,6 @@ beforeAll(async () => {
   );
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [oasisDexAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
@@ -80,7 +79,7 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
     takerAsset = weth.options.address;
 
     const makerToWethAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [makerAsset]))[0]
+      (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
     );
 
     takerQuantity = BNExpMul(
@@ -169,7 +168,7 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
     takerQuantity = toWei('0.01', 'ether');
 
     const takerToWethAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [takerAsset]))[0]
+      (await call(priceSource, 'getLiveRate', [takerAsset, weth.options.address]))[0]
     );
     makerQuantity = BNExpDiv(
       new BN(takerQuantity),

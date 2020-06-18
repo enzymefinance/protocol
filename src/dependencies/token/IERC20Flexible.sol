@@ -1,4 +1,5 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 
 /// @title Flexible ERC20 interface
 /// @author Melon Council DAO <security@meloncoucil.io>

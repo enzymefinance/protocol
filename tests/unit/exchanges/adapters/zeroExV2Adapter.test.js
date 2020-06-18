@@ -65,7 +65,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory,
@@ -140,7 +139,6 @@ describe('takeOrder', () => {
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -244,7 +242,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -254,17 +251,16 @@ describe('takeOrder', () => {
     });
   });
 
+  // @dev Uses ZRX as maker asset so that fees can be deducted from the maker amount
   describe('Fill Order 2: w/ taker fee', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, fillQuantity, takerFee;
-    let preFundHoldingsMln, postFundHoldingsMln;
     let preFundHoldingsWeth, postFundHoldingsWeth;
     let preFundHoldingsZrx, postFundHoldingsZrx;
     let tx;
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        defaultTokens: [mln.options.address, weth.options.address],
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -276,41 +272,16 @@ describe('takeOrder', () => {
         manager,
         web3
       });
-
-      // Make 2nd investment with ZRX to allow taker fee trade
-      takerFee = toWei('0.0001', 'ether');
-      const contribAmount = toWei('1', 'ether');
-
-      await send(
-        fund.shares,
-        'enableSharesInvestmentAssets',
-        [[zrx.options.address]],
-        managerTxOpts,
-        web3
-      );
-      await investInFund({
-        fundAddress: fund.hub.options.address,
-        investment: {
-          contribAmount,
-          investor,
-          tokenContract: zrx
-        },
-        tokenPriceData: {
-          priceSource,
-          tokenAddresses: [ zrx.options.address ],
-          tokenPrices: [ zrxToWethRate ]
-        },
-        web3
-      });
     });
 
     test('third party makes and validates an off-chain order', async () => {
       const makerAddress = deployer;
       const makerAssetAmount = toWei('1', 'Ether');
       const takerAssetAmount = toWei('0.05', 'Ether');
-      makerTokenAddress = mln.options.address;
+      makerTokenAddress = zrx.options.address;
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
+      takerFee = toWei('0.001', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -325,13 +296,7 @@ describe('takeOrder', () => {
         },
       );
 
-      await send(
-        mln,
-        'approve',
-        [erc20Proxy.options.address, makerAssetAmount],
-        defaultTxOpts,
-        web3
-      );
+      await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
       signedOrder = await signZeroExOrder(unsignedOrder, deployer);
       const signatureValid = await isValidZeroExSignatureOffChain(
         unsignedOrder,
@@ -347,9 +312,6 @@ describe('takeOrder', () => {
 
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
       );
       preFundHoldingsZrx = new BN(
         await call(vault, 'assetBalances', [zrx.options.address])
@@ -372,9 +334,6 @@ describe('takeOrder', () => {
       postFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
       postFundHoldingsZrx = new BN(
         await call(vault, 'assetBalances', [zrx.options.address])
       );
@@ -384,11 +343,10 @@ describe('takeOrder', () => {
       expect(postFundHoldingsWeth).bigNumberEq(
         preFundHoldingsWeth.sub(new BN(signedOrder.takerAssetAmount))
       );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
-      );
       expect(postFundHoldingsZrx).bigNumberEq(
-        preFundHoldingsZrx.sub(new BN(signedOrder.takerFee))
+        preFundHoldingsZrx
+          .add(new BN(signedOrder.makerAssetAmount))
+          .sub(new BN(signedOrder.takerFee))
       );
     });
 
@@ -405,7 +363,6 @@ describe('takeOrder', () => {
         CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
         'OrderFilled'
       );
-      expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
       expect(orderFilled.buyAsset).toBe(makerTokenAddress);
       expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
       expect(orderFilled.sellAsset).toBe(takerTokenAddress);
@@ -417,162 +374,129 @@ describe('takeOrder', () => {
     });
   });
 
-  // describe('Fill Order 3: partial fill w/ taker fee', () => {
-  //   let signedOrder;
-  //   let makerTokenAddress, takerTokenAddress, takerFee;
-  //   let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
-  //   let preFundHoldingsMln, postFundHoldingsMln;
-  //   let preFundHoldingsWeth, postFundHoldingsWeth;
-  //   let preFundHoldingsZrx, postFundHoldingsZrx;
-  //   let tx;
+  // @dev Uses ZRX as maker asset so that fees can be deducted from the maker amount
+  describe('Fill Order 3: partial fill w/ taker fee', () => {
+    let signedOrder;
+    let makerTokenAddress, takerTokenAddress, takerFee;
+    let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
+    let preFundHoldingsWeth, postFundHoldingsWeth;
+    let preFundHoldingsZrx, postFundHoldingsZrx;
+    let tx;
 
-  //   beforeAll(async () => {
-  //     fund = await setupFundWithParams({
-  //       defaultTokens: [mln.options.address, weth.options.address],
-  //       integrationAdapters: [zeroExAdapter.options.address],
-  //       initialInvestment: {
-  //         contribAmount: toWei('1', 'ether'),
-  //         investor,
-  //         tokenContract: weth
-  //       },
-  //       quoteToken: weth.options.address,
-  //       fundFactory,
-  //       manager,
-  //       web3
-  //     });
+    beforeAll(async () => {
+      // Re-deploy FundFactory contract only
+      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 
-  //     // Make 2nd investment with ZRX to allow taker fee trade
-  //     takerFee = toWei('0.0001', 'ether');
-  //     await send(
-  //       fund.shares,
-  //       'enableSharesInvestmentAssets',
-  //       [[zrx.options.address]],
-  //       defaultTxOpts,
-  //       web3
-  //     );
-  //     await investInFund({
-  //       fundAddress: fund.hub.options.address,
-  //       investment: {
-  //         contribAmount: takerFee,
-  //         investor,
-  //         tokenContract: zrx
-  //       },
-  //       tokenPriceData: {
-  //         priceSource,
-  //         tokenAddresses: [
-  //           zrx.options.address
-  //         ]
-  //       }
-  //     });
-  //   });
+      // Set up fund
+      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
+      fund = await setupFundWithParams({
+        integrationAdapters: [zeroExAdapter.options.address],
+        initialInvestment: {
+          contribAmount: toWei('1', 'ether'),
+          investor: deployer,
+          tokenContract: weth
+        },
+        quoteToken: weth.options.address,
+        fundFactory
+      });
+    });
 
-  //   test('third party makes and validates an off-chain order', async () => {
-  //     const makerAddress = deployer;
-  //     const makerAssetAmount = toWei('1', 'Ether');
-  //     const takerAssetAmount = toWei('0.05', 'Ether');
-  //     makerTokenAddress = mln.options.address;
-  //     takerTokenAddress = weth.options.address;
+    test('third party makes and validates an off-chain order', async () => {
+      const makerAddress = deployer;
+      const makerAssetAmount = toWei('1', 'Ether');
+      const takerAssetAmount = toWei('0.05', 'Ether');
+      makerTokenAddress = zrx.options.address;
+      takerTokenAddress = weth.options.address;
+      takerFee = toWei('0.001', 'ether');
 
-  //     const unsignedOrder = await createUnsignedZeroExOrder(
-  //       zeroExExchange.options.address,
-  //       {
-  //         makerAddress,
-  //         makerTokenAddress,
-  //         makerAssetAmount,
-  //         takerTokenAddress,
-  //         takerAssetAmount,
-  //         takerFee,
-  //         feeRecipientAddress: randomHex(20),
-  //       },
-  //     );
 
-  //     await send(
-  //       mln,
-  //       'approve',
-  //       [erc20Proxy.options.address, makerAssetAmount],
-  //       defaultTxOpts,
-  //       web3
-  //     );
-  //     signedOrder = await signZeroExOrder(unsignedOrder, deployer);
-  //     const signatureValid = await isValidZeroExSignatureOffChain(
-  //       unsignedOrder,
-  //       signedOrder.signature,
-  //       deployer
-  //     );
+      const unsignedOrder = await createUnsignedZeroExOrder(
+        zeroExExchange.options.address,
+        {
+          makerAddress,
+          makerTokenAddress,
+          makerAssetAmount,
+          takerTokenAddress,
+          takerAssetAmount,
+          takerFee,
+          feeRecipientAddress: randomHex(20),
+        },
+      );
 
-  //     expect(signatureValid).toBeTruthy();
-  //   });
+      await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      const signatureValid = await isValidZeroExSignatureOffChain(
+        unsignedOrder,
+        signedOrder.signature,
+        deployer
+      );
 
-  //   test('half of the order is filled through the fund', async () => {
-  //     const { vault } = fund;
-  //     const partialFillDivisor = new BN(2);
-  //     takerFillQuantity = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
-  //     makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
-  //     takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
+      expect(signatureValid).toBeTruthy();
+    });
 
-  //     preFundHoldingsWeth = new BN(
-  //       await call(vault, 'assetBalances', [weth.options.address])
-  //     );
-  //     preFundHoldingsMln = new BN(
-  //       await call(vault, 'assetBalances', [mln.options.address])
-  //     );
-  //     preFundHoldingsZrx = new BN(
-  //       await call(vault, 'assetBalances', [zrx.options.address])
-  //     );
+    test('half of the order is filled through the fund', async () => {
+      const { vault } = fund;
+      const partialFillDivisor = new BN(2);
+      takerFillQuantity = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
+      makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
+      takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
 
-  //     const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString());
+      preFundHoldingsWeth = new BN(
+        await call(vault, 'assetBalances', [weth.options.address])
+      );
+      preFundHoldingsZrx = new BN(
+        await call(vault, 'assetBalances', [zrx.options.address])
+      );
 
-  //     tx = await send(
-  //       vault,
-  //       'callOnIntegration',
-  //       [
-  //         zeroExAdapter.options.address,
-  //         takeOrderSignature,
-  //         encodedArgs,
-  //       ],
-  //       managerTxOpts,
-  //       web3
-  //     );
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString());
 
-  //     postFundHoldingsWeth = new BN(
-  //       await call(vault, 'assetBalances', [weth.options.address])
-  //     );
-  //     postFundHoldingsMln = new BN(
-  //       await call(vault, 'assetBalances', [mln.options.address])
-  //     );
-  //     postFundHoldingsZrx = new BN(
-  //       await call(vault, 'assetBalances', [zrx.options.address])
-  //     );
-  //   });
+      tx = await send(
+        vault,
+        'callOnIntegration',
+        [
+          zeroExAdapter.options.address,
+          takeOrderSignature,
+          encodedArgs,
+        ],
+        defaultTxOpts,
+      );
 
-  //   it('correctly updates fund holdings', async () => {
-  //     expect(postFundHoldingsWeth).bigNumberEq(preFundHoldingsWeth.sub(takerFillQuantity));
-  //     expect(postFundHoldingsMln).bigNumberEq(preFundHoldingsMln.add(makerFillQuantity));
-  //     expect(postFundHoldingsZrx).bigNumberEq(preFundHoldingsZrx.sub(takerFeeFillQuantity));
-  //   });
+      postFundHoldingsWeth = new BN(
+        await call(vault, 'assetBalances', [weth.options.address])
+      );
+      postFundHoldingsZrx = new BN(
+        await call(vault, 'assetBalances', [zrx.options.address])
+      );
+    });
 
-  //   it('emits correct OrderFilled event', async () => {
-  //     const orderFilledCount = getEventCountFromLogs(
-  //       tx.logs,
-  //       CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
-  //       'OrderFilled'
-  //     );
-  //     expect(orderFilledCount).toBe(1);
+    it('correctly updates fund holdings', async () => {
+      expect(postFundHoldingsWeth).bigNumberEq(preFundHoldingsWeth.sub(takerFillQuantity));
+      expect(postFundHoldingsZrx).bigNumberEq(
+        preFundHoldingsZrx.add(makerFillQuantity).sub(takerFeeFillQuantity)
+      );
+    });
 
-  //     const orderFilled = getEventFromLogs(
-  //       tx.logs,
-  //       CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
-  //       'OrderFilled'
-  //     );
-  //     expect(orderFilled.targetContract).toBe(zeroExExchange.options.address);
-  //     expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-  //     expect(new BN(orderFilled.buyAmount)).bigNumberEq(makerFillQuantity);
-  //     expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-  //     expect(new BN(orderFilled.sellAmount)).bigNumberEq(takerFillQuantity);
-  //     expect(orderFilled.feeAssets.length).toBe(1);
-  //     expect(orderFilled.feeAssets[0]).toBe(zrx.options.address);
-  //     expect(orderFilled.feeAmounts.length).toBe(1);
-  //     expect(new BN(orderFilled.feeAmounts[0])).bigNumberEq(takerFeeFillQuantity);
-  //   });
-  // });
+    it('emits correct OrderFilled event', async () => {
+      const orderFilledCount = getEventCountFromLogs(
+        tx.logs,
+        CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
+        'OrderFilled'
+      );
+      expect(orderFilledCount).toBe(1);
+
+      const orderFilled = getEventFromLogs(
+        tx.logs,
+        CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
+        'OrderFilled'
+      );
+      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
+      expect(new BN(orderFilled.buyAmount)).bigNumberEq(makerFillQuantity);
+      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
+      expect(new BN(orderFilled.sellAmount)).bigNumberEq(takerFillQuantity);
+      expect(orderFilled.feeAssets.length).toBe(1);
+      expect(orderFilled.feeAssets[0]).toBe(zrx.options.address);
+      expect(orderFilled.feeAmounts.length).toBe(1);
+      expect(new BN(orderFilled.feeAmounts[0])).bigNumberEq(takerFeeFillQuantity);
+    });
+  });
 });

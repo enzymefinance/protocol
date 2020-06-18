@@ -58,6 +58,7 @@ describe('new investment in fund', () => {
         isInitial: true,
         tokenContract: weth
       },
+      quoteToken: weth.options.address,
       web3
     });
   });
@@ -113,7 +114,7 @@ describe('vault', () => {
 
   beforeAll(async () => {
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
+      fundFactory,
       integrationAdapters: [kyberAdapter.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
@@ -129,7 +130,7 @@ describe('vault', () => {
     takerAsset = weth.options.address;
     takerQuantity = investmentAmount;
     const makerToWethAssetRate = new BN(
-      (await call(priceSource, 'getPrice', [makerAsset]))[0]
+      (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
     );
     makerQuantity = BNExpDiv(
       new BN(takerQuantity),
@@ -296,7 +297,6 @@ describe('redeem shares', () => {
 
   beforeAll(async () => {
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       initialInvestment: {
         contribAmount: investmentAmount,
         investor: deployer,

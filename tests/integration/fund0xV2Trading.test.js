@@ -52,7 +52,6 @@ beforeAll(async () => {
   zrxToEthRate = await call(priceSource, 'getPrice', [zrx.options.address]);
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [zeroExAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
@@ -78,7 +77,7 @@ describe('Fund takes an order', () => {
       zeroExExchange.options.address,
       {
         makerAddress,
-        makerTokenAddress: mln.options.address,
+        makerTokenAddress: zrx.options.address,
         makerAssetAmount,
         takerTokenAddress: weth.options.address,
         takerAssetAmount,
@@ -100,15 +99,15 @@ describe('Fund takes an order', () => {
     const { vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
-    const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
+    const preZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-    const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
     );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
+    const preFundHoldingsZrx = new BN(
+      await call(vault, 'assetBalances', [zrx.options.address])
     );
 
     const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
@@ -125,30 +124,30 @@ describe('Fund takes an order', () => {
       web3
     );
 
-    const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
+    const postZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-    const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
     );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
+    const postFundHoldingsZrx = new BN(
+      await call(vault, 'assetBalances', [zrx.options.address])
     );
 
-    expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
+    expect(postZrxDeployer).bigNumberEq(preZrxDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
+    const fundHoldingsZrxDiff = postFundHoldingsZrx.sub(preFundHoldingsZrx);
 
     // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+    expect(fundHoldingsZrxDiff).bigNumberEq(postFundBalanceOfZrx.sub(preFundBalanceOfZrx));
 
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(new BN(signedOrder.takerAssetAmount));
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundHoldingsZrxDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 });
 
@@ -186,44 +185,7 @@ describe('Fund takes an order with a taker fee', () => {
     expect(signatureValid).toBeTruthy();
   });
 
-  test('Invest in fund with enough ZRX to take trade with taker fee', async () => {
-    const { hub, shares } = fund;
-
-    // Enable investment with zrx
-    await send(shares, 'enableSharesInvestmentAssets', [[zrx.options.address]], managerTxOpts, web3);
-
-    const contribAmount = toWei('1', 'ether');
-    const shareCost = new BN(
-      await call(
-        shares,
-        'getSharesCostInAsset',
-        [toWei('1', 'ether'), zrx.options.address]
-      )
-    );
-    const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
-
-    const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-
-    await investInFund({
-      fundAddress: hub.options.address,
-      investment: {
-        contribAmount,
-        investor,
-        tokenContract: zrx
-      },
-      tokenPriceData: {
-        priceSource,
-        tokenAddresses: [zrx.options.address],
-        tokenPrices: [zrxToEthRate]
-      },
-      web3
-    });
-
-    const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
-    expect(postInvestorShares).bigNumberEq(preInvestorShares.add(wantedShares));
-  });
-
-  test('Fund with enough ZRX takes order', async () => {
+  test('manager takes order through adapter', async () => {
     const { vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 

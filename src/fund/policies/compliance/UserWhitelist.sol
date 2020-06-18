@@ -1,48 +1,60 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 
-import "../../../dependencies/DSAuth.sol";
+import "../utils/BuySharesPreValidatePolicyBase.sol";
+import "../utils/AddressListPolicyMixin.sol";
 
 /// @title UserWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Investors can be added and removed from whitelist
-contract UserWhitelist is DSAuth {
-    enum Applied { pre, post }
+contract UserWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin {
+    constructor(address _registry) public PolicyBase(_registry) {}
 
-    event ListAddition(address indexed who);
-    event ListRemoval(address indexed who);
-
-    mapping (address => bool) public whitelisted;
-
-    constructor(address[] memory _preApproved) public {
-        batchAddToWhitelist(_preApproved);
+    /// @notice Add the initial policy settings for a fund
+    /// @param _encodedSettings Encoded settings to apply to a fund
+    /// @dev A fund's PolicyManager is always the sender
+    /// @dev Only called once, on PolicyManager.enablePolicies()
+    function addFundSettings(bytes calldata _encodedSettings) external override onlyPolicyManager {
+        __addToList(abi.decode(_encodedSettings, (address[])));
     }
 
-    function addToWhitelist(address _who) public auth {
-        whitelisted[_who] = true;
-        emit ListAddition(_who);
+    /// @notice Provides a constant string identifier for a policy
+    function identifier() external pure override returns (string memory) {
+        return "USER_WHITELIST";
     }
 
-    function removeFromWhitelist(address _who) public auth {
-        whitelisted[_who] = false;
-        emit ListRemoval(_who);
+    /// @notice Update the policy settings for a fund
+    /// @param _encodedSettings Encoded settings to apply to a fund
+    /// @dev A fund's PolicyManager is always the sender
+    function updateFundSettings(bytes calldata _encodedSettings)
+        external
+        override
+        onlyPolicyManager
+    {
+        (
+            address[] memory itemsToAdd,
+            address[] memory itemsToRemove
+        ) = abi.decode(_encodedSettings, (address[], address[]));
+        require(
+            itemsToAdd.length > 0 || itemsToRemove.length > 0,
+            "updateFundSettings: must pass addresses to add or remove"
+        );
+
+        if (itemsToAdd.length > 0) __addToList(itemsToAdd);
+        if (itemsToRemove.length > 0) __removeFromList(itemsToRemove);
     }
 
-    function batchAddToWhitelist(address[] memory _members) public auth {
-        for (uint i = 0; i < _members.length; i++) {
-            addToWhitelist(_members[i]);
-        }
+    /// @notice Apply the rule with specified paramters, in the context of a fund
+    /// @param _encodedArgs Encoded args with which to validate the rule
+    /// @return True if the rule passes
+    /// @dev A fund's PolicyManager is always the sender
+    function validateRule(bytes calldata _encodedArgs)
+        external
+        override
+        onlyPolicyManager
+        returns (bool)
+    {
+        (address buyer,,) = __decodeRuleArgs(_encodedArgs);
+        return isInList(msg.sender, buyer);
     }
-
-    function batchRemoveFromWhitelist(address[] memory _members) public auth {
-        for (uint i = 0; i < _members.length; i++) {
-            removeFromWhitelist(_members[i]);
-        }
-    }
-
-    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier) external returns (bool) {
-        return whitelisted[addresses[0]];
-    }
-
-    function position() external pure returns (Applied) { return Applied.pre; }
-    function identifier() external pure returns (string memory) { return 'UserWhitelist'; }
 }

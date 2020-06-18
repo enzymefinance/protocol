@@ -41,7 +41,6 @@ beforeAll(async () => {
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [kyberAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

@@ -1,4 +1,5 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 
 import "../../registry/IRegistry.sol";
 import "./IHub.sol";
@@ -25,6 +26,10 @@ abstract contract FundRouterMixin {
 
     function __getShares(address _hub) internal view returns (address) {
         return IHub(_hub).shares();
+    }
+
+    function __getValueInterpreter(address _hub) internal view returns (address) {
+        return IRegistry(__getRegistry(_hub)).valueInterpreter();
     }
 
     function __getVault(address _hub) internal view returns (address) {

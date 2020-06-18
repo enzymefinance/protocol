@@ -26,7 +26,7 @@ let web3;
 let deployer, updater, someAccount;
 let deployerTxOpts, updaterTxOpts, someAccountTxOpts, councilTxOpts;
 let conversionRates, kyberNetworkProxy, registry;
-let dai, mln, weth, registeredAssets;
+let eur, mln, weth, registeredPrimitives;
 
 // TODO: move pricefeed deployment to the primary fork so we can actually deploy it?
 beforeAll(async () => {
@@ -61,12 +61,22 @@ beforeAll(async () => {
   //     );
   //   }
   // }
+  // for (const addr of [eur.options.address, mln.options.address, weth.options.address]) {
+  //   await send(
+  //     registry,
+  //     'registerPrimitive',
+  //     [ addr ],
+  //     deployerTxOpts
+  //   );
+  // }
 
-  registeredAssets = await call(registry, 'getRegisteredAssets');
+  registeredPrimitives = await call(registry, 'getRegisteredPrimitives');
 });
 
 describe('update', () => {
   let kyberPriceFeed;
+  let pricefeedQuoteAsset;
+  let maxDeviationFromFeed;
   let mlnPriceFromKyber;
   let maxDeviationFromFeed = toWei('0.1', 'ether');
 
@@ -92,8 +102,8 @@ describe('update', () => {
       web3
     );
     mlnPriceFromKyber = new BN((await call(
-      kyberPriceFeed, 'getKyberPrice', [mln.options.address, weth.options.address]
-    )).kyberPrice_);
+      kyberPriceFeed, 'getLiveRate', [mln.options.address, weth.options.address]
+    ))[0]);
   });
 
   test('Some unrelated account cannot update feed', async () => {
@@ -133,7 +143,6 @@ describe('update', () => {
       updateKyberPriceFeed(kyberPriceFeed, web3, updaterTxOpts)
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
 
-
     let receipt = await send(kyberPriceFeed, 'setUpdater', [updater], deployerTxOpts, web3);
     const logSetUpdater = getEventFromLogs(
         receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'UpdaterSet'
@@ -150,7 +159,11 @@ describe('update', () => {
     // expect(logUpdated.prices).toEqual(dummyPrices);
 
     const hasValidMlnPrice = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
-    const { 0: mlnPrice } = await call(kyberPriceFeed, 'getPrice', [mln.options.address]);
+    const { 0: mlnPrice } = await call(
+      kyberPriceFeed,
+      'getCanonicalRate',
+      [mln.options.address, pricefeedQuoteAsset.options.address]
+    );
 
     expect(hasValidMlnPrice).toBe(true);
     // expect(mlnPrice.toString()).toBe(toWei('1', 'ether'));
@@ -283,7 +296,7 @@ describe('update', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts,
@@ -292,8 +305,12 @@ describe('update', () => {
 
     const validPricePostUpdate1 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
     expect(validPricePostUpdate1).toBe(true);
-    const mlnPricePostUpdate1 = await call(kyberPriceFeed, 'getPrice', [mln.options.address]);
-    expect(mlnPricePostUpdate1.price_).toBe(midpointPrice);
+    const mlnPricePostUpdate1 = (await call(
+      kyberPriceFeed,
+      'getCanonicalRate',
+      [mln.options.address, pricefeedQuoteAsset.options.address]
+    ))[0];
+    expect(mlnPricePostUpdate1).toBe(midpointPrice);
 
     const validPricePreUpdate2 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
     expect(validPricePreUpdate2).toBe(true);
@@ -319,7 +336,7 @@ describe('update', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
+        registeredPrimitives,
         [toWei('1', 'ether'), midpointPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts,
@@ -331,25 +348,14 @@ describe('update', () => {
   });
 });
 
-// TODO: would be better to test this with a freshly-deployed price feed and our own reserves
-describe.skip('getPrice', () => {
+describe('getCanonicalRate', () => {
   let kyberPriceFeed;
+  let pricefeedQuoteAsset;
 
   beforeAll(async () => {
-    // kyberPriceFeed = await deploy(
-    //   CONTRACT_NAMES.KYBER_PRICEFEED,
-    //   [
-    //     registry.options.address,
-    //     kyberNetworkProxy.options.address,
-    //     toWei('0.5', 'ether'),
-    //     weth.options.address,
-    //     toWei('0.1', 'ether')
-    //   ],
-    //   deployerTxOpts
-    // );
   });
 
-  test('Price change in reserve is reflected in getPrice post-update', async () => {
+  test('Price change in reserve is reflected in getCanonicalRate post-update', async () => {
     const mlnPrice = BNExpDiv(
       new BN(toWei('1', 'ether')),
       new BN(toWei('0.05', 'ether'))
@@ -432,15 +438,19 @@ describe.skip('getPrice', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
-        [preEurPrice.price_.toString(), midpointPrice.toString(), toWei('1', 'ether')]
+        registeredPrimitives,
+        [preEurPrice.toString(), midpointPrice.toString(), toWei('1', 'ether')]
       ],
       deployerTxOpts,
       web3
     );
 
-    const postMlnPrice = await call(kyberPriceFeed, 'getPrice', [mln.options.address]);
-    expect(postMlnPrice.price_).toBe(midpointPrice);
+    const postMlnPrice = (await call(
+      kyberPriceFeed,
+      'getCanonicalRate',
+      [mln.options.address, pricefeedQuoteAsset.options.address]
+    ))[0];
+    expect(postMlnPrice).toBe(midpointPrice);
   });
 
   test('Crossed market condition yields midpoint price', async () => {
@@ -479,15 +489,19 @@ describe.skip('getPrice', () => {
       kyberPriceFeed,
       'update',
       [
-        registeredAssets,
-        [preEurPrice.price_.toString(), midpointPrice, toWei('1', 'ether')]
+        registeredPrimitives,
+        [preEurPrice, midpointPrice, toWei('1', 'ether')]
       ],
       deployerTxOpts,
       web3
     );
 
-    const postMlnPrice = await call(kyberPriceFeed, 'getPrice', [mln.options.address]);
+    const postMlnPrice = (await call(
+      kyberPriceFeed,
+      'getCanonicalRate',
+      [mln.options.address, pricefeedQuoteAsset.options.address]
+    ))[0];
 
-    expect(postMlnPrice.price_).toBe(midpointPrice);
+    expect(postMlnPrice).toBe(midpointPrice);
   });
 });

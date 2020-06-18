@@ -11,6 +11,7 @@ import { toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { deploy } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { encodeArgs } from '~/tests/utils/formatting';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { getDeployed } from '~/tests/utils/getDeployed';
@@ -19,7 +20,10 @@ const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 let web3;
 let deployer, manager, investor, badInvestor;
-let defaultTxOpts, managerTxOpts;
+let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;
+let fundFactory, priceSource;
+let userWhitelist;
+let mln, weth;
 let buySharesFunctionSig;
 
 beforeAll(async () => {
@@ -28,12 +32,20 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
+  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
+  const contracts = deployed.contracts;
+
+  mln = contracts.MLN;
+  weth = contracts.WETH;
+  priceSource = contracts.TestingPriceFeed;
+  fundFactory = contracts.FundFactory;
+  userWhitelist = contracts.UserWhitelist;
+
   buySharesFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.SHARES,
     'buyShares',
   );
 });
-
 
 // TODO: we're changing how policies like this are deployed/managed shortly, so no
 // need to fix this test right now
@@ -56,16 +68,18 @@ describe.skip('Fund 1: user whitelist', () => {
     priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-    console.log(defaultTxOpts)
 
     fund = await setupFundWithParams({
-      defaultTokens: [mln.options.address, weth.options.address],
       initialInvestment: {
         contribAmount: toWei('1', 'ether'),
         investor: manager,
         tokenContract: weth
       },
       manager,
+      policies: {
+        addresses: policies.addresses,
+        encodedSettings: policies.encodedSettings
+      },
       quoteToken: weth.options.address,
       fundFactory,
       web3
@@ -80,30 +94,14 @@ describe.skip('Fund 1: user whitelist', () => {
     );
 
     // Investment params
-    wantedShares = toWei('1', 'ether');
-    offeredValue = await call(
-      fund.shares,
-      'getSharesCostInAsset',
-      [wantedShares, weth.options.address]
-    );
+    offeredValue = toWei('1', 'ether');
   });
 
   test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const buySharesPoliciesRes = await call(
-      policyManager,
-      'getPoliciesBySig',
-      [encodeFunctionSignature(buySharesFunctionSig)],
-    );
-    const buySharesPolicyAddresses = [
-      ...buySharesPoliciesRes[0],
-      ...buySharesPoliciesRes[1]
-    ];
-
-    expect(
-      buySharesPolicyAddresses.includes(userWhitelist.options.address)
-    ).toBe(true);
+    const policies = await call (policyManager, 'getEnabledPolicies');
+    expect(policies).toContain(userWhitelist.options.address);
   });
 
   test('Bad request investment: user not on whitelist', async () => {
@@ -123,11 +121,14 @@ describe.skip('Fund 1: user whitelist', () => {
           tokenPrices: [toWei('1', 'ether')]
         }
       })
-    ).rejects.toThrowFlexible("Rule evaluated to false: UserWhitelist");
+    ).rejects.toThrowFlexible("Rule evaluated to false: USER_WHITELIST");
   });
 
   test('Good request investment: user is whitelisted', async () => {
     const { hub, shares } = fund;
+
+    const sharePrice = new BN(await call(shares, 'calcSharePrice'));
+    const expectedShares = BNExpDiv(new BN(offeredValue), sharePrice);
 
     await investInFund({
       fundAddress: hub.options.address,
@@ -143,7 +144,7 @@ describe.skip('Fund 1: user whitelist', () => {
       }
     })
 
-    const investorShares = await call(shares, 'balanceOf', [investor]);
-    expect(investorShares).toEqual(wantedShares);
+    const investorShares = new BN(await call(shares, 'balanceOf', [investor]));
+    expect(investorShares).bigNumberEq(expectedShares);
   });
 });

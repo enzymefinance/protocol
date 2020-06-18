@@ -1,4 +1,5 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 
 import "../../registry/IRegistry.sol";
 import "./Spoke.sol";
@@ -25,6 +26,7 @@ contract Hub is IHub {
     FundStatus public override status;
 
     // Infrastruture
+    address public override FUND_FACTORY;
     address public override REGISTRY;
 
     // Components
@@ -35,13 +37,16 @@ contract Hub is IHub {
 
     modifier onlyFundFactory() {
         require(
-            msg.sender == IRegistry(REGISTRY).fundFactory(),
+            msg.sender == FUND_FACTORY,
             "Only FundFactory can make this call"
         );
         _;
     }
 
-    constructor(address _registry, address _manager, string memory _name) public {
+    constructor(address _registry, address _fundFactory, address _manager, string memory _name)
+        public
+    {
+        FUND_FACTORY = _fundFactory;
         MANAGER = _manager;
         NAME = _name;
         REGISTRY = _registry;

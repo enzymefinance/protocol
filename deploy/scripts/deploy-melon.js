@@ -9,15 +9,6 @@ const main = async input => {
   const melonAddrs = input.melon.addr;
   const tokenAddrs = input.tokens.addr;
 
-  const airSwapAdapter = await nab('AirSwapAdapter', [], melonAddrs);
-  const kyberAdapter = await nab('KyberAdapter', [], melonAddrs);
-  const oasisDexAdapter = await nab('OasisDexAdapter', [], melonAddrs);
-  const uniswapAdapter = await nab('UniswapAdapter', [], melonAddrs);
-  const zeroExV2Adapter = await nab('ZeroExV2Adapter', [], melonAddrs);
-  const zeroExV3Adapter = await nab('ZeroExV3Adapter', [], melonAddrs);
-  const engineAdapter = await nab('EngineAdapter', [], melonAddrs);
-  const priceTolerance = await nab('PriceTolerance', [melonConf.priceTolerance], melonAddrs);
-  const userWhitelist = await nab('UserWhitelist', [melonConf.userWhitelist], melonAddrs);
   const managementFee = await nab('ManagementFee', [], melonAddrs);
   const performanceFee = await nab('PerformanceFee', [], melonAddrs);
   const feeManagerFactory = await nab('FeeManagerFactory', [], melonAddrs);
@@ -27,6 +18,24 @@ const main = async input => {
   const registry = await nab('Registry', [melonConf.registryOwner], melonAddrs);
   const engine = await nab('Engine', [melonConf.engineDelay, registry.options.address], melonAddrs);
   const sharesRequestor = await nab('SharesRequestor', [registry.options.address], melonAddrs);
+  const valueInterpreter = await nab('ValueInterpreter', [registry.options.address], melonAddrs);
+
+  // Adapters
+  const airSwapAdapter = await nab('AirSwapAdapter', [input.airSwap.addr.Swap], melonAddrs);
+  const kyberAdapter = await nab('KyberAdapter', [input.kyber.addr.KyberNetworkProxy], melonAddrs);
+  const oasisDexAdapter = await nab('OasisDexAdapter', [input.oasis.addr.OasisDexExchange], melonAddrs);
+  const uniswapAdapter = await nab('UniswapAdapter', [input.uniswap.addr.UniswapFactory], melonAddrs);
+  const zeroExV2Adapter = await nab('ZeroExV2Adapter', [input.zeroExV2.addr.ZeroExV2Exchange], melonAddrs);
+  const zeroExV3Adapter = await nab('ZeroExV3Adapter', [input.zeroExV3.addr.ZeroExV3Exchange], melonAddrs);
+  const engineAdapter = await nab('EngineAdapter', [engine.options.address], melonAddrs);
+
+  // Policies
+  const assetBlacklist = await nab('AssetBlacklist', [registry.options.address], melonAddrs);
+  const assetWhitelist = await nab('AssetWhitelist', [registry.options.address], melonAddrs);
+  const maxConcentration = await nab('MaxConcentration', [registry.options.address], melonAddrs);
+  const maxPositions = await nab('MaxPositions', [registry.options.address], melonAddrs);
+  const priceTolerance = await nab('PriceTolerance', [registry.options.address], melonAddrs);
+  const userWhitelist = await nab('UserWhitelist', [registry.options.address], melonAddrs);
 
   const fundFactory = await nab('FundFactory', [
     feeManagerFactory.options.address,
@@ -74,54 +83,9 @@ const main = async input => {
   if (`${previousRegisteredSharesRequestor}`.toLowerCase() !== sharesRequestor.options.address.toLowerCase()) {
     await send(registry, 'setSharesRequestor', [sharesRequestor.options.address]);
   }
-
-  const integrations = {};
-  integrations.engine = {
-    gateway: engine.options.address,
-    adapter: engineAdapter.options.address,
-    integrationType: 0,
-  };
-  if (input.airSwap) {
-    integrations.airSwap = {
-      gateway: input.airSwap.addr.Swap,
-      adapter: airSwapAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.kyber) {
-    integrations.kyber = {
-      gateway: input.kyber.addr.KyberNetworkProxy,
-      adapter: kyberAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.oasis) {
-    integrations.oasis = {
-      gateway: input.oasis.addr.OasisDexExchange,
-      adapter: oasisDexAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.uniswap) {
-    integrations.uniswap = {
-      gateway: input.uniswap.addr.UniswapFactory,
-      adapter: uniswapAdapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.zeroExV2) {
-    integrations.zeroExV2 = {
-      gateway: input.zeroExV2.addr.ZeroExV2Exchange,
-      adapter: zeroExV2Adapter.options.address,
-      integrationType: 1
-    };
-  }
-  if (input.zeroExV3) {
-    integrations.zeroExV3 = {
-      gateway: input.zeroExV3.addr.ZeroExV3Exchange,
-      adapter: zeroExV3Adapter.options.address,
-      integrationType: 1
-    };
+  const previousRegisteredValueInterpreter = await call(registry, 'valueInterpreter');
+  if (`${previousRegisteredValueInterpreter}`.toLowerCase() !== valueInterpreter.options.address.toLowerCase()) {
+    await send(registry, 'setValueInterpreter', [valueInterpreter.options.address]);
   }
 
   const fees = [managementFee.options.address, performanceFee.options.address];
@@ -131,16 +95,39 @@ const main = async input => {
     }
   }
 
-  for (const info of Object.values(integrations)) {
-    if (!(await call(registry, 'integrationAdapterIsRegistered', [info.adapter]))) {
-      await send(registry, 'registerIntegrationAdapter', [info.adapter, info.gateway, info.integrationType]);
+  const integrationAdapters = [
+    engineAdapter.options.address,
+    airSwapAdapter.options.address,
+    kyberAdapter.options.address,
+    oasisDexAdapter.options.address,
+    uniswapAdapter.options.address,
+    zeroExV2Adapter.options.address,
+    zeroExV3Adapter.options.address
+  ];
+  for (const adapter of integrationAdapters) {
+    if (!(await call(registry, 'integrationAdapterIsRegistered', [adapter]))) {
+      await send(registry, 'registerIntegrationAdapter', [adapter]);
+    }
+  }
+
+  const policies = [
+    assetBlacklist.options.address,
+    assetWhitelist.options.address,
+    maxConcentration.options.address,
+    maxPositions.options.address,
+    priceTolerance.options.address,
+    userWhitelist.options.address,
+  ];
+  for (const policy of policies) {
+    if (!(await call(registry, 'policyIsRegistered', [policy]))) {
+      await send(registry, 'registerPolicy', [policy]);
     }
   }
 
   for (const [sym, info] of Object.entries(input.tokens.conf)) {
     const tokenAddress = tokenAddrs[sym];
-    if (!(await call(registry, 'assetIsRegistered', [tokenAddress]))) {
-      await send(registry, 'registerAsset', [tokenAddress]);
+    if (!(await call(registry, 'primitiveIsRegistered', [tokenAddress]))) {
+      await send(registry, 'registerPrimitive', [tokenAddress]);
     }
     if (conf.track === 'TESTING') {
       const previousDecimals = await call(priceSource, 'assetsToDecimals', [tokenAddress]);
@@ -166,8 +153,6 @@ const main = async input => {
     "ZeroExV2Adapter": zeroExV2Adapter,
     "ZeroExV3Adapter": zeroExV3Adapter,
     "EngineAdapter": engineAdapter,
-    "PriceTolerance": priceTolerance,
-    "UserWhitelist": userWhitelist,
     "FeeManagerFactory": feeManagerFactory,
     "PolicyManagerFactory": policyManagerFactory,
     "SharesFactory": sharesFactory,
@@ -177,7 +162,14 @@ const main = async input => {
     "Registry": registry,
     "Engine": engine,
     "SharesRequestor": sharesRequestor,
-    "FundFactory": fundFactory
+    "ValueInterpreter": valueInterpreter,
+    "FundFactory": fundFactory,
+    "AssetBlacklist": assetBlacklist,
+    "AssetWhitelist": assetWhitelist,
+    "MaxConcentration": maxConcentration,
+    "MaxPositions": maxPositions,
+    "PriceTolerance": priceTolerance,
+    "UserWhitelist": userWhitelist
   };
 
   if (conf.track === 'KYBER_PRICE') {

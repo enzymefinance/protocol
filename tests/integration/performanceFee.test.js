@@ -58,7 +58,6 @@ beforeAll(async () => {
   mlnToEthRate = toWei('0.5', 'ether');
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [oasisDexAdapter.options.address],
     fees: {
       addresses: feeAddresses,
@@ -86,14 +85,8 @@ test(`fund gets weth from (non-initial) investor`, async () => {
   const { hub, shares } = fund;
 
   const contribAmount = toWei('1', 'ether');
-  const shareCost = new BN(
-    await call(
-      shares,
-      'getSharesCostInAsset',
-      [toWei('1', 'ether'), weth.options.address]
-    )
-  );
-  const wantedShares = BNExpDiv(new BN(contribAmount), shareCost);
+  const sharePrice = new BN(await call(shares, 'calcSharePrice'));
+  const expectedShares = BNExpDiv(new BN(contribAmount), sharePrice);
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
@@ -113,7 +106,7 @@ test(`fund gets weth from (non-initial) investor`, async () => {
   });
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
-  expect(postTotalSupply).bigNumberEq(preTotalSupply.add(new BN(wantedShares)));
+  expect(postTotalSupply).bigNumberEq(preTotalSupply.add(expectedShares));
 });
 
 test(`can NOT artificially inflate share price by transfering weth to Vault`, async () => {
@@ -123,17 +116,13 @@ test(`can NOT artificially inflate share price by transfering weth to Vault`, as
 
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundGav = new BN(await call(shares, 'calcGav'));
-  const preFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
+  const preFundSharePrice = new BN(await call(shares, 'calcSharePrice'));
 
   await send(weth, 'transfer', [vault.options.address, inflationAmount], defaultTxOpts, web3);
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(shares, 'calcGav'));
-  const postFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
+  const postFundSharePrice = new BN(await call(shares, 'calcSharePrice'));
   expect(postTotalSupply).bigNumberEq(preTotalSupply);
   expect(postFundSharePrice).bigNumberEq(preFundSharePrice);
   expect(postFundGav).bigNumberEq(preFundGav);
@@ -141,14 +130,14 @@ test(`can NOT artificially inflate share price by transfering weth to Vault`, as
 
 // @dev To inflate performance fee, take a trade, then update the pricefeed with a more favorable price.
 test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH', async () => {
-  const { vault } = fund;
+  const { shares, vault } = fund;
 
   const makerAsset = mln.options.address;
   const makerQuantity = toWei('0.1', 'ether');
   const takerAsset = weth.options.address;
 
   const makerToWethAssetRate = new BN(
-    (await call(priceSource, 'getPrice', [makerAsset]))[0]
+    (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
   );
   const takerQuantity = BNExpMul(
     new BN(makerQuantity),
@@ -192,12 +181,11 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     web3
   );
 
-  const mlnPricePreSwap = new BN(
-    (await call(priceSource, 'getPrice', [mln.options.address]))[0]
-  );
+  // Update prices with higher MLN/WETH price
+  const preFundGav = new BN(await call(shares, 'calcGav'));
   const preMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
-    mlnPricePreSwap
+    new BN((await call(priceSource, 'getCanonicalRate', [mln.options.address, weth.options.address]))[0])
   );
 
   // third party makes swap on kyber to influence MLN price
@@ -213,13 +201,18 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   const mlnPricePostSwap = new BN(
     (await call(priceSource, 'getPrice', [mln.options.address]))[0]
   );
+  const postFundGav = new BN(await call(shares, 'calcGav'));
   const postMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
     mlnPricePostSwap
   );
 
-  expect(mlnPricePostSwap).bigNumberGt(mlnPricePreSwap);
-  expect(postMlnGav).bigNumberGt(preMlnGav);
+  const mlnGavDiff = postMlnGav.sub(preMlnGav);
+
+  // Fund gav should increase by change in mlnGav
+  expect(postFundGav).bigNumberEq(preFundGav.add(mlnGavDiff));
+  // Mln gav should increase by rate change in mln: 50% increase
+  expect(mlnGavDiff).bigNumberEq(preMlnGav.div(new BN(2)));
 });
 
 test(`performance fee is calculated correctly`, async () => {
@@ -273,17 +266,21 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
+  const preFundGav = new BN(await call(shares, 'calcGav'));
+  const preFundGavPerShare = BNExpDiv(preFundGav, preTotalSupply);
 
   const performanceFeeOwed = new BN(await call(feeManager, 'performanceFeeAmount'));
   expect(performanceFeeOwed).bigNumberGt(new BN(0));
 
   const redeemQuantity = preInvestorShares.div(new BN(2));
-
   await send(shares, 'redeemSharesQuantity', [redeemQuantity.toString()], investorTxOpts, web3);
+
+  const postHWM = new BN(await call(performanceFee, 'highWaterMark', [feeManager.options.address]));
   const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
 
+  expect(postHWM).bigNumberEq(preFundGavPerShare);
   expect(postInvestorShares).bigNumberEq(preInvestorShares.sub(redeemQuantity));
   expect(postManagerShares).bigNumberEq(preManagerShares.add(performanceFeeOwed));
   expect(postTotalSupply).bigNumberEq(preTotalSupply.add(performanceFeeOwed).sub(redeemQuantity));
@@ -324,9 +321,10 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   // Artificially inflate gav with a price update
   const preMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
-    new BN((await call(priceSource, 'getPrice', [mln.options.address]))[0])
+    new BN((await call(priceSource, 'getCanonicalRate', [mln.options.address, weth.options.address]))[0])
   );
-  const newMlnToEthRate = toWei('1', 'ether');
+  // Double Mln price
+  const newMlnToEthRate = toWei('1.5', 'ether');
   await send(
     kyberProxy,
     'swapEtherToToken',
@@ -345,9 +343,6 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
 
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preFundGav = new BN(await call(shares, 'calcGav'));
-  const preFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
   const performanceFeeOwed = new BN(await call(feeManager, 'performanceFeeAmount'));
@@ -357,9 +352,6 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
 
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postFundGav = new BN(await call(shares, 'calcGav'));
-  const postFundSharePrice = new BN(
-    await call(shares, 'getSharesCostInAsset', [toWei('1', 'ether'), weth.options.address])
-  );
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
 
   const preFundGavPerShare = BNExpDiv(preFundGav, preTotalSupply);

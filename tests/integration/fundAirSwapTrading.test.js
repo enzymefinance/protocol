@@ -40,7 +40,6 @@ beforeAll(async () => {
   airSwapAdapter = getDeployed(CONTRACT_NAMES.AIR_SWAP_ADAPTER, web3);
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [airSwapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

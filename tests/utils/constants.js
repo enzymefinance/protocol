@@ -16,7 +16,6 @@ export const ENCODING_TYPES = {
   MINIMAL: ['address', 'uint256', 'address', 'uint256'], // a general and minimal type
 }
 
-
 export const CONTRACT_NAMES = {
   ADDRESS_LIST: 'AddressList',
   AIR_SWAP_ADAPTER: 'AirSwapAdapter',
@@ -73,6 +72,7 @@ export const CONTRACT_NAMES = {
   AIR_SWAP_TYPES: 'AirSwapTypes',
   AIR_SWAP_ADAPTER: 'AirSwapAdapter',
   USER_WHITELIST: 'UserWhitelist',
+  VALUE_INTERPRETER: 'ValueInterpreter',
   VAULT: 'Vault',
   VAULT_FACTORY: 'VaultFactory',
   WETH: 'WETH',

@@ -1,34 +1,48 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 
-import "../../hub/Spoke.sol";
-import "../../shares/Shares.sol";
 import "../../vault/Vault.sol";
-import "../TradingSignatures.sol";
+import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
 
 /// @title MaxPositions Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Validates the allowed number of owned assets of a particular fund
-contract MaxPositions is TradingSignatures {
-    enum Applied { pre, post }
+contract MaxPositions is CallOnIntegrationPostValidatePolicyBase {
+    event MaxPositionsSet(address policyManager, uint256 value);
 
-    uint public maxPositions;
+    mapping (address => uint256) public policyManagerToMaxPositions;
 
-    /// @dev _maxPositions = 10 means max 10 different asset tokens
-    /// @dev _maxPositions = 0 means no asset tokens are investable
-    constructor(uint _maxPositions) public { maxPositions = _maxPositions; }
+    constructor(address _registry) public PolicyBase(_registry) {}
 
-    function rule(bytes4 sig, address[5] calldata addresses, uint[3] calldata values, bytes32 identifier)
-        external
-        returns (bool)
-    {
-        if (sig != TAKE_ORDER) revert("Signature was not TakeOrder");
-        IHub hub = IHub(Spoke(msg.sender).HUB());
-        // Always allow a trade INTO the quote asset
-        address incomingToken = addresses[2];
-        if (Shares(hub.shares()).DENOMINATION_ASSET() == incomingToken) return true;
-        return Vault(payable(hub.vault())).getOwnedAssets().length <= maxPositions;
+    // EXTERNAL FUNCTIONS
+
+    /// @notice Add the initial policy settings for a fund
+    /// @param _encodedSettings Encoded settings to apply to a fund
+    /// @dev A fund's PolicyManager is always the sender
+    /// @dev Only called once, on PolicyManager.enablePolicies()
+    function addFundSettings(bytes calldata _encodedSettings) external override onlyPolicyManager {
+        uint256 maxPositions = abi.decode(_encodedSettings, (uint256));
+        require(maxPositions > 1, "addFundSettings: maxPositions must be greater than 1");
+
+        policyManagerToMaxPositions[msg.sender] = maxPositions;
+        emit MaxPositionsSet(msg.sender, maxPositions);
     }
 
-    function position() external pure returns (Applied) { return Applied.post; }
-    function identifier() external pure returns (string memory) { return 'MaxPositions'; }
+    /// @notice Provides a constant string identifier for a policy
+    function identifier() external pure override returns (string memory) {
+        return "MAX_POSITIONS";
+    }
+
+    /// @notice Apply the rule with specified paramters, in the context of a fund
+    /// @return True if the rule passes
+    /// @dev A fund's PolicyManager is always the sender
+    function validateRule(bytes calldata)
+        external
+        override
+        onlyPolicyManager
+        returns (bool)
+    {
+        uint256 ownedAssetsCount = Vault(payable(__getVault())).getOwnedAssets().length;
+        return ownedAssetsCount <= policyManagerToMaxPositions[msg.sender];
+    }
 }

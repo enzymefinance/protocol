@@ -48,7 +48,6 @@ beforeAll(async () => {
   uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [uniswapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

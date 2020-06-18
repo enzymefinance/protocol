@@ -1,4 +1,5 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../../dependencies/DSMath.sol";
@@ -6,11 +7,13 @@ import "../../dependencies/token/IERC20.sol";
 import "../../fund/hub/IHub.sol";
 import "../../fund/hub/ISpoke.sol";
 import "../../registry/IRegistry.sol";
+import "./IIntegrationAdapter.sol";
+import "./IntegrationSignatures.sol";
 
 /// @title Integration Adapter base contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Provides convenience functions for use in integration adapters
-abstract contract IntegrationAdapter is DSMath {
+abstract contract IntegrationAdapter is IIntegrationAdapter, IntegrationSignatures, DSMath {
     /// @notice Increment allowance of an asset for some target
     /// @dev Checks the actual in-contract assetBalances (as opposed to "holdings")
     function __approveAsset(

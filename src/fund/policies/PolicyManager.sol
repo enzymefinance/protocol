@@ -1,6 +1,8 @@
-pragma solidity 0.6.4;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
+import "../../dependencies/libs/EnumerableSet.sol";
 import "../hub/Spoke.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
@@ -9,95 +11,108 @@ import "./IPolicyManager.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages policies by registering and validating policies
 contract PolicyManager is IPolicyManager, Spoke {
+    using EnumerableSet for EnumerableSet.AddressSet;
 
-    event Registration(
-        bytes4 indexed sig,
-        IPolicy.Applied position,
-        address indexed policy
-    );
+    event PolicyEnabled(address indexed policy, bytes encodedSettings);
 
-    struct Entry {
-        IPolicy[] pre;
-        IPolicy[] post;
-    }
-
-    mapping(bytes4 => Entry) policies;
+    EnumerableSet.AddressSet private enabledPolicies;
 
     constructor (address _hub) public Spoke(_hub) {}
 
-    function register(bytes4 sig, address _policy) public onlyManager {
-        IPolicy.Applied position = IPolicy(_policy).position();
-        if (position == IPolicy.Applied.pre) {
-            policies[sig].pre.push(IPolicy(_policy));
-        } else if (position == IPolicy.Applied.post) {
-            policies[sig].post.push(IPolicy(_policy));
-        } else {
-            revert("Only pre and post allowed");
-        }
-        emit Registration(sig, position, _policy);
-    }
-
-    function batchRegister(bytes4[] memory sig, address[] memory _policies) public onlyManager {
-        require(sig.length == _policies.length, "Arrays lengths unequal");
-        for (uint i = 0; i < sig.length; i++) {
-            register(sig[i], _policies[i]);
-        }
-    }
-
-    function PoliciesToAddresses(IPolicy[] storage _policies) internal view returns (address[] memory) {
-        address[] memory res = new address[](_policies.length);
-        for(uint i = 0; i < _policies.length; i++) {
-            res[i] = address(_policies[i]);
-        }
-        return res;
-    }
-
-    function getPoliciesBySig(bytes4 sig) public view returns (address[] memory, address[] memory) {
-        return (PoliciesToAddresses(policies[sig].pre), PoliciesToAddresses(policies[sig].post));
-    }
-
-    modifier isValidPolicyBySig(bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) {
-        preValidate(sig, addresses, values, identifier);
-        _;
-        postValidate(sig, addresses, values, identifier);
-    }
-
-    modifier isValidPolicy(address[5] memory addresses, uint[3] memory values, bytes32 identifier) {
-        preValidate(msg.sig, addresses, values, identifier);
-        _;
-        postValidate(msg.sig, addresses, values, identifier);
-    }
-
-    function preValidate(
-        bytes4 sig,
-        address[5] memory addresses,
-        uint[3] memory values,
-        bytes32 identifier
-    )
-        public
+    /// @notice Enable policies for use in the fund
+    /// @param _policies The policies to enable
+    /// @param _encodedSettings The encoded settings with which a fund uses a policy
+    function enablePolicies(address[] calldata _policies, bytes[] calldata _encodedSettings)
+        external
         override
     {
-        validate(policies[sig].pre, sig, addresses, values, identifier);
-    }
+        // Access
+        require(
+            msg.sender == __getHub().FUND_FACTORY(),
+            "Only FundFactory can make this call"
+        );
+        // Sanity check
+        require(_policies.length > 0, "enablePolicies: _policies cannot be empty");
+        require(
+            _policies.length == _encodedSettings.length,
+            "enablePolicies: array lengths unequal"
+        );
 
-    function postValidate(
-        bytes4 sig,
-        address[5] memory addresses,
-        uint[3] memory values,
-        bytes32 identifier
-    )
-        public
-        override
-    {
-        validate(policies[sig].post, sig, addresses, values, identifier);
-    }
-
-    function validate(IPolicy[] storage aux, bytes4 sig, address[5] memory addresses, uint[3] memory values, bytes32 identifier) internal {
-        for(uint i = 0; i < aux.length; i++) {
+        // Enable each policy with settings
+        IRegistry registry = __getRegistry();
+        for (uint256 i = 0; i < _policies.length; i++) {
+            IPolicy policy = IPolicy(_policies[i]);
             require(
-                aux[i].rule(sig, addresses, values, identifier),
-                string(abi.encodePacked("Rule evaluated to false: ", aux[i].identifier()))
+                registry.policyIsRegistered(address(policy)),
+                "enablePolicies: Policy is not on Registry"
             );
+            require(
+                !__policyIsEnabled(address(policy)),
+                "enablePolicies: Policy is already enabled"
+            );
+
+            // Add policy
+            EnumerableSet.add(enabledPolicies, address(policy));
+
+            // Set fund config on policy
+            policy.addFundSettings(_encodedSettings[i]);
+
+            emit PolicyEnabled(address(policy), _encodedSettings[i]);
+        }
+    }
+
+    function preValidatePolicy(PolicyHook _hook, bytes calldata _encodedArgs) external override {
+        __validatePolicy(_hook, PolicyHookExecutionTime.Pre, _encodedArgs);
+    }
+
+    function postValidatePolicy(PolicyHook _hook, bytes calldata _encodedArgs) external override {
+        __validatePolicy(_hook, PolicyHookExecutionTime.Post, _encodedArgs);
+    }
+
+    function updatePolicySettings(address _policy, bytes calldata _encodedSettings)
+        external
+        onlyManager
+    {
+        IPolicy(_policy).updateFundSettings(_encodedSettings);
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Get a list of enabled policies
+    /// @return An array of enabled policy addresses
+    function getEnabledPolicies() public view returns (address[] memory) {
+        return EnumerableSet.enumerate(enabledPolicies);
+    }
+
+    // PRIVATE FUNCTIONS
+
+    /// @notice Check is a policy is enabled for the fund
+    function __policyIsEnabled(address _policy) private view returns (bool) {
+        return EnumerableSet.contains(enabledPolicies, _policy);
+    }
+
+    /// @notice Helper to validate policies
+    function __validatePolicy(
+        PolicyHook _hook,
+        PolicyHookExecutionTime _executionTime,
+        bytes memory _encodedArgs
+    )
+        private
+    {
+        address[] memory policies = getEnabledPolicies();
+        for (uint i = 0; i < policies.length; i++) {
+            if (
+                IPolicy(policies[i]).policyHook() == _hook &&
+                IPolicy(policies[i]).policyHookExecutionTime() == _executionTime
+            ) {
+                require(
+                    IPolicy(policies[i]).validateRule(_encodedArgs),
+                    string(abi.encodePacked(
+                        "Rule evaluated to false: ",
+                        IPolicy(policies[i]).identifier()
+                    ))
+                );
+            }
         }
     }
 }

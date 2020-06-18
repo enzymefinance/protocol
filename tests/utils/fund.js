@@ -46,7 +46,6 @@ export const investInFund = async ({
 
   const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress, web3);
   const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'), web3);
-  const shares = fetchContract(CONTRACT_NAMES.SHARES,  await call(hub, 'shares'), web3);
   const sharesRequestor = fetchContract(
     CONTRACT_NAMES.SHARES_REQUESTOR,
     await call(registry, 'sharesRequestor'),
@@ -56,17 +55,6 @@ export const investInFund = async ({
   if (!amguTxValue) {
     amguTxValue = toWei('0.01', 'ether');
   }
-
-  // Calculate amount of shares to buy with contribution
-  const shareCost = new BN(
-    await call(
-      shares,
-      'getSharesCostInAsset',
-      [toWei('1', 'ether'), tokenContract.options.address]
-    )
-  );
-
-  const wantedShares = BNExpDiv(new BN(contribAmount), shareCost).toString();
 
   // Fund investor with contribution token, if necessary
   const investorTokenBalance = new BN(
@@ -98,12 +86,12 @@ export const investInFund = async ({
   await send(
     sharesRequestor,
     'requestShares',
-    [hub.options.address, tokenContract.options.address, contribAmount, wantedShares],
+    [hub.options.address, contribAmount, 0],
     { ...investorTxOpts, value: amguTxValue },
     web3
   );
 
-  // Update prices and executes reqeust if not initial investment
+  // Update prices and executes request if not initial investment
   if (isInitial !== true) {
     await delay(1000);
     await updateKyberPriceFeed(tokenPriceData.priceSource, web3);
@@ -111,7 +99,7 @@ export const investInFund = async ({
       sharesRequestor,
       'executeRequestFor',
       [investor, hub.options.address],
-      { ...investorTxOpts, value: amguTxValue },
+      investorTxOpts,
       web3
     );
   }
@@ -119,11 +107,14 @@ export const investInFund = async ({
 
 export const setupFundWithParams = async ({
   amguTxValue,
-  defaultTokens,
   fees = {
     addresses: [],
     rates: [],
     periods: [],
+  },
+  policies = {
+    addresses: [],
+    encodedSettings: []
   },
   initialInvestment = {
     contribAmount: 0,
@@ -153,9 +144,10 @@ export const setupFundWithParams = async ({
       fees.addresses,
       fees.rates,
       fees.periods,
+      policies.addresses,
+      policies.encodedSettings,
       integrationAdapters,
-      quoteToken,
-      defaultTokens,
+      quoteToken
     ],
     managerTxOpts,
     web3
@@ -216,18 +208,7 @@ export const setupInvestedTestFund = async (
 
   return setupFundWithParams({
     amguTxValue,
-    defaultTokens: [
-      mln.options.address,
-      weth.options.address
-    ],
-    integrationAdapters: [
-      engineAdapter.options.address,
-      kyberAdapter.options.address,
-      oasisDexAdapter.options.address,
-      uniswapAdapter.options.address,
-      zeroExV2Adapter.options.address,
-      zeroExV3Adapter.options.address,
-    ],
+    integrationAdapters: adapterAddresses,
     fees: {
       addresses: [
         managementFee.options.address,

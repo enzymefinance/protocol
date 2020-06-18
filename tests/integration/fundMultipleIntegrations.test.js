@@ -44,7 +44,6 @@ beforeAll(async () => {
   kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     integrationAdapters: [oasisDexAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),

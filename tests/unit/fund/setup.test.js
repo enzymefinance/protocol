@@ -29,8 +29,9 @@ beforeAll(async () => {
       [],
       [],
       [],
-      weth.options.address,
-      [mln.options.address, weth.options.address],
+      [],
+      [],
+      weth.options.address
     ],
     managerTxOpts,
     web3

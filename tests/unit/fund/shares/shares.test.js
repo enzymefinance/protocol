@@ -1,9 +1,12 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
+import getAccounts from '~/deploy/utils/getAccounts';
+import web3 from '~/deploy/utils/get-web3';
+
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import { setupFundWithParams } from '~/tests/utils/fund';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
 let deployer, manager, investor, thirdParty;
@@ -30,9 +33,9 @@ beforeAll(async () => {
 
   defaultBuyShares = {
     buyer: investor,
-    investmentAssetContract: weth,
+    denominationAssetToken: weth,
     investmentAmount: toWei('1', 'ether'),
-    sharesQuantity: toWei('1', 'ether'),
+    minSharesQuantity: 0,
     txOpts: investorTxOpts,
   };
 });
@@ -40,12 +43,10 @@ beforeAll(async () => {
 // TODO: can test for _hub and _registry also, but let's see how the hub/spoke system changes
 describe('constructor', () => {
   let fund;
-  let defaultTokens;
 
   beforeAll(async () => {
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-    defaultTokens = [weth.options.address, mln.options.address];
     fund = await setupFundWithParams({
       defaultTokens,
       quoteToken: weth.options.address,
@@ -54,31 +55,22 @@ describe('constructor', () => {
       web3
     });
   });
-
-  it('enables _defaultAssets as investment assets', async () => {
-    const investmentAssets = await call(fund.shares, 'getSharesInvestmentAssets');
-    expect(investmentAssets.length).toBe(defaultTokens.length);
-
-    for (const token of defaultTokens) {
-      expect(investmentAssets.includes(token));
-      expect(await call(fund.shares, 'isSharesInvestmentAsset', [token])).toBeTruthy();
-    }
-  });
 });
 
 describe('buyShares', () => {
   let fund;
   let buySharesTxBlock;
+  let expectedShares;
   let preBuyerShares, postBuyerShares, preTotalShares, postTotalShares;
-  let preCallerInvestmentAsset, postCallerInvestmentAsset;
-  let preFundHoldingsInvestmentAsset, postFundHoldingsInvestmentAsset;
-  let preVaultInvestmentAsset, postVaultInvestmentAsset;
+  let preCallerDenominationAsset, postCallerDenominationAsset;
+  let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
+  let preVaultDenominationAsset, postVaultDenominationAsset;
 
   beforeAll(async () => {
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
+      fundFactory,
       quoteToken: weth.options.address,
       fundFactory,
       manager,
@@ -98,7 +90,7 @@ describe('buyShares', () => {
 
   it('can NOT be called by deployer or fund manager', async () => {
     await send(
-      defaultBuyShares.investmentAssetContract,
+      defaultBuyShares.denominationAssetToken,
       'approve',
       [fund.shares.options.address, defaultBuyShares.investmentAmount],
       defaultTxOpts,
@@ -110,8 +102,8 @@ describe('buyShares', () => {
         'buyShares',
         [
           defaultBuyShares.buyer,
-          defaultBuyShares.investmentAssetContract.options.address,
-          defaultBuyShares.sharesQuantity
+          defaultBuyShares.investmentAmount,
+          defaultBuyShares.minSharesQuantity
         ],
         defaultTxOpts,
         web3
@@ -122,38 +114,40 @@ describe('buyShares', () => {
   it('succeeds when called by sharesRequestor', async () => {
     await send(registry, 'setSharesRequestor', [deployer], defaultTxOpts, web3);
 
-    preFundHoldingsInvestmentAsset = new BN(
+    prefundHoldingsDenominationAsset = new BN(
       await call(
         fund.vault,
         'assetBalances',
-        [defaultBuyShares.investmentAssetContract.options.address]
+        [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
     preBuyerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
-    preCallerInvestmentAsset = new BN(
+    preCallerDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [deployer]
       )
     );
     preTotalShares = new BN(await call(fund.shares, 'totalSupply'));
-    preVaultInvestmentAsset = new BN(
+    preVaultDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [fund.vault.options.address]
       )
     );
 
+    const sharePrice = new BN(await call(fund.shares, 'calcSharePrice'));
+    expectedShares = BNExpDiv(new BN(defaultBuyShares.investmentAmount), sharePrice);
     await expect(
       send(
         fund.shares,
         'buyShares',
         [
           defaultBuyShares.buyer,
-          defaultBuyShares.investmentAssetContract.options.address,
-          defaultBuyShares.sharesQuantity
+          defaultBuyShares.investmentAmount,
+          defaultBuyShares.minSharesQuantity
         ],
         defaultTxOpts,
         web3
@@ -161,25 +155,25 @@ describe('buyShares', () => {
     ).resolves.not.toThrow()
 
     buySharesTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsInvestmentAsset = new BN(
+    postFundHoldingsDenominationAsset = new BN(
       await call(
         fund.vault,
         'assetBalances',
-        [defaultBuyShares.investmentAssetContract.options.address]
+        [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
     postBuyerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
-    postCallerInvestmentAsset = new BN(
+    postCallerDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [deployer]
       )
     );
     postTotalShares = new BN(await call(fund.shares, 'totalSupply'));
-    postVaultInvestmentAsset = new BN(
+    postVaultDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [fund.vault.options.address]
       )
@@ -188,21 +182,17 @@ describe('buyShares', () => {
 
   it('correctly updates state', async () => {
     // 1. Shares created
-    expect(postBuyerShares.sub(preBuyerShares)).bigNumberEq(
-      new BN(defaultBuyShares.sharesQuantity)
-    );
-    expect(postTotalShares.sub(preTotalShares)).bigNumberEq(
-      new BN(defaultBuyShares.sharesQuantity)
-    );
+    expect(postBuyerShares.sub(preBuyerShares)).bigNumberEq(expectedShares);
+    expect(postTotalShares.sub(preTotalShares)).bigNumberEq(expectedShares);
     // 2. Investment asset transferred
-    expect(preCallerInvestmentAsset.sub(postCallerInvestmentAsset)).bigNumberEq(
+    expect(preCallerDenominationAsset.sub(postCallerDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
-    expect(postVaultInvestmentAsset.sub(preVaultInvestmentAsset)).bigNumberEq(
+    expect(postVaultDenominationAsset.sub(preVaultDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
     // 3. Fund internal accounting increased
-    expect(postFundHoldingsInvestmentAsset.sub(preFundHoldingsInvestmentAsset)).bigNumberEq(
+    expect(postFundHoldingsDenominationAsset.sub(prefundHoldingsDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
   });
@@ -219,162 +209,8 @@ describe('buyShares', () => {
 
     const eventValues = events[0].returnValues;
     expect(eventValues.buyer).toBe(defaultBuyShares.buyer);
-    expect(eventValues.sharesQuantity).toBe(defaultBuyShares.sharesQuantity);
-    expect(eventValues.investmentAsset).toBe(
-      defaultBuyShares.investmentAssetContract.options.address
-    );
+    expect(eventValues.sharesQuantity).toBe(expectedShares.toString());
     expect(eventValues.investmentAmount).toBe(defaultBuyShares.investmentAmount);
-  });
-});
-
-describe('disableSharesInvestmentAssets', () => {
-  let fund;
-  let defaultTokens, tokensToDisable;
-  let preInvestmentAssets, postInvestmentAssets;
-  let disableInvestmentAssetsTxBlock;
-
-  beforeAll(async () => {
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-
-    tokensToDisable = [dai.options.address, zrx.options.address];
-    defaultTokens = [
-      weth.options.address,
-      mln.options.address,
-      ...tokensToDisable
-    ];
-    fund = await setupFundWithParams({
-      defaultTokens,
-      quoteToken: weth.options.address,
-      fundFactory,
-      manager,
-      web3
-    });
-  });
-
-  it('can NOT be called by an unauthorized user', async () => {
-    await expect(
-      send(
-        fund.shares,
-        'disableSharesInvestmentAssets',
-        [tokensToDisable],
-        { ...defaultTxOpts, from: thirdParty },
-        web3
-      )
-    ).rejects.toThrowFlexible("Only the fund manager can call this function")
-  });
-
-  it('succeeds when called by an authorized user', async () => {
-    preInvestmentAssets = await call(fund.shares, 'getSharesInvestmentAssets');
-
-    await expect(
-      send(
-        fund.shares,
-        'disableSharesInvestmentAssets',
-        [tokensToDisable],
-        managerTxOpts,
-        web3
-      )
-    ).resolves.not.toThrow()
-
-    disableInvestmentAssetsTxBlock = await web3.eth.getBlockNumber();
-    postInvestmentAssets = await call(fund.shares, 'getSharesInvestmentAssets');
-  });
-
-  it('correctly updates state', async () => {
-    expect(preInvestmentAssets.length - postInvestmentAssets.length).toBe(tokensToDisable.length);
-    for (const token of tokensToDisable) {
-      expect(!postInvestmentAssets.includes(token));
-      expect(await call(fund.shares, 'isSharesInvestmentAsset', [token])).toBeFalsy();
-    }
-  });
-
-  it('emits correct SharesInvestmentAssetsDisabled event', async () => {
-    const events = await fund.shares.getPastEvents(
-      'SharesInvestmentAssetsDisabled',
-      {
-        fromBlock: disableInvestmentAssetsTxBlock,
-        toBlock: 'latest'
-      }
-    );
-    expect(events.length).toBe(1);
-
-    const eventValues = events[0].returnValues;
-    expect(eventValues.assets).toEqual(tokensToDisable);
-  });
-});
-
-describe('enableSharesInvestmentAssets', () => {
-  let fund;
-  let defaultTokens, tokensToEnable;
-  let preInvestmentAssets, postInvestmentAssets;
-  let enableInvestmentAssetsTxBlock;
-
-  beforeAll(async () => {
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-
-    tokensToEnable = [dai.options.address, zrx.options.address];
-    defaultTokens = [
-      weth.options.address,
-      mln.options.address
-    ];
-    fund = await setupFundWithParams({
-      defaultTokens,
-      quoteToken: weth.options.address,
-      fundFactory,
-      manager,
-      web3
-    });
-  });
-
-  it('can NOT be called by an unauthorized user', async () => {
-    await expect(
-      send(
-        fund.shares,
-        'enableSharesInvestmentAssets',
-        [tokensToEnable],
-        { ...defaultTxOpts, from: thirdParty },
-        web3
-      )
-    ).rejects.toThrowFlexible("Only the fund manager can call this function")
-  });
-
-  it('succeeds when called by an authorized user', async () => {
-    preInvestmentAssets = await call(fund.shares, 'getSharesInvestmentAssets');
-
-    await expect(
-      send(
-        fund.shares,
-        'enableSharesInvestmentAssets',
-        [tokensToEnable],
-        managerTxOpts,
-        web3
-      )
-    ).resolves.not.toThrow()
-
-    enableInvestmentAssetsTxBlock = await web3.eth.getBlockNumber();
-    postInvestmentAssets = await call(fund.shares, 'getSharesInvestmentAssets');
-  });
-
-  it('correctly updates state', async () => {
-    expect(postInvestmentAssets.length - preInvestmentAssets.length).toBe(tokensToEnable.length);
-    for (const token of tokensToEnable) {
-      expect(postInvestmentAssets.includes(token));
-      expect(await call(fund.shares, 'isSharesInvestmentAsset', [token])).toBeTruthy();
-    }
-  });
-
-  it('emits correct SharesInvestmentAssetsEnabled event', async () => {
-    const events = await fund.shares.getPastEvents(
-      'SharesInvestmentAssetsEnabled',
-      {
-        fromBlock: enableInvestmentAssetsTxBlock,
-        toBlock: 'latest'
-      }
-    );
-    expect(events.length).toBe(1);
-
-    const eventValues = events[0].returnValues;
-    expect(eventValues.assets).toEqual(tokensToEnable);
   });
 });
 
@@ -382,22 +218,22 @@ describe('enableSharesInvestmentAssets', () => {
 describe('redeemShares', () => {
   let fund;
   let redeemTxBlock;
-  let preFundHoldingsInvestmentAsset, postFundHoldingsInvestmentAsset;
-  let preRedeemerInvestmentAsset, postRedeemerInvestmentAsset, preRedeemerShares, postRedeemerShares;
+  let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
+  let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
-      quoteToken: weth.options.address,
+      fundFactory,
       initialInvestment: {
         contribAmount: defaultBuyShares.investmentAmount,
         investor: defaultBuyShares.buyer,
-        tokenContract: defaultBuyShares.investmentAssetContract
+        tokenContract: weth
       },
       fundFactory,
+      quoteToken: weth.options.address,
       manager,
       web3
     });
@@ -416,17 +252,17 @@ describe('redeemShares', () => {
   });
 
   it('succeeds when called by a user with shares', async () => {
-    preFundHoldingsInvestmentAsset = new BN(
+    prefundHoldingsDenominationAsset = new BN(
       await call(
         fund.vault,
         'assetBalances',
-        [defaultBuyShares.investmentAssetContract.options.address]
+        [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
     preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
-    preRedeemerInvestmentAsset = new BN(
+    preRedeemerDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [defaultBuyShares.buyer]
       )
@@ -443,17 +279,17 @@ describe('redeemShares', () => {
     ).resolves.not.toThrow()
 
     redeemTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsInvestmentAsset = new BN(
+    postFundHoldingsDenominationAsset = new BN(
       await call(
         fund.vault,
         'assetBalances',
-        [defaultBuyShares.investmentAssetContract.options.address]
+        [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
     postRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
-    postRedeemerInvestmentAsset = new BN(
+    postRedeemerDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [defaultBuyShares.buyer]
       )
@@ -464,11 +300,11 @@ describe('redeemShares', () => {
     // 1. Shares destroyed
     expect(postRedeemerShares).bigNumberEq(new BN(0));
     // 2. Asset returned to investor
-    expect(postRedeemerInvestmentAsset.sub(preRedeemerInvestmentAsset)).bigNumberEq(
+    expect(postRedeemerDenominationAsset.sub(preRedeemerDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
     // 3. Fund internal accounting decreased
-    expect(preFundHoldingsInvestmentAsset.sub(postFundHoldingsInvestmentAsset)).bigNumberEq(
+    expect(prefundHoldingsDenominationAsset.sub(postFundHoldingsDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
   });
@@ -485,9 +321,9 @@ describe('redeemShares', () => {
 
     const eventValues = events[0].returnValues;
     expect(eventValues.redeemer).toBe(defaultBuyShares.buyer);
-    expect(eventValues.sharesQuantity).toBe(defaultBuyShares.sharesQuantity);
+    expect(eventValues.sharesQuantity).toBe(preRedeemerShares.toString());
     expect(eventValues.receivedAssets).toEqual(
-      [defaultBuyShares.investmentAssetContract.options.address]
+      [defaultBuyShares.denominationAssetToken.options.address]
     );
     expect(eventValues.receivedAssetQuantities).toEqual([defaultBuyShares.investmentAmount]);
   });
@@ -495,34 +331,34 @@ describe('redeemShares', () => {
 
 describe('redeemSharesQuantity', () => {
   let fund;
-  let halfOfShares, halfOfInvestmentAsset;
+  let halfOfDenominationAsset, halfOfShares;
   let redeemTxBlock;
-  let preFundHoldingsInvestmentAsset, postFundHoldingsInvestmentAsset;
-  let preRedeemerInvestmentAsset, postRedeemerInvestmentAsset, preRedeemerShares, postRedeemerShares;
+  let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
+  let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
-      quoteToken: weth.options.address,
+      fundFactory,
       initialInvestment: {
         contribAmount: defaultBuyShares.investmentAmount,
         investor: defaultBuyShares.buyer,
-        tokenContract: defaultBuyShares.investmentAssetContract
+        tokenContract: weth
       },
       fundFactory,
+      quoteToken: weth.options.address,
       manager,
       web3
     });
 
-    halfOfShares = new BN(defaultBuyShares.sharesQuantity).div(new BN(2));
-    halfOfInvestmentAsset = new BN(defaultBuyShares.investmentAmount).div(new BN(2));
+    halfOfDenominationAsset = new BN(defaultBuyShares.investmentAmount).div(new BN(2));
+    preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
   });
 
   it('can NOT be called by a user without enough shares', async () => {
-    const sharesPlusOne = new BN(defaultBuyShares.sharesQuantity).add(new BN(1)).toString();
+    const sharesPlusOne = preRedeemerShares.add(new BN(1)).toString();
 
     await expect(
       send(
@@ -536,22 +372,22 @@ describe('redeemSharesQuantity', () => {
   });
 
   it('succeeds when called by a user with shares', async () => {
-    preFundHoldingsInvestmentAsset = new BN(
+    prefundHoldingsDenominationAsset = new BN(
       await call(
         fund.vault,
         'assetBalances',
-        [defaultBuyShares.investmentAssetContract.options.address]
+        [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
-    preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
-    preRedeemerInvestmentAsset = new BN(
+    preRedeemerDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [defaultBuyShares.buyer]
       )
     );
 
+    halfOfShares = preRedeemerShares.div(new BN(2));
     await expect(
       send(
         fund.shares,
@@ -563,17 +399,17 @@ describe('redeemSharesQuantity', () => {
     ).resolves.not.toThrow()
 
     redeemTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsInvestmentAsset = new BN(
+    postFundHoldingsDenominationAsset = new BN(
       await call(
         fund.vault,
         'assetBalances',
-        [defaultBuyShares.investmentAssetContract.options.address]
+        [defaultBuyShares.denominationAssetToken.options.address]
       )
     );
     postRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
-    postRedeemerInvestmentAsset = new BN(
+    postRedeemerDenominationAsset = new BN(
       await call(
-        defaultBuyShares.investmentAssetContract,
+        defaultBuyShares.denominationAssetToken,
         'balanceOf',
         [defaultBuyShares.buyer]
       )
@@ -584,12 +420,12 @@ describe('redeemSharesQuantity', () => {
     // 1. Shares destroyed
     expect(preRedeemerShares.sub(postRedeemerShares)).bigNumberEq(halfOfShares);
     // 2. Asset returned to investor
-    expect(postRedeemerInvestmentAsset.sub(preRedeemerInvestmentAsset)).bigNumberEq(
-      halfOfInvestmentAsset
+    expect(postRedeemerDenominationAsset.sub(preRedeemerDenominationAsset)).bigNumberEq(
+      halfOfDenominationAsset
     );
     // 3. Fund internal accounting decreased
-    expect(preFundHoldingsInvestmentAsset.sub(postFundHoldingsInvestmentAsset)).bigNumberEq(
-      halfOfInvestmentAsset
+    expect(prefundHoldingsDenominationAsset.sub(postFundHoldingsDenominationAsset)).bigNumberEq(
+      halfOfDenominationAsset
     );
   });
 
@@ -607,8 +443,8 @@ describe('redeemSharesQuantity', () => {
     expect(eventValues.redeemer).toBe(defaultBuyShares.buyer);
     expect(eventValues.sharesQuantity).toBe(halfOfShares.toString());
     expect(eventValues.receivedAssets).toEqual(
-      [defaultBuyShares.investmentAssetContract.options.address]
+      [defaultBuyShares.denominationAssetToken.options.address]
     );
-    expect(eventValues.receivedAssetQuantities).toEqual([halfOfInvestmentAsset.toString()]);
+    expect(eventValues.receivedAssetQuantities).toEqual([halfOfDenominationAsset.toString()]);
   });
 });

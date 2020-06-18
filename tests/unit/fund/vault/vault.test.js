@@ -24,7 +24,6 @@ describe('withdraw', () => {
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
     fund = await setupFundWithParams({
-      defaultTokens: [weth.options.address],
       quoteToken: weth.options.address,
       fundFactory,
       manager,

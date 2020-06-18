@@ -39,7 +39,6 @@ beforeAll(async () => {
   managementFeeRate = toWei('0.02', 'ether');
 
   fund = await setupFundWithParams({
-    defaultTokens: [mln.options.address, weth.options.address],
     fees: {
       addresses: [managementFee.options.address],
       rates: [managementFeeRate],
