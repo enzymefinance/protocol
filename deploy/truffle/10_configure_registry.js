@@ -1,28 +1,27 @@
 const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
-const AirSwapSwap = artifacts.require('AirSwapSwap');
 const AirSwapAdapter = artifacts.require('AirSwapAdapter');
+const AssetBlacklist = artifacts.require('AssetBlacklist');
+const AssetWhitelist = artifacts.require('AssetWhitelist');
 const Engine = artifacts.require('Engine');
 const EngineAdapter = artifacts.require('EngineAdapter');
+const IConversionRates = artifacts.require('IConversionRates');
 const KyberAdapter = artifacts.require('KyberAdapter');
-const KyberNetworkProxy = artifacts.require('KyberNetworkProxy');
 const KyberPriceFeed = artifacts.require('KyberPriceFeed');
-const MatchingMarket = artifacts.require('MatchingMarket');
+const MaxConcentration = artifacts.require('MaxConcentration');
+const MaxPositions = artifacts.require('MaxPositions');
 const OasisDexAdapter = artifacts.require('OasisDexAdapter');
+const PriceTolerance = artifacts.require('PriceTolerance');
 const Registry = artifacts.require('Registry');
 const SharesRequestor = artifacts.require('SharesRequestor');
 const UniswapAdapter = artifacts.require('UniswapAdapter');
-const UniswapFactory = artifacts.require('UniswapFactory');
+const UserWhitelist = artifacts.require('UserWhitelist');
 const ZeroExV2Adapter = artifacts.require('ZeroExV2Adapter');
-const ZeroExV2Exchange = artifacts.require('ZeroExV2Exchange');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
-const ZeroExV3Exchange = artifacts.require('ZeroExV3Exchange');
-
-const ConversionRates = artifacts.require('ConversionRates');
 
 const updateKyberFeedTruffle = async (feed, registry) => {
-  const quoteAsset = await feed.QUOTE_ASSET();
+  const quoteAsset = await feed.PRICEFEED_QUOTE_ASSET();
 
   // TODO: move account loading somewhere else most likely; maybe a pre-deploy script
   /////////////////////////////////
@@ -31,7 +30,7 @@ const updateKyberFeedTruffle = async (feed, registry) => {
   // const mlnReserveAdmin = '0x2Fd6181541bEbe30D17CF3a5d9f40eBceCbdBA43';
   // const mlnConversionRatesAddress = '0x56e69afad3a92394cedc02cfee821f1c05e86c47';
 
-  const zrxConversionRates = await ConversionRates.at(zrxConversionRatesAddress);
+  const zrxConversionRates = await IConversionRates.at(zrxConversionRatesAddress);
   // const mlnConversionRates = await ConversionRates.at(mlnConversionRatesAddress);
 
   // Load account with eth TODO: move this somewhere else?
@@ -62,7 +61,7 @@ const updateKyberFeedTruffle = async (feed, registry) => {
 
   // TODO: select even fewer tokens if possible
   // TODO: avoid hardcoding these addresses
-  const deregisterAssetList = [
+  const deregisterPrimitiveList = [
     // '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
     // '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892', // MLN
     '0x960b236A07cf122663c4303350609A66A7B288C0',
@@ -82,12 +81,12 @@ const updateKyberFeedTruffle = async (feed, registry) => {
   ];
 
   await Promise.all(
-    deregisterAssetList.map(
-      asset => registry.deregisterAsset(asset)
+    deregisterPrimitiveList.map(
+      primitive => registry.deregisterPrimitive(primitive)
     )
   );
 
-  const tokens = await registry.getRegisteredAssets();
+  const tokens = await registry.getRegisteredPrimitives();
 
   const prices = {}; // TODO: convert to promise.all
 
@@ -99,7 +98,7 @@ const updateKyberFeedTruffle = async (feed, registry) => {
       if (token.toLowerCase() === quoteAsset.toLowerCase())
         tokenPrice = web3.utils.toWei('1', 'ether');
       else
-        tokenPrice = (await feed.getKyberPrice(token, quoteAsset)).kyberPrice_;
+        tokenPrice = (await feed.getLiveRate(token, quoteAsset)).rate_;
       console.log(`got price for ${token}`)
       prices[token] = tokenPrice.toString();
     }
@@ -116,70 +115,48 @@ const updateKyberFeedTruffle = async (feed, registry) => {
 module.exports = async _ => {
   const registry = await Registry.deployed();
   const priceSource = await KyberPriceFeed.deployed();
-  const kyberNetworkProxy = await KyberNetworkProxy.at(mainnetAddrs.kyber.KyberNetworkProxy);
-  const matchingMarket = await MatchingMarket.at(mainnetAddrs.oasis.OasisDexExchange);
-  const uniswapFactory = await UniswapFactory.at(mainnetAddrs.uniswap.UniswapFactory);
-  const zeroExV2Exchange = await ZeroExV2Exchange.at(mainnetAddrs.zeroExV2.ZeroExV2Exchange);
-  const zeroExV3Exchange = await ZeroExV3Exchange.at(mainnetAddrs.zeroExV3.ZeroExV3Exchange);
-  const airSwapSwap = await AirSwapSwap.at(mainnetAddrs.airSwap.AirSwapSwap);
 
   await registry.setPriceSource(priceSource.address);
   await registry.setEngine((await Engine.deployed()).address);
   await registry.setSharesRequestor((await SharesRequestor.deployed()).address);
 
-  const integrations = {};
-  integrations.engine = {
-    gateway: (await Engine.deployed()).address,
-    adapter: (await EngineAdapter.deployed()).address,
-    integrationType: 0,
-  };
-  integrations.airSwap = {
-    gateway: airSwapSwap.address,
-    adapter: (await AirSwapAdapter.deployed()).address,
-    integrationType: 1
-  };
-  integrations.kyber = {
-    gateway: kyberNetworkProxy.address,
-    adapter: (await KyberAdapter.deployed()).address,
-    integrationType: 1
-  };
-  integrations.oasis = {
-    gateway: matchingMarket.address,
-    adapter: (await OasisDexAdapter.deployed()).address,
-    integrationType: 1
-  };
-  integrations.uniswap = {
-    gateway: uniswapFactory.address,
-    adapter: (await UniswapAdapter.deployed()).address,
-    integrationType: 1
-  };
-  integrations.zeroExV2 = {
-    gateway: zeroExV2Exchange.address,
-    adapter: (await ZeroExV2Adapter.deployed()).address,
-    integrationType: 1
-  };
-  integrations.zeroExV3 = {
-    gateway: zeroExV3Exchange.address,
-    adapter: (await ZeroExV3Adapter.deployed()).address,
-    integrationType: 1
-  };
+  const integrationAdapters = [
+    (await EngineAdapter.deployed()).address,
+    (await AirSwapAdapter.deployed()).address,
+    (await KyberAdapter.deployed()).address,
+    (await OasisDexAdapter.deployed()).address,
+    (await UniswapAdapter.deployed()).address,
+    (await ZeroExV2Adapter.deployed()).address,
+    (await ZeroExV3Adapter.deployed()).address
+  ];
+
+  const policies = [
+    (await AssetBlacklist.deployed()).address,
+    (await AssetWhitelist.deployed()).address,
+    (await MaxConcentration.deployed()).address,
+    (await MaxPositions.deployed()).address,
+    (await PriceTolerance.deployed()).address,
+    (await UserWhitelist.deployed()).address
+  ];
 
   // TODO: parallelize
-  for (const info of Object.values(integrations)) {
-    if (!(await registry.integrationAdapterIsRegistered(info.adapter))) {
-      await registry.registerIntegrationAdapter(
-        info.adapter,
-        info.gateway,
-        info.integrationType
-      );
+  for (const policy of policies) {
+    if (!(await registry.policyIsRegistered(policy))) {
+      await registry.registerPolicy(policy);
+    }
+  }
+
+  // TODO: parallelize
+  for (const integrationAdapter of integrationAdapters) {
+    if (!(await registry.integrationAdapterIsRegistered(integrationAdapter))) {
+      await registry.registerIntegrationAdapter(integrationAdapter);
     }
   }
 
   // TODO: parallelize
   for (const tokenAddress of Object.values(mainnetAddrs.tokens)) {
-    const alreadyRegistered = await registry.assetIsRegistered(tokenAddress);
-    if (!alreadyRegistered) {
-      await registry.registerAsset(tokenAddress);
+    if (!await registry.primitiveIsRegistered(tokenAddress)) {
+      await registry.registerPrimitive(tokenAddress);
     }
   }
 
