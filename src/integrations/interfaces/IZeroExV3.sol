@@ -45,4 +45,5 @@ interface IZeroExV3 {
     function preSign(bytes32) external;
     function protocolFeeCollector() external view returns (address);
     function protocolFeeMultiplier() external view returns (uint256);
+    function setProtocolFeeMultiplier(uint256 _feeMultiplier) external;
 }
