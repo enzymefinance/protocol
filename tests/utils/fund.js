@@ -205,6 +205,15 @@ export const setupInvestedTestFund = async (
   const managementFeePeriod = 0;
   const performanceFeePeriod = 60 * 60 * 24 * 90; // 90 days
 
+  let adapterAddresses = [
+    engineAdapter.options.address,
+    kyberAdapter.options.address,
+    oasisDexAdapter.options.address,
+    uniswapAdapter.options.address,
+    zeroExV2Adapter.options.address,
+    zeroExV3Adapter.options.address
+  ];
+
   return setupFundWithParams({
     amguTxValue,
     integrationAdapters: adapterAddresses,

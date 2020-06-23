@@ -9,9 +9,11 @@ const EngineAdapter = artifacts.require('EngineAdapter');
 const IConversionRates = artifacts.require('IConversionRates');
 const KyberAdapter = artifacts.require('KyberAdapter');
 const KyberPriceFeed = artifacts.require('KyberPriceFeed');
+const ManagementFee = artifacts.require('ManagementFee');
 const MaxConcentration = artifacts.require('MaxConcentration');
 const MaxPositions = artifacts.require('MaxPositions');
 const OasisDexAdapter = artifacts.require('OasisDexAdapter');
+const PerformanceFee = artifacts.require('PerformanceFee');
 const PriceTolerance = artifacts.require('PriceTolerance');
 const Registry = artifacts.require('Registry');
 const SharesRequestor = artifacts.require('SharesRequestor');
@@ -141,6 +143,11 @@ module.exports = async _ => {
     (await UserWhitelist.deployed()).address
   ];
 
+  const fees = [
+    (await ManagementFee.deployed()).address,
+    (await PerformanceFee.deployed()).address
+  ];
+
   // TODO: parallelize
   for (const policy of policies) {
     if (!(await registry.policyIsRegistered(policy))) {
@@ -159,6 +166,12 @@ module.exports = async _ => {
   for (const tokenAddress of Object.values(mainnetAddrs.tokens)) {
     if (!await registry.primitiveIsRegistered(tokenAddress)) {
       await registry.registerPrimitive(tokenAddress);
+    }
+  }
+
+  for (const fee of fees) {
+    if (!(await registry.feeIsRegistered(fee))) {
+      await registry.registerFee(fee);
     }
   }
 

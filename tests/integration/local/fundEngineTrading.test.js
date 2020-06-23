@@ -5,7 +5,6 @@
  * @test The amount of WETH being asked for by the fund is respected as a minimum
  */
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { BNExpMul } from '~/tests/utils/BNmath';
@@ -14,37 +13,33 @@ import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { increaseTime } from '~/tests/utils/rpc';
 import { setupInvestedTestFund } from '~/tests/utils/fund';
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
-let deployer, manager, investor;
-let defaultTxOpts, managerTxOpts, investorTxOpts;
+let deployer, manager;
+let defaultTxOpts, managerTxOpts;
 let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource;
-let contracts;
 let mlnPrice, makerQuantity, takerQuantity;
-let takeOrderSignature, takeOrderSignatureBytes;
-let mlnToEthRate;
-let fundFactory;
+let takeOrderSignature;
 
 beforeAll(async () => {
   web3 = await startChain();
-  [deployer, manager, investor] = await web3.eth.getAccounts();
+  [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
   engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  priceTolerance = getDeployed(CONTRACT_NAMES.PRICE_TOLERANCE, web3);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
-  );
-  takeOrderSignatureBytes = encodeFunctionSignature(
-    takeOrderSignature
   );
   mlnPrice = (await priceSource.methods
     .getCanonicalRate(mln.options.address, weth.options.address)
@@ -59,24 +54,9 @@ beforeAll(async () => {
 test('Setup a fund with amgu charged to seed Melon Engine', async () => {
   await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts, web3);
 
-  fund = await setupFundWithParams({
-    amguTxValue: toWei('10', 'ether'),
-    defaultTokens: [mln.options.address, weth.options.address],
-    integrationAdapters: [engineAdapter.options.address],
-    initialInvestment: {
-      contribAmount: toWei('1', 'ether'),
-      investor: deployer,
-      tokenContract: weth
-    },
-    manager,
-    quoteToken: weth.options.address,
-    fundFactory,
-    web3
-  });
-
   // TODO: Need to calculate this in fund.js
   const amguTxValue = toWei('10', 'ether');
-  fund = await setupInvestedTestFund(contracts, manager, amguTxValue);
+  fund = await setupInvestedTestFund(mainnetAddrs, manager, amguTxValue, web3);
 });
 
 test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async () => {
@@ -100,6 +80,7 @@ test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async 
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     )
   ).resolves.not.toThrow()
 });
