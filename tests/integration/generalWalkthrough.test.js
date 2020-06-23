@@ -10,9 +10,7 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import { BNExpDiv } from '~/tests/utils/BNmath';
-import getAccounts from '~/deploy/utils/getAccounts';
+import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { encodeArgs, stringToBytes } from '~/tests/utils/formatting';
 import { investInFund, getFundComponents } from '~/tests/utils/fund';
@@ -24,7 +22,6 @@ import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
-let contracts;
 let offeredValue, amguAmount;
 let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
 let takeOrderFunctionSig;
@@ -42,10 +39,9 @@ beforeAll(async () => {
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  oasisDex = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
+  oasisDex = getDeployed(CONTRACT_NAMES.OASIS_DEX_INTERFACE, web3, mainnetAddrs.oasis.OasisDexExchange);
   oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  priceTolerance = getDeployed(CONTRACT_NAMES.PRICE_TOLERANCE, web3);
   managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
   performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE, web3);
   userWhitelist = getDeployed(CONTRACT_NAMES.USER_WHITELIST, web3);
@@ -84,11 +80,11 @@ beforeAll(async () => {
     [oasisDexAdapter.options.address],
     weth.options.address
   ], managerTxOpts, web3);
-  await send(fundFactory, 'createFeeManager', [], managerTxOpts);
-  await send(fundFactory, 'createPolicyManager', [], managerTxOpts);
-  await send(fundFactory, 'createShares', [], managerTxOpts);
-  await send(fundFactory, 'createVault', [], managerTxOpts);
-  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOpts);
+  await send(fundFactory, 'createFeeManager', [], managerTxOpts, web3);
+  await send(fundFactory, 'createPolicyManager', [], managerTxOpts, web3);
+  await send(fundFactory, 'createShares', [], managerTxOpts, web3);
+  await send(fundFactory, 'createVault', [], managerTxOpts, web3);
+  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOpts, web3);
   const hubAddress = getEventFromLogs(
     res.logs,
     CONTRACT_NAMES.FUND_FACTORY,
@@ -150,7 +146,8 @@ test('Buying shares (initial investment) succeeds for whitelisted user with allo
     policyManager,
     'updatePolicySettings',
     [userWhitelist.options.address, encodedUserWhitelistArgs],
-    managerTxOpts
+    managerTxOpts,
+    web3
   );
 
   const sharePrice = new BN(await call(shares, 'calcSharePrice'));
@@ -177,7 +174,7 @@ test('Fund can take an order on Oasis DEX', async () => {
   const takerAsset = weth.options.address;
 
   const makerToWethAssetRate = new BN(
-    (await call(priceSource, 'getPrice', [makerAsset]))[0]
+    (await call(priceSource, 'getLiveRate', [makerAsset, takerAsset])).rate_
   );
 
   const takerQuantity = BNExpMul(
@@ -191,13 +188,13 @@ test('Fund can take an order on Oasis DEX', async () => {
     oasisDex,
     'offer',
     [
-      makerQuantity, makerAsset, takerQuantity, takerAsset, 0
+      makerQuantity, makerAsset, takerQuantity, takerAsset
     ],
     defaultTxOpts,
     web3
   );
 
-  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
+  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_INTERFACE, 'LogUnsortedOffer');
   const orderId = logMake.id;
 
   const preMlnFundHoldings = await call(vault, 'assetBalances', [mln.options.address]);

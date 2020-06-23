@@ -47,6 +47,7 @@ export const CONTRACT_NAMES = {
   MLN: 'MLN',
   OASIS_DEX_ADAPTER: 'OasisDexAdapter',
   OASIS_DEX_EXCHANGE: 'OasisDexExchange',
+  OASIS_DEX_INTERFACE: 'IOasisDex',
   ORDER_TAKER: 'OrderTaker',
   PERFORMANCE_FEE: 'PerformanceFee',
   POLICY: 'Policy',
