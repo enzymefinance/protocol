@@ -17,6 +17,7 @@ const Registry = artifacts.require('Registry');
 const SharesRequestor = artifacts.require('SharesRequestor');
 const UniswapAdapter = artifacts.require('UniswapAdapter');
 const UserWhitelist = artifacts.require('UserWhitelist');
+const ValueInterpreter = artifacts.require('ValueInterpreter');
 const ZeroExV2Adapter = artifacts.require('ZeroExV2Adapter');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 
@@ -66,7 +67,7 @@ const updateKyberFeedTruffle = async (feed, registry) => {
     // '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892', // MLN
     '0x960b236A07cf122663c4303350609A66A7B288C0',
     '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
-    // '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
     // '0xdd974D5C2e2928deA5F71b9825b8b646686BD200', // KNC
     '0x514910771AF9Ca656af840dff83E8264EcF986CA',
     '0x0F5D2fB29fb7d3CFeE444a200298f468908cC942',
@@ -119,6 +120,7 @@ module.exports = async _ => {
   await registry.setPriceSource(priceSource.address);
   await registry.setEngine((await Engine.deployed()).address);
   await registry.setSharesRequestor((await SharesRequestor.deployed()).address);
+  await registry.setValueInterpreter((await ValueInterpreter.deployed()).address);
 
   const integrationAdapters = [
     (await EngineAdapter.deployed()).address,

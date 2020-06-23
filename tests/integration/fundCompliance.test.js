@@ -6,68 +6,41 @@
  * @test Whitelist policy allows whitelisted user to participate
  */
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
-import { toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { deploy } from '~/deploy/utils/deploy-contract';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { call } from '~/deploy/utils/deploy-contract';
 import { encodeArgs } from '~/tests/utils/formatting';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import { getFunctionSignature } from '~/tests/utils/metadata';
 import { getDeployed } from '~/tests/utils/getDeployed';
-
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { toWei, BN } from 'web3-utils';
 
 let web3;
-let deployer, manager, investor, badInvestor;
-let defaultTxOpts, managerTxOpts, investorTxOpts, badInvestorTxOpts;
-let fundFactory, priceSource;
-let userWhitelist;
-let mln, weth;
-let buySharesFunctionSig;
+let manager, investor, badInvestor;
+let fundFactory;
 
 beforeAll(async () => {
   web3 = await startChain();
-  [deployer, manager, investor] = await web3.eth.getAccounts();
-  defaultTxOpts = { from: deployer, gas: 8000000 };
-  managerTxOpts = { ...defaultTxOpts, from: manager };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
-
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  priceSource = contracts.TestingPriceFeed;
-  fundFactory = contracts.FundFactory;
-  userWhitelist = contracts.UserWhitelist;
-
-  buySharesFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.SHARES,
-    'buyShares',
-  );
+  [, manager, investor, badInvestor] = await web3.eth.getAccounts();
 });
 
-// TODO: we're changing how policies like this are deployed/managed shortly, so no
-// need to fix this test right now
-describe.skip('Fund 1: user whitelist', () => {
-  let offeredValue, wantedShares;
-  let mln, weth, priceSource, userWhitelist;
+describe('Fund 1: user whitelist', () => {
+  let offeredValue;
+  let weth, priceSource, userWhitelist;
   let fund;
 
   beforeAll(async () => {
-    userWhitelist = await deploy(
-      CONTRACT_NAMES.USER_WHITELIST,
-      [[investor]],
-      defaultTxOpts,
-      [],
-      web3
-    );
-
-    mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
     weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
     priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    userWhitelist = getDeployed(CONTRACT_NAMES.USER_WHITELIST, web3);
 
+    const policies = {
+      addresses: [userWhitelist.options.address],
+      encodedSettings: [
+        encodeArgs(['address[]'], [[manager, investor]])
+      ]
+    };
 
     fund = await setupFundWithParams({
       initialInvestment: {
@@ -85,14 +58,6 @@ describe.skip('Fund 1: user whitelist', () => {
       web3
     });
 
-    await send(
-      fund.policyManager,
-      'register',
-      [encodeFunctionSignature(buySharesFunctionSig), userWhitelist.options.address],
-      managerTxOpts,
-      web3
-    );
-
     // Investment params
     offeredValue = toWei('1', 'ether');
   });
@@ -100,7 +65,7 @@ describe.skip('Fund 1: user whitelist', () => {
   test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const policies = await call (policyManager, 'getEnabledPolicies');
+    const policies = await call(policyManager, 'getEnabledPolicies');
     expect(policies).toContain(userWhitelist.options.address);
   });
 
@@ -119,7 +84,8 @@ describe.skip('Fund 1: user whitelist', () => {
           priceSource,
           tokenAddresses: [weth.options.address],
           tokenPrices: [toWei('1', 'ether')]
-        }
+        },
+        web3
       })
     ).rejects.toThrowFlexible("Rule evaluated to false: USER_WHITELIST");
   });
@@ -141,8 +107,9 @@ describe.skip('Fund 1: user whitelist', () => {
         priceSource,
         tokenAddresses: [weth.options.address],
         tokenPrices: [toWei('1', 'ether')]
-      }
-    })
+      },
+      web3
+    });
 
     const investorShares = new BN(await call(shares, 'balanceOf', [investor]));
     expect(investorShares).bigNumberEq(expectedShares);

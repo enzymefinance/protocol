@@ -1,6 +1,5 @@
 import { BN, toWei } from 'web3-utils';
 import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
-import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getEventFromLogs } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
@@ -71,7 +70,7 @@ export const investInFund = async ({
       tokenContract,
       'transfer',
       [investor, investorTokenShortfall.toString()],
-      investorTxOpts,
+      {},
       web3
     )
   }

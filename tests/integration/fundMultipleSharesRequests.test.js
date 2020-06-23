@@ -47,9 +47,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   let fund;
 
   beforeAll(async () => {
-    zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
     weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-    mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
     priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
     sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
@@ -126,7 +124,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     const { hub } = fund;
 
     // Investor 2
-    await send(weth, 'transfer', [investor2, contribAmount2], defaultTxOpts);
+    await send(weth, 'transfer', [investor2, contribAmount2], defaultTxOpts, web3);
     await send(
       weth,
       'approve',

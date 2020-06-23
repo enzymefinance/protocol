@@ -6,34 +6,32 @@
  * @test redeemSharesEmergency succeeds
  */
 
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 import { BN, toWei } from 'web3-utils';
 import { call, deploy, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
-import getAccounts from '~/deploy/utils/getAccounts';
-
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { setupFundWithParams } from '~/tests/utils/fund';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
 let web3;
 let defaultTxOpts, investorTxOpts;
 let deployer, manager, investor;
 let fund, weth, mln, priceSource, maliciousToken;
-let zeroExAdapter, zeroExExchange, erc20Proxy;
+let zeroExAdapter, zeroExExchange;
 
 // TODO: run this test when we can successfully deploy contracts on secondary forked chain
 beforeAll(async () => {
   web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
-  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  const registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
 
   maliciousToken = await deploy(
     CONTRACT_NAMES.MALICIOUS_TOKEN,
@@ -71,15 +69,6 @@ beforeAll(async () => {
     fundFactory,
     web3
   });
-
-  // Set price for Malicious Token
-  await send(
-    priceSource,
-    'update',
-    [tokenAddresses, tokenPrices],
-    defaultTxOpts,
-    web3
-  );
 });
 
 test('Fund receives Malicious token via 0x order', async () => {
@@ -96,13 +85,8 @@ test('Fund receives Malicious token via 0x order', async () => {
       takerTokenAddress: weth.options.address,
       takerAssetAmount: toWei('0.5', 'Ether')
     },
-    tokenPriceData: {
-      priceSource,
-      tokenAddresses,
-      tokenPrices
-    },
     web3
-  });
+  );
   // Activate malicious token
   await send(maliciousToken, 'startReverting', [], defaultTxOpts, web3);
 });
