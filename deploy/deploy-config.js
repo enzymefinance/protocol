@@ -15,6 +15,7 @@ module.exports = {
   kyberTokensPerEther: '1000000000000000000',
   kyberEthersPerToken: '1000000000000000000',
   kyberCategoryCap: '1000000000000000000000000000',
+  originalKyberAdmin: '0xBC33a1F908612640F2849b56b67a4De4d179C151',
   melonPriceTolerance: 10,
   melonUserWhitelist: ['0xc0c82081f2ad248391cd1483ae211d56c280887a'],
   melonRegistryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',

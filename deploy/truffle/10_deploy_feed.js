@@ -1,3 +1,4 @@
+const KyberNetworkProxy = artifacts.require('KyberNetworkProxy');
 const KyberPriceFeed = artifacts.require('KyberPriceFeed');
 const Registry = artifacts.require('Registry');
 
@@ -8,7 +9,7 @@ module.exports = async deployer => {
   priceSource = await deployer.deploy(
     KyberPriceFeed,
     (await Registry.deployed()).address,
-    mainnetAddrs.kyber.KyberNetworkProxy,
+    (await KyberNetworkProxy.deployed()).address,
     conf.melonMaxSpread,
     mainnetAddrs.tokens.WETH,
     conf.melonMaxPriceDeviation
