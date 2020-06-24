@@ -23,7 +23,6 @@ import {
 import { increaseTime } from '~/tests/utils/rpc';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { getDeployed } from '~/tests/utils/getDeployed';
-import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
 import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3
@@ -32,8 +31,9 @@ let defaultTxOpts, managerTxOpts;
 let mln, weth;
 let engine;
 let engineAdapter;
-let fund, fundFactory, priceSource;
+let fund, fundFactory;
 let takeOrderSignature;
+let mlnPrice;
 
 beforeAll(async () => {
   web3 = await startChain();
@@ -50,17 +50,15 @@ beforeAll(async () => {
   engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
   engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
 });
 
-describe.only('takeOrder', () => {
+describe('takeOrder', () => {
   // TODO: maybe validate that even a makerAsset value of 0 or 1 works?
   // @dev Only need to run this once
   // describe('__validateTakeOrderParams', () => {
   // });
 
-  describe.only('Fill Order 1: full amount of liquid eth', () => {
+  describe('Fill Order 1: full amount of liquid eth', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
@@ -72,7 +70,7 @@ describe.only('takeOrder', () => {
         amguTxValue: toWei('1', 'ether'),
         integrationAdapters: [engineAdapter.options.address],
         initialInvestment: {
-          contribAmount: toWei('0.1', 'ether'),
+          contribAmount: toWei('100', 'ether'),
           investor: deployer,
           tokenContract: mln
         },
@@ -82,7 +80,7 @@ describe.only('takeOrder', () => {
         web3
       });
 
-      const mlnPrice = new BN(await call(engine, 'enginePrice'));
+      mlnPrice = new BN(await call(engine, 'enginePrice'));
 
       // Thaw frozen eth from fund setup
       await increaseTime(86400 * 32, web3);
@@ -123,7 +121,8 @@ describe.only('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -172,13 +171,9 @@ describe.only('takeOrder', () => {
 
     beforeAll(async () => {
       // Set amgu price
-      await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
+      await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts, web3);
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
+      const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         integrationAdapters: [engineAdapter.options.address],
@@ -188,12 +183,14 @@ describe.only('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
 
       // Thaw frozen eth from fund setup
-      await increaseTime(86400 * 32);
-      await send(engine, 'thaw');
+      await increaseTime(86400 * 32, web3);
+      await send(engine, 'thaw', [], {}, web3);
 
       // Get expected maker/taker quantities based on liquid eth
       makerAsset = weth.options.address;
@@ -202,7 +199,7 @@ describe.only('takeOrder', () => {
       takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(mlnPrice)
-      ).toString();
+      ).add(new BN('1')).toString(); // adding 1 protects against rounding error (i.e. gives :ceiling")
     });
 
     test('order is filled through the fund', async () => {
@@ -280,63 +277,9 @@ describe.only('takeOrder', () => {
 
     beforeAll(async () => {
       // Set amgu price
-      await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
+      await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts, web3);
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
-      fund = await setupFundWithParams({
-        amguTxValue: toWei('1', 'ether'),
-        defaultTokens: [mln.options.address, weth.options.address],
-        integrationAdapters: [engineAdapter.options.address],
-        initialInvestment: {
-          contribAmount: toWei('100', 'ether'),
-          investor: deployer,
-          tokenContract: mln
-        },
-        quoteToken: weth.options.address,
-        fundFactory
-      });
-
-      // Thaw frozen eth from fund setup
-      await increaseTime(86400 * 32);
-      await send(engine, 'thaw');
-
-      // Get expected maker/taker quantities based on liquid eth
-      makerAsset = weth.options.address;
-      takerAsset = mln.options.address;
-      makerQuantity = new BN(await call(engine, 'liquidEther')).add(new BN(1)).toString();
-      takerQuantity = BNExpDiv(
-        new BN(makerQuantity),
-        new BN(mlnPrice)
-      ).toString();
-    });
-
-    it('cannot fill the order', async () => {
-      const { vault } = fund;
-
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity,
-        takerAsset,
-        takerQuantity,
-      });
-  describe('Fill Order 3: more than total available liquid eth', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
-    let tx;
-
-    beforeAll(async () => {
-      // Set amgu price
-      await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
-
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
+      const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
       fund = await setupFundWithParams({
         amguTxValue: toWei('1', 'ether'),
         integrationAdapters: [engineAdapter.options.address],
@@ -346,12 +289,14 @@ describe.only('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
 
       // Thaw frozen eth from fund setup
-      await increaseTime(86400 * 32);
-      await send(engine, 'thaw');
+      await increaseTime(86400 * 32, web3);
+      await send(engine, 'thaw', [], {}, web3);
 
       // Get expected maker/taker quantities based on liquid eth
       makerAsset = weth.options.address;
@@ -360,7 +305,7 @@ describe.only('takeOrder', () => {
       takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(mlnPrice)
-      ).toString();
+      ).add(new BN(1)).toString(); // adding 1 protects against rounding error (i.e. gives :ceiling")
     });
 
     it('cannot fill the order', async () => {
@@ -372,5 +317,19 @@ describe.only('takeOrder', () => {
         takerAsset,
         takerQuantity,
       });
+      await expect(
+        send(
+          vault,
+          'callOnIntegration',
+          [
+            engineAdapter.options.address,
+            takeOrderSignature,
+            encodedArgs,
+          ],
+          managerTxOpts,
+          web3
+        )
+      ).rejects.toThrowFlexible("Not enough liquid ether to send")
     });
+  });
 });
