@@ -62,6 +62,7 @@ describe('takeOrder', () => {
           investor: deployer,
           tokenContract: mln
         },
+        manager,
         quoteToken: mln.options.address,
         fundFactory,
         web3
