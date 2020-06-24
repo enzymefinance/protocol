@@ -49,7 +49,7 @@ beforeAll(async () => {
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
-  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_INTERFACE, web3, mainnetAddrs.kyber.KyberNetworkProxy);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 });
 
@@ -192,6 +192,7 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
+        manager,
         fundFactory,
         web3
       });
@@ -297,6 +298,7 @@ describe('takeOrder', () => {
         },
         quoteToken: mln.options.address,
         fundFactory,
+        manager,
         web3
       });
     });

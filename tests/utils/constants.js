@@ -37,6 +37,7 @@ export const CONTRACT_NAMES = {
   KYBER_ADAPTER: 'KyberAdapter',
   KYBER_EXCHANGE: 'KyberNetwork',
   KYBER_NETWORK_PROXY: 'KyberNetworkProxy',
+  KYBER_NETWORK_INTERFACE: 'IKyberNetworkProxy',
   KYBER_PRICEFEED: 'KyberPriceFeed',
   KYBER_RESERVE: 'KyberReserve',
   KYBER_WHITELIST: 'KyberWhiteList',
