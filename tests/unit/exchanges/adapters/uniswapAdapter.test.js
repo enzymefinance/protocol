@@ -46,19 +46,19 @@ beforeAll(async () => {
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
-  uniswapFactory = getDeployed(CONTRACT_NAMES.UNISWAP_FACTORY, web3, mainnetAddrs.uniswap.UniswapFactory);
+  uniswapFactory = getDeployed(CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE, web3, mainnetAddrs.uniswap.UniswapFactory);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   // Load interfaces for uniswap exchanges of tokens to be traded
   const mlnExchangeAddress = await call(uniswapFactory, 'getExchange', [mln.options.address]);
   mlnExchange = await getDeployed(
-    CONTRACT_NAMES.UNISWAP_EXCHANGE,
+    CONTRACT_NAMES.UNISWAP_EXCHANGE_INTERFACE,
     web3,
     mlnExchangeAddress
   );
   const daiExchangeAddress = await call(uniswapFactory, 'getExchange', [dai.options.address]);
   daiExchange = await getDeployed(
-    CONTRACT_NAMES.UNISWAP_EXCHANGE,
+    CONTRACT_NAMES.UNISWAP_EXCHANGE_INTERFACE,
     web3,
     daiExchangeAddress
   );
