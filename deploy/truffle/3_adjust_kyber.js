@@ -47,33 +47,35 @@ module.exports = async (deployer, _, accounts) => {
   const kyberNetworkAddress = await kyberNetworkProxy.kyberNetworkContract();
   const kyberNetwork = await KyberNetwork.at(kyberNetworkAddress);
 
+  // TODO: Comment this in again after we are done. This is the last step to make it fast (remove all other reserves).
+
   // delist existing reserves.
-  const tokenReserveMapping = await Promise.all(tokens.map(async (token) => {
-    const rates = await kyberNetwork.getReservesRates(token.address, 0);
-    const unique = [...rates[0], ...rates[2]].filter((reserve, index, array) => {
-      return array.indexOf(reserve) === index;
-    });
+  // const tokenReserveMapping = await Promise.all(tokens.map(async (token) => {
+  //   const rates = await kyberNetwork.getReservesRates(token.address, 0);
+  //   const unique = [...rates[0], ...rates[2]].filter((reserve, index, array) => {
+  //     return array.indexOf(reserve) === index;
+  //   });
 
-    return {
-      token,
-      reserves: unique,
-    };
-  }));
+  //   return {
+  //     token,
+  //     reserves: unique,
+  //   };
+  // }));
 
-  for (const tokenReserves of tokenReserveMapping) {
-    const address = tokenReserves.token.address;
-    for (let reserve of tokenReserves.reserves) {
-      await kyberNetwork.listPairForReserve(
-        reserve,
-        address,
-        true,
-        true,
-        false
-      , {
-        from: conf.kyberOperator,
-      });
-    }
-  }
+  // for (const tokenReserves of tokenReserveMapping) {
+  //   const address = tokenReserves.token.address;
+  //   for (let reserve of tokenReserves.reserves) {
+  //     await kyberNetwork.listPairForReserve(
+  //       reserve,
+  //       address,
+  //       true,
+  //       true,
+  //       false
+  //     , {
+  //       from: conf.kyberOperator,
+  //     });
+  //   }
+  // }
 
   // create our custom reserve.
   const conversionRates = await deployer.deploy(ConversionRates, admin);
@@ -110,6 +112,13 @@ module.exports = async (deployer, _, accounts) => {
       from: token.whale,
     });
 
+    console.log(token.address);
+    console.log(token.whale);
+    console.log(await kyberReserve.tokenWallet(token.address));
+    console.log((await token.contract.balanceOf(token.whale)).toString());
+    console.log((await token.contract.allowance(token.whale, kyberReserve.address)).toString());
+    console.log((await kyberReserve.getBalance(token.address)).toString());
+
     // enable trading for the current token on the reserve.
     await conversionRates.enableTokenTrade(token.address);
 
@@ -132,10 +141,16 @@ module.exports = async (deployer, _, accounts) => {
   );
 
   console.log(
-    await kyberNetwork.getExpectedRate(
-      "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
-      "0xec67005c4e498ec7f55e092bd1d35cbc47c91892",
-      "1"
-    )
-  );
+    await conversionRates.getListedTokens(),
+    await kyberReserve.getBalance('0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2'),
+    await kyberReserve.getBalance('0xec67005c4e498ec7f55e092bd1d35cbc47c91892'),
+  )
+
+  // console.log(
+  //   await kyberNetwork.getExpectedRate(
+  //     "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+  //     "0xec67005c4e498ec7f55e092bd1d35cbc47c91892",
+  //     "1"
+  //   )
+  // );
 };
