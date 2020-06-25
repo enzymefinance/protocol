@@ -15,6 +15,7 @@ const BN = web3.utils.BN;
 module.exports = async (deployer, _, accounts) => {
   const admin = accounts[0];
 
+  const kyberWeth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
   const maxUint = new BN(2).pow(new BN(256)).sub(new BN(1));
   const tokens = await Promise.all(Object.entries(mainnetAddrs.tokens).map(async ([symbol, address]) => {
     const contract = await ERC20WithFields.at(address);
@@ -98,32 +99,33 @@ module.exports = async (deployer, _, accounts) => {
   });
 
   for (let token of tokens) {
-    await conversionRates.addToken(token.address);
+    const kyberTokenAddress = token.symbol === 'WETH' ? kyberWeth : token.address;
+    await conversionRates.addToken(kyberTokenAddress);
     await conversionRates.setTokenControlInfo(
-      token.address,
+      kyberTokenAddress,
       token.minimalRecordResolution,
       token.maxPerBlockImbalance,
       token.maxTotalImbalance,
     );
 
     // allow the token to be withdrawn from the respective whale's wallet.
-    await kyberReserve.setTokenWallet(token.address, token.whale);
+    await kyberReserve.setTokenWallet(kyberTokenAddress, token.whale);
     await token.contract.approve(kyberReserve.address, maxUint, {
       from: token.whale,
     });
 
-    console.log(token.address);
+    console.log(token.address, kyberTokenAddress);
     console.log(token.whale);
-    console.log(await kyberReserve.tokenWallet(token.address));
+    console.log(await kyberReserve.tokenWallet(kyberTokenAddress));
     console.log((await token.contract.balanceOf(token.whale)).toString());
     console.log((await token.contract.allowance(token.whale, kyberReserve.address)).toString());
-    console.log((await kyberReserve.getBalance(token.address)).toString());
+    console.log((await kyberReserve.getBalance(kyberTokenAddress)).toString());
 
     // enable trading for the current token on the reserve.
-    await conversionRates.enableTokenTrade(token.address);
+    await conversionRates.enableTokenTrade(kyberTokenAddress);
 
     // list the token for the reserve.
-    await kyberNetwork.listPairForReserve(kyberReserve.address, token.address, true, true, true, {
+    await kyberNetwork.listPairForReserve(kyberReserve.address, kyberTokenAddress, true, true, true, {
       from: kyberOperator,
     });
   }
