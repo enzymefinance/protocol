@@ -19,7 +19,7 @@ contract KyberPriceFeed is DSMath {
     uint32 public constant VALIDITY_INTERVAL = 2 days;
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
-    uint256 public lastUpdate;
+    uint256 private lastUpdate;
     uint256 public maxPriceDeviation; // percent, expressed as a uint256 (fraction of 10^18)
     uint256 public maxSpread;
     address public updater;
@@ -160,6 +160,12 @@ contract KyberPriceFeed is DSMath {
             }
         }
         return true;
+    }
+
+    /// @notice Returns timestamp of the last successful pricefeed update
+    /// @return The timestamp of the last successful pricefeed update
+    function getLastUpdate() external view returns (uint256) {
+        return lastUpdate;
     }
 
     /// @notice Returns price as determined by an order
