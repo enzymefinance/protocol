@@ -10,11 +10,10 @@
  * TODO: takeOrder: Order: partial amount w/ takerFee and protocolFee
  */
 
-import { assetDataUtils } from '@0x/order-utils';
 import { BN, toWei, randomHex } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { setupFundWithParams } from '~/tests/utils/fund';
 import {
   getEventCountFromLogs,
   getEventFromLogs,
@@ -32,7 +31,6 @@ let web3;
 let deployer, manager;
 let defaultTxOpts, managerTxOpts, governorTxOpts;
 let zrx, mln, weth;
-let priceSource;
 let erc20Proxy, zeroExAdapter, zeroExExchange;
 let fund, fundFactory;
 let takeOrderSignature;
@@ -63,10 +61,9 @@ beforeAll(async () => {
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  erc20Proxy = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ERC20_PROXY, web3, mainnetAddrs.zeroExV3.ZeroExV3ERC20Proxy);
+  erc20Proxy = getDeployed(CONTRACT_NAMES.IERC20, web3, mainnetAddrs.zeroExV3.ZeroExV3ERC20Proxy);
   zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
-  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   defaultProtocolFeeMultiplier = await call(zeroExExchange, 'protocolFeeMultiplier');
@@ -79,7 +76,6 @@ describe('takeOrder', () => {
   describe('__validateTakeOrderParams', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, fillQuantity, takerFeeTokenAddress;
-    let badTokenAddress;
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
@@ -101,7 +97,6 @@ describe('takeOrder', () => {
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
       takerFeeTokenAddress = weth.options.address;
-      badTokenAddress = zrx.options.address;
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -205,13 +200,6 @@ describe('takeOrder', () => {
 
     test('order is filled through the fund', async () => {
       const { vault } = fund;
-
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
 
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
@@ -336,13 +324,6 @@ describe('takeOrder', () => {
 
     test('order is filled through the fund', async () => {
       const { vault } = fund;
-
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
 
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
@@ -473,13 +454,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -553,7 +527,7 @@ describe('takeOrder', () => {
     let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
     let preFundHoldingsMln, postFundHoldingsMln;
     let preFundHoldingsWeth, postFundHoldingsWeth;
-    let preFundHoldingsDai, postFundHoldingsDai;
+    let preFundHoldingsZrx, postFundHoldingsZrx;
     let tx;
 
     beforeAll(async () => {
@@ -597,7 +571,7 @@ describe('takeOrder', () => {
       const makerAddress = deployer;
       const makerAssetAmount = toWei('1', 'Ether');
       const takerAssetAmount = toWei('0.005', 'Ether');
-      const makerTokenAddress = dai.options.address;
+      const makerTokenAddress = zrx.options.address;
       const takerTokenAddress = weth.options.address;
       const fillQuantity = takerAssetAmount;
 
@@ -613,7 +587,7 @@ describe('takeOrder', () => {
         },
       );
 
-      await send(dai, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+      await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
       signedOrder = await signZeroExOrder(unsignedOrder, deployer);
 
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
@@ -626,7 +600,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).resolves.not.toThrow();
     });
@@ -683,7 +658,7 @@ describe('takeOrder', () => {
       preFundHoldingsMln = new BN(
         await call(vault, 'assetBalances', [mln.options.address])
       );
-      preFundHoldingsDai = new BN(
+      preFundHoldingsZrx = new BN(
         await call(vault, 'assetBalances', [zrx.options.address])
       );
 
@@ -707,7 +682,7 @@ describe('takeOrder', () => {
       postFundHoldingsMln = new BN(
         await call(vault, 'assetBalances', [mln.options.address])
       );
-      postFundHoldingsDai = new BN(
+      postFundHoldingsZrx = new BN(
         await call(vault, 'assetBalances', [zrx.options.address])
       );
     });
@@ -719,8 +694,8 @@ describe('takeOrder', () => {
       expect(postFundHoldingsMln).bigNumberEq(
         preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
       );
-      expect(postFundHoldingsDai).bigNumberEq(
-        preFundHoldingsDai.sub(new BN(signedOrder.takerFee))
+      expect(postFundHoldingsZrx).bigNumberEq(
+        preFundHoldingsZrx.sub(new BN(signedOrder.takerFee))
       );
     });
 
@@ -818,13 +793,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -887,7 +855,7 @@ describe('takeOrder', () => {
 
   describe('Fill Order 6: Partial amount, w/ protocol fee (taker asset), w/ taker fee in mln (maker asset)', () => {
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
+    let makerTokenAddress, takerTokenAddress, takerFeeTokenAddress;
     let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
     let preFundHoldingsMln, postFundHoldingsMln;
     let preFundHoldingsWeth, postFundHoldingsWeth;
@@ -917,7 +885,6 @@ describe('takeOrder', () => {
       takerFeeTokenAddress = mln.options.address;
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -951,13 +918,6 @@ describe('takeOrder', () => {
       takerFillQuantity = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
       makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
       takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
-
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
 
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])

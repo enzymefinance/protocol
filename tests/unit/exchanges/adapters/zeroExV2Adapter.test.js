@@ -10,7 +10,7 @@
 import { BN, toWei, randomHex } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { setupFundWithParams } from '~/tests/utils/fund';
 import {
   getEventCountFromLogs,
   getEventFromLogs,
@@ -29,11 +29,9 @@ let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let mln, zrx, weth;
-let priceSource;
 let erc20Proxy, zeroExAdapter, zeroExExchange;
 let fund, fundFactory;
 let takeOrderSignature;
-let zrxToWethRate;
 
 beforeAll(async () => {
   web3 = await startChain();
@@ -49,12 +47,10 @@ beforeAll(async () => {
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
   erc20Proxy = getDeployed(CONTRACT_NAMES.IERC20, web3, mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy);
   zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
   zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  zrxToWethRate = await call(priceSource, 'getLiveRate', [zrx.options.address, weth.options.address]);
 });
 
 describe('takeOrder', () => {
