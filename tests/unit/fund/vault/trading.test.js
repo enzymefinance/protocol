@@ -16,9 +16,9 @@ import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 let web3
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, maliciousUser;
-let kyberAdapter, oasisDexAdapter, oasisDexExchange, uniswapAdapter, uniswapFactory;
-let engine, engineAdapter, registry;
-let weth, mln;
+let kyberAdapter, oasisDexAdapter, uniswapAdapter;
+let engineAdapter, registry;
+let weth;
 let fundFactory;
 
 beforeAll(async () => {
@@ -27,11 +27,11 @@ beforeAll(async () => {
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
   oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
   uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
   registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 });
@@ -185,7 +185,8 @@ describe('enableAdapters', () => {
       registry,
       'deregisterIntegrationAdapter',
       [kyberAdapter.options.address],
-      defaultTxOpts
+      defaultTxOpts,
+      web3
     );
   });
 

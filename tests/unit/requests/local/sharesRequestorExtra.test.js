@@ -3,7 +3,6 @@
  */
 
 import { BN, toWei, isTopic } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
@@ -48,7 +47,6 @@ describe('cancellation conditions', () => {
 //   let fund;
 
 //   beforeAll(async () => {
-//     const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 //     const contracts = deployed.contracts;
 //     fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
