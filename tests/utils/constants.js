@@ -32,6 +32,7 @@ export const CONTRACT_NAMES = {
   FEE_MANAGER_FACTORY: 'FeeManagerFactory',
   FUND_FACTORY: 'FundFactory',
   HUB: 'Hub',
+  IERC20: 'IERC20',
   INTEGRATION_ADAPTER: 'IntegrationAdapter',
   IERC20: 'IERC20',
   KNC: 'KNC',

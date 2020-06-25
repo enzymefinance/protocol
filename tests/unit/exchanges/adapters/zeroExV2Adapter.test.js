@@ -50,11 +50,11 @@ beforeAll(async () => {
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  erc20Proxy = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ERC20_PROXY, web3, mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy);
+  erc20Proxy = getDeployed(CONTRACT_NAMES.IERC20, web3, mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy);
   zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
-  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  zrxToWethRate = await call(priceSource, 'getPrice', [zrx.options.address]);
+  zrxToWethRate = await call(priceSource, 'getLiveRate', [zrx.options.address, weth.options.address]);
 });
 
 describe('takeOrder', () => {
@@ -384,11 +384,7 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
+      const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -397,7 +393,8 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        web3
       });
     });
 
@@ -423,7 +420,7 @@ describe('takeOrder', () => {
         },
       );
 
-      await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+      await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
       signedOrder = await signZeroExOrder(unsignedOrder, deployer);
       const signatureValid = await isValidZeroExSignatureOffChain(
         unsignedOrder,
@@ -459,6 +456,7 @@ describe('takeOrder', () => {
           encodedArgs,
         ],
         defaultTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
