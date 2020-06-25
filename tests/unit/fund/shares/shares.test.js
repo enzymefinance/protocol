@@ -1,17 +1,15 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
 import { setupFundWithParams } from '~/tests/utils/fund';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
 let deployer, manager, investor, thirdParty;
-let defaultTxOpts, investorTxOpts, managerTxOpts, gasPrice;
-let dai, mln, weth, zrx;
+let defaultTxOpts, investorTxOpts, gasPrice;
+let weth;
 let registry, sharesRequestor;
 let defaultBuyShares;
 
@@ -20,16 +18,11 @@ beforeAll(async () => {
   [deployer, manager, investor] = await web3.eth.getAccounts();
   gasPrice = toWei('2', 'gwei');
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
-  managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
   registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
   sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
-
-  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
 
   defaultBuyShares = {
     buyer: investor,
@@ -42,12 +35,10 @@ beforeAll(async () => {
 
 // TODO: can test for _hub and _registry also, but let's see how the hub/spoke system changes
 describe('constructor', () => {
-  let fund;
-
   beforeAll(async () => {
     const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-    fund = await setupFundWithParams({
+    await setupFundWithParams({
       defaultTokens,
       quoteToken: weth.options.address,
       fundFactory,
