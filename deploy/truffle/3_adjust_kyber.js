@@ -53,7 +53,7 @@ module.exports = async (deployer, _, accounts) => {
   await feeBurner.setOperator(admin);
   await kyberNetwork.setFeeBurner(feeBurner.address);
 
-  const expectedRate = await deployer.deploy(ExpectedRate, kyberNetwork.address, admin);
+  const expectedRate = await deployer.deploy(ExpectedRate, kyberNetwork.address, kncToken, admin);
   await kyberNetwork.setExpectedRate(expectedRate.address);
 
   // create our custom reserve.
