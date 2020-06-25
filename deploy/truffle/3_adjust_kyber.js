@@ -1,103 +1,149 @@
-const FeeBurner = artifacts.require('FeeBurner');
-const ExpectedRate = artifacts.require('ExpectedRate');
-const KNC = artifacts.require('KNC');
-const ERC20WithFields = artifacts.require('ERC20WithFields');
-const KyberNetwork = artifacts.require('KyberNetwork');
-const KyberNetworkProxy = artifacts.require('KyberNetworkProxy');
-const ConversionRates = artifacts.require('ConversionRates');
-const KyberReserve = artifacts.require('KyberReserve');
-const conf = require('../deploy-config.js');
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+const FeeBurner = artifacts.require("FeeBurner");
+const ExpectedRate = artifacts.require("ExpectedRate");
+const KNC = artifacts.require("KNC");
+const ERC20WithFields = artifacts.require("ERC20WithFields");
+const KyberNetwork = artifacts.require("KyberNetwork");
+const KyberNetworkProxy = artifacts.require("KyberNetworkProxy");
+const ConversionRates = artifacts.require("ConversionRates");
+const KyberReserve = artifacts.require("KyberReserve");
+const conf = require("../deploy-config.js");
+const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
+const { kyber } = require("../../mainnet_thirdparty_contracts");
+const { kyberOperator, kyberAdmin } = require("../deploy-config.js");
 const BN = web3.utils.BN;
 
 module.exports = async (deployer, _, accounts) => {
   const admin = accounts[0];
-  const kyberNetwork = await KyberNetwork.at(mainnetAddrs.kyber.KyberNetwork);
-  console.log(await kyberNetwork.getExpectedRate('0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2', '0xec67005c4e498ec7f55e092bd1d35cbc47c91892', '1000000000000000000'))
-  const originalKyberAdmin = conf.originalKyberAdmin;
-  if ((await kyberNetwork.admin()) === originalKyberAdmin) {
-    await kyberNetwork.transferAdminQuickly(admin, {from: originalKyberAdmin});
-    await kyberNetwork.addOperator(admin);
-  }
-  // get rid of existing reserves
-  for (let i=0; i < await kyberNetwork.getNumReserves(); i++) {
-    const reserve = await KyberReserve.at(
-      await kyberNetwork.reserves(0)
-    );
-    for (let token of Object.values(mainnetAddrs.tokens)) {
+
+  const maxUint = new BN(2).pow(new BN(256)).sub(new BN(1));
+  const tokens = await Promise.all(Object.entries(mainnetAddrs.tokens).map(async ([symbol, address]) => {
+    const contract = await ERC20WithFields.at(address);
+    const decimals = await contract.decimals();
+    const price = new BN(10).pow(new BN(decimals));
+    const whale = conf.whales[symbol];
+
+    // token control info parameters.
+    const minimalRecordResolution = new BN(10).pow(new BN(decimals - 4));
+    const maxPerBlockImbalance = maxUint;
+    const maxTotalImbalance = maxUint;
+
+    return {
+      symbol,
+      address,
+      contract,
+      decimals,
+      price,
+      whale,
+      minimalRecordResolution,
+      maxPerBlockImbalance,
+      maxTotalImbalance,
+    }
+  }));
+
+  const kyberNetworkProxy = await KyberNetworkProxy.at(
+    mainnetAddrs.kyber.KyberNetworkProxy
+  );
+
+  const kyberNetworkAddress = await kyberNetworkProxy.kyberNetworkContract();
+  const kyberNetwork = await KyberNetwork.at(kyberNetworkAddress);
+
+  console.log(
+    await kyberNetwork.getExpectedRate(
+      "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+      "0xec67005c4e498ec7f55e092bd1d35cbc47c91892",
+      "100000000000"
+    )
+  );
+
+  // delist existing reserves.
+  const tokenReserveMapping = await Promise.all(tokens.map(async (token) => {
+    const rates = await kyberNetwork.getReservesRates(token.address, 0);
+    const unique = [...rates[0], ...rates[2]].filter((reserve, index, array) => {
+      return array.indexOf(reserve) === index;
+    });
+
+    return {
+      token,
+      reserves: unique,
+    };
+  }));
+
+  for (const tokenReserves of tokenReserveMapping) {
+    const address = tokenReserves.token.address;
+    for (let reserve of tokenReserves.reserves) {
       await kyberNetwork.listPairForReserve(
-        reserve.address,
-        token,
+        reserve,
+        address,
         true,
         true,
         false
-      );
+      , {
+        from: conf.kyberOperator,
+      });
     }
-    await kyberNetwork.removeReserve(
-      reserve.address,
-      0
-    );
   }
 
-  const kyberNetworkProxy = await deployer.deploy(KyberNetworkProxy, admin);
-  await kyberNetworkProxy.setKyberNetworkContract(kyberNetwork.address);
-  await kyberNetwork.setKyberProxy(kyberNetworkProxy.address);
-
-  const feeBurner = await deployer.deploy(FeeBurner, admin, mainnetAddrs.tokens.KNC, kyberNetwork.address, 18);
-  const expectedRate = await deployer.deploy(ExpectedRate, kyberNetwork.address, mainnetAddrs.tokens.KNC, admin);
-  await kyberNetwork.setFeeBurner(feeBurner.address);
-  await kyberNetwork.setExpectedRate(expectedRate.address);
-
-  console.log(await kyberNetwork.getExpectedRate('0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', '0xec67005c4e498ec7f55e092bd1d35cbc47c91892', 1))
-  // add reserve
-  const maxUint = (new BN(2)).pow(new BN(256)).sub(new BN(1));
+  // create our custom reserve.
   const conversionRates = await deployer.deploy(ConversionRates, admin);
-  await conversionRates.addOperator(admin);
-  await conversionRates.setValidRateDurationInBlocks(maxUint);
-
-  const kyberReserve = await deployer.deploy(KyberReserve, kyberNetwork.address, conversionRates.address, admin);
-  await kyberNetwork.addReserve(kyberReserve.address, false);
-  await kyberReserve.addOperator(admin);
-  await kyberReserve.enableTrade();
-  await conversionRates.setReserveAddress(kyberReserve.address);
-
-  const tokenPrices = [];
-  const tokens = Object.entries(mainnetAddrs.tokens);
-  for (let [symbol, tokenAddress] of tokens) {
-    const whale = mainnetAddrs.whales[symbol];
-    // set withdraw address for each token
-    const token = await ERC20WithFields.at(tokenAddress);
-    const decimals = await token.decimals();
-    tokenPrices.push((new BN(10)).pow(new BN(decimals)));
-    await conversionRates.addToken(tokenAddress);
-    await conversionRates.setTokenControlInfo(
-      tokenAddress,
-      (new BN(10)).pow(new BN(decimals-4)),
-      maxUint,
-      maxUint
-    );
-    await conversionRates.enableTokenTrade(tokenAddress);
-    await kyberReserve.setTokenWallet(tokenAddress, whale);
-    await token.approve(kyberReserve.address, maxUint, {from: whale});
-    await kyberNetwork.listPairForReserve(
-      kyberReserve.address,
-      tokenAddress,
-      true,
-      true,
-      true
-    );
-  }
-
-  // set prices for each token
-  await conversionRates.setBaseRate(
-    tokens.map(([,token]) => token),
-    tokenPrices,
-    tokenPrices,
-    [],
-    [],
-    (await web3.eth.getBlockNumber()),
-    [],
+  const kyberReserve = await deployer.deploy(
+    KyberReserve,
+    kyberNetwork.address,
+    conversionRates.address,
+    admin
   );
 
-  console.log(await kyberNetwork.getExpectedRate('0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', '0xec67005c4e498ec7f55e092bd1d35cbc47c91892', 1))
-}
+  await conversionRates.addOperator(admin);
+  await conversionRates.setValidRateDurationInBlocks(maxUint);
+  await conversionRates.setReserveAddress(kyberReserve.address);
+
+  // enable our custom reserve.
+  await kyberReserve.enableTrade();
+  await kyberReserve.addOperator(admin);
+  await kyberNetwork.addReserve(kyberReserve.address, false, {
+    from: kyberOperator,
+  });
+
+  for (let token of tokens) {
+    await conversionRates.addToken(token.address);
+    await conversionRates.setTokenControlInfo(
+      token.address,
+      token.minimalRecordResolution,
+      token.maxPerBlockImbalance,
+      token.maxTotalImbalance,
+    );
+
+    // allow the token to be withdrawn from the respective whale's wallet.
+    await kyberReserve.setTokenWallet(token.address, token.whale);
+    await token.contract.approve(kyberReserve.address, maxUint, {
+      from: token.whale,
+    });
+
+    // enable trading for the current token on the reserve.
+    await conversionRates.enableTokenTrade(token.address);
+
+    // list the token for the reserve.
+    await kyberNetwork.listPairForReserve(kyberReserve.address, token.address, true, true, true, {
+      from: kyberOperator,
+    });
+  }
+
+  // set prices for each token.
+  const block = await web3.eth.getBlockNumber();
+  await conversionRates.setBaseRate(
+    tokens.map(token => token.address),
+    tokens.map(token => token.price),
+    tokens.map(token => token.price),
+    [],
+    [],
+    block,
+    []
+  );
+
+  console.log(
+    await kyberNetwork.getExpectedRate(
+      "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+      "0xec67005c4e498ec7f55e092bd1d35cbc47c91892",
+      "1"
+    )
+  );
+};

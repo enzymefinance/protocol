@@ -56,7 +56,7 @@
     "web3-utils": "1.2.4"
   },
   "dependencies": {
-    "ganache-core": "^2.10.2",
+    "ganache-core": "^2.11.0-beta.0",
     "truffle": "^5.1.22"
   }
 }
