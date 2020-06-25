@@ -1,6 +1,8 @@
 const ERC20WithFields = artifacts.require("ERC20WithFields");
 const KyberNetwork = artifacts.require("KyberNetwork");
 const KyberNetworkProxy = artifacts.require("KyberNetworkProxy");
+const FeeBurner = artifacts.require("FeeBurner");
+const ExpectedRate = artifacts.require("ExpectedRate");
 const ConversionRates = artifacts.require("ConversionRates");
 const KyberReserve = artifacts.require("KyberReserve");
 const conf = require("../deploy-config.js");
@@ -16,12 +18,12 @@ module.exports = async (deployer, _, accounts) => {
     const contract = await ERC20WithFields.at(address);
     const decimals = await contract.decimals();
 
-    // TODO: hard-code prices in config somewhere.
+    // TODO: hard-code prices in config somewhere to make them a bit more variant.
     const price = new BN(10).pow(new BN(decimals));
     const whale = conf.whales[symbol];
 
     // token control info parameters.
-    const minimalRecordResolution = new BN(10).pow(new BN(decimals - 4));
+    const minimalRecordResolution = new BN(10).pow(new BN(decimals).sub(new BN(4)));
     const maxPerBlockImbalance = maxUint;
     const maxTotalImbalance = maxUint;
     const kyberAddress = symbol === 'WETH' ? kyberWeth : address;
@@ -40,41 +42,19 @@ module.exports = async (deployer, _, accounts) => {
     }
   }));
 
-  const kyberNetworkProxy = await KyberNetworkProxy.at(
-    mainnetAddrs.kyber.KyberNetworkProxy
-  );
+  const kyberNetwork = await deployer.deploy(KyberNetwork, admin);
+  await kyberNetwork.addOperator(admin);
 
-  const kyberNetworkAddress = await kyberNetworkProxy.kyberNetworkContract();
-  const kyberNetwork = await KyberNetwork.at(kyberNetworkAddress);
+  const kyberNetworkProxy = await deployer.deploy(KyberNetworkProxy, admin);
+  await kyberNetworkProxy.setKyberNetworkContract(kyberNetwork.address);
 
-  // delist existing reserves.
-  // TODO: This often times out. Can we optimize it a bit?
-  const tokenReserveMapping = await Promise.all(tokens.map(async (token) => {
-    const rates = await kyberNetwork.getReservesRates(token.address, 0);
-    const unique = [...rates[0], ...rates[2]].filter((reserve, index, array) => {
-      return array.indexOf(reserve) === index;
-    });
+  const kncToken = mainnetAddrs.tokens.KNC;
+  const feeBurner = await deployer.deploy(FeeBurner, admin, kncToken, kyberNetwork.address, new BN(10).pow(new BN(18)));
+  await feeBurner.setOperator(admin);
+  await kyberNetwork.setFeeBurner(feeBurner.address);
 
-    return {
-      token,
-      reserves: unique,
-    };
-  }));
-
-  for (const tokenReserves of tokenReserveMapping) {
-    const address = tokenReserves.token.address;
-    for (let reserve of tokenReserves.reserves) {
-      await kyberNetwork.listPairForReserve(
-        reserve,
-        address,
-        true,
-        true,
-        false
-      , {
-        from: conf.kyberOperator,
-      });
-    }
-  }
+  const expectedRate = await deployer.deploy(ExpectedRate, kyberNetwork.address, admin);
+  await kyberNetwork.setExpectedRate(expectedRate.address);
 
   // create our custom reserve.
   const conversionRates = await deployer.deploy(ConversionRates, admin);
@@ -91,9 +71,10 @@ module.exports = async (deployer, _, accounts) => {
 
   // enable our custom reserve.
   await kyberReserve.addOperator(admin);
-  await kyberNetwork.addReserve(kyberReserve.address, false, {
-    from: conf.kyberOperator,
-  });
+  await kyberNetwork.addReserve(kyberReserve.address, false);
+
+  // set no fees.
+  await feeBurner.setReserveData(kyberReserve.address, 0, kyberReserve.address);
 
   for (let token of tokens) {
     await conversionRates.addToken(token.kyberAddress);
@@ -117,9 +98,7 @@ module.exports = async (deployer, _, accounts) => {
     // enable trading for the current token on the reserve.
     await conversionRates.enableTokenTrade(token.kyberAddress);
     // list the token for the reserve.
-    await kyberNetwork.listPairForReserve(kyberReserve.address, token.address, true, true, true, {
-      from: conf.kyberOperator,
-    });
+    await kyberNetwork.listPairForReserve(kyberReserve.address, token.address, true, true, true);
   }
 
   // set prices for each token.
