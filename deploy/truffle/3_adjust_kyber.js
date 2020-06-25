@@ -47,14 +47,6 @@ module.exports = async (deployer, _, accounts) => {
   const kyberNetworkAddress = await kyberNetworkProxy.kyberNetworkContract();
   const kyberNetwork = await KyberNetwork.at(kyberNetworkAddress);
 
-  console.log(
-    await kyberNetwork.getExpectedRate(
-      "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
-      "0xec67005c4e498ec7f55e092bd1d35cbc47c91892",
-      "100000000000"
-    )
-  );
-
   // delist existing reserves.
   const tokenReserveMapping = await Promise.all(tokens.map(async (token) => {
     const rates = await kyberNetwork.getReservesRates(token.address, 0);
