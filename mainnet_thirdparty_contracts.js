@@ -3,7 +3,8 @@ module.exports = {
     Swap: '0x4572f2554421Bd64Bef1c22c8a81840E8D496BeA'
   },
   kyber: {
-    KyberNetworkProxy: '0x818E6FECD516Ecc3849DAf6845e3EC868087B755'
+    KyberNetworkProxy: '0x818E6FECD516Ecc3849DAf6845e3EC868087B755',
+    KyberNetwork: '0x65bf64ff5f51272f729bdcd7acfb00677ced86cd'
   },
   oasis: {
     OasisDexExchange: '0x794e6e91555438aFc3ccF1c5076A74F42133d08D'
