@@ -20,8 +20,6 @@ contract Vault is IVault, TokenUser, Spoke {
 
     event AssetAdded(address asset);
 
-    event AssetBalanceUpdated(address indexed asset, uint256 oldBalance, uint256 newBalance);
-
     event AssetRemoved(address asset);
 
     event CallOnIntegrationExecuted(
@@ -33,9 +31,8 @@ contract Vault is IVault, TokenUser, Spoke {
     );
 
     uint8 constant public MAX_OWNED_ASSETS = 20; // TODO: Keep this?
-    address[] public ownedAssets;
-    mapping(address => uint256) public override assetBalances;
 
+    EnumerableSet.AddressSet private ownedAssets;
     EnumerableSet.AddressSet private enabledAdapters;
 
     constructor(address _hub, address[] memory _adapters) public Spoke(_hub) {
@@ -54,7 +51,8 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @param _asset The asset to deposit
     /// @param _amount The amount of the asset to deposit
     function deposit(address _asset, uint256 _amount) external override onlyShares {
-        __increaseAssetBalance(_asset, _amount);
+        require(_amount > 0, "deposit: _amount must be >0");
+        __addOwnedAsset(_asset);
         __safeTransferFrom(_asset, msg.sender, address(this), _amount);
     }
 
@@ -82,18 +80,14 @@ contract Vault is IVault, TokenUser, Spoke {
         return EnumerableSet.enumerate(enabledAdapters);
     }
 
-    /// @notice Retrieves the assets owned by the fund
-    /// @return The addresses of assets owned by the fund
-    function getOwnedAssets() external view override returns(address[] memory) {
-        return ownedAssets;
-    }
-
     /// @notice Withdraw an asset from the Vault
     /// @dev Only the Shares contract can call this function
     /// @param _asset The asset to withdraw
     /// @param _amount The amount of the asset to withdraw
     function withdraw(address _asset, uint256 _amount) external override onlyShares {
-        __decreaseAssetBalance(_asset, _amount);
+        if (sub(__getAssetBalance(_asset), _amount) == 0) {
+            __removeOwnedAsset(_asset);
+        }
         __safeTransfer(_asset, msg.sender, _amount);
     }
 
@@ -138,7 +132,7 @@ contract Vault is IVault, TokenUser, Spoke {
         // Execute call on integration adapter
         __executeCoI(_adapter, _methodSignature, _encodedArgs);
 
-        // Update assetBalances and parse incoming and outgoing asset info
+        // Update ownedAssets and parse incoming and outgoing asset info
         (
             address[] memory incomingAssets,
             uint256[] memory incomingAssetAmounts,
@@ -171,6 +165,8 @@ contract Vault is IVault, TokenUser, Spoke {
         );
     }
 
+    /// @notice Retrieves amounts of assets owned by the fund
+    /// @return balances_ The amount of each asset owned by the fund
     function getAssetBalances(address[] memory _assets)
         public
         view
@@ -179,8 +175,14 @@ contract Vault is IVault, TokenUser, Spoke {
     {
         balances_ = new uint256[](_assets.length);
         for (uint256 i = 0; i < _assets.length; i++) {
-            balances_[i] = assetBalances[_assets[i]];
+            balances_[i] = __getAssetBalance(_assets[i]);
         }
+    }
+
+    /// @notice Retrieves the assets owned by the fund
+    /// @return The addresses of assets owned by the fund
+    function getOwnedAssets() public view override returns(address[] memory) {
+        return EnumerableSet.enumerate(ownedAssets);
     }
 
     // PRIVATE FUNCTIONS
@@ -190,31 +192,14 @@ contract Vault is IVault, TokenUser, Spoke {
     }
 
     /// @dev Helper to add an asset to a fund's ownedAssets
-    function __addAssetToOwnedAssets(address _asset) private {
-        require(
-            ownedAssets.length < MAX_OWNED_ASSETS,
-            "Max owned asset limit reached"
-        );
-        ownedAssets.push(_asset);
-        emit AssetAdded(_asset);
-    }
-
-    /// @dev Helper to decrease the assetBalance of an asset
-    function __decreaseAssetBalance(address _asset, uint256 _amount) private {
-        require(_amount > 0, "__decreaseAssetBalance: _amount must be > 0");
-        require(_asset != address(0), "__decreaseAssetBalance: _asset cannot be empty");
-
-        uint256 oldBalance = assetBalances[_asset];
-        require(
-            oldBalance >= _amount,
-            "__decreaseAssetBalance: new balance cannot be less than 0"
-        );
-
-        uint256 newBalance = sub(oldBalance, _amount);
-        if (newBalance == 0) __removeFromOwnedAssets(_asset);
-        assetBalances[_asset] = newBalance;
-
-        emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
+    function __addOwnedAsset(address _asset) private {
+        if (EnumerableSet.add(ownedAssets, _asset)) {
+            require(
+                EnumerableSet.length(ownedAssets) <= MAX_OWNED_ASSETS,
+                "__addOwnedAsset: Max owned asset limit reached"
+            );
+            emit AssetAdded(_asset);
+        }
     }
 
     /// @dev Helper to enable adapters for use in the fund.
@@ -253,6 +238,15 @@ contract Vault is IVault, TokenUser, Spoke {
         require(success, string(returnData));
     }
 
+    /// @dev Helper to get an owned asset's balance
+    function __getAssetBalance(address _asset)
+        private
+        view
+        returns (uint256)
+    {
+        return IERC20(_asset).balanceOf(address(this));
+    }
+
     // TODO: can check uniqueness of incoming assets also
     /// @dev Helper to get an array of assets to track balances of during a call-on-integration.
     /// Combining ownedAssets and new incoming assets is necessary because some asset might
@@ -266,34 +260,22 @@ contract Vault is IVault, TokenUser, Spoke {
         // Get count of untracked incoming assets
         uint256 newIncomingAssetsCount;
         for (uint256 i = 0; i < expectedIncomingAssets.length; i++) {
-            if (assetBalances[expectedIncomingAssets[i]] == 0) {
+            if (__getAssetBalance(expectedIncomingAssets[i]) == 0) {
                 newIncomingAssetsCount++;
             }
         }
         // Create an array of ownedAssets + untracked incoming assets
+        address[] memory ownedAssets = getOwnedAssets();
         monitoredAssets_ = new address[](ownedAssets.length + newIncomingAssetsCount);
         for (uint256 i = 0; i < ownedAssets.length; i++) {
             monitoredAssets_[i] = ownedAssets[i];
         }
 
         for (uint256 i = 0; i < expectedIncomingAssets.length; i++) {
-            if (assetBalances[expectedIncomingAssets[i]] == 0) {
+            if (__getAssetBalance(expectedIncomingAssets[i]) == 0) {
                 monitoredAssets_[ownedAssets.length + i] = expectedIncomingAssets[i];
             }
         }
-    }
-
-    /// @dev Helper to Increase the assetBalance of an asset
-    function __increaseAssetBalance(address _asset, uint256 _amount) private {
-        require(_amount > 0, "__increaseAssetBalance: _amount must be > 0");
-        require(_asset != address(0), "__increaseAssetBalance: _asset cannot be empty");
-
-        uint256 oldBalance = assetBalances[_asset];
-        if (oldBalance == 0) __addAssetToOwnedAssets(_asset);
-        uint256 newBalance = add(oldBalance, _amount);
-        assetBalances[_asset] = newBalance;
-
-        emit AssetBalanceUpdated(_asset, oldBalance, newBalance);
     }
 
     /// @dev Helper to confirm whether an asset is receivable via an integration
@@ -307,19 +289,14 @@ contract Vault is IVault, TokenUser, Spoke {
     }
 
     /// @dev Helper to remove an asset from a fund's ownedAssets
-    function __removeFromOwnedAssets(address _asset) private {
-        for (uint256 i; i < ownedAssets.length; i++) {
-            if (ownedAssets[i] == _asset) {
-                ownedAssets[i] = ownedAssets[ownedAssets.length - 1];
-                ownedAssets.pop();
-                break;
-            }
+    function __removeOwnedAsset(address _asset) private {
+        if (EnumerableSet.remove(ownedAssets, _asset)) {
+            emit AssetRemoved(_asset);
         }
-        emit AssetRemoved(_asset);
     }
 
     // TODO: assert uniqueness of each item in assets, or protect against this earlier
-    /// @dev Helper to update assetBalances post-callOnIntegration, and to construct arrays of
+    /// @dev Helper to update ownedAssets post-callOnIntegration, and to construct arrays of
     /// the incoming and outgoing assets and asset amounts for use in policy management and events
     function __updatePostCoIBalances(
         address[] memory _assets,
@@ -367,16 +344,19 @@ contract Vault is IVault, TokenUser, Spoke {
         for (uint256 i = 0; i < _assets.length; i++) {
             if (balanceDiffs[i] > 0) {
                 if (balancesIncreased[i]) {
+                    __addOwnedAsset(_assets[i]);
                     incomingAssets_[incomingAssetIndex] = _assets[i];
                     incomingAssetAmounts_[incomingAssetIndex] = balanceDiffs[i];
                     incomingAssetIndex++;
-                    __increaseAssetBalance(_assets[i], balanceDiffs[i]);
+
                 }
                 else {
+                    if (__getAssetBalance(_assets[i]) == 0) {
+                        __removeOwnedAsset(_assets[i]);
+                    }
                     outgoingAssets_[outgoingAssetIndex] = _assets[i];
                     outgoingAssetAmounts_[outgoingAssetIndex] = balanceDiffs[i];
                     outgoingAssetIndex++;
-                    __decreaseAssetBalance(_assets[i], balanceDiffs[i]);
                 }
             }
         }

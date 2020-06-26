@@ -15,7 +15,6 @@ import "./IntegrationSignatures.sol";
 /// @notice Provides convenience functions for use in integration adapters
 abstract contract IntegrationAdapter is IIntegrationAdapter, IntegrationSignatures, DSMath {
     /// @notice Increment allowance of an asset for some target
-    /// @dev Checks the actual in-contract assetBalances (as opposed to "holdings")
     function __approveAsset(
         address _asset,
         address _target,

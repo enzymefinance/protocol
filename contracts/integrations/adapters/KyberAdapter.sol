@@ -142,11 +142,6 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     )
         private
     {
-        require(
-            IVault(address(this)).assetBalances(_fillAssets[1]) >= _fillExpectedAmounts[1],
-            "__swapNativeAssetToToken: insufficient native token assetBalance"
-        );
-
         // Convert WETH to ETH
         WETH(payable(_fillAssets[1])).withdraw(_fillExpectedAmounts[1]);
 
