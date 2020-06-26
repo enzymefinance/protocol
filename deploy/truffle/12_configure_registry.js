@@ -42,7 +42,6 @@ const updateKyberFeedTruffle = async (feed, registry) => {
 
   await feed.update(sorted, prices);
 }
-/////////
 
 module.exports = async _ => {
   const registry = await Registry.deployed();
@@ -77,31 +76,48 @@ module.exports = async _ => {
     (await PerformanceFee.deployed()).address
   ];
 
-  // TODO: parallelize
-  for (const policy of policies) {
-    if (!(await registry.policyIsRegistered(policy))) {
-      await registry.registerPolicy(policy);
-    }
+  const [
+    unregisteredPolicies,
+    unregisteredAdapters,
+    unregisteredFees,
+    unregisteredPrimitives,
+  ] = (await Promise.all([
+    Promise.all(policies.map(async policy => {
+      if (!(await registry.policyIsRegistered(policy))) {
+        return policy;
+      }
+    })),
+    Promise.all(integrationAdapters.map(async adapter => {
+      if (!(await registry.integrationAdapterIsRegistered(adapter))) {
+        return adapter;
+      }
+    })),
+    Promise.all(fees.map(async fee => {
+      if (!(await registry.feeIsRegistered(fee))) {
+        return fee;
+      }
+    })),
+    Promise.all(Object.values(mainnetAddrs.tokens).map(async primitive => {
+      if (!(await registry.primitiveIsRegistered(primitive))) {
+        return primitive;
+      }
+    })),
+  ])).map(list => list.filter(value => !!value));
+
+  for (const policy of unregisteredPolicies) {
+    await registry.registerPolicy(policy);
   }
 
-  // TODO: parallelize
-  for (const integrationAdapter of integrationAdapters) {
-    if (!(await registry.integrationAdapterIsRegistered(integrationAdapter))) {
-      await registry.registerIntegrationAdapter(integrationAdapter);
-    }
+  for (const adapter of unregisteredAdapters) {
+    await registry.registerIntegrationAdapter(adapter);
   }
 
-  // TODO: parallelize
-  for (const tokenAddress of Object.values(mainnetAddrs.tokens)) {
-    if (!await registry.primitiveIsRegistered(tokenAddress)) {
-      await registry.registerPrimitive(tokenAddress);
-    }
+  for (const primitive of unregisteredPrimitives) {
+    await registry.registerPrimitive(primitive);
   }
 
-  for (const fee of fees) {
-    if (!(await registry.feeIsRegistered(fee))) {
-      await registry.registerFee(fee);
-    }
+  for (const fee of unregisteredFees) {
+    await registry.registerFee(fee);
   }
 
   await updateKyberFeedTruffle(priceSource, registry);
