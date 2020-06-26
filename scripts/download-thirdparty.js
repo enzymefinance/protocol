@@ -3,18 +3,12 @@ const fs = require('fs');
 const thirdpartyDir = './thirdparty';
 
 const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
-const commitHash = 'b660319859e74de25768dd5f00415f96be0b3bd6';
+const commitHash = '5766f98f05fcb0fb485da13270e3c56d16d05d67';
 
 // per-project mapping of actual contract names to the names we use
 const artifacts = {
   kyber: {
-    'ConversionRates': 'ConversionRates',
-    'ExpectedRate': 'ExpectedRate',
-    'FeeBurner': 'FeeBurner',
-    'KyberNetwork': 'KyberNetwork',
     'KyberNetworkProxy': 'KyberNetworkProxy',
-    'KyberReserve': 'KyberReserve',
-    'WhiteList': 'KyberWhiteList',
   },
   kyberMock: {
     'MockKyberNetwork': 'MockKyberNetwork',
@@ -47,9 +41,10 @@ const artifacts = {
 const mkdir = dir => !fs.existsSync(dir) && fs.mkdirSync(dir);
 
 const request = (projectName, contractName) => {
-  const options =  {
+  const options = {
     uri: `${baseUrl}/${commitHash}/artifacts/${projectName}/${contractName}.json`
-  }
+  };
+
   return rp(options);
 };
 
