@@ -87,7 +87,7 @@ describe('Fund takes an order', () => {
   test('Third party makes an order', async () => {
     const makerAddress = deployer;
     const makerTokenAddress = zrx.options.address;
-    const makerAssetAmount = toWei('10', 'Ether');
+    const makerAssetAmount = toWei('1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const makerPerTakerRate = new BN(
       (await call(priceSource, 'getLiveRate', [takerTokenAddress, makerTokenAddress]))[0]
@@ -304,7 +304,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
   test('Third party makes an order', async () => {
     const makerAddress = deployer;
     const makerTokenAddress = mln.options.address;
-    const makerAssetAmount = toWei('0.5', 'Ether');
+    const makerAssetAmount = toWei('0.1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const makerPerTakerRate = new BN(
       (await call(priceSource, 'getLiveRate', [takerTokenAddress, makerTokenAddress]))[0]

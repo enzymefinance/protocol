@@ -7,9 +7,8 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import {
   createUnsignedZeroExOrder,
@@ -18,16 +17,14 @@ import {
   signZeroExOrder
 } from '~/tests/utils/zeroExV2';
 import { getDeployed } from '~/tests/utils/getDeployed';
-
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let mln, zrx, weth, erc20Proxy, priceSource, zeroExAdapter, zeroExExchange;
+let mln, zrx, weth, erc20Proxy, zeroExAdapter, zeroExExchange;
 let fund;
 let takeOrderSignature;
-let zrxToEthRate;
 
 beforeAll(async () => {
   web3 = await startChain();
@@ -43,13 +40,11 @@ beforeAll(async () => {
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
   erc20Proxy = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ERC20_PROXY, web3, mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy);
   zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
   zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-  zrxToEthRate = await call(priceSource, 'getPrice', [zrx.options.address]);
 
   fund = await setupFundWithParams({
     integrationAdapters: [zeroExAdapter.options.address],
@@ -84,7 +79,7 @@ describe('Fund takes an order', () => {
       },
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+    await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
     signedOrder = await signZeroExOrder(unsignedOrder, deployer);
     const signatureValid = await isValidZeroExSignatureOffChain(
       unsignedOrder,
@@ -99,14 +94,14 @@ describe('Fund takes an order', () => {
     const { vault } = fund;
     const fillQuantity = signedOrder.takerAssetAmount;
 
-    const preZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
+    const preMlnDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-    const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfMln = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
     );
-    const preFundHoldingsZrx = new BN(
+    const preFundHoldingsMln = new BN(
       await call(vault, 'assetBalances', [zrx.options.address])
     );
 
@@ -124,30 +119,30 @@ describe('Fund takes an order', () => {
       web3
     );
 
-    const postZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
+    const postMlnDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-    const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfMln = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
     );
-    const postFundHoldingsZrx = new BN(
+    const postFundHoldingsMln = new BN(
       await call(vault, 'assetBalances', [zrx.options.address])
     );
 
-    expect(postZrxDeployer).bigNumberEq(preZrxDeployer.sub(new BN(signedOrder.makerAssetAmount)));
+    expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-    const fundHoldingsZrxDiff = postFundHoldingsZrx.sub(preFundHoldingsZrx);
+    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
 
     // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-    expect(fundHoldingsZrxDiff).bigNumberEq(postFundBalanceOfZrx.sub(preFundBalanceOfZrx));
+    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
 
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(new BN(signedOrder.takerAssetAmount));
-    expect(fundHoldingsZrxDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 });
 

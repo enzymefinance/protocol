@@ -5,7 +5,7 @@ module.exports = async (_, __, accounts) => {
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: whale,
-      value: web3.utils.toWei("100", "ether")
+      value: web3.utils.toWei("1", "ether")
     });
   }
 };

@@ -25,9 +25,9 @@
   ],
   "scripts": {
     "download-thirdparty": "node scripts/download-thirdparty.js && cp thirdparty/*.json out/",
-    "compile": "truffle compile && yarn download-thirdparty",
+    "compile": "truffle --config truffle-config.js compile",
     "deploy": "PRIVATE_KEYS=./keys.json DEPLOY_IN=./deploy_in_testing.json DEPLOY_OUT=./deploy_out_testing.json node deploy/scripts/deploy-system.js ./deploy_in_testing.json ./deploy_out_testing.json",
-    "deploy-truffle": "truffle migrate",
+    "deploy-truffle": "truffle migrate --skip-dry-run",
     "deploy-kovan": "PRIVATE_KEYS=./kovan_keys.json DEPLOY_IN=./deploy_in_kovan.json DEPLOY_OUT=./deploy_out_kovan.json node deploy/scripts/deploy-system.js ./deploy_in_kovan.json ./deploy_out_kovan.json",
     "devchain": "node ./tests/utils/test-chain.js",
     "lint": "solhint src/**/*.sol",

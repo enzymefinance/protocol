@@ -189,7 +189,6 @@ export const setupInvestedTestFund = async (
   const [deployer] = await web3.eth.getAccounts();
 
   const weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  const mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
   const performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE, web3);
   const managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
