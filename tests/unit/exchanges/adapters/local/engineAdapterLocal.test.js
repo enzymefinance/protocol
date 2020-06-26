@@ -93,7 +93,7 @@ describe('takeOrder', () => {
       takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(mlnPrice)
-      ).add(new BN(1)).toString(); // adding 1 protects against rounding error (i.e. gives :ceiling")
+      ).toString();
     });
 
     test('order is filled through the fund', async () => {
@@ -108,7 +108,7 @@ describe('takeOrder', () => {
 
       const encodedArgs = encodeTakeOrderArgs({
         makerAsset,
-        makerQuantity,
+        makerQuantity: (new BN(makerQuantity).sub(new BN(1000000))).toString(),
         takerAsset,
         takerQuantity,
       });
@@ -199,7 +199,7 @@ describe('takeOrder', () => {
       takerQuantity = BNExpDiv(
         new BN(makerQuantity),
         new BN(mlnPrice)
-      ).add(new BN('1')).toString(); // adding 1 protects against rounding error (i.e. gives :ceiling")
+      ).toString();
     });
 
     test('order is filled through the fund', async () => {
