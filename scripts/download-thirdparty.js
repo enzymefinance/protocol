@@ -3,7 +3,7 @@ const fs = require('fs');
 const thirdpartyDir = './thirdparty';
 
 const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
-const commitHash = '1413a3c64a5c649bff01c1275f6acc5ad092a5c5';
+const commitHash = 'b660319859e74de25768dd5f00415f96be0b3bd6';
 
 // per-project mapping of actual contract names to the names we use
 const artifacts = {
@@ -15,6 +15,9 @@ const artifacts = {
     'KyberNetworkProxy': 'KyberNetworkProxy',
     'KyberReserve': 'KyberReserve',
     'WhiteList': 'KyberWhiteList',
+  },
+  kyberMock: {
+    'MockKyberNetwork': 'MockKyberNetwork',
   },
   oasis: {
     'MatchingMarket': 'OasisDexExchange',
