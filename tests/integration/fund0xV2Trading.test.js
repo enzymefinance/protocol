@@ -46,7 +46,7 @@ beforeAll(async () => {
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
   erc20Proxy = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ERC20_PROXY, web3, mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy);
   zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
-  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   zrxToEthRate = await call(priceSource, 'getPrice', [zrx.options.address]);

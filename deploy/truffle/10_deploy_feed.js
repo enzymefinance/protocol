@@ -9,7 +9,7 @@ module.exports = async deployer => {
   priceSource = await deployer.deploy(
     KyberPriceFeed,
     (await Registry.deployed()).address,
-    (await KyberNetworkProxy.deployed()).address,
+    mainnetAddrs.kyber.KyberNetworkProxy,
     conf.melonMaxSpread,
     mainnetAddrs.tokens.WETH,
     conf.melonMaxPriceDeviation

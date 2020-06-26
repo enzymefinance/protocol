@@ -55,7 +55,7 @@ beforeAll(async () => {
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
   zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
-  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   erc20ProxyAddress = mainnetAddrs.zeroExV3.ZeroExV3ERC20Proxy;

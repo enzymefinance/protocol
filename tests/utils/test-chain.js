@@ -21,8 +21,7 @@ const server = ganache.server({
     ...Object.values(conf.whales),
     "0xa57bd00134b2850b2a1c55860c9e9ea100fdd6cf", // ZRX reserve operator
     "0x7D3455421BbC5Ed534a83c88FD80387dc8271392", // ZRX Governor contract
-    conf.kyberAdmin,
-    conf.kyberOperator
+    conf.kyberProxyAdmin
   ],
   default_balance_ether: startingBalance,
   accounts: [ // TODO: is this array redundant?

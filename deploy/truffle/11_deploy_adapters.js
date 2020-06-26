@@ -11,7 +11,7 @@ const Engine = artifacts.require('Engine');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 module.exports = async deployer => {
-  await deployer.deploy(KyberAdapter, (await KyberNetworkProxy.deployed()).address);
+  await deployer.deploy(KyberAdapter, mainnetAddrs.kyber.KyberNetworkProxy);
   await deployer.deploy(OasisDexAdapter, mainnetAddrs.oasis.OasisDexExchange);
   await deployer.deploy(UniswapAdapter, mainnetAddrs.uniswap.UniswapFactory);
   await deployer.deploy(ZeroExV2Adapter, mainnetAddrs.zeroExV2.ZeroExV2Exchange);

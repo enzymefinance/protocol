@@ -4,17 +4,7 @@ module.exports = {
   initialWethDepositAmount: '10000000000000000000',
   oasisDexCloseTime: '99999999999999',
   zeroExV3ProtocolFeeMultiplier: 150000,
-  kyberRateDuration: 500000,
-  kyberAdmin: '0x9d1dB7bb85dcE740e92668547F23EcfE55d8572b',
-  kyberOperator: '0x8180a5CA4E3B94045e05A9313777955f7518D757',
-  kyberMinimalRecordResolution: 2,
-  kyberMaxPerBlockImbalance: '100000000000000000000000000000',
-  kyberMaxTotalImbalance: '1200000000000000000000000000000',
-  kyberTokensToTransfer: '100000000000000000000000',
-  kyberInitialReserveAmount: '1000000000000000000',
-  kyberTokensPerEther: '1000000000000000000',
-  kyberEthersPerToken: '1000000000000000000',
-  kyberCategoryCap: '1000000000000000000000000000',
+  kyberProxyAdmin: '0xbc33a1f908612640f2849b56b67a4de4d179c151',
   melonPriceTolerance: 10,
   melonUserWhitelist: ['0xc0c82081f2ad248391cd1483ae211d56c280887a'],
   melonRegistryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
@@ -24,33 +14,7 @@ module.exports = {
   melonFundFactoryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
   melonInitialMGM: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
   melonVersionName: 'Fakename',
-  tokens: {
-    WETH: {
-      name: 'Wrapped ether',
-      decimals: 18,
-      initialDepositAmount: '1000000000000000000000000'
-    },
-    MLN: {
-      name: 'Melon Token',
-      decimals: 18
-    },
-    DAI: {
-      name: 'Dai',
-      decimals: 18
-    },
-    EUR: {
-      name: 'Euro Token',
-      decimals: 18
-    },
-    KNC: {
-      name: 'Kyber Network',
-      decimals: 18
-    },
-    ZRX: {
-      name: '0x protocol token',
-      decimals: 18
-    }
-  },
+  tokens: ['MLN', 'WETH', 'DAI', 'KNC', 'ZRX'],
   whales: {
     WETH: '0x07320deb2713370a3d7b49189fc2f99906e1ae8e',
     MLN: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
