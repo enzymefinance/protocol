@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
-pragma experimental ABIEncoderV2;
 
+import "../../utils/MathHelpers.sol";
 import "../interfaces/IOasisDex.sol";
-import "../libs/OrderTaker.sol";
+import "../utils/AdapterBase.sol";
 
 /// @title OasisDexAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Adapter between Melon and OasisDex Matching Market
-contract OasisDexAdapter is OrderTaker {
+/// @notice Adapter for interacting with OasisDex
+contract OasisDexAdapter is AdapterBase, MathHelpers {
     address immutable public EXCHANGE;
 
-    constructor(address _exchange) public {
+    constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
     }
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
@@ -21,149 +23,109 @@ contract OasisDexAdapter is OrderTaker {
         return "OASIS_DEX";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Trades assets on OasisDex
+    /// @param _encodedArgs Encoded order parameters
+    function takeOrder(bytes calldata _encodedArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedArgs)
+    {
+        (
+            uint256 takerAssetFillAmount,
+            uint256 orderIdentifier
+        ) = __decodeTakeOrderArgs(_encodedArgs);
+        
+        (
+            uint256 availableMakerAmount,
+            ,
+            uint256 availableTakerAmount,
+            address takerAsset
+        ) = IOasisDex(EXCHANGE).getOffer(orderIdentifier);
+
+        require(
+            takerAssetFillAmount <= availableTakerAmount,
+            "takeOrder: Taker asset fill amount greater than available"
+        );
+
+        // Execute fill
+        IERC20(takerAsset).approve(EXCHANGE, takerAssetFillAmount);
+        IOasisDex(EXCHANGE).buy(
+            orderIdentifier,
+            __calcRelativeQuantity(
+                availableTakerAmount,
+                availableMakerAmount,
+                takerAssetFillAmount
+            ) // maker fill amount calculated relative to taker fill amount
+        );
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedArgs The encoded parameters for the callOnIntegration
-    /// @return incomingAssets_ The assets to receive
-    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
-        external
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(bytes4 _selector, bytes memory _encodedArgs)
+        public
         view
         override
-        returns (address[] memory incomingAssets_)
+        returns (
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            (address makerAsset,,,,) = __decodeTakeOrderArgs(_encodedArgs);
+            (
+                uint256 takerAssetFillAmount,
+                uint256 orderIdentifier
+            ) = __decodeTakeOrderArgs(_encodedArgs);
+
+            (
+                uint256 availableMakerAmount,
+                address makerAsset,
+                uint256 availableTakerAmount,
+                address takerAsset
+            ) = IOasisDex(EXCHANGE).getOffer(orderIdentifier);
+
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = takerAsset;
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = takerAssetFillAmount;
+
             incomingAssets_ = new address[](1);
             incomingAssets_[0] = makerAsset;
+            minIncomingAssetAmounts_ = new uint256[](1);
+            minIncomingAssetAmounts_[0] = __calcRelativeQuantity(
+                availableTakerAmount,
+                availableMakerAmount,
+                takerAssetFillAmount
+            ); // maker fill amount calculated relative to taker fill amount;
         }
         else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
 
-    /// @notice Takes an active order on Oasis Dex (takeOrder)
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
-        internal
-        override
-        validateAndFinalizeFilledOrder(_fillData)
-    {
-        (
-            , , , ,
-            uint256 identifier
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        (,uint256[] memory fillExpectedAmounts,) = __decodeOrderFillData(_fillData);
-
-        // Execute take order on exchange
-        IOasisDex(EXCHANGE).buy(uint256(identifier), fillExpectedAmounts[0]);
-    }
-
-    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return fillAssets_ Assets to fill
-    /// - [0] Maker asset (same as _orderAddresses[2])
-    /// - [1] Taker asset (same as _orderAddresses[3])
-    /// @return fillExpectedAmounts_ Asset fill amounts
-    /// - [0] Expected (min) quantity of maker asset to receive
-    /// - [1] Expected (max) quantity of taker asset to spend
-    /// @return fillApprovalTargets_ Recipients of assets in fill order
-    /// - [0] Taker (fund), set to address(0)
-    /// - [1] Oasis Dex exchange ()
-    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
-        internal
-        view
-        override
-        returns (address[] memory, uint256[] memory, address[] memory)
-    {
-        (
-            address makerAsset,
-            ,
-            address takerAsset,
-            uint256 takerQuantity,
-            uint256 identifier
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        address[] memory fillAssets = new address[](2);
-        fillAssets[0] = makerAsset;
-        fillAssets[1] = takerAsset;
-
-        (
-            uint256 maxMakerQuantity,,uint256 maxTakerQuantity,
-        ) = IOasisDex(EXCHANGE).getOffer(uint256(identifier));
-
-        uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = __calculateRelativeQuantity(
-            maxTakerQuantity,
-            maxMakerQuantity,
-            takerQuantity
-        ); // maker fill amount
-        fillExpectedAmounts[1] = takerQuantity; // taker fill amount
-
-        address[] memory fillApprovalTargets = new address[](2);
-        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = EXCHANGE; // Oasis Dex exchange
-
-        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
-    }
-
-    /// @notice Validate the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(bytes memory _encodedArgs)
-        internal
-        view
-        override
-    {
-        (
-            address decodedMakerAsset,
-            ,
-            address decodedTakerAsset,
-            uint256 takerQuantity,
-            uint256 identifier
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-        (
-            ,
-            address makerAsset,
-            uint256 maxTakerQuantity,
-            address takerAsset
-        ) = IOasisDex(EXCHANGE).getOffer(uint256(identifier));
-
-        require(
-            decodedMakerAsset == makerAsset,
-            "__validateTakeOrderParams: Order maker asset does not match the input"
-        );
-        require(
-            decodedTakerAsset == takerAsset,
-            "__validateTakeOrderParams: Order taker asset does not match the input"
-        );
-        require(
-            takerQuantity <= maxTakerQuantity,
-            "__validateTakeOrderParams: Taker fill amount greater than available quantity"
-        );
-    }
+    // PRIVATE FUNCTIONS
 
     /// @notice Decode the parameters of a takeOrder call
     /// @param _encodedArgs Encoded parameters passed from client side
-    function __decodeTakeOrderArgs(
-        bytes memory _encodedArgs
-    )
-        internal
+    function __decodeTakeOrderArgs(bytes memory _encodedArgs)
+        private
         pure
         returns (
-            address makerAsset_,
-            uint256 makerQuantity_,
-            address takerAsset_,
-            uint256 takerQuantity_,
-            uint256 identifier_
+            uint256 takerAssetFillAmount_,
+            uint256 orderIdentifier_
         )
     {
         return abi.decode(
             _encodedArgs,
             (
-                address,
-                uint256,
-                address,
                 uint256,
                 uint256
             )

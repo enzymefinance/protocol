@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../dependencies/libs/EnumerableSet.sol";
 import "../fund/policies/IPolicy.sol";
-import "../integrations/libs/IIntegrationAdapter.sol";
+import "../integrations/IIntegrationAdapter.sol";
 import "./utils/MelonCouncilOwnable.sol";
 
 /// @title Registry Contract

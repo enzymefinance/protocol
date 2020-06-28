@@ -1,21 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
-pragma experimental ABIEncoderV2;
 
-import "../libs/OrderTaker.sol";
-import "../libs/decoders/MinimalTakeOrderDecoder.sol";
 import "../../dependencies/WETH.sol";
 import "../../engine/IEngine.sol";
+import "../utils/AdapterBase.sol";
 
 /// @title EngineAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Trading adapter to Melon Engine
-contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
+contract EngineAdapter is AdapterBase {
     address immutable public EXCHANGE;
 
-    constructor(address _exchange) public {
+    constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
     }
+
+    /// @dev Needed to receive ETH from swap
+    receive() external payable {}
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
@@ -23,108 +26,86 @@ contract EngineAdapter is OrderTaker, MinimalTakeOrderDecoder {
         return "MELON_ENGINE";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Trades assets on Kyber
+    /// @param _encodedArgs Encoded order parameters
+    function takeOrder(bytes calldata _encodedArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedArgs)
+    {
+        (,uint256 mlnTokenAmount) = __decodeArgs(_encodedArgs);
+
+        // Validate args
+        require(mlnTokenAmount > 0, "takeOrder: mlnTokenAmount must be >0");
+
+        // Execute fill
+        Registry registry = Registry(__getRegistry());
+        IERC20(registry.mlnToken()).approve(EXCHANGE, mlnTokenAmount);
+        uint256 preEthBalance = payable(address(this)).balance;
+        IEngine(EXCHANGE).sellAndBurnMln(mlnTokenAmount);
+        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
+
+        // Return ETH to WETH
+        WETH(payable(registry.nativeAsset())).deposit{value: ethFilledAmount}();
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedArgs The encoded parameters for the callOnIntegration
-    /// @return incomingAssets_ The assets to receive
-    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
-        external
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(bytes4 _selector, bytes memory _encodedArgs)
+        public
         view
         override
-        returns (address[] memory incomingAssets_)
+        returns (
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            (address makerAsset,,,) = __decodeTakeOrderArgs(_encodedArgs);
+            (
+                uint256 minNativeAssetAmount,
+                uint256 mlnTokenAmount
+            ) = __decodeArgs(_encodedArgs);
+            Registry registry = Registry(__getRegistry());
+
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = registry.mlnToken();
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = mlnTokenAmount;
+
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = makerAsset;
+            incomingAssets_[0] = registry.nativeAsset();
+            minIncomingAssetAmounts_ = new uint256[](1);
+            minIncomingAssetAmounts_[0] = minNativeAssetAmount;
         }
         else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
 
-    /// @notice Buys Ether from the Melon Engine, selling MLN (takeOrder)
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
-        internal
-        override
-        validateAndFinalizeFilledOrder(_fillData)
+    /// @dev Helper to decode the encoded arguments
+    function __decodeArgs(bytes memory _encodedArgs)
+        private
+        pure
+        returns (
+            uint256 minNativeAssetAmount_,
+            uint256 mlnTokenAmount_
+        )
     {
-        (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts,
-        ) = __decodeOrderFillData(_fillData);
-
-        // Fill order on Engine
-        uint256 preEthBalance = payable(address(this)).balance;
-        IEngine(EXCHANGE).sellAndBurnMln(fillExpectedAmounts[1]);
-        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
-
-        // Return ETH to WETH
-        WETH(payable(fillAssets[0])).deposit.value(ethFilledAmount)();
-    }
-
-    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return fillAssets_ Assets to fill
-    /// - [0] Maker asset (same as _orderAddresses[2])
-    /// - [1] Taker asset (same as _orderAddresses[3])
-    /// @return fillExpectedAmounts_ Asset fill amounts
-    /// - [0] Expected (min) quantity of WETH to receive
-    /// - [1] Expected (max) quantity of MLN to spend
-    /// @return fillApprovalTargets_ Recipients of assets in fill order
-    /// - [0] Taker (fund), set to address(0)
-    /// - [1] Melon Engine (EXCHANGE)
-    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
-        internal
-        view
-        override
-        returns (address[] memory, uint256[] memory, address[] memory)
-    {
-        (
-            address makerAsset,
-            uint256 makerQuantity,
-            address takerAsset,
-            uint256 takerQuantity
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        address[] memory fillAssets = new address[](2);
-        fillAssets[0] = makerAsset;
-        fillAssets[1] = takerAsset;
-
-        uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = makerQuantity;
-        fillExpectedAmounts[1] = takerQuantity;
-
-        address[] memory fillApprovalTargets = new address[](2);
-        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = EXCHANGE; // Oasis Dex exchange
-
-        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
-    }
-
-    /// @notice Validate the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(bytes memory _encodedArgs)
-        internal
-        view
-        override
-    {
-        (
-            address makerAsset,
-            ,
-            address takerAsset
-            ,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        require(
-            makerAsset == __getNativeAssetAddress(),
-            "__validateTakeOrderParams: maker asset does not match nativeAsset"
-        );
-        require(
-            takerAsset == __getMlnTokenAddress(),
-            "__validateTakeOrderParams: taker asset does not match mlnToken"
+        return abi.decode(
+            _encodedArgs,
+            (
+                uint256,
+                uint256
+            )
         );
     }
 }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
+import "../utils/CallOnIntegrationPreValidatePolicyBase.sol";
 import "../utils/AddressListPolicyMixin.sol";
 
 /// @title AssetBlacklist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A blacklist of assets to add to a fund's vault
 /// @dev Assets can be added but not removed from blacklist
-contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListPolicyMixin {
+contract AssetBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _registry) public PolicyBase(_registry) {}
 
     /// @notice Add the initial policy settings for a fund
@@ -24,7 +24,7 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
         return "ASSET_BLACKLIST";
     }
 
-    /// @notice Apply the rule with specified paramters, in the context of a fund
+    /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return True if the rule passes
     /// @dev A fund's PolicyManager is always the sender
