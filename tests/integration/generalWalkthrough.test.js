@@ -169,7 +169,7 @@ test('Buying shares (initial investment) succeeds for whitelisted user with allo
 test('Fund can take an order on Oasis DEX', async () => {
   const { vault } = fund;
 
-  const makerQuantity = toWei('2', 'ether');
+  const makerQuantity = (new BN(toWei('0.1', 'ether'))).toString();
   const makerAsset = mln.options.address;
   const takerAsset = weth.options.address;
 
@@ -194,7 +194,7 @@ test('Fund can take an order on Oasis DEX', async () => {
     web3
   );
 
-  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_INTERFACE, 'LogUnsortedOffer');
+  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_INTERFACE, 'LogMake');
   const orderId = logMake.id;
 
   const preMlnFundHoldings = await call(vault, 'assetBalances', [mln.options.address]);
