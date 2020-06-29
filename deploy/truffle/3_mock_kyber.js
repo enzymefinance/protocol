@@ -35,7 +35,7 @@ module.exports = async (deployer) => {
       return KYBER_ETH_ADDRESS;
     }
 
-    return address;
+    return token.address;
   });
 
   const rates = tokens.map(() => web3.utils.toWei('1', 'ether'));
