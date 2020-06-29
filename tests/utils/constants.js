@@ -38,6 +38,7 @@ export const CONTRACT_NAMES = {
   KNC: 'KNC',
   KYBER_ADAPTER: 'KyberAdapter',
   KYBER_EXCHANGE: 'KyberNetwork',
+  KYBER_MOCK_NETWORK: 'MockKyberNetwork',
   KYBER_NETWORK_PROXY: 'KyberNetworkProxy',
   KYBER_NETWORK_INTERFACE: 'IKyberNetworkProxy',
   KYBER_PRICEFEED: 'KyberPriceFeed',

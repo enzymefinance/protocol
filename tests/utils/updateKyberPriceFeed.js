@@ -2,6 +2,11 @@ import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getDeployed } from '~/tests/utils/getDeployed';
 import { call, send } from '~/deploy/utils/deploy-contract';
 
+export const setKyberRate = async (token, web3, price = web3.utils.toWei('1', 'ether')) => {
+  const mock = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK, web3);
+  await send(mock, 'setRate', [token, price], {}, web3)
+}
+
 export const updateKyberPriceFeed = async (feed, web3) => {
   const quoteAsset = await call(feed, 'PRICEFEED_QUOTE_ASSET');
   const registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
