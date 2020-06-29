@@ -5,7 +5,7 @@ const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
 const conf = require("../deploy-config");
 const BN = web3.utils.BN;
 
-module.exports = async (deployer, _, accounts) => {
+module.exports = async (deployer) => {
   const tokens = await Promise.all(conf.tokens.map(async (symbol) => {
     const address = mainnetAddrs.tokens[symbol];
     const contract = await ERC20WithFields.at(address);
