@@ -30,7 +30,7 @@ module.exports = async (deployer, _, accounts) => {
   // TODO: Make the price configurable per asset.
   const addresses = tokens.map(token => token.address);
   const rates = tokens.map(() => web3.utils.toWei('1', 'ether'));
-  await kyberNetwork.setRates(addresses, rates);
+  await kyberNetwork.setRates(addresses, rates, rates);
 
   for (let token of tokens) {
     // transfer half of the whale's assets to the reserve.
