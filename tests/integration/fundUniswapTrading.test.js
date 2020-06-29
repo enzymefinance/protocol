@@ -15,7 +15,7 @@ import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { getDeployed } from '~/tests/utils/getDeployed';
-import { mainnetAddrs } from '~/mainnet_thirdparty_contracts';
+import mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
 let deployer, manager, investor;
@@ -41,7 +41,7 @@ beforeAll(async () => {
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
   const uniswapFactory = getDeployed(
-    CONTRACT_NAMES.UNISWAP_FACTORY,
+    CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE,
     web3,
     mainnetAddrs.uniswap.UniswapFactory
   );
