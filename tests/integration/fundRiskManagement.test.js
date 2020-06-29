@@ -28,7 +28,7 @@ let defaultTxOpts, managerTxOpts;
 let takeOrderFunctionSig;
 let fundFactory, oasisDexAdapter, priceSource;
 let assetBlacklist, assetWhitelist, maxConcentration, maxPositions, priceTolerance;
-let dai, knc, mln, weth, zrx;
+let weth, knc, mln, zrx;
 let oasisDexExchange;
 let web3;
 
@@ -53,8 +53,6 @@ beforeAll(async () => {
   maxConcentration = getDeployed(CONTRACT_NAMES.MAX_CONCENTRATION, web3);
   priceTolerance = getDeployed(CONTRACT_NAMES.PRICE_TOLERANCE, web3);
 
-  // dai = contracts.DAI;
-
   takeOrderFunctionSig = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
@@ -68,7 +66,7 @@ beforeAll(async () => {
  * Max positions: 3
  * Price tolerance: 10%
  */
-describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max concentration', () => {
+describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentration', () => {
   let fund;
   let priceToleranceVal, maxConcentrationVal;
 
@@ -101,12 +99,13 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
         encodedSettings: policies.encodedSettings
       },
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      web3
     });
     maxConcentrationVal = await call(
       maxConcentration,
       'policyManagerToMaxConcentration',
-      [fund.policyManager.options.address]
+      [fund.policyManager.options.address],
     );
     priceToleranceVal = await call(
       priceTolerance,
@@ -115,10 +114,10 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
     );
   });
 
-  test.only('Confirm policies have been set', async () => {
+  test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const policies = await call (policyManager, 'getEnabledPolicies');
+    const policies = await call (policyManager, 'getEnabledPolicies', [], defaultTxOpts, web3);
     const expectedPolicies = [
       priceTolerance.options.address,
       maxPositions.options.address,
@@ -151,14 +150,14 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
         makerToWethAssetRate
       ).toString();
 
-      await send(knc, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts, web3);
+      await send(knc, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          badMakerQuantity, badMakerAsset, takerQuantity, takerAsset, 0
+          badMakerQuantity, badMakerAsset, takerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -201,14 +200,14 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
         makerToWethAssetRate
       ).toString();
 
-      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], defaultTxOpts, web3);
+      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          goodMakerQuantity, goodMakerAsset, takerQuantity, takerAsset, 0
+          goodMakerQuantity, goodMakerAsset, takerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -273,14 +272,14 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
         makerQuantityPercentLimit.sub(makerQuantityPercentShift)
       ).toString();
 
-      await send(mln, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts, web3);
+      await send(mln, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          badMakerQuantity, makerAsset, takerQuantity, takerAsset, 0
+          badMakerQuantity, makerAsset, takerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -320,14 +319,14 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
         makerQuantityPercentLimit.add(makerQuantityPercentShift)
       ).toString();
 
-      await send(mln, 'approve', [oasisDexExchange.options.address, toleratedMakerQuantity], defaultTxOpts, web3);
+      await send(mln, 'approve', [oasisDexExchange.options.address, toleratedMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          toleratedMakerQuantity, makerAsset, takerQuantity, takerAsset, 0
+          toleratedMakerQuantity, makerAsset, takerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -370,7 +369,7 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
 
     beforeAll(async () => {
       const { shares, vault } = fund;
-      makerAsset = dai.options.address;
+      makerAsset = weth.options.address;
       takerAsset = weth.options.address;
       makerToWethAssetRate = new BN(
         (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
@@ -409,14 +408,14 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
     });
 
     test('Third party makes an order', async () => {
-      await send(dai, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], defaultTxOpts);
+      await send(weth, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          goodMakerQuantity, makerAsset, goodTakerQuantity, takerAsset, 0
+          goodMakerQuantity, makerAsset, goodTakerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -451,14 +450,14 @@ describe.only('Fund 1: Asset blacklist, price tolerance, max positions, max conc
     });
 
     test('Third party makes an order', async () => {
-      await send(dai, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts, web3);
+      await send(weth, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          badMakerQuantity, makerAsset, badTakerQuantity, takerAsset, 0
+          badMakerQuantity, makerAsset, badTakerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -511,7 +510,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       encodedSettings: [
         encodeArgs(
           ['address[]'],
-          [[dai.options.address, mln.options.address, zrx.options.address]]
+          [[weth.options.address, mln.options.address, zrx.options.address]]
         ),
         encodeArgs(['uint256'], [3])
       ]
@@ -530,14 +529,15 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         encodedSettings: policies.encodedSettings
       },
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      web3
     });
   });
 
   test('Confirm policies have been set', async () => {
     const { policyManager } = fund;
 
-    const policies = await call (policyManager, 'getEnabledPolicies');
+    const policies = await call(policyManager, 'getEnabledPolicies');
     const expectedPolicies = [
       maxPositions.options.address,
       assetWhitelist.options.address
@@ -577,14 +577,14 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Third party makes an order', async () => {
-      await send(knc, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts);
+      await send(knc, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          badMakerQuantity, badMakerAsset, takerQuantity, takerAsset, 0
+          badMakerQuantity, badMakerAsset, takerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -627,14 +627,14 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         makerToWethAssetRate
       ).toString();
 
-      await send(zrx, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], defaultTxOpts, web3);
+      await send(zrx, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
         [
-          goodMakerQuantity, goodMakerAsset, takerQuantity, takerAsset, 0
+          goodMakerQuantity, goodMakerAsset, takerQuantity, takerAsset
         ],
-        defaultTxOpts,
+        managerTxOpts,
         web3
       );
 
@@ -697,7 +697,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         makerToWethAssetRate2
       ).toString();
 
-      badMakerAsset = dai.options.address;
+      badMakerAsset = weth.options.address;
       const makerToWethAssetRate3 = new BN(
         (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
       );
@@ -708,12 +708,12 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity1], defaultTxOpts, web3);
+      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity1], managerTxOpts, web3);
       const receipt = await send(
         oasisDexExchange,
         'offer',
-        [goodMakerQuantity1, goodMakerAsset1, takerQuantity, takerAsset, 0],
-        defaultTxOpts,
+        [goodMakerQuantity1, goodMakerAsset1, takerQuantity, takerAsset],
+        managerTxOpts,
         web3
       );
       const logMake = getEventFromLogs(
@@ -761,12 +761,12 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Third party makes an order', async () => {
-      await send(dai, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts, web3);
+      await send(weth, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
       const receipt = await send(
         oasisDexExchange,
         'offer',
-        [badMakerQuantity, badMakerAsset, takerQuantity, takerAsset, 0],
-        defaultTxOpts,
+        [badMakerQuantity, badMakerAsset, takerQuantity, takerAsset],
+        managerTxOpts,
         web3
       );
       const logMake = getEventFromLogs(
@@ -804,12 +804,12 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     });
 
     test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity2], defaultTxOpts, web3);
+      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity2], managerTxOpts, web3);
       const receipt = await send(
         oasisDexExchange,
         'offer',
-        [goodMakerQuantity2, goodMakerAsset1, takerQuantity, takerAsset, 0],
-        defaultTxOpts,
+        [goodMakerQuantity2, goodMakerAsset1, takerQuantity, takerAsset],
+        managerTxOpts,
         web3
       );
       const logMake = getEventFromLogs(
