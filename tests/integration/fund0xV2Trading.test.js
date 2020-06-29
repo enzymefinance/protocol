@@ -45,7 +45,6 @@ beforeAll(async () => {
   zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-
   fund = await setupFundWithParams({
     integrationAdapters: [zeroExAdapter.options.address],
     initialInvestment: {

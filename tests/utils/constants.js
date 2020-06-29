@@ -45,6 +45,7 @@ export const CONTRACT_NAMES = {
   KYBER_RESERVE: 'KyberReserve',
   KYBER_WHITELIST: 'KyberWhiteList',
   MALICIOUS_TOKEN: 'MaliciousToken',
+  BAD_TOKEN: 'BadERC20Token',
   MANAGEMENT_FEE: 'ManagementFee',
   MAX_CONCENTRATION: 'MaxConcentration',
   MAX_POSITIONS: 'MaxPositions',

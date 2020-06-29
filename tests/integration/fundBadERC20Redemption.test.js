@@ -1,50 +1,52 @@
+import mainnetAddrs from '~/mainnet_thirdparty_contracts';
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
+import { deploy, call, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
+import { updateKyberPriceFeed, setKyberRate } from '../utils/updateKyberPriceFeed';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
-let deployer, manager, investor;
+let web3;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
-let contracts;
-let weth, omg, priceSource, zeroExExchange;
-let fund;
+let deployer, manager, investor;
+let fund, weth, omg, registry, fundFactory, priceSource, kyberAdapter;
 let wethToEthRate, omgToEthRate;
 
 // @dev Set fund denomination asset to OMG so it can receive OMG as investment
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
 
-  weth = contracts.WETH;
-  omg = contracts.OMG;
-  zeroExExchange = contracts.ZeroExV2Exchange;
-  priceSource = contracts.TestingPriceFeed;
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
 
-  const fundFactory = contracts.FundFactory;
-  const zeroExAdapter = contracts.ZeroExV2Adapter;
-
-  wethToEthRate = toWei('1', 'ether');
-  omgToEthRate = toWei('0.5', 'ether');
-
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, omg.options.address],
-      [wethToEthRate, omgToEthRate],
-    ],
-    defaultTxOpts
+  omg = await deploy(
+    CONTRACT_NAMES.BAD_TOKEN,
+    ['OMG', 18, 'Bad'],
+    {},
+    [],
+    web3
   );
 
+  await send(
+    registry,
+    'registerPrimitive',
+    [omg.options.address],
+    defaultTxOpts,
+    web3
+  );
+
+  await setKyberRate(omg.options.address, web3, omgToEthRate);
+  await updateKyberPriceFeed(priceSource, web3);
+
   fund = await setupFundWithParams({
-    exchanges: [zeroExExchange.options.address],
-    exchangeAdapters: [zeroExAdapter.options.address],
+    integrationAdapters: [kyberAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -52,7 +54,8 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: omg.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 });
 
@@ -67,7 +70,7 @@ describe('Investor redeems BadERC20 token from a fund', () => {
     expect(preInvestorShares).bigNumberGt(new BN(0));
     const preInvestorBadERC20Balance = new BN(await call(omg, 'balanceOf', [investor]));
 
-    await send(shares, 'redeemShares', [], investorTxOpts);
+    await send(shares, 'redeemShares', [], investorTxOpts, web3);
 
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
     expect(postInvestorShares).bigNumberEq(new BN(0));
