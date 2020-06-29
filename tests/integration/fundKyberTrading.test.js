@@ -35,15 +35,10 @@ beforeAll(async () => {
 
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
   kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
-  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
   zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
   mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-
-  // Set the kyber network contract address back to the real one for this test.
-  // await send(kyberNetworkProxy, 'setKyberNetworkContract', [mainnetAddrs.kyber.KyberNetwork], {
-  //   from: '0xbc33a1f908612640f2849b56b67a4de4d179c151',
-  // }, web3);
 
   fund = await setupFundWithParams({
     integrationAdapters: [kyberAdapter.options.address],
