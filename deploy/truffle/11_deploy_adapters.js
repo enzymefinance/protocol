@@ -1,4 +1,3 @@
-const KyberNetworkProxy = artifacts.require('KyberNetworkProxy');
 const KyberAdapter = artifacts.require('KyberAdapter');
 const OasisDexAdapter = artifacts.require('OasisDexAdapter');
 const UniswapAdapter = artifacts.require('UniswapAdapter');
