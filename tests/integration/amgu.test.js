@@ -14,7 +14,6 @@ let web3;
 let deployer;
 let defaultTxOpts, managerTxOpts;
 let baseToken, quoteToken;
-let amguPrice;
 let engine, fundFactory, priceSource, registry, sharesRequestor, valueInterpreter;
 
 const assertAmguTx = async (contract, method, args=[]) => {
@@ -77,7 +76,7 @@ beforeEach(async () => {
   registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
   sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
-
+  valueInterpreter = getDeployed(CONTRACT_NAMES.VALUE_INTERPRETER, web3);
   quoteToken = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   baseToken = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
 });
