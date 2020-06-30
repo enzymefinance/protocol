@@ -188,6 +188,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
     new BN((await call(priceSource, 'getCanonicalRate', [mln.options.address, weth.options.address]))[0])
   );
+  const preWethGav = new BN(await call(vault, 'assetBalances', [mln.options.address]));
 
   const newMlnToEthRate = toWei('1.5', 'ether');
   await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString()], defaultTxOpts, web3);
@@ -201,11 +202,13 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
     mlnPricePostSwap
   );
+  const postWethGav = new BN(await call(vault, 'assetBalances', [mln.options.address]));
 
   const mlnGavDiff = postMlnGav.sub(preMlnGav);
+  const wethGavDiff = preWethGav.sub(postWethGav);
 
   // Fund gav should increase by change in mlnGav
-  expect(postFundGav).bigNumberEq(preFundGav.add(mlnGavDiff));
+  expect(postFundGav).bigNumberEq(preFundGav.add(mlnGavDiff).sub(wethGavDiff));
   // Mln gav should increase by rate change in mln: 50% increase
   expect(mlnGavDiff).bigNumberEq(preMlnGav.div(new BN(2)));
 });
@@ -230,9 +233,9 @@ test(`performance fee is calculated correctly`, async () => {
   const expectedPerformanceFee = BNExpMul(
     BNExpMul(
       gainInSharePrice,
-      new BN(performanceFeeRate),
+      currentTotalSupply,
     ),
-    currentTotalSupply,
+    new BN(performanceFeeRate),
   );
 
   const performanceFeeOwed = new BN(await call(feeManager, 'performanceFeeAmount'));
@@ -251,7 +254,6 @@ test(`performance fee is calculated correctly`, async () => {
   const expectedFeeShares = currentTotalSupply
     .mul(expectedFeeSharesPreDilution)
     .div(currentTotalSupply.sub(expectedFeeSharesPreDilution));
-  // TODO:: below not passing (expectedFeeShares is one wei too small)
   expect(performanceFeeOwed).bigNumberEq(expectedFeeShares);
 });
 
