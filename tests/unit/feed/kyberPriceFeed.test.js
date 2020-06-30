@@ -14,7 +14,7 @@
 
 import { BN, toWei } from 'web3-utils';
 import { send, call } from '~/deploy/utils/deploy-contract';
-import { BNExpDiv, BNExpInverse } from '~/tests/utils/BNmath';
+import { BNExpInverse } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getEventFromLogs } from '~/tests/utils/metadata';
 import { updateKyberPriceFeed, getKyberPrices } from '~/tests/utils/updateKyberPriceFeed';
@@ -301,17 +301,17 @@ describe.only('getCanonicalRate', () => {
   });
 
   test('Normal (positive) spread condition yields midpoint price', async () => {
-    const mlnBid = new BN(toWei('0.05', 'ether'));
-    const mlnAsk = new BN(toWei('0.04', 'ether'));
-    const midPointPrice = mlnBid.add(mlnAsk).div(new BN(2));
+    const mlnPerEther = BNExpInverse(new BN(toWei('0.04', 'ether')));
+    const etherPerMln = new BN(toWei('0.05', 'ether'));
+    const midPointPrice = BNExpInverse(mlnPerEther).add(etherPerMln).div(new BN(2));
 
     await send(
       kyber,
       'setRates',
       [
         [mln.options.address],
-        [mlnBid.toString()],
-        [mlnAsk.toString()],
+        [mlnPerEther.toString()],
+        [etherPerMln.toString()],
       ],
       deployerTxOpts,
       web3
@@ -324,19 +324,17 @@ describe.only('getCanonicalRate', () => {
   });
 
   test('Crossed market condition yields midpoint price', async () => {
-    const mlnBid = new BN(toWei('0.04', 'ether'));
-    const mlnAsk = new BN(toWei('0.05', 'ether'));
-    const midPointPrice = mlnBid.add(mlnAsk).div(new BN(2));
-
-    // TODO: The bid/ask rate logic in MockKyberNetwork is not correct yet.
+    const mlnPerEther = BNExpInverse(new BN(toWei('0.041', 'ether')));
+    const etherPerMln = new BN(toWei('0.04', 'ether'));
+    const midPointPrice = BNExpInverse(mlnPerEther).add(etherPerMln).div(new BN(2));
 
     await send(
       kyber,
       'setRates',
       [
         [mln.options.address],
-        [mlnBid.toString()],
-        [mlnAsk.toString()],
+        [mlnPerEther.toString()],
+        [etherPerMln.toString()],
       ],
       deployerTxOpts,
       web3
