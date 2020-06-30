@@ -191,7 +191,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   const preWethGav = new BN(await call(vault, 'assetBalances', [mln.options.address]));
 
   const newMlnToEthRate = toWei('1.5', 'ether');
-  await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString()], defaultTxOpts, web3);
+  await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString(), newMlnToEthRate.toString()], defaultTxOpts, web3);
   await updateKyberPriceFeed(priceSource, web3);
 
   const mlnPricePostSwap = new BN(
@@ -322,7 +322,7 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   );
   // Double Mln price
   const newMlnToEthRate = toWei('2', 'ether');
-  await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString()], defaultTxOpts, web3);
+  await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString(), newMlnToEthRate.toString()], defaultTxOpts, web3);
   await updateKyberPriceFeed(priceSource, web3);
   const postMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),
