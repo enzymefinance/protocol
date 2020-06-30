@@ -23,4 +23,5 @@ interface IOasisDex {
     function buy(uint256, uint256) external returns (bool);
     function cancel(uint256) external returns (bool);
     function offer(uint256, address, uint256, address) external returns (uint256);
+    function setMatchingEnabled(bool) external returns (bool);
 }
