@@ -1,5 +1,5 @@
 import { BN, toWei } from 'web3-utils';
-import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
+import { call, send } from '~/deploy/utils/deploy-contract';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getEventFromLogs } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
@@ -8,27 +8,12 @@ import { getDeployed } from '~/tests/utils/getDeployed';
 
 export const getFundComponents = async (hubAddress, web3) => {
   const components = {};
-  components.hub = fetchContract('Hub', hubAddress, web3);
-  components.feeManager = fetchContract(
-    'FeeManager',
-    await call(components.hub, 'feeManager'),
-    web3
-  );
-  components.policyManager = fetchContract(
-    'PolicyManager',
-    await call(components.hub, 'policyManager'),
-    web3
-  );
-  components.shares = fetchContract(
-    'Shares',
-    await call(components.hub, 'shares'),
-    web3
-  );
-  components.vault = fetchContract(
-    'Vault',
-    await call(components.hub, 'vault'),
-    web3
-  );
+
+  components.hub = getDeployed(CONTRACT_NAMES.HUB, web3, hubAddress);
+  components.feeManager = getDeployed(CONTRACT_NAMES.FEE_MANAGER, web3, await call(components.hub, 'feeManager'));
+  components.policyManager = getDeployed(CONTRACT_NAMES.POLICY_MANAGER, web3, await call(components.hub, 'policyManager'));
+  components.shares = getDeployed(CONTRACT_NAMES.SHARES, web3, await call(components.hub, 'shares'));
+  components.vault = getDeployed(CONTRACT_NAMES.VAULT, web3, await call(components.hub, 'vault'));
 
   return components;
 }
@@ -43,13 +28,14 @@ export const investInFund = async ({
   const { contribAmount, tokenContract, investor, isInitial = false } = investment;
   const investorTxOpts = { from: investor, gas: 8000000 };
 
-  const hub = fetchContract(CONTRACT_NAMES.HUB, fundAddress, web3);
-  const registry = fetchContract(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'), web3);
-  const sharesRequestor = fetchContract(
+  const hub = getDeployed(CONTRACT_NAMES.HUB, web3, fundAddress);
+  const registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3, await call(hub, 'REGISTRY'));
+  const sharesRequestor = getDeployed(
     CONTRACT_NAMES.SHARES_REQUESTOR,
-    await call(registry, 'sharesRequestor'),
-    web3
+    web3,
+    await call(registry, 'sharesRequestor')
   );
+
   // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
   if (!amguTxValue) {
     amguTxValue = toWei('0.01', 'ether');
