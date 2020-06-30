@@ -3,8 +3,11 @@ import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
 const ganache = require('ganache-core');
 const Web3 = require('web3');
 
+// Mute the max event listeners warnings
+require('events').EventEmitter.defaultMaxListeners = 100;
+
 // Default timeout interval for tests and before/after hooks
-jest.setTimeout(1200000); // 20 mins
+jest.setTimeout(120000); // 2 minutes
 
 // TODO: factor these keys into one place
 const pkeys = [
