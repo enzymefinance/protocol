@@ -147,7 +147,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         if (_baseAsset == _quoteAsset) {
             return (
                 10 ** uint256(ERC20WithFields(_quoteAsset).decimals()),
-                hasValidPrice(_quoteAsset),
+                true,
                 timestamp_
             );
         }
@@ -187,6 +187,14 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         override
         returns (uint256 rate_, bool isValid_)
     {
+        // Return early if assets are same
+        if (_baseAsset == _quoteAsset) {
+            return (
+                10 ** uint256(ERC20WithFields(_quoteAsset).decimals()),
+                true
+            );
+        }
+
         uint256 bidRate;
         uint256 bidRateOfReversePair;
         (bidRate,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(

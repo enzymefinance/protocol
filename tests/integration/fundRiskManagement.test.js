@@ -85,6 +85,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         encodeArgs(['uint256'], [toWei('0.1', 'ether')], web3), // 10%
       ]
     };
+
     fund = await setupFundWithParams({
       defaultTokens: [weth.options.address],
       integrationAdapters: [oasisDexAdapter.options.address],
@@ -145,6 +146,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       const makerToWethAssetRate = new BN(
         (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
       );
+
       badMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
         makerToWethAssetRate
@@ -195,6 +197,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       const makerToWethAssetRate = new BN(
         (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
       );
+
       goodMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
         makerToWethAssetRate
@@ -217,7 +220,6 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     test('Good take order: non-blacklisted maker asset', async () => {
       const { vault } = fund;
-
       const encodedArgs = encodeOasisDexTakeOrderArgs({
         makerAsset: goodMakerAsset,
         makerQuantity: goodMakerQuantity,
@@ -569,6 +571,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       const badMakerToWethAssetRate = new BN(
         (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
       );
+
       badMakerQuantity = BNExpDiv(
         new BN(takerQuantity),
         badMakerToWethAssetRate

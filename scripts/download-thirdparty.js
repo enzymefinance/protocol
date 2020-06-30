@@ -4,7 +4,7 @@ const fs = require('fs');
 const outDir = path.join(__dirname, '..', 'out');
 
 const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
-const commitHash = '41ba296bb60c6bfe4aab7d8139a983c32f78b114';
+const commitHash = '50655a7faa4261a6fb4edc7f0e4630630af15167';
 
 // per-project mapping of actual contract names to the names we use
 const artifacts = {
