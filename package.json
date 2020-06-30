@@ -29,7 +29,7 @@
     "deploy": "truffle migrate --skip-dry-run",
     "devchain": "node ./tests/utils/test-chain.js",
     "lint": "solhint src/**/*.sol",
-    "test": "yarn jest --runInBand --detectOpenHandles"
+    "test": "yarn jest"
   },
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
