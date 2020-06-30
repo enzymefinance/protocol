@@ -1,6 +1,5 @@
 const { orders, signatures } = require('@airswap/order-utils');
 const { GANACHE_PROVIDER } = require('@airswap/order-utils').constants;
-import web3 from '~/deploy/utils/get-web3';
 import { ENCODING_TYPES } from '~/tests/utils/constants';
 import { encodeArgs } from '~/tests/utils/formatting';
 
@@ -18,7 +17,7 @@ export const createUnsignedAirSwapOrder = async ({
   nonce,
   version,
   duration = 24 * 60 * 60, // 1 day
-}) => {
+}, web3) => {
   const latestBlock = await web3.eth.getBlock('latest');
 
   const order = await orders.getOrder({
@@ -60,7 +59,7 @@ export const signAirSwapOrder = async (order, exchangeAddress, signer) => {
   return order;
 };
 
-export const encodeAirSwapTakeOrderArgs = (order) => {
+export const encodeAirSwapTakeOrderArgs = (order, web3) => {
   const orderAddresses = [];
   const orderValues = [];
   const tokenKinds = [];
@@ -95,5 +94,5 @@ export const encodeAirSwapTakeOrderArgs = (order) => {
     sigUintComponent,
     version
   ];
-  return encodeArgs(ENCODING_TYPES.AIR_SWAP, args);
+  return encodeArgs(ENCODING_TYPES.AIR_SWAP, args, web3);
 };

@@ -1,111 +1,87 @@
+const path = require('path');
 const rp = require('request-promise');
 const fs = require('fs');
-const thirdpartyDir = './thirdparty';
+const outDir = path.join(__dirname, '..', 'out');
 
-const kyberContractNames = [
-  'ConversionRates',
-  'ExpectedRate',
-  'FeeBurner',
-  'KyberNetwork',
-  'KyberNetworkProxy',
-  'KyberReserve',
-  'WhiteList',
-];
-const oasisDexContractNames = [
-  'OasisDexExchange',
-];
-const uniswapContractNames = [
-  'UniswapExchange',
-  'UniswapFactory',
-];
-const zeroExV2ContractNames = [
-  'ZeroExV2ERC20Proxy',
-  'ZeroExV2Exchange',
-];
-const zeroExV3ContractNames = [
-  'ZeroExV3ERC20Proxy',
-  'ZeroExV3Exchange',
-  'ZeroExV3Staking',
-  'ZeroExV3StakingProxy',
-  'ZeroExV3ZrxVault'
-];
+const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
+const commitHash = '50655a7faa4261a6fb4edc7f0e4630630af15167';
 
-const contractNames = [].concat(
-  kyberContractNames,
-  oasisDexContractNames,
-  uniswapContractNames,
-  zeroExV2ContractNames,
-  zeroExV3ContractNames,
-);
-
-function findStringArrayDuplicate(array) {
-  const uniqueItems = {};
-  for (const item of array) {
-    if (typeof item !== 'string') throw new Error(`${item} is not a string.`)
-
-    if (item in uniqueItems) {
-      return item;
-    }
-    uniqueItems[item] = true;
+// per-project mapping of actual contract names to the names we use
+const artifacts = {
+  kyber: {
+    'KyberNetworkProxy': 'KyberNetworkProxy',
+  },
+  kyberMock: {
+    'MockKyberNetwork': 'MockKyberNetwork',
+  },
+  oasis: {
+    'MatchingMarket': 'OasisDexExchange',
+  },
+  zeroExV2: {
+    'ERC20Proxy': 'ZeroExV2ERC20Proxy',
+    'Exchange': 'ZeroExV2Exchange',
+  },
+  zeroExV3: {
+    'Exchange': 'ZeroExV3Exchange',
+    'Staking': 'ZeroExV3Staking',
+    'StakingProxy': 'ZeroExV3StakingProxy',
+    'ZrxVault': 'ZeroExV3ZrxVault'
+  },
+  airSwap: {
+    'Swap': 'AirSwapSwap',
+    'Types': 'AirSwapTypes',
+    'ERC20TransferHandler': 'AirSwapERC20TransferHandler',
+    'TransferHandlerRegistry': 'AirSwapTransferHandlerRegistry'
+  },
+  uniswap: {
+    'UniswapExchange': 'UniswapExchange',
+    'UniswapFactory': 'UniswapFactory'
   }
 }
 
-const requestOptions = (fileExtension) => (contractName) => {
-  return {
-    uri: `https://raw.githubusercontent.com/melonproject/thirdparty-artifacts/master/thirdparty/${contractName}${fileExtension}`
-  }
+const mkdir = dir => !fs.existsSync(dir) && fs.mkdirSync(dir);
+
+const request = (projectName, contractName) => {
+  const options = {
+    uri: `${baseUrl}/${commitHash}/artifacts/${projectName}/${contractName}.json`
+  };
+
+  return rp(options);
 };
 
-const abiRequestOptions = requestOptions('.abi');
-const bytecodeRequestOptions = requestOptions('.bin');
-
-function mkdir(dir) {
-  if (!fs.existsSync(dir)){
-      fs.mkdirSync(dir);
-  }
-}
-
-async function wrapRequestResult(request, contractName, fileExtension) {
-  const result = await request;
-
+const wrapRequest = async (
+  request,
+  projectName,
+  originalContractName,
+  outputContractName
+) => {
   return {
-    contractName,
-    fileExtension,
-    content: result
+    projectName,
+    outputContractName,
+    content: (await request(projectName, originalContractName))
   };
 }
 
 (async () => {
-
-  const duplicate = findStringArrayDuplicate(contractNames);
-  if (duplicate !== undefined) {
-    throw new Error(`${duplicate} is duplicated.`);
-  }
-
-  const requests = [];
-  for (const cName of contractNames) {
-    {
-      const request = rp(abiRequestOptions(cName));
-      const abiReq = wrapRequestResult(request, cName, '.abi');
-      requests.push(abiReq);
-    }
-    {
-      const request = rp(bytecodeRequestOptions(cName));
-      const bytecodeReq = wrapRequestResult(request, cName, '.bin');
-      requests.push(bytecodeReq);
-    }
-  }
+  const requests = Object.entries(artifacts)
+    .map(([projectName, contractNameMappings]) => (
+      Object.entries(contractNameMappings).map(
+        ([originalName, outputName]) => wrapRequest(
+          request, projectName, originalName, outputName
+        )
+      )
+    )
+  ).reduce((a,b) => a.concat(b), []);
 
   try {
+    mkdir(outDir);
     const results = await Promise.all(requests);
-    mkdir(thirdpartyDir);
     for (const result of results) {
-      const { contractName, fileExtension, content } = result;
-      fs.writeFileSync(`${thirdpartyDir}/${contractName}${fileExtension}`, content);
+      const { outputContractName, content } = result;
+      fs.writeFileSync(`${outDir}/${outputContractName}.json`, content);
     }
   }
   catch (e) {
-    console.log(e)
+    console.error(e)
   }
-
 })();

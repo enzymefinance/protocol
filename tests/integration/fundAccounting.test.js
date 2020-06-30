@@ -7,31 +7,32 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+let web3;
 let deployer, manager, investor;
 let defaultTxOpts;
 let mln, weth;
 let fund;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
-
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  const fundFactory = contracts.FundFactory;
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   fund = await setupFundWithParams({
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 });
 
@@ -47,7 +48,8 @@ test('initial investment (with quote token)', async () => {
       investor,
       isInitial: true,
       tokenContract: weth
-    }
+    },
+    web3
   });
 
   const fundWethHoldings = await call(vault, 'assetBalances', [weth.options.address])
@@ -69,7 +71,7 @@ test('sending quote token directly to Vault does NOT affect fund calculations', 
     await call(vault, 'assetBalances', [weth.options.address])
   );
 
-  await send(weth, 'transfer', [vault.options.address, tokenQuantity], defaultTxOpts);
+  await send(weth, 'transfer', [vault.options.address, tokenQuantity], defaultTxOpts, web3);
 
   const postFundGav = await call(shares, 'calcGav');
   const postFundSharePrice = await call(shares, 'calcSharePrice');

@@ -7,56 +7,52 @@
  */
 
 import { randomHex } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import web3 from '~/deploy/utils/get-web3';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import getAccounts from '~/deploy/utils/getAccounts';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, maliciousUser;
-let kyberAdapter, oasisDexAdapter, oasisDexExchange, uniswapAdapter, uniswapFactory;
-let engine, engineAdapter, registry;
-let weth, mln;
+let kyberAdapter, oasisDexAdapter, uniswapAdapter;
+let engineAdapter, registry;
+let weth;
+let fundFactory;
 
 beforeAll(async () => {
-  [deployer, manager, maliciousUser] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, maliciousUser] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
-
-  weth = contracts.WETH;
-  mln = contracts.MLN;
-
-  engine = contracts.Engine;
-  engineAdapter = contracts.EngineAdapter;
-  kyberAdapter = contracts.KyberAdapter;
-  oasisDexExchange = contracts.OasisDexExchange;
-  oasisDexAdapter = contracts.OasisDexAdapter;
-  registry = contracts.Registry;
-  uniswapAdapter = contracts.UniswapAdapter;
-  uniswapFactory = contracts.UniswapFactory;
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
+  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 });
 
-describe('constructor', async () => {
+describe('constructor', () => {
   let fund;
   let integrationAdapters;
   let enabledAdapters;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts.FundFactory;
-
-    integrationAdapters = [oasisDexAdapter.options.address, uniswapAdapter.options.address];
+    integrationAdapters = [
+      oasisDexAdapter.options.address,
+      uniswapAdapter.options.address
+    ];
 
     fund = await setupFundWithParams({
       integrationAdapters,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
 
     enabledAdapters = await call(fund.vault, 'getEnabledAdapters');
@@ -79,11 +75,10 @@ describe('disableAdapters', () => {
   let disableAdapterTxBlock;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts.FundFactory;
-
-    adaptersToDisable = [uniswapAdapter.options.address, engineAdapter.options.address];
+    adaptersToDisable = [
+      uniswapAdapter.options.address,
+      engineAdapter.options.address
+    ];
 
     initialAdapters = [
       oasisDexAdapter.options.address,
@@ -94,7 +89,9 @@ describe('disableAdapters', () => {
       integrationAdapters: initialAdapters,
       manager,
       quoteToken: weth.options.address,
-      fundFactory
+      manager,
+      fundFactory,
+      web3
     });
   });
 
@@ -105,7 +102,8 @@ describe('disableAdapters', () => {
           fund.vault,
           'disableAdapters',
           [adaptersToDisable],
-          { ...defaultTxOpts, from: maliciousUser }
+          { ...defaultTxOpts, from: maliciousUser },
+          web3
         )
       ).rejects.toThrowFlexible("Only the fund manager can call this function");
     });
@@ -114,7 +112,7 @@ describe('disableAdapters', () => {
       const preEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
 
       await expect(
-        send(fund.vault, 'disableAdapters', [[randomHex(20)]], managerTxOpts)
+        send(fund.vault, 'disableAdapters', [[randomHex(20)]], managerTxOpts, web3)
       ).rejects.toThrowFlexible("adapter already disabled");
 
       const postEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
@@ -129,7 +127,7 @@ describe('disableAdapters', () => {
     it('allows an authenticated user to disable adapters', async () => {  
       preEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
       await expect(
-        send(fund.vault, 'disableAdapters', [adaptersToDisable], managerTxOpts)
+        send(fund.vault, 'disableAdapters', [adaptersToDisable], managerTxOpts, web3)
       ).resolves.not.toThrow();
       disableAdapterTxBlock = await web3.eth.getBlockNumber();
 
@@ -170,10 +168,6 @@ describe('enableAdapters', () => {
   let enableAdapterTxBlock;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    const fundFactory = contracts.FundFactory;
-
     initialAdapters = [oasisDexAdapter.options.address];
     adaptersToEnable = [uniswapAdapter.options.address, kyberAdapter.options.address];
 
@@ -181,7 +175,9 @@ describe('enableAdapters', () => {
       integrationAdapters: initialAdapters,
       manager,
       quoteToken: weth.options.address,
-      fundFactory
+      fundFactory,
+      manager,
+      web3
     });
 
     // De-register KyberAdapter from registry to re-register it later
@@ -189,7 +185,8 @@ describe('enableAdapters', () => {
       registry,
       'deregisterIntegrationAdapter',
       [kyberAdapter.options.address],
-      defaultTxOpts
+      defaultTxOpts,
+      web3
     );
   });
 
@@ -200,7 +197,8 @@ describe('enableAdapters', () => {
           fund.vault,
           'enableAdapters',
           [adaptersToEnable],
-          { ...defaultTxOpts, from: maliciousUser }
+          { ...defaultTxOpts, from: maliciousUser },
+          web3
         )
       ).rejects.toThrowFlexible("Only the fund manager can call this function");
     });
@@ -209,7 +207,13 @@ describe('enableAdapters', () => {
       const preEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
 
       await expect(
-        send(fund.vault, 'enableAdapters', [initialAdapters], managerTxOpts)
+        send(
+          fund.vault,
+          'enableAdapters',
+          [initialAdapters],
+          managerTxOpts,
+          web3
+        )
       ).rejects.toThrowFlexible("Adapter is already enabled");
 
       const postEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
@@ -219,7 +223,7 @@ describe('enableAdapters', () => {
   
     it('does NOT allow un-registered adapter', async () => {
       await expect(
-        send(fund.vault, 'enableAdapters', [adaptersToEnable], managerTxOpts)
+        send(fund.vault, 'enableAdapters', [adaptersToEnable], managerTxOpts, web3)
       ).rejects.toThrowFlexible("Adapter is not on Registry");
     });
   });
@@ -233,13 +237,14 @@ describe('enableAdapters', () => {
         registry,
         'registerIntegrationAdapter',
         [kyberAdapter.options.address],
-        defaultTxOpts
+        defaultTxOpts,
+        web3
       );
 
       preEnabledAdapters = await call(fund.vault, 'getEnabledAdapters');
 
       await expect(
-        send(fund.vault, 'enableAdapters', [adaptersToEnable], managerTxOpts)
+        send(fund.vault, 'enableAdapters', [adaptersToEnable], managerTxOpts, web3)
       ).resolves.not.toThrow();
       enableAdapterTxBlock = await web3.eth.getBlockNumber();
 

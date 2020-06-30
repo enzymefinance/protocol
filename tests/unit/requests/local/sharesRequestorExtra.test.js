@@ -3,30 +3,29 @@
  */
 
 import { BN, toWei, isTopic } from 'web3-utils';
-
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { increaseTime } from '~/tests/utils/rpc';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3;
 let deployer;
 let defaultTxOpts;
 let weth;
 let sharesRequestor;
 let basicRequest;
+let fundFactory;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
+  web3 = await startChain();
+  [deployer] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
-
-  sharesRequestor = contracts[CONTRACT_NAMES.SHARES_REQUESTOR];
-  weth = contracts.WETH;
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3)
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
 
   basicRequest = {
     owner: deployer,
@@ -48,7 +47,6 @@ describe('cancellation conditions', () => {
 //   let fund;
 
 //   beforeAll(async () => {
-//     const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
 //     const contracts = deployed.contracts;
 //     fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
 
@@ -126,7 +124,9 @@ const createRequest = async (fundAddress, request) => {
     await send(
       request.investmentAssetContract,
       'transfer',
-      [request.owner, investorTokenShortfall.toString()]
+      [request.owner, investorTokenShortfall.toString()],
+      defaultTxOpts,
+      web3
     )
   }
 
@@ -145,6 +145,7 @@ const createRequest = async (fundAddress, request) => {
       request.investmentAmount,
       request.minSharesQuantity
     ],
-    { ...request.txOpts, value: request.amguValue }
+    { ...request.txOpts, value: request.amguValue },
+    web3
   );
 };

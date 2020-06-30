@@ -9,39 +9,36 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpMul } from '~/tests/utils/BNmath';
 import {
   CONTRACT_NAMES,
-  EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
 } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
-import getAccounts from '~/deploy/utils/getAccounts';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3;
 let defaultTxOpts, managerTxOpts;
 let deployer, manager, investor;
-let contracts;
 let takeOrderSignature;
-let fundFactory, kyberAdapter, kyberNetworkProxy, weth, mln, eur;
+let fundFactory, kyberAdapter, kyberNetworkProxy, weth, mln, zrx;
 let fund;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
-
-  fundFactory = contracts.FundFactory;
-  kyberAdapter = contracts.KyberAdapter;
-  kyberNetworkProxy = contracts.KyberNetworkProxy;
-  weth = contracts.WETH;
-  mln = contracts.MLN;
-  eur = contracts.EUR;
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
+  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
 
   fund = await setupFundWithParams({
     integrationAdapters: [kyberAdapter.options.address],
@@ -52,7 +49,8 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 
   takeOrderSignature = getFunctionSignature(
@@ -93,7 +91,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -104,6 +102,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -147,20 +146,26 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  console.log(`WETH: ${preFundBalanceOfWeth}`)
+  console.log(`MLN: ${preFundBalanceOfMln}`)
+
   const preFundHoldingsWeth = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );
   const preFundHoldingsMln = new BN(
     await call(vault, 'assetBalances', [mln.options.address])
   );
+  console.log(`WETH: ${preFundHoldingsWeth}`)
+  console.log(`MLN: ${preFundBalanceOfMln}`)
 
   const encodedArgs = encodeTakeOrderArgs({
     makerAsset,
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
+  // XXX: this errors with a revert, but no revert message
   await send(
     vault,
     'callOnIntegration',
@@ -170,6 +175,7 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -198,7 +204,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = eur.options.address;
+  const makerAsset = zrx.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
@@ -213,7 +219,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
   const preFundHoldingsWeth = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );
@@ -221,7 +227,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
     await call(vault, 'assetBalances', [mln.options.address])
   );
   const preFundHoldingsEur = new BN(
-    await call(vault, 'assetBalances', [eur.options.address])
+    await call(vault, 'assetBalances', [zrx.options.address])
   );
 
   const encodedArgs = encodeTakeOrderArgs({
@@ -229,7 +235,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -240,11 +246,12 @@ test('swap MLN directly to EUR without intermediary', async () => {
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postFundBalanceOfEur = new BN(await call(eur, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
   const postFundHoldingsWeth = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
   );
@@ -252,7 +259,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
     await call(vault, 'assetBalances', [mln.options.address])
   );
   const postFundHoldingsEur = new BN(
-    await call(vault, 'assetBalances', [eur.options.address])
+    await call(vault, 'assetBalances', [zrx.options.address])
   );
 
   const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
@@ -275,7 +282,7 @@ test('swap fails if make quantity is too high', async () => {
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = eur.options.address;
+  const makerAsset = zrx.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
@@ -293,7 +300,7 @@ test('swap fails if make quantity is too high', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await expect(
     send(
@@ -305,6 +312,7 @@ test('swap fails if make quantity is too high', async () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     )
   ).rejects.toThrowFlexible("received less buy asset than expected");
 });

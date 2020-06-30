@@ -1,58 +1,43 @@
 const { orders } = require('@airswap/order-utils');
-const { ERC20_INTERFACE_ID } = require('@airswap/order-utils').constants;
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import getAccounts from '~/deploy/utils/getAccounts';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { setupFundWithParams } from '~/tests/utils/fund';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import {
   createUnsignedAirSwapOrder,
   signAirSwapOrder,
   encodeAirSwapTakeOrderArgs
 } from '~/tests/utils/airSwap';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
-let contracts;
 let airSwapAdapter;
 let mln, weth, swapContract;
 let fund;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts =  { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  swapContract = contracts.Swap;
-  orders.setVerifyingContract(swapContract.options.address);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
 
-  const fundFactory = contracts.FundFactory;
-  airSwapAdapter = contracts.AirSwapAdapter;
+  swapContract = getDeployed(CONTRACT_NAMES.AIR_SWAP_SWAP, web3, mainnetAddrs.airSwap.AirSwapSwap);
 
-  const erc20TransferHandler = contracts.ERC20TransferHandler;
-  const transferHandlerRegistry = contracts.TransferHandlerRegistry;
-  await send(
-    transferHandlerRegistry,
-    'addTransferHandler',
-    [
-      ERC20_INTERFACE_ID,
-      erc20TransferHandler.options.address,
-    ],
-    defaultTxOpts
-  );
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  airSwapAdapter = getDeployed(CONTRACT_NAMES.AIR_SWAP_ADAPTER, web3);
 
   fund = await setupFundWithParams({
     integrationAdapters: [airSwapAdapter.options.address],
@@ -64,6 +49,7 @@ beforeAll(async () => {
     manager,
     quoteToken: weth.options.address,
     fundFactory,
+    web3
   });
 });
 
@@ -82,17 +68,18 @@ describe('Fund takes an order', () => {
       senderWallet: vault.options.address,
       senderToken: weth.options.address,
       senderTokenAmount: fillQuantity,
-    });
+    }, web3);
 
     signedOrder = await signAirSwapOrder(unsignedOrder, swapContract.options.address, deployer);
 
-    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder);
+    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder, web3);
 
     await send(
       mln,
       'approve',
       [swapContract.options.address, makerAssetAmount],
       defaultTxOpts,
+      web3
     );
 
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -113,6 +100,7 @@ describe('Fund takes an order', () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));

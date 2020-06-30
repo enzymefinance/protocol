@@ -11,13 +11,8 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-
-import web3 from '~/deploy/utils/get-web3';
-import { call, fetchContract, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import getAccounts from '~/deploy/utils/getAccounts';
-
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { call, send } from '~/deploy/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import {
   getEventCountFromLogs,
@@ -25,83 +20,47 @@ import {
   getFunctionSignature
 } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
-let defaultTxOpts;
-let contracts;
+let web3;
+let deployer, manager;
+let managerTxOpts;
 let dai, mln, weth;
 let uniswapAdapter, uniswapFactory;
 let mlnExchange, daiExchange;
-let fund;
+let fund, fundFactory;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
-  defaultTxOpts = { from: deployer, gas: 8000000 };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
+  managerTxOpts = { from: manager, gas: 8000000 };
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  dai = contracts.DAI;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-
-  uniswapAdapter = contracts[CONTRACT_NAMES.UNISWAP_ADAPTER];
-  uniswapFactory = contracts[CONTRACT_NAMES.UNISWAP_EXCHANGE];
+  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
+  uniswapFactory = getDeployed(CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE, web3, mainnetAddrs.uniswap.UniswapFactory);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   // Load interfaces for uniswap exchanges of tokens to be traded
-  const iUniswapFactory = await fetchContract(
-    "IUniswapFactory",
-    contracts.UniswapFactory.options.address
-  );
-  const mlnExchangeAddress = await call(iUniswapFactory, 'getExchange', [mln.options.address]);
-  mlnExchange = await fetchContract(
-    "IUniswapExchange",
+  const mlnExchangeAddress = await call(uniswapFactory, 'getExchange', [mln.options.address]);
+  mlnExchange = await getDeployed(
+    CONTRACT_NAMES.UNISWAP_EXCHANGE_INTERFACE,
+    web3,
     mlnExchangeAddress
   );
   const daiExchangeAddress = await call(uniswapFactory, 'getExchange', [dai.options.address]);
-  daiExchange = await fetchContract(
-    "IUniswapExchange",
+  daiExchange = await getDeployed(
+    CONTRACT_NAMES.UNISWAP_EXCHANGE_INTERFACE,
+    web3,
     daiExchangeAddress
-  );
-
-  // Seed uniswap exchanges with liquidity
-  const ethLiquidityAmount = toWei('1', 'ether');
-  const daiLiquidityAmount = toWei('200', 'ether');
-  const mlnLiquidityAmount = toWei('2', 'ether');
-
-  const minLiquidity = 0; // For first liquidity provider
-  const deadline = (await web3.eth.getBlock('latest')).timestamp + 300 // Arbitrary
-
-  await send(
-    mln,
-    'approve',
-    [mlnExchange.options.address, mlnLiquidityAmount],
-    defaultTxOpts
-  );
-  await send(
-    mlnExchange,
-    'addLiquidity',
-    [minLiquidity, mlnLiquidityAmount, deadline],
-    { ...defaultTxOpts, value: ethLiquidityAmount }
-  );
-
-  await send(
-    dai,
-    'approve',
-    [daiExchange.options.address, daiLiquidityAmount],
-    defaultTxOpts
-  );
-  await send(
-    daiExchange,
-    'addLiquidity',
-    [minLiquidity, daiLiquidityAmount, deadline],
-    { ...defaultTxOpts, value: ethLiquidityAmount }
   );
 });
 
@@ -127,11 +86,6 @@ describe('takeOrder', () => {
         [takerQuantity]
       );
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
@@ -140,7 +94,9 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -159,7 +115,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -169,7 +125,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -228,11 +185,6 @@ describe('takeOrder', () => {
         [takerQuantity]
       );
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
@@ -241,7 +193,9 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -260,7 +214,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -270,7 +224,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -334,11 +289,6 @@ describe('takeOrder', () => {
         [intermediateEth]
       );
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [uniswapAdapter.options.address],
         initialInvestment: {
@@ -347,7 +297,9 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -366,7 +318,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -376,7 +328,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsDai = new BN(

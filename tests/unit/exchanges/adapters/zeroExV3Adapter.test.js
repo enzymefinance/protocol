@@ -10,16 +10,10 @@
  * TODO: takeOrder: Order: partial amount w/ takerFee and protocolFee
  */
 
-import { assetDataUtils } from '@0x/order-utils';
 import { BN, toWei, randomHex } from 'web3-utils';
-
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import getAccounts from '~/deploy/utils/getAccounts';
-import web3 from '~/deploy/utils/get-web3';
-
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { setupFundWithParams } from '~/tests/utils/fund';
 import {
   getEventCountFromLogs,
   getEventFromLogs,
@@ -30,40 +24,47 @@ import {
   encodeZeroExTakeOrderArgs,
   signZeroExOrder
 } from '~/tests/utils/zeroExV3';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
-let defaultTxOpts;
-let contracts;
-let dai, mln, weth;
-let priceSource;
+let web3;
+let deployer, manager;
+let defaultTxOpts, managerTxOpts, governorTxOpts;
+let zrx, mln, weth;
 let erc20Proxy, zeroExAdapter, zeroExExchange;
-let fund;
+let fund, fundFactory;
 let takeOrderSignature;
 let defaultProtocolFeeMultiplier, protocolFeeAmount, chainId;
 
 beforeAll(async () => {
   // @dev Set gas price explicitly for consistently calculating 0x v3's protocol fee
   const gasPrice = toWei('2', 'gwei');
-  [deployer] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
+  managerTxOpts = { from: manager, gas: 8000000, gasPrice };
+  governorTxOpts = { from: mainnetAddrs.zeroExV3.ZeroExV3Governor, gas: 8000000 };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
+  // load governor with eth so it can send tx
+  await web3.eth.sendTransaction({
+    from: deployer,
+    to: mainnetAddrs.zeroExV3.ZeroExV3Governor,
+    value: toWei('1', 'ether'),
+    gas: 1000000
+  });
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  dai = contracts.DAI;
-
-  priceSource = contracts[CONTRACT_NAMES.TESTING_PRICEFEED];
-
-  erc20Proxy = contracts[CONTRACT_NAMES.ZERO_EX_V3_ERC20_PROXY];
-  zeroExAdapter = contracts[CONTRACT_NAMES.ZERO_EX_V3_ADAPTER];
-  zeroExExchange = contracts[CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE];
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
+  erc20Proxy = getDeployed(CONTRACT_NAMES.IERC20, web3, mainnetAddrs.zeroExV3.ZeroExV3ERC20Proxy);
+  zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   defaultProtocolFeeMultiplier = await call(zeroExExchange, 'protocolFeeMultiplier');
   protocolFeeAmount = new BN(defaultProtocolFeeMultiplier).mul(new BN(gasPrice));
@@ -75,15 +76,14 @@ describe('takeOrder', () => {
   describe('__validateTakeOrderParams', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, fillQuantity, takerFeeTokenAddress;
-    let badTokenAddress;
 
     beforeAll(async () => {
-      // Set up fund
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -97,7 +97,6 @@ describe('takeOrder', () => {
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
       takerFeeTokenAddress = weth.options.address;
-      badTokenAddress = dai.options.address;
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -112,10 +111,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -129,7 +129,7 @@ describe('takeOrder', () => {
       const { vault } = fund;
       const badFillQuantity = new BN(fillQuantity).add(new BN(1)).toString();
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, badFillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, badFillQuantity, web3);
 
       await expect(
         send(
@@ -140,7 +140,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).rejects.toThrowFlexible("taker fill amount greater than max order quantity");
     });
@@ -153,11 +154,6 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -166,7 +162,9 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -188,10 +186,11 @@ describe('takeOrder', () => {
           takerTokenAddress,
           takerAssetAmount,
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -204,13 +203,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -218,7 +210,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -228,7 +220,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -280,11 +273,6 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -293,7 +281,9 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -321,10 +311,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -337,13 +328,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -351,7 +335,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -361,7 +345,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -418,11 +403,6 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -431,7 +411,9 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -459,10 +441,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -475,13 +458,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -489,7 +465,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -499,7 +475,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -549,20 +526,15 @@ describe('takeOrder', () => {
     });
   });
 
-  describe('Fill Order 4: Full amount, NO protocol fee, w/ taker fee in dai (3rd asset)', () => {
+  describe('Fill Order 4: Full amount, NO protocol fee, w/ taker fee in zrx (3rd asset)', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
     let preFundHoldingsMln, postFundHoldingsMln;
     let preFundHoldingsWeth, postFundHoldingsWeth;
-    let preFundHoldingsDai, postFundHoldingsDai;
+    let preFundHoldingsZrx, postFundHoldingsZrx;
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -571,11 +543,19 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
 
       // Set protocolFeeMultiplier to 0
-      await send(zeroExExchange, 'setProtocolFeeMultiplier', [0], defaultTxOpts);
+      await send(
+        zeroExExchange,
+        'setProtocolFeeMultiplier',
+        [0],
+        governorTxOpts,
+        web3
+      );
     });
 
     afterAll(async () => {
@@ -584,7 +564,8 @@ describe('takeOrder', () => {
         zeroExExchange,
         'setProtocolFeeMultiplier',
         [defaultProtocolFeeMultiplier],
-        defaultTxOpts
+        governorTxOpts,
+        web3
       );
     });
 
@@ -594,7 +575,7 @@ describe('takeOrder', () => {
       const makerAddress = deployer;
       const makerAssetAmount = toWei('1', 'Ether');
       const takerAssetAmount = toWei('0.005', 'Ether');
-      const makerTokenAddress = dai.options.address;
+      const makerTokenAddress = zrx.options.address;
       const takerTokenAddress = weth.options.address;
       const fillQuantity = takerAssetAmount;
 
@@ -608,12 +589,13 @@ describe('takeOrder', () => {
           takerTokenAddress,
           takerAssetAmount,
         },
+        web3
       );
 
-      await send(dai, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
       await expect(
         send(
           vault,
@@ -623,7 +605,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).resolves.not.toThrow();
     });
@@ -633,7 +616,7 @@ describe('takeOrder', () => {
       const makerAssetAmount = toWei('1', 'Ether');
       const takerAssetAmount = toWei('0.05', 'Ether');
       const feeRecipientAddress = randomHex(20);
-      takerFeeTokenAddress = dai.options.address;
+      takerFeeTokenAddress = zrx.options.address;
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
       fillQuantity = takerAssetAmount;
@@ -652,10 +635,17 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(
+        mln,
+        'approve',
+        [erc20Proxy.options.address, makerAssetAmount],
+        defaultTxOpts,
+        web3
+      );
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -668,24 +658,17 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
       preFundHoldingsMln = new BN(
         await call(vault, 'assetBalances', [mln.options.address])
       );
-      preFundHoldingsDai = new BN(
-        await call(vault, 'assetBalances', [dai.options.address])
+      preFundHoldingsZrx = new BN(
+        await call(vault, 'assetBalances', [zrx.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -695,7 +678,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -704,8 +688,8 @@ describe('takeOrder', () => {
       postFundHoldingsMln = new BN(
         await call(vault, 'assetBalances', [mln.options.address])
       );
-      postFundHoldingsDai = new BN(
-        await call(vault, 'assetBalances', [dai.options.address])
+      postFundHoldingsZrx = new BN(
+        await call(vault, 'assetBalances', [zrx.options.address])
       );
     });
 
@@ -716,8 +700,8 @@ describe('takeOrder', () => {
       expect(postFundHoldingsMln).bigNumberEq(
         preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
       );
-      expect(postFundHoldingsDai).bigNumberEq(
-        preFundHoldingsDai.sub(new BN(signedOrder.takerFee))
+      expect(postFundHoldingsZrx).bigNumberEq(
+        preFundHoldingsZrx.sub(new BN(signedOrder.takerFee))
       );
     });
 
@@ -753,11 +737,6 @@ describe('takeOrder', () => {
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -766,11 +745,13 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
 
       // Set protocolFeeMultiplier to 0
-      await send(zeroExExchange, 'setProtocolFeeMultiplier', [0], defaultTxOpts);
+      await send(zeroExExchange, 'setProtocolFeeMultiplier', [0], governorTxOpts, web3);
     });
 
     afterAll(async () => {
@@ -779,7 +760,8 @@ describe('takeOrder', () => {
         zeroExExchange,
         'setProtocolFeeMultiplier',
         [defaultProtocolFeeMultiplier],
-        defaultTxOpts
+        governorTxOpts,
+        web3
       );
     });
 
@@ -801,10 +783,11 @@ describe('takeOrder', () => {
           takerTokenAddress,
           takerAssetAmount
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -817,13 +800,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -831,7 +807,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -841,7 +817,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -885,18 +862,13 @@ describe('takeOrder', () => {
 
   describe('Fill Order 6: Partial amount, w/ protocol fee (taker asset), w/ taker fee in mln (maker asset)', () => {
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
+    let makerTokenAddress, takerTokenAddress, takerFeeTokenAddress;
     let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
     let preFundHoldingsMln, postFundHoldingsMln;
     let preFundHoldingsWeth, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [zeroExAdapter.options.address],
         initialInvestment: {
@@ -905,7 +877,9 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -918,7 +892,6 @@ describe('takeOrder', () => {
       takerFeeTokenAddress = mln.options.address;
       makerTokenAddress = mln.options.address;
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
@@ -933,10 +906,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
-      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -953,13 +927,6 @@ describe('takeOrder', () => {
       makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
       takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
 
-      const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-      const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-        EMPTY_ADDRESS :
-        assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
       preFundHoldingsWeth = new BN(
         await call(vault, 'assetBalances', [weth.options.address])
       );
@@ -967,7 +934,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString());
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString(), web3);
 
       tx = await send(
         vault,
@@ -977,7 +944,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(

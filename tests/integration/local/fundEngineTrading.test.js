@@ -5,62 +5,42 @@
  * @test The amount of WETH being asked for by the fund is respected as a minimum
  */
 
-import { encodeFunctionSignature } from 'web3-eth-abi';
 import { BN, toWei } from 'web3-utils';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-
 import { BNExpMul } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getFunctionSignature } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
 import { increaseTime } from '~/tests/utils/rpc';
 import { setupInvestedTestFund } from '~/tests/utils/fund';
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer, manager, investor;
-let defaultTxOpts, managerTxOpts, investorTxOpts;
+let web3;
+let deployer, manager;
+let defaultTxOpts, managerTxOpts;
 let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource;
-let contracts;
 let mlnPrice, makerQuantity, takerQuantity;
-let takeOrderSignature, takeOrderSignatureBytes;
-let mlnToEthRate, wethToEthRate;
+let takeOrderSignature;
 
 beforeAll(async () => {
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  investorTxOpts = { ...defaultTxOpts, from: investor };
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY, CONTRACT_NAMES.ENGINE]);
-  contracts = deployed.contracts;
-  engine = contracts.Engine;
-  engineAdapter = contracts.EngineAdapter;
-  kyberAdapter = contracts.KyberAdapter;
-  priceSource = contracts.TestingPriceFeed;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
+
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
-  takeOrderSignatureBytes = encodeFunctionSignature(
-    takeOrderSignature
-  );
-
-  // Set initial prices to be predictably the same as prices when updated again later
-  wethToEthRate = toWei('1', 'ether');
-  mlnToEthRate = toWei('0.5', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address],
-      [wethToEthRate, mlnToEthRate],
-    ],
-    defaultTxOpts
-  );
-
   mlnPrice = (await priceSource.methods
     .getCanonicalRate(mln.options.address, weth.options.address)
     .call())[0];
@@ -72,11 +52,11 @@ beforeAll(async () => {
 });
 
 test('Setup a fund with amgu charged to seed Melon Engine', async () => {
-  await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
+  await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts, web3);
 
   // TODO: Need to calculate this in fund.js
   const amguTxValue = toWei('10', 'ether');
-  fund = await setupInvestedTestFund(contracts, manager, amguTxValue);
+  fund = await setupInvestedTestFund(mainnetAddrs, manager, amguTxValue, web3);
 });
 
 test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async () => {
@@ -88,7 +68,7 @@ test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async 
     makerQuantity: minMakerQuantity,
     takerAsset: weth.options.address,
     takerQuantity: toWei('0.1', 'ether'),
-  });
+  }, web3);
 
   await expect(
     send(
@@ -100,17 +80,17 @@ test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async 
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     )
   ).resolves.not.toThrow()
 });
 
-// TODO: fix failure due to web3 2.0 RPC interface (see increaseTime.js)
 test('Trade on Melon Engine', async () => {
   const { vault } = fund;
 
   // Thaw frozen eth
-  await increaseTime(86400 * 32);
-  await send(engine, 'thaw');
+  await increaseTime(86400 * 32, web3);
+  await send(engine, 'thaw', [], defaultTxOpts, web3);
 
   const preLiquidEther = new BN(await call(engine, 'liquidEther'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -130,7 +110,10 @@ test('Trade on Melon Engine', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
+
+  // get fresh price since we changed blocktime
+  await updateKyberPriceFeed(priceSource, web3);
 
   await send(
     vault,
@@ -141,6 +124,7 @@ test('Trade on Melon Engine', async () => {
       encodedArgs,
     ],
     managerTxOpts,
+    web3
   );
 
   const postLiquidEther = new BN(await call(engine, 'liquidEther'));
@@ -175,7 +159,7 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await expect(
     send(
@@ -187,6 +171,7 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     )
   ).rejects.toThrowFlexible(
     "validateAndEmitOrderFillResults: received less buy asset than expected"

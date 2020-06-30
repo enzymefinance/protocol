@@ -1,36 +1,32 @@
 import { BN, toWei } from 'web3-utils';
-
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import getAccounts from '~/deploy/utils/getAccounts';
-import web3 from '~/deploy/utils/get-web3';
-
 import { BNExpDiv } from '~/tests/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import { delay } from '~/tests/utils/time';
-import updateTestingPriceFeed from '~/tests/utils/updateTestingPriceFeed';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
+let web3;
 let deployer, investor, thirdPartyCaller;
 let defaultTxOpts, investorTxOpts, gasPrice;
-let mln, weth;
+let weth, fundFactory;
 let priceSource, registry, sharesRequestor;
-let basicRequest, basicTokenPriceData;
+let basicRequest;
 
 beforeAll(async () => {
-  [deployer, investor, thirdPartyCaller] = await getAccounts();
+  web3 = await startChain();
+  [deployer, investor, thirdPartyCaller] = await web3.eth.getAccounts();
   gasPrice = toWei('2', 'gwei');
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  const contracts = deployed.contracts;
-
-  priceSource = contracts[CONTRACT_NAMES.TESTING_PRICEFEED];
-  registry = contracts[CONTRACT_NAMES.REGISTRY];
-  sharesRequestor = contracts[CONTRACT_NAMES.SHARES_REQUESTOR];
-  weth = contracts.WETH;
-  mln = contracts.MLN;
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
 
   basicRequest = {
     owner: investor,
@@ -40,25 +36,14 @@ beforeAll(async () => {
     txOpts: investorTxOpts,
     amguValue: toWei('0.1', 'ether')
   };
-
-  basicTokenPriceData = {
-    priceSource,
-    tokenAddresses: [weth.options.address, mln.options.address],
-    tokenPrices: [toWei('1', 'ether'), toWei('2', 'ether')]
-  };
 });
 
 describe('cancelRequest', () => {
-  let fundFactory;
   let fund;
   let incentiveFee;
   let requestTxBlock, cancelTxBlock;
 
   beforeAll(async () => {
-    const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-    const contracts = deployed.contracts;
-    fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
     // @dev include initial investment so test doesn't bypass Request creation
     fund = await setupFundWithParams({
       initialInvestment: {
@@ -67,7 +52,9 @@ describe('cancelRequest', () => {
         tokenContract: weth
       },
       quoteToken: weth.options.address,
-      fundFactory
+      manager: deployer,
+      fundFactory,
+      web3
     });
 
     await createRequest(fund.hub.options.address, basicRequest);
@@ -78,16 +65,16 @@ describe('cancelRequest', () => {
 
   it('does NOT allow cancellation when a cancellation condition is not met', async () => {
     await expect(
-      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
+      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts, web3)
     ).rejects.toThrowFlexible("No cancellation condition was met");
   });
 
   it('succeeds when cancellation condition is met', async () => {
     // Shut down the fund so cancellation condition passes
-    await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
+    await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
 
     await expect(
-      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
+      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts, web3)
     ).resolves.not.toThrow();
 
     cancelTxBlock = await web3.eth.getBlockNumber();
@@ -129,10 +116,6 @@ describe('executeRequestFor', () => {
     let fund;
 
     beforeAll(async () => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-  
       fund = await setupFundWithParams({
         quoteToken: weth.options.address,
         fundFactory,
@@ -140,7 +123,9 @@ describe('executeRequestFor', () => {
           contribAmount: toWei('1', 'ether'),
           investor: deployer,
           tokenContract: weth
-        }
+        },
+        manager: deployer,
+        web3
       });
     });
 
@@ -150,7 +135,8 @@ describe('executeRequestFor', () => {
           sharesRequestor,
           'executeRequestFor',
           [basicRequest.owner, fund.hub.options.address],
-          basicRequest.txOpts
+          basicRequest.txOpts,
+          web3
         )
       ).rejects.toThrowFlexible("Request does not exist");
     });
@@ -163,9 +149,10 @@ describe('executeRequestFor', () => {
           sharesRequestor,
           'executeRequestFor',
           [basicRequest.owner, fund.hub.options.address],
-          basicRequest.txOpts
+          basicRequest.txOpts,
+          web3
         )
-      ).rejects.toThrowFlexible("Price has not updated since request");      
+      ).rejects.toThrowFlexible('Price has not updated since request');      
     });
   });
 
@@ -174,13 +161,8 @@ describe('executeRequestFor', () => {
     let request, txReceipt;
     let expectedShares;
     let preTxBlock, preCallerEth, postCallerEth, preOwnerShares, postOwnerShares;
-    let preOwnerInvestmentAssetBalance, postOwnerInvestmentAssetBalance;
 
     beforeAll(async () => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
         initialInvestment: {
@@ -189,7 +171,9 @@ describe('executeRequestFor', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager: deployer,
+        web3
       });
 
       // Create request and update price
@@ -207,23 +191,16 @@ describe('executeRequestFor', () => {
     it('succeeds', async() => {
       preTxBlock = await web3.eth.getBlockNumber();
       preCallerEth = new BN(await web3.eth.getBalance(thirdPartyCaller));
-      preOwnerInvestmentAssetBalance = new BN(
-        await call(basicRequest.investmentAssetContract, 'balanceOf', [basicRequest.owner])
-      );
       preOwnerShares = new BN(await call(fund.shares, 'balanceOf', [basicRequest.owner]));
 
       const thirdPartyCallerTxOpts = { ...basicRequest.txOpts, from: thirdPartyCaller };
 
       txReceipt = await executeRequest(
         fund.hub.options.address,
-        {...basicRequest, txOpts: thirdPartyCallerTxOpts},
-        basicTokenPriceData
+        {...basicRequest, txOpts: thirdPartyCallerTxOpts}
       );
 
       postCallerEth = new BN(await web3.eth.getBalance(thirdPartyCaller));
-      postOwnerInvestmentAssetBalance = new BN(
-        await call(basicRequest.investmentAssetContract, 'balanceOf', [basicRequest.owner])
-      );
       postOwnerShares = new BN(await call(fund.shares, 'balanceOf', [basicRequest.owner]));
     });
 
@@ -274,13 +251,8 @@ describe('executeRequestFor', () => {
     let request, txReceipt;
     let expectedShares;
     let preTxBlock, preOwnerEth, postOwnerEth, preOwnerShares, postOwnerShares;
-    let preOwnerInvestmentAssetBalance, postOwnerInvestmentAssetBalance;
 
     beforeAll(async () => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
         initialInvestment: {
@@ -289,7 +261,9 @@ describe('executeRequestFor', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager: deployer,
+        web3
       });
 
       // Create request and update price
@@ -307,21 +281,14 @@ describe('executeRequestFor', () => {
     it('succeeds', async() => {
       preTxBlock = await web3.eth.getBlockNumber();
       preOwnerEth = new BN(await web3.eth.getBalance(basicRequest.owner));
-      preOwnerInvestmentAssetBalance = new BN(
-        await call(basicRequest.investmentAssetContract, 'balanceOf', [basicRequest.owner])
-      );
       preOwnerShares = new BN(await call(fund.shares, 'balanceOf', [basicRequest.owner]));
 
       txReceipt = await executeRequest(
         fund.hub.options.address,
-        basicRequest,
-        basicTokenPriceData
+        basicRequest
       );
 
       postOwnerEth = new BN(await web3.eth.getBalance(basicRequest.owner));
-      postOwnerInvestmentAssetBalance = new BN(
-        await call(basicRequest.investmentAssetContract, 'balanceOf', [basicRequest.owner])
-      );
       postOwnerShares = new BN(await call(fund.shares, 'balanceOf', [basicRequest.owner]));
     });
 
@@ -370,17 +337,14 @@ describe('executeRequestFor', () => {
 
 describe('requestShares', () => {
   describe('Bad Requests', () => {
-    let fundFactory;
     let fund;
 
     beforeAll(async () => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
       fund = await setupFundWithParams({
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager: deployer,
+        web3
       });
     });
 
@@ -397,7 +361,8 @@ describe('requestShares', () => {
             basicRequest.investmentAmount,
             basicRequest.minSharesQuantity
           ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue }
+          { ...basicRequest.txOpts, value: basicRequest.amguValue },
+          web3
         )
       ).rejects.toThrowFlexible("_hub cannot be empty");
 
@@ -412,7 +377,8 @@ describe('requestShares', () => {
         basicRequest.investmentAssetContract,
         'approve',
         [sharesRequestor.options.address, badApprovalAmount],
-        basicRequest.txOpts
+        basicRequest.txOpts,
+        web3
       );
       await expect(
         send(
@@ -423,13 +389,14 @@ describe('requestShares', () => {
             basicRequest.investmentAmount,
             basicRequest.minSharesQuantity
           ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue }
+          { ...basicRequest.txOpts, value: basicRequest.amguValue },
+          web3
         )
       ).rejects.toThrow();
     });
 
     it('does NOT allow request for a shutdown fund', async() => {
-      await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
+      await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
       await expect(
         createRequest(fund.hub.options.address, basicRequest)
       ).rejects.toThrowFlexible("Fund is not active");
@@ -442,10 +409,6 @@ describe('requestShares', () => {
     let preTxBlock, preSharesRequestorEth, postSharesRequestorEth;
 
     beforeAll(async () => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
         initialInvestment: {
@@ -454,7 +417,9 @@ describe('requestShares', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager: deployer,
+        web3
       });
 
       incentiveFee = await call(registry, 'incentive');
@@ -465,7 +430,8 @@ describe('requestShares', () => {
         basicRequest.investmentAssetContract,
         'approve',
         [sharesRequestor.options.address, basicRequest.investmentAmount],
-        basicRequest.txOpts
+        basicRequest.txOpts,
+        web3
       );
 
       preTxBlock = await web3.eth.getBlockNumber();
@@ -481,7 +447,8 @@ describe('requestShares', () => {
             basicRequest.investmentAmount,
             basicRequest.minSharesQuantity
           ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue }
+          { ...basicRequest.txOpts, value: basicRequest.amguValue },
+          web3
         )
       ).resolves.not.toThrow();
 
@@ -528,10 +495,6 @@ describe('requestShares', () => {
     let fund;
 
     beforeAll(async () => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
       // @dev include initial investment so test doesn't bypass Request creation
       fund = await setupFundWithParams({
         initialInvestment: {
@@ -540,7 +503,9 @@ describe('requestShares', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager: deployer,
+        web3
       });
 
       await createRequest(fund.hub.options.address, basicRequest);
@@ -553,10 +518,6 @@ describe('requestShares', () => {
     });
 
     it('allows requests for multiple funds', async() => {
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-      const contracts = deployed.contracts;
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
-
       const fund2 = await setupFundWithParams({
         initialInvestment: {
           contribAmount: toWei('1', 'ether'),
@@ -564,7 +525,9 @@ describe('requestShares', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager: deployer,
+        web3
       });
 
       await expect(
@@ -589,7 +552,9 @@ const createRequest = async (fundAddress, request) => {
     await send(
       request.investmentAssetContract,
       'transfer',
-      [request.owner, investorTokenShortfall.toString()]
+      [request.owner, investorTokenShortfall.toString()],
+      defaultTxOpts,
+      web3
     )
   }
 
@@ -598,7 +563,8 @@ const createRequest = async (fundAddress, request) => {
     request.investmentAssetContract,
     'approve',
     [sharesRequestor.options.address, request.investmentAmount],
-    request.txOpts
+    request.txOpts,
+    web3
   );
   return send(
     sharesRequestor,
@@ -608,21 +574,19 @@ const createRequest = async (fundAddress, request) => {
       request.investmentAmount,
       request.minSharesQuantity
     ],
-    { ...request.txOpts, value: request.amguValue }
+    { ...request.txOpts, value: request.amguValue },
+    web3
   );
 };
 
-const executeRequest = async (fundAddress, request, tokenPriceData) => {
+const executeRequest = async (fundAddress, request) => {
   await delay(1000);
-  await updateTestingPriceFeed(
-    tokenPriceData.priceSource,
-    tokenPriceData.tokenAddresses,
-    tokenPriceData.tokenPrices
-  );
+  await updateKyberPriceFeed(priceSource, web3);
   return send(
     sharesRequestor,
     'executeRequestFor',
     [request.owner, fundAddress],
-    request.txOpts
+    request.txOpts,
+    web3
   );
 };

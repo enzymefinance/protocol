@@ -6,7 +6,6 @@ import {
 import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subproviders';
 import { providerUtils } from '@0x/utils';
 import { SignatureType } from '@0x/types';
-import web3 from '~/deploy/utils/get-web3';
 import { EMPTY_ADDRESS, ENCODING_TYPES } from '~/tests/utils/constants';
 import { encodeArgs } from '~/tests/utils/formatting';
 
@@ -27,6 +26,7 @@ export const createUnsignedZeroExOrder = async (
     takerFee,
     takerFeeTokenAddress
   },
+  web3
 ) => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(makerTokenAddress);
   const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
@@ -81,7 +81,7 @@ const getPrivateKeyProvider = (wallet, signer) => {
   return providerEngine;
 }
 
-export const encodeZeroExTakeOrderArgs = (order, fillQuantity) => {
+export const encodeZeroExTakeOrderArgs = (order, fillQuantity, web3) => {
   const orderAddresses = [];
   const orderValues = [];
   const orderData = [];
@@ -104,10 +104,10 @@ export const encodeZeroExTakeOrderArgs = (order, fillQuantity) => {
   const signature = order.signature;
 
   const args = [orderAddresses, orderValues, orderData, signature];
-  return encodeArgs(ENCODING_TYPES.ZERO_EX_V3, args);
+  return encodeArgs(ENCODING_TYPES.ZERO_EX_V3, args, web3);
 };
 
-export const signZeroExOrder = async (order, signer) => {
+export const signZeroExOrder = async (order, signer, web3) => {
   const signerFormatted = signer.toLowerCase();
   const pkProvider = getPrivateKeyProvider(web3.eth.accounts.wallet, signer);
   const signedOrder = await signatureUtils.ecSignOrderAsync(

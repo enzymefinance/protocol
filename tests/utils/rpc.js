@@ -1,6 +1,4 @@
-import web3 from '~/deploy/utils/get-web3';
-
-const mine = async () => {
+const mine = async web3 => {
   return new Promise((resolve, reject) => {
     web3.eth.currentProvider.send(
       {
@@ -17,7 +15,7 @@ const mine = async () => {
   });
 }
 
-const increaseTime = async seconds => {
+const increaseTime = async (seconds, web3) => {
   await new Promise((resolve, reject) => {
     web3.eth.currentProvider.send(
       {
@@ -32,7 +30,7 @@ const increaseTime = async seconds => {
       },
     );
   });
-  await mine();
+  await mine(web3);
 }
 
 module.exports = {increaseTime, mine};

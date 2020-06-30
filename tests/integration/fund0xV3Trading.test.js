@@ -7,66 +7,58 @@
  * @test Fund takes an order made by a third party, with no protocolFee set
  */
 
-import { assetDataUtils } from '@0x/order-utils';
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import web3 from '~/deploy/utils/get-web3';
 import { BNExpDiv } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { setupFundWithParams } from '~/tests/utils/fund';
 import { getFunctionSignature } from '~/tests/utils/metadata';
-import getAccounts from '~/deploy/utils/getAccounts';
 import {
   createUnsignedZeroExOrder,
   encodeZeroExTakeOrderArgs,
   signZeroExOrder
 } from '~/tests/utils/zeroExV3';
+import { getDeployed } from '~/tests/utils/getDeployed';
 
+const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+
+let web3;
 let deployer, manager, investor;
-let defaultTxOpts, managerTxOpts, investorTxOpts;
-let contracts;
-let dai, mln, weth, priceSource, fundFactory, zeroExExchange, erc20Proxy, fund, zeroExAdapter;
+let defaultTxOpts, managerTxOpts, governorTxOpts;
+let zrx, mln, weth, priceSource, fundFactory, zeroExExchange, erc20ProxyAddress, fund, zeroExAdapter;
 let takeOrderSignature;
 let protocolFeeAmount, chainId;
-let mlnToEthRate, wethToEthRate, daiToEthRate;
+
+const gasPrice = toWei('2', 'gwei');
 
 beforeAll(async () => {
-  const gasPrice = toWei('2', 'gwei');
-  [deployer, manager, investor] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  investorTxOpts = { ...defaultTxOpts, from: investor };
+  governorTxOpts = { ...defaultTxOpts, from: mainnetAddrs.zeroExV3.ZeroExV3Governor };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
+  await web3.eth.sendTransaction({
+    from: deployer,
+    to: mainnetAddrs.zeroExV3.ZeroExV3Governor,
+    value: toWei('1', 'ether'),
+    gas: 1000000
+  });
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  dai = contracts.DAI;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-  priceSource = contracts.TestingPriceFeed;
-  fundFactory = contracts.FundFactory;
-  zeroExExchange = contracts.ZeroExV3Exchange;
-  zeroExAdapter = contracts.ZeroExV3Adapter;
-  erc20Proxy = contracts.ZeroExV3ERC20Proxy;
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  zrx = getDeployed(CONTRACT_NAMES.ZRX, web3, mainnetAddrs.tokens.ZRX);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
-  wethToEthRate = toWei('1', 'ether');
-  mlnToEthRate = toWei('0.5', 'ether');
-  daiToEthRate = toWei('0.005', 'ether');
-  await send(
-    priceSource,
-    'update',
-    [
-      [weth.options.address, mln.options.address, dai.options.address],
-      [wethToEthRate, mlnToEthRate, daiToEthRate],
-    ],
-    defaultTxOpts
-  );
+  erc20ProxyAddress = mainnetAddrs.zeroExV3.ZeroExV3ERC20Proxy;
 
   fund = await setupFundWithParams({
     integrationAdapters: [zeroExAdapter.options.address],
@@ -77,7 +69,8 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory
+    fundFactory,
+    web3
   });
 
   // Set vars - orders
@@ -93,8 +86,8 @@ describe('Fund takes an order', () => {
 
   test('Third party makes an order', async () => {
     const makerAddress = deployer;
-    const makerTokenAddress = dai.options.address;
-    const makerAssetAmount = toWei('10', 'Ether');
+    const makerTokenAddress = zrx.options.address;
+    const makerAssetAmount = toWei('1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const makerPerTakerRate = new BN(
       (await call(priceSource, 'getLiveRate', [takerTokenAddress, makerTokenAddress]))[0]
@@ -114,11 +107,12 @@ describe('Fund takes an order', () => {
         takerTokenAddress,
         takerAssetAmount,
       },
+      web3
     );
 
-    await send(dai, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+    await send(zrx, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
     const signatureValid = await call(
       zeroExExchange,
@@ -132,26 +126,19 @@ describe('Fund takes an order', () => {
   test('Manager takes order through 0x adapter', async () => {
     const { vault } = fund;
 
-    const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-    const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
-    const preDaiDeployer = new BN(await call(dai, 'balanceOf', [deployer]));
+    const preZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-    const preFundBalanceOfDai = new BN(await call(dai, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const preFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
     );
-    const preFundHoldingsDai = new BN(
-      await call(vault, 'assetBalances', [dai.options.address])
+    const preFundHoldingsZrx = new BN(
+      await call(vault, 'assetBalances', [zrx.options.address])
     );
 
     const fillQuantity = signedOrder.takerAssetAmount;
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -162,34 +149,35 @@ describe('Fund takes an order', () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
-    const postDaiDeployer = new BN(await call(dai, 'balanceOf', [deployer]));
+    const postZrxDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-    const postFundBalanceOfDai = new BN(await call(dai, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const postFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
     );
-    const postFundHoldingsDai = new BN(
-      await call(vault, 'assetBalances', [dai.options.address])
+    const postFundHoldingsZrx = new BN(
+      await call(vault, 'assetBalances', [zrx.options.address])
     );
 
-    expect(postDaiDeployer).bigNumberEq(preDaiDeployer.sub(new BN(signedOrder.makerAssetAmount)));
+    expect(postZrxDeployer).bigNumberEq(preZrxDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-    const fundHoldingsDaiDiff = postFundHoldingsDai.sub(preFundHoldingsDai);
+    const fundHoldingsZrxDiff = postFundHoldingsZrx.sub(preFundHoldingsZrx);
 
     // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-    expect(fundHoldingsDaiDiff).bigNumberEq(postFundBalanceOfDai.sub(preFundBalanceOfDai));
+    expect(fundHoldingsZrxDiff).bigNumberEq(postFundBalanceOfZrx.sub(preFundBalanceOfZrx));
 
     // Confirm that expected asset amounts were filled
     expect(fundHoldingsWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount).add(new BN(protocolFeeAmount))
     );
-    expect(fundHoldingsDaiDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundHoldingsZrxDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 });
 
@@ -210,7 +198,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
     ).toString();
 
     const takerFee = new BN(toWei('1', 'ether'));
-    const takerFeeTokenAddress = dai.options.address;
+    const takerFeeTokenAddress = zrx.options.address;
     const feeRecipientAddress = investor;
 
     const unsignedOrder = await createUnsignedZeroExOrder(
@@ -226,11 +214,12 @@ describe('Fund takes an order with a different taker fee asset', () => {
         takerAssetAmount,
         takerFeeTokenAddress
       },
+      web3
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+    await send(mln, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
     const signatureValid = await call(
       zeroExExchange,
       'isValidOrderSignature',
@@ -245,11 +234,11 @@ describe('Fund takes an order with a different taker fee asset', () => {
 
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const preFundBalanceOfDai = new BN(await call(dai, 'balanceOf', [vault.options.address]));
+    const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsDai = new BN(
-      await call(vault, 'assetBalances', [dai.options.address])
+    const preFundHoldingsZrx = new BN(
+      await call(vault, 'assetBalances', [zrx.options.address])
     );
     const preFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
@@ -260,7 +249,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
 
     const fillQuantity = signedOrder.takerAssetAmount;
 
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -271,16 +260,17 @@ describe('Fund takes an order with a different taker fee asset', () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
-    const postFundBalanceOfDai = new BN(await call(dai, 'balanceOf', [vault.options.address]));
+    const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsDai = new BN(
-      await call(vault, 'assetBalances', [dai.options.address])
+    const postFundHoldingsZrx = new BN(
+      await call(vault, 'assetBalances', [zrx.options.address])
     );
     const postFundHoldingsWeth = new BN(
       await call(vault, 'assetBalances', [weth.options.address])
@@ -292,12 +282,12 @@ describe('Fund takes an order with a different taker fee asset', () => {
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
-    const fundHoldingsDaiDiff = preFundHoldingsDai.sub(postFundHoldingsDai);
+    const fundHoldingsZrxDiff = preFundHoldingsZrx.sub(postFundHoldingsZrx);
     const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
     const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
 
     // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsDaiDiff).bigNumberEq(preFundBalanceOfDai.sub(postFundBalanceOfDai));
+    expect(fundHoldingsZrxDiff).bigNumberEq(preFundBalanceOfZrx.sub(postFundBalanceOfZrx));
     expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
     expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
 
@@ -306,7 +296,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
       new BN(signedOrder.takerAssetAmount).add(new BN(protocolFeeAmount))
     );
     expect(fundHoldingsMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
-    expect(fundHoldingsDaiDiff).bigNumberEq(new BN(signedOrder.takerFee));
+    expect(fundHoldingsZrxDiff).bigNumberEq(new BN(signedOrder.takerFee));
   });
 });
 
@@ -316,7 +306,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
   test('Third party makes an order', async () => {
     const makerAddress = deployer;
     const makerTokenAddress = mln.options.address;
-    const makerAssetAmount = toWei('0.5', 'Ether');
+    const makerAssetAmount = toWei('0.1', 'Ether');
     const takerTokenAddress = weth.options.address;
     const makerPerTakerRate = new BN(
       (await call(priceSource, 'getLiveRate', [takerTokenAddress, makerTokenAddress]))[0]
@@ -343,11 +333,12 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
         takerFee,
         takerFeeTokenAddress
       },
+      web3
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+    await send(mln, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
     const signatureValid = await call(
       zeroExExchange,
       'isValidOrderSignature',
@@ -372,7 +363,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     );
 
     const fillQuantity = signedOrder.takerAssetAmount;
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -383,6 +374,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
@@ -421,7 +413,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
 
   // @dev Sets protocolFeeMultiplier to 0, so need to undo after if further tests
   test('Deployer sets protocolFeeMultiplier to 0', async () => {
-    await send(zeroExExchange, 'setProtocolFeeMultiplier', [0], defaultTxOpts);
+    await send(zeroExExchange, 'setProtocolFeeMultiplier', [0], governorTxOpts, web3);
     const newProtocolFeeMultiplier = await call(zeroExExchange, 'protocolFeeMultiplier');
     expect(newProtocolFeeMultiplier).toEqual("0");
   });
@@ -449,11 +441,12 @@ describe('Fund can take an order when protocol fee disabled', () => {
         takerTokenAddress,
         takerAssetAmount,
       },
+      web3
     );
 
-    await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
+    await send(mln, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
     const signatureValid = await call(
       zeroExExchange,
@@ -467,13 +460,6 @@ describe('Fund can take an order when protocol fee disabled', () => {
   test('Manager takes order through 0x adapter', async () => {
     const { vault } = fund;
 
-    const makerFeeAsset = signedOrder.makerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.makerFeeAssetData).tokenAddress;
-    const takerFeeAsset = signedOrder.takerFeeAssetData === '0x' ?
-      EMPTY_ADDRESS :
-      assetDataUtils.decodeERC20AssetData(signedOrder.takerFeeAssetData).tokenAddress;
-
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -486,7 +472,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
     );
 
     const fillQuantity = signedOrder.takerAssetAmount;
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -497,6 +483,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
         encodedArgs,
       ],
       managerTxOpts,
+      web3
     );
 
     const postMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));

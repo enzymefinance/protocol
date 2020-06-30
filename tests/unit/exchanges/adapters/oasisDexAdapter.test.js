@@ -7,12 +7,8 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
-import getAccounts from '~/deploy/utils/getAccounts';
-
-import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/tests/utils/constants';
+import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
 import {
   getEventCountFromLogs,
@@ -20,39 +16,40 @@ import {
   getFunctionSignature
 } from '~/tests/utils/metadata';
 import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
-let defaultTxOpts;
-let contracts;
+let web3;
+let deployer, manager;
+let defaultTxOpts, managerTxOpts;
 let dai, mln, weth;
 let oasisDexAdapter, oasisDexExchange;
-let fund;
+let fund, fundFactory;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
+  managerTxOpts = { from: manager, gas: 8000000 };
 
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
+  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
+  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
-
-  dai = contracts.DAI;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-
-  oasisDexAdapter = contracts[CONTRACT_NAMES.OASIS_DEX_ADAPTER];
-  oasisDexExchange = contracts[CONTRACT_NAMES.OASIS_DEX_EXCHANGE];
 });
 
 describe('takeOrder', () => {
   // @dev Only need to run this once
   describe('__validateTakeOrderParams', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity, fillQuantity;
+    let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let badAsset;
     let orderId;
 
@@ -61,27 +58,33 @@ describe('takeOrder', () => {
       makerQuantity = toWei('0.02', 'ether');
       takerAsset = weth.options.address;
       takerQuantity = toWei('0.01', 'ether');
-      fillQuantity = takerQuantity;
       badAsset = dai.options.address;
 
-      // Set up fund
-      const fundFactory = contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [oasisDexAdapter.options.address],
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
     test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
+      await send(
+        mln,
+        'approve',
+        [oasisDexExchange.options.address, makerQuantity],
+        defaultTxOpts,
+        web3
+      );
       const res = await send(
         oasisDexExchange,
         'offer',
         [
           makerQuantity, makerAsset, takerQuantity, takerAsset, 0
         ],
-        defaultTxOpts
+        defaultTxOpts,
+        web3
       );
 
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -91,16 +94,13 @@ describe('takeOrder', () => {
     it('does not allow different maker asset address than actual oasisDex order', async () => {
       const { vault } = fund;
 
-      const orderAddresses = [];
-      const orderValues = [];
-
       const encodedArgs = encodeOasisDexTakeOrderArgs({
         makerAsset: badAsset,
         makerQuantity,
         takerAsset,
         takerQuantity,
         orderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -111,7 +111,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).rejects.toThrowFlexible("Order maker asset does not match the input")
     });
@@ -125,7 +126,7 @@ describe('takeOrder', () => {
         takerAsset: badAsset,
         takerQuantity,
         orderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -136,7 +137,8 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          defaultTxOpts,
+          managerTxOpts,
+          web3
         )
       ).rejects.toThrowFlexible("Order taker asset does not match the input")
     });
@@ -175,7 +177,7 @@ describe('takeOrder', () => {
   });
 
   describe('Fill Order 1: full amount', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity, fillQuantity;
+    let makerAsset, makerQuantity, takerAsset, takerQuantity;
     let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let orderId;
     let tx;
@@ -185,13 +187,7 @@ describe('takeOrder', () => {
       makerQuantity = toWei('0.02', 'ether');
       takerAsset = weth.options.address;
       takerQuantity = toWei('0.01', 'ether');
-      fillQuantity = takerQuantity;
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
@@ -200,19 +196,28 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
     test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
+      await send(
+        mln,
+        'approve',
+        [oasisDexExchange.options.address, makerQuantity],
+        defaultTxOpts,
+        web3
+      );
       const res = await send(
         oasisDexExchange,
         'offer',
         [
           makerQuantity, makerAsset, takerQuantity, takerAsset, 0
         ],
-        defaultTxOpts
+        defaultTxOpts,
+        web3
       );
 
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -235,7 +240,7 @@ describe('takeOrder', () => {
         takerAsset,
         takerQuantity,
         orderId,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -245,7 +250,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -289,10 +295,6 @@ describe('takeOrder', () => {
 
   describe('Fill Order 2: partial amount', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
-    let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
-    let orderId;
-    let tx;
 
     beforeAll(async () => {
       makerAsset = mln.options.address;
@@ -300,11 +302,6 @@ describe('takeOrder', () => {
       takerAsset = weth.options.address;
       takerQuantity = toWei('0.01', 'ether');
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [oasisDexAdapter.options.address],
         initialInvestment: {
@@ -313,23 +310,30 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
     test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
-      const res = await send(
+      await send(
+        mln,
+        'approve',
+        [oasisDexExchange.options.address, makerQuantity],
+        defaultTxOpts,
+        web3
+      );
+      await send(
         oasisDexExchange,
         'offer',
         [
           makerQuantity, makerAsset, takerQuantity, takerAsset, 0
         ],
-        defaultTxOpts
+        defaultTxOpts,
+        web3
       );
 
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      orderId = logMake.id;
     });
 
     // TODO

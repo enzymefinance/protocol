@@ -11,15 +11,10 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { partialRedeploy } from '~/deploy/scripts/deploy-system';
 import { BNExpMul } from '~/tests/utils/BNmath';
-import getAccounts from '~/deploy/utils/getAccounts';
-
 import {
   CONTRACT_NAMES,
-  EMPTY_ADDRESS,
   KYBER_ETH_ADDRESS,
 } from '~/tests/utils/constants';
 import { setupFundWithParams } from '~/tests/utils/fund';
@@ -29,33 +24,33 @@ import {
   getFunctionSignature
 } from '~/tests/utils/metadata';
 import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
+import { getDeployed } from '~/tests/utils/getDeployed';
+import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
-let deployer;
-let defaultTxOpts;
-let contracts;
-let eur, mln, weth;
+let web3;
+let deployer, manager;
+let managerTxOpts;
+let dai, mln, weth;
 let kyberAdapter, kyberNetworkProxy;
-let fund;
+let fund, fundFactory;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  [deployer] = await getAccounts();
-  defaultTxOpts = { from: deployer, gas: 8000000 };
-
-  const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY]);
-  contracts = deployed.contracts;
+  web3 = await startChain();
+  [deployer, manager] = await web3.eth.getAccounts();
+  managerTxOpts = { from: manager, gas: 8000000 };
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
 
-  eur = contracts.EUR;
-  mln = contracts.MLN;
-  weth = contracts.WETH;
-
-  kyberAdapter = contracts[CONTRACT_NAMES.KYBER_ADAPTER];
-  kyberNetworkProxy = contracts[CONTRACT_NAMES.KYBER_NETWORK_PROXY];
+  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_INTERFACE, web3, mainnetAddrs.kyber.KyberNetworkProxy);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
 });
 
 describe('takeOrder', () => {
@@ -85,11 +80,6 @@ describe('takeOrder', () => {
         new BN(expectedRate.toString()),
       ).toString();
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [kyberAdapter.options.address],
         initialInvestment: {
@@ -98,7 +88,9 @@ describe('takeOrder', () => {
           tokenContract: weth
         },
         quoteToken: weth.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
@@ -117,7 +109,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -127,7 +119,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -191,11 +184,6 @@ describe('takeOrder', () => {
         new BN(expectedRate.toString()),
       ).toString();
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [kyberAdapter.options.address],
         initialInvestment: {
@@ -204,7 +192,9 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
-        fundFactory
+        manager,
+        fundFactory,
+        web3
       });
     });
 
@@ -223,8 +213,9 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
+      // TODO: this is the tx that fails now (just with revert, no message)
       tx = await send(
         vault,
         'callOnIntegration',
@@ -233,7 +224,8 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
       postFundHoldingsWeth = new BN(
@@ -278,13 +270,13 @@ describe('takeOrder', () => {
   // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 3: token to token', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let preFundHoldingsMln, preFundHoldingsEur, postFundHoldingsMln, postFundHoldingsEur;
+    let preFundHoldingsMln, preFundHoldingsDai, postFundHoldingsMln, postFundHoldingsDai;
     let tx;
 
     beforeAll(async () => {
       takerAsset = mln.options.address;
       takerQuantity = toWei('0.01', 'ether');
-      makerAsset = eur.options.address;
+      makerAsset = dai.options.address;
 
       const { 0: expectedRate } = await call(
         kyberNetworkProxy,
@@ -297,11 +289,6 @@ describe('takeOrder', () => {
         new BN(expectedRate.toString()),
       ).toString();
 
-      // Re-deploy FundFactory contract only
-      const deployed = await partialRedeploy([CONTRACT_NAMES.FUND_FACTORY], true);
-
-      // Set up fund
-      const fundFactory = deployed.contracts[CONTRACT_NAMES.FUND_FACTORY];
       fund = await setupFundWithParams({
         integrationAdapters: [kyberAdapter.options.address],
         initialInvestment: {
@@ -310,15 +297,17 @@ describe('takeOrder', () => {
           tokenContract: mln
         },
         quoteToken: mln.options.address,
-        fundFactory
+        fundFactory,
+        manager,
+        web3
       });
     });
 
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsEur = new BN(
-        await call(vault, 'assetBalances', [eur.options.address])
+      preFundHoldingsDai = new BN(
+        await call(vault, 'assetBalances', [dai.options.address])
       );
       preFundHoldingsMln = new BN(
         await call(vault, 'assetBalances', [mln.options.address])
@@ -329,7 +318,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -339,11 +328,12 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        defaultTxOpts,
+        managerTxOpts,
+        web3
       );
 
-      postFundHoldingsEur = new BN(
-        await call(vault, 'assetBalances', [eur.options.address])
+      postFundHoldingsDai = new BN(
+        await call(vault, 'assetBalances', [dai.options.address])
       );
       postFundHoldingsMln = new BN(
         await call(vault, 'assetBalances', [mln.options.address])
@@ -351,8 +341,8 @@ describe('takeOrder', () => {
     });
 
     it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsEur).bigNumberEq(
-        preFundHoldingsEur.add(new BN(makerQuantity))
+      expect(postFundHoldingsDai).bigNumberEq(
+        preFundHoldingsDai.add(new BN(makerQuantity))
       );
       expect(postFundHoldingsMln).bigNumberEq(
         preFundHoldingsMln.sub(new BN(takerQuantity))
