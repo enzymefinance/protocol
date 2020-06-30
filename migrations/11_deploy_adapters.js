@@ -7,7 +7,7 @@ const EngineAdapter = artifacts.require('EngineAdapter');
 const AirSwapAdapter = artifacts.require('AirSwapAdapter');
 const Engine = artifacts.require('Engine');
 
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+const mainnetAddrs = require('../config');
 
 module.exports = async deployer => {
   await deployer.deploy(KyberAdapter, mainnetAddrs.kyber.KyberNetworkProxy);

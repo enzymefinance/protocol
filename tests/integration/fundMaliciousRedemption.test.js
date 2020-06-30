@@ -6,20 +6,20 @@
  * @test redeemSharesEmergency succeeds
  */
 
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import mainnetAddrs from '~/config';
 import { BN, toWei } from 'web3-utils';
-import { call, deploy, send } from '~/deploy/utils/deploy-contract';
-import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
-import { getDeployed } from '~/tests/utils/getDeployed';
+import { call, deploy, send } from '~/utils/deploy-contract';
+import { BNExpMul } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
+import { getDeployed } from '~/utils/getDeployed';
 import { updateKyberPriceFeed, setKyberRate } from '../utils/updateKyberPriceFeed';
-import { getFunctionSignature } from '~/tests/utils/metadata';
+import { getFunctionSignature } from '~/utils/metadata';
 import {
   createUnsignedZeroExOrder,
   encodeZeroExTakeOrderArgs,
   signZeroExOrder
-} from '~/tests/utils/zeroExV3';
+} from '~/utils/zeroExV3';
 
 let web3;
 let defaultTxOpts, investorTxOpts, managerTxOpts;

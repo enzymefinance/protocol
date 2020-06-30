@@ -22,5 +22,4 @@ module.exports = {
   },
   contracts_directory: './src',
   contracts_build_directory: './out',
-  migrations_directory: './deploy/truffle'
 };

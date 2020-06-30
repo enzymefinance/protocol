@@ -1,10 +1,10 @@
-import mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import mainnetAddrs from '~/config';
 import { BN, toWei } from 'web3-utils';
-import { deploy, call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { deploy, call, send } from '~/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
 import { updateKyberPriceFeed, setKyberRate } from '../utils/updateKyberPriceFeed';
-import { getDeployed } from '~/tests/utils/getDeployed';
+import { getDeployed } from '~/utils/getDeployed';
 
 let web3;
 let defaultTxOpts, managerTxOpts, investorTxOpts;

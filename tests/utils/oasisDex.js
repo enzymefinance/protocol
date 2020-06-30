@@ -1,5 +1,5 @@
-import { ENCODING_TYPES } from '~/tests/utils/constants';
-import { encodeArgs } from '~/tests/utils/formatting';
+import { ENCODING_TYPES } from '~/utils/constants';
+import { encodeArgs } from '~/utils/formatting';
 
 export const encodeOasisDexTakeOrderArgs = ({
   makerAsset,

@@ -6,13 +6,13 @@
  * @test Whitelist policy allows whitelisted user to participate
  */
 
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
-import { BNExpDiv } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { call } from '~/deploy/utils/deploy-contract';
-import { encodeArgs } from '~/tests/utils/formatting';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
+import mainnetAddrs from '~/config';
+import { BNExpDiv } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { call } from '~/utils/deploy-contract';
+import { encodeArgs } from '~/utils/formatting';
+import { getDeployed } from '~/utils/getDeployed';
+import { investInFund, setupFundWithParams } from '~/utils/fund';
 import { toWei, BN } from 'web3-utils';
 
 let web3;

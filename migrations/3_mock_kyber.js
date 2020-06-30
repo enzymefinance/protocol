@@ -1,8 +1,7 @@
 const ERC20WithFields = artifacts.require("ERC20WithFields");
 const MockKyberNetwork = artifacts.require("MockKyberNetwork");
 const KyberNetworkProxy = artifacts.require("KyberNetworkProxy");
-const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
-const { kyber } = require("../../mainnet_thirdparty_contracts");
+const mainnetAddrs = require("../config");
 const BN = web3.utils.BN;
 
 module.exports = async (deployer) => {

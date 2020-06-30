@@ -26,14 +26,8 @@ yarn install
 
 ## Compile contracts
 
-### Prerequisites
-
-- [docker](https://www.docker.com/)
-
-After installation, go to the above `protocol` directory, have Docker running, and:
-
 ```sh
-make
+yarn compile
 ```
 
 ## Test
@@ -49,24 +43,6 @@ yarn devchain
 # in a second terminal
 yarn deploy
 yarn test
-```
-
-### Kovan testnet
-
-#### Prerequisites
-
-In order to run these tests on Kovan testnet, you'll need your own `kovan_keys.json` file with 5 public / private key pairs, each funded with some ETH. You can use `kovan_keys.json.template` to set up your accounts as follows:
-
-1. Rename the file to `kovan_keys.json`
-2. Copy/paste 5 public / private key pairs in place of `PUBLIC_KEY_1`, `PRIVATE_KEY_1`, etc
-3. Send Kovan ETH to each account. For Accounts 2-5, 1 or 2 ETH per account should be fine. For account 1 with the default settings, over 200 ETH is required with the default settings, so consider the next step...
-4. (optional) Adjust `deployerWethAmount` (default: 100 ETH) and `kyberReserveAmount` (default: 100 ETH) in `deploy_in_kovan.json` to smaller amounts that total less than the total Kovan ETH of Account 1. 10 ETH each should be fine.
-
-#### Deploy and test
-
-```sh
-yarn deploy-kovan
-yarn test-kovan
 ```
 
 ## Contribute

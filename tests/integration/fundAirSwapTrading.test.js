@@ -1,16 +1,16 @@
 const { orders } = require('@airswap/order-utils');
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { getFunctionSignature } from '~/tests/utils/metadata';
-import { setupFundWithParams } from '~/tests/utils/fund';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
+import { call, send } from '~/utils/deploy-contract';
+import { getFunctionSignature } from '~/utils/metadata';
+import { setupFundWithParams } from '~/utils/fund';
+import { CONTRACT_NAMES } from '~/utils/constants';
 import {
   createUnsignedAirSwapOrder,
   signAirSwapOrder,
   encodeAirSwapTakeOrderArgs
-} from '~/tests/utils/airSwap';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+} from '~/utils/airSwap';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager, investor;

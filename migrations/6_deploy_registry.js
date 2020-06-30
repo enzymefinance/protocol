@@ -1,4 +1,4 @@
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+const mainnetAddrs = require('../config');
 const Registry = artifacts.require('Registry');
 const ManagementFee = artifacts.require('ManagementFee');
 const PerformanceFee = artifacts.require('PerformanceFee');

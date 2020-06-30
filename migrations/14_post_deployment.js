@@ -1,4 +1,4 @@
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+const mainnetAddrs = require('../config');
 const Registry = artifacts.require('Registry');
 const OasisDex = artifacts.require('IOasisDex');
 const WETH = artifacts.require('WETH');

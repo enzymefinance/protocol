@@ -7,8 +7,8 @@ import {
 import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subproviders';
 import { SignatureType } from '@0x/types-v2';
 import { providerUtils } from '@0x/utils';
-import { EMPTY_ADDRESS, ENCODING_TYPES } from '~/tests/utils/constants';
-import { encodeArgs } from '~/tests/utils/formatting';
+import { EMPTY_ADDRESS, ENCODING_TYPES } from '~/utils/constants';
+import { encodeArgs } from '~/utils/formatting';
 
 // TODO: refactor along with zeroExV3 util
 /**
