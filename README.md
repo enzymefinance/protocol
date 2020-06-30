@@ -34,8 +34,6 @@ yarn compile
 
 After the above "Compile contracts" step, follow the instructions below.
 
-### Local blockchain
-
 The tests are meant to be run on a ganache fork of mainnet.
 
 ```sh
