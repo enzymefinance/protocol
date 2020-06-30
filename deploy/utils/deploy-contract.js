@@ -174,28 +174,4 @@ const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
   return contract;
 }
 
-// get a contract with some address
-// TODO: broken since we started using truffle; delete when merging
-const fetchContract = (name, address, web3) => {
-  const abi = JSON.parse(fs.readFileSync(`${outdir}/${name}.json`, 'utf8')).abi;
-  stdout(`Fetching ${name} at ${address}`);
-  const contract = new web3.eth.Contract(abi, address);
-  return contract;
-}
-
-// get address from deploy input if we have one
-// otherwise deploy it with args
-// TODO: broken since we started using truffle; delete when merging
-// TODO: better document
-const nab = async (name, args, input, explicitKey=null, libs=[], web3) => {
-  let contract;
-  const key = explicitKey || name;
-  if (input[key] === '' || input[key] === undefined) {
-    contract = await deploy(name, args, {}, libs);
-  } else {
-    contract = fetchContract(name, input[key], web3);
-  }
-  return contract;
-}
-
-module.exports = { call, send, deploy, fetchContract, nab };
+module.exports = { call, send, deploy };
