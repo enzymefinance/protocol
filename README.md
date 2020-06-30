@@ -32,12 +32,15 @@ yarn compile
 
 ## Test
 
-After the above "Compile contracts" step, follow the instructions below, depending on if you want to run tests on your computer or on Kovan testnet.
+After the above "Compile contracts" step, follow the instructions below.
 
 ### Local blockchain
 
+The tests are meant to be run on a ganache fork of mainnet.
+
 ```sh
 # first terminal
+export MAINNET_NODE_URL=https://mainnet.infura.io/v3/<infura id>
 yarn devchain
 
 # in a second terminal
