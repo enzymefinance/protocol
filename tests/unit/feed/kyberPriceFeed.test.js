@@ -266,7 +266,7 @@ describe('update', () => {
   });
 });
 
-describe.only('getCanonicalRate', () => {
+describe('getCanonicalRate', () => {
   let kyberPriceFeed;
   let pricefeedQuoteAsset;
 
@@ -276,16 +276,18 @@ describe.only('getCanonicalRate', () => {
   });
 
   test('Price change in kyber is reflected in getCanonicalRate post-update', async () => {
-    const mlnPrice = toWei('0.6', 'ether');
-    const daiPrice = toWei('0.5', 'ether');
+    const etherPerMln = new BN(toWei('0.06', 'ether'));
+    const mlnPerEther = BNExpInverse(etherPerMln);
+    const etherPerDai = new BN(toWei('0.9', 'ether'));
+    const daiPerEther = BNExpInverse(etherPerDai);
 
     await send(
       kyber,
       'setRates',
       [
         [mln.options.address, dai.options.address],
-        [mlnPrice.toString(), daiPrice.toString()],
-        [mlnPrice.toString(), daiPrice.toString()],
+        [mlnPerEther.toString(), daiPerEther.toString()],
+        [etherPerMln.toString(), etherPerDai.toString()],
       ],
       deployerTxOpts,
       web3
@@ -296,8 +298,8 @@ describe.only('getCanonicalRate', () => {
     const { 0: updatedMlnPrice } = await call(kyberPriceFeed, 'getCanonicalRate', [mln.options.address, pricefeedQuoteAsset]);
     const { 0: updatedDaiPrice } = await call(kyberPriceFeed, 'getCanonicalRate', [dai.options.address, pricefeedQuoteAsset]);
 
-    expect(updatedMlnPrice.toString()).toBe(mlnPrice);
-    expect(updatedDaiPrice.toString()).toBe(daiPrice);
+    expect(updatedMlnPrice.toString()).toBe(etherPerMln.toString());
+    expect(updatedDaiPrice.toString()).toBe(etherPerDai.toString());
   });
 
   test('Normal (positive) spread condition yields midpoint price', async () => {

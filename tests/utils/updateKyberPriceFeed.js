@@ -1,17 +1,17 @@
-import { toWei } from 'web3-utils';
+import { toWei, BN } from 'web3-utils';
 import { CONTRACT_NAMES } from '~/tests/utils/constants';
 import { getDeployed } from '~/tests/utils/getDeployed';
 import { call, send } from '~/deploy/utils/deploy-contract';
-import { tokens } from '../../mainnet_thirdparty_contracts';
+import { BNExpInverse } from '~/tests/utils/BNmath';
 
 export const setKyberRate = async (
   token,
   web3,
-  bid = web3.utils.toWei('1', 'ether'),
-  ask = bid,
+  etherPerToken = new BN(web3.utils.toWei('1', 'ether')),
+  tokenPerEther = BNExpInverse(etherPerToken),
 ) => {
   const mock = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK, web3);
-  await send(mock, 'setRate', [token, bid, ask], {}, web3);
+  await send(mock, 'setRate', [token, tokenPerEther.toString(), etherPerToken.toString()], {}, web3);
 }
 
 export const updateKyberPriceFeed = async (feed, web3, opts = {}) => {

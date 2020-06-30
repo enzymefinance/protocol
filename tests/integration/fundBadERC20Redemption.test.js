@@ -10,7 +10,6 @@ let web3;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let deployer, manager, investor;
 let fund, weth, omg, registry, fundFactory, priceSource, kyberAdapter;
-let wethToEthRate, omgToEthRate;
 
 // @dev Set fund denomination asset to OMG so it can receive OMG as investment
 beforeAll(async () => {
@@ -42,7 +41,7 @@ beforeAll(async () => {
     web3
   );
 
-  await setKyberRate(omg.options.address, web3, omgToEthRate);
+  await setKyberRate(omg.options.address, web3);
   await updateKyberPriceFeed(priceSource, web3);
 
   fund = await setupFundWithParams({
