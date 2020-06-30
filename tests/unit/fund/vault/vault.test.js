@@ -1,8 +1,8 @@
-import { send } from '~/deploy/utils/deploy-contract';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { send } from '~/utils/deploy-contract';
+import { getDeployed } from '~/utils/getDeployed';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager;

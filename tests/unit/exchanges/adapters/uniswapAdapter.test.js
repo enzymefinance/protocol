@@ -11,17 +11,17 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
+import { call, send } from '~/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
 import {
   getEventCountFromLogs,
   getEventFromLogs,
   getFunctionSignature
-} from '~/tests/utils/metadata';
-import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+} from '~/utils/metadata';
+import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager;

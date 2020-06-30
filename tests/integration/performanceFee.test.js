@@ -8,16 +8,16 @@
  */
 
 import { toWei, BN } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
-import { delay } from '~/tests/utils/time';
-import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import { updateKyberPriceFeed, setKyberRate } from '~/tests/utils/updateKyberPriceFeed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { call, send } from '~/utils/deploy-contract';
+import { BNExpDiv, BNExpMul } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { investInFund, setupFundWithParams } from '~/utils/fund';
+import { getEventFromLogs, getFunctionSignature } from '~/utils/metadata';
+import { delay } from '~/utils/time';
+import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
+import { getDeployed } from '~/utils/getDeployed';
+import { updateKyberPriceFeed, setKyberRate } from '~/utils/updateKyberPriceFeed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let defaultTxOpts, investorTxOpts, managerTxOpts;

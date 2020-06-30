@@ -1,8 +1,8 @@
 import { toWei, BN } from 'web3-utils';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpInverse } from '~/tests/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { getDeployed } from '~/utils/getDeployed';
+import { call, send } from '~/utils/deploy-contract';
+import { BNExpInverse } from '~/utils/BNmath';
 
 export const setKyberRate = async (
   token,

@@ -9,15 +9,15 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpDiv, BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { encodeArgs, stringToBytes } from '~/tests/utils/formatting';
-import { investInFund, getFundComponents } from '~/tests/utils/fund';
-import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
-import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { call, send } from '~/utils/deploy-contract';
+import { BNExpDiv, BNExpMul } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { encodeArgs, stringToBytes } from '~/utils/formatting';
+import { investInFund, getFundComponents } from '~/utils/fund';
+import { getEventFromLogs, getFunctionSignature } from '~/utils/metadata';
+import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager, investor;

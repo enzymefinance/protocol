@@ -2,12 +2,18 @@ module.exports = {
   roots: ['<rootDir>/tests'],
   testEnvironment: 'node',
   transform: {
-    '^.+\\.js$': 'babel-jest'
+    '^.+\\.(js|ts)$': 'ts-jest'
   },
-  testRegex: '((\\.|/)(test))\\.(js)$',
+  testRegex: '((\\.|/)(test))\\.(js|ts)$',
   moduleFileExtensions: ['ts', 'js', 'json', 'node', 'bin'],
-  setupFilesAfterEnv: ['./jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js'],
   moduleNameMapper: {
-    '~/(.*)': '<rootDir>/$1'
+    '~/config': '<rootDir>/config',
+    '~/(.*)': '<rootDir>/tests/$1'
+  },
+  globals: {
+    'ts-jest': {
+      tsConfig: '<rootDir>/tsconfig.json'
+    }
   }
 };

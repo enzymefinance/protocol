@@ -1,4 +1,4 @@
-import { ENCODING_TYPES } from '~/tests/utils/constants';
+import { ENCODING_TYPES } from '~/utils/constants';
 import { padLeft, numberToHex, stringToHex } from 'web3-utils';
 
 export const numberToBytes = (value, numBytes) =>

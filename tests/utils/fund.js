@@ -1,10 +1,10 @@
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { getEventFromLogs } from '~/tests/utils/metadata';
-import { delay } from '~/tests/utils/time';
-import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
-import { getDeployed } from '~/tests/utils/getDeployed';
+import { call, send } from '~/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { getEventFromLogs } from '~/utils/metadata';
+import { delay } from '~/utils/time';
+import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
+import { getDeployed } from '~/utils/getDeployed';
 
 export const getFundComponents = async (hubAddress, web3) => {
   const components = {};

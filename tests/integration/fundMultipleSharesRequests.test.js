@@ -8,14 +8,14 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { BNExpDiv } from '~/tests/utils/BNmath';
-import { investInFund, setupFundWithParams } from '~/tests/utils/fund';
-import { delay } from '~/tests/utils/time';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { call, send } from '~/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { BNExpDiv } from '~/utils/BNmath';
+import { investInFund, setupFundWithParams } from '~/utils/fund';
+import { delay } from '~/utils/time';
+import { getDeployed } from '~/utils/getDeployed';
+import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager, investor1, investor2, investor3;

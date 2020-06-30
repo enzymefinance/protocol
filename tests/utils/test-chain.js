@@ -1,6 +1,6 @@
 const ganache = require("ganache-core");
 const Web3 = require("web3");
-const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
+const mainnetAddrs = require("../../config");
 
 const MAINNET_NODE_URL = process.env.MAINNET_NODE_URL;
 if (!MAINNET_NODE_URL) {

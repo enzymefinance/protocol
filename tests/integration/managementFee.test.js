@@ -7,14 +7,13 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
-import { delay } from '~/tests/utils/time';
-import { getDeployed } from '~/tests/utils/getDeployed';
-
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+import { call, send } from '~/utils/deploy-contract';
+import { BNExpMul } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
+import { delay } from '~/utils/time';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 const yearInSeconds = new BN(31536000);
 let web3;

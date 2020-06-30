@@ -1,4 +1,4 @@
-const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
+const mainnetAddrs = require("../config");
 
 module.exports = async (_, __, [admin]) => {
   for (const whale of Object.values(mainnetAddrs.whales)) {

@@ -13,13 +13,13 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { send, call } from '~/deploy/utils/deploy-contract';
-import { BNExpInverse } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { getEventFromLogs } from '~/tests/utils/metadata';
-import { updateKyberPriceFeed, getKyberPrices } from '~/tests/utils/updateKyberPriceFeed';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { send, call } from '~/utils/deploy-contract';
+import { BNExpInverse } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { getEventFromLogs } from '~/utils/metadata';
+import { updateKyberPriceFeed, getKyberPrices } from '~/utils/updateKyberPriceFeed';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, updater, someAccount;

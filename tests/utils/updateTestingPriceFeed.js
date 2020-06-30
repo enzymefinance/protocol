@@ -1,6 +1,6 @@
 import { BN } from 'web3-utils';
 
-import { send } from '~/deploy/utils/deploy-contract';
+import { send } from '~/utils/deploy-contract';
 
 const updateTestingPriceFeed = async (pricefeedContract, tokenAddresses, prices) => {
   // TODO: do not use fake prices

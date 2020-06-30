@@ -1,12 +1,11 @@
 // TODO: make this into unit tests
 
 import { toWei, BN } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { getEventFromLogs } from '~/tests/utils/metadata';
-import { getDeployed } from '~/tests/utils/getDeployed';
-
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+import { call, send } from '~/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { getEventFromLogs } from '~/utils/metadata';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 const amguPrice = toWei('1', 'gwei');
 

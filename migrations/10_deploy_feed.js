@@ -1,7 +1,7 @@
 const utils = require('web3-utils');
 const KyberPriceFeed = artifacts.require('KyberPriceFeed');
 const Registry = artifacts.require('Registry');
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+const mainnetAddrs = require('../config');
 
 const maxSpread = utils.toWei('0.1', 'ether');
 const maxPriceDeviation = utils.toWei('0.1', 'ether');

@@ -6,16 +6,16 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpMul } from '~/tests/utils/BNmath';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { getFunctionSignature } from '~/tests/utils/metadata';
-import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
-import { increaseTime } from '~/tests/utils/rpc';
-import { setupInvestedTestFund } from '~/tests/utils/fund';
-import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+import { call, send } from '~/utils/deploy-contract';
+import { BNExpMul } from '~/utils/BNmath';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { getFunctionSignature } from '~/utils/metadata';
+import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { increaseTime } from '~/utils/rpc';
+import { setupInvestedTestFund } from '~/utils/fund';
+import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager;

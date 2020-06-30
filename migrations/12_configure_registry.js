@@ -1,4 +1,4 @@
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+const mainnetAddrs = require('../config');
 
 const AirSwapAdapter = artifacts.require('AirSwapAdapter');
 const AssetBlacklist = artifacts.require('AssetBlacklist');

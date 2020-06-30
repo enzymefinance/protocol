@@ -6,18 +6,18 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
-import { getFunctionSignature } from '~/tests/utils/metadata';
+import { call, send } from '~/utils/deploy-contract';
+import { CONTRACT_NAMES } from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
+import { getFunctionSignature } from '~/utils/metadata';
 import {
   createUnsignedZeroExOrder,
   encodeZeroExTakeOrderArgs,
   isValidZeroExSignatureOffChain,
   signZeroExOrder
-} from '~/tests/utils/zeroExV2';
-import { getDeployed } from '~/tests/utils/getDeployed';
-const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
+} from '~/utils/zeroExV2';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let deployer, manager, investor;

@@ -8,17 +8,17 @@
  */
 
 import { BN, toWei } from 'web3-utils';
-import { call, send } from '~/deploy/utils/deploy-contract';
-import { BNExpMul } from '~/tests/utils/BNmath';
+import { call, send } from '~/utils/deploy-contract';
+import { BNExpMul } from '~/utils/BNmath';
 import {
   CONTRACT_NAMES,
   KYBER_ETH_ADDRESS,
-} from '~/tests/utils/constants';
-import { setupFundWithParams } from '~/tests/utils/fund';
-import { getFunctionSignature } from '~/tests/utils/metadata';
-import { encodeTakeOrderArgs } from '~/tests/utils/formatting';
-import { getDeployed } from '~/tests/utils/getDeployed';
-import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
+} from '~/utils/constants';
+import { setupFundWithParams } from '~/utils/fund';
+import { getFunctionSignature } from '~/utils/metadata';
+import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { getDeployed } from '~/utils/getDeployed';
+import mainnetAddrs from '~/config';
 
 let web3;
 let defaultTxOpts, managerTxOpts;
@@ -146,8 +146,6 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  console.log(`WETH: ${preFundBalanceOfWeth}`)
-  console.log(`MLN: ${preFundBalanceOfMln}`)
 
   const preFundHoldingsWeth = new BN(
     await call(vault, 'assetBalances', [weth.options.address])
@@ -155,8 +153,6 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
   const preFundHoldingsMln = new BN(
     await call(vault, 'assetBalances', [mln.options.address])
   );
-  console.log(`WETH: ${preFundHoldingsWeth}`)
-  console.log(`MLN: ${preFundBalanceOfMln}`)
 
   const encodedArgs = encodeTakeOrderArgs({
     makerAsset,

@@ -1,7 +1,7 @@
 const { orders, signatures } = require('@airswap/order-utils');
 const { GANACHE_PROVIDER } = require('@airswap/order-utils').constants;
-import { ENCODING_TYPES } from '~/tests/utils/constants';
-import { encodeArgs } from '~/tests/utils/formatting';
+import { ENCODING_TYPES } from '~/utils/constants';
+import { encodeArgs } from '~/utils/formatting';
 
 export const createUnsignedAirSwapOrder = async ({
   signerId,
