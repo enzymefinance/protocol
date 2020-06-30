@@ -3,7 +3,6 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../../dependencies/TokenUser.sol";
-import "../../dependencies/libs/EnumerableSet.sol";
 import "../../prices/IValueInterpreter.sol";
 import "../hub/Spoke.sol";
 import "./IShares.sol";
@@ -13,8 +12,6 @@ import "./SharesToken.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Buy and sell shares for a Melon fund
 contract Shares is IShares, TokenUser, Spoke, SharesToken {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
     event SharesBought(
         address indexed buyer,
         uint256 sharesQuantity,
