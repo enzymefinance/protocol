@@ -369,7 +369,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
 
     beforeAll(async () => {
       const { shares, vault } = fund;
-      makerAsset = weth.options.address;
+      makerAsset = mln.options.address;
       takerAsset = weth.options.address;
       makerToWethAssetRate = new BN(
         (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
@@ -408,7 +408,14 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Third party makes an order', async () => {
-      await send(weth, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], managerTxOpts, web3);
+      await send(
+        mln,
+        'approve',
+        [oasisDexExchange.options.address, goodMakerQuantity],
+        managerTxOpts,
+        web3
+      );
+
       const res = await send(
         oasisDexExchange,
         'offer',
@@ -450,7 +457,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Third party makes an order', async () => {
-      await send(weth, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
+      await send(mln, 'approve', [oasisDexExchange.options.address, badMakerQuantity], managerTxOpts, web3);
       const res = await send(
         oasisDexExchange,
         'offer',
