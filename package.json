@@ -24,8 +24,9 @@
     "deployments/"
   ],
   "scripts": {
-    "download-thirdparty": "node scripts/download-thirdparty.js && cp thirdparty/*.json out/",
+    "download-thirdparty": "node scripts/download-thirdparty.js",
     "compile": "truffle --config truffle-config.js compile",
+    "postcompile": "yarn download-thirdparty",
     "deploy": "truffle migrate --skip-dry-run",
     "devchain": "node ./tests/utils/test-chain.js",
     "lint": "solhint src/**/*.sol",

@@ -1,6 +1,7 @@
+const path = require('path');
 const rp = require('request-promise');
 const fs = require('fs');
-const thirdpartyDir = './thirdparty';
+const outDir = path.join(__dirname, '..', 'out');
 
 const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
 const commitHash = '41ba296bb60c6bfe4aab7d8139a983c32f78b114';
@@ -73,12 +74,11 @@ const wrapRequest = async (
   ).reduce((a,b) => a.concat(b), []);
 
   try {
-    mkdir(thirdpartyDir);
+    mkdir(outDir);
     const results = await Promise.all(requests);
     for (const result of results) {
       const { outputContractName, content } = result;
-
-      fs.writeFileSync(`${thirdpartyDir}/${outputContractName}.json`, content);
+      fs.writeFileSync(`${outDir}/${outputContractName}.json`, content);
     }
   }
   catch (e) {
