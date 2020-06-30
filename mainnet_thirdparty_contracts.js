@@ -11,7 +11,8 @@ module.exports = {
     KyberNetworkProxyAdmin: '0xbc33a1f908612640f2849b56b67a4de4d179c151'
   },
   oasis: {
-    OasisDexExchange: '0x794e6e91555438aFc3ccF1c5076A74F42133d08D'
+    OasisDexExchange: '0x794e6e91555438aFc3ccF1c5076A74F42133d08D',
+    OasisDexExchangeAdmin: '0xdB33dFD3D61308C33C63209845DaD3e6bfb2c674'
   },
   uniswap: {
     UniswapFactory: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'

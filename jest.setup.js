@@ -7,7 +7,7 @@ const Web3 = require('web3');
 require('events').EventEmitter.defaultMaxListeners = 100;
 
 // Default timeout interval for tests and before/after hooks
-jest.setTimeout(120000); // 2 minutes
+jest.setTimeout(60 * 5 * 1000); // 5 minutes
 
 // TODO: factor these keys into one place
 const pkeys = [
@@ -42,6 +42,7 @@ global.startChain = async () => {
       '0x3eb01b3391ea15ce752d01cf3d3f09dec596f650', // KNC whale
       '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8', // ZRX whale
       '0x7D3455421BbC5Ed534a83c88FD80387dc8271392', // ZRX Governor contract
+      '0xdB33dFD3D61308C33C63209845DaD3e6bfb2c674', // OasisDex admin
     ],
     accounts: [
       {

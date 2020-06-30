@@ -22,7 +22,8 @@ const server = ganache.server({
   unlocked_accounts: [
     ...Object.values(mainnetAddrs.whales),
     mainnetAddrs.zeroExV3.ZeroExV3Governor,
-    mainnetAddrs.kyber.KyberNetworkProxyAdmin
+    mainnetAddrs.kyber.KyberNetworkProxyAdmin,
+    mainnetAddrs.oasis.OasisDexExchangeAdmin,
   ],
   default_balance_ether: startingBalance,
   accounts: [ // TODO: is this array redundant?

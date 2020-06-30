@@ -36,6 +36,7 @@ export const CONTRACT_NAMES = {
   INTEGRATION_ADAPTER: 'IntegrationAdapter',
   IERC20: 'IERC20',
   KNC: 'KNC',
+  REP: 'REP',
   KYBER_ADAPTER: 'KyberAdapter',
   KYBER_EXCHANGE: 'KyberNetwork',
   KYBER_MOCK_NETWORK: 'MockKyberNetwork',
