@@ -17,7 +17,7 @@ before_script:
   - until curl 127.0.0.1:8545 -X POST --data '{"method":"net_listening"}' >/dev/null 2>&1; do :; done
 script:
   - yarn compile
-  - yarn migrate
+  - yarn deploy
   - yarn test
 after_failure:
   - cat ganache.log
