@@ -91,7 +91,7 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -163,7 +163,7 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   // XXX: this errors with a revert, but no revert message
   await send(
@@ -235,7 +235,7 @@ test('swap MLN directly to EUR without intermediary', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -300,7 +300,7 @@ test('swap fails if make quantity is too high', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await expect(
     send(

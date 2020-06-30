@@ -77,7 +77,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -102,7 +102,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset: badAsset,
         takerQuantity,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -128,7 +128,7 @@ describe('takeOrder', () => {
         makerQuantity: zeroMakerQuanity,
         takerAsset: takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       await expect(
         send(

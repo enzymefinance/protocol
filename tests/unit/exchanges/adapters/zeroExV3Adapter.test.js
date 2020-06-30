@@ -43,12 +43,12 @@ beforeAll(async () => {
   [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
   managerTxOpts = { from: manager, gas: 8000000, gasPrice };
-  governorTxOpts = { from: mainnetAddrs.zeroExV3.ZeroExGovernor, gas: 8000000 };
+  governorTxOpts = { from: mainnetAddrs.zeroExV3.ZeroExV3Governor, gas: 8000000 };
 
   // load governor with eth so it can send tx
   await web3.eth.sendTransaction({
     from: deployer,
-    to: mainnetAddrs.zeroExV3.ZeroExGovernor,
+    to: mainnetAddrs.zeroExV3.ZeroExV3Governor,
     value: toWei('1', 'ether'),
     gas: 1000000
   });
@@ -111,10 +111,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
       await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -128,7 +129,7 @@ describe('takeOrder', () => {
       const { vault } = fund;
       const badFillQuantity = new BN(fillQuantity).add(new BN(1)).toString();
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, badFillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, badFillQuantity, web3);
 
       await expect(
         send(
@@ -185,10 +186,11 @@ describe('takeOrder', () => {
           takerTokenAddress,
           takerAssetAmount,
         },
+        web3
       );
 
       await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -208,7 +210,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -309,10 +311,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
       await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -332,7 +335,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -438,10 +441,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
       await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -461,7 +465,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -585,12 +589,13 @@ describe('takeOrder', () => {
           takerTokenAddress,
           takerAssetAmount,
         },
+        web3
       );
 
       await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
       await expect(
         send(
           vault,
@@ -630,6 +635,7 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
       await send(
@@ -639,7 +645,7 @@ describe('takeOrder', () => {
         defaultTxOpts,
         web3
       );
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -662,7 +668,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [zrx.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -777,10 +783,11 @@ describe('takeOrder', () => {
           takerTokenAddress,
           takerAssetAmount
         },
+        web3
       );
 
       await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -800,7 +807,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
         vault,
@@ -899,10 +906,11 @@ describe('takeOrder', () => {
           takerFee,
           takerFeeTokenAddress
         },
+        web3
       );
 
       await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
       const signatureValid = await call(
         zeroExExchange,
         'isValidOrderSignature',
@@ -926,7 +934,7 @@ describe('takeOrder', () => {
         await call(vault, 'assetBalances', [mln.options.address])
       );
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString());
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString(), web3);
 
       tx = await send(
         vault,

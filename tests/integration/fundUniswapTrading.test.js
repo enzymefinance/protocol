@@ -101,7 +101,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -162,7 +162,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -234,7 +234,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -294,7 +294,7 @@ test('Order fails if maker amount is not satisfied', async () => {
     makerQuantity: highMakerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await expect(
     send(

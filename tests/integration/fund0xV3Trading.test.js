@@ -36,11 +36,11 @@ beforeAll(async () => {
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
   managerTxOpts = { ...defaultTxOpts, from: manager };
-  governorTxOpts = { ...defaultTxOpts, from: mainnetAddrs.zeroExV3.ZeroExGovernor };
+  governorTxOpts = { ...defaultTxOpts, from: mainnetAddrs.zeroExV3.ZeroExV3Governor };
 
   await web3.eth.sendTransaction({
     from: deployer,
-    to: mainnetAddrs.zeroExV3.ZeroExGovernor,
+    to: mainnetAddrs.zeroExV3.ZeroExV3Governor,
     value: toWei('1', 'ether'),
     gas: 1000000
   });
@@ -107,11 +107,12 @@ describe('Fund takes an order', () => {
         takerTokenAddress,
         takerAssetAmount,
       },
+      web3
     );
 
     await send(zrx, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
     const signatureValid = await call(
       zeroExExchange,
@@ -137,7 +138,7 @@ describe('Fund takes an order', () => {
     );
 
     const fillQuantity = signedOrder.takerAssetAmount;
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -213,11 +214,12 @@ describe('Fund takes an order with a different taker fee asset', () => {
         takerAssetAmount,
         takerFeeTokenAddress
       },
+      web3
     );
 
     await send(mln, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
     const signatureValid = await call(
       zeroExExchange,
       'isValidOrderSignature',
@@ -247,7 +249,7 @@ describe('Fund takes an order with a different taker fee asset', () => {
 
     const fillQuantity = signedOrder.takerAssetAmount;
 
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -331,11 +333,12 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
         takerFee,
         takerFeeTokenAddress
       },
+      web3
     );
 
     await send(mln, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
     const signatureValid = await call(
       zeroExExchange,
       'isValidOrderSignature',
@@ -360,7 +363,7 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     );
 
     const fillQuantity = signedOrder.takerAssetAmount;
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -438,11 +441,12 @@ describe('Fund can take an order when protocol fee disabled', () => {
         takerTokenAddress,
         takerAssetAmount,
       },
+      web3
     );
 
     await send(mln, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
 
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
     const signatureValid = await call(
       zeroExExchange,
@@ -468,7 +472,7 @@ describe('Fund can take an order when protocol fee disabled', () => {
     );
 
     const fillQuantity = signedOrder.takerAssetAmount;
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,

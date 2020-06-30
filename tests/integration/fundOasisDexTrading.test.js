@@ -122,7 +122,7 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
       takerAsset,
       takerQuantity,
       orderId,
-    });
+    }, web3);
 
     await send(
       vault,
@@ -210,7 +210,7 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
       takerAsset,
       takerQuantity,
       orderId,
-    });
+    }, web3);
 
     await send(
       vault,

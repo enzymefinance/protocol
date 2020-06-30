@@ -110,7 +110,7 @@ test('fund takes an order on Kyber', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await send(
     vault,

@@ -2,14 +2,13 @@ const ERC20WithFields = artifacts.require("ERC20WithFields");
 const MockKyberNetwork = artifacts.require("MockKyberNetwork");
 const KyberNetworkProxy = artifacts.require("KyberNetworkProxy");
 const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
-const conf = require("../deploy-config");
+const { kyber } = require("../../mainnet_thirdparty_contracts");
 const BN = web3.utils.BN;
 
 module.exports = async (deployer) => {
-  const tokens = await Promise.all(conf.tokens.map(async (symbol) => {
-    const address = mainnetAddrs.tokens[symbol];
+  const tokens = await Promise.all(Object.entries(mainnetAddrs.tokens).map(async ([symbol, address]) => {
     const contract = await ERC20WithFields.at(address);
-    const whale = conf.whales[symbol];
+    const whale = mainnetAddrs.whales[symbol];
     const balance = await contract.balanceOf(whale);
 
     return {
@@ -24,7 +23,7 @@ module.exports = async (deployer) => {
   const kyberNetwork = await deployer.deploy(MockKyberNetwork);
   const kyberNetworkProxy = await KyberNetworkProxy.at(mainnetAddrs.kyber.KyberNetworkProxy);
   await kyberNetworkProxy.setKyberNetworkContract(kyberNetwork.address, {
-    from: conf.kyberProxyAdmin,
+    from: mainnetAddrs.kyber.KyberNetworkProxyAdmin,
   });
 
   // TODO: Make the price configurable per asset.

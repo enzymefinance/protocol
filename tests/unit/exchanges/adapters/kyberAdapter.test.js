@@ -109,7 +109,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -213,7 +213,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       // TODO: this is the tx that fails now (just with revert, no message)
       tx = await send(
@@ -318,7 +318,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,

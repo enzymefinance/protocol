@@ -1,5 +1,3 @@
-const conf = require('../deploy-config.js');
-
 const FeeManagerFactory = artifacts.require('FeeManagerFactory');
 const FundFactory = artifacts.require('FundFactory');
 const PolicyManagerFactory = artifacts.require('PolicyManagerFactory');
@@ -9,12 +7,17 @@ const VaultFactory = artifacts.require('VaultFactory');
 
 module.exports = async deployer => {
   const registry = await Registry.deployed();
+  const feeManagerFactory = await FeeManagerFactory.deployed();
+  const sharesFactory = await SharesFactory.deployed();
+  const vaultFactory = await VaultFactory.deployed();
+  const policyManagerFactory = await PolicyManagerFactory.deployed();
+
   const fundFactory = await deployer.deploy(
     FundFactory,
-    (await FeeManagerFactory.deployed()).address,
-    (await SharesFactory.deployed()).address,
-    (await VaultFactory.deployed()).address,
-    (await PolicyManagerFactory.deployed()).address,
+    feeManagerFactory.address,
+    sharesFactory.address,
+    vaultFactory.address,
+    policyManagerFactory.address,
     registry.address,
   );
 

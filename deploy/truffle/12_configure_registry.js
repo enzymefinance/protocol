@@ -1,4 +1,3 @@
-const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
 
 const AirSwapAdapter = artifacts.require('AirSwapAdapter');
@@ -24,7 +23,7 @@ const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 
 const updateKyberFeedTruffle = async (feed, registry) => {
   const quoteAsset = await feed.PRICEFEED_QUOTE_ASSET();
-  const tokens = conf.tokens.map(symbol => mainnetAddrs.tokens[symbol].toLowerCase());
+  const tokens = Object.entries(mainnetAddrs.tokens).map(([, address]) => address.toLowerCase());
   const deregister = (await registry.getRegisteredPrimitives()).filter(address => {
     return !tokens.includes(address.toLowerCase());
   });

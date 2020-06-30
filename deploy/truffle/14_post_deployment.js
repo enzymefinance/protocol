@@ -1,6 +1,4 @@
-const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
-
 const Registry = artifacts.require('Registry');
 const WETH = artifacts.require('WETH');
 const MLN = artifacts.require('MLN');
@@ -20,18 +18,18 @@ module.exports = async _ => {
   await weth.transfer(manager, web3.utils.toWei('10000', 'ether'));
   await weth.transfer(investor, web3.utils.toWei('10000', 'ether'));
 
-  await mln.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: conf.whales.MLN});
-  await mln.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: conf.whales.MLN});
-  await mln.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: conf.whales.MLN});
+  await mln.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.MLN});
+  await mln.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.MLN});
+  await mln.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.MLN});
 
-  await knc.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: conf.whales.KNC});
-  await knc.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: conf.whales.KNC});
-  await knc.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: conf.whales.KNC});
+  await knc.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.KNC});
+  await knc.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.KNC});
+  await knc.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.KNC});
 
-  await zrx.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: conf.whales.ZRX});
-  await zrx.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: conf.whales.ZRX});
-  await zrx.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: conf.whales.ZRX});
+  await zrx.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.ZRX});
+  await zrx.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.ZRX});
+  await zrx.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.ZRX});
 
-  // finally set Registry owner
-  await (await Registry.deployed()).setOwner(conf.melonRegistryOwner);
+  const registry = await Registry.deployed();
+  await registry.setOwner(mainnetAddrs.melon.MelonRegistryOwner);
 }

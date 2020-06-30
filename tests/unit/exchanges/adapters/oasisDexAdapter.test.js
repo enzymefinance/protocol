@@ -100,7 +100,7 @@ describe('takeOrder', () => {
         takerAsset,
         takerQuantity,
         orderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -126,7 +126,7 @@ describe('takeOrder', () => {
         takerAsset: badAsset,
         takerQuantity,
         orderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -240,7 +240,7 @@ describe('takeOrder', () => {
         takerAsset,
         takerQuantity,
         orderId,
-      });
+      }, web3);
 
       tx = await send(
         vault,

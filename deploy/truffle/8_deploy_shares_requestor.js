@@ -4,12 +4,6 @@ const ValueInterpreter = artifacts.require('ValueInterpreter');
 
 module.exports = async deployer => {
   const registry = await Registry.deployed();
-  await deployer.deploy(
-    SharesRequestor,
-    registry.address
-  );
-  await deployer.deploy(
-    ValueInterpreter,
-    registry.address
-  );
+  await deployer.deploy(SharesRequestor, registry.address);
+  await deployer.deploy(ValueInterpreter, registry.address);
 }

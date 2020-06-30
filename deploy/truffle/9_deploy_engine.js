@@ -1,11 +1,9 @@
-const conf = require('../deploy-config.js');
 const Engine = artifacts.require('Engine');
 const Registry = artifacts.require('Registry');
 
+const melonEngineDelay = 2592000;
+
 module.exports = async deployer => {
-  await deployer.deploy(
-    Engine,
-    conf.melonEngineDelay,
-    (await Registry.deployed()).address
-  );
+  const registry = await Registry.deployed();
+  await deployer.deploy(Engine, melonEngineDelay, registry.address);
 }

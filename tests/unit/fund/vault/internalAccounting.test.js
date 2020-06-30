@@ -146,7 +146,7 @@ describe('vault', () => {
       makerQuantity,
       takerAsset,
       takerQuantity: badTakerQuantity
-    });
+    }, web3);
 
     await expect(
       send(
@@ -178,7 +178,7 @@ describe('vault', () => {
       makerQuantity,
       takerAsset,
       takerQuantity
-    });
+    }, web3);
 
     await expect(
       send(

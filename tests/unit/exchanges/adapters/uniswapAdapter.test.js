@@ -115,7 +115,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -214,7 +214,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -318,7 +318,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,

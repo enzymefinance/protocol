@@ -15,6 +15,6 @@ module.exports = async deployer => {
   await deployer.deploy(UniswapAdapter, mainnetAddrs.uniswap.UniswapFactory);
   await deployer.deploy(ZeroExV2Adapter, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   await deployer.deploy(ZeroExV3Adapter, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
-  await deployer.deploy(AirSwapAdapter, mainnetAddrs.airswap.Swap);
+  await deployer.deploy(AirSwapAdapter, mainnetAddrs.airSwap.AirSwapSwap);
   await deployer.deploy(EngineAdapter, (await Engine.deployed()).address);
 }

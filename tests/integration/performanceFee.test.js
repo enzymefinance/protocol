@@ -16,7 +16,7 @@ import { getEventFromLogs, getFunctionSignature } from '~/tests/utils/metadata';
 import { delay } from '~/tests/utils/time';
 import { encodeOasisDexTakeOrderArgs } from '~/tests/utils/oasisDex';
 import { getDeployed } from '~/tests/utils/getDeployed';
-import { updateKyberPriceFeed } from '~/tests/utils/updateKyberPriceFeed';
+import { updateKyberPriceFeed, setKyberRate } from '~/tests/utils/updateKyberPriceFeed';
 import * as mainnetAddrs from '~/mainnet_thirdparty_contracts';
 
 let web3;
@@ -168,7 +168,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     takerAsset,
     takerQuantity,
     orderId,
-  });
+  }, web3);
 
   await send(
     vault,
@@ -191,7 +191,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   const preWethGav = new BN(await call(vault, 'assetBalances', [mln.options.address]));
 
   const newMlnToEthRate = toWei('1.5', 'ether');
-  await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString(), newMlnToEthRate.toString()], defaultTxOpts, web3);
+  await setKyberRate(mln.options.address, web3, newMlnToEthRate);
   await updateKyberPriceFeed(priceSource, web3);
 
   const mlnPricePostSwap = new BN(
@@ -322,7 +322,7 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   );
   // Double Mln price
   const newMlnToEthRate = toWei('2', 'ether');
-  await send(mockKyber, 'setRate', [mln.options.address, newMlnToEthRate.toString(), newMlnToEthRate.toString()], defaultTxOpts, web3);
+  await setKyberRate(mln.options.address, web3, newMlnToEthRate);
   await updateKyberPriceFeed(priceSource, web3);
   const postMlnGav = BNExpMul(
     new BN(await call(vault, 'assetBalances', [mln.options.address])),

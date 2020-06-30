@@ -66,7 +66,7 @@ beforeAll(async () => {
 
   const policies = {
     contracts: [userWhitelist.options.address],
-    encodedSettings: [encodeArgs(['address[]'], [[deployer]])]
+    encodedSettings: [encodeArgs(['address[]'], [[deployer]], web3)]
   };
 
   const fundName = stringToBytes(`Test fund ${Date.now()}`, 32);
@@ -141,7 +141,7 @@ test('Buying shares (initial investment) fails for user not on whitelist', async
 test('Buying shares (initial investment) succeeds for whitelisted user with allowance', async () => {
   const { hub, policyManager, shares } = fund;
 
-  const encodedUserWhitelistArgs = encodeArgs(['address[]', 'address[]'], [[investor], []]);
+  const encodedUserWhitelistArgs = encodeArgs(['address[]', 'address[]'], [[investor], []], web3);
   await send(
     policyManager,
     'updatePolicySettings',
@@ -206,7 +206,7 @@ test('Fund can take an order on Oasis DEX', async () => {
     takerAsset,
     takerQuantity,
     orderId,
-  });
+  }, web3);
 
   await send(
     vault,

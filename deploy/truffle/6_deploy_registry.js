@@ -1,19 +1,23 @@
-const conf = require('../deploy-config.js');
 const mainnetAddrs = require('../../mainnet_thirdparty_contracts');
-
 const Registry = artifacts.require('Registry');
 const ManagementFee = artifacts.require('ManagementFee');
 const PerformanceFee = artifacts.require('PerformanceFee');
 const WETH = artifacts.require('WETH');
 const MLN = artifacts.require('MLN');
 
-module.exports = async (deployer, _, accounts) => {
+module.exports = async (deployer, _, [admin]) => {
+  await deployer.deploy(Registry, admin);
+
+  const registry = await Registry.deployed();
+  await registry.setMGM(mainnetAddrs.melon.MelonInitialMGM);
+
   const weth = await WETH.at(mainnetAddrs.tokens.WETH);
   const mln = await MLN.at(mainnetAddrs.tokens.MLN);
-  const registry = await deployer.deploy(Registry, accounts[0]);
-  await registry.setMGM(conf.melonInitialMGM);
-  await registry.registerFee((await ManagementFee.deployed()).address);
-  await registry.registerFee((await PerformanceFee.deployed()).address);
   await registry.setNativeAsset(weth.address);
   await registry.setMlnToken(mln.address);
+
+  const managementFee = await ManagementFee.deployed();
+  const performanceFee = await PerformanceFee.deployed();
+  await registry.registerFee(managementFee.address);
+  await registry.registerFee(performanceFee.address);
 }

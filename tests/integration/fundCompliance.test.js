@@ -38,7 +38,7 @@ describe('Fund 1: user whitelist', () => {
     const policies = {
       addresses: [userWhitelist.options.address],
       encodedSettings: [
-        encodeArgs(['address[]'], [[manager, investor]])
+        encodeArgs(['address[]'], [[manager, investor]], web3)
       ]
     };
 

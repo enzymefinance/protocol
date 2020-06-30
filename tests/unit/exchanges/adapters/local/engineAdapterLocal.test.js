@@ -111,7 +111,7 @@ describe('takeOrder', () => {
         makerQuantity: (new BN(makerQuantity).sub(new BN(1000000))).toString(),
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -217,7 +217,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
 
       tx = await send(
         vault,
@@ -316,7 +316,8 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      });
+      }, web3);
+
       await expect(
         send(
           vault,

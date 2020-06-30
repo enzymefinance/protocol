@@ -68,11 +68,11 @@ describe('Fund takes an order', () => {
       senderWallet: vault.options.address,
       senderToken: weth.options.address,
       senderTokenAmount: fillQuantity,
-    });
+    }, web3);
 
     signedOrder = await signAirSwapOrder(unsignedOrder, swapContract.options.address, deployer);
 
-    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder);
+    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder, web3);
 
     await send(
       mln,

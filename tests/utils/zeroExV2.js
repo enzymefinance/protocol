@@ -7,7 +7,6 @@ import {
 import { PrivateKeyWalletSubprovider, Web3ProviderEngine } from '@0x/subproviders';
 import { SignatureType } from '@0x/types-v2';
 import { providerUtils } from '@0x/utils';
-import web3 from '~/deploy/utils/get-web3';
 import { EMPTY_ADDRESS, ENCODING_TYPES } from '~/tests/utils/constants';
 import { encodeArgs } from '~/tests/utils/formatting';
 
@@ -26,8 +25,9 @@ export const createUnsignedZeroExOrder = async (
     duration = 24 * 60 * 60,
     makerAddress,
     feeRecipientAddress,
-    takerFee,
+    takerFee
   },
+  web3
 ) => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(makerTokenAddress);
   const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
@@ -59,7 +59,7 @@ export const createUnsignedZeroExOrder = async (
   return order;
 };
 
-export const encodeZeroExTakeOrderArgs = (order, fillQuantity) => {
+export const encodeZeroExTakeOrderArgs = (order, fillQuantity, web3) => {
   const orderAddresses = [];
   const orderValues = [];
   const orderData = [];
@@ -80,13 +80,14 @@ export const encodeZeroExTakeOrderArgs = (order, fillQuantity) => {
   const signature = order.signature;
 
   const args = [orderAddresses, orderValues, orderData, signature];
-  return encodeArgs(ENCODING_TYPES.ZERO_EX_V2, args);
+  return encodeArgs(ENCODING_TYPES.ZERO_EX_V2, args, web3);
 };
 
 export const isValidZeroExSignatureOffChain = (
   order,
   signature,
-  makerAddress
+  makerAddress,
+  web3
 ) => {
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
 
@@ -109,7 +110,7 @@ const getPrivateKeyProvider = (wallet, signer) => {
   return providerEngine;
 }
 
-export const signZeroExOrder = async (order, signer) => {
+export const signZeroExOrder = async (order, signer, web3) => {
   const signerFormatted = signer.toLowerCase();
 
   const pkProvider = getPrivateKeyProvider(web3.eth.accounts.wallet, signer);

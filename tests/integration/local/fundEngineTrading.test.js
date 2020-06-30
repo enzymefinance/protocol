@@ -68,7 +68,7 @@ test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async 
     makerQuantity: minMakerQuantity,
     takerAsset: weth.options.address,
     takerQuantity: toWei('0.1', 'ether'),
-  });
+  }, web3);
 
   await expect(
     send(
@@ -110,7 +110,7 @@ test('Trade on Melon Engine', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   // get fresh price since we changed blocktime
   await updateKyberPriceFeed(priceSource, web3);
@@ -159,7 +159,7 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  });
+  }, web3);
 
   await expect(
     send(

@@ -1,11 +1,11 @@
-const conf = require("../deploy-config");
+const mainnetAddrs = require("../../mainnet_thirdparty_contracts");
 
-module.exports = async (_, __, accounts) => {
-  for (const whale of Object.values(conf.whales)) {
+module.exports = async (_, __, [admin]) => {
+  for (const whale of Object.values(mainnetAddrs.whales)) {
     await web3.eth.sendTransaction({
-      from: accounts[0],
+      from: admin,
       to: whale,
-      value: web3.utils.toWei("1", "ether")
+      value: web3.utils.toWei("100", "ether")
     });
   }
 };

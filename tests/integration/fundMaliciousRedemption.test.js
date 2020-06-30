@@ -92,10 +92,11 @@ test('Fund receives Malicious token via 0x order', async () => {
       takerTokenAddress: weth.options.address,
       takerAssetAmount: toWei('0.5', 'Ether')
     },
+    web3
   );
 
   await send(maliciousToken, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
-  const signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+  const signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
 
   await send(
     vault,
@@ -103,7 +104,7 @@ test('Fund receives Malicious token via 0x order', async () => {
     [
       zeroExAdapter.options.address,
       getFunctionSignature(CONTRACT_NAMES.ORDER_TAKER, 'takeOrder'),
-      encodeZeroExTakeOrderArgs(signedOrder, signedOrder.takerAssetAmount),
+      encodeZeroExTakeOrderArgs(signedOrder, signedOrder.takerAssetAmount, web3),
     ],
     managerTxOpts,
     web3

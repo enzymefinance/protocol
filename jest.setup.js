@@ -65,6 +65,7 @@ global.startChain = async () => {
   for (const pkey of pkeys) {
     web3.eth.accounts.wallet.add(pkey);
   }
+
   return web3;
 }
 

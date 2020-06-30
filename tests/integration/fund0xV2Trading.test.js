@@ -76,14 +76,16 @@ describe('Fund takes an order', () => {
         takerTokenAddress: weth.options.address,
         takerAssetAmount,
       },
+      web3
     );
 
     await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
     const signatureValid = await isValidZeroExSignatureOffChain(
       unsignedOrder,
       signedOrder.signature,
-      deployer
+      deployer,
+      web3
     );
 
     expect(signatureValid).toBeTruthy();
@@ -104,7 +106,7 @@ describe('Fund takes an order', () => {
       await call(vault, 'assetBalances', [zrx.options.address])
     );
 
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,
@@ -166,14 +168,16 @@ describe('Fund takes an order with a taker fee', () => {
         takerTokenAddress: weth.options.address,
         takerAssetAmount,
       },
+      web3
     );
 
     await send(mln, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts, web3);
-    signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+    signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
     const signatureValid = await isValidZeroExSignatureOffChain(
       unsignedOrder,
       signedOrder.signature,
-      deployer
+      deployer,
+      web3
     );
 
     expect(signatureValid).toBeTruthy();
@@ -198,7 +202,7 @@ describe('Fund takes an order with a taker fee', () => {
       await call(vault, 'assetBalances', [zrx.options.address])
     );
 
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
     await send(
       vault,

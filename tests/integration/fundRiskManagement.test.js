@@ -79,10 +79,10 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         priceTolerance.options.address
       ],
       encodedSettings: [
-        encodeArgs(['address[]'], [[knc.options.address]]),
-        encodeArgs(['uint256'], [3]),
-        encodeArgs(['uint256'], [toWei('0.1', 'ether')]), // 10%
-        encodeArgs(['uint256'], [toWei('0.1', 'ether')]), // 10%
+        encodeArgs(['address[]'], [[knc.options.address]], web3),
+        encodeArgs(['uint256'], [3], web3),
+        encodeArgs(['uint256'], [toWei('0.1', 'ether')], web3), // 10%
+        encodeArgs(['uint256'], [toWei('0.1', 'ether')], web3), // 10%
       ]
     };
     fund = await setupFundWithParams({
@@ -174,7 +174,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerAsset,
         takerQuantity,
         orderId: badOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -224,7 +224,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerAsset,
         takerQuantity,
         orderId: goodOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -296,7 +296,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerAsset,
         takerQuantity,
         orderId: badOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -343,7 +343,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerAsset,
         takerQuantity,
         orderId: goodOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -432,7 +432,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerAsset,
         takerQuantity: goodTakerQuantity,
         orderId: goodOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -474,7 +474,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
         takerAsset,
         takerQuantity: badTakerQuantity,
         orderId: badOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -510,9 +510,10 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       encodedSettings: [
         encodeArgs(
           ['address[]'],
-          [[weth.options.address, mln.options.address, zrx.options.address]]
+          [[weth.options.address, mln.options.address, zrx.options.address]],
+          web3
         ),
-        encodeArgs(['uint256'], [3])
+        encodeArgs(['uint256'], [3], web3)
       ]
     };
     fund = await setupFundWithParams({
@@ -601,7 +602,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         takerAsset,
         takerQuantity,
         orderId: badOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -651,7 +652,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         takerAsset,
         takerQuantity,
         orderId: goodOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -742,7 +743,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         takerAsset,
         takerQuantity,
         orderId: goodOrderId1,
-      });
+      }, web3);
 
       await send(
         vault,
@@ -786,7 +787,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         takerAsset,
         takerQuantity,
         orderId: badOrderId,
-      });
+      }, web3);
 
       await expect(
         send(
@@ -829,7 +830,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         takerAsset,
         takerQuantity,
         orderId: goodOrderId2,
-      });
+      }, web3);
 
       await expect(
         send(
