@@ -60,4 +60,3 @@ contract WETH {
         return true;
     }
 }
-
