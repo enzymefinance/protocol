@@ -36,6 +36,7 @@
     "@0x/types-v2": "npm:@0x/types@2.4.3",
     "@0x/utils": "^5.1.2",
     "@airswap/order-utils": "^0.3.20",
+    "@openzeppelin/contracts": "3.0.1",
     "ganache-core": "^2.11.0-beta.0",
     "jest": "^26.1.0",
     "jest-matcher-utils": "^26.1.0",
