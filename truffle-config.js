@@ -5,7 +5,11 @@ module.exports = {
       docker: true,
       parser: 'solcjs',
       settings: {
-        evmVersion: 'istanbul'
+        evmVersion: 'istanbul',
+        optimizer: {
+          enabled: true,
+          runs: 1
+        }
       }
     }
   },
