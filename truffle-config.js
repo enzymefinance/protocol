@@ -5,19 +5,19 @@ module.exports = {
       docker: true,
       parser: 'solcjs',
       settings: {
-        evmVersion: 'istanbul',
         optimizer: {
           enabled: true,
-          runs: 1
-        }
+          runs: 200
+        },
+        evmVersion: 'istanbul'
       }
     }
   },
   networks: {
     development: {
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 8545,
-      network_id: '*' // Match any network id
+      network_id: "*" // Match any network id
     }
   }
 };
