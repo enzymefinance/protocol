@@ -6,10 +6,11 @@ const WETH = artifacts.require('WETH');
 const MLN = artifacts.require('MLN');
 
 module.exports = async (deployer, _, [admin]) => {
-  await deployer.deploy(Registry, admin);
+  // TODO: 1st param should be real MTC
+  // TODO: 2nd param should be real MGM
+  await deployer.deploy(Registry, admin, mainnetAddrs.melon.MelonInitialMGM);
 
   const registry = await Registry.deployed();
-  await registry.setMGM(mainnetAddrs.melon.MelonInitialMGM);
 
   const weth = await WETH.at(mainnetAddrs.tokens.WETH);
   const mln = await MLN.at(mainnetAddrs.tokens.MLN);
