@@ -109,12 +109,6 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
 
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     const encodedArgs = encodeOasisDexTakeOrderArgs({
       makerAsset,
@@ -138,23 +132,13 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
-    const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+    const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+    const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(new BN(takerQuantity));
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerQuantity));
+    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
   });
 });
 
@@ -197,12 +181,6 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
 
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     const encodedArgs = encodeOasisDexTakeOrderArgs({
       makerAsset,
@@ -226,22 +204,12 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
-    const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
-    const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
-    expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
+    const fundBalanceOfWethDiff = postFundBalanceOfWeth.sub(preFundBalanceOfWeth);
+    const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(new BN(makerQuantity));
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
+    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(makerQuantity));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
   });
 });

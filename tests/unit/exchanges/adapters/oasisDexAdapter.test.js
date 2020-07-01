@@ -178,7 +178,6 @@ describe('takeOrder', () => {
 
   describe('Fill Order 1: full amount', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let orderId;
     let tx;
 
@@ -227,13 +226,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeOasisDexTakeOrderArgs({
         makerAsset,
         makerQuantity,
@@ -252,22 +244,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.sub(new BN(takerQuantity))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(makerQuantity))
       );
     });
 

@@ -72,7 +72,6 @@ describe('takeOrder', () => {
 
   describe('Fill Order 1: eth to token', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -103,13 +102,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeTakeOrderArgs({
         makerAsset,
         makerQuantity,
@@ -127,22 +119,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.sub(new BN(takerQuantity))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(makerQuantity))
       );
     });
 
@@ -171,7 +147,6 @@ describe('takeOrder', () => {
   // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 2: token to eth', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -202,13 +177,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeTakeOrderArgs({
         makerAsset,
         makerQuantity,
@@ -226,22 +194,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.add(new BN(makerQuantity))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.sub(new BN(takerQuantity))
       );
     });
 
@@ -270,7 +222,6 @@ describe('takeOrder', () => {
   // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 3: token to token', () => {
     let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let preFundHoldingsMln, preFundHoldingsDai, postFundHoldingsMln, postFundHoldingsDai;
     let tx;
 
     beforeAll(async () => {
@@ -306,13 +257,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsDai = new BN(
-        await call(vault, 'assetBalances', [dai.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeTakeOrderArgs({
         makerAsset,
         makerQuantity,
@@ -330,22 +274,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsDai = new BN(
-        await call(vault, 'assetBalances', [dai.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsDai).bigNumberEq(
-        preFundHoldingsDai.add(new BN(makerQuantity))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.sub(new BN(takerQuantity))
       );
     });
 

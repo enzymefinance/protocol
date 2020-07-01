@@ -54,7 +54,7 @@ describe('buyShares', () => {
   let expectedShares;
   let preBuyerShares, postBuyerShares, preTotalShares, postTotalShares;
   let preCallerDenominationAsset, postCallerDenominationAsset;
-  let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
+  let preFundBalanceOfDenominationAsset, postFundBalanceOfDenominationAsset;
   let preVaultDenominationAsset, postVaultDenominationAsset;
 
   beforeAll(async () => {
@@ -105,11 +105,11 @@ describe('buyShares', () => {
   it('succeeds when called by sharesRequestor', async () => {
     await send(registry, 'setSharesRequestor', [deployer], defaultTxOpts, web3);
 
-    prefundHoldingsDenominationAsset = new BN(
+    preFundBalanceOfDenominationAsset = new BN(
       await call(
-        fund.vault,
-        'assetBalances',
-        [defaultBuyShares.denominationAssetToken.options.address]
+        defaultBuyShares.denominationAssetToken,
+        'balanceOf',
+        [fund.vault.options.address]
       )
     );
     preBuyerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
@@ -146,11 +146,11 @@ describe('buyShares', () => {
     ).resolves.not.toThrow()
 
     buySharesTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsDenominationAsset = new BN(
+    postFundBalanceOfDenominationAsset = new BN(
       await call(
-        fund.vault,
-        'assetBalances',
-        [defaultBuyShares.denominationAssetToken.options.address]
+        defaultBuyShares.denominationAssetToken,
+        'balanceOf',
+        [fund.vault.options.address]
       )
     );
     postBuyerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
@@ -183,7 +183,7 @@ describe('buyShares', () => {
       new BN(defaultBuyShares.investmentAmount)
     );
     // 3. Fund internal accounting increased
-    expect(postFundHoldingsDenominationAsset.sub(prefundHoldingsDenominationAsset)).bigNumberEq(
+    expect(postFundBalanceOfDenominationAsset.sub(preFundBalanceOfDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
   });
@@ -209,7 +209,7 @@ describe('buyShares', () => {
 describe('redeemShares', () => {
   let fund;
   let redeemTxBlock;
-  let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
+  let preFundBalanceOfDenominationAsset, postFundBalanceOfDenominationAsset;
   let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
@@ -243,11 +243,11 @@ describe('redeemShares', () => {
   });
 
   it('succeeds when called by a user with shares', async () => {
-    prefundHoldingsDenominationAsset = new BN(
+    preFundBalanceOfDenominationAsset = new BN(
       await call(
-        fund.vault,
-        'assetBalances',
-        [defaultBuyShares.denominationAssetToken.options.address]
+        defaultBuyShares.denominationAssetToken,
+        'balanceOf',
+        [fund.vault.options.address]
       )
     );
     preRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
@@ -270,11 +270,11 @@ describe('redeemShares', () => {
     ).resolves.not.toThrow()
 
     redeemTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsDenominationAsset = new BN(
+    postFundBalanceOfDenominationAsset = new BN(
       await call(
-        fund.vault,
-        'assetBalances',
-        [defaultBuyShares.denominationAssetToken.options.address]
+        defaultBuyShares.denominationAssetToken,
+        'balanceOf',
+        [fund.vault.options.address]
       )
     );
     postRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
@@ -295,7 +295,7 @@ describe('redeemShares', () => {
       new BN(defaultBuyShares.investmentAmount)
     );
     // 3. Fund internal accounting decreased
-    expect(prefundHoldingsDenominationAsset.sub(postFundHoldingsDenominationAsset)).bigNumberEq(
+    expect(preFundBalanceOfDenominationAsset.sub(postFundBalanceOfDenominationAsset)).bigNumberEq(
       new BN(defaultBuyShares.investmentAmount)
     );
   });
@@ -324,7 +324,7 @@ describe('redeemSharesQuantity', () => {
   let fund;
   let halfOfDenominationAsset, halfOfShares;
   let redeemTxBlock;
-  let prefundHoldingsDenominationAsset, postFundHoldingsDenominationAsset;
+  let preFundBalanceOfDenominationAsset, postFundBalanceOfDenominationAsset;
   let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
@@ -363,11 +363,11 @@ describe('redeemSharesQuantity', () => {
   });
 
   it('succeeds when called by a user with shares', async () => {
-    prefundHoldingsDenominationAsset = new BN(
+    preFundBalanceOfDenominationAsset = new BN(
       await call(
-        fund.vault,
-        'assetBalances',
-        [defaultBuyShares.denominationAssetToken.options.address]
+        defaultBuyShares.denominationAssetToken,
+        'balanceOf',
+        [fund.vault.options.address]
       )
     );
     preRedeemerDenominationAsset = new BN(
@@ -390,11 +390,11 @@ describe('redeemSharesQuantity', () => {
     ).resolves.not.toThrow()
 
     redeemTxBlock = await web3.eth.getBlockNumber();
-    postFundHoldingsDenominationAsset = new BN(
+    postFundBalanceOfDenominationAsset = new BN(
       await call(
-        fund.vault,
-        'assetBalances',
-        [defaultBuyShares.denominationAssetToken.options.address]
+        defaultBuyShares.denominationAssetToken,
+        'balanceOf',
+        [fund.vault.options.address]
       )
     );
     postRedeemerShares = new BN(await call(fund.shares, 'balanceOf', [defaultBuyShares.buyer]));
@@ -415,7 +415,7 @@ describe('redeemSharesQuantity', () => {
       halfOfDenominationAsset
     );
     // 3. Fund internal accounting decreased
-    expect(prefundHoldingsDenominationAsset.sub(postFundHoldingsDenominationAsset)).bigNumberEq(
+    expect(preFundBalanceOfDenominationAsset.sub(postFundBalanceOfDenominationAsset)).bigNumberEq(
       halfOfDenominationAsset
     );
   });
