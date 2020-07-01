@@ -17,14 +17,14 @@ contract SharesToken is StandardToken {
         decimals = 18;
     }
 
-    function transfer(address to, uint amount) public override returns (bool) {
+    function transfer(address, uint256) public override returns (bool) {
         revert("Unimplemented");
     }
 
     function transferFrom(
-        address from,
-        address to,
-        uint amount
+        address,
+        address,
+        uint256
     )
         public
         override
@@ -33,13 +33,13 @@ contract SharesToken is StandardToken {
         revert("Unimplemented");
     }
 
-    function approve(address spender, uint amount) public override returns (bool) {
+    function approve(address, uint256) public override returns (bool) {
         revert("Unimplemented");
     }
 
     function increaseApproval(
-        address spender,
-        uint amount
+        address,
+        uint256
     )
         public
         override
@@ -49,8 +49,8 @@ contract SharesToken is StandardToken {
     }
 
     function decreaseApproval(
-        address spender,
-        uint amount
+        address,
+        uint256
     )
         public
         override
