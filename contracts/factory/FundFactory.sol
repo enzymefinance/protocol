@@ -8,7 +8,6 @@ import "../fund/policies/IPolicyManager.sol";
 import "../fund/shares/IShares.sol";
 import "../fund/vault/IVault.sol";
 import "../engine/AmguConsumer.sol";
-import "../registry/IRegistry.sol";
 
 /// @title FundFactory Contract
 /// @author Melon Council DAO <security@meloncoucil.io>

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../registry/IRegistry.sol";
-import "./Spoke.sol";
 import "./IHub.sol";
 
 /// @title Hub Contract
