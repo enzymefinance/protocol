@@ -1,5 +1,4 @@
 const mainnetAddrs = require('../config');
-const Registry = artifacts.require('Registry');
 const OasisDex = artifacts.require('IOasisDex');
 const WETH = artifacts.require("WETH");
 const ERC20WithFields = artifacts.require("ERC20WithFields");
@@ -38,9 +37,6 @@ module.exports = async _ => {
   await zrx.transfer(primary, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.ZRX});
   await zrx.transfer(manager, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.ZRX});
   await zrx.transfer(investor, web3.utils.toWei('1000', 'ether'), {from: mainnetAddrs.whales.ZRX});
-
-  const registry = await Registry.deployed();
-  await registry.setOwner(mainnetAddrs.melon.MelonRegistryOwner);
 
   const oasisDex = await OasisDex.at(mainnetAddrs.oasis.OasisDexExchange);
   await oasisDex.setMatchingEnabled(false, {
