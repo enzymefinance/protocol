@@ -26,7 +26,7 @@ abstract contract Spoke is ISpoke, FundRouterMixin {
 
     modifier onlyShares() {
         require(msg.sender == address(__getShares()), "Only Shares can call this function");
-        _; 
+        _;
     }
 
     constructor(address _hub) public {
