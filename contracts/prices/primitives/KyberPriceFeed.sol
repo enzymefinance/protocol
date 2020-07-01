@@ -157,7 +157,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
 
         // If no price for base or quote asset, return early
         if (baseAssetPrice == 0 || quoteAssetPrice == 0) {
-            return (0, false, timestamp_); 
+            return (0, false, timestamp_);
         }
 
         isValid_ = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);

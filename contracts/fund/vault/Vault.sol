@@ -181,7 +181,7 @@ contract Vault is IVault, TokenUser, Spoke {
         for (uint256 i = 0; i < _assets.length; i++) {
             balances_[i] = assetBalances[_assets[i]];
         }
-    } 
+    }
 
     // PRIVATE FUNCTIONS
     /// @dev Helper to check if an adapter is enabled for the fund

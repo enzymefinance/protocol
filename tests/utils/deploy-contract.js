@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const web3Utils = require('web3-utils');
 
-const outdir = path.resolve(`${__dirname}/../../out`);
+const outDir = path.resolve(__dirname, '../../build/contracts');
 
 const defaultOptions = {
   gas: web3Utils.toHex(10000000),
@@ -128,7 +128,7 @@ const send = async (contract, method=undefined, args=[], overrideOpts={}, web3) 
 // deploy a contract with some args
 const deploy = async (name, args=[], overrideOpts={}, libs=[], web3) => {
   const artifact = JSON.parse(
-    fs.readFileSync(path.join(outdir, `${name}.json`))
+    fs.readFileSync(path.join(outDir, `${name}.json`))
   );
 
   // TODO: maybe can remove linking since we compile/deploy with truffle
