@@ -37,7 +37,7 @@ beforeAll(async () => {
   );
 
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
   oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
   kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);

@@ -24,7 +24,6 @@ export const CONTRACT_NAMES = {
   ASSET_WHITELIST: 'AssetWhitelist',
   BURNABLE_TOKEN: 'BurnableToken',
   CONVERSION_RATES: 'ConversionRates',
-  DAI: 'DAI',
   ENGINE: 'Engine',
   ENGINE_ADAPTER: 'EngineAdapter',
   ERC20_TRANSFER_HANDLER: 'ERC20TransferHandler',
@@ -32,11 +31,9 @@ export const CONTRACT_NAMES = {
   FEE_MANAGER_FACTORY: 'FeeManagerFactory',
   FUND_FACTORY: 'FundFactory',
   HUB: 'Hub',
-  IERC20: 'IERC20',
   INTEGRATION_ADAPTER: 'IntegrationAdapter',
   IERC20: 'IERC20',
-  KNC: 'KNC',
-  REP: 'REP',
+  ERC20_WITH_FIELDS: 'ERC20WithFields',
   KYBER_ADAPTER: 'KyberAdapter',
   KYBER_EXCHANGE: 'KyberNetwork',
   KYBER_MOCK_NETWORK: 'MockKyberNetwork',
@@ -50,7 +47,6 @@ export const CONTRACT_NAMES = {
   MANAGEMENT_FEE: 'ManagementFee',
   MAX_CONCENTRATION: 'MaxConcentration',
   MAX_POSITIONS: 'MaxPositions',
-  MLN: 'MLN',
   OASIS_DEX_ADAPTER: 'OasisDexAdapter',
   OASIS_DEX_EXCHANGE: 'OasisDexExchange',
   OASIS_DEX_INTERFACE: 'IOasisDex',
@@ -92,6 +88,5 @@ export const CONTRACT_NAMES = {
   ZERO_EX_V3_EXCHANGE_INTERFACE: 'IZeroExV3',
   ZERO_EX_V3_STAKING: 'ZeroExV3Staking',
   ZERO_EX_V3_STAKING_PROXY: 'ZeroExV3StakingProxy',
-  ZERO_EX_V3_ZRX_VAULT: 'ZeroExV3ZrxVault',
-  ZRX: 'ZRX'
+  ZERO_EX_V3_ZRX_VAULT: 'ZeroExV3ZrxVault'
 }
