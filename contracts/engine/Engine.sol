@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 
 import "../dependencies/DSMath.sol";
-import "../dependencies/token/BurnableToken.sol";
+import "../dependencies/token/IMelonToken.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/hub/ISpoke.sol";
 import "../prices/primitives/IPriceSource.sol";
@@ -161,9 +161,9 @@ contract Engine is IEngine, DSMath {
     function mlnToken()
         public
         view
-        returns (BurnableToken)
+        returns (IMelonToken)
     {
-        return BurnableToken(registry.mlnToken());
+        return IMelonToken(registry.mlnToken());
     }
 
     /// @dev Get PriceSource from the registry

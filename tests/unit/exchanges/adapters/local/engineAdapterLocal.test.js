@@ -45,7 +45,7 @@ beforeAll(async () => {
     CONTRACT_NAMES.ORDER_TAKER,
     'takeOrder',
   );
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
   engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
