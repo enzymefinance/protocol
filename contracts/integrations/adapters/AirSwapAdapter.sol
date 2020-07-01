@@ -21,7 +21,7 @@ contract AirSwapAdapter is OrderTaker {
         return "AIRSWAP";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedArgs The encoded parameters for the callOnIntegration
     /// @return incomingAssets_ The assets to receive

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const outDir = './out';
+const outDir = path.join(__dirname, '../../build/contracts');
 
 // TODO: own file?
 // or merge with 'deploy-contract'
