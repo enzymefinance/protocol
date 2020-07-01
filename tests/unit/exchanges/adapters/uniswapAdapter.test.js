@@ -42,9 +42,9 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
   uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
   uniswapFactory = getDeployed(CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE, web3, mainnetAddrs.uniswap.UniswapFactory);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);

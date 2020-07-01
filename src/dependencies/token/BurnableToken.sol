@@ -3,13 +3,10 @@ pragma solidity 0.6.8;
 
 import "./PreminedToken.sol";
 
-/// @dev Just a wrapper for premined tokens which can actually be burnt
-contract BurnableToken is PreminedToken {
-    constructor(string memory _symbol, uint8 _decimals, string memory _name)
-        public
-        PreminedToken(_symbol, _decimals, _name)
-    {}
-
+/// @title Flexible ERC20 interface
+/// @author Melon Council DAO <security@meloncoucil.io>
+/// @dev Just a wrapper for tokens which can be burnt
+abstract contract BurnableToken is PreminedToken {
     function burn(uint _amount) public {
         _burn(msg.sender, _amount);
     }
