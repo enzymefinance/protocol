@@ -1,7 +1,7 @@
 const path = require('path');
 const rp = require('request-promise');
 const fs = require('fs');
-const outDir = path.join(__dirname, '..', 'out');
+const outDir = path.join(__dirname, '../build/contracts');
 
 const baseUrl = 'https://raw.githubusercontent.com/melonproject/thirdparty-artifacts';
 const commitHash = '8832d09865b5da4c8ed56c3bcaf6f0a855560cf9';

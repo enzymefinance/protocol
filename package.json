@@ -19,10 +19,6 @@
     "Smart Contracts",
     "Solidity"
   ],
-  "files": [
-    "out/",
-    "deployments/"
-  ],
   "scripts": {
     "download-thirdparty": "node scripts/download-thirdparty.js",
     "compile": "truffle compile",
