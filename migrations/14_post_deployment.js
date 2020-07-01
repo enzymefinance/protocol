@@ -1,21 +1,17 @@
 const mainnetAddrs = require('../config');
 const OasisDex = artifacts.require('IOasisDex');
-const WETH = artifacts.require('WETH');
-const MLN = artifacts.require('MLN');
-const DAI = artifacts.require('DAI');
-const REP = artifacts.require('REP');
-const KNC = artifacts.require('KNC');
-const ZRX = artifacts.require('ZRX');
+const WETH = artifacts.require("WETH");
+const ERC20WithFields = artifacts.require("ERC20WithFields");
 
 module.exports = async _ => {
   const [primary, manager, investor] = await web3.eth.getAccounts();
 
   const weth = await WETH.at(mainnetAddrs.tokens.WETH);
-  const dai = await DAI.at(mainnetAddrs.tokens.DAI);
-  const rep = await REP.at(mainnetAddrs.tokens.REP);
-  const mln = await MLN.at(mainnetAddrs.tokens.MLN);
-  const knc = await KNC.at(mainnetAddrs.tokens.KNC);
-  const zrx = await ZRX.at(mainnetAddrs.tokens.ZRX);
+  const dai = await ERC20WithFields.at(mainnetAddrs.tokens.DAI);
+  const rep = await ERC20WithFields.at(mainnetAddrs.tokens.REP);
+  const mln = await ERC20WithFields.at(mainnetAddrs.tokens.MLN);
+  const knc = await ERC20WithFields.at(mainnetAddrs.tokens.KNC);
+  const zrx = await ERC20WithFields.at(mainnetAddrs.tokens.ZRX);
 
   await weth.deposit({ value: web3.utils.toWei('30000', 'ether')});
   await weth.transfer(primary, web3.utils.toWei('10000', 'ether'));

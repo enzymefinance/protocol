@@ -26,7 +26,7 @@ beforeAll(async () => {
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
   kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
 
   takeOrderSignature = getFunctionSignature(

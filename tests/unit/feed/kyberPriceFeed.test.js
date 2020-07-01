@@ -36,8 +36,8 @@ beforeAll(async () => {
   updaterTxOpts = { from: updater, gas: defaultGas };
   someAccountTxOpts = { from: someAccount, gas: defaultGas };
 
-  dai = getDeployed(CONTRACT_NAMES.DAI, web3, mainnetAddrs.tokens.DAI);
-  mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
   kyber = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK, web3);

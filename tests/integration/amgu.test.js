@@ -77,7 +77,7 @@ beforeEach(async () => {
   sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
   valueInterpreter = getDeployed(CONTRACT_NAMES.VALUE_INTERPRETER, web3);
   quoteToken = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  baseToken = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  baseToken = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
 });
 
 // Reset amgu and incentive after all tests so as not to affect other tests in suite

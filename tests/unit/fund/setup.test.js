@@ -16,7 +16,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
   userTxOpts = { ...defaultTxOpts, from: user };
 
-  const mln = getDeployed(CONTRACT_NAMES.MLN, web3, mainnetAddrs.tokens.MLN);
+  const mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
   const weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
   
