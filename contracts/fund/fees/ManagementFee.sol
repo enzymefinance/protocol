@@ -43,4 +43,3 @@ contract ManagementFee is DSMath {
         return 0;
     }
 }
-

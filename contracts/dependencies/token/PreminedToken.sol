@@ -17,4 +17,3 @@ contract PreminedToken is StandardToken {
         emit Transfer(address(0), msg.sender, totalSupply_);
     }
 }
-

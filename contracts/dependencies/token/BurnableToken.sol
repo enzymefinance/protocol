@@ -18,4 +18,3 @@ contract BurnableToken is PreminedToken {
         _burnFrom(from, value);
     }
 }
-

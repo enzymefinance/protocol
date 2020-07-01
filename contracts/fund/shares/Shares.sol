@@ -73,7 +73,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
 
         // Calculate shares quantity
         sharesBought_ = mul(
-            _investmentAmount, 
+            _investmentAmount,
             10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals())
         ) / calcSharePrice();
         require(sharesBought_ >= _minSharesQuantity, "buyShares: minimum shares quantity not met");

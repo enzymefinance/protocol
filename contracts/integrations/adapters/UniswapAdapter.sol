@@ -2,15 +2,16 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../interfaces/IKyberNetworkProxy.sol";
 import "../libs/OrderTaker.sol";
 import "../libs/decoders/MinimalTakeOrderDecoder.sol";
+import "../interfaces/IUniswapFactory.sol";
+import "../interfaces/IUniswapExchange.sol";
 import "../../dependencies/WETH.sol";
 
-/// @title KyberAdapter Contract
+/// @title UniswapAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Adapter between Melon and Kyber Network
-contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
+/// @notice Adapter between Melon and Uniswap
+contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
     address immutable public EXCHANGE;
 
     constructor(address _exchange) public {
@@ -20,10 +21,10 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
     function identifier() external pure override returns (string memory) {
-        return "KYBER_NETWORK";
+        return "UNISWAP_V1";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedArgs The encoded parameters for the callOnIntegration
     /// @return incomingAssets_ The assets to receive
@@ -43,7 +44,7 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
         }
     }
 
-    /// @notice Take a market order on Kyber Swap (takeOrder)
+    /// @notice Take a market order on Uniswap (takeOrder)
     /// @param _encodedArgs Encoded parameters passed from client side
     /// @param _fillData Encoded data to pass to OrderFiller
     function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
@@ -56,7 +57,6 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
             uint256[] memory fillExpectedAmounts,
         ) = __decodeOrderFillData(_fillData);
 
-        // Execute order on exchange, depending on asset types
         if (fillAssets[1] == __getNativeAssetAddress()) {
             __swapNativeAssetToToken(fillAssets, fillExpectedAmounts);
         }
@@ -78,7 +78,7 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     /// - [1] Expected (max) quantity of taker asset to spend
     /// @return fillApprovalTargets_ Recipients of assets in fill order
     /// - [0] Taker (fund), set to address(0)
-    /// - [1] Kyber exchange (EXCHANGE)
+    /// - [1] Uniswap exchange of taker asset
     function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
         internal
         view
@@ -104,7 +104,7 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
         fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
         fillApprovalTargets[1] = fillAssets[1] == __getNativeAssetAddress() ?
             address(0) :
-            EXCHANGE; // Kyber exchange
+            IUniswapFactory(EXCHANGE).getExchange(fillAssets[1]); // Uniswap exchange of taker asset
 
         return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
     }
@@ -118,22 +118,6 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     {}
 
     // PRIVATE FUNCTIONS
-
-    /// @notice Calculates the minimum acceptable rate of taker asset per maker asset
-    /// @dev Required by Kyber swap
-    function __calcMinMakerAssetPerTakerAssetRate(
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
-    )
-        private
-        view
-        returns (uint256)
-    {
-        return mul(
-            _fillExpectedAmounts[1],
-            10 ** uint256(ERC20WithFields(_fillAssets[0]).decimals())
-        ) / _fillExpectedAmounts[0];
-    }
 
     /// @notice Executes a swap of ETH (taker) to ERC20 (maker)
     function __swapNativeAssetToToken(
@@ -151,12 +135,13 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
         WETH(payable(_fillAssets[1])).withdraw(_fillExpectedAmounts[1]);
 
         // Swap tokens
-        IKyberNetworkProxy(EXCHANGE).swapEtherToToken.value(
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[0]);
+        IUniswapExchange(tokenExchange).ethToTokenSwapInput.value(
             _fillExpectedAmounts[1]
         )
         (
-            _fillAssets[0],
-            __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+            _fillExpectedAmounts[0],
+            add(block.timestamp, 1)
         );
     }
 
@@ -167,11 +152,12 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     )
         private
     {
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[1]);
         uint256 preEthBalance = payable(address(this)).balance;
-        IKyberNetworkProxy(EXCHANGE).swapTokenToEther(
-            _fillAssets[1],
+        IUniswapExchange(tokenExchange).tokenToEthSwapInput(
             _fillExpectedAmounts[1],
-            __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+            _fillExpectedAmounts[0],
+            add(block.timestamp, 1)
         );
         uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
@@ -186,11 +172,13 @@ contract KyberAdapter is OrderTaker, MinimalTakeOrderDecoder {
     )
         private
     {
-        IKyberNetworkProxy(EXCHANGE).swapTokenToToken(
-            _fillAssets[1],
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[1]);
+        IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
             _fillExpectedAmounts[1],
-            _fillAssets[0],
-            __calcMinMakerAssetPerTakerAssetRate(_fillAssets, _fillExpectedAmounts)
+            _fillExpectedAmounts[0],
+            1,
+            add(block.timestamp, 1),
+            _fillAssets[0]
         );
     }
 }
