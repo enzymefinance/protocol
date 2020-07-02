@@ -1,0 +1,6 @@
+# Only format files in the testing framework directory for now.
+/*
+/*
+!/tests
+/tests/*
+!/tests/framework
