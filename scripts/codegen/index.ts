@@ -30,6 +30,7 @@ import { generate, ContractData } from './utils/generate';
       }
 
       const buildArtifact = JSON.parse(fs.readFileSync(buildArtifactPath, 'utf8'));
+      console.log(buildArtifact.userdoc, buildArtifact.devdoc);
 
       return {
         name: contractName,

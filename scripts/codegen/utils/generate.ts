@@ -116,7 +116,7 @@ function getType(param: ethers.utils.ParamType, flexible?: boolean): string {
   return 'any';
 }
 
-export interface NatspecDevdoc {
+export interface NatspecUserdoc {
   notice?: string;
   methods?: {
     [key: string]: {
@@ -125,7 +125,7 @@ export interface NatspecDevdoc {
   };
 }
 
-export interface NatspecUserdoc {
+export interface NatspecDevdoc {
   title?: string;
   author?: string;
   methods?: {
@@ -209,7 +209,7 @@ function generateContractFile(
   const calls = uniques.filter((item) => item.fragment.constant);
   const transactions = uniques.filter((item) => !item.fragment.constant);
 
-  const contractFile = project.createSourceFile(`${destination}.ts`, contractClassStructure, {
+  const contractFile = project.createSourceFile(destination, contractClassStructure, {
     overwrite: true,
   });
 
@@ -220,15 +220,15 @@ function generateContractFile(
 
   const contractClass = contractFile.getClassOrThrow('MyContract').rename(data.name);
   const contractDocs = contractClass.addJsDoc({
-    description: data.devdoc?.notice || undefined,
+    description: data.userdoc?.notice || undefined,
     tags: [
       {
         tagName: 'title',
-        text: data.userdoc?.title || undefined,
+        text: data.devdoc?.title || undefined,
       },
       {
         tagName: 'author',
-        text: data.userdoc?.author || undefined,
+        text: data.devdoc?.author || undefined,
       },
     ].filter((item) => !!item.text),
   });
@@ -272,10 +272,10 @@ function generateContractFile(
 
     const callDocs = callDeclaration.addJsDoc({
       description: (write) => {
-        write.conditionalWriteLine(!!item.devdoc?.notice, item.devdoc?.notice || '');
-        write.conditionalBlankLine(!!(item.devdoc?.notice && item.userdoc?.details));
-        write.conditionalWriteLine(!!item.userdoc?.details, item.userdoc?.details || '');
-        write.conditionalBlankLine(!!(item.devdoc?.notice || item.userdoc?.details));
+        write.conditionalWriteLine(!!item.devdoc?.details, item.devdoc?.details || '');
+        write.conditionalBlankLine(!!(item.devdoc?.details && item.userdoc?.notice));
+        write.conditionalWriteLine(!!item.userdoc?.notice, item.userdoc?.notice || '');
+        write.conditionalBlankLine(!!(item.devdoc?.details || item.userdoc?.notice));
 
         write.writeLine('```solidity');
         write.writeLine(item.minimal);
@@ -283,7 +283,7 @@ function generateContractFile(
       },
     });
 
-    const params = Object.entries(item.userdoc?.params ?? {});
+    const params = Object.entries(item.devdoc?.params ?? {});
     callDocs.addTags(
       params.map(([key, value]) => ({
         tagName: 'param',
@@ -291,7 +291,7 @@ function generateContractFile(
       })),
     );
 
-    const returns = Object.entries(item.userdoc?.returns ?? {});
+    const returns = Object.entries(item.devdoc?.returns ?? {});
     if (returns.length) {
       callDocs.addTag({
         tagName: 'returns',
@@ -318,10 +318,10 @@ function generateContractFile(
 
     const transactionDocs = transactionDeclaration.addJsDoc({
       description: (write) => {
-        write.conditionalWriteLine(!!item.devdoc?.notice, item.devdoc?.notice || '');
-        write.conditionalBlankLine(!!(item.devdoc?.notice && item.userdoc?.details));
-        write.conditionalWriteLine(!!item.userdoc?.details, item.userdoc?.details || '');
-        write.conditionalBlankLine(!!(item.devdoc?.notice || item.userdoc?.details));
+        write.conditionalWriteLine(!!item.devdoc?.details, item.devdoc?.details || '');
+        write.conditionalBlankLine(!!(item.devdoc?.details && item.userdoc?.notice));
+        write.conditionalWriteLine(!!item.userdoc?.notice, item.userdoc?.notice || '');
+        write.conditionalBlankLine(!!(item.devdoc?.details || item.userdoc?.notice));
 
         write.writeLine('```solidity');
         write.writeLine(item.minimal);
@@ -329,7 +329,7 @@ function generateContractFile(
       },
     });
 
-    const params = Object.entries(item.userdoc?.params ?? {});
+    const params = Object.entries(item.devdoc?.params ?? {});
     transactionDocs.addTags(
       params.map(([key, value]) => ({
         tagName: 'param',
@@ -337,7 +337,7 @@ function generateContractFile(
       })),
     );
 
-    const returns = Object.entries(item.userdoc?.returns ?? {});
+    const returns = Object.entries(item.devdoc?.returns ?? {});
     if (returns.length) {
       transactionDocs.addTag({
         tagName: 'returns',
