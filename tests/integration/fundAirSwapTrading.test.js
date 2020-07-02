@@ -84,12 +84,6 @@ describe('Fund takes an order', () => {
 
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     await send(
       vault,
@@ -105,23 +99,13 @@ describe('Fund takes an order', () => {
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
-    const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+    const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+    const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(new BN(fillQuantity));
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerAssetAmount));
+    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(fillQuantity));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerAssetAmount));
   });
 });
 

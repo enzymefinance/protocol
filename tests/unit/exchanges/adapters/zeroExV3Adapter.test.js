@@ -150,7 +150,6 @@ describe('takeOrder', () => {
   describe('Fill Order 1: Full taker amount w/ protocol fee, w/o taker fee', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, fillQuantity;
-    let preFundHoldingsMln, preFundHoldingsWeth, postFundHoldingsMln, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -203,13 +202,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
@@ -222,22 +214,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.sub(new BN(signedOrder.takerAssetAmount)).sub(protocolFeeAmount)
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
       );
     });
 
@@ -268,8 +244,6 @@ describe('takeOrder', () => {
   describe('Fill Order 2: Full amount, w/ protocol fee (taker asset), w/ taker fee in weth (taker asset)', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, fillQuantity;
-    let preFundHoldingsMln, postFundHoldingsMln;
-    let preFundHoldingsWeth, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -328,13 +302,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
@@ -347,25 +314,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth
-          .sub(new BN(signedOrder.takerAssetAmount))
-          .sub(protocolFeeAmount)
-          .sub(new BN(signedOrder.takerFee))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
       );
     });
 
@@ -398,8 +346,6 @@ describe('takeOrder', () => {
   describe('Fill Order 3: Full amount, w/ protocol fee (taker asset), w/ taker fee in mln (maker asset)', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
-    let preFundHoldingsMln, postFundHoldingsMln;
-    let preFundHoldingsWeth, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -458,13 +404,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
@@ -477,26 +416,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth
-          .sub(new BN(signedOrder.takerAssetAmount))
-          .sub(protocolFeeAmount)
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln
-          .add(new BN(signedOrder.makerAssetAmount))
-          .sub(new BN(signedOrder.takerFee))
       );
     });
 
@@ -529,9 +448,6 @@ describe('takeOrder', () => {
   describe('Fill Order 4: Full amount, NO protocol fee, w/ taker fee in zrx (3rd asset)', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
-    let preFundHoldingsMln, postFundHoldingsMln;
-    let preFundHoldingsWeth, postFundHoldingsWeth;
-    let preFundHoldingsZrx, postFundHoldingsZrx;
     let tx;
 
     beforeAll(async () => {
@@ -658,16 +574,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-      preFundHoldingsZrx = new BN(
-        await call(vault, 'assetBalances', [zrx.options.address])
-      );
-
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
@@ -680,28 +586,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-      postFundHoldingsZrx = new BN(
-        await call(vault, 'assetBalances', [zrx.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.sub(new BN(signedOrder.takerAssetAmount))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
-      );
-      expect(postFundHoldingsZrx).bigNumberEq(
-        preFundHoldingsZrx.sub(new BN(signedOrder.takerFee))
       );
     });
 
@@ -732,8 +616,6 @@ describe('takeOrder', () => {
   describe('Fill Order 5: Full amount, NO protocol fee', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, fillQuantity;
-    let preFundHoldingsMln, postFundHoldingsMln;
-    let preFundHoldingsWeth, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -800,13 +682,6 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
 
       tx = await send(
@@ -819,22 +694,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.sub(new BN(signedOrder.takerAssetAmount))
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(new BN(signedOrder.makerAssetAmount))
       );
     });
 
@@ -864,8 +723,6 @@ describe('takeOrder', () => {
     let signedOrder;
     let makerTokenAddress, takerTokenAddress, takerFeeTokenAddress;
     let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
-    let preFundHoldingsMln, postFundHoldingsMln;
-    let preFundHoldingsWeth, postFundHoldingsWeth;
     let tx;
 
     beforeAll(async () => {
@@ -927,13 +784,6 @@ describe('takeOrder', () => {
       makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
       takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
 
-      preFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      preFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-
       const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString(), web3);
 
       tx = await send(
@@ -946,22 +796,6 @@ describe('takeOrder', () => {
         ],
         managerTxOpts,
         web3
-      );
-
-      postFundHoldingsWeth = new BN(
-        await call(vault, 'assetBalances', [weth.options.address])
-      );
-      postFundHoldingsMln = new BN(
-        await call(vault, 'assetBalances', [mln.options.address])
-      );
-    });
-
-    it('correctly updates fund holdings', async () => {
-      expect(postFundHoldingsWeth).bigNumberEq(
-        preFundHoldingsWeth.sub(takerFillQuantity).sub(protocolFeeAmount)
-      );
-      expect(postFundHoldingsMln).bigNumberEq(
-        preFundHoldingsMln.add(makerFillQuantity).sub(takerFeeFillQuantity)
       );
     });
 

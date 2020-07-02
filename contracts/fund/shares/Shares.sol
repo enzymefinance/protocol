@@ -193,11 +193,11 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         _burn(msg.sender, _sharesQuantity);
 
         // Calculate and transfer payout assets to redeemer
+        uint256[] memory assetBalances = vault.getAssetBalances(payoutAssets);
         uint256[] memory payoutQuantities = new uint256[](payoutAssets.length);
         for (uint256 i = 0; i < payoutAssets.length; i++) {
-            uint256 quantityHeld = vault.assetBalances(payoutAssets[i]);
             // Redeemer's ownership percentage of asset holdings
-            payoutQuantities[i] = mul(quantityHeld, _sharesQuantity) / sharesSupply;
+            payoutQuantities[i] = mul(assetBalances[i], _sharesQuantity) / sharesSupply;
 
             // Transfer payout asset to redeemer
             try vault.withdraw(payoutAssets[i], payoutQuantities[i]) {}

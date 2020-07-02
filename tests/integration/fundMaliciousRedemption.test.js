@@ -128,14 +128,10 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const preMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const preWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
 
-  const preFundHoldingsMaliciousToken = new BN(
-    await call(vault, 'assetBalances', [maliciousToken.options.address])
-  );
-  const preFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
-  const preFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMaliciousToken = new BN(
+    await call(maliciousToken, 'balanceOf', [vault.options.address])
   );
 
   const investorShares = await call(shares, 'balanceOf', [investor]);
@@ -148,12 +144,11 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
 
-  const postFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
-  const postFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
+  // const postFundBalanceOfMaliciousToken = new BN(
+  //   await call(maliciousToken, 'balanceOf', [vault.options.address])
+  // );
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
   const postFundGav = new BN(await call(shares, 'calcGav'));
@@ -161,12 +156,12 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const maliciousTokenPrice = new BN(
     (await call(priceSource, 'getLiveRate', [maliciousToken.options.address, weth.options.address]))[0]
   );
-  const fundMaliciousTokenValue = BNExpMul(preFundHoldingsMaliciousToken, maliciousTokenPrice);
+  const fundMaliciousTokenValue = BNExpMul(preFundBalanceOfMaliciousToken, maliciousTokenPrice);
 
   expect(postTotalSupply).bigNumberEq(preTotalSupply.sub(new BN(investorShares)));
-  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preFundHoldingsWeth));
-  expect(postFundHoldingsWeth).bigNumberEq(new BN(0));
-  expect(postFundHoldingsMln).toEqual(preFundHoldingsMln);
+  expect(postWethInvestor).bigNumberEq(preWethInvestor.add(preFundBalanceOfWeth));
+  expect(postFundBalanceOfWeth).bigNumberEq(new BN(0));
+  expect(postFundBalanceOfMln).toEqual(preFundBalanceOfMln);
   expect(postMlnInvestor).toEqual(preMlnInvestor);
   expect(postFundGav).bigNumberEq(fundMaliciousTokenValue);
 });

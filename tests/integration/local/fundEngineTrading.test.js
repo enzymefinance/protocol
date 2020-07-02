@@ -95,12 +95,6 @@ test('Trade on Melon Engine', async () => {
   const preLiquidEther = new BN(await call(engine, 'liquidEther'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const preFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
 
   const makerAsset = weth.options.address;
   const takerAsset = mln.options.address;
@@ -130,21 +124,12 @@ test('Trade on Melon Engine', async () => {
   const postLiquidEther = new BN(await call(engine, 'liquidEther'));
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const postFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
 
-  const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
-  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
+  const fundBalanceOfWethDiff = postFundBalanceOfWeth.sub(preFundBalanceOfWeth);
+  const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
 
-  expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
-  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
-
-  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundHoldingsWethDiff).bigNumberEq(preLiquidEther.sub(postLiquidEther));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(preLiquidEther.sub(postLiquidEther));
 });
 
 test('Maker quantity as minimum returned WETH is respected', async () => {

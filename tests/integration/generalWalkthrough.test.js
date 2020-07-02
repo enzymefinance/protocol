@@ -197,8 +197,8 @@ test('Fund can take an order on Oasis DEX', async () => {
   const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_INTERFACE, 'LogMake');
   const orderId = logMake.id;
 
-  const preMlnFundHoldings = await call(vault, 'assetBalances', [mln.options.address]);
-  const preWethFundHoldings = await call(vault, 'assetBalances', [weth.options.address]);
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
   const encodedArgs = encodeOasisDexTakeOrderArgs({
     makerAsset,
@@ -220,19 +220,14 @@ test('Fund can take an order on Oasis DEX', async () => {
     web3
   );
 
-  const postMlnFundHoldings = await call(vault, 'assetBalances', [mln.options.address]);
-  const postWethFundHoldings = await call(vault, 'assetBalances', [weth.options.address]);
+  const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  expect(
-    new BN(postMlnFundHoldings.toString()).eq(
-      new BN(preMlnFundHoldings.toString()).add(new BN(makerQuantity.toString())),
-    ),
-  ).toBe(true);
-  expect(
-    new BN(postWethFundHoldings.toString()).eq(
-      new BN(preWethFundHoldings.toString()).sub(new BN(takerQuantity.toString())),
-    ),
-  ).toBe(true);
+  const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+  const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
+
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
 });
 
 // TODO - redeem shares?

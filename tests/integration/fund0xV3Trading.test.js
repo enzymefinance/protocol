@@ -129,12 +129,6 @@ describe('Fund takes an order', () => {
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsZrx = new BN(
-      await call(vault, 'assetBalances', [zrx.options.address])
-    );
 
     const fillQuantity = signedOrder.takerAssetAmount;
     const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
@@ -155,28 +149,18 @@ describe('Fund takes an order', () => {
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsZrx = new BN(
-      await call(vault, 'assetBalances', [zrx.options.address])
-    );
 
     expect(postZrxDeployer).bigNumberEq(preZrxDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
-    const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-    const fundHoldingsZrxDiff = postFundHoldingsZrx.sub(preFundHoldingsZrx);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-    expect(fundHoldingsZrxDiff).bigNumberEq(postFundBalanceOfZrx.sub(preFundBalanceOfZrx));
+    const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+    const fundBalanceOfZrxDiff = postFundBalanceOfZrx.sub(preFundBalanceOfZrx);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(
+    expect(fundBalanceOfWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount).add(new BN(protocolFeeAmount))
     );
-    expect(fundHoldingsZrxDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundBalanceOfZrxDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 });
 
@@ -236,15 +220,6 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsZrx = new BN(
-      await call(vault, 'assetBalances', [zrx.options.address])
-    );
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     const fillQuantity = signedOrder.takerAssetAmount;
 
@@ -268,34 +243,20 @@ describe('Fund takes an order with a different taker fee asset', () => {
     const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsZrx = new BN(
-      await call(vault, 'assetBalances', [zrx.options.address])
-    );
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
-    const fundHoldingsZrxDiff = preFundHoldingsZrx.sub(postFundHoldingsZrx);
-    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-    const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsZrxDiff).bigNumberEq(preFundBalanceOfZrx.sub(postFundBalanceOfZrx));
-    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
-    expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+    const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+    const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
+    const fundBalanceOfZrxDiff = preFundBalanceOfZrx.sub(postFundBalanceOfZrx);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(
+    expect(fundBalanceOfWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount).add(new BN(protocolFeeAmount))
     );
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
-    expect(fundHoldingsZrxDiff).bigNumberEq(new BN(signedOrder.takerFee));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundBalanceOfZrxDiff).bigNumberEq(new BN(signedOrder.takerFee));
   });
 });
 
@@ -354,12 +315,6 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     const fillQuantity = signedOrder.takerAssetAmount;
     const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
@@ -380,30 +335,20 @@ describe('Fund takes an order with same taker, taker fee, and protocol fee asset
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
-    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-    const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
-    expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+    const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+    const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(
+    expect(fundBalanceOfWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount)
         .add(new BN(protocolFeeAmount))
         .add(new BN(signedOrder.takerFee))
     );
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 });
 
@@ -463,12 +408,6 @@ describe('Fund can take an order when protocol fee disabled', () => {
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const preFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const preFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     const fillQuantity = signedOrder.takerAssetAmount;
     const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity, web3);
@@ -489,27 +428,17 @@ describe('Fund can take an order when protocol fee disabled', () => {
     const postWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-    const postFundHoldingsWeth = new BN(
-      await call(vault, 'assetBalances', [weth.options.address])
-    );
-    const postFundHoldingsMln = new BN(
-      await call(vault, 'assetBalances', [mln.options.address])
-    );
 
     expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
     expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
 
-    const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-    const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-
-    // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-    expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
-    expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
+    const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+    const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundHoldingsWethDiff).bigNumberEq(
+    expect(fundBalanceOfWethDiff).bigNumberEq(
       new BN(signedOrder.takerAssetAmount).add(new BN(signedOrder.takerFee))
     );
-    expect(fundHoldingsMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
   });
 });

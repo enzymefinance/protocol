@@ -80,12 +80,6 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const preFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
 
   const takerAsset = weth.options.address;
   const takerQuantity = toWei('0.1', 'ether');
@@ -117,23 +111,13 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const postFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
 
-  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-  const fundHoldingsMlnDiff = postFundHoldingsMln.sub(preFundHoldingsMln);
-
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-  expect(fundHoldingsMlnDiff).bigNumberEq(postFundBalanceOfMln.sub(preFundBalanceOfMln));
+  const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+  const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundHoldingsWethDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
 });
 
 test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
@@ -141,12 +125,6 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const preFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const preFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
 
   const takerAsset = mln.options.address;
   const takerQuantity = toWei('0.01', 'ether');
@@ -178,23 +156,13 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-  const postFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const postFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
 
-  const fundHoldingsWethDiff = postFundHoldingsWeth.sub(preFundHoldingsWeth);
-  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
-
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-  expect(fundHoldingsWethDiff).bigNumberEq(postFundBalanceOfWeth.sub(preFundBalanceOfWeth));
-  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
+  const fundBalanceOfWethDiff = postFundBalanceOfWeth.sub(preFundBalanceOfWeth);
+  const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundHoldingsWethDiff).bigNumberEq(new BN(makerQuantity));
-  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
 });
 
 test('Swap MLN directly to EUR without specifying a minimum maker quantity', async () => {
@@ -219,15 +187,6 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
-  const preFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const preFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
-  const preFundHoldingsEur = new BN(
-    await call(vault, 'assetBalances', [zrx.options.address])
-  );
 
   const encodedArgs = encodeTakeOrderArgs({
     makerAsset,
@@ -251,29 +210,15 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const postFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
-  const postFundHoldingsWeth = new BN(
-    await call(vault, 'assetBalances', [weth.options.address])
-  );
-  const postFundHoldingsMln = new BN(
-    await call(vault, 'assetBalances', [mln.options.address])
-  );
-  const postFundHoldingsEur = new BN(
-    await call(vault, 'assetBalances', [zrx.options.address])
-  );
 
-  const fundHoldingsWethDiff = preFundHoldingsWeth.sub(postFundHoldingsWeth);
-  const fundHoldingsMlnDiff = preFundHoldingsMln.sub(postFundHoldingsMln);
-  const fundHoldingsEurDiff = postFundHoldingsEur.sub(preFundHoldingsEur);
-
-  // Confirm that ERC20 token balances and assetBalances (internal accounting) diffs are equal
-  expect(fundHoldingsWethDiff).bigNumberEq(preFundBalanceOfWeth.sub(postFundBalanceOfWeth));
-  expect(fundHoldingsMlnDiff).bigNumberEq(preFundBalanceOfMln.sub(postFundBalanceOfMln));
-  expect(fundHoldingsEurDiff).bigNumberEq(postFundBalanceOfEur.sub(preFundBalanceOfEur));
+  const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
+  const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
+  const fundBalanceOfEurDiff = postFundBalanceOfEur.sub(preFundBalanceOfEur);
 
   // Confirm that expected asset amounts were filled
-  expect(fundHoldingsEurDiff).bigNumberEq(new BN(expectedMakerQuantity));
-  expect(fundHoldingsMlnDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundHoldingsWethDiff).bigNumberEq(new BN(0));
+  expect(fundBalanceOfEurDiff).bigNumberEq(new BN(expectedMakerQuantity));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(0));
 });
 
 test('Order fails if maker amount is not satisfied', async () => {

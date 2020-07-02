@@ -377,7 +377,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       );
 
       const makerAssetGav = BNExpMul(
-        new BN(await call(vault, 'assetBalances', [makerAsset])),
+        new BN(await call(rep, 'balanceOf', [vault.options.address])),
         makerToWethAssetRate
       );
 

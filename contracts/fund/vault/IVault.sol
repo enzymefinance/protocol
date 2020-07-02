@@ -4,7 +4,6 @@ pragma solidity 0.6.8;
 /// @title Vault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IVault {
-    function assetBalances(address) external view returns (uint256);
     function deposit(address, uint256) external;
     function getAssetBalances(address[] calldata) external view returns (uint256[] memory);
     function getOwnedAssets() external view returns (address[] memory);
