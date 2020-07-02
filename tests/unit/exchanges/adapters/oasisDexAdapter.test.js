@@ -19,7 +19,6 @@ import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager;
 let defaultTxOpts, managerTxOpts;
 let dai, mln, weth;
@@ -28,17 +27,16 @@ let fund, fundFactory;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { from: manager, gas: 8000000 };
 
-  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
-  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.DAI);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
+  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, mainnetAddrs.oasis.OasisDexExchange);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -64,8 +62,7 @@ describe('takeOrder', () => {
         integrationAdapters: [oasisDexAdapter.options.address],
         quoteToken: weth.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -74,8 +71,7 @@ describe('takeOrder', () => {
         mln,
         'approve',
         [oasisDexExchange.options.address, makerQuantity],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       );
       const res = await send(
         oasisDexExchange,
@@ -83,8 +79,7 @@ describe('takeOrder', () => {
         [
           makerQuantity, makerAsset, takerQuantity, takerAsset, 0
         ],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       );
 
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -100,7 +95,7 @@ describe('takeOrder', () => {
         takerAsset,
         takerQuantity,
         orderId,
-      }, web3);
+      });
 
       await expect(
         send(
@@ -111,8 +106,7 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          managerTxOpts,
-          web3
+          managerTxOpts
         )
       ).rejects.toThrowFlexible("Order maker asset does not match the input")
     });
@@ -126,7 +120,7 @@ describe('takeOrder', () => {
         takerAsset: badAsset,
         takerQuantity,
         orderId,
-      }, web3);
+      });
 
       await expect(
         send(
@@ -137,8 +131,7 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          managerTxOpts,
-          web3
+          managerTxOpts
         )
       ).rejects.toThrowFlexible("Order taker asset does not match the input")
     });
@@ -196,8 +189,7 @@ describe('takeOrder', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -206,8 +198,7 @@ describe('takeOrder', () => {
         mln,
         'approve',
         [oasisDexExchange.options.address, makerQuantity],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       );
       const res = await send(
         oasisDexExchange,
@@ -215,8 +206,7 @@ describe('takeOrder', () => {
         [
           makerQuantity, makerAsset, takerQuantity, takerAsset, 0
         ],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       );
 
       const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -232,7 +222,7 @@ describe('takeOrder', () => {
         takerAsset,
         takerQuantity,
         orderId,
-      }, web3);
+      });
 
       tx = await send(
         vault,
@@ -242,8 +232,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 
@@ -287,8 +276,7 @@ describe('takeOrder', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -297,8 +285,7 @@ describe('takeOrder', () => {
         mln,
         'approve',
         [oasisDexExchange.options.address, makerQuantity],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       );
       await send(
         oasisDexExchange,
@@ -306,8 +293,7 @@ describe('takeOrder', () => {
         [
           makerQuantity, makerAsset, takerQuantity, takerAsset, 0
         ],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       );
 
     });

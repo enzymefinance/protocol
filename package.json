@@ -4,7 +4,7 @@
   "description": "Technology Regulated and Operated Investment Funds",
   "author": "Melon Council DAO <team@meloncouncil.io>",
   "license": "GPL-3.0",
-  "homepage": "https://github.com/melonproject/protocol#readme",
+  "homepage": "https://melonprotocol.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/melonproject/protocol.git"
@@ -20,13 +20,13 @@
     "Solidity"
   ],
   "scripts": {
-    "download-thirdparty": "node scripts/download-thirdparty.js",
+    "download-thirdparty": "node scripts/download-thirdparty",
     "compile": "truffle compile",
     "postcompile": "yarn download-thirdparty",
     "deploy": "truffle migrate --skip-dry-run",
-    "devchain": "node ./tests/utils/test-chain.js",
+    "devchain": "node tests/ganache/fork",
     "lint": "solhint src/**/*.sol",
-    "test": "yarn jest"
+    "test": "yarn jest --config tests/jest.config.js"
   },
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
@@ -49,5 +49,7 @@
     "web3-eth-abi": "1.2.9",
     "web3-utils": "1.2.9"
   },
-  "dependencies": {}
+  "engines": {
+    "node": "^12"
+  }
 }

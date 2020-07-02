@@ -23,7 +23,6 @@ import { encodeTakeOrderArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager;
 let managerTxOpts;
 let dai, mln, weth;
@@ -33,7 +32,6 @@ let fund, fundFactory;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager] = await web3.eth.getAccounts();
   managerTxOpts = { from: manager, gas: 8000000 };
 
@@ -42,24 +40,22 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
-  uniswapFactory = getDeployed(CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE, web3, mainnetAddrs.uniswap.UniswapFactory);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.DAI);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER);
+  uniswapFactory = getDeployed(CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE, mainnetAddrs.uniswap.UniswapFactory);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
   // Load interfaces for uniswap exchanges of tokens to be traded
   const mlnExchangeAddress = await call(uniswapFactory, 'getExchange', [mln.options.address]);
   mlnExchange = await getDeployed(
     CONTRACT_NAMES.UNISWAP_EXCHANGE_INTERFACE,
-    web3,
     mlnExchangeAddress
   );
   const daiExchangeAddress = await call(uniswapFactory, 'getExchange', [dai.options.address]);
   daiExchange = await getDeployed(
     CONTRACT_NAMES.UNISWAP_EXCHANGE_INTERFACE,
-    web3,
     daiExchangeAddress
   );
 });
@@ -94,8 +90,7 @@ describe('takeOrder', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -107,7 +102,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       tx = await send(
         vault,
@@ -117,8 +112,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 
@@ -169,8 +163,7 @@ describe('takeOrder', () => {
         },
         quoteToken: mln.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -182,7 +175,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       tx = await send(
         vault,
@@ -192,8 +185,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 
@@ -249,8 +241,7 @@ describe('takeOrder', () => {
         },
         quoteToken: mln.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -262,7 +253,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       tx = await send(
         vault,
@@ -272,8 +263,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 

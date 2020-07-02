@@ -4,12 +4,11 @@ import { setupFundWithParams } from '~/utils/fund';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3, weth, fundFactory;
+let weth, fundFactory;
 
 beforeAll(async () => {
-  web3 = await startChain();
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 });
 
 describe('constructor', () => {
@@ -18,8 +17,7 @@ describe('constructor', () => {
   beforeAll(async () => {
     fund = await setupFundWithParams({
       quoteToken: weth.options.address,
-      fundFactory,
-      web3
+      fundFactory
     }); 
   });
 

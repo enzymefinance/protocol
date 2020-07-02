@@ -17,7 +17,7 @@ export const createUnsignedAirSwapOrder = async ({
   nonce,
   version,
   duration = 24 * 60 * 60, // 1 day
-}, web3) => {
+}) => {
   const latestBlock = await web3.eth.getBlock('latest');
 
   const order = await orders.getOrder({
@@ -59,7 +59,7 @@ export const signAirSwapOrder = async (order, exchangeAddress, signer) => {
   return order;
 };
 
-export const encodeAirSwapTakeOrderArgs = (order, web3) => {
+export const encodeAirSwapTakeOrderArgs = (order) => {
   const orderAddresses = [];
   const orderValues = [];
   const tokenKinds = [];
@@ -94,5 +94,5 @@ export const encodeAirSwapTakeOrderArgs = (order, web3) => {
     sigUintComponent,
     version
   ];
-  return encodeArgs(ENCODING_TYPES.AIR_SWAP, args, web3);
+  return encodeArgs(ENCODING_TYPES.AIR_SWAP, args);
 };

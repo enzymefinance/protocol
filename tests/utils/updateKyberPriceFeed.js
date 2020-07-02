@@ -6,19 +6,18 @@ import { BNExpInverse } from '~/utils/BNmath';
 
 export const setKyberRate = async (
   token,
-  web3,
   etherPerToken = new BN(web3.utils.toWei('1', 'ether')),
   tokenPerEther = BNExpInverse(etherPerToken),
 ) => {
-  const mock = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK, web3);
-  await send(mock, 'setRate', [token, tokenPerEther.toString(), etherPerToken.toString()], {}, web3);
+  const mock = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK);
+  await send(mock, 'setRate', [token, tokenPerEther.toString(), etherPerToken.toString()], {});
 }
 
-export const updateKyberPriceFeed = async (feed, web3, opts = {}) => {
-  const registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+export const updateKyberPriceFeed = async (feed, opts = {}) => {
+  const registry = getDeployed(CONTRACT_NAMES.REGISTRY);
   const tokens = await call(registry, 'getRegisteredPrimitives');
   const prices = await getKyberPrices(feed, tokens);
-  return send(feed, 'update', [tokens, prices], opts, web3);
+  return send(feed, 'update', [tokens, prices], opts);
 }
 
 export const getKyberPrices = async (feed, tokens) => {

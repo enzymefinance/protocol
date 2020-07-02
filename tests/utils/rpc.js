@@ -1,4 +1,4 @@
-const mine = async web3 => {
+const mine = async () => {
   return new Promise((resolve, reject) => {
     web3.eth.currentProvider.send(
       {
@@ -15,7 +15,7 @@ const mine = async web3 => {
   });
 }
 
-const increaseTime = async (seconds, web3) => {
+const increaseTime = async (seconds) => {
   await new Promise((resolve, reject) => {
     web3.eth.currentProvider.send(
       {
@@ -30,7 +30,7 @@ const increaseTime = async (seconds, web3) => {
       },
     );
   });
-  await mine(web3);
+  await mine();
 }
 
 module.exports = {increaseTime, mine};

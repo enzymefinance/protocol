@@ -26,8 +26,7 @@ export const createUnsignedZeroExOrder = async (
     makerAddress,
     feeRecipientAddress,
     takerFee
-  },
-  web3
+  }
 ) => {
   const makerAssetData = assetDataUtils.encodeERC20AssetData(makerTokenAddress);
   const takerAssetData = assetDataUtils.encodeERC20AssetData(takerTokenAddress);
@@ -59,7 +58,7 @@ export const createUnsignedZeroExOrder = async (
   return order;
 };
 
-export const encodeZeroExTakeOrderArgs = (order, fillQuantity, web3) => {
+export const encodeZeroExTakeOrderArgs = (order, fillQuantity) => {
   const orderAddresses = [];
   const orderValues = [];
   const orderData = [];
@@ -80,14 +79,13 @@ export const encodeZeroExTakeOrderArgs = (order, fillQuantity, web3) => {
   const signature = order.signature;
 
   const args = [orderAddresses, orderValues, orderData, signature];
-  return encodeArgs(ENCODING_TYPES.ZERO_EX_V2, args, web3);
+  return encodeArgs(ENCODING_TYPES.ZERO_EX_V2, args);
 };
 
 export const isValidZeroExSignatureOffChain = (
   order,
   signature,
-  makerAddress,
-  web3
+  makerAddress
 ) => {
   const orderHashHex = orderHashUtils.getOrderHashHex(order);
 
@@ -110,7 +108,7 @@ const getPrivateKeyProvider = (wallet, signer) => {
   return providerEngine;
 }
 
-export const signZeroExOrder = async (order, signer, web3) => {
+export const signZeroExOrder = async (order, signer) => {
   const signerFormatted = signer.toLowerCase();
 
   const pkProvider = getPrivateKeyProvider(web3.eth.accounts.wallet, signer);

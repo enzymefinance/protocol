@@ -15,12 +15,10 @@ import { getDeployed } from '~/utils/getDeployed';
 import { investInFund, setupFundWithParams } from '~/utils/fund';
 import { toWei, BN } from 'web3-utils';
 
-let web3;
 let manager, investor, badInvestor;
 let fundFactory;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [, manager, investor, badInvestor] = await web3.eth.getAccounts();
 });
 
@@ -30,15 +28,15 @@ describe('Fund 1: user whitelist', () => {
   let fund;
 
   beforeAll(async () => {
-    weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-    fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-    userWhitelist = getDeployed(CONTRACT_NAMES.USER_WHITELIST, web3);
+    weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
+    fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+    userWhitelist = getDeployed(CONTRACT_NAMES.USER_WHITELIST);
 
     const policies = {
       addresses: [userWhitelist.options.address],
       encodedSettings: [
-        encodeArgs(['address[]'], [[manager, investor]], web3)
+        encodeArgs(['address[]'], [[manager, investor]])
       ]
     };
 
@@ -54,8 +52,7 @@ describe('Fund 1: user whitelist', () => {
         encodedSettings: policies.encodedSettings
       },
       quoteToken: weth.options.address,
-      fundFactory,
-      web3
+      fundFactory
     });
 
     // Investment params
@@ -84,8 +81,7 @@ describe('Fund 1: user whitelist', () => {
           priceSource,
           tokenAddresses: [weth.options.address],
           tokenPrices: [toWei('1', 'ether')]
-        },
-        web3
+        }
       })
     ).rejects.toThrowFlexible("Rule evaluated to false: USER_WHITELIST");
   });
@@ -107,8 +103,7 @@ describe('Fund 1: user whitelist', () => {
         priceSource,
         tokenAddresses: [weth.options.address],
         tokenPrices: [toWei('1', 'ether')]
-      },
-      web3
+      }
     });
 
     const investorShares = new BN(await call(shares, 'balanceOf', [investor]));

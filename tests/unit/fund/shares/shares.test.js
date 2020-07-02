@@ -6,7 +6,6 @@ import { setupFundWithParams } from '~/utils/fund';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager, investor, thirdParty;
 let defaultTxOpts, investorTxOpts, gasPrice;
 let weth;
@@ -14,15 +13,14 @@ let registry, sharesRequestor;
 let defaultBuyShares;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   gasPrice = toWei('2', 'gwei');
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
-  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
 
   defaultBuyShares = {
     buyer: investor,
@@ -36,14 +34,13 @@ beforeAll(async () => {
 // TODO: can test for _hub and _registry also, but let's see how the hub/spoke system changes
 describe('constructor', () => {
   beforeAll(async () => {
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
     await setupFundWithParams({
       defaultTokens,
       quoteToken: weth.options.address,
       fundFactory,
-      manager,
-      web3
+      manager
     });
   });
 });
@@ -58,14 +55,13 @@ describe('buyShares', () => {
   let preVaultDenominationAsset, postVaultDenominationAsset;
 
   beforeAll(async () => {
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
     fund = await setupFundWithParams({
       fundFactory,
       quoteToken: weth.options.address,
       fundFactory,
-      manager,
-      web3
+      manager
     });
   });
 
@@ -74,8 +70,7 @@ describe('buyShares', () => {
       registry,
       'setSharesRequestor',
       [sharesRequestor.options.address],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     );
   });
 
@@ -84,8 +79,7 @@ describe('buyShares', () => {
       defaultBuyShares.denominationAssetToken,
       'approve',
       [fund.shares.options.address, defaultBuyShares.investmentAmount],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     );
     await expect(
       send(
@@ -96,14 +90,13 @@ describe('buyShares', () => {
           defaultBuyShares.investmentAmount,
           defaultBuyShares.minSharesQuantity
         ],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       )
     ).rejects.toThrowFlexible("Only SharesRequestor can call this function")
   });
 
   it('succeeds when called by sharesRequestor', async () => {
-    await send(registry, 'setSharesRequestor', [deployer], defaultTxOpts, web3);
+    await send(registry, 'setSharesRequestor', [deployer], defaultTxOpts);
 
     preFundBalanceOfDenominationAsset = new BN(
       await call(
@@ -140,8 +133,7 @@ describe('buyShares', () => {
           defaultBuyShares.investmentAmount,
           defaultBuyShares.minSharesQuantity
         ],
-        defaultTxOpts,
-        web3
+        defaultTxOpts
       )
     ).resolves.not.toThrow()
 
@@ -213,7 +205,7 @@ describe('redeemShares', () => {
   let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
@@ -225,8 +217,7 @@ describe('redeemShares', () => {
       },
       fundFactory,
       quoteToken: weth.options.address,
-      manager,
-      web3
+      manager
     });
   });
 
@@ -236,8 +227,7 @@ describe('redeemShares', () => {
         fund.shares,
         'redeemShares',
         [],
-        { ...defaultTxOpts, from: thirdParty },
-        web3
+        { ...defaultTxOpts, from: thirdParty }
       )
     ).rejects.toThrowFlexible("_sharesQuantity must be > 0")
   });
@@ -264,8 +254,7 @@ describe('redeemShares', () => {
         fund.shares,
         'redeemShares',
         [],
-        defaultBuyShares.txOpts,
-        web3
+        defaultBuyShares.txOpts
       )
     ).resolves.not.toThrow()
 
@@ -328,7 +317,7 @@ describe('redeemSharesQuantity', () => {
   let preRedeemerDenominationAsset, postRedeemerDenominationAsset, preRedeemerShares, postRedeemerShares;
 
   beforeAll(async () => {
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
     // Buy shares directly via initial investment
     fund = await setupFundWithParams({
@@ -340,8 +329,7 @@ describe('redeemSharesQuantity', () => {
       },
       fundFactory,
       quoteToken: weth.options.address,
-      manager,
-      web3
+      manager
     });
 
     halfOfDenominationAsset = new BN(defaultBuyShares.investmentAmount).div(new BN(2));
@@ -356,8 +344,7 @@ describe('redeemSharesQuantity', () => {
         fund.shares,
         'redeemSharesQuantity',
         [sharesPlusOne],
-        defaultBuyShares.txOpts,
-        web3
+        defaultBuyShares.txOpts
       )
     ).rejects.toThrowFlexible("_sharesQuantity exceeds sender balance")
   });
@@ -384,8 +371,7 @@ describe('redeemSharesQuantity', () => {
         fund.shares,
         'redeemSharesQuantity',
         [halfOfShares.toString()],
-        defaultBuyShares.txOpts,
-        web3
+        defaultBuyShares.txOpts
       )
     ).resolves.not.toThrow()
 

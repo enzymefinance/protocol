@@ -6,14 +6,14 @@ import { delay } from '~/utils/time';
 import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
 import { getDeployed } from '~/utils/getDeployed';
 
-export const getFundComponents = async (hubAddress, web3) => {
+export const getFundComponents = async (hubAddress) => {
   const components = {};
 
-  components.hub = getDeployed(CONTRACT_NAMES.HUB, web3, hubAddress);
-  components.feeManager = getDeployed(CONTRACT_NAMES.FEE_MANAGER, web3, await call(components.hub, 'feeManager'));
-  components.policyManager = getDeployed(CONTRACT_NAMES.POLICY_MANAGER, web3, await call(components.hub, 'policyManager'));
-  components.shares = getDeployed(CONTRACT_NAMES.SHARES, web3, await call(components.hub, 'shares'));
-  components.vault = getDeployed(CONTRACT_NAMES.VAULT, web3, await call(components.hub, 'vault'));
+  components.hub = getDeployed(CONTRACT_NAMES.HUB, hubAddress);
+  components.feeManager = getDeployed(CONTRACT_NAMES.FEE_MANAGER, await call(components.hub, 'feeManager'));
+  components.policyManager = getDeployed(CONTRACT_NAMES.POLICY_MANAGER, await call(components.hub, 'policyManager'));
+  components.shares = getDeployed(CONTRACT_NAMES.SHARES, await call(components.hub, 'shares'));
+  components.vault = getDeployed(CONTRACT_NAMES.VAULT, await call(components.hub, 'vault'));
 
   return components;
 }
@@ -22,17 +22,15 @@ export const investInFund = async ({
   fundAddress,
   investment,
   amguTxValue,
-  tokenPriceData,
-  web3
+  tokenPriceData
 }) => {
   const { contribAmount, tokenContract, investor, isInitial = false } = investment;
   const investorTxOpts = { from: investor, gas: 8000000 };
 
-  const hub = getDeployed(CONTRACT_NAMES.HUB, web3, fundAddress);
-  const registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3, await call(hub, 'REGISTRY'));
+  const hub = getDeployed(CONTRACT_NAMES.HUB, fundAddress);
+  const registry = getDeployed(CONTRACT_NAMES.REGISTRY, await call(hub, 'REGISTRY'));
   const sharesRequestor = getDeployed(
     CONTRACT_NAMES.SHARES_REQUESTOR,
-    web3,
     await call(registry, 'sharesRequestor')
   );
 
@@ -56,8 +54,7 @@ export const investInFund = async ({
       tokenContract,
       'transfer',
       [investor, investorTokenShortfall.toString()],
-      {},
-      web3
+      {}
     )
   }
   // Invest in fund
@@ -65,27 +62,23 @@ export const investInFund = async ({
     tokenContract,
     'approve',
     [sharesRequestor.options.address, contribAmount],
-    investorTxOpts,
-    web3
+    investorTxOpts
   )
   await send(
     sharesRequestor,
     'requestShares',
     [hub.options.address, contribAmount, 0],
-    { ...investorTxOpts, value: amguTxValue },
-    web3
+    { ...investorTxOpts, value: amguTxValue }
   );
 
   // Update prices and executes request if not initial investment
   if (isInitial !== true) {
-    await delay(1000);
-    await updateKyberPriceFeed(tokenPriceData.priceSource, web3);
+    await updateKyberPriceFeed(tokenPriceData.priceSource);
     await send(
       sharesRequestor,
       'executeRequestFor',
       [investor, hub.options.address],
-      investorTxOpts,
-      web3
+      investorTxOpts
     );
   }
 }
@@ -110,8 +103,7 @@ export const setupFundWithParams = async ({
   manager,
   name = `test-fund-${Date.now()}`,
   quoteToken,
-  fundFactory,
-  web3
+  fundFactory
 }) => {
   const managerTxOpts = { from: manager, gas: 8000000 };
 
@@ -134,30 +126,28 @@ export const setupFundWithParams = async ({
       integrationAdapters,
       quoteToken
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
-  await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu, web3);
-  await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu, web3);
-  await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu, web3);
-  await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu, web3);
-  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOptsWithAmgu, web3);
+  await send(fundFactory, 'createFeeManager', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createPolicyManager', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createShares', [], managerTxOptsWithAmgu);
+  await send(fundFactory, 'createVault', [], managerTxOptsWithAmgu);
+  const res = await send(fundFactory, 'completeFundSetup', [], managerTxOptsWithAmgu);
 
   const hubAddress = getEventFromLogs(
     res.logs,
     CONTRACT_NAMES.FUND_FACTORY,
     'FundSetupCompleted'
   ).hub;
-  const fund = await getFundComponents(hubAddress, web3);
+  const fund = await getFundComponents(hubAddress);
 
   // Make initial investment, if applicable
   if (new BN(initialInvestment.contribAmount).gt(new BN(0))) {
     await investInFund({
       amguTxValue,
       fundAddress: fund.hub.options.address,
-      investment: { ...initialInvestment, isInitial: true },
-      web3
+      investment: { ...initialInvestment, isInitial: true }
     });
   }
 
@@ -169,21 +159,20 @@ export const setupFundWithParams = async ({
 export const setupInvestedTestFund = async (
   mainnetAddrs,
   manager,
-  amguTxValue = null,
-  web3
+  amguTxValue = null
 ) => {
   const [deployer] = await web3.eth.getAccounts();
 
-  const weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  const performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE, web3);
-  const managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
-  const engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
-  const kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
-  const oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
-  const uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
-  const zeroExV2Adapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER, web3);
-  const zeroExV3Adapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
+  const weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  const performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE);
+  const managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE);
+  const engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER);
+  const kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
+  const oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
+  const uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER);
+  const zeroExV2Adapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER);
+  const zeroExV3Adapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER);
 
   const managementFeeRate = toWei('.02', 'ether');
   const performanceFeeRate = toWei('.2', 'ether');
@@ -223,7 +212,6 @@ export const setupInvestedTestFund = async (
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 };

@@ -3,12 +3,10 @@ import { call, send } from '~/utils/deploy-contract';
 import { BNExpDiv } from '~/utils/BNmath';
 import { CONTRACT_NAMES, EMPTY_ADDRESS } from '~/utils/constants';
 import { setupFundWithParams } from '~/utils/fund';
-import { delay } from '~/utils/time';
 import { getDeployed } from '~/utils/getDeployed';
 import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, investor, thirdPartyCaller;
 let defaultTxOpts, investorTxOpts, gasPrice;
 let weth, fundFactory;
@@ -16,17 +14,16 @@ let priceSource, registry, sharesRequestor;
 let basicRequest;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, investor, thirdPartyCaller] = await web3.eth.getAccounts();
   gasPrice = toWei('2', 'gwei');
   defaultTxOpts = { from: deployer, gas: 8000000, gasPrice };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
-  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR);
 
   basicRequest = {
     owner: investor,
@@ -53,8 +50,7 @@ describe('cancelRequest', () => {
       },
       quoteToken: weth.options.address,
       manager: deployer,
-      fundFactory,
-      web3
+      fundFactory
     });
 
     await createRequest(fund.hub.options.address, basicRequest);
@@ -65,16 +61,16 @@ describe('cancelRequest', () => {
 
   it('does NOT allow cancellation when a cancellation condition is not met', async () => {
     await expect(
-      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts, web3)
+      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
     ).rejects.toThrowFlexible("No cancellation condition was met");
   });
 
   it('succeeds when cancellation condition is met', async () => {
     // Shut down the fund so cancellation condition passes
-    await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
+    await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
 
     await expect(
-      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts, web3)
+      send(sharesRequestor, 'cancelRequest', [fund.hub.options.address], basicRequest.txOpts)
     ).resolves.not.toThrow();
 
     cancelTxBlock = await web3.eth.getBlockNumber();
@@ -124,8 +120,7 @@ describe('executeRequestFor', () => {
           investor: deployer,
           tokenContract: weth
         },
-        manager: deployer,
-        web3
+        manager: deployer
       });
     });
 
@@ -135,8 +130,7 @@ describe('executeRequestFor', () => {
           sharesRequestor,
           'executeRequestFor',
           [basicRequest.owner, fund.hub.options.address],
-          basicRequest.txOpts,
-          web3
+          basicRequest.txOpts
         )
       ).rejects.toThrowFlexible("Request does not exist");
     });
@@ -149,8 +143,7 @@ describe('executeRequestFor', () => {
           sharesRequestor,
           'executeRequestFor',
           [basicRequest.owner, fund.hub.options.address],
-          basicRequest.txOpts,
-          web3
+          basicRequest.txOpts
         )
       ).rejects.toThrowFlexible('Price has not updated since request');      
     });
@@ -172,8 +165,7 @@ describe('executeRequestFor', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager: deployer,
-        web3
+        manager: deployer
       });
 
       // Create request and update price
@@ -262,8 +254,7 @@ describe('executeRequestFor', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager: deployer,
-        web3
+        manager: deployer
       });
 
       // Create request and update price
@@ -343,8 +334,7 @@ describe('requestShares', () => {
       fund = await setupFundWithParams({
         quoteToken: weth.options.address,
         fundFactory,
-        manager: deployer,
-        web3
+        manager: deployer
       });
     });
 
@@ -361,8 +351,7 @@ describe('requestShares', () => {
             basicRequest.investmentAmount,
             basicRequest.minSharesQuantity
           ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue },
-          web3
+          { ...basicRequest.txOpts, value: basicRequest.amguValue }
         )
       ).rejects.toThrowFlexible("_hub cannot be empty");
 
@@ -377,26 +366,23 @@ describe('requestShares', () => {
         basicRequest.investmentAssetContract,
         'approve',
         [sharesRequestor.options.address, badApprovalAmount],
-        basicRequest.txOpts,
-        web3
+        basicRequest.txOpts
       );
-      await expect(
-        send(
-          sharesRequestor,
-          'requestShares',
-          [
-            fund.hub.options.address,
-            basicRequest.investmentAmount,
-            basicRequest.minSharesQuantity
-          ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue },
-          web3
-        )
-      ).rejects.toThrow();
+
+      await expect(send(
+        sharesRequestor,
+        'requestShares',
+        [
+          fund.hub.options.address,
+          basicRequest.investmentAmount,
+          basicRequest.minSharesQuantity
+        ],
+        { ...basicRequest.txOpts, value: basicRequest.amguValue }
+      )).rejects.toThrow();
     });
 
     it('does NOT allow request for a shutdown fund', async() => {
-      await send(fund.hub, 'shutDownFund', [], defaultTxOpts, web3);
+      await send(fund.hub, 'shutDownFund', [], defaultTxOpts);
       await expect(
         createRequest(fund.hub.options.address, basicRequest)
       ).rejects.toThrowFlexible("Fund is not active");
@@ -418,8 +404,7 @@ describe('requestShares', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager: deployer,
-        web3
+        manager: deployer
       });
 
       incentiveFee = await call(registry, 'incentive');
@@ -430,8 +415,7 @@ describe('requestShares', () => {
         basicRequest.investmentAssetContract,
         'approve',
         [sharesRequestor.options.address, basicRequest.investmentAmount],
-        basicRequest.txOpts,
-        web3
+        basicRequest.txOpts
       );
 
       preTxBlock = await web3.eth.getBlockNumber();
@@ -447,8 +431,7 @@ describe('requestShares', () => {
             basicRequest.investmentAmount,
             basicRequest.minSharesQuantity
           ],
-          { ...basicRequest.txOpts, value: basicRequest.amguValue },
-          web3
+          { ...basicRequest.txOpts, value: basicRequest.amguValue }
         )
       ).resolves.not.toThrow();
 
@@ -504,8 +487,7 @@ describe('requestShares', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager: deployer,
-        web3
+        manager: deployer
       });
 
       await createRequest(fund.hub.options.address, basicRequest);
@@ -526,8 +508,7 @@ describe('requestShares', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager: deployer,
-        web3
+        manager: deployer
       });
 
       await expect(
@@ -553,8 +534,7 @@ const createRequest = async (fundAddress, request) => {
       request.investmentAssetContract,
       'transfer',
       [request.owner, investorTokenShortfall.toString()],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     )
   }
 
@@ -563,8 +543,7 @@ const createRequest = async (fundAddress, request) => {
     request.investmentAssetContract,
     'approve',
     [sharesRequestor.options.address, request.investmentAmount],
-    request.txOpts,
-    web3
+    request.txOpts
   );
   return send(
     sharesRequestor,
@@ -574,19 +553,16 @@ const createRequest = async (fundAddress, request) => {
       request.investmentAmount,
       request.minSharesQuantity
     ],
-    { ...request.txOpts, value: request.amguValue },
-    web3
+    { ...request.txOpts, value: request.amguValue }
   );
 };
 
 const executeRequest = async (fundAddress, request) => {
-  await delay(1000);
-  await updateKyberPriceFeed(priceSource, web3);
+  await updateKyberPriceFeed(priceSource);
   return send(
     sharesRequestor,
     'executeRequestFor',
     [request.owner, fundAddress],
-    request.txOpts,
-    web3
+    request.txOpts
   );
 };

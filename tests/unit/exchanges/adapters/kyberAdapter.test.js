@@ -27,7 +27,6 @@ import { encodeTakeOrderArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager;
 let managerTxOpts;
 let dai, mln, weth;
@@ -36,7 +35,6 @@ let fund, fundFactory;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager] = await web3.eth.getAccounts();
   managerTxOpts = { from: manager, gas: 8000000 };
 
@@ -45,12 +43,12 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
-  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_INTERFACE, web3, mainnetAddrs.kyber.KyberNetworkProxy);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_INTERFACE, mainnetAddrs.kyber.KyberNetworkProxy);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 });
 
 describe('takeOrder', () => {
@@ -88,8 +86,7 @@ describe('takeOrder', () => {
         },
         quoteToken: weth.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -101,7 +98,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       tx = await send(
         vault,
@@ -111,8 +108,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 
@@ -168,8 +164,7 @@ describe('takeOrder', () => {
         },
         quoteToken: mln.options.address,
         manager,
-        fundFactory,
-        web3
+        fundFactory
       });
     });
 
@@ -181,7 +176,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       // TODO: this is the tx that fails now (just with revert, no message)
       tx = await send(
@@ -192,8 +187,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 
@@ -249,8 +243,7 @@ describe('takeOrder', () => {
         },
         quoteToken: mln.options.address,
         fundFactory,
-        manager,
-        web3
+        manager
       });
     });
 
@@ -262,7 +255,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       tx = await send(
         vault,
@@ -272,8 +265,7 @@ describe('takeOrder', () => {
           takeOrderSignature,
           encodedArgs,
         ],
-        managerTxOpts,
-        web3
+        managerTxOpts
       );
     });
 

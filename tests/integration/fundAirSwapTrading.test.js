@@ -12,7 +12,6 @@ import {
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let airSwapAdapter;
@@ -21,7 +20,6 @@ let fund;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts =  { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
@@ -31,13 +29,13 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
 
-  swapContract = getDeployed(CONTRACT_NAMES.AIR_SWAP_SWAP, web3, mainnetAddrs.airSwap.AirSwapSwap);
+  swapContract = getDeployed(CONTRACT_NAMES.AIR_SWAP_SWAP, mainnetAddrs.airSwap.AirSwapSwap);
 
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  airSwapAdapter = getDeployed(CONTRACT_NAMES.AIR_SWAP_ADAPTER, web3);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  airSwapAdapter = getDeployed(CONTRACT_NAMES.AIR_SWAP_ADAPTER);
 
   fund = await setupFundWithParams({
     integrationAdapters: [airSwapAdapter.options.address],
@@ -48,8 +46,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 });
 
@@ -68,18 +65,17 @@ describe('Fund takes an order', () => {
       senderWallet: vault.options.address,
       senderToken: weth.options.address,
       senderTokenAmount: fillQuantity,
-    }, web3);
+    });
 
     signedOrder = await signAirSwapOrder(unsignedOrder, swapContract.options.address, deployer);
 
-    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder, web3);
+    const encodedArgs = encodeAirSwapTakeOrderArgs(signedOrder);
 
     await send(
       mln,
       'approve',
       [swapContract.options.address, makerAssetAmount],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     );
 
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -93,8 +89,7 @@ describe('Fund takes an order', () => {
         takeOrderSignature,
         encodedArgs,
       ],
-      managerTxOpts,
-      web3
+      managerTxOpts
     );
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
