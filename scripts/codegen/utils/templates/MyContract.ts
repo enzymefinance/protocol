@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 
 export class MyContract extends Contract {
+
   /**
    * The contract abis.
    */

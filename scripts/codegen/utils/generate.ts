@@ -97,7 +97,7 @@ function getType(param: ethers.utils.ParamType, flexible?: boolean): string {
   if (param.type === 'array' || param.type.substr(-1) === ']') {
     const matches = param.type.match(/\[([0-9]*)\]$/);
     if (matches && matches[1]) {
-      const type = getType(param.arrayChildren);
+      const type = getType(param.arrayChildren, flexible);
       const list = Array.from(Array(parseInt(matches[1], 10)).keys())
         .map(() => type)
         .join(', ');
@@ -105,7 +105,7 @@ function getType(param: ethers.utils.ParamType, flexible?: boolean): string {
       return `[${list}]`;
     }
 
-    return `${getType(param.arrayChildren)}[]`;
+    return `${getType(param.arrayChildren, flexible)}[]`;
   }
 
   if (param.type === 'tuple') {
@@ -165,7 +165,7 @@ export function generate(
 
   const exportStatements = mapping
     .map((item) => {
-      const contractFilePath = path.resolve(path.join(output, `${item.name}.ts`));
+      const contractFilePath = path.resolve(path.join(output, item.name));
       const relativePath = path.relative(path.dirname(exportsFilePath), contractFilePath);
       const contractExport = `export { ${item.name} } from './${relativePath}'`;
       return contractExport;
@@ -182,7 +182,7 @@ function generateContractFile(
   data: ContractData,
   format: (source: string) => string,
 ) {
-  const destination = path.resolve(path.join(output, `${data.name}.ts`));
+  const destination = path.resolve(path.join(output, data.name));
   const root = path.join(__dirname, '..', '..', '..', 'tests', 'framework');
   const relative = path.relative(path.dirname(destination), root);
   const signatures = Object.keys(data.interface.functions);
@@ -209,7 +209,7 @@ function generateContractFile(
   const calls = uniques.filter((item) => item.fragment.constant);
   const transactions = uniques.filter((item) => !item.fragment.constant);
 
-  const contractFile = project.createSourceFile(destination, contractClassStructure, {
+  const contractFile = project.createSourceFile(`${destination}.ts`, contractClassStructure, {
     overwrite: true,
   });
 
@@ -254,7 +254,7 @@ function generateContractFile(
   const constructorArgs = constructorFragment?.inputs.map((item) => item.name) ?? [];
   const constructorInputs = constructorFragment?.inputs.map((item) => ({
     name: item.name,
-    type: getType(item),
+    type: getType(item, true),
   })) as ParameterDeclarationStructure[];
 
   const deployMethod = contractClass.getMethodOrThrow('deploy');

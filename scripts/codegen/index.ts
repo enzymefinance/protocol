@@ -8,13 +8,19 @@ import { generate, ContractData } from './utils/generate';
 
 (async () => {
   const packageRoot = path.join(__dirname, '..', '..');
-  const codegenOut = path.resolve(packageRoot, 'tests', 'framework', 'codegen');
+  const codegenOut = path.resolve(packageRoot, 'tests', 'framework', 'contracts');
   const contractsOut = path.join(packageRoot, 'build', 'contracts');
   const prettierConfig = prettier.resolveConfig.sync(packageRoot);
   const contractNames = [
     "Registry",
     "Engine",
     "Hub",
+    "FundFactory",
+    "WETH",
+
+    // Policies
+    "AssetBlacklist",
+    "AssetWhitelist"
   ];
 
   rimraf.sync(codegenOut);
@@ -30,7 +36,6 @@ import { generate, ContractData } from './utils/generate';
       }
 
       const buildArtifact = JSON.parse(fs.readFileSync(buildArtifactPath, 'utf8'));
-      console.log(buildArtifact.userdoc, buildArtifact.devdoc);
 
       return {
         name: contractName,

@@ -36,6 +36,24 @@ module.exports = {
     AirSwapSwap: '0x4572f2554421Bd64Bef1c22c8a81840E8D496BeA',
     AirSwapTypes: '0xa42d613D8B8B6cB9507F46A5dd3FD98276570FD7'
   },
+  whales: {
+    WETH: '0x07320deb2713370a3d7b49189fc2f99906e1ae8e',
+    MLN: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
+    ANT: '0xfbb1b73c4f0bda4f67dca266ce6ef42f520fbb98',
+    BAT: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
+    DAI: '0x07bb41df8c1d275c4259cdd0dbf0189d6a9a5f32',
+    KNC: '0x3eb01b3391ea15ce752d01cf3d3f09dec596f650',
+    LINK: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
+    MANA: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
+    MKR: '0xf37216a8ac034d08b4663108d7532dfcb44583ed',
+    REP: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
+    REN: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
+    RLC: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
+    SAI: '0x76af586d041d6988cdba95347e2f857872524fea',
+    USDC: '0x92d7796c04ee34d1d16c57fab92fc2bccf434468',
+    WBTC: '0x447a9652221f46471a2323b98b73911cda58fd8a',
+    ZRX: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8'
+  },
   tokens: {
     WETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     MLN: '0xec67005c4e498ec7f55e092bd1d35cbc47c91892',
@@ -54,22 +72,4 @@ module.exports = {
     WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
     ZRX: '0xe41d2489571d322189246dafa5ebde1f4699f498'
   },
-  whales: {
-    WETH: '0x07320deb2713370a3d7b49189fc2f99906e1ae8e',
-    MLN: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
-    ANT: '0xfbb1b73c4f0bda4f67dca266ce6ef42f520fbb98',
-    BAT: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-    DAI: '0x07bb41df8c1d275c4259cdd0dbf0189d6a9a5f32',
-    KNC: '0x3eb01b3391ea15ce752d01cf3d3f09dec596f650',
-    LINK: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-    MANA: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-    MKR: '0xf37216a8ac034d08b4663108d7532dfcb44583ed',
-    REP: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-    REN: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-    RLC: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-    SAI: '0x76af586d041d6988cdba95347e2f857872524fea',
-    USDC: '0x92d7796c04ee34d1d16c57fab92fc2bccf434468',
-    WBTC: '0x447a9652221f46471a2323b98b73911cda58fd8a',
-    ZRX: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8'
-  }
 };

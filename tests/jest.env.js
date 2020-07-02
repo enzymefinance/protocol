@@ -1,5 +1,6 @@
 const NodeEnvironment = require('jest-environment-node');
 const ganache = require('ganache-core');
+const ethers = require('ethers');
 const Web3 = require('web3');
 
 class MelonEnvironment extends NodeEnvironment {
@@ -19,6 +20,12 @@ class MelonEnvironment extends NodeEnvironment {
         secretKey: privateKey,
         balance: this.global.forkStartingBalance,
       })),
+    });
+
+    this.global.ethersProvider = new ethers.providers.Web3Provider(provider);
+    this.global.ethersSigners = (this.global.forkPrivateKeys || []).map(privateKey => {
+      const wallet = new ethers.Wallet(privateKey);
+      return wallet.connect(this.global.ethersProvider);
     });
 
     this.global.web3 = new Web3(provider, null, {

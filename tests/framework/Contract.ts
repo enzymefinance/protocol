@@ -1,6 +1,56 @@
+import path from 'path';
+import fs from 'fs';
 import { ethers } from 'ethers';
+import addresses from '~/config';
 
+// TODO: Properly type the truffle build artifact.
+export type Artifact = any;
 export type AddressLike = string | Contract;
+
+export const artifactDirectory = path.join(__dirname, '..', '..', 'build', 'contracts');
+
+/**
+ * Loads a truffle build artifact object given it's filename.
+ *
+ * @param name The name of the truffle build artifact.
+ */
+export function getArtifact(contract: SpecificContract): Artifact {
+  const artifactPath = path.join(artifactDirectory, `${contract.name}.json`);
+  if (!fs.existsSync(artifactPath)) {
+    throw new Error(`Missing artifact for contract ${contract.name}`);
+  }
+
+  try {
+    const artifact = fs.readFileSync(artifactPath, 'utf8');
+    return JSON.parse(artifact);
+  } catch (error) {
+    throw new Error(`Failed to load artifact for contract ${contract.name}: ${error.toString()}`)
+  }
+}
+
+/**
+ * Retrieves the address of a deployed contract.
+ *
+ * @param artifact The artifact payload.
+ * @param network The network id. Defaults to 1.
+ */
+export function getArtifactAddress(artifact: Artifact, network: number = 1): string | undefined {
+  if (artifact.networks[network]?.address) {
+    return artifact.networks[network]?.address
+  }
+
+  if (network === 1) {
+    const name = artifact.contractName;
+    const values = Object.values(addresses);
+    const flattened: { [key: string]: string } = values.reduce((carry, current) => {
+      return { ...carry, ...current };
+    }, {});
+
+    return flattened[name];
+  }
+
+  return undefined;
+}
 
 export async function resolveAddress(
   signerOrProvider: ethers.Signer | ethers.providers.Provider,
@@ -104,12 +154,12 @@ export class DeploymentTransactionWrapper<TContract extends Contract = Contract>
   public async send(overrides?: ethers.Overrides): Promise<TContract> {
     const tx = await this.populate(overrides);
     const response = await this.signer.sendTransaction(tx);
-    return Contract.fromDeployment(this.contract, this.signer, response);
+    return Contract.fromDeployment(this.contract, response, this.signer);
   }
 }
 
 export interface SpecificContract<TContract extends Contract = Contract> {
-  new (addressOrName: string, signerOrProvider: ethers.Signer | ethers.providers.Provider): TContract;
+  new (addressOrName: string, signerOrProvider?: ethers.Signer | ethers.providers.Provider): TContract;
   abi: string[];
 }
 
@@ -145,16 +195,42 @@ export abstract class Contract {
    */
   public static fromDeployment<TContract extends Contract = Contract>(
     implementation: SpecificContract<TContract>,
-    signer: ethers.Signer,
     response: ethers.providers.TransactionResponse,
+    signerOrProvider?: ethers.Signer | ethers.providers.Provider,
   ) {
     const address = ethers.utils.getContractAddress(response);
-    const instance = new implementation(address, signer);
+    const instance = new implementation(address, signerOrProvider);
 
     // TODO: Remove this once we have our own completely custom contract object.
     ethers.utils.defineReadOnly(instance.$$ethers, 'deployTransaction', response);
 
     return instance;
+  }
+
+  /**
+   *
+   * @param implementation
+   * @param signer
+   */
+  public static fromArtifact<TContract extends Contract = Contract>(
+    implementation: SpecificContract<TContract>,
+    signerOrProvider?: ethers.Signer | ethers.providers.Provider,
+  ) {
+    const address = this.artifactAddress(implementation);
+    return new implementation(address, signerOrProvider);
+  }
+
+  /**
+   *
+   * @param implementation
+   */
+  public static artifactAddress(implementation: SpecificContract): string {
+    const address = getArtifactAddress(getArtifact(implementation));
+    if (!address) {
+      throw new Error(`Failed to retrieve address from artifact for contract ${implementation.name}`);
+    }
+
+    return address;
   }
 
   /**
@@ -173,7 +249,7 @@ export abstract class Contract {
    * @param addressOrName The address or name of the contract.
    * @param signerOrProvider The ethers.js signer or provider instance to use.
    */
-  constructor(addressOrName: string, signerOrProvider: ethers.Signer | ethers.providers.Provider) {
+  constructor(addressOrName: string, signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
     this.interface = new ethers.utils.Interface(new.target.abi);
 
     // TODO: Completely replace the ethers.Contract implementation with a custom version that is more tightly tailored for our use case.
