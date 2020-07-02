@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { FundFactory, AssetBlacklist, AssetWhitelist, WETH } from '~/framework/contracts';
-import { Contract, getArtifactAddress, getArtifact } from '~/framework/Contract';
+import { Contract } from '~/framework/Contract';
 
 export const stringToBytes = (value: string, numBytes: number = 32) => {
   const string = Buffer.from(value, 'utf8').toString('hex');
@@ -60,16 +60,36 @@ export async function setupFundWithParams({
   );
 };
 
+function assetBlacklistPolicy(
+  blacklist: string[],
+  address = Contract.artifactAddress(AssetBlacklist),
+): PolicyParams {
+  return {
+    address,
+    encoding: ['address[]'],
+    settings: [blacklist],
+  };
+}
+
+function assetWhitelistPolicy(
+  whitelist: string[],
+  address = Contract.artifactAddress(AssetWhitelist),
+): PolicyParams {
+  return {
+    address,
+    encoding: ['address[]'],
+    settings: [whitelist],
+  };
+}
+
 describe('general walkthrough', () => {
   it('set up a fund', async () => {
+    const weth = Contract.artifactAddress(WETH);
     await setupFundWithParams({
       policies: [
-        {
-          address: Contract.artifactAddress(AssetBlacklist),
-          settings: [[Contract.artifactAddress(WETH)]],
-          encoding: ['address[]'],
-        }
-      ]
+        assetBlacklistPolicy([weth]),
+        assetWhitelistPolicy([weth])
+      ],
     });
   });
 });

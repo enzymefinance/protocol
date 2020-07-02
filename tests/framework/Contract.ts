@@ -52,18 +52,24 @@ export function getArtifactAddress(artifact: Artifact, network: number = 1): str
   return undefined;
 }
 
-export async function resolveAddress(
+export async function resolveAddressOrName(
   signerOrProvider: ethers.Signer | ethers.providers.Provider,
   value: AddressLike | Promise<AddressLike>,
 ) {
-  const resolved = await Promise.resolve(value);
+  const resolved = await resolveAddress(value);
+  return signerOrProvider.resolveName(resolved);
+}
 
+export async function resolveAddress(
+  value: AddressLike | Promise<AddressLike>,
+) {
+  const resolved = await Promise.resolve(value);
   if (Contract.isContract(resolved)) {
     const contract = await resolved.$$ethers.deployed();
-    return signerOrProvider.resolveName(contract.address);
+    return contract.address;
   }
 
-  return signerOrProvider.resolveName(resolved.toString());
+  return resolved;
 }
 
 export async function resolveArguments(
@@ -82,7 +88,7 @@ export async function resolveArguments(
   }
 
   if (type.type === 'address') {
-    return resolveAddress(signerOrProvider, resolved);
+    return resolveAddressOrName(signerOrProvider, resolved);
   }
 
   if (type.type === 'tuple') {
