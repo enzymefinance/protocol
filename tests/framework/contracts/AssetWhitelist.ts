@@ -33,17 +33,10 @@ export class AssetWhitelist extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
-  public static deploy(
-    bytecode: string,
-    signer: ethers.Signer,
-    _registry: AddressLike,
-  ) {
-    return new DeploymentTransactionWrapper(this, bytecode, signer, [
-      _registry,
-    ]);
+  public static deploy(signer: ethers.Signer, _registry: AddressLike) {
+    return new DeploymentTransactionWrapper(this, signer, [_registry]);
   }
 
   /**

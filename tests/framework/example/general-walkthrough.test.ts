@@ -69,12 +69,12 @@ export async function setupFundWithParams({
     denominatorAddress,
   ).send();
 
-  await (await fundFactory.createFeeManager().send()).wait();
-  await (await fundFactory.createPolicyManager().send()).wait();
-  await (await fundFactory.createShares().send()).wait();
-  await (await fundFactory.createVault().send()).wait();
+  await fundFactory.createFeeManager().send();
+  await fundFactory.createPolicyManager().send();
+  await fundFactory.createShares().send();
+  await fundFactory.createVault().send();
 
-  const result = (await (await fundFactory.completeFundSetup().send()).wait());
+  const result = await fundFactory.completeFundSetup().send();
   const event = result.events?.find(item => item.event === 'FundSetupCompleted');
 
   if (!event) {
@@ -95,7 +95,7 @@ export interface FundComponents {
 
 export async function getFundComponents(
   address: string,
-  signerOrProvider: ethers.Signer | ethers.providers.Provider,
+  signerOrProvider: ethers.Signer | ethers.providers.Provider = ethersProvider,
 ): Promise<FundComponents> {
   const hub = new contracts.Hub(address, signerOrProvider);
   const [
@@ -171,6 +171,15 @@ async function performanceFee(
 }
 
 describe('general walkthrough', () => {
+  it('deploy a registry contract', async () => {
+    const signer = ethersSigners[0];
+    const address = await signer.getAddress();
+    const registry = await contracts.Registry.deploy(signer, address, address).send();
+
+    const mtc = await registry.MTC();
+    expect(mtc).toEqual(address);
+  });
+
   it('set up a fund', async () => {
     const fund = await setupFundWithParams({
       policies: [
@@ -186,6 +195,7 @@ describe('general walkthrough', () => {
       ],
     });
 
-    expect(await fixtures.Registry.fundIsRegistered(fund.hub)).toBeTruthy();
+    const registered = await fixtures.Registry.fundIsRegistered(fund.hub);
+    expect(registered).toBeTruthy();
   });
 });

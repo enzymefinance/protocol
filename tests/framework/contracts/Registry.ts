@@ -86,19 +86,14 @@ export class Registry extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
   public static deploy(
-    bytecode: string,
     signer: ethers.Signer,
     _MTC: AddressLike,
     _MGM: AddressLike,
   ) {
-    return new DeploymentTransactionWrapper(this, bytecode, signer, [
-      _MTC,
-      _MGM,
-    ]);
+    return new DeploymentTransactionWrapper(this, signer, [_MTC, _MGM]);
   }
 
   /**

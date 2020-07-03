@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { getArtifact } from '~/framework';
 
 export class MyContract extends Contract {
 
@@ -10,8 +11,7 @@ export class MyContract extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
-  public static deploy(bytecode: string, signer: ethers.Signer) {}
+  public static deploy(signer: ethers.Signer) {}
 }

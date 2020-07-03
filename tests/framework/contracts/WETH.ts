@@ -31,11 +31,10 @@ export class WETH extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
-  public static deploy(bytecode: string, signer: ethers.Signer) {
-    return new DeploymentTransactionWrapper(this, bytecode, signer);
+  public static deploy(signer: ethers.Signer) {
+    return new DeploymentTransactionWrapper(this, signer);
   }
 
   /**

@@ -151,9 +151,11 @@ export class TransactionWrapper<TOverrides extends ethers.Overrides = ethers.Ove
     return this.contract.$$ethers.estimateGas[this.signature](...args, overrides || {});
   }
 
-  public async send(overrides?: TOverrides): Promise<ethers.ContractTransaction> {
+  public async send(overrides?: TOverrides): Promise<ethers.ContractReceipt> {
     const args = await this.args();
-    return this.contract.$$ethers.functions[this.signature](...args, overrides || {});
+    const tx = await this.contract.$$ethers.functions[this.signature](...args, overrides || {});
+    // We don't have a use-case for observing tx confirmation. Return the receipt promise right away.
+    return (tx as ethers.ContractTransaction).wait();
   }
 }
 
@@ -163,7 +165,6 @@ export class DeploymentTransactionWrapper<TContract extends Contract = Contract>
 
   constructor(
     public readonly contract: SpecificContract<TContract>,
-    public readonly bytecode: string,
     public readonly signer: ethers.Signer,
     protected readonly rawArgs?: any[],
   ) {
@@ -183,7 +184,8 @@ export class DeploymentTransactionWrapper<TContract extends Contract = Contract>
     const args = await this.args();
 
     // Set the data to the bytecode and the encoded constructor arguments.
-    const data = ethers.utils.hexlify(ethers.utils.concat([this.bytecode, this.interface.encodeDeploy(args)]));
+    const artifact = getArtifact(this.contract);
+    const data = ethers.utils.hexlify(ethers.utils.concat([artifact.bytecode, this.interface.encodeDeploy(args)]));
     return { ...overridez, data };
   }
 

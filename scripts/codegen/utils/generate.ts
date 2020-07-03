@@ -260,7 +260,7 @@ function generateContractFile(
   const deployMethod = contractClass.getMethodOrThrow('deploy');
   deployMethod.addParameters(constructorInputs ?? []);
   const deployArgs = constructorArgs.length ? `, [${constructorArgs.join(', ')}]` : '';
-  deployMethod.addStatements([`return new DeploymentTransactionWrapper(this, bytecode, signer${deployArgs})`]);
+  deployMethod.addStatements([`return new DeploymentTransactionWrapper(this, signer${deployArgs})`]);
 
   calls.forEach((item) => {
     const inputs = item.inputs.concat([`$$overrides?: ${item.overrides}`]).join(', ');

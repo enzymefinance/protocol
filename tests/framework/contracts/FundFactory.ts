@@ -51,11 +51,9 @@ export class FundFactory extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
   public static deploy(
-    bytecode: string,
     signer: ethers.Signer,
     _feeManagerFactory: AddressLike,
     _sharesFactory: AddressLike,
@@ -63,7 +61,7 @@ export class FundFactory extends Contract {
     _policyManagerFactory: AddressLike,
     _registry: AddressLike,
   ) {
-    return new DeploymentTransactionWrapper(this, bytecode, signer, [
+    return new DeploymentTransactionWrapper(this, signer, [
       _feeManagerFactory,
       _sharesFactory,
       _vaultFactory,

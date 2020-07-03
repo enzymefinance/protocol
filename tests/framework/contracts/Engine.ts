@@ -48,19 +48,14 @@ export class Engine extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
   public static deploy(
-    bytecode: string,
     signer: ethers.Signer,
     _delay: ethers.BigNumberish,
     _registry: AddressLike,
   ) {
-    return new DeploymentTransactionWrapper(this, bytecode, signer, [
-      _delay,
-      _registry,
-    ]);
+    return new DeploymentTransactionWrapper(this, signer, [_delay, _registry]);
   }
 
   /**

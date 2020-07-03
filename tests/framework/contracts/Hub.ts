@@ -42,18 +42,16 @@ export class Hub extends Contract {
   /**
    * Deploy a new contract instance.
    *
-   * @param bytecode The bytecode to deploy the contract with.
    * @param signer The ethers.js signer instance to use.
    */
   public static deploy(
-    bytecode: string,
     signer: ethers.Signer,
     _registry: AddressLike,
     _fundFactory: AddressLike,
     _manager: AddressLike,
     _name: string,
   ) {
-    return new DeploymentTransactionWrapper(this, bytecode, signer, [
+    return new DeploymentTransactionWrapper(this, signer, [
       _registry,
       _fundFactory,
       _manager,
