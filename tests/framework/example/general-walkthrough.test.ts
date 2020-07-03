@@ -30,8 +30,8 @@ export interface SetupFundParams {
   manager?: ethers.Signer,
   name?: string;
   adapters?: AddressLike[];
-  fees?: FeeParams[];
-  policies?: PolicyParams[];
+  fees?: (FeeParams | Promise<FeeParams>)[];
+  policies?: (PolicyParams | Promise<PolicyParams>)[];
   denominator?: AddressLike;
 }
 
@@ -46,12 +46,15 @@ export async function setupFundWithParams({
   const fundFactory = Contract.fromArtifact(contracts.FundFactory, manager);
   const fundName = stringToBytes(name);
 
-  const feesRates = fees.map(item => item.rate);
-  const feesPeriods = fees.map(item => item.period);
-  const policiesSettings = policies.map(item => encodeArgs(item.encoding, item.settings));
+  const resolvedFees = await Promise.all(fees);
+  const resolvedPolicies = await Promise.all(policies);
 
-  const feesAddresses = await Promise.all(fees.map(item => resolveAddress(item.address)));
-  const policiesAddresses = await Promise.all(policies.map(item => resolveAddress(item.address)));
+  const feesRates = resolvedFees.map(item => item.rate);
+  const feesPeriods = resolvedFees.map(item => item.period);
+  const policiesSettings = resolvedPolicies.map(item => encodeArgs(item.encoding, item.settings));
+
+  const feesAddresses = await Promise.all(resolvedFees.map(item => resolveAddress(item.address)));
+  const policiesAddresses = await Promise.all(resolvedPolicies.map(item => resolveAddress(item.address)));
   const adapterAddresses = await Promise.all(adapters.map(item => resolveAddress(item)));
   const denominatorAddress = await resolveAddress(denominator);
 
@@ -170,17 +173,17 @@ async function performanceFee(
 describe('general walkthrough', () => {
   it('set up a fund', async () => {
     const fund = await setupFundWithParams({
-      policies: await Promise.all([
+      policies: [
         assetWhitelistPolicy([fixtures.WETH, fixtures.MLN])
-      ]),
-      fees: await Promise.all([
+      ],
+      fees: [
         managementFee(0.1, 30),
         performanceFee(0.1, 90),
-      ]),
-      adapters: await Promise.all([
+      ],
+      adapters: [
         fixtures.KyberAdapter,
         fixtures.EngineAdapter,
-      ]),
+      ],
     });
 
     expect(await fixtures.Registry.fundIsRegistered(fund.hub)).toBeTruthy();
