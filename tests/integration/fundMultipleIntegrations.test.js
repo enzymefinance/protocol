@@ -16,7 +16,6 @@ import { encodeTakeOrderArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let takeOrderSignature;
@@ -26,7 +25,6 @@ let kyberNetworkProxy, kyberAdapter;
 let fundFactory, fund;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
@@ -36,12 +34,12 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
-  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
-  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, mainnetAddrs.kyber.KyberNetworkProxy);
 
   fund = await setupFundWithParams({
     integrationAdapters: [oasisDexAdapter.options.address],
@@ -52,8 +50,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 });
 
@@ -67,8 +64,7 @@ test("add Kyber to fund's enabled integrations", async () => {
     vault,
     'enableAdapters',
     [[kyberAdapter.options.address]],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   const postAddIntegrations = await call(vault, 'getEnabledAdapters');
@@ -104,7 +100,7 @@ test('fund takes an order on Kyber', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   await send(
     vault,
@@ -114,8 +110,7 @@ test('fund takes an order on Kyber', async () => {
       takeOrderSignature,
       encodedArgs,
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));

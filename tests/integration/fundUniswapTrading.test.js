@@ -17,7 +17,6 @@ import { encodeTakeOrderArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let zrx, mln, weth, fund;
@@ -26,7 +25,6 @@ let takeOrderSignature;
 let uniswapAdapter;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
@@ -36,16 +34,15 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  zrx = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.ZRX);
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  zrx = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.ZRX);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
   const uniswapFactory = getDeployed(
     CONTRACT_NAMES.UNISWAP_FACTORY_INTERFACE,
-    web3,
     mainnetAddrs.uniswap.UniswapFactory
   );
-  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER, web3);
+  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER);
 
   fund = await setupFundWithParams({
     integrationAdapters: [uniswapAdapter.options.address],
@@ -56,21 +53,18 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 
   // Load interfaces for uniswap exchanges of tokens to be traded
   const mlnExchangeAddress = await call(uniswapFactory, 'getExchange', [mln.options.address]);
   mlnExchange = await getDeployed(
     CONTRACT_NAMES.UNISWAP_EXCHANGE,
-    web3,
     mlnExchangeAddress
   );
   const zrxExchangeAddress = await call(uniswapFactory, 'getExchange', [zrx.options.address]);
   zrxExchange = await getDeployed(
     CONTRACT_NAMES.UNISWAP_EXCHANGE,
-    web3,
     zrxExchangeAddress
   );
 });
@@ -95,7 +89,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   await send(
     vault,
@@ -105,8 +99,7 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
       takeOrderSignature,
       encodedArgs,
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -140,7 +133,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   await send(
     vault,
@@ -150,8 +143,7 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
       takeOrderSignature,
       encodedArgs,
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -193,7 +185,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
     makerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   await send(
     vault,
@@ -203,8 +195,7 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
       takeOrderSignature,
       encodedArgs,
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -239,7 +230,7 @@ test('Order fails if maker amount is not satisfied', async () => {
     makerQuantity: highMakerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   await expect(
     send(
@@ -250,8 +241,7 @@ test('Order fails if maker amount is not satisfied', async () => {
         takeOrderSignature,
         encodedArgs,
       ],
-      managerTxOpts,
-      web3
+      managerTxOpts
     )
   ).rejects.toThrow(); // No specific message, fails at Uniswap level
 });

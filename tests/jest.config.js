@@ -1,6 +1,16 @@
+const config = require('./ganache/config');
+
 module.exports = {
+  rootDir: '..',
   roots: ['<rootDir>/tests'],
-  testEnvironment: 'node',
+  testEnvironment: '<rootDir>/tests/jest.env.js',
+  testEnvironmentOptions: {
+    forkPort: config.forkPort,
+    forkGasLimit: config.forkGasLimit,
+    forkStartingBalance: config.forkStartingBalance,
+    forkUnlockedAccounts: config.forkUnlockedAccounts,
+    forkPrivateKeys: config.forkPrivateKeys,
+  },
   transform: {
     '^.+\\.(js|ts)$': 'ts-jest'
   },

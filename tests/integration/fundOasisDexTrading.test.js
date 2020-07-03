@@ -15,7 +15,6 @@ import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let mln, weth, oasisDexAdapter, oasisDexExchange, priceSource;
@@ -23,18 +22,17 @@ let takeOrderSignature;
 let fund;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
-  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
+  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, mainnetAddrs.oasis.OasisDexExchange);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
 
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -50,23 +48,8 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
-
-  // // Set prices to non-constant value (testing uses "1" for every rate)
-  // const wethRateConstant = toWei('1', 'ether');
-  // const mlnPerEthRate = toWei('0.5', 'ether');
-  // await send(
-  //   priceSource,
-  //   'update',
-  //   [
-  //     [weth.options.address, mln.options.address],
-  //     [wethRateConstant, mlnPerEthRate]
-  //   ],
-  //   defaultTxOpts,
-  //   web3
-  // );
 });
 
 describe('Fund can take an order (buy MLN with WETH)', () => {
@@ -89,15 +72,14 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
   });
 
   test('Third party makes an order', async () => {
-    await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts, web3);
+    await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
     const res = await send(
       oasisDexExchange,
       'offer',
       [
         makerQuantity, makerAsset, takerQuantity, takerAsset, 0
       ],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     );
 
     const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -116,7 +98,7 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
       takerAsset,
       takerQuantity,
       orderId,
-    }, web3);
+    });
 
     await send(
       vault,
@@ -126,8 +108,7 @@ describe('Fund can take an order (buy MLN with WETH)', () => {
         takeOrderSignature,
         encodedArgs,
       ],
-      managerTxOpts,
-      web3
+      managerTxOpts
     );
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -161,15 +142,14 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
   });
 
   test('Third party makes an order', async () => {
-    await send(weth, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts, web3);
+    await send(weth, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
     const res = await send(
       oasisDexExchange,
       'offer',
       [
         makerQuantity, makerAsset, takerQuantity, takerAsset, 0
       ],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     );
 
     const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -188,7 +168,7 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
       takerAsset,
       takerQuantity,
       orderId,
-    }, web3);
+    });
 
     await send(
       vault,
@@ -198,8 +178,7 @@ describe('Fund can take an order (buy WETH with MLN)', () => {
         takeOrderSignature,
         encodedArgs,
       ],
-      managerTxOpts,
-      web3
+      managerTxOpts
     );
 
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));

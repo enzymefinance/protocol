@@ -10,7 +10,6 @@ import { increaseTime } from '~/utils/rpc';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer;
 let defaultTxOpts;
 let weth;
@@ -19,13 +18,12 @@ let basicRequest;
 let fundFactory;
 
 beforeAll(async () => {
-  web3 = await startChain();
-  [deployer] = await web3.eth.getAccounts();
+    [deployer] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
 
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3)
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR)
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
 
   basicRequest = {
     owner: deployer,
@@ -125,8 +123,7 @@ const createRequest = async (fundAddress, request) => {
       request.investmentAssetContract,
       'transfer',
       [request.owner, investorTokenShortfall.toString()],
-      defaultTxOpts,
-      web3
+      defaultTxOpts
     )
   }
 
@@ -145,7 +142,6 @@ const createRequest = async (fundAddress, request) => {
       request.investmentAmount,
       request.minSharesQuantity
     ],
-    { ...request.txOpts, value: request.amguValue },
-    web3
+    { ...request.txOpts, value: request.amguValue }
   );
 };

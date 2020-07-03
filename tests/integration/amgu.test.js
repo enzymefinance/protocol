@@ -9,22 +9,20 @@ import mainnetAddrs from '~/config';
 
 const amguPrice = toWei('1', 'gwei');
 
-let web3;
-let deployer;
-let defaultTxOpts, managerTxOpts;
-let baseToken, quoteToken;
-let engine, fundFactory, priceSource, registry, sharesRequestor, valueInterpreter;
+let deployer, firstManager, secondManager;
+let defaultTxOpts, firstManagerTxOpts, secondManagerTxOpts;
+let quoteToken;
+let engine, fundFactory, registry, sharesRequestor, valueInterpreter;
 
-const assertAmguTx = async (contract, method, args=[]) => {
+const assertAmguTx = async (contract, method, opts) => {
   const arbitraryEthAmount = toWei('1', 'ether');
-  const preUserBalance = new BN(await web3.eth.getBalance(deployer));
+  const preUserBalance = new BN(await web3.eth.getBalance(opts.from));
   const gasPrice = await web3.eth.getGasPrice();
   const result = await send(
     contract,
     method,
-    args,
-    { ...defaultTxOpts, value: arbitraryEthAmount, gasPrice },
-    web3
+    [],
+    { ...opts, value: arbitraryEthAmount, gasPrice }
   );
 
   const {
@@ -40,7 +38,7 @@ const assertAmguTx = async (contract, method, args=[]) => {
   // TODO: This method does not result in less than the estimate
   if (method === 'completeSetup') return result;
 
-  const postUserBalance = new BN(await web3.eth.getBalance(deployer));
+  const postUserBalance = new BN(await web3.eth.getBalance(opts.from));
 
   const wethAddress = await call(registry, 'nativeAsset');
   const mlnAddress = await call(registry, 'mlnToken');
@@ -59,41 +57,39 @@ const assertAmguTx = async (contract, method, args=[]) => {
   expect(new BN(totalAmguPaidInEth)).bigNumberEq(ethAmguAmount);
   expect(txCostInWei).bigNumberLt(totalUserCost);
   expect(estimatedTotalUserCost).bigNumberEq(totalUserCost);
-  expect(payer.toLowerCase()).toBe(deployer.toLowerCase());
+  expect(payer.toLowerCase()).toBe(opts.from.toLowerCase());
 
   return result;
 }
 
 beforeEach(async () => {
-  web3 = await startChain();
-
-  [deployer] = await web3.eth.getAccounts();
+  [deployer, firstManager, secondManager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
+  firstManagerTxOpts = { ...defaultTxOpts, from: firstManager };
+  secondManagerTxOpts = { ...defaultTxOpts, from: secondManager };
 
-  engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
-  valueInterpreter = getDeployed(CONTRACT_NAMES.VALUE_INTERPRETER, web3);
-  quoteToken = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  baseToken = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
+  engine = getDeployed(CONTRACT_NAMES.ENGINE);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY);
+  sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR);
+  valueInterpreter = getDeployed(CONTRACT_NAMES.VALUE_INTERPRETER);
+  quoteToken = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
 });
 
 // Reset amgu and incentive after all tests so as not to affect other tests in suite
 afterEach(async () => {
-  await send(engine, 'setAmguPrice', [0], defaultTxOpts, web3);
+  await send(engine, 'setAmguPrice', [0], defaultTxOpts);
   const resetAmguPrice = await call(engine, 'getAmguPrice');
   expect(resetAmguPrice).toBe('0');
 
   const incentivePrice = toWei('0.01', 'ether');
-  await send(registry, 'setIncentive', [incentivePrice], defaultTxOpts, web3);
+  await send(registry, 'setIncentive', [incentivePrice], defaultTxOpts);
   const resetIncentive = await call(registry, 'incentive');
   expect(resetIncentive).toBe(incentivePrice);
 });
 
 test('Set amgu and check its usage in single amguPayable function', async () => {
-  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts, web3);
+  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
   const newAmguPrice = await call(engine, 'getAmguPrice');
   expect(newAmguPrice).toBe(amguPrice);
 
@@ -110,15 +106,14 @@ test('Set amgu and check its usage in single amguPayable function', async () => 
       [],
       quoteToken.options.address,
     ],
-    managerTxOpts,
-    web3
+    firstManagerTxOpts
   );
 
-  await assertAmguTx(fundFactory, 'createShares');
+  await assertAmguTx(fundFactory, 'createShares', firstManagerTxOpts);
 });
 
 test('set amgu with incentive attached and check its usage in creating a fund', async () => {
-  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts, web3);
+  await send(engine, 'setAmguPrice', [amguPrice], defaultTxOpts);
   const newAmguPrice = await call(engine, 'getAmguPrice');
   expect(newAmguPrice).toBe(amguPrice);
 
@@ -135,15 +130,14 @@ test('set amgu with incentive attached and check its usage in creating a fund', 
       [],
       quoteToken.options.address
     ],
-    managerTxOpts,
-    web3
+    secondManagerTxOpts
   );
 
-  await assertAmguTx(fundFactory, 'createFeeManager');
-  await assertAmguTx(fundFactory, 'createPolicyManager');
-  await assertAmguTx(fundFactory, 'createShares');
-  await assertAmguTx(fundFactory, 'createVault');
-  const res = await assertAmguTx(fundFactory, 'completeFundSetup');
+  await assertAmguTx(fundFactory, 'createFeeManager', secondManagerTxOpts);
+  await assertAmguTx(fundFactory, 'createPolicyManager', secondManagerTxOpts);
+  await assertAmguTx(fundFactory, 'createShares', secondManagerTxOpts);
+  await assertAmguTx(fundFactory, 'createVault', secondManagerTxOpts);
+  const res = await assertAmguTx(fundFactory, 'completeFundSetup', secondManagerTxOpts);
 
   const hubAddress = getEventFromLogs(
     res.logs,
@@ -157,12 +151,11 @@ test('set amgu with incentive attached and check its usage in creating a fund', 
     quoteToken,
     'approve',
     [sharesRequestor.options.address, investmentAmount],
-    defaultTxOpts,
-    web3
+    defaultTxOpts
   );
 
   const incentiveInputAmount = toWei('100', 'ether');
-  await send(registry, 'setIncentive', [incentiveInputAmount], defaultTxOpts, web3);
+  await send(registry, 'setIncentive', [incentiveInputAmount], defaultTxOpts);
   const newIncentiveAmount = await call(registry, 'incentive');
   expect(newIncentiveAmount).toBe(incentiveInputAmount);
 
@@ -177,8 +170,7 @@ test('set amgu with incentive attached and check its usage in creating a fund', 
       investmentAmount,
       "0"
     ],
-    { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice },
-    web3
+    { ...defaultTxOpts, value: toWei('101', 'ether'), gasPrice }
   );
 
   const {

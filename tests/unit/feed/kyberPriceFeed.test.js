@@ -21,7 +21,6 @@ import { updateKyberPriceFeed, getKyberPrices } from '~/utils/updateKyberPriceFe
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, updater, someAccount;
 let deployerTxOpts, updaterTxOpts, someAccountTxOpts, councilTxOpts;
 let mlnPriceFromKyber;
@@ -30,17 +29,16 @@ let dai, mln, weth, registeredPrimitives;
 
 beforeAll(async () => {
   const defaultGas = 8000000;
-  web3 = await startChain();
   [deployer, updater, someAccount] = await web3.eth.getAccounts();
   deployerTxOpts = { from: deployer, gas: defaultGas };
   updaterTxOpts = { from: updater, gas: defaultGas };
   someAccountTxOpts = { from: someAccount, gas: defaultGas };
 
-  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
-  kyber = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK, web3);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  registry = getDeployed(CONTRACT_NAMES.REGISTRY);
+  kyber = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK);
 
   councilTxOpts = { from: await call(registry, 'owner'), gas: defaultGas }
   registeredPrimitives = await call(registry, 'getRegisteredPrimitives');
@@ -52,15 +50,14 @@ describe('update', () => {
   let maxDeviationFromFeed = toWei('0.1', 'ether');
 
   beforeAll(async () => {
-    kyberPriceFeed = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+    kyberPriceFeed = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
     pricefeedQuoteAsset = await call(kyberPriceFeed, 'PRICEFEED_QUOTE_ASSET');
 
     await send(
       kyberPriceFeed,
       'setMaxPriceDeviation',
       [maxDeviationFromFeed],
-      deployerTxOpts,
-      web3
+      deployerTxOpts
     );
 
     mlnPriceFromKyber = new BN((await call(
@@ -76,7 +73,7 @@ describe('update', () => {
     expect(designatedUpdater).not.toBe(someAccount);
 
     await expect(
-      updateKyberPriceFeed(kyberPriceFeed, web3, someAccountTxOpts)
+      updateKyberPriceFeed(kyberPriceFeed, someAccountTxOpts)
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
   });
 
@@ -85,7 +82,7 @@ describe('update', () => {
     expect(registryOwner).toBe(deployer);
 
     const livePrices = await getKyberPrices(kyberPriceFeed, registeredPrimitives);
-    const receipt = await updateKyberPriceFeed(kyberPriceFeed, web3, councilTxOpts)
+    const receipt = await updateKyberPriceFeed(kyberPriceFeed, councilTxOpts)
     const logUpdated = getEventFromLogs(receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated');
 
     expect(logUpdated.assets).toEqual(registeredPrimitives);
@@ -94,16 +91,16 @@ describe('update', () => {
 
   test('Designated updater can update feed', async () => {
     await expect(
-      updateKyberPriceFeed(kyberPriceFeed, web3, updaterTxOpts)
+      updateKyberPriceFeed(kyberPriceFeed, updaterTxOpts)
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
 
-    const setUpdaterReceipt = await send(kyberPriceFeed, 'setUpdater', [updater], deployerTxOpts, web3);
+    const setUpdaterReceipt = await send(kyberPriceFeed, 'setUpdater', [updater], deployerTxOpts);
     const logSetUpdater = getEventFromLogs(setUpdaterReceipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'UpdaterSet');
 
     expect(logSetUpdater.updater).toBe(updater);
 
     const livePrices = await getKyberPrices(kyberPriceFeed, registeredPrimitives);
-    const updateReceipt = await updateKyberPriceFeed(kyberPriceFeed, web3, updaterTxOpts);
+    const updateReceipt = await updateKyberPriceFeed(kyberPriceFeed, updaterTxOpts);
     const logUpdated = getEventFromLogs(updateReceipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated');
 
     expect(logUpdated.assets).toEqual(registeredPrimitives);
@@ -130,10 +127,10 @@ describe('update', () => {
     invalidSanityRates[1] = barelyTooHighPrice.toString();
 
     await expect(
-      send(kyberPriceFeed, 'update', [registeredPrimitives,invalidSanityRates], deployerTxOpts, web3)
+      send(kyberPriceFeed, 'update', [registeredPrimitives,invalidSanityRates], deployerTxOpts)
     ).rejects.toThrowFlexible('update: Kyber price deviates too much from maxPriceDeviation');
 
-    const receipt = await send(kyberPriceFeed, 'update', [registeredPrimitives, validSanityRates], deployerTxOpts, web3);
+    const receipt = await send(kyberPriceFeed, 'update', [registeredPrimitives, validSanityRates], deployerTxOpts);
     const logUpdated = getEventFromLogs(receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated');
 
     expect(logUpdated.assets).toEqual(registeredPrimitives);
@@ -156,10 +153,10 @@ describe('update', () => {
     invalidSanityRates[1] = barelyTooLowPrice.toString();
 
     await expect(
-      send(kyberPriceFeed, 'update', [registeredPrimitives,invalidSanityRates], deployerTxOpts, web3)
+      send(kyberPriceFeed, 'update', [registeredPrimitives,invalidSanityRates], deployerTxOpts)
     ).rejects.toThrowFlexible('update: Kyber price deviates too much from maxPriceDeviation');
 
-    const receipt = await send(kyberPriceFeed, 'update', [registeredPrimitives, validSanityRates], deployerTxOpts, web3);
+    const receipt = await send(kyberPriceFeed, 'update', [registeredPrimitives, validSanityRates], deployerTxOpts);
     const logUpdated = getEventFromLogs(receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated');
 
     expect(logUpdated.assets).toEqual(registeredPrimitives);
@@ -271,7 +268,7 @@ describe('getCanonicalRate', () => {
   let pricefeedQuoteAsset;
 
   beforeAll(async () => {
-    kyberPriceFeed = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+    kyberPriceFeed = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
     pricefeedQuoteAsset = await call(kyberPriceFeed, 'PRICEFEED_QUOTE_ASSET');
   });
 
@@ -289,11 +286,10 @@ describe('getCanonicalRate', () => {
         [mlnPerEther.toString(), daiPerEther.toString()],
         [etherPerMln.toString(), etherPerDai.toString()],
       ],
-      deployerTxOpts,
-      web3
+      deployerTxOpts
     );
 
-    await updateKyberPriceFeed(kyberPriceFeed, web3)
+    await updateKyberPriceFeed(kyberPriceFeed)
 
     const { 0: updatedMlnPrice } = await call(kyberPriceFeed, 'getCanonicalRate', [mln.options.address, pricefeedQuoteAsset]);
     const { 0: updatedDaiPrice } = await call(kyberPriceFeed, 'getCanonicalRate', [dai.options.address, pricefeedQuoteAsset]);
@@ -315,11 +311,10 @@ describe('getCanonicalRate', () => {
         [mlnPerEther.toString()],
         [etherPerMln.toString()],
       ],
-      deployerTxOpts,
-      web3
+      deployerTxOpts
     );
 
-    await updateKyberPriceFeed(kyberPriceFeed, web3);
+    await updateKyberPriceFeed(kyberPriceFeed);
 
     const { 0: updatedMlnPrice } = (await call(kyberPriceFeed, 'getCanonicalRate', [mln.options.address, pricefeedQuoteAsset]));
     expect(updatedMlnPrice.toString()).toBe(midPointPrice.toString());
@@ -338,11 +333,10 @@ describe('getCanonicalRate', () => {
         [mlnPerEther.toString()],
         [etherPerMln.toString()],
       ],
-      deployerTxOpts,
-      web3
+      deployerTxOpts
     );
 
-    await updateKyberPriceFeed(kyberPriceFeed, web3);
+    await updateKyberPriceFeed(kyberPriceFeed);
 
     const { 0: updatedMlnPrice } = (await call(kyberPriceFeed, 'getCanonicalRate', [mln.options.address, pricefeedQuoteAsset]));
     expect(updatedMlnPrice.toString()).toBe(midPointPrice.toString());

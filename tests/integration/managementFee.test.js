@@ -16,23 +16,21 @@ import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
 const yearInSeconds = new BN(31536000);
-let web3;
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let managementFeeRate;
 let managementFee, mln, weth, fund;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
   const managementFeePeriod = 0;
   managementFeeRate = toWei('0.02', 'ether');
@@ -50,8 +48,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 });
 
@@ -72,10 +69,7 @@ test('executing rewardManagementFee distributes management fee shares to manager
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundGav = new BN(await call(shares, 'calcGav'));
 
-  // Delay 1 sec to ensure block new blocktime
-  await delay(1000);
-
-  await send(feeManager, 'rewardManagementFee', [], managerTxOpts, web3);
+  await send(feeManager, 'rewardManagementFee', [], managerTxOpts);
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
@@ -115,10 +109,7 @@ test('executing rewardAllFees distributes fee shares to manager', async () => {
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preFundGav = new BN(await call(shares, 'calcGav'));
 
-  // Delay 1 sec to ensure block new blocktime
-  await delay(3000);
-
-  await send(feeManager, 'rewardAllFees', [], managerTxOpts, web3);
+  await send(feeManager, 'rewardAllFees', [], managerTxOpts);
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
@@ -157,10 +148,7 @@ test('Investor redeems his shares', async () => {
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
   const preInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
 
-  // Delay 1 sec to ensure block new blocktime
-  await delay(1000);
-
-  await send(shares, 'redeemShares', [], investorTxOpts, web3);
+  await send(shares, 'redeemShares', [], investorTxOpts);
 
   const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const postWethInvestor = new BN(await call(weth, 'balanceOf', [investor]));
@@ -197,10 +185,7 @@ test('Manager redeems his shares', async () => {
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   expect(preManagerShares).not.bigNumberEq(new BN(0));
 
-  // Delay 1 sec to ensure block new blocktime
-  await delay(1000);
-
-  await send(shares, 'redeemShares', [], managerTxOpts, web3);
+  await send(shares, 'redeemShares', [], managerTxOpts);
 
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   expect(postManagerShares).bigNumberEq(new BN(0));

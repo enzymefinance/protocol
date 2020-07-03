@@ -17,7 +17,6 @@ import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager;
 let defaultTxOpts, managerTxOpts;
 let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource;
@@ -25,17 +24,16 @@ let mlnPrice, makerQuantity, takerQuantity;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  engine = getDeployed(CONTRACT_NAMES.ENGINE, web3);
-  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER, web3);
-  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  engine = getDeployed(CONTRACT_NAMES.ENGINE);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
+  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
 
   takeOrderSignature = getFunctionSignature(
     CONTRACT_NAMES.ORDER_TAKER,
@@ -52,11 +50,11 @@ beforeAll(async () => {
 });
 
 test('Setup a fund with amgu charged to seed Melon Engine', async () => {
-  await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts, web3);
+  await send(engine, 'setAmguPrice', [toWei('1', 'gwei')], defaultTxOpts);
 
   // TODO: Need to calculate this in fund.js
   const amguTxValue = toWei('10', 'ether');
-  fund = await setupInvestedTestFund(mainnetAddrs, manager, amguTxValue, web3);
+  fund = await setupInvestedTestFund(mainnetAddrs, manager, amguTxValue);
 });
 
 test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async () => {
@@ -68,7 +66,7 @@ test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async 
     makerQuantity: minMakerQuantity,
     takerAsset: weth.options.address,
     takerQuantity: toWei('0.1', 'ether'),
-  }, web3);
+  });
 
   await expect(
     send(
@@ -79,8 +77,7 @@ test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async 
         takeOrderSignature,
         encodedArgs,
       ],
-      managerTxOpts,
-      web3
+      managerTxOpts
     )
   ).resolves.not.toThrow()
 });
@@ -89,8 +86,8 @@ test('Trade on Melon Engine', async () => {
   const { vault } = fund;
 
   // Thaw frozen eth
-  await increaseTime(86400 * 32, web3);
-  await send(engine, 'thaw', [], defaultTxOpts, web3);
+  await increaseTime(86400 * 32);
+  await send(engine, 'thaw', [], defaultTxOpts);
 
   const preLiquidEther = new BN(await call(engine, 'liquidEther'));
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
@@ -104,10 +101,10 @@ test('Trade on Melon Engine', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   // get fresh price since we changed blocktime
-  await updateKyberPriceFeed(priceSource, web3);
+  await updateKyberPriceFeed(priceSource);
 
   await send(
     vault,
@@ -117,8 +114,7 @@ test('Trade on Melon Engine', async () => {
       takeOrderSignature,
       encodedArgs,
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   const postLiquidEther = new BN(await call(engine, 'liquidEther'));
@@ -144,7 +140,7 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
     makerQuantity,
     takerAsset,
     takerQuantity,
-  }, web3);
+  });
 
   await expect(
     send(
@@ -155,8 +151,7 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
         takeOrderSignature,
         encodedArgs,
       ],
-      managerTxOpts,
-      web3
+      managerTxOpts
     )
   ).rejects.toThrowFlexible(
     "validateAndEmitOrderFillResults: received less buy asset than expected"

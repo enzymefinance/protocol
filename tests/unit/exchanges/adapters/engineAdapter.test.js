@@ -18,7 +18,6 @@ import { encodeTakeOrderArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
-let web3
 let deployer, manager;
 let dai, mln, weth, engineAdapter, fundFactory;
 let managerTxOpts;
@@ -26,7 +25,6 @@ let fund;
 let takeOrderSignature;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager] = await web3.eth.getAccounts();
   managerTxOpts = { from: manager, gas: 8000000 };
 
@@ -35,11 +33,11 @@ beforeAll(async () => {
     'takeOrder',
   );
 
-  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.DAI);
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER, web3);
-  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  dai = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.DAI);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER);
+  fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 });
 
 describe('takeOrder', () => {
@@ -64,8 +62,7 @@ describe('takeOrder', () => {
         },
         manager,
         quoteToken: mln.options.address,
-        fundFactory,
-        web3
+        fundFactory
       });
     });
 
@@ -77,7 +74,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       await expect(
         send(
@@ -88,8 +85,7 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          managerTxOpts,
-          web3
+          managerTxOpts
         )
       ).rejects.toThrowFlexible("maker asset does not match nativeAsset")
     });
@@ -102,7 +98,7 @@ describe('takeOrder', () => {
         makerQuantity,
         takerAsset: badAsset,
         takerQuantity,
-      }, web3);
+      });
 
       await expect(
         send(
@@ -113,8 +109,7 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          managerTxOpts,
-          web3
+          managerTxOpts
         )
       ).rejects.toThrowFlexible("taker asset does not match mlnToken")
     });
@@ -128,7 +123,7 @@ describe('takeOrder', () => {
         makerQuantity: zeroMakerQuanity,
         takerAsset: takerAsset,
         takerQuantity,
-      }, web3);
+      });
 
       await expect(
         send(
@@ -139,8 +134,7 @@ describe('takeOrder', () => {
             takeOrderSignature,
             encodedArgs,
           ],
-          managerTxOpts,
-          web3
+          managerTxOpts
         )
       ).rejects.toThrowFlexible("Not enough liquid ether to send")
     });

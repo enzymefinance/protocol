@@ -21,7 +21,6 @@ import {
   signZeroExOrder
 } from '~/utils/zeroExV3';
 
-let web3;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let fund, weth, mln, priceSource, maliciousToken;
@@ -29,40 +28,37 @@ let zeroExAdapter, zeroExExchange, erc20ProxyAddress;
 
 // TODO: run this test when we can successfully deploy contracts on secondary forked chain
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, web3);
-  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE_INTERFACE, web3, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
+  zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V3_EXCHANGE_INTERFACE, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
   erc20ProxyAddress = mainnetAddrs.zeroExV3.ZeroExV3ERC20Proxy;
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
-  const registry = getDeployed(CONTRACT_NAMES.REGISTRY, web3);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
+  const registry = getDeployed(CONTRACT_NAMES.REGISTRY);
 
   maliciousToken = await deploy(
     CONTRACT_NAMES.MALICIOUS_TOKEN,
     ['MLC', 18, 'Malicious'],
     {},
-    [],
-    web3
+    []
   );
 
   await send(
     registry,
     'registerPrimitive',
     [maliciousToken.options.address],
-    defaultTxOpts,
-    web3
+    defaultTxOpts
   );
 
   // Set price for Malicious Token
-  await setKyberRate(maliciousToken.options.address, web3);
-  await updateKyberPriceFeed(priceSource, web3);
+  await setKyberRate(maliciousToken.options.address);
+  await updateKyberPriceFeed(priceSource);
 
   fund = await setupFundWithParams({
     integrationAdapters: [zeroExAdapter.options.address],
@@ -73,8 +69,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 });
 
@@ -91,12 +86,11 @@ test('Fund receives Malicious token via 0x order', async () => {
       makerAssetAmount,
       takerTokenAddress: weth.options.address,
       takerAssetAmount: toWei('0.5', 'Ether')
-    },
-    web3
+    }
   );
 
-  await send(maliciousToken, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts, web3);
-  const signedOrder = await signZeroExOrder(unsignedOrder, deployer, web3);
+  await send(maliciousToken, 'approve', [erc20ProxyAddress, makerAssetAmount], defaultTxOpts);
+  const signedOrder = await signZeroExOrder(unsignedOrder, deployer);
 
   await send(
     vault,
@@ -104,10 +98,9 @@ test('Fund receives Malicious token via 0x order', async () => {
     [
       zeroExAdapter.options.address,
       getFunctionSignature(CONTRACT_NAMES.ORDER_TAKER, 'takeOrder'),
-      encodeZeroExTakeOrderArgs(signedOrder, signedOrder.takerAssetAmount, web3),
+      encodeZeroExTakeOrderArgs(signedOrder, signedOrder.takerAssetAmount),
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 });
 
@@ -115,10 +108,10 @@ test('redeemShares fails in presence of malicious token', async () => {
   const { shares } = fund;
 
   // Activate malicious token
-  await send(maliciousToken, 'startReverting', [], defaultTxOpts, web3);
+  await send(maliciousToken, 'startReverting', [], defaultTxOpts);
 
   await expect(
-    send(shares, 'redeemShares', [], investorTxOpts, web3)
+    send(shares, 'redeemShares', [], investorTxOpts)
   ).rejects.toThrowFlexible();
 });
 
@@ -138,7 +131,7 @@ test('redeemSharesEmergency succeeds in presence of malicious token', async () =
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
   await expect(
-    send(shares, 'redeemSharesEmergency', [], investorTxOpts, web3)
+    send(shares, 'redeemSharesEmergency', [], investorTxOpts)
   ).resolves.not.toThrow();
 
   const postMlnInvestor = new BN(await call(mln, 'balanceOf', [investor]));

@@ -1,13 +1,6 @@
 export const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const KYBER_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
-export const TRACKS = {
-  // Track for testing with our own testing price feed
-  TESTING: 'testing',
-  // Track linked to the kyber price feed
-  KYBER_PRICE: 'kyberPrice',
-}
-
 export const ENCODING_TYPES = {
   ZERO_EX_V2: ['address[4]', 'uint256[7]', 'bytes[2]', 'bytes'],
   ZERO_EX_V3: ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
@@ -64,7 +57,6 @@ export const CONTRACT_NAMES = {
   SHARES_TOKEN: 'SharesToken',
   SPOKE: 'Spoke',
   STANDARD_TOKEN: 'StandardToken',
-  TESTING_PRICEFEED: 'TestingPriceFeed',
   TRADING: 'Trading',
   TRANSFER_HANDLER_REGISTRY: 'TransferHandlerRegistry',
   UNISWAP_ADAPTER: 'UniswapAdapter',

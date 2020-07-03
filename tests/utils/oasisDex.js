@@ -7,7 +7,7 @@ export const encodeOasisDexTakeOrderArgs = ({
   takerAsset,
   takerQuantity,
   orderId,
-}, web3) => {
+}) => {
   const args = [makerAsset, makerQuantity, takerAsset, takerQuantity, orderId];
-  return encodeArgs(ENCODING_TYPES.OASIS_DEX, args, web3);
+  return encodeArgs(ENCODING_TYPES.OASIS_DEX, args);
 };

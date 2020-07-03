@@ -19,7 +19,6 @@ import { getDeployed } from '~/utils/getDeployed';
 import { updateKyberPriceFeed, setKyberRate } from '~/utils/updateKyberPriceFeed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let performanceFeePeriod, performanceFeeRate;
@@ -31,22 +30,21 @@ let takeOrderSignature;
 let kyberProxy, mockKyber;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [deployer, manager, investor] = await web3.eth.getAccounts();
   defaultTxOpts = { from: deployer, gas: 8000000 };
   managerTxOpts = { ...defaultTxOpts, from: manager };
   investorTxOpts = { ...defaultTxOpts, from: investor };
 
-  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, web3, mainnetAddrs.tokens.MLN);
-  weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER, web3);
-  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE, web3, mainnetAddrs.oasis.OasisDexExchange);
-  managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE, web3);
-  performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE, web3);
-  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-  kyberProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, web3, mainnetAddrs.kyber.KyberNetworkProxy);
-  mockKyber = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK, web3);
-  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+  mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS,  mainnetAddrs.tokens.MLN);
+  weth = getDeployed(CONTRACT_NAMES.WETH,  mainnetAddrs.tokens.WETH);
+  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
+  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE,  mainnetAddrs.oasis.OasisDexExchange);
+  managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE);
+  performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE);
+  priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
+  kyberProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY,  mainnetAddrs.kyber.KyberNetworkProxy);
+  mockKyber = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK);
+  const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
   const feeAddresses = [
     managementFee.options.address,
@@ -72,8 +70,7 @@ beforeAll(async () => {
     },
     manager,
     quoteToken: weth.options.address,
-    fundFactory,
-    web3
+    fundFactory
   });
 
   takeOrderSignature = getFunctionSignature(
@@ -102,8 +99,7 @@ test(`fund gets weth from (non-initial) investor`, async () => {
       priceSource,
       tokenAddresses: [weth.options.address, mln.options.address],
       tokenPrices: [wethToEthRate, mlnToEthRate]
-    },
-    web3
+    }
   });
 
   const postTotalSupply = new BN(await call(shares, 'totalSupply'));
@@ -127,15 +123,14 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   ).toString();
 
   // Third party makes an order
-  await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts, web3);
+  await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
   const res = await send(
     oasisDexExchange,
     'offer',
     [
       makerQuantity, makerAsset, takerQuantity, takerAsset, 0
     ],
-    defaultTxOpts,
-    web3
+    defaultTxOpts
   );
 
   const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
@@ -149,7 +144,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
     takerAsset,
     takerQuantity,
     orderId,
-  }, web3);
+  });
 
   await send(
     vault,
@@ -159,8 +154,7 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
       takeOrderSignature,
       encodedArgs,
     ],
-    managerTxOpts,
-    web3
+    managerTxOpts
   );
 
   // Update prices with higher MLN/WETH price
@@ -172,8 +166,8 @@ test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH'
   const preWethGav = new BN(await call(weth, 'balanceOf', [vault.options.address]));
 
   const etherPerMln = new BN(toWei('1.5', 'ether'));
-  await setKyberRate(mln.options.address, web3, etherPerMln);
-  await updateKyberPriceFeed(priceSource, web3);
+  await setKyberRate(mln.options.address,  etherPerMln);
+  await updateKyberPriceFeed(priceSource);
 
   const mlnPricePostSwap = new BN(
     (await call(priceSource, 'getLiveRate', [mln.options.address, weth.options.address]))[0]
@@ -251,7 +245,7 @@ test(`investor redeems half his shares, performance fee deducted`, async () => {
   expect(performanceFeeOwed).bigNumberGt(new BN(0));
 
   const redeemQuantity = preInvestorShares.div(new BN(2));
-  await send(shares, 'redeemSharesQuantity', [redeemQuantity.toString()], investorTxOpts, web3);
+  await send(shares, 'redeemSharesQuantity', [redeemQuantity.toString()], investorTxOpts);
 
   const postHWM = new BN(await call(performanceFee, 'highWaterMark', [feeManager.options.address]));
   const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor]));
@@ -275,7 +269,7 @@ test(`manager redeems his shares and receives expected proportion of assets`, as
   const preManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const preTotalSupply = new BN(await call(shares, 'totalSupply'));
 
-  await send(shares, 'redeemShares', [], managerTxOpts, web3);
+  await send(shares, 'redeemShares', [], managerTxOpts);
 
   const postMlnManager = new BN(await call(mln, 'balanceOf', [manager]));
   const postWethManager = new BN(await call(weth, 'balanceOf', [manager]));
@@ -303,8 +297,8 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   );
   // Double Mln price
   const etherPerMln = new BN(toWei('2', 'ether'));
-  await setKyberRate(mln.options.address, web3, etherPerMln);
-  await updateKyberPriceFeed(priceSource, web3);
+  await setKyberRate(mln.options.address,  etherPerMln);
+  await updateKyberPriceFeed(priceSource);
   const postMlnGav = BNExpMul(
     new BN(await call(mln, 'balanceOf', [vault.options.address])),
     new BN(etherPerMln)
@@ -318,7 +312,7 @@ test(`manager calls rewardAllFees to update high watermark`, async () => {
   const performanceFeeOwed = new BN(await call(feeManager, 'performanceFeeAmount'));
   expect(performanceFeeOwed).bigNumberGt(new BN(0));
 
-  await send(feeManager, 'rewardAllFees', [], managerTxOpts, web3);
+  await send(feeManager, 'rewardAllFees', [], managerTxOpts);
 
   const postManagerShares = new BN(await call(shares, 'balanceOf', [manager]));
   const postFundGav = new BN(await call(shares, 'calcGav'));

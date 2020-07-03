@@ -17,13 +17,11 @@ import { getDeployed } from '~/utils/getDeployed';
 import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
 import mainnetAddrs from '~/config';
 
-let web3;
 let deployer, manager, investor1, investor2, investor3;
 let defaultTxOpts;
 let investor1TxOpts, investor2TxOpts, investor3TxOpts;
 
 beforeAll(async () => {
-  web3 = await startChain();
   [
     deployer,
     manager,
@@ -47,10 +45,10 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
   let fund;
 
   beforeAll(async () => {
-    weth = getDeployed(CONTRACT_NAMES.WETH, web3, mainnetAddrs.tokens.WETH);
-    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED, web3);
-    sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR, web3);
-    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY, web3);
+    weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
+    priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
+    sharesRequestor = getDeployed(CONTRACT_NAMES.SHARES_REQUESTOR);
+    const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
     // Set initial prices to be predictably the same as prices when updated again later
     const wethToEthRate = toWei('1', 'ether');
@@ -59,7 +57,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       prices: [wethToEthRate]
     };
   
-    await updateKyberPriceFeed(priceSource, web3);
+    await updateKyberPriceFeed(priceSource);
 
     fund = await setupFundWithParams({
       initialInvestment: {
@@ -69,8 +67,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       },
       manager,
       quoteToken: weth.options.address,
-      fundFactory,
-      web3
+      fundFactory
     });
 
     amguAmount = toWei('.01', 'ether');
@@ -84,38 +81,34 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     const { hub } = fund;
 
     // Investor 1 - weth
-    await send(weth, 'transfer', [investor1, contribAmount1], defaultTxOpts, web3);
+    await send(weth, 'transfer', [investor1, contribAmount1], defaultTxOpts);
     await send(
       weth,
       'approve',
       [sharesRequestor.options.address, contribAmount1],
-      investor1TxOpts,
-      web3
+      investor1TxOpts
     );
     await send(
       sharesRequestor,
       'requestShares',
       [hub.options.address, contribAmount1, "0"],
-      { ...investor1TxOpts, value: amguAmount },
-      web3
+      { ...investor1TxOpts, value: amguAmount }
     );
 
     // Investor 1
-    await send(weth, 'transfer', [investor1, contribAmount1], defaultTxOpts, web3);
+    await send(weth, 'transfer', [investor1, contribAmount1], defaultTxOpts);
     await send(
       weth,
       'approve',
       [sharesRequestor.options.address, contribAmount1],
-      investor1TxOpts,
-      web3
+      investor1TxOpts
     );
     await expect(
       send(
         sharesRequestor,
         'requestShares',
         [hub.options.address, contribAmount1, "0"],
-        { ...investor1TxOpts, value: amguAmount },
-        web3
+        { ...investor1TxOpts, value: amguAmount }
       )
     ).rejects.toThrowFlexible('Only one request can exist (per fund)');
   });
@@ -124,37 +117,33 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     const { hub } = fund;
 
     // Investor 2
-    await send(weth, 'transfer', [investor2, contribAmount2], defaultTxOpts, web3);
+    await send(weth, 'transfer', [investor2, contribAmount2], defaultTxOpts);
     await send(
       weth,
       'approve',
       [sharesRequestor.options.address, contribAmount2],
-      investor2TxOpts,
-      web3
+      investor2TxOpts
     );
     await send(
       sharesRequestor,
       'requestShares',
       [hub.options.address, contribAmount2, "0"],
-      { ...investor2TxOpts, value: amguAmount },
-      web3
+      { ...investor2TxOpts, value: amguAmount }
     );
 
     // Investor 3
-    await send(weth, 'transfer', [investor3, contribAmount3], defaultTxOpts, web3);
+    await send(weth, 'transfer', [investor3, contribAmount3], defaultTxOpts);
     await send(
       weth,
       'approve',
       [sharesRequestor.options.address, contribAmount3],
-      investor3TxOpts,
-      web3
+      investor3TxOpts
     );
     await send(
       sharesRequestor,
       'requestShares',
       [hub.options.address, contribAmount3, "0"],
-      { ...investor3TxOpts, value: amguAmount },
-      web3
+      { ...investor3TxOpts, value: amguAmount }
     );
   });
 
@@ -162,16 +151,14 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
     const { hub, shares } = fund;
 
     // Need price update before sharesRequest executed
-    await delay(1000);
-    await updateKyberPriceFeed(priceSource, web3);
+    await updateKyberPriceFeed(priceSource);
 
     // investor1
     await send(
       sharesRequestor,
       'executeRequestFor',
       [investor1, hub.options.address],
-      investor1TxOpts,
-      web3
+      investor1TxOpts
     );
 
     const expectedShares1 = BNExpDiv(new BN(contribAmount1), sharePrice);
@@ -183,8 +170,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       sharesRequestor,
       'executeRequestFor',
       [investor2, hub.options.address],
-      investor2TxOpts,
-      web3
+      investor2TxOpts
     );
   
     const expectedShares2 = BNExpDiv(new BN(contribAmount2), sharePrice);
@@ -196,8 +182,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
       sharesRequestor,
       'executeRequestFor',
       [investor3, hub.options.address],
-      investor3TxOpts,
-      web3
+      investor3TxOpts
     );
   
     const expectedShares3 = BNExpDiv(new BN(contribAmount3), sharePrice);
@@ -225,8 +210,7 @@ describe('Fund 1: Multiple investors buying shares with different tokens', () =>
         priceSource,
         tokenAddresses: tokenPrices.addresses,
         tokenPrices: tokenPrices.prices
-      },
-      web3
+      }
     });
 
     const postInvestorShares = new BN(await call(shares, 'balanceOf', [investor1]));

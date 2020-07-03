@@ -15,7 +15,7 @@ export const stringToBytes = (value, numBytes) =>
 //   return stringifiedStruct;
 // };
 
-export const encodeArgs = (encodingType, args, web3) => {
+export const encodeArgs = (encodingType, args) => {
   const hex = web3.eth.abi.encodeParameters(encodingType, args);
   return web3.utils.hexToBytes(hex);
 };
@@ -25,7 +25,7 @@ export const encodeTakeOrderArgs = ({
   makerQuantity,
   takerAsset,
   takerQuantity,
-}, web3) => {
+}) => {
   const args = [makerAsset, makerQuantity, takerAsset, takerQuantity];
-  return encodeArgs(ENCODING_TYPES.MINIMAL, args, web3);
+  return encodeArgs(ENCODING_TYPES.MINIMAL, args);
 };
