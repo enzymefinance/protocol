@@ -107,14 +107,14 @@ export class Registry extends Contract {
    * ```
    *
    */
-  MGM!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  MGM!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function MTC() view returns (address)
    * ```
    *
    */
-  MTC!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  MTC!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function derivativeToPriceSource(address) view returns (address)
@@ -124,21 +124,21 @@ export class Registry extends Contract {
   derivativeToPriceSource!: (
     $$0: AddressLike,
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  ) => Promise<string>;
   /**
    * ```solidity
    * function engine() view returns (address)
    * ```
    *
    */
-  engine!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  engine!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function fundFactory() view returns (address)
    * ```
    *
    */
-  fundFactory!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  fundFactory!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function fundFactoryIsRegistered(address) view returns (bool)
@@ -186,21 +186,21 @@ export class Registry extends Contract {
     $$0: AddressLike,
     $$1: ethers.BigNumberish,
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  ) => Promise<string>;
   /**
    * ```solidity
    * function mlnToken() view returns (address)
    * ```
    *
    */
-  mlnToken!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  mlnToken!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function nativeAsset() view returns (address)
    * ```
    *
    */
-  nativeAsset!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  nativeAsset!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * Returns the address of the current owner.
    *
@@ -209,32 +209,28 @@ export class Registry extends Contract {
    * ```
    *
    */
-  owner!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  owner!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function priceSource() view returns (address)
    * ```
    *
    */
-  priceSource!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  priceSource!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function sharesRequestor() view returns (address)
    * ```
    *
    */
-  sharesRequestor!: (
-    $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  sharesRequestor!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function valueInterpreter() view returns (address)
    * ```
    *
    */
-  valueInterpreter!: (
-    $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  valueInterpreter!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * Get all registered primitives
    *
@@ -246,7 +242,7 @@ export class Registry extends Contract {
    */
   getRegisteredPrimitives!: (
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike[]>;
+  ) => Promise<string[]>;
   /**
    * Check whether a primitive is registered
    *
@@ -270,9 +266,7 @@ export class Registry extends Contract {
    * @returns A list of all registered fee addresses
    *
    */
-  getRegisteredFees!: (
-    $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike[]>;
+  getRegisteredFees!: ($$overrides?: ethers.CallOverrides) => Promise<string[]>;
   /**
    * Check whether a fee is registered
    *
@@ -298,7 +292,7 @@ export class Registry extends Contract {
    */
   getRegisteredPolicies!: (
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike[]>;
+  ) => Promise<string[]>;
   /**
    * Check whether a policy is registered
    *
@@ -324,7 +318,7 @@ export class Registry extends Contract {
    */
   getRegisteredIntegrationAdapters!: (
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike[]>;
+  ) => Promise<string[]>;
   /**
    * Check if an integration adapter is on the Registry
    *

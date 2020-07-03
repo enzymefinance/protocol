@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import prettier from 'prettier';
 import rimraf from 'rimraf';
+import glob from 'glob';
 import { ethers } from 'ethers';
 import { Project, QuoteKind, IndentationText } from 'ts-morph';
 import { generate, ContractData } from './utils/generate';
@@ -11,17 +12,9 @@ import { generate, ContractData } from './utils/generate';
   const codegenOut = path.resolve(packageRoot, 'tests', 'framework', 'contracts');
   const contractsOut = path.join(packageRoot, 'build', 'contracts');
   const prettierConfig = prettier.resolveConfig.sync(packageRoot);
-  const contractNames = [
-    "Registry",
-    "Engine",
-    "Hub",
-    "FundFactory",
-    "WETH",
-
-    // Policies
-    "AssetBlacklist",
-    "AssetWhitelist"
-  ];
+  const contractNames = glob.sync('**/*.json', {
+    cwd: contractsOut,
+  }).map(file => path.basename(file, '.json'));
 
   rimraf.sync(codegenOut);
   if (!fs.existsSync(codegenOut)) {

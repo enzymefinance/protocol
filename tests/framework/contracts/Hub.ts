@@ -67,14 +67,14 @@ export class Hub extends Contract {
    * ```
    *
    */
-  FUND_FACTORY!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  FUND_FACTORY!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function MANAGER() view returns (address)
    * ```
    *
    */
-  MANAGER!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  MANAGER!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function NAME() view returns (string)
@@ -88,28 +88,28 @@ export class Hub extends Contract {
    * ```
    *
    */
-  REGISTRY!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  REGISTRY!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function feeManager() view returns (address)
    * ```
    *
    */
-  feeManager!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  feeManager!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function policyManager() view returns (address)
    * ```
    *
    */
-  policyManager!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  policyManager!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function shares() view returns (address)
    * ```
    *
    */
-  shares!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  shares!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function status() view returns (uint8)
@@ -123,7 +123,7 @@ export class Hub extends Contract {
    * ```
    *
    */
-  vault!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  vault!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * Initializes a fund (activates it)
    *

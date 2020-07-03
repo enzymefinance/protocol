@@ -78,16 +78,14 @@ export class FundFactory extends Contract {
    * ```
    *
    */
-  REGISTRY!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  REGISTRY!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function feeManagerFactory() view returns (address)
    * ```
    *
    */
-  feeManagerFactory!: (
-    $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  feeManagerFactory!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function managerToPendingFundHub(address) view returns (address)
@@ -97,7 +95,7 @@ export class FundFactory extends Contract {
   managerToPendingFundHub!: (
     $$0: AddressLike,
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  ) => Promise<string>;
   /**
    * ```solidity
    * function managerToPendingFundSettings(address) view returns (address)
@@ -107,7 +105,7 @@ export class FundFactory extends Contract {
   managerToPendingFundSettings!: (
     $$0: AddressLike,
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  ) => Promise<string>;
   /**
    * ```solidity
    * function policyManagerFactory() view returns (address)
@@ -116,21 +114,21 @@ export class FundFactory extends Contract {
    */
   policyManagerFactory!: (
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike>;
+  ) => Promise<string>;
   /**
    * ```solidity
    * function sharesFactory() view returns (address)
    * ```
    *
    */
-  sharesFactory!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  sharesFactory!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function vaultFactory() view returns (address)
    * ```
    *
    */
-  vaultFactory!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  vaultFactory!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * Needed to provide clean url slugs for the frontend
    *

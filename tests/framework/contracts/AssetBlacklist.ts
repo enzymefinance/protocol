@@ -52,7 +52,7 @@ export class AssetBlacklist extends Contract {
    * ```
    *
    */
-  REGISTRY!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  REGISTRY!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * Get all addresses in a fund's list
    *
@@ -66,7 +66,7 @@ export class AssetBlacklist extends Contract {
   getList!: (
     _policyManager: AddressLike,
     $$overrides?: ethers.CallOverrides,
-  ) => Promise<AddressLike[]>;
+  ) => Promise<string[]>;
   /**
    * Check if an address is in a fund's list
    *

@@ -32,7 +32,7 @@ function getOutput(fragment: ethers.utils.FunctionFragment) {
   }
 
   if (fragment.outputs?.length === 1) {
-    return getType(fragment.outputs[0]);
+    return getType(fragment.outputs[0], false);
   }
 
   // If all output parameters are named and unique, we can specify the struct.
@@ -41,7 +41,7 @@ function getOutput(fragment: ethers.utils.FunctionFragment) {
   });
 
   if (struct) {
-    return `{ ${fragment.outputs?.map((o) => `${o.name}: ${getType(o)}`).join(', ')} }`;
+    return `{ ${fragment.outputs?.map((o) => `${o.name}: ${getType(o, false)}`).join(', ')} }`;
   }
 
   // Otherwise, all we know is that it will be an Array.
@@ -62,7 +62,7 @@ function getOverrides(fragment: ethers.utils.FunctionFragment) {
 
 function getType(param: ethers.utils.ParamType, flexible?: boolean): string {
   if (param.type === 'address') {
-    return 'AddressLike';
+    return flexible ? 'AddressLike' : 'string';
   }
 
   if (param.type === 'string') {

@@ -8,7 +8,9 @@ export type Artifact = any;
 export type AddressLike = string | Contract;
 
 export const artifactDirectory = path.join(__dirname, '..', '..', 'build', 'contracts');
-
+export const mainnetContractAddresses = Object.values(addresses).reduce((carry, current) => {
+  return { ...carry, ...current };
+}, {} as { [key: string]: string | undefined });
 /**
  * Loads a truffle build artifact object given it's filename.
  *
@@ -41,12 +43,7 @@ export function getArtifactAddress(artifact: Artifact, network: number = 1): str
 
   if (network === 1) {
     const name = artifact.contractName;
-    const values = Object.values(addresses);
-    const flattened: { [key: string]: string } = values.reduce((carry, current) => {
-      return { ...carry, ...current };
-    }, {});
-
-    return flattened[name];
+    return mainnetContractAddresses[name];
   }
 
   return undefined;
@@ -57,19 +54,33 @@ export async function resolveAddressOrName(
   value: AddressLike | Promise<AddressLike>,
 ) {
   const resolved = await resolveAddress(value);
+  if (resolved.startsWith('0x')) {
+    return resolved;
+  }
+
   return signerOrProvider.resolveName(resolved);
 }
 
 export async function resolveAddress(
   value: AddressLike | Promise<AddressLike>,
 ) {
-  const resolved = await Promise.resolve(value);
-  if (Contract.isContract(resolved)) {
-    const contract = await resolved.$$ethers.deployed();
-    return contract.address;
+  const resolved = await value;
+  if (typeof resolved === 'string' && resolved.startsWith('0x')) {
+    return resolved;
   }
 
-  return resolved;
+  if (Contract.isContract(resolved)) {
+    if (resolved.$$ethers.address) {
+      return resolved.$$ethers.address;
+    }
+
+    if (resolved.$$ethers.deployTransaction) {
+      const contract = await resolved.$$ethers.deployed();
+      return contract.address;
+    }
+  }
+
+  throw new Error(`Failed to resolve address for contract ${resolved.name}`);
 }
 
 export async function resolveArguments(
@@ -77,7 +88,7 @@ export async function resolveArguments(
   type: ethers.utils.ParamType | ethers.utils.ParamType[],
   value: any,
 ): Promise<any> {
-  const resolved = await Promise.resolve(value);
+  const resolved = await value;
   if (Array.isArray(type)) {
     return Promise.all(
       type.map((type, index) => {
@@ -107,40 +118,69 @@ export async function resolveArguments(
 }
 
 export class TransactionWrapper<TOverrides extends ethers.Overrides = ethers.Overrides> {
-  constructor(public readonly contract: Contract, public readonly signature: string, public readonly args?: any[]) {}
+  protected resolvedArgs?: Promise<any[]>;
 
-  public populate(overrides?: TOverrides): Promise<ethers.UnsignedTransaction> {
-    return this.contract.$$ethers.populateTransaction[this.signature](...(this.args || []), overrides || {});
+  constructor(
+    public readonly contract: Contract,
+    public readonly fragment: ethers.utils.FunctionFragment,
+    public readonly signature: string,
+    public readonly rawArgs?: any[]
+  ) {}
+
+  public async args() {
+    if (this.resolvedArgs == null) {
+      const provider = this.contract.$$ethers.provider;
+      this.resolvedArgs = resolveArguments(provider, this.fragment.inputs, this.rawArgs || []);
+    }
+
+    return this.resolvedArgs;
   }
 
-  public call(overrides?: ethers.CallOverrides): Promise<any> {
-    return this.contract.$$ethers.callStatic[this.signature](...(this.args || []), overrides || {});
+  public async populate(overrides?: TOverrides): Promise<ethers.UnsignedTransaction> {
+    const args = await this.args();
+    return this.contract.$$ethers.populateTransaction[this.signature](...args, overrides || {});
   }
 
-  public estimate(overrides?: TOverrides): Promise<ethers.BigNumber> {
-    return this.contract.$$ethers.estimateGas[this.signature](...(this.args || []), overrides || {});
+  public async call(overrides?: ethers.CallOverrides): Promise<any> {
+    const args = await this.args();
+    return this.contract.$$ethers.callStatic[this.signature](...args, overrides || {});
   }
 
-  public send(overrides?: TOverrides): Promise<ethers.providers.TransactionResponse> {
-    return this.contract.$$ethers.functions[this.signature](...(this.args || []), overrides || {});
+  public async estimate(overrides?: TOverrides): Promise<ethers.BigNumber> {
+    const args = await this.args();
+    return this.contract.$$ethers.estimateGas[this.signature](...args, overrides || {});
+  }
+
+  public async send(overrides?: TOverrides): Promise<ethers.ContractTransaction> {
+    const args = await this.args();
+    return this.contract.$$ethers.functions[this.signature](...args, overrides || {});
   }
 }
 
 export class DeploymentTransactionWrapper<TContract extends Contract = Contract> {
-  public interface: ethers.utils.Interface;
+  public readonly interface: ethers.utils.Interface;
+  protected resolvedArgs?: Promise<any[]>;
 
   constructor(
     public readonly contract: SpecificContract<TContract>,
     public readonly bytecode: string,
     public readonly signer: ethers.Signer,
-    public readonly args?: any[],
+    protected readonly rawArgs?: any[],
   ) {
     this.interface = new ethers.utils.Interface(contract.abi);
   }
 
+  public async args() {
+    if (this.resolvedArgs == null) {
+       this.resolvedArgs = resolveArguments(this.signer, this.interface.deploy.inputs, this.rawArgs || []);
+    }
+
+    return this.resolvedArgs;
+  }
+
   public async populate(overrides?: ethers.CallOverrides): Promise<ethers.UnsignedTransaction> {
-    const args = await resolveArguments(this.signer, this.interface.deploy.inputs, this.args);
     const overridez = (ethers.utils.shallowCopy(overrides ?? {}) as any) as ethers.UnsignedTransaction;
+    const args = await this.args();
 
     // Set the data to the bytecode and the encoded constructor arguments.
     const data = ethers.utils.hexlify(ethers.utils.concat([this.bytecode, this.interface.encodeDeploy(args)]));
@@ -181,7 +221,7 @@ export abstract class Contract {
    * @param value The suspected contract instance.
    * @returns true if the given value is a contract, false otherwise.
    */
-  public static isContract(value: Contract | any): value is Contract {
+  public static isContract(value: Contract | any): value is SpecificContract & Contract {
     if (value instanceof Contract) {
       return true;
     }
@@ -201,7 +241,7 @@ export abstract class Contract {
    */
   public static fromDeployment<TContract extends Contract = Contract>(
     implementation: SpecificContract<TContract>,
-    response: ethers.providers.TransactionResponse,
+    response: ethers.ContractTransaction,
     signerOrProvider?: ethers.Signer | ethers.providers.Provider,
   ) {
     const address = ethers.utils.getContractAddress(response);
@@ -278,12 +318,17 @@ export abstract class Contract {
 
     calls.forEach((signature) => {
       const fragment = this.interface.functions[signature];
-      (this as any)[fragment.name] = this.$$ethers.functions[signature];
+      (this as any)[fragment.name] = async (...args: any[]) => {
+        const resolved = await resolveArguments(this.$$ethers.provider, fragment.inputs, args);
+        return this.$$ethers.callStatic[fragment.name](...resolved);
+      };
     });
 
     transactions.forEach((signature) => {
       const fragment = this.interface.functions[signature];
-      (this as any)[fragment.name] = (...args: any[]) => new TransactionWrapper(this, signature, args);
+      (this as any)[fragment.name] = (...args: any[]) => {
+        return new TransactionWrapper(this, fragment, signature, args);
+      };
     });
   }
 }

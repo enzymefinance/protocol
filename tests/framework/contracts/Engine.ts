@@ -110,7 +110,7 @@ export class Engine extends Contract {
    * ```
    *
    */
-  registry!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  registry!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * ```solidity
    * function thawingDelay() view returns (uint256)
@@ -193,7 +193,7 @@ export class Engine extends Contract {
    * ```
    *
    */
-  mlnToken!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  mlnToken!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * Get PriceSource from the registry
    *
@@ -202,7 +202,7 @@ export class Engine extends Contract {
    * ```
    *
    */
-  priceSource!: ($$overrides?: ethers.CallOverrides) => Promise<AddressLike>;
+  priceSource!: ($$overrides?: ethers.CallOverrides) => Promise<string>;
   /**
    * only callable by MTC
    *
