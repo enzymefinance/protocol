@@ -11,12 +11,13 @@ import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpMul } from '~/utils/BNmath';
 import {
+  CALL_ON_INTEGRATION_ENCODING_TYPES,
   CONTRACT_NAMES,
   KYBER_ETH_ADDRESS,
 } from '~/utils/constants';
 import { setupFundWithParams } from '~/utils/fund';
 import { getFunctionSignature } from '~/utils/metadata';
-import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
@@ -51,7 +52,7 @@ beforeAll(async () => {
   });
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.KYBER_ADAPTER,
     'takeOrder'
   );
 });
@@ -59,30 +60,33 @@ beforeAll(async () => {
 test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => {
   const { vault } = fund;
 
-  const takerAsset = weth.options.address;
-  const takerQuantity = toWei('0.1', 'ether');
-  const makerAsset = mln.options.address;
+  const outgoingAsset = weth.options.address;
+  const outgoingAssetAmount = toWei('0.1', 'ether');
+  const incomingAsset = mln.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
     'getExpectedRate',
-    [KYBER_ETH_ADDRESS, makerAsset, takerQuantity],
+    [KYBER_ETH_ADDRESS, incomingAsset, outgoingAssetAmount],
   );
 
-  const makerQuantity = BNExpMul(
-    new BN(takerQuantity.toString()),
+  const expectedIncomingAssetAmount = BNExpMul(
+    new BN(outgoingAssetAmount.toString()),
     new BN(expectedRate.toString()),
   ).toString();
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
 
   await send(
     vault,
@@ -102,39 +106,41 @@ test('swap WETH for MLN with expected rate from kyberNetworkProxy', async () => 
   const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(outgoingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
 });
 
 test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => {
   const { vault } = fund;
 
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = weth.options.address;
+  const outgoingAsset = mln.options.address;
+  const outgoingAssetAmount = toWei('0.01', 'ether');
+  const incomingAsset = weth.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
     'getExpectedRate',
-    [takerAsset, KYBER_ETH_ADDRESS, takerQuantity],
+    [KYBER_ETH_ADDRESS, incomingAsset, outgoingAssetAmount],
   );
 
-  const makerQuantity = BNExpMul(
-    new BN(takerQuantity.toString()),
+  const expectedIncomingAssetAmount = BNExpMul(
+    new BN(outgoingAssetAmount.toString()),
     new BN(expectedRate.toString()),
   ).toString();
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
 
-  // XXX: this errors with a revert, but no revert message
   await send(
     vault,
     'callOnIntegration',
@@ -153,25 +159,25 @@ test('swap MLN for WETH with expected rate from kyberNetworkProxy', async () => 
   const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(makerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(outgoingAssetAmount));
 });
 
-test('swap MLN directly to EUR without intermediary', async () => {
+test('swap MLN directly to ZRX without intermediary', async () => {
   const { vault } = fund;
 
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = zrx.options.address;
+  const outgoingAsset = mln.options.address;
+  const outgoingAssetAmount = toWei('0.01', 'ether');
+  const incomingAsset = zrx.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
     'getExpectedRate',
-    [takerAsset, makerAsset, takerQuantity],
+    [outgoingAsset, incomingAsset, outgoingAssetAmount],
   );
 
-  const makerQuantity = BNExpMul(
-    new BN(takerQuantity.toString()),
+  const expectedIncomingAssetAmount = BNExpMul(
+    new BN(outgoingAssetAmount.toString()),
     new BN(expectedRate.toString()),
   ).toString();
 
@@ -179,12 +185,15 @@ test('swap MLN directly to EUR without intermediary', async () => {
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
 
   await send(
     vault,
@@ -206,35 +215,39 @@ test('swap MLN directly to EUR without intermediary', async () => {
   const fundBalanceOfEurDiff = postFundBalanceOfEur.sub(preFundBalanceOfEur);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfEurDiff).bigNumberEq(new BN(makerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfEurDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(outgoingAssetAmount));
   expect(fundBalanceOfWethDiff).bigNumberEq(new BN(0));
 });
 
 test('swap fails if make quantity is too high', async () => {
   const { vault } = fund;
 
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = zrx.options.address;
+  const outgoingAsset = mln.options.address;
+  const outgoingAssetAmount = toWei('0.01', 'ether');
+  const incomingAsset = zrx.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
     'getExpectedRate',
-    [takerAsset, makerAsset, takerQuantity],
+    [outgoingAsset, incomingAsset, outgoingAssetAmount],
   );
 
-  const makerQuantity = BNExpMul(
-    new BN(takerQuantity.toString()),
-    new BN(expectedRate.toString()).mul(new BN(2)),
-  ).toString();
+  const expectedIncomingAssetAmount = BNExpMul(
+    new BN(outgoingAssetAmount.toString()),
+    new BN(expectedRate.toString()),
+  );
+  const tooHighIncomingAssetAmount = expectedIncomingAssetAmount.add(new BN(1)).toString();
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      tooHighIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
 
   await expect(
     send(
@@ -247,5 +260,5 @@ test('swap fails if make quantity is too high', async () => {
       ],
       managerTxOpts
     )
-  ).rejects.toThrowFlexible("received less buy asset than expected");
+  ).rejects.toThrowFlexible("received incoming asset less than expected");
 });

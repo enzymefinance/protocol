@@ -1,13 +1,13 @@
 /*
  * @file Unit tests for vault via the ZeroExV3Adapter
  *
- * @test takeOrder: __validateTakeOrderParams
- * @test takeOrder: Order 1: full amount w/ protocolFee
- * @test takeOrder: Order 2: full amount w/ protocolFee, w/ WETH takerFee
- * @test takeOrder: Order: full amount w/ protocolFee, w/ MLN takerFee
- * TODO: takeOrder: Order: full amount w/ protocolFee, w/ DAI takerFee
- * TODO: takeOrder: Order: full amount w/ no fees
- * TODO: takeOrder: Order: partial amount w/ takerFee and protocolFee
+ * @test takeOrder: Bad order: too high fill amount
+ * @test takeOrder: Order 1: full amount w/ protocolFee (taker asset)
+ * @test takeOrder: Order 2: full amount w/ protocolFee (taker asset), w/ takerFee (taker asset)
+ * @test takeOrder: Order 3: full amount w/ protocolFee (taker asset), w/ takerFee (maker asset)
+ * @test takeOrder: Order 4: full amount w/o protocolFee, w/ ZRX takerFee (new asset)
+ * @test takeOrder: Order 5: full amount w/ no fees
+ * @test takeOrder: Order 6: partial amount w/ protocolFee (taker asset), w/ takerFee (maker asset)
  */
 
 import { BN, toWei, randomHex } from 'web3-utils';
@@ -52,7 +52,7 @@ beforeAll(async () => {
   });
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
     'takeOrder',
   );
 
@@ -70,43 +70,37 @@ beforeAll(async () => {
 });
 
 describe('takeOrder', () => {
-  // @dev Only need to run this once
-  describe('__validateTakeOrderParams', () => {
+  describe('Bad order: too high fill amount', () => {
+    let takerAssetAmount;
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, fillQuantity, takerFeeTokenAddress;
 
     beforeAll(async () => {
       fund = await setupFundWithParams({
-        integrationAdapters: [zeroExAdapter.options.address],
-        quoteToken: weth.options.address,
         fundFactory,
-        manager
+        initialInvestment: {
+          contribAmount: toWei('1', 'ether'),
+          investor: deployer,
+          tokenContract: weth
+        },
+        integrationAdapters: [zeroExAdapter.options.address],
+        manager,
+        quoteToken: weth.options.address
       });
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
       const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
-      const feeRecipientAddress = randomHex(20);
-      const takerFee = toWei('0.001', 'ether');
-      makerTokenAddress = mln.options.address;
-      takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
-      takerFeeTokenAddress = weth.options.address;
+      takerAssetAmount = toWei('0.05', 'Ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
-          makerTokenAddress,
+          makerAddress: deployer,
+          makerTokenAddress: mln.options.address,
           makerAssetAmount,
-          takerTokenAddress,
+          takerTokenAddress: weth.options.address,
           takerAssetAmount,
-          feeRecipientAddress,
-          takerFee,
-          takerFeeTokenAddress
         }
       );
 
@@ -123,9 +117,9 @@ describe('takeOrder', () => {
 
     it('does not allow taker fill amount greater than order max', async () => {
       const { vault } = fund;
-      const badFillQuantity = new BN(fillQuantity).add(new BN(1)).toString();
+      const tooHighTakerFillAmount = new BN(takerAssetAmount).add(new BN(1)).toString();
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, badFillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, tooHighTakerFillAmount);
 
       await expect(
         send(
@@ -138,13 +132,13 @@ describe('takeOrder', () => {
           ],
           managerTxOpts
         )
-      ).rejects.toThrowFlexible("taker fill amount greater than max order quantity");
+      ).rejects.toThrowFlexible("Taker asset fill amount greater than available");
     });
   });
 
-  describe('Fill Order 1: Full taker amount w/ protocol fee, w/o taker fee', () => {
+  describe('Fill Order 1: Full taker amount w/ protocol fee (taker asset), w/o taker fee', () => {
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, fillQuantity;
+    let makerTokenAddress, makerAssetAmount, takerTokenAddress, takerAssetAmount;
     let tx;
 
     beforeAll(async () => {
@@ -162,18 +156,16 @@ describe('takeOrder', () => {
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
       makerTokenAddress = mln.options.address;
+      makerAssetAmount = toWei('1', 'Ether');
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
+      takerAssetAmount = toWei('0.05', 'Ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
+          makerAddress: deployer,
           makerTokenAddress,
           makerAssetAmount,
           takerTokenAddress,
@@ -195,7 +187,7 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
       tx = await send(
         vault,
@@ -209,33 +201,37 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-      expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
-      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-      expect(orderFilled.sellAmount).toBe(signedOrder.takerAssetAmount);
-      expect(orderFilled.feeAssets.length).toBe(1);
-      expect(orderFilled.feeAssets[0]).toBe(weth.options.address);
-      expect(orderFilled.feeAmounts.length).toBe(1);
-      expect(orderFilled.feeAmounts[0]).toBe(protocolFeeAmount.toString());
+
+      expect(coiExecuted.adapter).toBe(zeroExAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(makerTokenAddress);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(makerAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(takerTokenAddress);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(new BN(coiExecuted.outgoingAssetAmounts[0])).bigNumberEq(
+        new BN(takerAssetAmount).add(protocolFeeAmount)
+      );
     });
   });
 
   describe('Fill Order 2: Full amount, w/ protocol fee (taker asset), w/ taker fee in weth (taker asset)', () => {
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, fillQuantity;
+    let makerTokenAddress, makerAssetAmount, takerTokenAddress, takerAssetAmount, takerFeeTokenAddress, takerFee;
     let tx;
 
     beforeAll(async () => {
@@ -253,27 +249,24 @@ describe('takeOrder', () => {
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
-      const feeRecipientAddress = randomHex(20);
-      const takerFee = toWei('0.001', 'ether');
-      const takerFeeTokenAddress = weth.options.address;
       makerTokenAddress = mln.options.address;
+      makerAssetAmount = toWei('1', 'Ether');
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
+      takerAssetAmount = toWei('0.05', 'Ether');
+      takerFeeTokenAddress = weth.options.address;
+      takerFee = toWei('0.001', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
+          makerAddress: deployer,
           makerTokenAddress,
           makerAssetAmount,
           takerTokenAddress,
           takerAssetAmount,
-          feeRecipientAddress,
-          takerFee,
+          feeRecipientAddress: randomHex(20),
+          takerFee: takerFee,
           takerFeeTokenAddress
         }
       );
@@ -292,7 +285,7 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
       tx = await send(
         vault,
@@ -306,35 +299,37 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-      expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
-      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-      expect(orderFilled.sellAmount).toBe(signedOrder.takerAssetAmount);
-      expect(orderFilled.feeAssets.length).toBe(1);
-      expect(orderFilled.feeAssets[0]).toBe(weth.options.address);
-      expect(orderFilled.feeAmounts.length).toBe(1);
-      expect(new BN(orderFilled.feeAmounts[0])).bigNumberEq(
-        new BN(signedOrder.takerFee).add(protocolFeeAmount)
+
+      expect(coiExecuted.adapter).toBe(zeroExAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(makerTokenAddress);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(makerAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(takerTokenAddress);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(new BN(coiExecuted.outgoingAssetAmounts[0])).bigNumberEq(
+        new BN(takerAssetAmount).add(protocolFeeAmount).add(new BN(takerFee))
       );
     });
   });
 
   describe('Fill Order 3: Full amount, w/ protocol fee (taker asset), w/ taker fee in mln (maker asset)', () => {
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
+    let makerTokenAddress, makerAssetAmount, takerTokenAddress, takerAssetAmount, takerFeeTokenAddress, takerFee;
     let tx;
 
     beforeAll(async () => {
@@ -352,26 +347,23 @@ describe('takeOrder', () => {
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
-      const feeRecipientAddress = randomHex(20);
-      takerFeeTokenAddress = mln.options.address;
       makerTokenAddress = mln.options.address;
+      makerAssetAmount = toWei('1', 'Ether');
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
+      takerAssetAmount = toWei('0.05', 'Ether');
+      takerFeeTokenAddress = mln.options.address;
       takerFee = toWei('0.01', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
+          makerAddress: deployer,
           makerTokenAddress,
           makerAssetAmount,
           takerTokenAddress,
           takerAssetAmount,
-          feeRecipientAddress,
+          feeRecipientAddress: randomHex(20),
           takerFee,
           takerFeeTokenAddress
         }
@@ -391,7 +383,7 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
       tx = await send(
         vault,
@@ -405,35 +397,39 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-      expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
-      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-      expect(orderFilled.sellAmount).toBe(signedOrder.takerAssetAmount);
-      expect(orderFilled.feeAssets.length).toBe(2);
-      expect(orderFilled.feeAssets[0]).toBe(weth.options.address);
-      expect(orderFilled.feeAssets[1]).toBe(takerFeeTokenAddress);
-      expect(orderFilled.feeAmounts.length).toBe(2);
-      expect(new BN(orderFilled.feeAmounts[0])).bigNumberEq(protocolFeeAmount);
-      expect(orderFilled.feeAmounts[1]).toBe(signedOrder.takerFee);
+
+      expect(coiExecuted.adapter).toBe(zeroExAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(makerTokenAddress);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(new BN(coiExecuted.incomingAssetAmounts[0])).bigNumberEq(
+        new BN(makerAssetAmount).sub(new BN(takerFee))
+      );
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(takerTokenAddress);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(new BN(coiExecuted.outgoingAssetAmounts[0])).bigNumberEq(
+        new BN(takerAssetAmount).add(protocolFeeAmount)
+      );
     });
   });
 
   describe('Fill Order 4: Full amount, NO protocol fee, w/ taker fee in zrx (3rd asset)', () => {
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, takerFee, takerFeeTokenAddress, fillQuantity;
+    let makerTokenAddress, makerAssetAmount, takerTokenAddress, takerAssetAmount, takerFeeTokenAddress, takerFee;
     let tx;
 
     beforeAll(async () => {
@@ -468,24 +464,20 @@ describe('takeOrder', () => {
       );
     });
 
-    test('third party makes and fund takes an order for DAI (to be used as fees)', async () => {
+    test('third party makes and fund takes an order for ZRX (to be used as fees)', async () => {
       const { vault } = fund;
 
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
+      const makerAssetAmount = toWei('0.01', 'Ether');
       const takerAssetAmount = toWei('0.005', 'Ether');
-      const makerTokenAddress = zrx.options.address;
-      const takerTokenAddress = weth.options.address;
-      const fillQuantity = takerAssetAmount;
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
-          makerTokenAddress,
+          makerAddress: deployer,
+          makerTokenAddress: zrx.options.address,
           makerAssetAmount,
-          takerTokenAddress,
+          takerTokenAddress: weth.options.address,
           takerAssetAmount,
         }
       );
@@ -493,7 +485,7 @@ describe('takeOrder', () => {
       await send(zrx, 'approve', [erc20Proxy.options.address, makerAssetAmount], defaultTxOpts);
       signedOrder = await signZeroExOrder(unsignedOrder, deployer);
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
       await expect(
         send(
           vault,
@@ -509,26 +501,23 @@ describe('takeOrder', () => {
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
-      const feeRecipientAddress = randomHex(20);
-      takerFeeTokenAddress = zrx.options.address;
       makerTokenAddress = mln.options.address;
+      makerAssetAmount = toWei('1', 'Ether');
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
-      takerFee = toWei('1', 'ether');
+      takerAssetAmount = toWei('0.05', 'Ether');
+      takerFeeTokenAddress = zrx.options.address;
+      takerFee = toWei('0.01', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
+          makerAddress: deployer,
           makerTokenAddress,
           makerAssetAmount,
           takerTokenAddress,
           takerAssetAmount,
-          feeRecipientAddress,
+          feeRecipientAddress: randomHex(20),
           takerFee,
           takerFeeTokenAddress
         }
@@ -553,7 +542,7 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
       tx = await send(
         vault,
@@ -567,33 +556,37 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-      expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
-      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-      expect(orderFilled.sellAmount).toBe(signedOrder.takerAssetAmount);
-      expect(orderFilled.feeAssets.length).toBe(1);
-      expect(orderFilled.feeAssets[0]).toBe(takerFeeTokenAddress);
-      expect(orderFilled.feeAmounts.length).toBe(1);
-      expect(orderFilled.feeAmounts[0]).toBe(signedOrder.takerFee);
+
+      expect(coiExecuted.adapter).toBe(zeroExAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(makerTokenAddress);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(makerAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(2);
+      expect(coiExecuted.outgoingAssets[0]).toBe(takerTokenAddress);
+      expect(coiExecuted.outgoingAssets[1]).toBe(takerFeeTokenAddress);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(2);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(takerAssetAmount);
+      expect(coiExecuted.outgoingAssetAmounts[1]).toBe(takerFee);
     });
   });
 
   describe('Fill Order 5: Full amount, NO protocol fee', () => {
-    let signedOrder;
-    let makerTokenAddress, takerTokenAddress, fillQuantity;
+    let makerTokenAddress, makerAssetAmount, takerTokenAddress, takerAssetAmount;
+    let signedOrder;    
     let tx;
 
     beforeAll(async () => {
@@ -624,18 +617,16 @@ describe('takeOrder', () => {
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
       makerTokenAddress = mln.options.address;
+      makerAssetAmount = toWei('1', 'Ether');
       takerTokenAddress = weth.options.address;
-      fillQuantity = takerAssetAmount;
+      takerAssetAmount = toWei('0.05', 'Ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
+          makerAddress: deployer,
           makerTokenAddress,
           makerAssetAmount,
           takerTokenAddress,
@@ -657,7 +648,7 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
       tx = await send(
         vault,
@@ -671,32 +662,36 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-      expect(orderFilled.buyAmount).toBe(signedOrder.makerAssetAmount);
-      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-      expect(orderFilled.sellAmount).toBe(signedOrder.takerAssetAmount);
-      expect(orderFilled.feeAssets.length).toBe(0);
-      expect(orderFilled.feeAmounts.length).toBe(0);
+
+      expect(coiExecuted.adapter).toBe(zeroExAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(makerTokenAddress);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(makerAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(takerTokenAddress);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(takerAssetAmount);
     });
   });
 
   describe('Fill Order 6: Partial amount, w/ protocol fee (taker asset), w/ taker fee in mln (maker asset)', () => {
+    let makerTokenAddress, makerAssetAmount, takerTokenAddress, takerAssetAmount, takerFeeTokenAddress, takerFee;
+    let takerAssetFillAmount, expectedMakerAssetFillAmount, expectedTakerFeeFillAmount;
     let signedOrder;
-    let makerTokenAddress, takerTokenAddress, takerFeeTokenAddress;
-    let makerFillQuantity, takerFillQuantity, takerFeeFillQuantity;
     let tx;
 
     beforeAll(async () => {
@@ -714,25 +709,23 @@ describe('takeOrder', () => {
     });
 
     test('third party makes and validates an off-chain order', async () => {
-      const makerAddress = deployer;
-      const makerAssetAmount = toWei('1', 'Ether');
-      const takerAssetAmount = toWei('0.05', 'Ether');
-      const feeRecipientAddress = randomHex(20);
-      const takerFee = toWei('0.001', 'ether');
-      takerFeeTokenAddress = mln.options.address;
       makerTokenAddress = mln.options.address;
+      makerAssetAmount = toWei('1', 'Ether');
       takerTokenAddress = weth.options.address;
+      takerAssetAmount = toWei('0.05', 'Ether');
+      takerFeeTokenAddress = mln.options.address;
+      takerFee = toWei('0.001', 'ether');
 
       const unsignedOrder = await createUnsignedZeroExOrder(
         zeroExExchange.options.address,
         chainId,
         {
-          makerAddress,
+          makerAddress: deployer,
           makerTokenAddress,
           makerAssetAmount,
           takerTokenAddress,
           takerAssetAmount,
-          feeRecipientAddress,
+          feeRecipientAddress: randomHex(20),
           takerFee,
           takerFeeTokenAddress
         }
@@ -752,11 +745,11 @@ describe('takeOrder', () => {
     test('half of the order is filled through the fund', async () => {
       const { vault } = fund;
       const partialFillDivisor = new BN(2);
-      takerFillQuantity = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
-      makerFillQuantity = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
-      takerFeeFillQuantity = new BN(signedOrder.takerFee).div(partialFillDivisor);
+      takerAssetFillAmount = new BN(signedOrder.takerAssetAmount).div(partialFillDivisor);
+      expectedMakerAssetFillAmount = new BN(signedOrder.makerAssetAmount).div(partialFillDivisor);
+      expectedTakerFeeFillAmount = new BN(signedOrder.takerFee).div(partialFillDivisor);
 
-      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerFillQuantity.toString());
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetFillAmount.toString());
 
       tx = await send(
         vault,
@@ -770,29 +763,33 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ZERO_EX_V3_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerTokenAddress);
-      expect(new BN(orderFilled.buyAmount)).bigNumberEq(makerFillQuantity);
-      expect(orderFilled.sellAsset).toBe(takerTokenAddress);
-      expect(new BN(orderFilled.sellAmount)).bigNumberEq(takerFillQuantity);
-      expect(orderFilled.feeAssets.length).toBe(2);
-      expect(orderFilled.feeAssets[0]).toBe(weth.options.address);
-      expect(orderFilled.feeAssets[1]).toBe(takerFeeTokenAddress);
-      expect(orderFilled.feeAmounts.length).toBe(2);
-      expect(new BN(orderFilled.feeAmounts[0])).bigNumberEq(protocolFeeAmount);
-      expect(new BN(orderFilled.feeAmounts[1])).bigNumberEq(takerFeeFillQuantity);
+
+      expect(coiExecuted.adapter).toBe(zeroExAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(makerTokenAddress);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(new BN(coiExecuted.incomingAssetAmounts[0])).bigNumberEq(
+        new BN(expectedMakerAssetFillAmount).sub(new BN(expectedTakerFeeFillAmount))
+      );
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(takerTokenAddress);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(new BN(coiExecuted.outgoingAssetAmounts[0])).bigNumberEq(
+        new BN(takerAssetFillAmount).add(protocolFeeAmount)
+      );
     });
   });
 });

@@ -25,7 +25,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.AIR_SWAP_ADAPTER,
     'takeOrder',
   );
 
@@ -56,15 +56,15 @@ describe('Fund takes an order', () => {
   test('manager takes order through adapter', async () => {
     const { vault } = fund;
     const makerAssetAmount = toWei('1', 'ether');
-    const fillQuantity = toWei('0.05', 'ether');
+    const takerAssetAmount = toWei('0.05', 'ether');
 
     const unsignedOrder = await createUnsignedAirSwapOrder({
       signerWallet: deployer,
       signerToken: mln.options.address,
       signerTokenAmount: makerAssetAmount,
-      senderWallet: vault.options.address,
+      senderWallet: airSwapAdapter.options.address,
       senderToken: weth.options.address,
-      senderTokenAmount: fillQuantity,
+      senderTokenAmount: takerAssetAmount,
     });
 
     signedOrder = await signAirSwapOrder(unsignedOrder, swapContract.options.address, deployer);
@@ -99,7 +99,7 @@ describe('Fund takes an order', () => {
     const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(fillQuantity));
+    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerAssetAmount));
     expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerAssetAmount));
   });
 });

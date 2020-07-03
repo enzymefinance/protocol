@@ -2,7 +2,7 @@
  * @file General actions taken by users and funds in the lifespan of a fund
  *
  * @test A user can only invest in a fund if they are whitelisted and have set a token allowance for the fund
- * @test A fund can take an order (on OasisDex)
+ * @test A fund can take an order (on Kyber)
  * @test A user cannot invest in a fund that has been shutdown
  * @test TODO: Calculate fees?
  * @test TODO: Redeem shares?
@@ -11,19 +11,23 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpDiv, BNExpMul } from '~/utils/BNmath';
-import { CONTRACT_NAMES } from '~/utils/constants';
+import {
+  CALL_ON_INTEGRATION_ENCODING_TYPES,
+  CONTRACT_NAMES,
+  KYBER_ETH_ADDRESS
+} from '~/utils/constants';
 import { encodeArgs, stringToBytes } from '~/utils/formatting';
 import { investInFund, getFundComponents } from '~/utils/fund';
 import { getEventFromLogs, getFunctionSignature } from '~/utils/metadata';
-import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
 let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts, investorTxOpts;
 let offeredValue, amguAmount;
-let mln, weth, fundFactory, oasisDex, oasisDexAdapter, priceSource;
-let takeOrderFunctionSig;
+let mln, weth, fundFactory, kyberNetworkProxy, kyberAdapter, priceSource;
+let takeOrderSignature;
 let sharesRequestor, userWhitelist;
 let managementFee, performanceFee;
 let fund;
@@ -37,8 +41,8 @@ beforeAll(async () => {
   mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
-  oasisDex = getDeployed(CONTRACT_NAMES.OASIS_DEX_INTERFACE, mainnetAddrs.oasis.OasisDexExchange);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, mainnetAddrs.kyber.KyberNetworkProxy);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
   managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE);
   performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE);
@@ -75,7 +79,7 @@ beforeAll(async () => {
     fees.periods,
     policies.contracts,
     policies.encodedSettings,
-    [oasisDexAdapter.options.address],
+    [kyberAdapter.options.address],
     weth.options.address
   ], managerTxOpts);
   await send(fundFactory, 'createFeeManager', [], managerTxOpts);
@@ -94,8 +98,8 @@ beforeAll(async () => {
   offeredValue = toWei('1', 'ether');
   amguAmount = toWei('0.1', 'ether');
 
-  takeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+  takeOrderSignature = getFunctionSignature(
+    CONTRACT_NAMES.KYBER_ADAPTER,
     'takeOrder',
   );
 });
@@ -159,53 +163,43 @@ test('Buying shares (initial investment) succeeds for whitelisted user with allo
   expect(investorShares).toEqual(expectedShares.toString());
 });
 
-test('Fund can take an order on Oasis DEX', async () => {
+test('Fund can take an order on Kyber', async () => {
   const { vault } = fund;
 
-  const makerQuantity = (new BN(toWei('0.1', 'ether'))).toString();
-  const makerAsset = mln.options.address;
-  const takerAsset = weth.options.address;
+  const outgoingAsset = weth.options.address;
+  const outgoingAssetAmount = toWei('0.1', 'ether');
+  const incomingAsset = mln.options.address;
 
-  const makerToWethAssetRate = new BN(
-    (await call(priceSource, 'getLiveRate', [makerAsset, takerAsset])).rate_
+  const { 0: expectedRate } = await call(
+    kyberNetworkProxy,
+    'getExpectedRate',
+    [KYBER_ETH_ADDRESS, incomingAsset, outgoingAssetAmount],
   );
 
-  const takerQuantity = BNExpMul(
-    new BN(makerQuantity),
-    makerToWethAssetRate
+  const expectedIncomingAssetAmount = BNExpMul(
+    new BN(outgoingAssetAmount.toString()),
+    new BN(expectedRate.toString()),
   ).toString();
-
-
-  await send(mln, 'approve', [oasisDex.options.address, makerQuantity], defaultTxOpts);
-  const res = await send(
-    oasisDex,
-    'offer',
-    [
-      makerQuantity, makerAsset, takerQuantity, takerAsset
-    ],
-    defaultTxOpts
-  );
-
-  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_INTERFACE, 'LogMake');
-  const orderId = logMake.id;
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  const encodedArgs = encodeOasisDexTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-    orderId,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
 
   await send(
     vault,
     'callOnIntegration',
     [
-      oasisDexAdapter.options.address,
-      takeOrderFunctionSig,
+      kyberAdapter.options.address,
+      takeOrderSignature,
       encodedArgs,
     ],
     managerTxOpts
@@ -217,8 +211,9 @@ test('Fund can take an order on Oasis DEX', async () => {
   const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
   const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
-  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
+  // Confirm that expected asset amounts were filled
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(outgoingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
 });
 
 // TODO - redeem shares?

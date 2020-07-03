@@ -9,10 +9,14 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpMul } from '~/utils/BNmath';
-import { CONTRACT_NAMES, KYBER_ETH_ADDRESS } from '~/utils/constants';
+import {
+  CALL_ON_INTEGRATION_ENCODING_TYPES,
+  CONTRACT_NAMES,
+  KYBER_ETH_ADDRESS
+} from '~/utils/constants';
 import { setupFundWithParams } from '~/utils/fund';
 import { getFunctionSignature } from '~/utils/metadata';
-import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
@@ -20,8 +24,8 @@ let deployer, manager, investor;
 let defaultTxOpts, managerTxOpts;
 let takeOrderSignature;
 let mln, weth;
-let oasisDexAdapter;
-let kyberNetworkProxy, kyberAdapter;
+let kyberAdapter, uniswapAdapter;
+let kyberNetworkProxy;
 let fundFactory, fund;
 
 beforeAll(async () => {
@@ -30,19 +34,19 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.KYBER_ADAPTER,
     'takeOrder',
   );
 
   weth = getDeployed(CONTRACT_NAMES.WETH, mainnetAddrs.tokens.WETH);
   mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
   kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
   kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, mainnetAddrs.kyber.KyberNetworkProxy);
+  uniswapAdapter = getDeployed(CONTRACT_NAMES.UNISWAP_ADAPTER);
 
   fund = await setupFundWithParams({
-    integrationAdapters: [oasisDexAdapter.options.address],
+    integrationAdapters: [uniswapAdapter.options.address],
     initialInvestment: {
       contribAmount: toWei('1', 'ether'),
       investor,
@@ -76,31 +80,33 @@ test("add Kyber to fund's enabled integrations", async () => {
 test('fund takes an order on Kyber', async () => {
   const { vault } = fund;
 
-  const takerAsset = weth.options.address;
-  const takerQuantity = toWei('0.1', 'ether');
-  const makerAsset = mln.options.address;
+  const outgoingAsset = weth.options.address;
+  const outgoingAssetAmount = toWei('0.1', 'ether');
+  const incomingAsset = mln.options.address;
 
   const { 0: expectedRate } = await call(
     kyberNetworkProxy,
     'getExpectedRate',
-    [KYBER_ETH_ADDRESS, makerAsset, takerQuantity],
-    defaultTxOpts
+    [KYBER_ETH_ADDRESS, incomingAsset, outgoingAssetAmount],
   );
 
-  const makerQuantity = BNExpMul(
-    new BN(takerQuantity.toString()),
-    new BN(expectedRate.toString()),
+  const expectedIncomingAssetAmount = BNExpMul(
+    new BN(outgoingAssetAmount),
+    new BN(expectedRate),
   ).toString();
+
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
 
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
 
   await send(
     vault,
@@ -120,6 +126,6 @@ test('fund takes an order on Kyber', async () => {
   const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(outgoingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
 });

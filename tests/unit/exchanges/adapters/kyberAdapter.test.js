@@ -1,10 +1,6 @@
 /*
  * @file Unit tests for vault via the KyberAdapter
  *
- * @dev Note that liquidity pool is only added to in top-level beforeAll,
- * which is fine because these unit tests are agnostic to pricefeed
- *
- * @test takeOrder: __validateTakeOrderParams
  * @test takeOrder: Order 1: eth to token
  * @test takeOrder: Order 2: token to eth
  * @test takeOrder: Order 3: token to token
@@ -14,6 +10,7 @@ import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpMul } from '~/utils/BNmath';
 import {
+  CALL_ON_INTEGRATION_ENCODING_TYPES,
   CONTRACT_NAMES,
   KYBER_ETH_ADDRESS,
 } from '~/utils/constants';
@@ -23,7 +20,7 @@ import {
   getEventFromLogs,
   getFunctionSignature
 } from '~/utils/metadata';
-import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
@@ -39,7 +36,7 @@ beforeAll(async () => {
   managerTxOpts = { from: manager, gas: 8000000 };
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.KYBER_ADAPTER,
     'takeOrder',
   );
 
@@ -52,28 +49,23 @@ beforeAll(async () => {
 });
 
 describe('takeOrder', () => {
-  // TODO: input validation, if necessary
-  // @dev Only need to run this once
-  // describe('__validateTakeOrderParams', () => {
-  // });
-
   describe('Fill Order 1: eth to token', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
+    let incomingAsset, expectedIncomingAssetAmount, outgoingAsset, outgoingAssetAmount;
     let tx;
 
     beforeAll(async () => {
-      takerAsset = weth.options.address;
-      takerQuantity = toWei('0.01', 'ether');
-      makerAsset = mln.options.address;
+      outgoingAsset = weth.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
+      incomingAsset = mln.options.address;
 
       const { 0: expectedRate } = await call(
         kyberNetworkProxy,
         'getExpectedRate',
-        [KYBER_ETH_ADDRESS, makerAsset, takerQuantity],
+        [KYBER_ETH_ADDRESS, incomingAsset, outgoingAssetAmount],
       );
 
-      makerQuantity = BNExpMul(
-        new BN(takerQuantity.toString()),
+      expectedIncomingAssetAmount = BNExpMul(
+        new BN(outgoingAssetAmount.toString()),
         new BN(expectedRate.toString()),
       ).toString();
 
@@ -93,12 +85,15 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity,
-        takerAsset,
-        takerQuantity,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          incomingAsset, // incoming asset
+          expectedIncomingAssetAmount, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       tx = await send(
         vault,
@@ -112,46 +107,50 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.KYBER_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.KYBER_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerAsset);
-      expect(orderFilled.buyAmount).toBe(makerQuantity);
-      expect(orderFilled.sellAsset).toBe(takerAsset);
-      expect(orderFilled.sellAmount).toBe(takerQuantity);
-      expect(orderFilled.feeAssets.length).toBe(0);
-      expect(orderFilled.feeAmounts.length).toBe(0);
+
+      expect(coiExecuted.adapter).toBe(kyberAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(incomingAsset);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(expectedIncomingAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(outgoingAsset);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(outgoingAssetAmount);
     });
   });
 
   // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 2: token to eth', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
+    let incomingAsset, expectedIncomingAssetAmount, outgoingAsset, outgoingAssetAmount;
     let tx;
 
     beforeAll(async () => {
-      takerAsset = mln.options.address;
-      takerQuantity = toWei('0.01', 'ether');
-      makerAsset = weth.options.address;
+      outgoingAsset = mln.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
+      incomingAsset = weth.options.address;
 
       const { 0: expectedRate } = await call(
         kyberNetworkProxy,
         'getExpectedRate',
-        [takerAsset, KYBER_ETH_ADDRESS, takerQuantity],
+        [outgoingAsset, KYBER_ETH_ADDRESS, outgoingAssetAmount],
       );
 
-      makerQuantity = BNExpMul(
-        new BN(takerQuantity.toString()),
+      expectedIncomingAssetAmount = BNExpMul(
+        new BN(outgoingAssetAmount.toString()),
         new BN(expectedRate.toString()),
       ).toString();
 
@@ -171,14 +170,16 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity,
-        takerAsset,
-        takerQuantity,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          incomingAsset, // incoming asset
+          expectedIncomingAssetAmount, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
-      // TODO: this is the tx that fails now (just with revert, no message)
       tx = await send(
         vault,
         'callOnIntegration',
@@ -191,46 +192,50 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.KYBER_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.KYBER_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerAsset);
-      expect(orderFilled.buyAmount).toBe(makerQuantity);
-      expect(orderFilled.sellAsset).toBe(takerAsset);
-      expect(orderFilled.sellAmount).toBe(takerQuantity);
-      expect(orderFilled.feeAssets.length).toBe(0);
-      expect(orderFilled.feeAmounts.length).toBe(0);
+
+      expect(coiExecuted.adapter).toBe(kyberAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(incomingAsset);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(expectedIncomingAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(outgoingAsset);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(outgoingAssetAmount);
     });
   });
 
   // @dev Set denomination asset to MLN to allow investment in MLN
   describe('Fill Order 3: token to token', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
+    let incomingAsset, expectedIncomingAssetAmount, outgoingAsset, outgoingAssetAmount;
     let tx;
 
     beforeAll(async () => {
-      takerAsset = mln.options.address;
-      takerQuantity = toWei('0.01', 'ether');
-      makerAsset = dai.options.address;
+      outgoingAsset = mln.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
+      incomingAsset = dai.options.address;
 
       const { 0: expectedRate } = await call(
         kyberNetworkProxy,
         'getExpectedRate',
-        [takerAsset, makerAsset, takerQuantity],
+        [outgoingAsset, incomingAsset, outgoingAssetAmount],
       );
 
-      makerQuantity = BNExpMul(
-        new BN(takerQuantity.toString()),
+      expectedIncomingAssetAmount = BNExpMul(
+        new BN(outgoingAssetAmount.toString()),
         new BN(expectedRate.toString()),
       ).toString();
 
@@ -250,12 +255,15 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity,
-        takerAsset,
-        takerQuantity,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          incomingAsset, // incoming asset
+          expectedIncomingAssetAmount, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       tx = await send(
         vault,
@@ -269,25 +277,29 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.KYBER_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.KYBER_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerAsset);
-      expect(orderFilled.buyAmount).toBe(makerQuantity);
-      expect(orderFilled.sellAsset).toBe(takerAsset);
-      expect(orderFilled.sellAmount).toBe(takerQuantity);
-      expect(orderFilled.feeAssets.length).toBe(0);
-      expect(orderFilled.feeAmounts.length).toBe(0);
+
+      expect(coiExecuted.adapter).toBe(kyberAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(incomingAsset);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(expectedIncomingAssetAmount);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(outgoingAsset);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(outgoingAssetAmount);
     });
   });
 });

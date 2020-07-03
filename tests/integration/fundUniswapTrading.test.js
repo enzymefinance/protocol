@@ -10,10 +10,10 @@
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
-import { CONTRACT_NAMES } from '~/utils/constants';
+import { CALL_ON_INTEGRATION_ENCODING_TYPES, CONTRACT_NAMES } from '~/utils/constants';
 import { setupFundWithParams } from '~/utils/fund';
 import { getFunctionSignature } from '~/utils/metadata';
-import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
@@ -30,7 +30,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.UNISWAP_ADAPTER,
     'takeOrder',
   );
 
@@ -72,24 +72,27 @@ beforeAll(async () => {
 test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const { vault } = fund;
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-
-  const takerAsset = weth.options.address;
-  const takerQuantity = toWei('0.1', 'ether');
-  const makerAsset = mln.options.address;
-  const makerQuantity = await call(
+  const outgoingAsset = weth.options.address;
+  const outgoingAssetAmount = toWei('0.1', 'ether');
+  const incomingAsset = mln.options.address;
+  const expectedIncomingAssetAmount = await call(
     mlnExchange,
     'getEthToTokenInputPrice',
-    [takerQuantity]
+    [outgoingAssetAmount]
   );
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.UNISWAP.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
+
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
   await send(
     vault,
@@ -109,31 +112,34 @@ test('Swap WETH for MLN with minimum derived from Uniswap price', async () => {
   const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(outgoingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
 });
 
 test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const { vault } = fund;
 
-  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
-  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
-
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = weth.options.address;
-  const makerQuantity = await call(
+  const outgoingAsset = mln.options.address;
+  const outgoingAssetAmount = toWei('0.01', 'ether');
+  const incomingAsset = weth.options.address;
+  const expectedIncomingAssetAmount = await call(
     mlnExchange,
     'getTokenToEthInputPrice',
-    [takerQuantity]
+    [outgoingAssetAmount]
   );
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.UNISWAP.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      expectedIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
+
+  const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
+  const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
   await send(
     vault,
@@ -153,39 +159,41 @@ test('Swap MLN for WETH with minimum derived from Uniswap price', async () => {
   const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(makerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfWethDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(outgoingAssetAmount));
 });
 
-test('Swap MLN directly to EUR without specifying a minimum maker quantity', async () => {
+test('Swap MLN directly to ZRX without specifying a minimum maker quantity', async () => {
   const { vault } = fund;
 
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = zrx.options.address;
-  const makerQuantity = "1";
+  const outgoingAsset = mln.options.address;
+  const outgoingAssetAmount = toWei('0.01', 'ether');
+  const incomingAsset = zrx.options.address;
 
   const intermediateEth = await call(
     mlnExchange,
     'getTokenToEthInputPrice',
-    [takerQuantity]
+    [outgoingAssetAmount]
   );
-  const expectedMakerQuantity = await call(
+  const expectedIncomingAssetAmount = await call(
     zrxExchange,
     'getEthToTokenInputPrice',
     [intermediateEth]
   );
 
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.UNISWAP.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      1, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
+
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfEur = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
-
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
 
   await send(
     vault,
@@ -207,31 +215,33 @@ test('Swap MLN directly to EUR without specifying a minimum maker quantity', asy
   const fundBalanceOfEurDiff = postFundBalanceOfEur.sub(preFundBalanceOfEur);
 
   // Confirm that expected asset amounts were filled
-  expect(fundBalanceOfEurDiff).bigNumberEq(new BN(expectedMakerQuantity));
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfEurDiff).bigNumberEq(new BN(expectedIncomingAssetAmount));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(outgoingAssetAmount));
   expect(fundBalanceOfWethDiff).bigNumberEq(new BN(0));
 });
 
 test('Order fails if maker amount is not satisfied', async () => {
   const { vault } = fund;
 
-  const takerAsset = mln.options.address;
-  const takerQuantity = toWei('0.01', 'ether');
-  const makerAsset = weth.options.address;
-  const makerQuantity = await call(
+  const outgoingAsset = mln.options.address;
+  const outgoingAssetAmount = toWei('0.01', 'ether');
+  const incomingAsset = weth.options.address;
+  const expectedIncomingAssetAmount = await call(
     mlnExchange,
     'getTokenToEthInputPrice',
-    [takerQuantity]
+    [outgoingAssetAmount]
   );
-  const highMakerQuantity = new BN(makerQuantity).mul(new BN(2)).toString();
+  const tooHighIncomingAssetAmount = new BN(expectedIncomingAssetAmount).add(new BN(1)).toString();
 
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity: highMakerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
-
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.UNISWAP.TAKE_ORDER,
+    [
+      incomingAsset, // incoming asset
+      tooHighIncomingAssetAmount, // min incoming asset amount
+      outgoingAsset, // outgoing asset,
+      outgoingAssetAmount // exact outgoing asset amount
+    ]
+  );
   await expect(
     send(
       vault,
