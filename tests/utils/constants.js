@@ -1,12 +1,114 @@
 export const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const KYBER_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
-export const ENCODING_TYPES = {
-  ZERO_EX_V2: ['address[4]', 'uint256[7]', 'bytes[2]', 'bytes'],
-  ZERO_EX_V3: ['address[4]', 'uint256[7]', 'bytes[4]', 'bytes'],
-  AIR_SWAP: ['address[6]', 'uint256[6]', 'bytes4[2]', 'bytes32[2]', 'uint8', 'bytes1'],
-  OASIS_DEX: ['address', 'uint256', 'address', 'uint256', 'uint256'],
-  MINIMAL: ['address', 'uint256', 'address', 'uint256'], // a general and minimal type
+export const CALL_ON_INTEGRATION_ENCODING_TYPES = {
+  AIR_SWAP: {
+    TAKE_ORDER: [
+      'bytes' // AIR_SWAP.ORDER
+    ],
+    ORDER: [
+      // [0] signer.wallet
+      // [1] signer.token
+      // [2] sender.wallet
+      // [3] sender.token
+      // [4] signature.signatory
+      // [5] signature.validator
+      'address[6]',
+      // [0] nonce
+      // [1] expiry
+      // [2] signer.amount
+      // [3] signer.id
+      // [4] sender.amount
+      // [5] sender.id
+      'uint256[6]',
+      // [0] signer.kind
+      // [1] sender.kind
+      'bytes4[2]',
+      // [0] signature.r
+      // [1] signature.s
+      'bytes32[2]',
+      'uint8', // signature.v
+      'bytes1' // signature.version
+    ]
+  },
+  ENGINE: {
+    TAKE_ORDER: [
+      'uint256', // min incoming asset (WETH) amount
+      'uint256' // exact outgoing asset (MLN) amount
+    ]
+  },
+  KYBER: {
+    TAKE_ORDER: [
+      'address', // incoming asset
+      'uint256', // min incoming asset amount
+      'address', // outgoing asset,
+      'uint256' // exact outgoing asset amount
+    ]
+  },
+  OASIS_DEX: {
+    TAKE_ORDER: [
+      'uint256', // exact outgoing asset amount (fill amount)
+      'uint256' // order identifier
+    ]
+  },
+  UNISWAP: {
+    TAKE_ORDER: [
+      'address', // incoming asset
+      'uint256', // min incoming asset amount
+      'address', // outgoing asset,
+      'uint256' // exact outgoing asset amount
+    ]
+  },
+  ZERO_EX_V2: {
+    TAKE_ORDER: [
+      'bytes', // ZERO_EX_V2.ORDER
+      'uint256' // exact outgoing asset amount (taker asset fill amount)
+    ],
+    ORDER: [
+      // [0] makerAddress
+      // [1] takerAddress
+      // [2] feeRecipientAddress
+      // [3] senderAddress
+      'address[4]',
+      // [0] makerAssetAmount
+      // [1] takerAssetAmount
+      // [2] makerFee
+      // [3] takerFee
+      // [4] expirationTimeSeconds
+      // [5] salt
+      'uint256[6]',
+      // [0] makerAssetData
+      // [1] takerAssetData
+      'bytes[2]',
+      'bytes' // signature
+    ]
+  },
+  ZERO_EX_V3: {
+    TAKE_ORDER: [
+      'bytes', // ZERO_EX_V2.ORDER
+      'uint256' // exact outgoing asset amount (taker asset fill amount)
+    ],
+    ORDER: [
+      // [0] makerAddress
+      // [1] takerAddress
+      // [2] feeRecipientAddress
+      // [3] senderAddress
+      'address[4]',
+      // [0] makerAssetAmount
+      // [1] takerAssetAmount
+      // [2] makerFee
+      // [3] takerFee
+      // [4] expirationTimeSeconds
+      // [5] salt
+      'uint256[6]',
+      // [0] makerAssetData
+      // [1] takerAssetData
+      // [2] makerFeeAssetData
+      // [3] takerFeeAssetData
+      'bytes[4]',
+      'bytes' // signature
+    ]
+  },
 }
 
 export const CONTRACT_NAMES = {

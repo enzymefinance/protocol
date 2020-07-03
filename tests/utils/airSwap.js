@@ -1,6 +1,6 @@
 const { orders, signatures } = require('@airswap/order-utils');
 const { GANACHE_PROVIDER } = require('@airswap/order-utils').constants;
-import { ENCODING_TYPES } from '~/utils/constants';
+import { CALL_ON_INTEGRATION_ENCODING_TYPES } from '~/utils/constants';
 import { encodeArgs } from '~/utils/formatting';
 
 export const createUnsignedAirSwapOrder = async ({
@@ -60,39 +60,48 @@ export const signAirSwapOrder = async (order, exchangeAddress, signer) => {
 };
 
 export const encodeAirSwapTakeOrderArgs = (order) => {
-  const orderAddresses = [];
-  const orderValues = [];
-  const tokenKinds = [];
-  const sigBytesComponents = [];
+  const encodedZeroExOrder = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.AIR_SWAP.ORDER,
+    [ 
+      // address type
+      [
+        order.signer.wallet,
+        order.signer.token,
+        order.sender.wallet,
+        order.sender.token,
+        order.signature.signatory,
+        order.signature.validator
+      ],
+      // uint256 type
+      [ 
+        order.nonce,
+        order.expiry,
+        order.signer.amount,
+        order.signer.id,
+        order.sender.amount,
+        order.sender.id
+      ],
+      // bytes4 type
+      [
+        order.signer.kind,
+        order.sender.kind
+      ],
+      // bytes32 type
+      [
+        order.signature.r,
+        order.signature.s
+      ],
+      // uint8 type
+      order.signature.v,
+      // bytes1 type
+      order.signature.version
+    ]
+  );
 
-  orderAddresses[0] = order.signer.wallet;
-  orderAddresses[1] = order.signer.token;
-  orderAddresses[2] = order.sender.wallet;
-  orderAddresses[3] = order.sender.token;
-  orderAddresses[4] = order.signature.signatory;
-  orderAddresses[5] = order.signature.validator;
-
-  orderValues[0] = order.nonce;
-  orderValues[1] = order.expiry;
-  orderValues[2] = order.signer.amount;
-  orderValues[3] = order.signer.id;
-  orderValues[4] = order.sender.amount;
-  orderValues[5] = order.sender.id;
-
-  tokenKinds[0] = order.signer.kind;
-  tokenKinds[1] = order.sender.kind;
-  sigBytesComponents[0] = order.signature.r;
-  sigBytesComponents[1] = order.signature.s;
-  const sigUintComponent = order.signature.v;
-  const version = order.signature.version;
-
-  const args = [
-    orderAddresses,
-    orderValues,
-    tokenKinds,
-    sigBytesComponents,
-    sigUintComponent,
-    version
-  ];
-  return encodeArgs(ENCODING_TYPES.AIR_SWAP, args);
+  return encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.AIR_SWAP.TAKE_ORDER,
+    [
+      encodedZeroExOrder, // AIR_SWAP.ORDER
+    ]
+  );
 };
