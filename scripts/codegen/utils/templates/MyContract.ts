@@ -1,5 +1,9 @@
 import { ethers } from 'ethers';
-import { Contract, TransactionWrapper, DeploymentTransactionWrapper } from '~/framework/contract';
+import {
+  Contract,
+  TransactionWrapper,
+  DeploymentTransactionWrapper,
+} from '~/framework/contract';
 import { AddressLike } from '~/framework/types';
 
 export class MyContract extends Contract {

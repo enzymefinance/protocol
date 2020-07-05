@@ -2,8 +2,6 @@ import config from '~/config';
 import { Contract } from '~/framework/contract';
 import * as contracts from '~/framework/contracts';
 
-// prettier-ignore-start
-
 // TOKENS
 export const WETH = new contracts.WETH(config.tokens.WETH, ethersProvider);
 export const MLN = new contracts.ERC20WithFields(config.tokens.MLN, ethersProvider);
@@ -52,5 +50,3 @@ export const PolicyManagerFactory = Contract.fromArtifact(contracts.PolicyManage
 export const Registry = Contract.fromArtifact(contracts.Registry,ethersProvider);
 export const Engine = Contract.fromArtifact(contracts.Engine, ethersProvider);
 export const KyberPriceFeed = Contract.fromArtifact(contracts.KyberPriceFeed,ethersProvider);
-
-// prettier-ignore-end

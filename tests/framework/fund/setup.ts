@@ -1,9 +1,9 @@
-import { ethers } from "ethers";
-import { contracts, fixtures } from "~/framework";
-import { AddressLike } from "~/framework/types";
-import { Contract } from "~/framework/contract";
-import { FeeParams, PolicyParams } from "~/framework/fund";
-import { stringToBytes, encodeArgs, resolveAddress } from "~/framework/utils";
+import { ethers } from 'ethers';
+import { contracts, fixtures } from '~/framework';
+import { AddressLike } from '~/framework/types';
+import { Contract } from '~/framework/contract';
+import { FeeParams, PolicyParams } from '~/framework/fund';
+import { stringToBytes, encodeArgs, resolveAddress } from '~/framework/utils';
 
 export interface SetupFundParams {
   manager?: ethers.Signer;

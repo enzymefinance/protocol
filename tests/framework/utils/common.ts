@@ -5,7 +5,10 @@ import addresses from '~/config';
 import { Contract, SpecificContract } from '~/framework/contract';
 import { Artifact, AddressLike } from '~/framework/types';
 
-export const artifactDirectory = path.join(__dirname, '../../../build/contracts');
+export const artifactDirectory = path.join(
+  __dirname,
+  '../../../build/contracts',
+);
 export const mainnetContractAddresses = Object.values(addresses).reduce(
   (carry, current) => {
     return { ...carry, ...current };
@@ -18,9 +21,7 @@ export const mainnetContractAddresses = Object.values(addresses).reduce(
  *
  * @param name The name of the truffle build artifact.
  */
-export function getArtifact(
-  contract: SpecificContract,
-): Artifact {
+export function getArtifact(contract: SpecificContract): Artifact {
   const artifactPath = path.join(artifactDirectory, `${contract.name}.json`);
   if (!fs.existsSync(artifactPath)) {
     throw new Error(`Missing artifact for contract ${contract.name}`);

@@ -1,5 +1,10 @@
-import { contracts, fixtures } from "~/framework";
-import { setupFundWithParams, assetWhitelistPolicy, managementFee, performanceFee } from "~/framework/fund";
+import { contracts, fixtures } from '~/framework';
+import {
+  setupFundWithParams,
+  assetWhitelistPolicy,
+  managementFee,
+  performanceFee,
+} from '~/framework/fund';
 
 describe('general walkthrough', () => {
   it('deploy a registry contract', async () => {

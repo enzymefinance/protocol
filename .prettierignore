@@ -4,6 +4,9 @@
 /tests/*
 !/tests/framework
 
+# Do not auto-format the fixtures file.
+/tests/framework/fixtures.ts
+
 !/scripts
 /scripts/*
 !/scripts/codegen
