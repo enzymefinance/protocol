@@ -27,6 +27,7 @@
     "deploy": "truffle migrate --skip-dry-run",
     "devchain": "node tests/ganache/fork",
     "format": "prettier --write {scripts,tests}/{*,**/*}.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "solhint src/**/*.sol",
     "test": "yarn jest --config tests/jest.config.js"
   },
