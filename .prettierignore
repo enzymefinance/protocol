@@ -4,8 +4,9 @@
 /tests/*
 !/tests/framework
 
-# Do not auto-format the fixtures file.
+# Do not auto-format the fixtures file and generated code.
 /tests/framework/fixtures.ts
+/tests/framework/contracts/*
 
 !/scripts
 /scripts/*
