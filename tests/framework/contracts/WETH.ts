@@ -3,8 +3,8 @@ import {
   Contract,
   TransactionWrapper,
   DeploymentTransactionWrapper,
-  AddressLike,
-} from './..';
+} from '~/framework/contract';
+import { AddressLike } from '~/framework/types';
 
 export class WETH extends Contract {
   /**

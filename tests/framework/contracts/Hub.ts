@@ -2,9 +2,9 @@ import { ethers } from 'ethers';
 import {
   Contract,
   TransactionWrapper,
-  AddressLike,
   DeploymentTransactionWrapper,
-} from './..';
+} from '~/framework/contract';
+import { AddressLike } from '~/framework/types';
 
 /**
  * Router for communication between componentsHas one or more Spokes

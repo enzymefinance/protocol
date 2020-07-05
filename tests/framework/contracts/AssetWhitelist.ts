@@ -2,9 +2,9 @@ import { ethers } from 'ethers';
 import {
   Contract,
   TransactionWrapper,
-  AddressLike,
   DeploymentTransactionWrapper,
-} from './..';
+} from '~/framework/contract';
+import { AddressLike } from '~/framework/types';
 
 /**
  * A whitelist of assets to add to a fund's vault

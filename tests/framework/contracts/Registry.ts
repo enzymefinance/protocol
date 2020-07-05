@@ -2,9 +2,9 @@ import { ethers } from 'ethers';
 import {
   Contract,
   TransactionWrapper,
-  AddressLike,
   DeploymentTransactionWrapper,
-} from './..';
+} from '~/framework/contract';
+import { AddressLike } from '~/framework/types';
 
 /**
  * The top-level contract for all Melon infrastructure that maintains registries of assets, integrations, fees, policies, and funds, as well as the current versions of infrastructural contracts

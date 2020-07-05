@@ -1,14 +1,14 @@
 import path from 'path';
 import { ethers } from 'ethers';
-import {
-  Node,
-  Project,
-  ParameterDeclarationStructure,
-} from 'ts-morph';
+import { Node, Project, ParameterDeclarationStructure } from 'ts-morph';
 
 const templateProject = new Project();
-templateProject.addSourceFilesAtPaths(path.join(__dirname, 'templates', '*.ts'));
-const contractClassStructure = templateProject.getSourceFileOrThrow('MyContract.ts').getStructure();
+templateProject.addSourceFilesAtPaths(
+  path.join(__dirname, 'templates', '*.ts'),
+);
+const contractClassStructure = templateProject
+  .getSourceFileOrThrow('MyContract.ts')
+  .getStructure();
 
 function prettifyText(node: Node, format: (source: string) => string) {
   const text = node.getText({ includeJsDocComments: true });
@@ -37,11 +37,16 @@ function getOutput(fragment: ethers.utils.FunctionFragment) {
 
   // If all output parameters are named and unique, we can specify the struct.
   const struct = fragment.outputs?.every((item, index, array) => {
-    return !!item.name && array.findIndex((inner) => inner.name === item.name) === index;
+    return (
+      !!item.name &&
+      array.findIndex((inner) => inner.name === item.name) === index
+    );
   });
 
   if (struct) {
-    return `{ ${fragment.outputs?.map((o) => `${o.name}: ${getType(o, false)}`).join(', ')} }`;
+    return `{ ${fragment.outputs
+      ?.map((o) => `${o.name}: ${getType(o, false)}`)
+      .join(', ')} }`;
   }
 
   // Otherwise, all we know is that it will be an Array.
@@ -109,7 +114,9 @@ function getType(param: ethers.utils.ParamType, flexible?: boolean): string {
   }
 
   if (param.type === 'tuple') {
-    const struct = param.components.map((p, i) => `${p.name || `$$${i}`}: ${getType(p, flexible)}`);
+    const struct = param.components.map(
+      (p, i) => `${p.name || `$$${i}`}: ${getType(p, flexible)}`,
+    );
     return `{ ${struct.join(', ')} }`;
   }
 
@@ -163,13 +170,15 @@ export function generate(
     overwrite: true,
   });
 
-  const exportStatements = mapping
-    .map((item) => {
-      const contractFilePath = path.resolve(path.join(output, item.name));
-      const relativePath = path.relative(path.dirname(exportsFilePath), contractFilePath);
-      const contractExport = `export { ${item.name} } from './${relativePath}'`;
-      return contractExport;
-    });
+  const exportStatements = mapping.map((item) => {
+    const contractFilePath = path.resolve(path.join(output, item.name));
+    const relativePath = path.relative(
+      path.dirname(exportsFilePath),
+      contractFilePath,
+    );
+    const contractExport = `export { ${item.name} } from './${relativePath}'`;
+    return contractExport;
+  });
 
   exportsFile.addStatements(exportStatements);
   exportsFile.fixUnusedIdentifiers().fixMissingImports();
@@ -183,8 +192,6 @@ function generateContractFile(
   format: (source: string) => string,
 ) {
   const destination = path.resolve(path.join(output, data.name));
-  const root = path.join(__dirname, '..', '..', '..', 'tests', 'framework');
-  const relative = path.relative(path.dirname(destination), root);
   const signatures = Object.keys(data.interface.functions);
   const functions = signatures.map((signature) => {
     const fragment = data.interface.functions[signature];
@@ -203,22 +210,29 @@ function generateContractFile(
   });
 
   const uniques = functions.filter((item, index, array) => {
-    return index === array.findIndex((candidate) => candidate.fragment.name === item.fragment.name);
+    return (
+      index ===
+      array.findIndex(
+        (candidate) => candidate.fragment.name === item.fragment.name,
+      )
+    );
   });
 
   const calls = uniques.filter((item) => item.fragment.constant);
   const transactions = uniques.filter((item) => !item.fragment.constant);
 
-  const contractFile = project.createSourceFile(`${destination}.ts`, contractClassStructure, {
-    overwrite: true,
-  });
+  const contractFile = project.createSourceFile(
+    `${destination}.ts`,
+    contractClassStructure,
+    {
+      overwrite: true,
+    },
+  );
 
-  contractFile.addImportDeclaration({
-    namedImports: ['Contract', 'TransactionWrapper'],
-    moduleSpecifier: `./${relative}`,
-  });
+  const contractClass = contractFile
+    .getClassOrThrow('MyContract')
+    .rename(data.name);
 
-  const contractClass = contractFile.getClassOrThrow('MyContract').rename(data.name);
   const contractDocs = contractClass.addJsDoc({
     description: data.userdoc?.notice || undefined,
     tags: [
@@ -251,7 +265,9 @@ function generateContractFile(
     return ethers.utils.FunctionFragment.isConstructorFragment(fragment);
   });
 
-  const constructorArgs = constructorFragment?.inputs.map((item) => item.name) ?? [];
+  const constructorArgs =
+    constructorFragment?.inputs.map((item) => item.name) ?? [];
+
   const constructorInputs = constructorFragment?.inputs.map((item) => ({
     name: item.name,
     type: getType(item, true),
@@ -259,11 +275,20 @@ function generateContractFile(
 
   const deployMethod = contractClass.getMethodOrThrow('deploy');
   deployMethod.addParameters(constructorInputs ?? []);
-  const deployArgs = constructorArgs.length ? `, [${constructorArgs.join(', ')}]` : '';
-  deployMethod.addStatements([`return new DeploymentTransactionWrapper(this, signer${deployArgs})`]);
+
+  const deployArgs = constructorArgs.length
+    ? `, [${constructorArgs.join(', ')}]`
+    : '';
+
+  deployMethod.addStatements([
+    `return new DeploymentTransactionWrapper(this, signer${deployArgs})`,
+  ]);
 
   calls.forEach((item) => {
-    const inputs = item.inputs.concat([`$$overrides?: ${item.overrides}`]).join(', ');
+    const inputs = item.inputs
+      .concat([`$$overrides?: ${item.overrides}`])
+      .join(', ');
+
     const callDeclaration = contractClass.addProperty({
       name: item.fragment.name,
       type: `(${inputs}) => Promise<${item.output}>`,
@@ -272,10 +297,23 @@ function generateContractFile(
 
     const callDocs = callDeclaration.addJsDoc({
       description: (write) => {
-        write.conditionalWriteLine(!!item.devdoc?.details, item.devdoc?.details || '');
-        write.conditionalBlankLine(!!(item.devdoc?.details && item.userdoc?.notice));
-        write.conditionalWriteLine(!!item.userdoc?.notice, item.userdoc?.notice || '');
-        write.conditionalBlankLine(!!(item.devdoc?.details || item.userdoc?.notice));
+        write.conditionalWriteLine(
+          !!item.devdoc?.details,
+          item.devdoc?.details || '',
+        );
+
+        write.conditionalBlankLine(
+          !!(item.devdoc?.details && item.userdoc?.notice),
+        );
+
+        write.conditionalWriteLine(
+          !!item.userdoc?.notice,
+          item.userdoc?.notice || '',
+        );
+
+        write.conditionalBlankLine(
+          !!(item.devdoc?.details || item.userdoc?.notice),
+        );
 
         write.writeLine('```solidity');
         write.writeLine(item.minimal);
@@ -318,10 +356,23 @@ function generateContractFile(
 
     const transactionDocs = transactionDeclaration.addJsDoc({
       description: (write) => {
-        write.conditionalWriteLine(!!item.devdoc?.details, item.devdoc?.details || '');
-        write.conditionalBlankLine(!!(item.devdoc?.details && item.userdoc?.notice));
-        write.conditionalWriteLine(!!item.userdoc?.notice, item.userdoc?.notice || '');
-        write.conditionalBlankLine(!!(item.devdoc?.details || item.userdoc?.notice));
+        write.conditionalWriteLine(
+          !!item.devdoc?.details,
+          item.devdoc?.details || '',
+        );
+
+        write.conditionalBlankLine(
+          !!(item.devdoc?.details && item.userdoc?.notice),
+        );
+
+        write.conditionalWriteLine(
+          !!item.userdoc?.notice,
+          item.userdoc?.notice || '',
+        );
+
+        write.conditionalBlankLine(
+          !!(item.devdoc?.details || item.userdoc?.notice),
+        );
 
         write.writeLine('```solidity');
         write.writeLine(item.minimal);
@@ -354,7 +405,11 @@ function generateContractFile(
     }
   });
 
-  contractFile.fixUnusedIdentifiers().fixMissingImports();
+  contractFile.fixUnusedIdentifiers().fixMissingImports(undefined, {
+    importModuleSpecifierPreference: 'non-relative',
+    importModuleSpecifierEnding: 'minimal',
+  });
+
   contractFile.replaceWithText(prettifyText(contractFile, format));
 
   return contractFile;

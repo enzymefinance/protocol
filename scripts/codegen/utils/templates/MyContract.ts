@@ -1,8 +1,8 @@
 import { ethers } from 'ethers';
-import { getArtifact } from '~/framework';
+import { Contract, TransactionWrapper, DeploymentTransactionWrapper } from '~/framework/contract';
+import { AddressLike } from '~/framework/types';
 
 export class MyContract extends Contract {
-
   /**
    * The contract abis.
    */

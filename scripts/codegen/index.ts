@@ -8,13 +8,20 @@ import { Project, QuoteKind, IndentationText } from 'ts-morph';
 import { generate, ContractData } from './utils/generate';
 
 (async () => {
-  const packageRoot = path.join(__dirname, '..', '..');
-  const codegenOut = path.resolve(packageRoot, 'tests', 'framework', 'contracts');
+  const packageRoot = path.join(__dirname, '../..');
+  const codegenOut = path.resolve(
+    packageRoot,
+    'tests',
+    'framework',
+    'contracts',
+  );
   const contractsOut = path.join(packageRoot, 'build', 'contracts');
   const prettierConfig = prettier.resolveConfig.sync(packageRoot);
-  const contractNames = glob.sync('**/*.json', {
-    cwd: contractsOut,
-  }).map(file => path.basename(file, '.json'));
+  const contractNames = glob
+    .sync('**/*.json', {
+      cwd: contractsOut,
+    })
+    .map((file) => path.basename(file, '.json'));
 
   rimraf.sync(codegenOut);
   if (!fs.existsSync(codegenOut)) {
@@ -28,7 +35,9 @@ import { generate, ContractData } from './utils/generate';
         throw new Error(`Missing contract build artifact for ${contractName}.`);
       }
 
-      const buildArtifact = JSON.parse(fs.readFileSync(buildArtifactPath, 'utf8'));
+      const buildArtifact = JSON.parse(
+        fs.readFileSync(buildArtifactPath, 'utf8'),
+      );
 
       return {
         name: contractName,
@@ -37,7 +46,9 @@ import { generate, ContractData } from './utils/generate';
         devdoc: buildArtifact.devdoc,
       } as ContractData;
     } catch (error) {
-      throw new Error(`Failed to load source data for contract ${contractName}: ${error}`);
+      throw new Error(
+        `Failed to load source data for contract ${contractName}: ${error}`,
+      );
     }
   });
 
@@ -54,7 +65,10 @@ import { generate, ContractData } from './utils/generate';
   });
 
   generate(codegenProject, codegenOut, codegenSubjects, (source: string) => {
-    const options: prettier.Options = { ...prettierConfig, parser: 'typescript' };
+    const options: prettier.Options = {
+      ...prettierConfig,
+      parser: 'typescript',
+    };
     return prettier.format(source, options);
   });
 

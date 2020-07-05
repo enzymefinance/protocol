@@ -26,7 +26,7 @@
     "postcompile": "yarn download-thirdparty",
     "deploy": "truffle migrate --skip-dry-run",
     "devchain": "node tests/ganache/fork",
-    "format": "prettier --write tests/{*,**/*}.ts",
+    "format": "prettier --write {scripts,tests}/{*,**/*}.ts",
     "lint": "solhint src/**/*.sol",
     "test": "yarn jest --config tests/jest.config.js"
   },
