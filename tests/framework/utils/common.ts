@@ -5,10 +5,7 @@ import addresses from '~/config';
 import { Contract, SpecificContract } from '~/framework/contract';
 import { Artifact, AddressLike } from '~/framework/types';
 
-export const artifactDirectory = path.join(
-  __dirname,
-  '../../../build/contracts',
-);
+export const artifactDir = path.join(__dirname, '../../../build/contracts');
 export const mainnetContractAddresses = Object.values(addresses).reduce(
   (carry, current) => {
     return { ...carry, ...current };
@@ -22,7 +19,7 @@ export const mainnetContractAddresses = Object.values(addresses).reduce(
  * @param name The name of the truffle build artifact.
  */
 export function getArtifact(contract: SpecificContract): Artifact {
-  const artifactPath = path.join(artifactDirectory, `${contract.name}.json`);
+  const artifactPath = path.join(artifactDir, `${contract.name}.json`);
   if (!fs.existsSync(artifactPath)) {
     throw new Error(`Missing artifact for contract ${contract.name}`);
   }
@@ -61,6 +58,26 @@ export function getArtifactAddress(
   return undefined;
 }
 
+/**
+ * Checks if the given object is a contract instance.
+ *
+ * @param value The suspected contract instance.
+ * @returns true if the given value is a contract, false otherwise.
+ */
+export function isContract(
+  value: Contract | any,
+): value is SpecificContract & Contract {
+  if (value instanceof Contract) {
+    return true;
+  }
+
+  if (value.interface && ethers.utils.Interface.isInterface(value.interface)) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function resolveAddressOrName(
   signerOrProvider: ethers.Signer | ethers.providers.Provider,
   value: AddressLike | Promise<AddressLike>,
@@ -81,7 +98,7 @@ export async function resolveAddress(
     return resolved;
   }
 
-  if (Contract.isContract(resolved)) {
+  if (isContract(resolved)) {
     if (resolved.$$ethers.address) {
       return resolved.$$ethers.address;
     }

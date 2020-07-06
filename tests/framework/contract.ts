@@ -134,29 +134,6 @@ export abstract class Contract {
   public static readonly abi: string[];
 
   /**
-   * Checks if the given object is a contract instance.
-   *
-   * @param value The suspected contract instance.
-   * @returns true if the given value is a contract, false otherwise.
-   */
-  public static isContract(
-    value: Contract | any,
-  ): value is SpecificContract & Contract {
-    if (value instanceof Contract) {
-      return true;
-    }
-
-    if (
-      value.interface &&
-      ethers.utils.Interface.isInterface(value.interface)
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
    *
    * @param implementation
    * @param response
