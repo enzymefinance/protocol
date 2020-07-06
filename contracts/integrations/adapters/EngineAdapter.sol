@@ -26,40 +26,15 @@ contract EngineAdapter is AdapterBase {
         return "MELON_ENGINE";
     }
 
-    /// @notice Trades assets on Kyber
-    /// @param _encodedArgs Encoded order parameters
-    function takeOrder(bytes calldata _encodedArgs)
-        external
-        onlyVault
-        fundAssetsTransferHandler(_encodedArgs)
-    {
-        (,uint256 mlnTokenAmount) = __decodeArgs(_encodedArgs);
-
-        // Validate args
-        require(mlnTokenAmount > 0, "takeOrder: mlnTokenAmount must be >0");
-
-        // Execute fill
-        Registry registry = Registry(__getRegistry());
-        IERC20(registry.mlnToken()).approve(EXCHANGE, mlnTokenAmount);
-        uint256 preEthBalance = payable(address(this)).balance;
-        IEngine(EXCHANGE).sellAndBurnMln(mlnTokenAmount);
-        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
-
-        // Return ETH to WETH
-        WETH(payable(registry.nativeAsset())).deposit{value: ethFilledAmount}();
-    }
-
-    // PUBLIC FUNCTIONS
-
     /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedArgs The encoded parameters for the callOnIntegration
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes memory _encodedArgs)
-        public
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+        external
         view
         override
         returns (
@@ -73,7 +48,7 @@ contract EngineAdapter is AdapterBase {
             (
                 uint256 minNativeAssetAmount,
                 uint256 mlnTokenAmount
-            ) = __decodeArgs(_encodedArgs);
+            ) = __decodeCallArgs(_encodedCallArgs);
             Registry registry = Registry(__getRegistry());
 
             spendAssets_ = new address[](1);
@@ -91,8 +66,34 @@ contract EngineAdapter is AdapterBase {
         }
     }
 
+    /// @notice Trades assets on Kyber
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(bytes calldata _encodedCallArgs, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedAssetTransferArgs)
+    {
+        (,uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
+
+        // Validate args
+        require(mlnTokenAmount > 0, "takeOrder: mlnTokenAmount must be >0");
+
+        // Execute fill
+        Registry registry = Registry(__getRegistry());
+        IERC20(registry.mlnToken()).approve(EXCHANGE, mlnTokenAmount);
+        uint256 preEthBalance = payable(address(this)).balance;
+        IEngine(EXCHANGE).sellAndBurnMln(mlnTokenAmount);
+        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
+
+        // Return ETH to WETH
+        WETH(payable(registry.nativeAsset())).deposit{value: ethFilledAmount}();
+    }
+
+    // PRIVATE FUNCTIONS
+
     /// @dev Helper to decode the encoded arguments
-    function __decodeArgs(bytes memory _encodedArgs)
+    function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
         returns (
@@ -101,7 +102,7 @@ contract EngineAdapter is AdapterBase {
         )
     {
         return abi.decode(
-            _encodedArgs,
+            _encodedCallArgs,
             (
                 uint256,
                 uint256

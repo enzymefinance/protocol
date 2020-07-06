@@ -25,73 +25,15 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
         return "ZERO_EX_V3";
     }
 
-    /// @notice Take order on 0x Protocol
-    /// @param _encodedArgs Encoded order parameters
-    function takeOrder(bytes calldata _encodedArgs)
-        external
-        onlyVault
-        fundAssetsTransferHandler(_encodedArgs)
-    {
-        (
-            bytes memory encodedZeroExOrderArgs,
-            uint256 takerAssetFillAmount
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-        IZeroExV3.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
-        (,,,bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
-
-        // Validate args
-        require(
-            takerAssetFillAmount <= order.takerAssetAmount,
-            "takeOrder: Taker asset fill amount greater than available"
-        );
-        require(
-            IZeroExV3(EXCHANGE).isValidOrderSignature(order, signature),
-            "takeOrder: order signature is invalid"
-        );
-
-        // Approve spend assets
-        __increaseApproval(
-            __getAssetAddress(order.takerAssetData),
-            __getAssetProxy(order.takerAssetData),
-            takerAssetFillAmount
-        );
-
-        uint256 protocolFee = __calcProtocolFeeAmount();
-        if (protocolFee > 0) {
-            __increaseApproval(
-                Registry(REGISTRY).nativeAsset(),
-                IZeroExV3(EXCHANGE).protocolFeeCollector(),
-                protocolFee 
-            );
-        }
-
-        if (order.takerFee > 0) {
-            __increaseApproval(
-                __getAssetAddress(order.takerFeeAssetData),
-                __getAssetProxy(order.takerFeeAssetData),
-                __calcRelativeQuantity(
-                    order.takerAssetAmount,
-                    order.takerFee,
-                    takerAssetFillAmount
-                ) // fee calculated relative to taker fill amount
-            );
-        }
-
-        // Execute order
-        IZeroExV3(EXCHANGE).fillOrder(order, takerAssetFillAmount, signature);
-    }
-
-    // PUBLIC FUNCTIONS
-
     /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedArgs The encoded parameters for the callOnIntegration
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes memory _encodedArgs)
-        public
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+        external
         view
         override
         returns (
@@ -105,7 +47,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             (
                 bytes memory encodedZeroExOrderArgs,
                 uint256 takerAssetFillAmount
-            ) = __decodeTakeOrderArgs(_encodedArgs);
+            ) = __decodeTakeOrderArgs(_encodedCallArgs);
             IZeroExV3.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
             address makerAsset = __getAssetAddress(order.makerAssetData);
             address protocolFeeAsset = Registry(REGISTRY).nativeAsset(); // TODO: store as immutable var?
@@ -155,6 +97,63 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
         else {
             revert("parseIncomingAssets: _selector invalid");
         }
+    }
+
+    /// @notice Take order on 0x Protocol
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(bytes calldata _encodedCallArgs, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedAssetTransferArgs)
+    {
+        (
+            bytes memory encodedZeroExOrderArgs,
+            uint256 takerAssetFillAmount
+        ) = __decodeTakeOrderArgs(_encodedCallArgs);
+        IZeroExV3.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
+        (,,,bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
+
+        // Validate args
+        require(
+            takerAssetFillAmount <= order.takerAssetAmount,
+            "takeOrder: Taker asset fill amount greater than available"
+        );
+        require(
+            IZeroExV3(EXCHANGE).isValidOrderSignature(order, signature),
+            "takeOrder: order signature is invalid"
+        );
+
+        // Approve spend assets
+        __increaseApproval(
+            __getAssetAddress(order.takerAssetData),
+            __getAssetProxy(order.takerAssetData),
+            takerAssetFillAmount
+        );
+
+        uint256 protocolFee = __calcProtocolFeeAmount();
+        if (protocolFee > 0) {
+            __increaseApproval(
+                Registry(REGISTRY).nativeAsset(),
+                IZeroExV3(EXCHANGE).protocolFeeCollector(),
+                protocolFee 
+            );
+        }
+
+        if (order.takerFee > 0) {
+            __increaseApproval(
+                __getAssetAddress(order.takerFeeAssetData),
+                __getAssetProxy(order.takerFeeAssetData),
+                __calcRelativeQuantity(
+                    order.takerAssetAmount,
+                    order.takerFee,
+                    takerAssetFillAmount
+                ) // fee calculated relative to taker fill amount
+            );
+        }
+
+        // Execute order
+        IZeroExV3(EXCHANGE).fillOrder(order, takerAssetFillAmount, signature);
     }
 
     // PRIVATE FUNCTIONS
@@ -221,10 +220,10 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
     }
 
     /// @notice Decode the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @param _encodedCallArgs Encoded parameters passed from client side
     /// @return encodedZeroExOrderArgs_ Encoded args of the 0x order
     /// @return takerAssetFillAmount_ Amount of taker asset to fill
-    function __decodeTakeOrderArgs(bytes memory _encodedArgs)
+    function __decodeTakeOrderArgs(bytes memory _encodedCallArgs)
         private
         pure
         returns (
@@ -233,7 +232,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
         )
     {
         return abi.decode(
-            _encodedArgs,
+            _encodedCallArgs,
             (
                 bytes,
                 uint256

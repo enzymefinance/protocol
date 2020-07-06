@@ -27,19 +27,61 @@ contract UniswapAdapter is AdapterBase {
         return "UNISWAP_V1";
     }
 
+    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @param _selector The function selector for the callOnIntegration
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+        external
+        view
+        override
+        returns (
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        if (_selector == TAKE_ORDER_SELECTOR) {
+            (
+                address incomingAsset,
+                uint256 minIncomingAssetAmount,
+                address outgoingAsset,
+                uint256 outgoingAssetAmount
+            ) = __decodeCallArgs(_encodedCallArgs);
+
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = outgoingAsset;
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = outgoingAssetAmount;
+
+            incomingAssets_ = new address[](1);
+            incomingAssets_[0] = incomingAsset;
+            minIncomingAssetAmounts_ = new uint256[](1);
+            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
+        }
+        else {
+            revert("parseIncomingAssets: _selector invalid");
+        }
+    }
+
     /// @notice Trades assets on Uniswap
-    /// @param _encodedArgs Encoded order parameters
-    function takeOrder(bytes calldata _encodedArgs)
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(bytes calldata _encodedCallArgs, bytes calldata _encodedAssetTransferArgs)
         external
         onlyVault
-        fundAssetsTransferHandler(_encodedArgs)
+        fundAssetsTransferHandler(_encodedAssetTransferArgs)
     {
         (
             address incomingAsset,
             uint256 minIncomingAssetAmount,
             address outgoingAsset,
             uint256 outgoingAssetAmount
-        ) = __decodeArgs(_encodedArgs);
+        ) = __decodeCallArgs(_encodedCallArgs);
 
         // Validate args
         require(minIncomingAssetAmount > 0, "takeOrder: minIncomingAssetAmount must be >0");
@@ -61,53 +103,10 @@ contract UniswapAdapter is AdapterBase {
         }
     }
 
-    // PUBLIC FUNCTIONS
-
-    /// @notice Parses the expected assets to receive from a call on integration 
-    /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedArgs The encoded parameters for the callOnIntegration
-    /// @return spendAssets_ The assets to spend in the call
-    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
-    /// @return incomingAssets_ The assets to receive in the call
-    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes memory _encodedArgs)
-        public
-        view
-        override
-        returns (
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
-            address[] memory incomingAssets_,
-            uint256[] memory minIncomingAssetAmounts_
-        )
-    {
-        if (_selector == TAKE_ORDER_SELECTOR) {
-            (
-                address incomingAsset,
-                uint256 minIncomingAssetAmount,
-                address outgoingAsset,
-                uint256 outgoingAssetAmount
-            ) = __decodeArgs(_encodedArgs);
-
-            spendAssets_ = new address[](1);
-            spendAssets_[0] = outgoingAsset;
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = outgoingAssetAmount;
-
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = incomingAsset;
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-        }
-        else {
-            revert("parseIncomingAssets: _selector invalid");
-        }
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode the encoded arguments
-    function __decodeArgs(bytes memory _encodedArgs)
+    function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
         returns (
@@ -118,7 +117,7 @@ contract UniswapAdapter is AdapterBase {
         )
     {
         return abi.decode(
-            _encodedArgs,
+            _encodedCallArgs,
             (
                 address,
                 uint256,

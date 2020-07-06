@@ -20,12 +20,19 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
     /// the fund and the adapter, by wrapping the adapter action.
     /// This modifier should be implemented in almost all adapter actions that do not require
     /// special transfer logic (e.g., ignoring transfer requirements)
-    modifier fundAssetsTransferHandler(bytes memory _encodedArgs) {
+    modifier fundAssetsTransferHandler(bytes memory _encodedAssetTransferArgs) {
         (
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets,
-        ) = parseAssetsForMethod(msg.sig, _encodedArgs);
+            address[] memory incomingAssets
+        ) = abi.decode(
+            _encodedAssetTransferArgs,
+            (
+                address[],
+                uint256[],
+                address[]
+            )
+        );
 
         // Sanity check
         require(
@@ -100,17 +107,6 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
     constructor(address _registry) public {
         REGISTRY = _registry;
     }
-
-    // PUBLIC FUNCTIONS
-
-    /// @notice Parses the expected assets to receive from a call on integration 
-    /// @dev Overridden here to give public visibility for use in fundAssetsTransferHandler
-    function parseAssetsForMethod(bytes4, bytes memory)
-        public
-        view
-        virtual
-        override
-        returns (address[] memory, uint256[] memory, address[] memory, uint256[] memory);
 
     // INTERNAL FUNCTIONS
 

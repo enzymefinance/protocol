@@ -20,37 +20,18 @@ contract AirSwapAdapter is AdapterBase {
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
     function identifier() external pure override returns (string memory) {
-        return "AIRSWAP";
+        return "AIR_SWAP";
     }
-
-    /// @notice Take order on AirSwap
-    /// @param _encodedArgs Encoded order parameters
-    function takeOrder(bytes calldata _encodedArgs)
-        external
-        onlyVault
-        fundAssetsTransferHandler(_encodedArgs)
-    {
-        // Validate args
-        // TODO: is there any validation necessary here?
-
-        // Execute fill
-        bytes memory encodedAirSwapOrderArgs = __decodeTakeOrderArgs(_encodedArgs);
-        ISwap.Order memory order = __constructOrderStruct(encodedAirSwapOrderArgs);
-        IERC20(order.sender.token).approve(EXCHANGE, order.sender.amount);
-        ISwap(EXCHANGE).swap(order);
-    }
-
-    // PUBLIC FUNCTIONS
 
     /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedArgs The encoded parameters for the callOnIntegration
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes memory _encodedArgs)
-        public
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+        external
         view
         override
         returns (
@@ -61,7 +42,7 @@ contract AirSwapAdapter is AdapterBase {
         )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            bytes memory encodedAirSwapOrderArgs = __decodeTakeOrderArgs(_encodedArgs);
+            bytes memory encodedAirSwapOrderArgs = __decodeTakeOrderCallArgs(_encodedCallArgs);
             ISwap.Order memory order = __constructOrderStruct(encodedAirSwapOrderArgs);
 
             spendAssets_ = new address[](1);
@@ -77,6 +58,24 @@ contract AirSwapAdapter is AdapterBase {
         else {
             revert("parseIncomingAssets: _selector invalid");
         }
+    }
+
+    /// @notice Take order on AirSwap
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(bytes calldata _encodedCallArgs, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedAssetTransferArgs)
+    {
+        // Validate args
+        // TODO: is there any validation necessary here?
+
+        // Execute fill
+        bytes memory encodedAirSwapOrderArgs = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        ISwap.Order memory order = __constructOrderStruct(encodedAirSwapOrderArgs);
+        IERC20(order.sender.token).approve(EXCHANGE, order.sender.amount);
+        ISwap(EXCHANGE).swap(order);
     }
 
     // PRIVATE FUNCTIONS
@@ -132,18 +131,18 @@ contract AirSwapAdapter is AdapterBase {
     }
 
     /// @notice Decode the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @param _encodedCallArgs Encoded parameters passed from client side
     /// @return encodedAirSwapOrderArgs_ Encoded args of the AirSwap order
     /// @dev Double encoding the order args like this is superfluous, but it is consistent
     /// with the way we pass in 0x order parameters separate from an order fill amount
     // TODO: confirm if partial fills are allowed
-    function __decodeTakeOrderArgs(bytes memory _encodedArgs)
+    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
         private
         pure
         returns (bytes memory encodedAirSwapOrderArgs_)
     {
         return abi.decode(
-            _encodedArgs,
+            _encodedCallArgs,
             (bytes)
         );
     }

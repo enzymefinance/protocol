@@ -50,11 +50,11 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @dev Refer to specific adapter to see how to encode its arguments
     /// @param _adapter Adapter of the integration on which to execute a call
     /// @param _methodSignature Method signature of the adapter method to execute
-    /// @param _encodedArgs Encoded arguments specific to the adapter
+    /// @param _encodedCallArgs Encoded arguments specific to the adapter
     function callOnIntegration(
         address _adapter,
         string calldata _methodSignature,
-        bytes calldata _encodedArgs
+        bytes calldata _encodedCallArgs
     )
         external
         onlyManager
@@ -66,14 +66,20 @@ contract Vault is IVault, TokenUser, Spoke {
             uint256[] memory preCallIncomingAssetBalances,
             uint256[] memory minIncomingAssetAmounts,
             address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts,
             uint256[] memory preCallSpendAssetBalances
         ) = __preProcessCoI(
             _adapter,
             selector,
-            _encodedArgs
+            _encodedCallArgs
         );
 
-        __executeCoI(_adapter, _methodSignature, _encodedArgs);
+        __executeCoI(
+            _adapter,
+            _methodSignature,
+            _encodedCallArgs,
+            abi.encode(spendAssets, spendAssetAmounts, incomingAssets)
+        );
 
         __postProcessCoI(
             _adapter,
@@ -197,12 +203,13 @@ contract Vault is IVault, TokenUser, Spoke {
     function __executeCoI(
         address _adapter,
         string memory _methodSignature,
-        bytes memory _encodedArgs
+        bytes memory _encodedCallArgs,
+        bytes memory _encodedAssetTransferArgs
     )
         private
     {
         (bool success, bytes memory returnData) = _adapter.call(
-            abi.encodeWithSignature(_methodSignature, _encodedArgs)
+            abi.encodeWithSignature(_methodSignature, _encodedCallArgs, _encodedAssetTransferArgs)
         );
         require(success, string(returnData));
     }
@@ -230,7 +237,7 @@ contract Vault is IVault, TokenUser, Spoke {
     function __preProcessCoI(
         address _adapter,
         bytes4 _selector,
-        bytes memory _encodedArgs
+        bytes memory _encodedCallArgs
     )
         private
         returns (
@@ -238,6 +245,7 @@ contract Vault is IVault, TokenUser, Spoke {
             uint256[] memory preCallIncomingAssetBalances_,
             uint256[] memory minIncomingAssetAmounts_,
             address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
             uint256[] memory preCallSpendAssetBalances_
         )
     {
@@ -256,15 +264,14 @@ contract Vault is IVault, TokenUser, Spoke {
         // - Incoming + spend assets both allowed to be empty
         // - Incoming asset amounts allowed to be 0 (e.g., in case of adding an airdropped token)
         // - Incoming + spend assets are allowed to overlap (e.g., a fee for the incomingAsset charged in a spend asset)
-        uint256[] memory spendAssetAmounts;
         (
             spendAssets_,
-            spendAssetAmounts,
+            spendAssetAmounts_,
             incomingAssets_,
             minIncomingAssetAmounts_
-        ) = IIntegrationAdapter(_adapter).parseAssetsForMethod(_selector, _encodedArgs);
+        ) = IIntegrationAdapter(_adapter).parseAssetsForMethod(_selector, _encodedCallArgs);
         require(
-            spendAssets_.length == spendAssetAmounts.length,
+            spendAssets_.length == spendAssetAmounts_.length,
             "__preProcessCoI: spend assets arrays unequal"
         );
         require(
@@ -293,7 +300,7 @@ contract Vault is IVault, TokenUser, Spoke {
                 incomingAssets_,
                 minIncomingAssetAmounts_,
                 spendAssets_,
-                spendAssetAmounts
+                spendAssetAmounts_
             )
         );
 
@@ -304,7 +311,7 @@ contract Vault is IVault, TokenUser, Spoke {
             // TODO: decide whether or not to revoke approval at the end of an action,
             // and/or how to deal with the extreme edge case of overflow.
             // This will probably involve considering how limit orders could work.
-            __increaseApproval(spendAssets_[i], _adapter, spendAssetAmounts[i]);
+            __increaseApproval(spendAssets_[i], _adapter, spendAssetAmounts_[i]);
             preCallSpendAssetBalances_[i] = IERC20(spendAssets_[i]).balanceOf(address(this));
         }
     }
