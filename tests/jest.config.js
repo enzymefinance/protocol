@@ -9,14 +9,14 @@ module.exports = {
     forkGasLimit: config.forkGasLimit,
     forkStartingBalance: config.forkStartingBalance,
     forkUnlockedAccounts: config.forkUnlockedAccounts,
-    forkPrivateKeys: config.forkPrivateKeys,
+    forkAccounts: config.forkAccounts,
   },
   transform: {
     '^.+\\.(js|ts)$': 'ts-jest'
   },
   testRegex: '((\\.|/)(test))\\.(js|ts)$',
   moduleFileExtensions: ['ts', 'js', 'json', 'node', 'bin'],
-  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js', '<rootDir>/tests/jest.extend.js'],
   moduleNameMapper: {
     '~/config': '<rootDir>/config',
     '~/(.*)': '<rootDir>/tests/$1'

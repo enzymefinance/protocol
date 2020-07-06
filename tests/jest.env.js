@@ -16,24 +16,19 @@ class MelonEnvironment extends NodeEnvironment {
       network_id: 1,
       gasLimit: this.global.forkGasLimit,
       unlocked_accounts: this.global.forkUnlockedAccounts || [],
-      accounts: (this.global.forkPrivateKeys || []).map(privateKey => ({
-        secretKey: privateKey,
-        balance: this.global.forkStartingBalance,
-      })),
-    });
-
-    this.global.ethersProvider = new ethers.providers.Web3Provider(provider);
-    this.global.ethersSigners = (this.global.forkPrivateKeys || []).map(privateKey => {
-      const wallet = new ethers.Wallet(privateKey);
-      return wallet.connect(this.global.ethersProvider);
+      accounts: this.global.forkAccounts || [],
     });
 
     this.global.web3 = new Web3(provider, null, {
       transactionConfirmationBlocks: 1
     });
 
-    (this.global.forkPrivateKeys || []).map(privateKey => {
-      this.global.web3.eth.accounts.wallet.add(privateKey);
+    this.global.ethersProvider = new ethers.providers.Web3Provider(provider);
+    this.global.ethersSigners = this.global.forkAccounts.map(account => {
+      this.global.web3.eth.accounts.wallet.add(account.secretKey);
+
+      const wallet = new ethers.Wallet(account.secretKey);
+      return wallet.connect(this.global.ethersProvider);
     });
   }
 }

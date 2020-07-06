@@ -4,8 +4,10 @@ import { AddressLike } from '~/framework/types';
 import { Contract } from '~/framework/contract';
 import { FeeParams, PolicyParams } from '~/framework/fund';
 import { stringToBytes, encodeArgs, resolveAddress } from '~/framework/utils';
+import { FundFactory } from '~/framework/contracts';
 
 export interface SetupFundParams {
+  factory: FundFactory;
   manager?: ethers.Signer;
   name?: string;
   adapters?: AddressLike[];
@@ -15,14 +17,13 @@ export interface SetupFundParams {
 }
 
 export async function setupFundWithParams({
-  manager = ethersSigners[0],
+  factory,
   name = `test-fund-${Date.now()}`,
   fees = [],
   policies = [],
   adapters = [],
   denominator = fixtures.WETH,
 }: SetupFundParams) {
-  const fundFactory = Contract.fromArtifact(contracts.FundFactory, manager);
   const fundName = stringToBytes(name);
 
   const resolvedFees = await Promise.all(fees);
@@ -49,7 +50,7 @@ export async function setupFundWithParams({
 
   const denominatorAddress = await resolveAddress(denominator);
 
-  await fundFactory
+  await factory
     .beginFundSetup(
       fundName,
       feesAddresses,
@@ -62,12 +63,12 @@ export async function setupFundWithParams({
     )
     .send();
 
-  await fundFactory.createFeeManager().send();
-  await fundFactory.createPolicyManager().send();
-  await fundFactory.createShares().send();
-  await fundFactory.createVault().send();
+  await factory.createFeeManager().send();
+  await factory.createPolicyManager().send();
+  await factory.createShares().send();
+  await factory.createVault().send();
 
-  const result = await fundFactory.completeFundSetup().send();
+  const result = await factory.completeFundSetup().send();
   const event = result.events?.find(
     (item) => item.event === 'FundSetupCompleted',
   );
@@ -78,7 +79,8 @@ export async function setupFundWithParams({
     );
   }
 
-  const components = await getFundComponents(event.args!.hub, manager);
+  const signer = factory.$$ethers.signer;
+  const components = await getFundComponents(event.args!.hub, signer);
   return components;
 }
 

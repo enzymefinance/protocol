@@ -56,6 +56,7 @@ export class TransactionWrapper<
       ...args,
       overridez,
     );
+
     // We don't have a use-case for observing tx confirmation. Return the receipt promise right away.
     return (tx as ethers.ContractTransaction).wait();
   }
@@ -95,6 +96,7 @@ export class DeploymentTransactionWrapper<
         this.interface.encodeDeploy(args),
       ]),
     );
+
     return { ...overridez, data };
   }
 
@@ -228,9 +230,10 @@ export abstract class Contract {
   ) {
     this.interface = new ethers.utils.Interface(new.target.abi);
 
-    // TODO: Completely replace the ethers.Contract implementation with a custom version that is more tightly tailored for our use case.
+    // TODO: Completely replace the ethers.Contract implementation with a custom
+    // version that is more tightly tailored for our use case.
     this.$$ethers = new ethers.Contract(
-      ethers.utils.getAddress(addressOrName),
+      addressOrName,
       this.interface,
       signerOrProvider,
     );
@@ -238,13 +241,11 @@ export abstract class Contract {
     const uniques = Object.keys(this.interface.functions).filter(
       (signature, index, array) => {
         const fragment = this.interface.functions[signature];
-        return (
-          index ===
-          array.findIndex(
-            (item) =>
-              this.$$ethers.interface.functions[item].name === fragment.name,
-          )
-        );
+        const found = array.findIndex((item) => {
+          return this.$$ethers.interface.functions[item].name === fragment.name;
+        });
+
+        return index === found;
       },
     );
 
@@ -266,6 +267,7 @@ export abstract class Contract {
           fragment.inputs,
           args,
         );
+
         return this.$$ethers.callStatic[fragment.name](...resolved);
       };
     });
@@ -276,5 +278,23 @@ export abstract class Contract {
         return new TransactionWrapper(this, fragment, signature, args);
       };
     });
+  }
+
+  public attach(addressOrName: string): this {
+    const provider = this.$$ethers.signer ?? this.$$ethers.provider;
+    return new (<SpecificContract>this.constructor)(
+      addressOrName,
+      provider,
+    ) as this;
+  }
+
+  public connect(
+    providerOrSigner: ethers.providers.Provider | ethers.Signer,
+  ): this {
+    const address = this.$$ethers.address;
+    return new (<SpecificContract>this.constructor)(
+      address,
+      providerOrSigner,
+    ) as this;
   }
 }

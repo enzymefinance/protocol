@@ -14,10 +14,7 @@ const server = ganache.server({
   network_id: 1,
   gasLimit: config.forkGasLimit,
   unlocked_accounts: config.forkUnlockedAccounts || [],
-  accounts: (config.forkPrivateKeys || []).map(privateKey => ({
-    secretKey: privateKey,
-    balance: config.forkStartingBalance,
-  })),
+  accounts: (config.forkAccounts || []).map(item => item.secretKey),
 });
 
 server.listen(8545, (error, result) => {

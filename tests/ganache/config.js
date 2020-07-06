@@ -17,6 +17,11 @@ const forkPrivateKeys = [
   '0x2760966c32dd5179176ab8066895148f2bdfa3072427b9904660a0555d1c32e7'
 ];
 
+const forkAccounts = forkPrivateKeys.map(privateKey => ({
+  secretKey: privateKey,
+  balance: forkStartingBalance,
+}));
+
 const forkUnlockedAccounts = [
   ...Object.values(addresses.whales),
   addresses.zeroExV3.ZeroExV3Governor,
@@ -29,5 +34,6 @@ module.exports = {
   forkGasLimit,
   forkStartingBalance,
   forkPrivateKeys,
+  forkAccounts,
   forkUnlockedAccounts,
 };
