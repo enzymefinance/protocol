@@ -1,5 +1,5 @@
 import config from '~/config';
-import { Contract } from '~/framework/contract';
+import { fromArtifact } from '~/framework/utils';
 import * as contracts from '~/framework/contracts';
 
 // TOKENS
@@ -21,32 +21,32 @@ export const WBTC = new contracts.ERC20WithFields(config.tokens.WBTC);
 export const ZRX = new contracts.ERC20WithFields(config.tokens.ZRX);
 
 // ADAPTERS
-export const KyberAdapter = Contract.fromArtifact(contracts.KyberAdapter);
-export const ZeroExV2Adapter = Contract.fromArtifact(contracts.ZeroExV2Adapter);
-export const ZeroExV3Adapter = Contract.fromArtifact(contracts.ZeroExV3Adapter);
-export const UniswapAdapter = Contract.fromArtifact(contracts.UniswapAdapter);
-export const AirSwapAdapter = Contract.fromArtifact(contracts.AirSwapAdapter);
-export const EngineAdapter = Contract.fromArtifact(contracts.EngineAdapter);
-export const OasisDexAdapter = Contract.fromArtifact(contracts.OasisDexAdapter);
+export const KyberAdapter = fromArtifact(contracts.KyberAdapter);
+export const ZeroExV2Adapter = fromArtifact(contracts.ZeroExV2Adapter);
+export const ZeroExV3Adapter = fromArtifact(contracts.ZeroExV3Adapter);
+export const UniswapAdapter = fromArtifact(contracts.UniswapAdapter);
+export const AirSwapAdapter = fromArtifact(contracts.AirSwapAdapter);
+export const EngineAdapter = fromArtifact(contracts.EngineAdapter);
+export const OasisDexAdapter = fromArtifact(contracts.OasisDexAdapter);
 
 // POLICIES
-export const AssetBlacklist = Contract.fromArtifact(contracts.AssetBlacklist);
-export const AssetWhitelist = Contract.fromArtifact(contracts.AssetWhitelist);
-export const UserWhitelist = Contract.fromArtifact(contracts.UserWhitelist);
-export const PriceTolerance = Contract.fromArtifact(contracts.PriceTolerance);
-export const MaxConcentration = Contract.fromArtifact(contracts.MaxConcentration);
-export const MaxPositions = Contract.fromArtifact(contracts.MaxPositions);
+export const AssetBlacklist = fromArtifact(contracts.AssetBlacklist);
+export const AssetWhitelist = fromArtifact(contracts.AssetWhitelist);
+export const UserWhitelist = fromArtifact(contracts.UserWhitelist);
+export const PriceTolerance = fromArtifact(contracts.PriceTolerance);
+export const MaxConcentration = fromArtifact(contracts.MaxConcentration);
+export const MaxPositions = fromArtifact(contracts.MaxPositions);
 
 // FEES
-export const PerformanceFee = Contract.fromArtifact(contracts.PerformanceFee);
-export const ManagementFee = Contract.fromArtifact(contracts.ManagementFee);
+export const PerformanceFee = fromArtifact(contracts.PerformanceFee);
+export const ManagementFee = fromArtifact(contracts.ManagementFee);
 
 // FACTORIES
-export const FundFactory = Contract.fromArtifact(contracts.FundFactory);
-export const FeeManagerFactory = Contract.fromArtifact(contracts.FeeManagerFactory);
-export const PolicyManagerFactory = Contract.fromArtifact(contracts.PolicyManagerFactory);
+export const FundFactory = fromArtifact(contracts.FundFactory);
+export const FeeManagerFactory = fromArtifact(contracts.FeeManagerFactory);
+export const PolicyManagerFactory = fromArtifact(contracts.PolicyManagerFactory);
 
 // CORE
-export const Registry = Contract.fromArtifact(contracts.Registry);
-export const Engine = Contract.fromArtifact(contracts.Engine);
-export const KyberPriceFeed = Contract.fromArtifact(contracts.KyberPriceFeed);
+export const Registry = fromArtifact(contracts.Registry);
+export const Engine = fromArtifact(contracts.Engine);
+export const KyberPriceFeed = fromArtifact(contracts.KyberPriceFeed);

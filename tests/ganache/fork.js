@@ -10,14 +10,12 @@ if (!process.env.MAINNET_NODE_URL) {
 const server = ganache.server({
   logger: console,
   fork: process.env.MAINNET_NODE_URL,
-  port: config.forkPort,
-  network_id: 1,
   gasLimit: config.forkGasLimit,
-  unlocked_accounts: config.forkUnlockedAccounts || [],
-  accounts: (config.forkAccounts || []).map(item => item.secretKey),
+  unlocked_accounts: config.forkUnlockedAccounts,
+  accounts: config.forkAccounts,
 });
 
-server.listen(8545, (error, result) => {
+server.listen(config.forkPort, (error, result) => {
   if (error) {
     console.error(error);
     process.exit(1);

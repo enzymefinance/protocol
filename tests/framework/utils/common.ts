@@ -37,6 +37,45 @@ export function getArtifact(contract: SpecificContract): Artifact {
 }
 
 /**
+ *
+ * @param implementation
+ * @param response
+ * @param signerOrProvider
+ */
+export function fromDeployment<TContract extends Contract = Contract>(
+  implementation: SpecificContract<TContract>,
+  response: ethers.ContractTransaction,
+  signerOrProvider?: ethers.Signer | ethers.providers.Provider,
+) {
+  const address = ethers.utils.getContractAddress(response);
+  const instance = new implementation(address, signerOrProvider);
+
+  // TODO: Remove this once we have our own completely custom contract object.
+  ethers.utils.defineReadOnly(instance.$$ethers, 'deployTransaction', response);
+
+  return instance;
+}
+
+/**
+ *
+ * @param implementation
+ * @param signer
+ */
+export function fromArtifact<TContract extends Contract = Contract>(
+  implementation: SpecificContract<TContract>,
+  signerOrProvider?: ethers.Signer | ethers.providers.Provider,
+) {
+  const address = getArtifactAddress(getArtifact(implementation));
+  if (!address) {
+    throw new Error(
+      `Failed to retrieve address from artifact for contract ${implementation.name}`,
+    );
+  }
+
+  return new implementation(address, signerOrProvider);
+}
+
+/**
  * Retrieves the address of a deployed contract.
  *
  * @param artifact The artifact payload.

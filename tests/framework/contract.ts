@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import {
   resolveArguments,
   getArtifact,
-  getArtifactAddress,
+  fromDeployment,
 } from '~/framework/utils';
 
 export class TransactionWrapper<
@@ -115,7 +115,7 @@ export class DeploymentTransactionWrapper<
   public async send(overrides?: ethers.Overrides): Promise<TContract> {
     const tx = await this.populate(overrides);
     const response = await this.signer.sendTransaction(tx);
-    return Contract.fromDeployment(this.contract, response, this.signer);
+    return fromDeployment(this.contract, response, this.signer);
   }
 }
 
@@ -132,58 +132,6 @@ export abstract class Contract {
    * The contract abi.
    */
   public static readonly abi: string[];
-
-  /**
-   *
-   * @param implementation
-   * @param response
-   * @param signerOrProvider
-   */
-  public static fromDeployment<TContract extends Contract = Contract>(
-    implementation: SpecificContract<TContract>,
-    response: ethers.ContractTransaction,
-    signerOrProvider?: ethers.Signer | ethers.providers.Provider,
-  ) {
-    const address = ethers.utils.getContractAddress(response);
-    const instance = new implementation(address, signerOrProvider);
-
-    // TODO: Remove this once we have our own completely custom contract object.
-    ethers.utils.defineReadOnly(
-      instance.$$ethers,
-      'deployTransaction',
-      response,
-    );
-
-    return instance;
-  }
-
-  /**
-   *
-   * @param implementation
-   * @param signer
-   */
-  public static fromArtifact<TContract extends Contract = Contract>(
-    implementation: SpecificContract<TContract>,
-    signerOrProvider?: ethers.Signer | ethers.providers.Provider,
-  ) {
-    const address = this.artifactAddress(implementation);
-    return new implementation(address, signerOrProvider);
-  }
-
-  /**
-   *
-   * @param implementation
-   */
-  public static artifactAddress(implementation: SpecificContract): string {
-    const address = getArtifactAddress(getArtifact(implementation));
-    if (!address) {
-      throw new Error(
-        `Failed to retrieve address from artifact for contract ${implementation.name}`,
-      );
-    }
-
-    return address;
-  }
 
   /**
    * The contract interface.
@@ -257,6 +205,11 @@ export abstract class Contract {
     });
   }
 
+  /**
+   * @todo Write this.
+   *
+   * @param addressOrName
+   */
   public attach(addressOrName: string): this {
     const provider = this.$$ethers.signer ?? this.$$ethers.provider;
     return new (<SpecificContract>this.constructor)(
@@ -265,6 +218,11 @@ export abstract class Contract {
     ) as this;
   }
 
+  /**
+   * @todo Write this.
+   *
+   * @param providerOrSigner
+   */
   public connect(
     providerOrSigner: ethers.providers.Provider | ethers.Signer,
   ): this {
