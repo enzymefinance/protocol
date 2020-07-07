@@ -3,8 +3,6 @@ pragma solidity 0.6.8;
 
 import "../../dependencies/token/IERC20.sol";
 import "../../dependencies/TokenUser.sol";
-import "../../fund/hub/Hub.sol";
-import "../../fund/hub/Spoke.sol";
 import "../../fund/hub/SpokeCallee.sol";
 import "../../registry/Registry.sol";
 import "../IIntegrationAdapter.sol";
@@ -168,7 +166,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
     function __isVault(address _who) internal view returns (bool) {
         // 1. Is valid Spoke of a Registered fund
         // 2. Is the vault of the registered fund
-        try Spoke(_who).HUB() returns (address hub) {
+        try ISpoke(_who).HUB() returns (address hub) {
             return Registry(REGISTRY).fundIsRegistered(hub) && __getVault(hub) == _who;
         }
         catch {
