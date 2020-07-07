@@ -6,23 +6,25 @@ import "../exchanges/interfaces/IKyberNetworkProxy.sol";
 import "../registry/IRegistry.sol";
 
 /// @title Price Feed Template
-/// @author Melonport AG <team@melonport.com>
+/// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Routes external prices to smart contracts from Kyber
 contract KyberPriceFeed is DSMath {
+    event ExpectedRateWethQtySet(uint256 expectedRateWethQty);
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
     event MaxSpreadSet(uint256 maxSpread);
     event PricesUpdated(address[] assets, uint256[] prices);
     event RegistrySet(address newRegistry);
     event UpdaterSet(address updater);
 
-    uint8 public constant KYBER_PRECISION = 18;
-    uint32 public constant VALIDITY_INTERVAL = 2 days;
+    uint256 public constant KYBER_PRECISION = 18;
+    uint256 public constant VALIDITY_INTERVAL = 2 days;
     address public KYBER_NETWORK_PROXY;
     address public QUOTE_ASSET;
-    uint256 private lastUpdate;
+    uint256 public lastUpdate;
     uint256 public maxPriceDeviation; // percent, expressed as a uint256 (fraction of 10^18)
     uint256 public maxSpread;
     address public updater;
+    uint256 public expectedRateWethQty;
     mapping (address => uint256) public prices;
     IRegistry public registry;
 
@@ -31,7 +33,9 @@ contract KyberPriceFeed is DSMath {
         address _kyberNetworkProxy,
         uint256 _maxSpread,
         address _quoteAsset,
-        uint256 _maxPriceDeviation
+        uint256 _maxPriceDeviation,
+        uint256 _expectedRateWethQty,
+        address _updater
     )
         public
     {
@@ -40,7 +44,8 @@ contract KyberPriceFeed is DSMath {
         maxSpread = _maxSpread;
         QUOTE_ASSET = _quoteAsset;
         maxPriceDeviation = _maxPriceDeviation;
-        updater = registry.owner();
+        expectedRateWethQty = _expectedRateWethQty;
+        updater = _updater;
     }
 
     modifier onlyRegistryOwner() {
@@ -95,6 +100,13 @@ contract KyberPriceFeed is DSMath {
         }
         lastUpdate = block.timestamp;
         emit PricesUpdated(_saneAssets, newPrices);
+    }
+
+    /// @notice Update the srcQty to use in getExpectedRate(), in terms of WETH
+    /// @param _expectedRateWethQty New srcQty, in terms of WETH
+    function setExpectedRateWethQty(uint256 _expectedRateWethQty) external onlyRegistryOwner {
+        expectedRateWethQty = _expectedRateWethQty;
+        emit ExpectedRateWethQtySet(_expectedRateWethQty);
     }
 
     /// @notice Update maximum price deviation between price hints and Kyber price
@@ -276,19 +288,19 @@ contract KyberPriceFeed is DSMath {
         (bidRate,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
             __getKyberMaskAsset(_baseAsset),
             __getKyberMaskAsset(_quoteAsset),
-            registry.getReserveMin(_baseAsset)
+            __calcSrcQtyForExpectedRateLookup(_baseAsset)
         );
         (bidRateOfReversePair,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
             __getKyberMaskAsset(_quoteAsset),
             __getKyberMaskAsset(_baseAsset),
-            registry.getReserveMin(_quoteAsset)
+            __calcSrcQtyForExpectedRateLookup(_quoteAsset)
         );
 
         if (bidRate == 0 || bidRateOfReversePair == 0) {
             return (false, 0);  // return early and avoid revert
         }
 
-        uint256 askRate = 10 ** (uint256(KYBER_PRECISION) * 2) / bidRateOfReversePair;
+        uint256 askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
         /**
           Average the bid/ask prices:
           avgPriceFromKyber = (bidRate + askRate) / 2
@@ -299,7 +311,7 @@ contract KyberPriceFeed is DSMath {
         kyberPrice_ = mul(
             add(bidRate, askRate),
             10 ** uint256(ERC20WithFields(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
-        ) / mul(2, 10 ** uint256(KYBER_PRECISION));
+        ) / mul(2, 10 ** KYBER_PRECISION);
 
         // Find the "quoted spread", to inform caller whether it is below maximum
         uint256 spreadFromKyber;
@@ -308,7 +320,7 @@ contract KyberPriceFeed is DSMath {
         } else {
             spreadFromKyber = mul(
                 sub(askRate, bidRate),
-                10 ** uint256(KYBER_PRECISION)
+                10 ** KYBER_PRECISION
             ) / askRate;
         }
 
@@ -317,6 +329,19 @@ contract KyberPriceFeed is DSMath {
     }
 
     // INTERNAL FUNCTIONS
+
+    /// @dev Helper to calculate the srcQty with which to call getExpectedRate()
+    function __calcSrcQtyForExpectedRateLookup(address _srcAsset) internal view returns (uint256) {
+        uint256 lastSrcAssetPrice = prices[_srcAsset];
+        // If there has not been a price update yet, use 1 unit of the srcAsset
+        if (lastSrcAssetPrice == 0) {
+            return 10 ** uint256(ERC20WithFields(_srcAsset).decimals());
+        }
+        return mul(
+            expectedRateWethQty,
+            10 ** uint256(ERC20WithFields(_srcAsset).decimals())
+        ) / lastSrcAssetPrice;
+    }
 
     /// @dev Return Kyber ETH asset symbol if _asset is WETH
     function __getKyberMaskAsset(address _asset) internal view returns (address) {
@@ -363,6 +388,6 @@ contract KyberPriceFeed is DSMath {
         } else {
             deviation = sub(_sanePrice, _priceFromKyber);
         }
-        return mul(deviation, 10 ** uint256(KYBER_PRECISION)) / _sanePrice <= maxPriceDeviation;
+        return mul(deviation, 10 ** KYBER_PRECISION) / _sanePrice <= maxPriceDeviation;
     }
 }
