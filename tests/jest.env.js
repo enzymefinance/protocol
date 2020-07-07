@@ -11,6 +11,7 @@ class MelonEnvironment extends NodeEnvironment {
       fork: `http://127.0.0.1:${config.forkPort}`,
       gasLimit: '0x989680',
       accounts: config.forkAccounts,
+      unlocked_accounts: config.forkUnlockedAccounts,
     });
 
     this.global.web3 = new Web3(provider);

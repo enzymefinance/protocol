@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "download-thirdparty": "node scripts/download-thirdparty",
-    "codegen": "ts-node scripts/codegen",
+    "codegen": "crestproject codegen \"build/contracts/**.json\" tests-new/contracts",
     "compile": "truffle compile",
     "postcompile": "yarn download-thirdparty",
     "deploy": "truffle migrate --skip-dry-run",
@@ -39,25 +39,20 @@
     "@0x/types-v2": "npm:@0x/types@2.4.3",
     "@0x/utils": "^5.1.2",
     "@airswap/order-utils": "^0.3.20",
-    "@ethersproject/cli": "^5.0.1",
+    "@crestproject/crestproject": "^0.0.4",
+    "@nomiclabs/buidler": "^1.3.8",
     "@openzeppelin/contracts": "3.0.1",
     "@types/jest": "^26.0.3",
-    "@types/rimraf": "^3.0.0",
-    "ethers": "^5.0.3",
+    "crestproject": "^0.0.0",
+    "ethers": "^5.0.5",
     "ganache-core": "^2.11.0-beta.0",
-    "glob": "^7.1.6",
     "jest": "^26.1.0",
-    "jest-matcher-utils": "^26.1.0",
     "prettier": "^2.0.5",
     "request-promise": "^4.2.2",
-    "rimraf": "^3.0.2",
     "solhint": "^3.0.0",
     "truffle": "^5.1.32",
     "ts-jest": "^26.1.1",
-    "ts-morph": "^7.1.2",
-    "ts-node": "^8.10.2",
-    "tsconfig-paths": "^3.9.0",
-    "typescript": "^3.9.5",
+    "typescript": "^4.0.0-beta",
     "web3": "1.2.9",
     "web3-eth-abi": "1.2.9",
     "web3-utils": "1.2.9"
@@ -66,26 +61,37 @@
     "node": "^12"
   },
   "jest": {
-    "preset": "ts-jest",
-    "roots": [
-      "<rootDir>/tests"
-    ],
-    "testEnvironment": "<rootDir>/tests/jest.env.js",
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/jest.setup.ts",
-      "<rootDir>/tests/jest.extend.ts"
-    ],
-    "transform": {
-      "^.+\\.[jt]s$": "ts-jest"
-    },
-    "moduleNameMapper": {
-      "~/config": "<rootDir>/config",
-      "~/(.*)": "<rootDir>/tests/$1"
-    },
-    "globals": {
-      "ts-jest": {
-        "diagnostics": false
+    "projects": [
+      {
+        "displayName": "old",
+        "preset": "ts-jest",
+        "roots": [
+          "<rootDir>/tests"
+        ],
+        "testEnvironment": "<rootDir>/tests/jest.env.js",
+        "setupFilesAfterEnv": [
+          "<rootDir>/tests/jest.setup.js"
+        ],
+        "transform": {
+          "^.+\\.[jt]s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "~/config": "<rootDir>/config",
+          "~/(.*)": "<rootDir>/tests/$1"
+        },
+        "globals": {
+          "ts-jest": {
+            "diagnostics": false
+          }
+        }
+      },
+      {
+        "displayName": "unit",
+        "preset": "crestproject",
+        "roots": [
+          "<rootDir>/tests-new/unit"
+        ]
       }
-    }
+    ]
   }
 }

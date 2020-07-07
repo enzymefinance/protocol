@@ -1,13 +1,3 @@
 # Only format files in the testing framework directory for now.
 /*
-!/tests
-/tests/*
-!/tests/*.ts
-
-# Do not auto-format the fixtures file and generated code.
-/tests/framework/fixtures.ts
-/tests/framework/contracts/*
-
-!/scripts
-/scripts/*
-!/scripts/codegen
+!/tests-new

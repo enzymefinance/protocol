@@ -3,4 +3,4 @@ node_modules/
 
 # ignore built code
 build/
-tests/framework/contracts/
+tests-new/contracts/

@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { BN } from 'web3-utils';
-import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
 
 // Mute the max event listeners warnings
 require('events').EventEmitter.defaultMaxListeners = 100;
@@ -13,23 +12,31 @@ expect.extend({
   bigNumberCloseTo(received, expected, margin = new BN(100)) {
     const passMessage = (received, expected) => () => {
       return (
-        matcherHint('.not.bigNumberCloseTo') +
+        this.matcherHint('.not.bigNumberCloseTo') +
         '\n\n' +
         'Expected and expected.toString() values to not be close:\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.this.printReceived(received)} ${this.this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
     const failMessage = (received, expected) => () => {
       return (
-        matcherHint('.bigNumberCloseTo') +
+        this.matcherHint('.bigNumberCloseTo') +
         '\n\n' +
         'Expected and expected.toString():\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
@@ -58,23 +65,31 @@ expect.extend({
   bigNumberEq(received, expected) {
     const passMessage = (received, expected) => () => {
       return (
-        matcherHint('.not.bigNumberEq') +
+        this.matcherHint('.not.bigNumberEq') +
         '\n\n' +
         'Expected and expected.toString() values to not be equal:\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
     const failMessage = (received, expected) => () => {
       return (
-        matcherHint('.bigNumberEq') +
+        this.matcherHint('.bigNumberEq') +
         '\n\n' +
         'Expected and expected.toString():\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
@@ -98,23 +113,31 @@ expect.extend({
   bigNumberGtEq(received, expected) {
     const passMessage = (received, expected) => () => {
       return (
-        matcherHint('.not.bigNumberGtEq') +
+        this.matcherHint('.not.bigNumberGtEq') +
         '\n\n' +
         'Expected and expected.toString() values to not be greater than or equal to:\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
     const failMessage = (received, expected) => () => {
       return (
-        matcherHint('.bigNumberGtEq') +
+        this.matcherHint('.bigNumberGtEq') +
         '\n\n' +
         'Expected and expected.toString():\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
@@ -138,23 +161,31 @@ expect.extend({
   bigNumberGt(received, expected) {
     const passMessage = (received, expected) => () => {
       return (
-        matcherHint('.not.bigNumberGt') +
+        this.matcherHint('.not.bigNumberGt') +
         '\n\n' +
         'Expected and expected.toString() values to not be greater than:\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
     const failMessage = (received, expected) => () => {
       return (
-        matcherHint('.bigNumberGt') +
+        this.matcherHint('.bigNumberGt') +
         '\n\n' +
         'Expected and expected.toString():\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
@@ -178,23 +209,31 @@ expect.extend({
   bigNumberLt(received, expected) {
     const passMessage = (received, expected) => () => {
       return (
-        matcherHint('.not.bigNumberLt') +
+        this.matcherHint('.not.bigNumberLt') +
         '\n\n' +
         'Expected and expected.toString() values to not be less than:\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
     const failMessage = (received, expected) => () => {
       return (
-        matcherHint('.bigNumberLt') +
+        this.matcherHint('.bigNumberLt') +
         '\n\n' +
         'Expected and expected.toString():\n' +
-        `  ${printExpected(expected)} ${printExpected(expected.toString())}\n` +
+        `  ${this.printExpected(expected)} ${this.printExpected(
+          expected.toString(),
+        )}\n` +
         'Received and received.toString():\n' +
-        `  ${printReceived(received)} ${printReceived(received.toString())}`
+        `  ${this.printReceived(received)} ${this.printReceived(
+          received.toString(),
+        )}`
       );
     };
 
@@ -217,22 +256,22 @@ expect.extend({
 expect.extend({
   toThrowFlexible(e, subString = null) {
     const passMessage = (e, subString) => () => {
-      return matcherHint('.not.toThrowFlexible') + '\n\n' + subString
+      return this.matcherHint('.not.toThrowFlexible') + '\n\n' + subString
         ? 'Expected to not throw with substring:\n' +
-            `  ${printExpected(subString)}\n` +
+            `  ${this.printExpected(subString)}\n` +
             'Full error message:\n' +
-            `  ${printReceived(e.message)}`
+            `  ${this.printReceived(e.message)}`
         : 'Expected to not throw, but received error:\n' +
-            `  ${printExpected(e)}`;
+            `  ${this.printExpected(e)}`;
     };
 
     const failMessage = (e, isError, subString) => () => {
-      return matcherHint('.toThrowFlexible') + '\n\n' + isError
+      return this.matcherHint('.toThrowFlexible') + '\n\n' + isError
         ? 'Expected error with substring:\n' +
-            `  ${printExpected(subString)}\n` +
+            `  ${this.printExpected(subString)}\n` +
             'Received message:\n' +
-            `  ${printReceived(e)}`
-        : 'Expected error but received:\n' + `  ${printReceived(e)}`;
+            `  ${this.printReceived(e)}`
+        : 'Expected error but received:\n' + `  ${this.printReceived(e)}`;
     };
 
     const hasMessage =

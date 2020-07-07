@@ -1,10 +1,10 @@
-import { FundComponents } from '~/framework/fund';
-import { contracts } from '~/framework';
+import { SharesRequestor } from '../contracts/SharesRequestor';
+import { FundComponents } from './setup';
 import { ethers } from 'ethers';
 
 export interface RequestSharesParams {
   fund: FundComponents;
-  requestor: contracts.SharesRequestor;
+  requestor: SharesRequestor;
   amgu?: ethers.BigNumberish;
   amount?: ethers.BigNumberish;
   shares?: ethers.BigNumberish;
@@ -17,7 +17,8 @@ export function requestShares({
   amount = ethers.utils.parseEther('1'),
   shares = ethers.utils.parseEther('1'),
 }: RequestSharesParams) {
-  return requestor.requestShares(fund.hub, amount, shares).send({
-    value: amgu,
-  });
+  return requestor.requestShares
+    .args(fund.hub.address, amount, shares)
+    .value(amgu)
+    .send();
 }
