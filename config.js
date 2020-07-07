@@ -17,6 +17,9 @@ module.exports = {
   uniswap: {
     UniswapFactory: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
   },
+  uniswapV2: {
+    UniswapV2Router2: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+  },
   zeroExV2: {
     ZeroExV2Exchange: '0x080bf510fcbf18b91105470639e9561022937712',
     ZeroExV2ERC20Proxy: '0x95e6f48254609a6ee006f7d493c8e5fb97094cef'
