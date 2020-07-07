@@ -1,18 +1,21 @@
-import { ethers } from 'ethers';
+import { ethers, TransactionReceipt } from 'ethers';
 
 declare global {
-  var ethersProvider: ethers.providers.Provider;
-  var ethersSigners: ethers.Signer[];
-
   namespace jest {
     interface Matchers<R> {
-      toHaveBeenCalledOnContract: (method?: string) => object;
-      toHaveBeenCalledOnContractTimes: (times: number, method?: string) => object;
+      contractCalled: (method?: string) => object;
+      contractCalledTimes: (times: number, method?: string) => object;
+      transactionReverts: () => Promise<object>;
+      transactionRevertsWith: (search: string) => Promise<object>;
+      bigNumberEq: (received: ethers.BigNumberish) => object;
     }
 
     interface Expect {
-      toHaveBeenCalledOnContract: (method?: string) => object;
-      toHaveBeenCalledOnContractTimes: (times: number, method?: string) => object;
+      contractCalled: (method?: string) => object;
+      contractCalledTimes: (times: number, method?: string) => object;
+      transactionReverts: () => Promise<object>;
+      transactionRevertsWith: (search: string) => Promise<object>;
+      bigNumberEq: (received: ethers.BigNumberish) => object;
     }
   }
 }

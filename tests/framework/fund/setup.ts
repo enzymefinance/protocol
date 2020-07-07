@@ -1,7 +1,6 @@
 import { ethers } from 'ethers';
 import { contracts, fixtures } from '~/framework';
 import { AddressLike } from '~/framework/types';
-import { Contract } from '~/framework/contract';
 import { FeeParams, PolicyParams } from '~/framework/fund';
 import { stringToBytes, encodeArgs, resolveAddress } from '~/framework/utils';
 import { FundFactory } from '~/framework/contracts';
@@ -94,7 +93,7 @@ export interface FundComponents {
 
 export async function getFundComponents(
   address: string,
-  signerOrProvider: ethers.Signer | ethers.providers.Provider = ethersProvider,
+  signerOrProvider: ethers.Signer | ethers.providers.Provider,
 ): Promise<FundComponents> {
   const hub = new contracts.Hub(address, signerOrProvider);
   const [

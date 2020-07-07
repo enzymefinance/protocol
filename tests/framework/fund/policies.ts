@@ -34,3 +34,16 @@ export async function assetWhitelistPolicy(
     ],
   };
 }
+
+export async function userWhitelistPolicy(
+  whitelist: AddressLike[],
+  address: AddressLike = fixtures.UserWhitelist,
+): Promise<PolicyParams> {
+  return {
+    address: await resolveAddress(address),
+    encoding: ['address[]'],
+    settings: [
+      await Promise.all(whitelist.map((item) => resolveAddress(item))),
+    ],
+  };
+}

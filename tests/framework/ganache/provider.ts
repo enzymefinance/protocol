@@ -14,7 +14,7 @@ export interface Snapshot<TFixture> {
 
 export class GanacheProvider extends ethers.providers.Web3Provider {
   public readonly snapshots = new Map<FixtureCreator<any>, Snapshot<any>>();
-  public readonly accounts: ethers.Signer[];
+  public readonly accounts: ethers.Wallet[];
 
   public static fork(
     fork: string | ganache.Provider = `http://127.0.0.1:${config.forkPort}`,

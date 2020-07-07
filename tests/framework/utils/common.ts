@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import addresses from '~/config';
 import { Contract, SpecificContract } from '~/framework/contract';
 import { Artifact, AddressLike } from '~/framework/types';
+import { contracts } from '~/framework';
 
 export const artifactDir = path.join(__dirname, '../../../build/contracts');
 export const mainnetContractAddresses = Object.values(addresses).reduce(
@@ -37,6 +38,7 @@ export function getArtifact(contract: SpecificContract): Artifact {
 }
 
 /**
+ * @todo Write this.
  *
  * @param implementation
  * @param response
@@ -57,6 +59,7 @@ export function fromDeployment<TContract extends Contract = Contract>(
 }
 
 /**
+ * @todo Write this.
  *
  * @param implementation
  * @param signer
@@ -117,6 +120,26 @@ export function isContract(
   return false;
 }
 
+/**
+ * Checks if the given object is a signer.
+ *
+ * @param value The suspected signer.
+ * @returns true if the given value is a signer, false otherwise.
+ */
+export function isWallet(value: Contract | any): value is ethers.Wallet {
+  if (value instanceof ethers.Wallet) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * @todo Write this.
+ *
+ * @param signerOrProvider
+ * @param value
+ */
 export async function resolveAddressOrName(
   signerOrProvider: ethers.Signer | ethers.providers.Provider,
   value: AddressLike | Promise<AddressLike>,
@@ -129,12 +152,21 @@ export async function resolveAddressOrName(
   return signerOrProvider.resolveName(resolved);
 }
 
+/**
+ * @todo Write this.
+ *
+ * @param value
+ */
 export async function resolveAddress(
   value: AddressLike | Promise<AddressLike>,
 ) {
   const resolved = await value;
   if (typeof resolved === 'string' && resolved.startsWith('0x')) {
     return resolved;
+  }
+
+  if (isWallet(resolved)) {
+    return resolved.getAddress();
   }
 
   if (isContract(resolved)) {
@@ -153,6 +185,13 @@ export async function resolveAddress(
   throw new Error('Failed to resolve address');
 }
 
+/**
+ * @todo Write this.
+ *
+ * @param signerOrProvider
+ * @param type
+ * @param value
+ */
 export async function resolveArguments(
   signerOrProvider: ethers.Signer | ethers.providers.Provider,
   type: ethers.utils.ParamType | ethers.utils.ParamType[],
@@ -194,16 +233,46 @@ export async function resolveArguments(
   return resolved;
 }
 
+/**
+ * @todo Write this.
+ *
+ * @param value
+ * @param numBytes
+ */
 export const stringToBytes = (value: string, numBytes: number = 32) => {
   const string = Buffer.from(value, 'utf8').toString('hex');
   const prefixed = string.startsWith('0x') ? string : `0x${string}`;
   return ethers.utils.hexZeroPad(prefixed, numBytes);
 };
 
+/**
+ * @todo Write this.
+ *
+ * @param types
+ * @param args
+ */
 export function encodeArgs(
   types: (string | ethers.utils.ParamType)[],
   args: any[],
 ) {
   const hex = ethers.utils.defaultAbiCoder.encode(types, args);
   return ethers.utils.arrayify(hex);
+}
+
+export async function transferToken(
+  token: contracts.IERC20,
+  to: AddressLike,
+  amount: ethers.BigNumberish = ethers.utils.parseEther('1'),
+) {
+  const address = await resolveAddress(to);
+  return token.transfer(address, amount).send();
+}
+
+export async function approveToken(
+  token: contracts.IERC20,
+  spender: AddressLike,
+  amount: ethers.BigNumberish = ethers.utils.parseEther('1'),
+) {
+  const address = await resolveAddress(spender);
+  return token.approve(address, amount).send();
 }

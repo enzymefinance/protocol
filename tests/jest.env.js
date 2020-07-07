@@ -23,12 +23,8 @@ class MelonEnvironment extends NodeEnvironment {
       transactionConfirmationBlocks: 1
     });
 
-    this.global.ethersProvider = new ethers.providers.Web3Provider(provider);
-    this.global.ethersSigners = this.global.forkAccounts.map(account => {
+    this.global.forkAccounts.forEach(account => {
       this.global.web3.eth.accounts.wallet.add(account.secretKey);
-
-      const wallet = new ethers.Wallet(account.secretKey);
-      return wallet.connect(this.global.ethersProvider);
     });
   }
 }
