@@ -2,20 +2,13 @@ import { ethers, TransactionReceipt } from 'ethers';
 
 declare global {
   namespace jest {
+    // TODO: Add more matchers.
     interface Matchers<R> {
-      contractCalled: (method?: string) => object;
-      contractCalledTimes: (times: number, method?: string) => object;
-      transactionReverts: () => Promise<object>;
-      transactionRevertsWith: (search: string) => Promise<object>;
-      bigNumberEq: (received: ethers.BigNumberish) => object;
-    }
-
-    interface Expect {
-      contractCalled: (method?: string) => object;
-      contractCalledTimes: (times: number, method?: string) => object;
-      transactionReverts: () => Promise<object>;
-      transactionRevertsWith: (search: string) => Promise<object>;
-      bigNumberEq: (received: ethers.BigNumberish) => object;
+      toBeCalledOnContract: (method?: string) => object;
+      toBeCalledOnContractTimes: (times: number, method?: string) => object;
+      toRevert: () => Promise<object>;
+      toRevertWith: (search: string) => Promise<object>;
+      toEqualBn: (received: ethers.BigNumberish) => object;
     }
   }
 }

@@ -1,9 +1,8 @@
-const utils = require('web3-utils');
+const ethers = require('ethers');
 const addresses = require('../../config');
 
 const forkPort = process.env.GANACHE_FORK_PORT || 8545;
-const forkGasLimit = '0x989680';
-const forkStartingBalance = utils.toWei('10000000', 'ether');
+const forkStartingBalance = ethers.utils.parseEther('10000000').toString();
 const forkPrivateKeys = [
   '0xd3fdff38aaf7be159fc1c12c66982fea997df08ca5b91b399e437370d3681721',
   '0x9cc70449981c6df178133db4c075c408876e8be3b147fa11f8ee947faa0b0011',
@@ -31,7 +30,6 @@ const forkUnlockedAccounts = [
 
 module.exports = {
   forkPort,
-  forkGasLimit,
   forkStartingBalance,
   forkPrivateKeys,
   forkAccounts,

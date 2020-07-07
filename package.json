@@ -25,11 +25,11 @@
     "compile": "truffle compile",
     "postcompile": "yarn download-thirdparty",
     "deploy": "truffle migrate --skip-dry-run",
-    "devchain": "node tests/ganache/fork",
+    "devchain": "ts-node --require tsconfig-paths/register tests/ganache/fork",
     "format": "prettier --write {scripts,tests}/{*,**/*}.ts",
     "typecheck": "tsc --noEmit",
     "lint": "solhint src/**/*.sol",
-    "test": "yarn jest --config tests/jest.config.js"
+    "test": "yarn jest"
   },
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
@@ -56,6 +56,7 @@
     "ts-jest": "^26.1.1",
     "ts-morph": "^7.1.2",
     "ts-node": "^8.10.2",
+    "tsconfig-paths": "^3.9.0",
     "typescript": "^3.9.5",
     "web3": "1.2.9",
     "web3-eth-abi": "1.2.9",
@@ -63,5 +64,28 @@
   },
   "engines": {
     "node": "^12"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "testEnvironment": "<rootDir>/tests/jest.env.js",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/jest.setup.ts",
+      "<rootDir>/tests/jest.extend.ts"
+    ],
+    "transform": {
+      "^.+\\.[jt]s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "~/config": "<rootDir>/config",
+      "~/(.*)": "<rootDir>/tests/$1"
+    },
+    "globals": {
+      "ts-jest": {
+        "diagnostics": false
+      }
+    }
   }
 }

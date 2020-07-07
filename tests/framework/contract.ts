@@ -69,7 +69,7 @@ export class DeploymentTransactionWrapper<
   public readonly args: Promise<any[]>;
 
   constructor(
-    public readonly contract: SpecificContract<TContract>,
+    public readonly contract: ContractBoilerplate<TContract>,
     public readonly signer: ethers.Signer,
     args: any[] = [],
   ) {
@@ -119,7 +119,7 @@ export class DeploymentTransactionWrapper<
   }
 }
 
-export interface SpecificContract<TContract extends Contract = Contract> {
+export interface ContractBoilerplate<TContract extends Contract = Contract> {
   new (
     addressOrName: string,
     signerOrProvider?: ethers.Signer | ethers.providers.Provider,
@@ -212,7 +212,7 @@ export abstract class Contract {
    */
   public attach(addressOrName: string): this {
     const provider = this.$$ethers.signer ?? this.$$ethers.provider;
-    return new (<SpecificContract>this.constructor)(
+    return new (<ContractBoilerplate>this.constructor)(
       addressOrName,
       provider,
     ) as this;
@@ -227,7 +227,7 @@ export abstract class Contract {
     providerOrSigner: ethers.providers.Provider | ethers.Signer,
   ): this {
     const address = this.$$ethers.address;
-    return new (<SpecificContract>this.constructor)(
+    return new (<ContractBoilerplate>this.constructor)(
       address,
       providerOrSigner,
     ) as this;

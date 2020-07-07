@@ -38,7 +38,7 @@ describe('general walkthrough', () => {
     const { allowed, fund } = await provider.snapshot(fixture);
     const requestor = fromArtifact(contracts.SharesRequestor, allowed);
 
-    await expect(requestShares({ fund, requestor })).transactionRevertsWith(
+    await expect(requestShares({ fund, requestor })).toRevertWith(
       'Actual allowance is less than _investmentAmount',
     );
   });
@@ -50,7 +50,7 @@ describe('general walkthrough', () => {
     await transferToken(fixtures.WETH.connect(deployer), disallowed);
     await approveToken(fixtures.WETH.connect(disallowed), requestor);
 
-    await expect(requestShares({ fund, requestor })).transactionRevertsWith(
+    await expect(requestShares({ fund, requestor })).toRevertWith(
       'Rule evaluated to false: USER_WHITELIST',
     );
   });
@@ -66,7 +66,7 @@ describe('general walkthrough', () => {
     await requestShares({ fund, requestor, amount, shares });
 
     const balance = await fund.shares.balanceOf(allowed);
-    expect(balance).bigNumberEq(shares);
+    expect(balance).toEqualBn(shares);
   });
 
   it('cannot invest in a shutdown fund', async () => {
@@ -74,7 +74,7 @@ describe('general walkthrough', () => {
     const requestor = fromArtifact(contracts.SharesRequestor, allowed);
 
     await fund.hub.shutDownFund().send();
-    await expect(requestShares({ fund, requestor })).transactionRevertsWith(
+    await expect(requestShares({ fund, requestor })).toRevertWith(
       'Fund is not active',
     );
   });

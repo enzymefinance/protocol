@@ -2,7 +2,7 @@
 /*
 !/tests
 /tests/*
-!/tests/framework
+!/tests/*.ts
 
 # Do not auto-format the fixtures file and generated code.
 /tests/framework/fixtures.ts

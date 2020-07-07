@@ -1,5 +1,5 @@
-const utils = require('web3-utils');
 const ganache = require('ganache-core');
+const ethers = require('ethers');
 const config = require('./config');
 
 if (!process.env.MAINNET_NODE_URL) {
@@ -10,18 +10,12 @@ if (!process.env.MAINNET_NODE_URL) {
 const server = ganache.server({
   logger: console,
   fork: process.env.MAINNET_NODE_URL,
-  gasLimit: config.forkGasLimit,
   unlocked_accounts: config.forkUnlockedAccounts,
   accounts: config.forkAccounts,
 });
 
-server.listen(config.forkPort, (error, result) => {
-  if (error) {
-    console.error(error);
-    process.exit(1);
-  }
-
-  const state = result ? result : server.provider.manager.state;
+server.listen(config.forkPort, () => {
+  const state = server.provider.manager.state;
 
   console.log('');
   console.log('Available Accounts');
@@ -29,13 +23,13 @@ server.listen(config.forkPort, (error, result) => {
 
   const accounts = state.accounts;
   const addresses = Object.keys(accounts);
-  const ethInWei = new utils.BN(utils.toWei('1', 'ether'));
+  const ethInWei = ethers.BigNumber.from(ethers.utils.parseEther('1'));
 
   addresses.forEach((address, index) => {
-    const balance = new utils.BN(accounts[address].account.balance);
-    const strBalance = balance.divRound(ethInWei).toString();
+    const balance = ethers.BigNumber.from(accounts[address].account.balance);
+    const strBalance = balance.div(ethInWei).toString();
     const about = balance.mod(ethInWei).isZero() ? '' : '~';
-    console.log(`(${index}) ${utils.toChecksumAddress(address)} (${about}${strBalance} ETH)`);
+    console.log(`(${index}) ${ethers.utils.getAddress(address)} (${about}${strBalance} ETH)`);
   });
 
   console.log('');

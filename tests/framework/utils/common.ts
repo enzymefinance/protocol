@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { ethers } from 'ethers';
 import addresses from '~/config';
-import { Contract, SpecificContract } from '~/framework/contract';
+import { Contract, ContractBoilerplate } from '~/framework/contract';
 import { Artifact, AddressLike } from '~/framework/types';
 import { contracts } from '~/framework';
 
@@ -19,7 +19,7 @@ export const mainnetContractAddresses = Object.values(addresses).reduce(
  *
  * @param name The name of the truffle build artifact.
  */
-export function getArtifact(contract: SpecificContract): Artifact {
+export function getArtifact(contract: ContractBoilerplate): Artifact {
   const artifactPath = path.join(artifactDir, `${contract.name}.json`);
   if (!fs.existsSync(artifactPath)) {
     throw new Error(`Missing artifact for contract ${contract.name}`);
@@ -45,7 +45,7 @@ export function getArtifact(contract: SpecificContract): Artifact {
  * @param signerOrProvider
  */
 export function fromDeployment<TContract extends Contract = Contract>(
-  implementation: SpecificContract<TContract>,
+  implementation: ContractBoilerplate<TContract>,
   response: ethers.ContractTransaction,
   signerOrProvider?: ethers.Signer | ethers.providers.Provider,
 ) {
@@ -65,7 +65,7 @@ export function fromDeployment<TContract extends Contract = Contract>(
  * @param signer
  */
 export function fromArtifact<TContract extends Contract = Contract>(
-  implementation: SpecificContract<TContract>,
+  implementation: ContractBoilerplate<TContract>,
   signerOrProvider?: ethers.Signer | ethers.providers.Provider,
 ) {
   const address = getArtifactAddress(getArtifact(implementation));
@@ -108,7 +108,7 @@ export function getArtifactAddress(
  */
 export function isContract(
   value: Contract | any,
-): value is SpecificContract & Contract {
+): value is ContractBoilerplate & Contract {
   if (value instanceof Contract) {
     return true;
   }

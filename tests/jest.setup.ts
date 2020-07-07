@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BN } from 'web3-utils';
 import { matcherHint, printExpected, printReceived } from 'jest-matcher-utils';
 
@@ -8,6 +9,7 @@ require('events').EventEmitter.defaultMaxListeners = 100;
 jest.setTimeout(60 * 5 * 1000); // 5 minutes
 
 expect.extend({
+  // @ts-ignore
   bigNumberCloseTo(received, expected, margin = new BN(100)) {
     const passMessage = (received, expected) => () => {
       return (
@@ -32,19 +34,21 @@ expect.extend({
     };
 
     if (!BN.isBN(received) || !BN.isBN(expected)) {
-      throw "Expected or received is not a BN.";
+      throw 'Expected or received is not a BN.';
     }
     if (!BN.isBN(margin)) {
-      throw "Margin is not a BN.";
+      throw 'Margin is not a BN.';
     }
 
-    const pass = received.gt(expected) ?
-      expected.add(margin).gt(received) :
-      received.add(margin).gt(expected)
+    const pass = received.gt(expected)
+      ? expected.add(margin).gt(received)
+      : received.add(margin).gt(expected);
 
     return {
       pass,
-      message: pass ? passMessage(received, expected) : failMessage(received, expected),
+      message: pass
+        ? passMessage(received, expected)
+        : failMessage(received, expected),
       actual: received,
     };
   },
@@ -75,14 +79,16 @@ expect.extend({
     };
 
     if (!BN.isBN(received) || !BN.isBN(expected)) {
-      throw "Expected or received is not a BN.";
+      throw 'Expected or received is not a BN.';
     }
 
     const pass = received.eq(expected);
 
     return {
       pass,
-      message: pass ? passMessage(received, expected) : failMessage(received, expected),
+      message: pass
+        ? passMessage(received, expected)
+        : failMessage(received, expected),
       actual: received,
     };
   },
@@ -113,14 +119,16 @@ expect.extend({
     };
 
     if (!BN.isBN(received) || !BN.isBN(expected)) {
-      throw "Expected or received is not a BN.";
+      throw 'Expected or received is not a BN.';
     }
 
     const pass = received.gte(expected);
 
     return {
       pass,
-      message: pass ? passMessage(received, expected) : failMessage(received, expected),
+      message: pass
+        ? passMessage(received, expected)
+        : failMessage(received, expected),
       actual: received,
     };
   },
@@ -151,14 +159,16 @@ expect.extend({
     };
 
     if (!BN.isBN(received) || !BN.isBN(expected)) {
-      throw "Expected or received is not a BN.";
+      throw 'Expected or received is not a BN.';
     }
 
     const pass = received.gt(expected);
 
     return {
       pass,
-      message: pass ? passMessage(received, expected) : failMessage(received, expected),
+      message: pass
+        ? passMessage(received, expected)
+        : failMessage(received, expected),
       actual: received,
     };
   },
@@ -189,14 +199,16 @@ expect.extend({
     };
 
     if (!BN.isBN(received) || !BN.isBN(expected)) {
-      throw "Expected or received is not a BN.";
+      throw 'Expected or received is not a BN.';
     }
 
     const pass = received.lt(expected);
 
     return {
       pass,
-      message: pass ? passMessage(received, expected) : failMessage(received, expected),
+      message: pass
+        ? passMessage(received, expected)
+        : failMessage(received, expected),
       actual: received,
     };
   },
@@ -205,35 +217,22 @@ expect.extend({
 expect.extend({
   toThrowFlexible(e, subString = null) {
     const passMessage = (e, subString) => () => {
-      return (
-        matcherHint('.not.toThrowFlexible') +
-        '\n\n' +
-        subString ? (
-          'Expected to not throw with substring:\n' +
-          `  ${printExpected(subString)}\n` +
-          'Full error message:\n' +
-          `  ${printReceived(e.message)}`
-        ) : (
-          'Expected to not throw, but received error:\n' +
-          `  ${printExpected(e)}`
-        )
-      );
+      return matcherHint('.not.toThrowFlexible') + '\n\n' + subString
+        ? 'Expected to not throw with substring:\n' +
+            `  ${printExpected(subString)}\n` +
+            'Full error message:\n' +
+            `  ${printReceived(e.message)}`
+        : 'Expected to not throw, but received error:\n' +
+            `  ${printExpected(e)}`;
     };
 
     const failMessage = (e, isError, subString) => () => {
-      return (
-        matcherHint('.toThrowFlexible') +
-        '\n\n' +
-        isError ? (
-          'Expected error with substring:\n' +
-          `  ${printExpected(subString)}\n` +
-          'Received message:\n' +
-          `  ${printReceived(e)}`
-        ) : (
-          'Expected error but received:\n' +
-          `  ${printReceived(e)}`
-        )
-      );
+      return matcherHint('.toThrowFlexible') + '\n\n' + isError
+        ? 'Expected error with substring:\n' +
+            `  ${printExpected(subString)}\n` +
+            'Received message:\n' +
+            `  ${printReceived(e)}`
+        : 'Expected error but received:\n' + `  ${printReceived(e)}`;
     };
 
     const hasMessage =
@@ -245,18 +244,18 @@ expect.extend({
     const infuraErrorMessage = 'Transaction has been reverted by the EVM';
     if (
       isError &&
-      (
-        !subString ||
+      (!subString ||
         e.message.includes(subString) ||
-        e.message.includes(infuraErrorMessage)
-      )
+        e.message.includes(infuraErrorMessage))
     ) {
       pass = true;
     }
 
     return {
       pass,
-      message: pass ? passMessage(e, subString) : failMessage(e, isError, subString)
+      message: pass
+        ? passMessage(e, subString)
+        : failMessage(e, isError, subString),
     };
   },
 });
