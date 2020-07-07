@@ -59,6 +59,13 @@ export const CALL_ON_INTEGRATION_ENCODING_TYPES = {
       'uint256' // exact outgoing asset amount
     ]
   },
+  UNISWAP_V2: {
+    TAKE_ORDER: [
+      'address[]', // "path" from outgoing asset to incoming asset, incl any intermediary steps
+      'uint256', // min incoming asset amount
+      'uint256' // exact outgoing asset amount
+    ]
+  },
   ZERO_EX_V2: {
     TAKE_ORDER: [
       'bytes', // ZERO_EX_V2.ORDER
@@ -165,6 +172,8 @@ export const CONTRACT_NAMES = {
   UNISWAP_EXCHANGE: 'UniswapExchange',
   UNISWAP_EXCHANGE_INTERFACE: 'IUniswapExchange',
   UNISWAP_EXCHANGE_TEMPLATE: 'UniswapExchangeTemplate',
+  UNISWAP_V2_ADAPTER: 'UniswapV2Adapter',
+  UNISWAP_V2_ROUTER2_INTERFACE: 'IUniswapV2Router2',
   AIR_SWAP_SWAP: 'AirSwapSwap',
   AIR_SWAP_TYPES: 'AirSwapTypes',
   AIR_SWAP_ADAPTER: 'AirSwapAdapter',
