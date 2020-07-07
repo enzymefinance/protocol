@@ -77,6 +77,7 @@ test('Fund receives Malicious token via 0x order', async () => {
   const { vault } = fund;
 
   const makerAssetAmount = toWei('1', 'ether');
+  const takerAssetAmount = toWei('0.5', 'Ether');
   const unsignedOrder = await createUnsignedZeroExOrder(
     zeroExExchange.options.address,
     await web3.eth.net.getId(),
@@ -85,7 +86,7 @@ test('Fund receives Malicious token via 0x order', async () => {
       makerTokenAddress: maliciousToken.options.address,
       makerAssetAmount,
       takerTokenAddress: weth.options.address,
-      takerAssetAmount: toWei('0.5', 'Ether')
+      takerAssetAmount
     }
   );
 
@@ -97,8 +98,8 @@ test('Fund receives Malicious token via 0x order', async () => {
     'callOnIntegration',
     [
       zeroExAdapter.options.address,
-      getFunctionSignature(CONTRACT_NAMES.ORDER_TAKER, 'takeOrder'),
-      encodeZeroExTakeOrderArgs(signedOrder, signedOrder.takerAssetAmount),
+      getFunctionSignature(CONTRACT_NAMES.ZERO_EX_V3_ADAPTER, 'takeOrder'),
+      encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount),
     ],
     managerTxOpts
   );

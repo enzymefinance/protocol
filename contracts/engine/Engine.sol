@@ -142,7 +142,10 @@ contract Engine is IEngine, DSMath {
     /// @notice MLN must be approved first
     /// @dev Only Vault can call this function (via EngineAdapter)
     function sellAndBurnMln(uint256 _mlnAmount) external override {
-        require(__isValidVault(msg.sender), "Only fund vault can use the engine");
+        require(
+            registry.integrationAdapterIsRegistered(msg.sender),
+            "Only a registered integration adapter can call this function"
+        );
         require(
             mlnToken().transferFrom(msg.sender, address(this), _mlnAmount),
             "MLN transferFrom failed"
@@ -173,18 +176,5 @@ contract Engine is IEngine, DSMath {
         returns (IPriceSource)
     {
         return IPriceSource(registry.priceSource());
-    }
-
-    /// @notice Helper to check whether an address is a valid fund Vault
-    function __isValidVault(address _who) private view returns (bool) {
-        // 1. Spoke points to hub
-        // 2. Hub is valid
-        // 3. Hub points to vault
-        try ISpoke(_who).HUB() returns (address hubAddress) {
-            return registry.fundIsRegistered(hubAddress) && IHub(hubAddress).vault() == _who;
-        }
-        catch {
-            return false;
-        }
     }
 }

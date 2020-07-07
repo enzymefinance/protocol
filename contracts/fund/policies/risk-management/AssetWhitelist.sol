@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
+import "../utils/CallOnIntegrationPreValidatePolicyBase.sol";
 import "../utils/AddressListPolicyMixin.sol";
 
 /// @title AssetWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A whitelist of assets to add to a fund's vault
 /// @dev Assets can be removed but not added from whitelist
-contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListPolicyMixin {
+contract AssetWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _registry) public PolicyBase(_registry) {}
 
     // EXTERNAL FUNCTIONS
@@ -26,7 +26,7 @@ contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListP
         return "ASSET_WHITELIST";
     }
 
-    /// @notice Apply the rule with specified paramters, in the context of a fund
+    /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return True if the rule passes
     /// @dev A fund's PolicyManager is always the sender

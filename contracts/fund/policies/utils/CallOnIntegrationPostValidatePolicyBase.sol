@@ -28,8 +28,8 @@ abstract contract CallOnIntegrationPostValidatePolicyBase is PolicyBase {
         internal
         pure
         returns (
-            bytes4 selector,
-            address adapter,
+            bytes4 selector_,
+            address adapter_,
             address[] memory incomingAssets_,
             uint256[] memory incomingAmounts_,
             address[] memory outgoingAssets_,

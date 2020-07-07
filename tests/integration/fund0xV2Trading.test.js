@@ -31,7 +31,7 @@ beforeAll(async () => {
   managerTxOpts = { ...defaultTxOpts, from: manager };
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.ZERO_EX_V2_ADAPTER,
     'takeOrder',
   );
 
@@ -57,17 +57,17 @@ beforeAll(async () => {
 });
 
 describe('Fund takes an order', () => {
+  let makerAssetAmount, takerAssetAmount;
   let signedOrder;
 
   test('Third party makes and validates an off-chain order', async () => {
-    const makerAddress = deployer;
-    const makerAssetAmount = toWei('1', 'Ether');
-    const takerAssetAmount = toWei('0.05', 'Ether');
+    makerAssetAmount = toWei('1', 'Ether');
+    takerAssetAmount = toWei('0.05', 'Ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
       zeroExExchange.options.address,
       {
-        makerAddress,
+        makerAddress: deployer,
         makerTokenAddress: zrx.options.address,
         makerAssetAmount,
         takerTokenAddress: weth.options.address,
@@ -88,14 +88,13 @@ describe('Fund takes an order', () => {
 
   test('Manager takes order through adapter', async () => {
     const { vault } = fund;
-    const fillQuantity = signedOrder.takerAssetAmount;
 
     const preMlnDeployer = new BN(await call(zrx, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
     const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfMln = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
 
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
     await send(
       vault,
@@ -113,33 +112,32 @@ describe('Fund takes an order', () => {
     const postFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfMln = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
 
-    expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
-    expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
+    expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(makerAssetAmount)));
+    expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(takerAssetAmount)));
 
     const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
     const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
 
     // Confirm that expected asset amounts were filled
-    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(signedOrder.takerAssetAmount));
-    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
+    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerAssetAmount));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerAssetAmount));
   });
 });
 
 describe('Fund takes an order with a taker fee', () => {
+  let makerAssetAmount, takerAssetAmount, takerFee;
   let signedOrder;
 
   test('Third party makes and validates an off-chain order', async () => {
-    const makerAddress = deployer;
-    const takerFee = new BN(toWei('0.0001', 'ether'));
-
-    const makerAssetAmount = toWei('1', 'Ether');
-    const takerAssetAmount = toWei('0.05', 'Ether');
+    takerFee = toWei('0.0001', 'ether');
+    makerAssetAmount = toWei('1', 'Ether');
+    takerAssetAmount = toWei('0.05', 'Ether');
 
     const unsignedOrder = await createUnsignedZeroExOrder(
       zeroExExchange.options.address,
       {
         feeRecipientAddress: investor,
-        makerAddress,
+        makerAddress: deployer,
         makerTokenAddress: mln.options.address,
         makerAssetAmount,
         takerFee,
@@ -161,7 +159,6 @@ describe('Fund takes an order with a taker fee', () => {
 
   test('manager takes order through adapter', async () => {
     const { vault } = fund;
-    const fillQuantity = signedOrder.takerAssetAmount;
 
     const preMlnDeployer = new BN(await call(mln, 'balanceOf', [deployer]));
     const preWethDeployer = new BN(await call(weth, 'balanceOf', [deployer]));
@@ -169,7 +166,7 @@ describe('Fund takes an order with a taker fee', () => {
     const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const preFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
 
-    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, fillQuantity);
+    const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, takerAssetAmount);
 
     await send(
       vault,
@@ -188,16 +185,16 @@ describe('Fund takes an order with a taker fee', () => {
     const postFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
     const postFundBalanceOfZrx = new BN(await call(zrx, 'balanceOf', [vault.options.address]));
 
-    expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(signedOrder.makerAssetAmount)));
-    expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(signedOrder.takerAssetAmount)));
+    expect(postMlnDeployer).bigNumberEq(preMlnDeployer.sub(new BN(makerAssetAmount)));
+    expect(postWethDeployer).bigNumberEq(preWethDeployer.add(new BN(takerAssetAmount)));
 
     const fundBalanceOfWethDiff = preFundBalanceOfWeth.sub(postFundBalanceOfWeth);
     const fundBalanceOfMlnDiff = postFundBalanceOfMln.sub(preFundBalanceOfMln);
     const fundBalanceOfZrxDiff = preFundBalanceOfZrx.sub(postFundBalanceOfZrx);
 
     // Confirm that expected asset amounts were filled
-    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(signedOrder.takerAssetAmount));
-    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(signedOrder.makerAssetAmount));
-    expect(fundBalanceOfZrxDiff).bigNumberEq(new BN(signedOrder.takerFee));
+    expect(fundBalanceOfWethDiff).bigNumberEq(new BN(takerAssetAmount));
+    expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(makerAssetAmount));
+    expect(fundBalanceOfZrxDiff).bigNumberEq(new BN(takerFee));
   });
 });

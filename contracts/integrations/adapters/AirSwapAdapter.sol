@@ -3,51 +3,88 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../interfaces/ISwap.sol";
-import "../libs/OrderTaker.sol";
+import "../utils/AdapterBase.sol";
 
 /// @title AirSwapAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter between Melon and AirSwap
-contract AirSwapAdapter is OrderTaker {
+contract AirSwapAdapter is AdapterBase {
     address immutable public EXCHANGE;
 
-    constructor(address _exchange) public {
+    constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
     }
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
     function identifier() external pure override returns (string memory) {
-        return "AIRSWAP";
+        return "AIR_SWAP";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedArgs The encoded parameters for the callOnIntegration
-    /// @return incomingAssets_ The assets to receive
-    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
         view
         override
-        returns (address[] memory incomingAssets_)
+        returns (
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            (address[6] memory orderAddresses,,,,,) = __decodeTakeOrderArgs(_encodedArgs);
+            bytes memory encodedAirSwapOrderArgs = __decodeTakeOrderCallArgs(_encodedCallArgs);
+            ISwap.Order memory order = __constructOrderStruct(encodedAirSwapOrderArgs);
+
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = order.sender.token;
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = order.sender.amount;
+
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = orderAddresses[1];
+            incomingAssets_[0] = order.signer.token;
+            minIncomingAssetAmounts_ = new uint256[](1);
+            minIncomingAssetAmounts_[0] = order.signer.amount;
         }
         else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
 
-    /// @notice Take a market order on AirSwap (takeOrder)
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
-        internal
-        override
-        validateAndFinalizeFilledOrder(_fillData)
+    /// @notice Take order on AirSwap
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(bytes calldata _encodedCallArgs, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedAssetTransferArgs)
+    {
+        // Validate args
+        // TODO: is there any validation necessary here?
+
+        // Execute fill
+        bytes memory encodedAirSwapOrderArgs = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        ISwap.Order memory order = __constructOrderStruct(encodedAirSwapOrderArgs);
+        IERC20(order.sender.token).approve(EXCHANGE, order.sender.amount);
+        ISwap(EXCHANGE).swap(order);
+    }
+
+    // PRIVATE FUNCTIONS
+
+    /// @dev Helper to contract an ISwap.Order struct from order args
+    function __constructOrderStruct(bytes memory _encodedOrderArgs)
+        private
+        pure
+        returns (ISwap.Order memory)
     {
         (
             address[6] memory orderAddresses,
@@ -56,96 +93,24 @@ contract AirSwapAdapter is OrderTaker {
             bytes32[2] memory sigBytesComponents,
             uint8 sigUintComponent,
             bytes1 version
-        ) = __decodeTakeOrderArgs(_encodedArgs);
+        ) = __decodeAirSwapOrderArgs(_encodedOrderArgs);
 
-        ISwap.Order memory order = __constructTakerOrder(
-            orderAddresses,
-            orderValues,
-            tokenKinds,
-            sigBytesComponents,
-            sigUintComponent,
-            version
-        );
-
-        ISwap(EXCHANGE).swap(order);
-    }
-
-    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return fillAssets_ Assets to fill
-    /// - [0] Maker asset
-    /// - [1] Taker asset
-    /// @return fillExpectedAmounts_ Asset fill amounts
-    /// - [0] Expected (min) quantity of maker asset to receive
-    /// - [1] Expected (max) quantity of taker asset to spend
-    /// @return fillApprovalTargets_ Recipients of assets in fill order
-    /// - [0] Taker (fund), set to address(0)
-    /// - [1] AirSwap exchange of taker asset
-    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
-        internal
-        view
-        override
-        returns (address[] memory, uint256[] memory, address[] memory)
-    {
-        (
-            address[6] memory orderAddresses,
-            uint256[6] memory orderValues, , , ,
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        address[] memory fillAssets = new address[](2);
-        fillAssets[0] = orderAddresses[1]; // maker asset
-        fillAssets[1] = orderAddresses[3]; // taker asset
-
-        uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = orderValues[2]; // maker fill amount
-        fillExpectedAmounts[1] = orderValues[4]; // taker fill amount
-
-        address[] memory fillApprovalTargets = new address[](2);
-        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = EXCHANGE;
-
-        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
-    }
-
-    /// @notice Validate the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(bytes memory _encodedArgs)
-        internal
-        view
-        override
-    {}
-
-    // PRIVATE FUNCTIONS
-
-    /// @notice Parses user inputs into a ISwap.Order format
-    function __constructTakerOrder(
-        address[6] memory _orderAddresses,
-        uint256[6] memory _orderValues,
-        bytes4[2] memory _tokenKinds,
-        bytes32[2] memory _sigBytesComponents,
-        uint8 _sigUintComponent,
-        bytes1 _version
-    )
-        private
-        pure
-        returns (ISwap.Order memory)
-    {
         return ISwap.Order({
-            nonce: _orderValues[0],
-            expiry: _orderValues[1],
+            nonce: orderValues[0],
+            expiry: orderValues[1],
             signer: ISwap.Party({
-                kind: _tokenKinds[0],
-                wallet: _orderAddresses[0],
-                token: _orderAddresses[1],
-                amount: _orderValues[2],
-                id: _orderValues[3]
+                kind: tokenKinds[0],
+                wallet: orderAddresses[0],
+                token: orderAddresses[1],
+                amount: orderValues[2],
+                id: orderValues[3]
             }),
             sender: ISwap.Party({
-                kind: _tokenKinds[1],
-                wallet: _orderAddresses[2],
-                token: _orderAddresses[3],
-                amount: _orderValues[4],
-                id: _orderValues[5]
+                kind: tokenKinds[1],
+                wallet: orderAddresses[2],
+                token: orderAddresses[3],
+                amount: orderValues[4],
+                id: orderValues[5]
             }),
             affiliate: ISwap.Party({
                 kind: bytes4(0),
@@ -155,18 +120,35 @@ contract AirSwapAdapter is OrderTaker {
                 id: 0
             }),
             signature: ISwap.Signature({
-                signatory: _orderAddresses[4],
-                validator: _orderAddresses[5],
-                version: _version,
-                v: _sigUintComponent,
-                r: _sigBytesComponents[0],
-                s: _sigBytesComponents[1]
+                signatory: orderAddresses[4],
+                validator: orderAddresses[5],
+                version: version,
+                v: sigUintComponent,
+                r: sigBytesComponents[0],
+                s: sigBytesComponents[1]
             })
         });
     }
 
     /// @notice Decode the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
+    /// @param _encodedCallArgs Encoded parameters passed from client side
+    /// @return encodedAirSwapOrderArgs_ Encoded args of the AirSwap order
+    /// @dev Double encoding the order args like this is superfluous, but it is consistent
+    /// with the way we pass in 0x order parameters separate from an order fill amount
+    // TODO: confirm if partial fills are allowed
+    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (bytes memory encodedAirSwapOrderArgs_)
+    {
+        return abi.decode(
+            _encodedCallArgs,
+            (bytes)
+        );
+    }
+
+    /// @dev Decode the parameters of an AirSwap order
+    /// @param _encodedAirSwapOrderArgs Encoded parameters of the AirSwap order
     /// @return orderAddresses_
     /// - [0] order.signer.wallet
     /// - [1] order.signer.token
@@ -189,10 +171,8 @@ contract AirSwapAdapter is OrderTaker {
     /// - [1] order.signature.s
     /// @return sigUintComponent_ order.signature.v
     /// @return version_ order.signature.version
-    function __decodeTakeOrderArgs(
-        bytes memory _encodedArgs
-    )
-        internal
+    function __decodeAirSwapOrderArgs(bytes memory _encodedAirSwapOrderArgs)
+        private
         pure
         returns (
             address[6] memory orderAddresses_,
@@ -204,7 +184,7 @@ contract AirSwapAdapter is OrderTaker {
         )
     {
         return abi.decode(
-            _encodedArgs,
+            _encodedAirSwapOrderArgs,
             (
                 address[6],
                 uint256[6],

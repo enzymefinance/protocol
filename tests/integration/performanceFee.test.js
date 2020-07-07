@@ -10,11 +10,11 @@
 import { toWei, BN } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpDiv, BNExpMul } from '~/utils/BNmath';
-import { CONTRACT_NAMES } from '~/utils/constants';
+import { CALL_ON_INTEGRATION_ENCODING_TYPES, CONTRACT_NAMES } from '~/utils/constants';
 import { investInFund, setupFundWithParams } from '~/utils/fund';
-import { getEventFromLogs, getFunctionSignature } from '~/utils/metadata';
+import { getFunctionSignature } from '~/utils/metadata';
 import { delay } from '~/utils/time';
-import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import { updateKyberPriceFeed, setKyberRate } from '~/utils/updateKyberPriceFeed';
 import mainnetAddrs from '~/config';
@@ -22,12 +22,12 @@ import mainnetAddrs from '~/config';
 let defaultTxOpts, investorTxOpts, managerTxOpts;
 let deployer, manager, investor;
 let performanceFeePeriod, performanceFeeRate;
-let mln, weth, oasisDexAdapter, oasisDexExchange;
+let mln, weth;
 let performanceFee, managementFee, priceSource;
+let kyberAdapter;
 let fund;
 let mlnToEthRate, wethToEthRate;
 let takeOrderSignature;
-let kyberProxy, mockKyber;
 
 beforeAll(async () => {
   [deployer, manager, investor] = await web3.eth.getAccounts();
@@ -37,13 +37,10 @@ beforeAll(async () => {
 
   mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS,  mainnetAddrs.tokens.MLN);
   weth = getDeployed(CONTRACT_NAMES.WETH,  mainnetAddrs.tokens.WETH);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
-  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_EXCHANGE,  mainnetAddrs.oasis.OasisDexExchange);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
   managementFee = getDeployed(CONTRACT_NAMES.MANAGEMENT_FEE);
   performanceFee = getDeployed(CONTRACT_NAMES.PERFORMANCE_FEE);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
-  kyberProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY,  mainnetAddrs.kyber.KyberNetworkProxy);
-  mockKyber = getDeployed(CONTRACT_NAMES.KYBER_MOCK_NETWORK);
   const fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
 
   const feeAddresses = [
@@ -57,7 +54,7 @@ beforeAll(async () => {
   mlnToEthRate = toWei('0.5', 'ether');
 
   fund = await setupFundWithParams({
-    integrationAdapters: [oasisDexAdapter.options.address],
+    integrationAdapters: [kyberAdapter.options.address],
     fees: {
       addresses: feeAddresses,
       rates: [0, performanceFeeRate],
@@ -74,7 +71,7 @@ beforeAll(async () => {
   });
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.KYBER_ADAPTER,
     'takeOrder'
   );
 });
@@ -107,50 +104,24 @@ test(`fund gets weth from (non-initial) investor`, async () => {
 });
 
 // @dev To inflate performance fee, take a trade, then update the pricefeed with a more favorable price.
-test('take a trade for MLN on OasisDex, and artificially raise price of MLN/ETH', async () => {
+test('take a trade for MLN on Kyber, and artificially raise price of MLN/ETH', async () => {
   const { shares, vault } = fund;
 
-  const makerAsset = mln.options.address;
-  const makerQuantity = toWei('0.1', 'ether');
-  const takerAsset = weth.options.address;
-
-  const makerToWethAssetRate = new BN(
-    (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
-  );
-  const takerQuantity = BNExpMul(
-    new BN(makerQuantity),
-    makerToWethAssetRate
-  ).toString();
-
-  // Third party makes an order
-  await send(mln, 'approve', [oasisDexExchange.options.address, makerQuantity], defaultTxOpts);
-  const res = await send(
-    oasisDexExchange,
-    'offer',
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
     [
-      makerQuantity, makerAsset, takerQuantity, takerAsset, 0
-    ],
-    defaultTxOpts
+      mln.options.address, // incoming asset
+      1, // min incoming asset amount
+      weth.options.address, // outgoing asset,
+      toWei('0.05', 'ether') // exact outgoing asset amount
+    ]
   );
-
-  const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-  const orderId = logMake.id;
-
-  // Fund takes the trade
-
-  const encodedArgs = encodeOasisDexTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-    orderId,
-  });
 
   await send(
     vault,
     'callOnIntegration',
     [
-      oasisDexAdapter.options.address,
+      kyberAdapter.options.address,
       takeOrderSignature,
       encodedArgs,
     ],

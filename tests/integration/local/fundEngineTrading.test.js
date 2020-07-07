@@ -8,9 +8,9 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpMul } from '~/utils/BNmath';
-import { CONTRACT_NAMES } from '~/utils/constants';
+import { CALL_ON_INTEGRATION_ENCODING_TYPES, CONTRACT_NAMES } from '~/utils/constants';
 import { getFunctionSignature } from '~/utils/metadata';
-import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { encodeArgs } from '~/utils/formatting';
 import { increaseTime } from '~/utils/rpc';
 import { setupInvestedTestFund } from '~/utils/fund';
 import { updateKyberPriceFeed } from '~/utils/updateKyberPriceFeed';
@@ -19,8 +19,8 @@ import mainnetAddrs from '~/config';
 
 let deployer, manager;
 let defaultTxOpts, managerTxOpts;
-let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource;
-let mlnPrice, makerQuantity, takerQuantity;
+let engine, mln, fund, weth, engineAdapter, kyberAdapter, priceSource, valueInterpreter;
+let mlnPrice, mlnQuantity, wethQuantity;
 let takeOrderSignature;
 
 beforeAll(async () => {
@@ -34,17 +34,18 @@ beforeAll(async () => {
   kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
   engineAdapter = getDeployed(CONTRACT_NAMES.ENGINE_ADAPTER);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
+  valueInterpreter = getDeployed(CONTRACT_NAMES.VALUE_INTERPRETER);
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.ENGINE_ADAPTER,
     'takeOrder',
   );
   mlnPrice = (await priceSource.methods
     .getCanonicalRate(mln.options.address, weth.options.address)
     .call())[0];
-  takerQuantity = toWei('0.001', 'ether'); // Mln sell qty
-  makerQuantity = BNExpMul(
-    new BN(takerQuantity.toString()),
+  mlnQuantity = toWei('0.001', 'ether');
+  wethQuantity = BNExpMul(
+    new BN(mlnQuantity.toString()),
     new BN(mlnPrice.toString()),
   ).toString();
 });
@@ -60,13 +61,15 @@ test('Setup a fund with amgu charged to seed Melon Engine', async () => {
 test('Take an order for MLN on Kyber (in order to take ETH from Engine)', async () => {
   const { vault } = fund;
 
-  const minMakerQuantity = toWei('0.1', 'ether');
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset: mln.options.address,
-    makerQuantity: minMakerQuantity,
-    takerAsset: weth.options.address,
-    takerQuantity: toWei('0.1', 'ether'),
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+    [
+      mln.options.address, // incoming asset
+      1, // min incoming asset amount
+      weth.options.address, // outgoing asset,
+      toWei('0.1', 'ether') // exact outgoing asset amount
+    ]
+  );
 
   await expect(
     send(
@@ -93,15 +96,13 @@ test('Trade on Melon Engine', async () => {
   const preFundBalanceOfWeth = new BN(await call(weth, 'balanceOf', [vault.options.address]));
   const preFundBalanceOfMln = new BN(await call(mln, 'balanceOf', [vault.options.address]));
 
-  const makerAsset = weth.options.address;
-  const takerAsset = mln.options.address;
-
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.ENGINE.TAKE_ORDER,
+    [
+      wethQuantity, // min incoming asset (WETH) amount
+      mlnQuantity // exact outgoing asset (MLN) amount
+    ]
+  );
 
   // get fresh price since we changed blocktime
   await updateKyberPriceFeed(priceSource);
@@ -124,23 +125,27 @@ test('Trade on Melon Engine', async () => {
   const fundBalanceOfWethDiff = postFundBalanceOfWeth.sub(preFundBalanceOfWeth);
   const fundBalanceOfMlnDiff = preFundBalanceOfMln.sub(postFundBalanceOfMln);
 
-  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(takerQuantity));
+  expect(fundBalanceOfMlnDiff).bigNumberEq(new BN(mlnQuantity));
   expect(fundBalanceOfWethDiff).bigNumberEq(preLiquidEther.sub(postLiquidEther));
 });
 
-test('Maker quantity as minimum returned WETH is respected', async () => {
+test('min WETH is respected', async () => {
   const { vault } = fund;
 
-  const makerQuantity = new BN(mlnPrice.toString()).div(new BN(2)).toString();
+  const expectedWethQuantity = (await call(
+    valueInterpreter,
+    'calcCanonicalAssetValue',
+    [mln.options.address, mlnQuantity, weth.options.address]
+  ))[0];
+  const tooHighWethQuantity = new BN(expectedWethQuantity).add(new BN(1)).toString();
 
-  const makerAsset = weth.options.address;
-  const takerAsset = mln.options.address;
-  const encodedArgs = encodeTakeOrderArgs({
-    makerAsset,
-    makerQuantity,
-    takerAsset,
-    takerQuantity,
-  });
+  const encodedArgs = encodeArgs(
+    CALL_ON_INTEGRATION_ENCODING_TYPES.ENGINE.TAKE_ORDER,
+    [
+      tooHighWethQuantity, // min incoming asset (WETH) amount
+      mlnQuantity // exact outgoing asset (MLN) amount
+    ]
+  );
 
   await expect(
     send(
@@ -154,6 +159,6 @@ test('Maker quantity as minimum returned WETH is respected', async () => {
       managerTxOpts
     )
   ).rejects.toThrowFlexible(
-    "validateAndEmitOrderFillResults: received less buy asset than expected"
+    "received incoming asset less than expected"
   );
 });

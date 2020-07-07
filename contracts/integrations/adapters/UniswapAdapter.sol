@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
-pragma experimental ABIEncoderV2;
 
-import "../libs/OrderTaker.sol";
-import "../libs/decoders/MinimalTakeOrderDecoder.sol";
+import "../../dependencies/WETH.sol";
 import "../interfaces/IUniswapFactory.sol";
 import "../interfaces/IUniswapExchange.sol";
-import "../../dependencies/WETH.sol";
+import "../utils/AdapterBase.sol";
 
 /// @title UniswapAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Adapter between Melon and Uniswap
-contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
+/// @notice Adapter for interacting with Uniswap
+contract UniswapAdapter is AdapterBase {
     address immutable public EXCHANGE;
 
-    constructor(address _exchange) public {
+    constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
     }
+
+    /// @dev Needed to receive ETH from swap
+    receive() external payable {}
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
@@ -24,156 +27,172 @@ contract UniswapAdapter is OrderTaker, MinimalTakeOrderDecoder {
         return "UNISWAP_V1";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets to receive from a call on integration 
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedArgs The encoded parameters for the callOnIntegration
-    /// @return incomingAssets_ The assets to receive
-    function parseIncomingAssets(bytes4 _selector, bytes calldata _encodedArgs)
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
         view
         override
-        returns (address[] memory incomingAssets_)
+        returns (
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            (address makerAsset,,,) = __decodeTakeOrderArgs(_encodedArgs);
+            (
+                address incomingAsset,
+                uint256 minIncomingAssetAmount,
+                address outgoingAsset,
+                uint256 outgoingAssetAmount
+            ) = __decodeCallArgs(_encodedCallArgs);
+
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = outgoingAsset;
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = outgoingAssetAmount;
+
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = makerAsset;
+            incomingAssets_[0] = incomingAsset;
+            minIncomingAssetAmounts_ = new uint256[](1);
+            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
         }
         else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
 
-    /// @notice Take a market order on Uniswap (takeOrder)
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @param _fillData Encoded data to pass to OrderFiller
-    function __fillTakeOrder(bytes memory _encodedArgs, bytes memory _fillData)
-        internal
-        override
-        validateAndFinalizeFilledOrder(_fillData)
+    /// @notice Trades assets on Uniswap
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(bytes calldata _encodedCallArgs, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyVault
+        fundAssetsTransferHandler(_encodedAssetTransferArgs)
     {
         (
-            address[] memory fillAssets,
-            uint256[] memory fillExpectedAmounts,
-        ) = __decodeOrderFillData(_fillData);
+            address incomingAsset,
+            uint256 minIncomingAssetAmount,
+            address outgoingAsset,
+            uint256 outgoingAssetAmount
+        ) = __decodeCallArgs(_encodedCallArgs);
 
-        if (fillAssets[1] == __getNativeAssetAddress()) {
-            __swapNativeAssetToToken(fillAssets, fillExpectedAmounts);
+        // Validate args
+        require(minIncomingAssetAmount > 0, "takeOrder: minIncomingAssetAmount must be >0");
+        require(outgoingAssetAmount > 0, "takeOrder: outgoingAssetAmount must be >0");
+        require(incomingAsset != outgoingAsset, "takeOrder: incomingAsset and outgoingAsset cannot be the same");
+        require(incomingAsset != address(0), "takeOrder: incomingAsset cannot be empty");
+        require(outgoingAsset != address(0), "takeOrder: outgoingAsset cannot be empty");
+
+        // Execute fill
+        address nativeAsset = Registry(__getRegistry()).nativeAsset();
+        if (outgoingAsset == nativeAsset) {
+            __swapNativeAssetToToken(incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount);
         }
-        else if (fillAssets[0] == __getNativeAssetAddress()) {
-            __swapTokenToNativeAsset(fillAssets, fillExpectedAmounts);
+        else if (incomingAsset == nativeAsset) {
+            __swapTokenToNativeAsset(incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount);
         }
         else {
-            __swapTokenToToken(fillAssets, fillExpectedAmounts);
+            __swapTokenToToken(incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount);
         }
     }
-
-    /// @notice Formats arrays of _fillAssets and their _fillExpectedAmounts for a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    /// @return fillAssets_ Assets to fill
-    /// - [0] Maker asset (same as _orderAddresses[2])
-    /// - [1] Taker asset (same as _orderAddresses[3])
-    /// @return fillExpectedAmounts_ Asset fill amounts
-    /// - [0] Expected (min) quantity of maker asset to receive
-    /// - [1] Expected (max) quantity of taker asset to spend
-    /// @return fillApprovalTargets_ Recipients of assets in fill order
-    /// - [0] Taker (fund), set to address(0)
-    /// - [1] Uniswap exchange of taker asset
-    function __formatFillTakeOrderArgs(bytes memory _encodedArgs)
-        internal
-        view
-        override
-        returns (address[] memory, uint256[] memory, address[] memory)
-    {
-        (
-            address makerAsset,
-            uint256 makerQuantity,
-            address takerAsset,
-            uint256 takerQuantity
-        ) = __decodeTakeOrderArgs(_encodedArgs);
-
-        address[] memory fillAssets = new address[](2);
-        fillAssets[0] = makerAsset;
-        fillAssets[1] = takerAsset;
-
-        uint256[] memory fillExpectedAmounts = new uint256[](2);
-        fillExpectedAmounts[0] = makerQuantity;
-        fillExpectedAmounts[1] = takerQuantity;
-
-        address[] memory fillApprovalTargets = new address[](2);
-        fillApprovalTargets[0] = address(0); // Fund (Use 0x0)
-        fillApprovalTargets[1] = fillAssets[1] == __getNativeAssetAddress() ?
-            address(0) :
-            IUniswapFactory(EXCHANGE).getExchange(fillAssets[1]); // Uniswap exchange of taker asset
-
-        return (fillAssets, fillExpectedAmounts, fillApprovalTargets);
-    }
-
-    /// @notice Validate the parameters of a takeOrder call
-    /// @param _encodedArgs Encoded parameters passed from client side
-    function __validateTakeOrderParams(bytes memory _encodedArgs)
-        internal
-        view
-        override
-    {}
 
     // PRIVATE FUNCTIONS
 
-    /// @notice Executes a swap of ETH (taker) to ERC20 (maker)
+    /// @dev Helper to decode the encoded arguments
+    function __decodeCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            address incomingAsset_,
+            uint256 minIncomingAssetAmount_,
+            address outgoingAsset_,
+            uint256 outgoingAssetAmount_
+        )
+    {
+        return abi.decode(
+            _encodedCallArgs,
+            (
+                address,
+                uint256,
+                address,
+                uint256
+            )
+        );
+    }
+
+    /// @dev Helper to execute a swap of ETH to ERC20
     function __swapNativeAssetToToken(
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        address _incomingAsset,
+        uint256 _minIncomingAssetAmount,
+        address _outgoingAsset,
+        uint256 _outgoingAssetAmount
     )
         private
     {
         // Convert WETH to ETH
-        WETH(payable(_fillAssets[1])).withdraw(_fillExpectedAmounts[1]);
+        WETH(payable(_outgoingAsset)).withdraw(_outgoingAssetAmount);
 
         // Swap tokens
-        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[0]);
-        IUniswapExchange(tokenExchange).ethToTokenSwapInput.value(
-            _fillExpectedAmounts[1]
-        )
-        (
-            _fillExpectedAmounts[0],
-            add(block.timestamp, 1)
-        );
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_incomingAsset);
+        IUniswapExchange(tokenExchange)
+            .ethToTokenSwapInput
+            {value: _outgoingAssetAmount}
+            (
+                _minIncomingAssetAmount,
+                add(block.timestamp, 1)
+            );
     }
 
-    /// @notice Executes a swap of ERC20 (taker) to ETH (maker)
+    /// @dev Helper to execute a swap of ERC20 to ETH
     function __swapTokenToNativeAsset(
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        address _incomingAsset,
+        uint256 _minIncomingAssetAmount,
+        address _outgoingAsset,
+        uint256 _outgoingAssetAmount
     )
         private
     {
-        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[1]);
+        // Increase approval
+
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_outgoingAsset);
+        IERC20(_outgoingAsset).approve(tokenExchange, _outgoingAssetAmount);
+
         uint256 preEthBalance = payable(address(this)).balance;
         IUniswapExchange(tokenExchange).tokenToEthSwapInput(
-            _fillExpectedAmounts[1],
-            _fillExpectedAmounts[0],
+            _outgoingAssetAmount,
+            _minIncomingAssetAmount,
             add(block.timestamp, 1)
         );
         uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
         // Convert ETH to WETH
-        WETH(payable(_fillAssets[0])).deposit.value(ethFilledAmount)();
+        WETH(payable(_incomingAsset)).deposit{value: ethFilledAmount}();
     }
 
-    /// @notice Executes a swap of ERC20 (taker) to ERC20 (maker)
+    /// @dev Helper to execute a swap of ERC20 to ERC20
     function __swapTokenToToken(
-        address[] memory _fillAssets,
-        uint256[] memory _fillExpectedAmounts
+        address _incomingAsset,
+        uint256 _minIncomingAssetAmount,
+        address _outgoingAsset,
+        uint256 _outgoingAssetAmount
     )
         private
     {
-        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_fillAssets[1]);
+        address tokenExchange = IUniswapFactory(EXCHANGE).getExchange(_outgoingAsset);
+        IERC20(_outgoingAsset).approve(tokenExchange, _outgoingAssetAmount);
         IUniswapExchange(tokenExchange).tokenToTokenSwapInput(
-            _fillExpectedAmounts[1],
-            _fillExpectedAmounts[0],
+            _outgoingAssetAmount,
+            _minIncomingAssetAmount,
             1,
             add(block.timestamp, 1),
-            _fillAssets[0]
+            _incomingAsset
         );
     }
 }

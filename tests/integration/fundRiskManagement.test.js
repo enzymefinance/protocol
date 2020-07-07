@@ -2,35 +2,38 @@
  * @file Tests a fund's risk management policies in executing trades
  *
  * @test Fund policies are set
- * @test TODO: A fund can only take an order for a non-blacklisted asset
- * @test TODO: A fund can only take an order with a tolerable amount of price slippage
- * @test TODO: A fund cannot take an order with an asset if it will exceed its max concentration
- * @test TODO: A fund can only take an order for a whitelisted asset
- * @test TODO: A fund can only take an order for its current assets once max positions is reached
+ * @test A fund can only take an order for a non-blacklisted asset
+ * @test A fund can only take an order with a tolerable amount of price slippage
+ * @test A fund cannot take an order with an asset if it will exceed its max concentration
+ * @test A fund can only take an order for a whitelisted asset
+ * @test A fund can only take an order for its current assets once max positions is reached
  */
 
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpMul, BNExpDiv } from '~/utils/BNmath';
-import { CONTRACT_NAMES } from '~/utils/constants';
+import { CALL_ON_INTEGRATION_ENCODING_TYPES, CONTRACT_NAMES } from '~/utils/constants';
 import { encodeArgs } from '~/utils/formatting';
 import { setupFundWithParams } from '~/utils/fund';
-import {
-  getEventFromLogs,
-  getFunctionSignature
-} from '~/utils/metadata';
-import { encodeOasisDexTakeOrderArgs } from '~/utils/oasisDex';
+import { getFunctionSignature } from '~/utils/metadata';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
+import {
+  createUnsignedZeroExOrder,
+  encodeZeroExTakeOrderArgs,
+  isValidZeroExSignatureOffChain,
+  signZeroExOrder
+} from '~/utils/zeroExV2';
 import mainnetAddrs from '~/config';
-
 
 let deployer, manager;
 let defaultTxOpts, managerTxOpts;
 let takeOrderFunctionSig;
-let fundFactory, oasisDexAdapter, priceSource;
+let fundFactory, priceSource;
+let kyberAdapter, zeroExAdapter;
 let assetBlacklist, assetWhitelist, maxConcentration, maxPositions, priceTolerance;
+let kyberNetworkProxy, zeroExExchange, erc20ProxyAddress;
 let rep, knc, mln, weth, zrx;
-let oasisDexExchange;
 
 beforeAll(async () => {
   [deployer, manager] = await web3.eth.getAccounts();
@@ -44,16 +47,20 @@ beforeAll(async () => {
   zrx = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.ZRX);
   priceSource = getDeployed(CONTRACT_NAMES.KYBER_PRICEFEED);
   fundFactory = getDeployed(CONTRACT_NAMES.FUND_FACTORY);
-  oasisDexAdapter = getDeployed(CONTRACT_NAMES.OASIS_DEX_ADAPTER);
-  oasisDexExchange = getDeployed(CONTRACT_NAMES.OASIS_DEX_INTERFACE, mainnetAddrs.oasis.OasisDexExchange);
+  kyberAdapter = getDeployed(CONTRACT_NAMES.KYBER_ADAPTER);
+  kyberNetworkProxy = getDeployed(CONTRACT_NAMES.KYBER_NETWORK_PROXY, mainnetAddrs.kyber.KyberNetworkProxy);
   assetBlacklist = getDeployed(CONTRACT_NAMES.ASSET_BLACKLIST);
   assetWhitelist = getDeployed(CONTRACT_NAMES.ASSET_WHITELIST);
   maxPositions = getDeployed(CONTRACT_NAMES.MAX_POSITIONS);
   maxConcentration = getDeployed(CONTRACT_NAMES.MAX_CONCENTRATION);
   priceTolerance = getDeployed(CONTRACT_NAMES.PRICE_TOLERANCE);
+  zeroExAdapter = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_ADAPTER);
+  zeroExExchange = getDeployed(CONTRACT_NAMES.ZERO_EX_V2_EXCHANGE_INTERFACE, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
+
+  erc20ProxyAddress = mainnetAddrs.zeroExV2.ZeroExV2ERC20Proxy;
 
   takeOrderFunctionSig = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.KYBER_ADAPTER,
     'takeOrder',
   );
 });
@@ -86,7 +93,7 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     };
     fund = await setupFundWithParams({
       defaultTokens: [weth.options.address],
-      integrationAdapters: [oasisDexAdapter.options.address],
+      integrationAdapters: [kyberAdapter.options.address, zeroExAdapter.options.address],
       initialInvestment: {
         contribAmount: toWei('1', 'ether'),
         investor: manager,
@@ -129,56 +136,35 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
   });
 
   describe('Asset blacklist', () => {
-    let badMakerAsset, badMakerQuantity, goodMakerAsset, goodMakerQuantity, takerAsset, takerQuantity;
-    let badOrderId, goodOrderId;
+    let outgoingAsset, outgoingAssetAmount;
+    let badIncomingAsset, goodIncomingAsset;
 
     beforeAll(async () => {
-      takerAsset = weth.options.address;
-      takerQuantity = toWei('0.01', 'ether');
-      badMakerAsset = knc.options.address;
-      goodMakerAsset = mln.options.address;
+      outgoingAsset = weth.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
+      badIncomingAsset = knc.options.address;
+      goodIncomingAsset = mln.options.address;
     });
 
-    test('Third party makes an order', async () => {
-      const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
-      );
-      badMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        makerToWethAssetRate
-      ).toString();
-
-      await send(knc, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          badMakerQuantity, badMakerAsset, takerQuantity, takerAsset
-        ],
-        defaultTxOpts
-      );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      badOrderId = logMake.id;
-    });
-
-    test('Bad take order: blacklisted maker asset', async () => {
+    test('Bad take order: blacklisted incoming asset', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: badMakerAsset,
-        makerQuantity: badMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: badOrderId,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          badIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            kyberAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -187,46 +173,25 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
       ).rejects.toThrowFlexible('Rule evaluated to false: ASSET_BLACKLIST');
     });
 
-    test('Third party makes an order', async () => {
-      const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
-      );
-      goodMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        makerToWethAssetRate
-      ).toString();
-
-      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          goodMakerQuantity, goodMakerAsset, takerQuantity, takerAsset
-        ],
-        defaultTxOpts
-      );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      goodOrderId = logMake.id;
-    });
-
-    test('Good take order: non-blacklisted maker asset', async () => {
+    test('Good take order: non-blacklisted incoming asset', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: goodMakerAsset,
-        makerQuantity: goodMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: goodOrderId,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          goodIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            kyberAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -237,66 +202,70 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
   });
 
   describe('Price tolerance', () => {
-    let makerAsset, takerAsset, takerQuantity;
-    let expectedMakerQuantity, badMakerQuantity, toleratedMakerQuantity;
-    let makerQuantityPercentLimit, makerQuantityPercentShift;
-    let badOrderId, goodOrderId;
+    let incomingAsset, outgoingAsset, outgoingAssetAmount;
+    let expectedIncomingAssetAmount, badIncomingAssetAmount, goodIncomingAssetAmount;
+    let incomingAssetAmountPercentLimit, incomingAssetAmountPercentShift;
+    let badSignedOrder, goodSignedOrder;
 
     beforeAll(async () => {
-      makerAsset = mln.options.address;
-      takerAsset = weth.options.address;
-      takerQuantity = toWei('0.01', 'ether');
+      incomingAsset = mln.options.address;
+      outgoingAsset = weth.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
 
-      const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
+      const incomingToOutgoingAssetRate = new BN(
+        (await call(priceSource, 'getLiveRate', [incomingAsset, outgoingAsset]))[0]
       );
-      expectedMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        makerToWethAssetRate
+      expectedIncomingAssetAmount = BNExpDiv(
+        new BN(outgoingAssetAmount),
+        incomingToOutgoingAssetRate
       ).toString();
 
-      makerQuantityPercentLimit =
+      incomingAssetAmountPercentLimit =
         new BN(toWei('1', 'ether')).sub(new BN(priceToleranceVal));
-      makerQuantityPercentShift = new BN(toWei('0.01', 'ether')); // 1%
+      incomingAssetAmountPercentShift = new BN(toWei('0.01', 'ether')); // 1%
     });
 
     test('Third party makes an order', async () => {
-      badMakerQuantity = BNExpMul(
-        new BN(expectedMakerQuantity),
-        makerQuantityPercentLimit.sub(makerQuantityPercentShift)
+      badIncomingAssetAmount = BNExpMul(
+        new BN(expectedIncomingAssetAmount),
+        incomingAssetAmountPercentLimit.sub(incomingAssetAmountPercentShift)
       ).toString();
 
-      await send(mln, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          badMakerQuantity, makerAsset, takerQuantity, takerAsset
-        ],
-        defaultTxOpts
+      const unsignedOrder = await createUnsignedZeroExOrder(
+        zeroExExchange.options.address,
+        {
+          makerAddress: deployer,
+          makerTokenAddress: incomingAsset,
+          makerAssetAmount: badIncomingAssetAmount,
+          takerTokenAddress: outgoingAsset,
+          takerAssetAmount: outgoingAssetAmount
+        }
       );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      badOrderId = logMake.id;
+  
+      await send(mln, 'approve', [erc20ProxyAddress, badIncomingAssetAmount], defaultTxOpts);
+  
+      badSignedOrder = await signZeroExOrder(unsignedOrder, deployer);
+  
+      const signatureValid = await isValidZeroExSignatureOffChain(
+        unsignedOrder,
+        badSignedOrder.signature,
+        deployer
+      );
+  
+      expect(signatureValid).toBeTruthy();
     });
 
     test('Bad take order: slippage just above limit', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset,
-        makerQuantity: badMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: badOrderId,
-      });
+      const encodedArgs = encodeZeroExTakeOrderArgs(badSignedOrder, outgoingAssetAmount);
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            zeroExAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -306,42 +275,46 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
 
     test('Third party makes an order', async () => {
-      toleratedMakerQuantity = BNExpMul(
-        new BN(expectedMakerQuantity),
-        makerQuantityPercentLimit.add(makerQuantityPercentShift)
+      goodIncomingAssetAmount = BNExpMul(
+        new BN(expectedIncomingAssetAmount),
+        incomingAssetAmountPercentLimit.add(incomingAssetAmountPercentShift)
       ).toString();
 
-      await send(mln, 'approve', [oasisDexExchange.options.address, toleratedMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          toleratedMakerQuantity, makerAsset, takerQuantity, takerAsset
-        ],
-        defaultTxOpts
+      const unsignedOrder = await createUnsignedZeroExOrder(
+        zeroExExchange.options.address,
+        {
+          makerAddress: deployer,
+          makerTokenAddress: incomingAsset,
+          makerAssetAmount: goodIncomingAssetAmount,
+          takerTokenAddress: outgoingAsset,
+          takerAssetAmount: outgoingAssetAmount
+        }
       );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      goodOrderId = logMake.id;
+  
+      await send(mln, 'approve', [erc20ProxyAddress, goodIncomingAssetAmount], defaultTxOpts);
+  
+      goodSignedOrder = await signZeroExOrder(unsignedOrder, deployer);
+  
+      const signatureValid = await isValidZeroExSignatureOffChain(
+        unsignedOrder,
+        goodSignedOrder.signature,
+        deployer
+      );
+  
+      expect(signatureValid).toBeTruthy();
     });
 
     test('Good take order: slippage just within limit', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset,
-        makerQuantity: toleratedMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: goodOrderId,
-      });
+      const encodedArgs = encodeZeroExTakeOrderArgs(goodSignedOrder, outgoingAssetAmount);
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            zeroExAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -351,130 +324,115 @@ describe('Fund 1: Asset blacklist, price tolerance, max positions, max concentra
     });
   });
 
+  // @dev need to assure that order prices are consistent with asset gav calculations
   describe('Max concentration', () => {
-    let makerAsset, takerAsset;
-    let makerToWethAssetRate;
-    let goodMakerQuantity, goodOrderId, goodTakerQuantity;
-    let badMakerQuantity, badOrderId, badTakerQuantity;
+    let incomingAsset, outgoingAsset;
+    let toleratedIncomingAssetAmount, toleratedOutgoingAssetAmount;
+    let highIncomingAssetAmount, highOutgoingAssetAmount;
+    let signedOrder;
 
     beforeAll(async () => {
       const { shares, vault } = fund;
-      makerAsset = rep.options.address;
-      takerAsset = weth.options.address;
-      makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [makerAsset, weth.options.address]))[0]
+      incomingAsset = rep.options.address;
+      outgoingAsset = weth.options.address;
+      const incomingToOutgoingAssetLiveRate = new BN(
+        (await call(priceSource, 'getLiveRate', [incomingAsset, outgoingAsset]))[0]
       );
 
-      const makerAssetGav = BNExpMul(
+      const incomingAssetGav = BNExpMul(
         new BN(await call(rep, 'balanceOf', [vault.options.address])),
-        makerToWethAssetRate
+        incomingToOutgoingAssetLiveRate
       );
 
       const fundGav = new BN(await call(shares, 'calcGav'));
-      const makerAssetGavPercent = BNExpDiv(makerAssetGav, fundGav);
-      const allowedMakerAssetGavPercentage =
-        new BN(maxConcentrationVal).sub(makerAssetGavPercent);
+      const incomingAssetGavPercent = BNExpDiv(incomingAssetGav, fundGav);
+      const allowedIncomingAssetGavPercentage =
+        new BN(maxConcentrationVal).sub(incomingAssetGavPercent);
 
       const percentageShift = new BN(toWei('0.01', 'ether')); // 1%
 
-      goodTakerQuantity = BNExpMul(
+      toleratedIncomingAssetAmount = BNExpMul(
         fundGav,
-        allowedMakerAssetGavPercentage.sub(percentageShift)
+        allowedIncomingAssetGavPercentage.sub(percentageShift)
       ).toString();
 
-      goodMakerQuantity = BNExpDiv(
-        new BN(goodTakerQuantity),
-        new BN(makerToWethAssetRate)
+      toleratedOutgoingAssetAmount = BNExpMul(
+        new BN(toleratedIncomingAssetAmount),
+        incomingToOutgoingAssetLiveRate
       ).toString();
 
-      badTakerQuantity = BNExpMul(
+      highIncomingAssetAmount = BNExpMul(
         fundGav,
-        percentageShift.mul(new BN(2)) // guarantees slightly too much
+        allowedIncomingAssetGavPercentage.add(percentageShift)
       ).toString();
-      badMakerQuantity = BNExpDiv(
-        new BN(badTakerQuantity),
-        makerToWethAssetRate
+
+      highOutgoingAssetAmount = BNExpMul(
+        new BN(highIncomingAssetAmount),
+        incomingToOutgoingAssetLiveRate
       ).toString();
     });
 
-    test('Third party makes an order', async () => {
-      await send(rep, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          goodMakerQuantity, makerAsset, goodTakerQuantity, takerAsset
-        ],
-        defaultTxOpts
+    test('Third party makes an order with more than tolerated incoming asset amount', async () => {
+      const unsignedOrder = await createUnsignedZeroExOrder(
+        zeroExExchange.options.address,
+        {
+          makerAddress: deployer,
+          makerTokenAddress: incomingAsset,
+          makerAssetAmount: highIncomingAssetAmount,
+          takerTokenAddress: outgoingAsset,
+          takerAssetAmount: highOutgoingAssetAmount
+        }
       );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      goodOrderId = logMake.id;
+  
+      await send(rep, 'approve', [erc20ProxyAddress, highIncomingAssetAmount], defaultTxOpts);
+  
+      signedOrder = await signZeroExOrder(unsignedOrder, deployer);
+  
+      const signatureValid = await isValidZeroExSignatureOffChain(
+        unsignedOrder,
+        signedOrder.signature,
+        deployer
+      );
+  
+      expect(signatureValid).toBeTruthy();
     });
 
-    test('Good make order: just under max-concentration', async () => {
+    test('Bad take order: max concentration exceeded', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset,
-        makerQuantity: goodMakerQuantity,
-        takerAsset,
-        takerQuantity: goodTakerQuantity,
-        orderId: goodOrderId,
-      });
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, highOutgoingAssetAmount);
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
-            takeOrderFunctionSig,
-            encodedArgs,
-          ],
-          managerTxOpts
-        )
-      ).resolves.not.toThrow();
-    });
-
-    test('Third party makes an order', async () => {
-      await send(rep, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          badMakerQuantity, makerAsset, badTakerQuantity, takerAsset
-        ],
-        defaultTxOpts
-      );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      badOrderId = logMake.id;
-    });
-
-    test('Bad make order: max concentration exceeded', async () => {
-      const { vault } = fund;
-
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset,
-        makerQuantity: badMakerQuantity,
-        takerAsset,
-        takerQuantity: badTakerQuantity,
-        orderId: badOrderId,
-      });
-
-      await expect(
-        send(
-          vault,
-          'callOnIntegration',
-          [
-            oasisDexAdapter.options.address,
+            zeroExAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
           managerTxOpts
         )
       ).rejects.toThrowFlexible('Rule evaluated to false: MAX_CONCENTRATION');
+    });
+
+    test('Good take order: just under max-concentration', async () => {
+      const { vault } = fund;
+
+      const encodedArgs = encodeZeroExTakeOrderArgs(signedOrder, toleratedOutgoingAssetAmount);
+
+      await expect(
+        send(
+          vault,
+          'callOnIntegration',
+          [
+            zeroExAdapter.options.address,
+            takeOrderFunctionSig,
+            encodedArgs,
+          ],
+          managerTxOpts
+        )
+      ).resolves.not.toThrow();
     });
   });
 });
@@ -503,7 +461,7 @@ describe('Fund 2: Asset whitelist, max positions', () => {
     };
     fund = await setupFundWithParams({
       defaultTokens: [weth.options.address],
-      integrationAdapters: [oasisDexAdapter.options.address],
+      integrationAdapters: [kyberAdapter.options.address],
       initialInvestment: {
         contribAmount: toWei('1', 'ether'),
         investor: manager,
@@ -534,65 +492,35 @@ describe('Fund 2: Asset whitelist, max positions', () => {
   });
 
   describe('Asset whitelist', () => {
-    let takerAsset, takerQuantity;
-    let badMakerAsset, badMakerQuantity, badOrderId;
-    let goodMakerAsset, goodMakerQuantity, goodOrderId;
+    let outgoingAsset, outgoingAssetAmount;
+    let badIncomingAsset, goodIncomingAsset;
 
     beforeAll(async () => {
-      takerAsset = weth.options.address;
-      takerQuantity = toWei('0.01', 'ether');
-
-      badMakerAsset = knc.options.address;
-      const badMakerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
-      );
-      badMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        badMakerToWethAssetRate
-      ).toString();
-
-      goodMakerAsset = zrx.options.address;
-      const goodMakerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
-      );
-      goodMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        goodMakerToWethAssetRate
-      ).toString();
-    });
-
-    test('Third party makes an order', async () => {
-      await send(knc, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          badMakerQuantity, badMakerAsset, takerQuantity, takerAsset
-        ],
-        defaultTxOpts
-      );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      badOrderId = logMake.id;
+      outgoingAsset = weth.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
+      badIncomingAsset = knc.options.address;
+      goodIncomingAsset = zrx.options.address;
     });
 
     test('Bad take order: non-whitelisted maker asset', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: badMakerAsset,
-        makerQuantity: badMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: badOrderId,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          badIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            kyberAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -601,46 +529,25 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       ).rejects.toThrowFlexible('Rule evaluated to false: ASSET_WHITELIST');
     });
 
-    test('Third party makes an order', async () => {
-      const makerToWethAssetRate = new BN(
-        (await call(priceSource, 'getLiveRate', [goodMakerAsset, weth.options.address]))[0]
-      );
-      goodMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        makerToWethAssetRate
-      ).toString();
-
-      await send(zrx, 'approve', [oasisDexExchange.options.address, goodMakerQuantity], defaultTxOpts);
-      const res = await send(
-        oasisDexExchange,
-        'offer',
-        [
-          goodMakerQuantity, goodMakerAsset, takerQuantity, takerAsset
-        ],
-        defaultTxOpts
-      );
-
-      const logMake = getEventFromLogs(res.logs, CONTRACT_NAMES.OASIS_DEX_EXCHANGE, 'LogMake');
-      goodOrderId = logMake.id;
-    });
-
-    test('Good take order: whitelisted maker asset', async () => {
+    test('Good take order: whitelisted incoming asset', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: goodMakerAsset,
-        makerQuantity: goodMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: goodOrderId,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          goodIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            kyberAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -651,57 +558,15 @@ describe('Fund 2: Asset whitelist, max positions', () => {
   });
 
   describe('Max positions', () => {
-    let takerAsset, takerQuantity;
-    let goodMakerAsset1, goodMakerQuantity1, goodOrderId1;
-    let goodMakerAsset2, goodMakerQuantity2, goodOrderId2;
-    let badMakerAsset, badMakerQuantity, badOrderId;
+    let outgoingAsset, outgoingAssetAmount;
+    let badIncomingAsset, goodIncomingAsset;
 
     beforeAll(async () => {
-      takerAsset = weth.options.address;
-      takerQuantity = toWei('0.01', 'ether');
+      outgoingAsset = weth.options.address;
+      outgoingAssetAmount = toWei('0.01', 'ether');
 
-      goodMakerAsset1 = mln.options.address;
-      const makerToWethAssetRate1 = new BN(
-        (await call(priceSource, 'getLiveRate', [goodMakerAsset1, weth.options.address]))[0]
-      );
-      goodMakerQuantity1 = BNExpDiv(
-        new BN(takerQuantity),
-        makerToWethAssetRate1
-      ).toString();
-
-      goodMakerAsset2 = mln.options.address;
-      const makerToWethAssetRate2 = new BN(
-        (await call(priceSource, 'getLiveRate', [goodMakerAsset2, weth.options.address]))[0]
-      );
-      goodMakerQuantity2 = BNExpDiv(
-        new BN(takerQuantity),
-        makerToWethAssetRate2
-      ).toString();
-
-      badMakerAsset = rep.options.address;
-      const makerToWethAssetRate3 = new BN(
-        (await call(priceSource, 'getLiveRate', [badMakerAsset, weth.options.address]))[0]
-      );
-      badMakerQuantity = BNExpDiv(
-        new BN(takerQuantity),
-        new BN(makerToWethAssetRate3)
-      ).toString();
-    });
-
-    test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity1], defaultTxOpts);
-      const receipt = await send(
-        oasisDexExchange,
-        'offer',
-        [goodMakerQuantity1, goodMakerAsset1, takerQuantity, takerAsset],
-        defaultTxOpts
-      );
-      const logMake = getEventFromLogs(
-        receipt.logs,
-        CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
-        'LogMake'
-      );
-      goodOrderId1 = logMake.id;
+      badIncomingAsset = rep.options.address;
+      goodIncomingAsset = mln.options.address;
     });
 
     test('Good take order 1: final allowed position', async () => {
@@ -716,19 +581,21 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       const preOwnedAssetsLength = (await call(vault, 'getOwnedAssets')).length;
       expect(Number(preOwnedAssetsLength)).toEqual(Number(maxPositionsVal) - 1);
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: goodMakerAsset1,
-        makerQuantity: goodMakerQuantity1,
-        takerAsset,
-        takerQuantity,
-        orderId: goodOrderId1,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          goodIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await send(
         vault,
         'callOnIntegration',
         [
-          oasisDexAdapter.options.address,
+          kyberAdapter.options.address,
           takeOrderFunctionSig,
           encodedArgs,
         ],
@@ -739,39 +606,25 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       expect(postOwnedAssetsLength).toEqual(Number(maxPositionsVal));
     });
 
-    test('Third party makes an order', async () => {
-      await send(rep, 'approve', [oasisDexExchange.options.address, badMakerQuantity], defaultTxOpts);
-      const receipt = await send(
-        oasisDexExchange,
-        'offer',
-        [badMakerQuantity, badMakerAsset, takerQuantity, takerAsset],
-        defaultTxOpts
-      );
-      const logMake = getEventFromLogs(
-        receipt.logs,
-        CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
-        'LogMake'
-      );
-      badOrderId = logMake.id;
-    });
-
     test('Bad take order: over limit for positions', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: badMakerAsset,
-        makerQuantity: badMakerQuantity,
-        takerAsset,
-        takerQuantity,
-        orderId: badOrderId,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          badIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            kyberAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -780,39 +633,25 @@ describe('Fund 2: Asset whitelist, max positions', () => {
       ).rejects.toThrowFlexible('Rule evaluated to false: MAX_POSITIONS');
     });
 
-    test('Third party makes an order', async () => {
-      await send(mln, 'approve', [oasisDexExchange.options.address, goodMakerQuantity2], defaultTxOpts);
-      const receipt = await send(
-        oasisDexExchange,
-        'offer',
-        [goodMakerQuantity2, goodMakerAsset1, takerQuantity, takerAsset],
-        defaultTxOpts
-      );
-      const logMake = getEventFromLogs(
-        receipt.logs,
-        CONTRACT_NAMES.OASIS_DEX_EXCHANGE,
-        'LogMake'
-      );
-      goodOrderId2 = logMake.id;
-    });
-
     test('Good make order 2: add to current position', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeOasisDexTakeOrderArgs({
-        makerAsset: goodMakerAsset2,
-        makerQuantity: goodMakerQuantity2,
-        takerAsset,
-        takerQuantity,
-        orderId: goodOrderId2,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.KYBER.TAKE_ORDER,
+        [
+          goodIncomingAsset, // incoming asset
+          1, // min incoming asset amount
+          outgoingAsset, // outgoing asset,
+          outgoingAssetAmount // exact outgoing asset amount
+        ]
+      );
 
       await expect(
         send(
           vault,
           'callOnIntegration',
           [
-            oasisDexAdapter.options.address,
+            kyberAdapter.options.address,
             takeOrderFunctionSig,
             encodedArgs,
           ],
@@ -820,5 +659,5 @@ describe('Fund 2: Asset whitelist, max positions', () => {
         )
       ).resolves.not.toThrowFlexible();
     });
- });
+  });
 });

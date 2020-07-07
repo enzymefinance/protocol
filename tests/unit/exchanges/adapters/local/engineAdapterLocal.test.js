@@ -13,7 +13,7 @@
 import { BN, toWei } from 'web3-utils';
 import { call, send } from '~/utils/deploy-contract';
 import { BNExpDiv } from '~/utils/BNmath';
-import { CONTRACT_NAMES } from '~/utils/constants';
+import { CALL_ON_INTEGRATION_ENCODING_TYPES, CONTRACT_NAMES } from '~/utils/constants';
 import { setupFundWithParams } from '~/utils/fund';
 import {
   getEventCountFromLogs,
@@ -21,7 +21,7 @@ import {
   getFunctionSignature
 } from '~/utils/metadata';
 import { increaseTime } from '~/utils/rpc';
-import { encodeTakeOrderArgs } from '~/utils/formatting';
+import { encodeArgs } from '~/utils/formatting';
 import { getDeployed } from '~/utils/getDeployed';
 import mainnetAddrs from '~/config';
 
@@ -40,7 +40,7 @@ beforeAll(async () => {
   managerTxOpts = { from: manager, gas: 8000000 };
 
   takeOrderSignature = getFunctionSignature(
-    CONTRACT_NAMES.ORDER_TAKER,
+    CONTRACT_NAMES.ENGINE_ADAPTER,
     'takeOrder',
   );
   mln = getDeployed(CONTRACT_NAMES.ERC20_WITH_FIELDS, mainnetAddrs.tokens.MLN);
@@ -51,13 +51,8 @@ beforeAll(async () => {
 });
 
 describe('takeOrder', () => {
-  // TODO: maybe validate that even a makerAsset value of 0 or 1 works?
-  // @dev Only need to run this once
-  // describe('__validateTakeOrderParams', () => {
-  // });
-
   describe('Fill Order 1: full amount of liquid eth', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
+    let mlnQuantity, wethQuantity;
     let tx;
 
     beforeAll(async () => {
@@ -82,12 +77,10 @@ describe('takeOrder', () => {
       await increaseTime(86400 * 32);
       await send(engine, 'thaw', [], defaultTxOpts);
 
-      // Get expected maker/taker quantities based on liquid eth
-      makerAsset = weth.options.address;
-      takerAsset = mln.options.address;
-      makerQuantity = await call(engine, 'liquidEther');
-      takerQuantity = BNExpDiv(
-        new BN(makerQuantity),
+      // Get expected quantities based on liquid eth
+      wethQuantity = await call(engine, 'liquidEther');
+      mlnQuantity = BNExpDiv(
+        new BN(wethQuantity),
         new BN(mlnPrice)
       ).toString();
     });
@@ -95,12 +88,13 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity: (new BN(makerQuantity).sub(new BN(1000000))).toString(),
-        takerAsset,
-        takerQuantity,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.ENGINE.TAKE_ORDER,
+        [
+          wethQuantity, // min incoming asset (WETH) amount
+          mlnQuantity // exact outgoing asset (MLN) amount
+        ]
+      );
 
       tx = await send(
         vault,
@@ -114,30 +108,34 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ENGINE_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ENGINE_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerAsset);
-      expect(orderFilled.buyAmount).toBe(makerQuantity);
-      expect(orderFilled.sellAsset).toBe(takerAsset);
-      expect(orderFilled.sellAmount).toBe(takerQuantity);
-      expect(orderFilled.feeAssets.length).toBe(0);
-      expect(orderFilled.feeAmounts.length).toBe(0);
+      
+      expect(coiExecuted.adapter).toBe(engineAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(weth.options.address);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(wethQuantity);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(mln.options.address);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(mlnQuantity);
     });
   });
 
   describe('Fill Order 2: arbitrary amount (half) of liquid eth', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
+    let mlnQuantity, wethQuantity;
     let tx;
 
     beforeAll(async () => {
@@ -162,12 +160,10 @@ describe('takeOrder', () => {
       await increaseTime(86400 * 32);
       await send(engine, 'thaw', [], {});
 
-      // Get expected maker/taker quantities based on liquid eth
-      makerAsset = weth.options.address;
-      takerAsset = mln.options.address;
-      makerQuantity = new BN(await call(engine, 'liquidEther')).div(new BN(2)).toString();
-      takerQuantity = BNExpDiv(
-        new BN(makerQuantity),
+      // Get expected quantities based on liquid eth
+      wethQuantity = new BN(await call(engine, 'liquidEther')).div(new BN(2)).toString();
+      mlnQuantity = BNExpDiv(
+        new BN(wethQuantity),
         new BN(mlnPrice)
       ).toString();
     });
@@ -175,12 +171,13 @@ describe('takeOrder', () => {
     test('order is filled through the fund', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity,
-        takerAsset,
-        takerQuantity,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.ENGINE.TAKE_ORDER,
+        [
+          wethQuantity, // min incoming asset (WETH) amount
+          mlnQuantity // exact outgoing asset (MLN) amount
+        ]
+      );
 
       tx = await send(
         vault,
@@ -194,31 +191,34 @@ describe('takeOrder', () => {
       );
     });
 
-    it('emits correct OrderFilled event', async () => {
-      const orderFilledCount = getEventCountFromLogs(
+    it('emits correct CallOnIntegrationExecuted event', async () => {
+      const coiExecutedCount = getEventCountFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ENGINE_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilledCount).toBe(1);
+      expect(coiExecutedCount).toBe(1);
 
-      const orderFilled = getEventFromLogs(
+      const coiExecuted = getEventFromLogs(
         tx.logs,
-        CONTRACT_NAMES.ENGINE_ADAPTER,
-        'OrderFilled'
+        CONTRACT_NAMES.VAULT,
+        'CallOnIntegrationExecuted'
       );
-      expect(orderFilled.buyAsset).toBe(makerAsset);
-      expect(orderFilled.buyAmount).toBe(makerQuantity);
-      expect(orderFilled.sellAsset).toBe(takerAsset);
-      expect(orderFilled.sellAmount).toBe(takerQuantity);
-      expect(orderFilled.feeAssets.length).toBe(0);
-      expect(orderFilled.feeAmounts.length).toBe(0);
+      
+      expect(coiExecuted.adapter).toBe(engineAdapter.options.address);
+      expect(coiExecuted.incomingAssets.length).toBe(1);
+      expect(coiExecuted.incomingAssets[0]).toBe(weth.options.address);
+      expect(coiExecuted.incomingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.incomingAssetAmounts[0]).toBe(wethQuantity);
+      expect(coiExecuted.outgoingAssets.length).toBe(1);
+      expect(coiExecuted.outgoingAssets[0]).toBe(mln.options.address);
+      expect(coiExecuted.outgoingAssetAmounts.length).toBe(1);
+      expect(coiExecuted.outgoingAssetAmounts[0]).toBe(mlnQuantity);
     });
   });
 
-  describe('Fill Order 3: more than total available liquid eth', () => {
-    let makerAsset, makerQuantity, takerAsset, takerQuantity;
-    let tx;
+  describe('Fill Order 3: more mln than total available liquid eth', () => {
+    let mlnQuantity, wethQuantity;
 
     beforeAll(async () => {
       // Set amgu price
@@ -242,12 +242,10 @@ describe('takeOrder', () => {
       await increaseTime(86400 * 32);
       await send(engine, 'thaw', [], {});
 
-      // Get expected maker/taker quantities based on liquid eth
-      makerAsset = weth.options.address;
-      takerAsset = mln.options.address;
-      makerQuantity = new BN(await call(engine, 'liquidEther')).add(new BN(1)).toString();
-      takerQuantity = BNExpDiv(
-        new BN(makerQuantity),
+      // Get expected quantities based on liquid eth
+      wethQuantity = await call(engine, 'liquidEther');
+      mlnQuantity = BNExpDiv(
+        new BN(wethQuantity),
         new BN(mlnPrice)
       ).add(new BN(1)).toString(); // adding 1 protects against rounding error (i.e. gives :ceiling")
     });
@@ -255,12 +253,13 @@ describe('takeOrder', () => {
     it('cannot fill the order', async () => {
       const { vault } = fund;
 
-      const encodedArgs = encodeTakeOrderArgs({
-        makerAsset,
-        makerQuantity,
-        takerAsset,
-        takerQuantity,
-      });
+      const encodedArgs = encodeArgs(
+        CALL_ON_INTEGRATION_ENCODING_TYPES.ENGINE.TAKE_ORDER,
+        [
+          wethQuantity, // min incoming asset (WETH) amount
+          mlnQuantity // exact outgoing asset (MLN) amount
+        ]
+      );
 
       await expect(
         send(
