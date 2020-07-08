@@ -3,6 +3,7 @@ const mainnetAddrs = require('../config');
 const AirSwapAdapter = artifacts.require('AirSwapAdapter');
 const AssetBlacklist = artifacts.require('AssetBlacklist');
 const AssetWhitelist = artifacts.require('AssetWhitelist');
+const ChaiAdapter = artifacts.require('ChaiAdapter');
 const Engine = artifacts.require('Engine');
 const EngineAdapter = artifacts.require('EngineAdapter');
 const KyberAdapter = artifacts.require('KyberAdapter');
@@ -52,6 +53,7 @@ module.exports = async _ => {
   await registry.setValueInterpreter((await ValueInterpreter.deployed()).address);
 
   const integrationAdapters = [
+    (await ChaiAdapter.deployed()).address,
     (await EngineAdapter.deployed()).address,
     (await AirSwapAdapter.deployed()).address,
     (await KyberAdapter.deployed()).address,

@@ -1,6 +1,9 @@
 // TODO: Rename this file. This is the primary config for mainnet deployment.
 
 module.exports = {
+  chai: {
+    ChaiToken: '0x06AF07097C9Eeb7fD685c692751D5C66dB49c215' 
+  },
   melon: {
     MelonInitialMGM: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
     MelonRegistryOwner: '0xc0c82081f2ad248391cd1483ae211d56c280887a',
