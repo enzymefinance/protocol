@@ -2,7 +2,7 @@
  * @file Tests simple cases of updating price against a Kyber deployment
  *
  * @test Some unrelated account cannot update feed
- * @test Registy owner an update feed
+ * @test Registry owner an update feed
  * @test Delegated updater can update the feed
  * @test MLN price update on reserve changes price on feed post-update
  * @test Normal spread condition from Kyber rates yields midpoint price
@@ -76,7 +76,9 @@ describe('update', () => {
         kyberNetworkProxy.options.address,
         toWei('0.5', 'ether'),
         weth.options.address,
-        toWei('0.1', 'ether')
+        toWei('0.1', 'ether'),
+        toWei('0.1', 'ether'),
+        deployer
       ],
       deployerTxOpts
     );
@@ -96,7 +98,7 @@ describe('update', () => {
       send(
         kyberPriceFeed,
         'update',
-        [registeredAssets, dummyPrices, false],
+        [registeredAssets, dummyPrices],
         someAccountTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -110,11 +112,11 @@ describe('update', () => {
     let receipt = await send(
       kyberPriceFeed,
       'update',
-      [registeredAssets, dummyPrices, false],
+      [registeredAssets, dummyPrices],
       deployerTxOpts
     );
     const logUpdated = getEventFromLogs(
-        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
+        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PriceUpdate'
     );
 
     expect(logUpdated.assets).toEqual(registeredAssets);
@@ -126,7 +128,7 @@ describe('update', () => {
       send(
         kyberPriceFeed,
         'update',
-        [registeredAssets, dummyPrices, false],
+        [registeredAssets, dummyPrices],
         updaterTxOpts
       )
     ).rejects.toThrowFlexible('Only registry owner or updater can call');
@@ -141,11 +143,11 @@ describe('update', () => {
     receipt = await send(
       kyberPriceFeed,
       'update',
-      [registeredAssets, dummyPrices, false],
+      [registeredAssets, dummyPrices],
       updaterTxOpts
     );
     const logUpdated = getEventFromLogs(
-        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
+        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PriceUpdate'
     );
 
     expect(logUpdated.assets).toEqual(registeredAssets);
@@ -174,8 +176,7 @@ describe('update', () => {
             toWei('1', 'ether'),
             barelyTooHighMlnPrice.toString(),
             toWei('1', 'ether')
-          ],
-          false
+          ]
         ],
         deployerTxOpts
       )
@@ -190,14 +191,13 @@ describe('update', () => {
           toWei('1', 'ether'),
           upperEndValidMlnPrice.toString(),
           toWei('1', 'ether')
-        ],
-        false
+        ]
       ],
       deployerTxOpts
     );
 
     const logUpdated = getEventFromLogs(
-        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
+        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PriceUpdate'
     );
 
     expect(logUpdated.assets).toEqual(registeredAssets);
@@ -224,8 +224,7 @@ describe('update', () => {
             toWei('1', 'ether'),
             barelyTooLowMlnPrice.toString(),
             toWei('1', 'ether')
-          ],
-          false
+          ]
         ],
         deployerTxOpts
       )
@@ -240,14 +239,13 @@ describe('update', () => {
           toWei('1', 'ether'),
           lowerEndValidMlnPrice.toString(),
           toWei('1', 'ether')
-        ],
-        false
+        ]
       ],
       deployerTxOpts
     );
 
     const logUpdated = getEventFromLogs(
-        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PricesUpdated'
+        receipt.logs, CONTRACT_NAMES.KYBER_PRICEFEED, 'PriceUpdate'
     );
 
     expect(logUpdated.assets).toEqual(registeredAssets);
@@ -295,7 +293,6 @@ describe('update', () => {
       ],
       deployerTxOpts
     );
-
     await send(
       kyberPriceFeed,
       'update',
@@ -305,8 +302,7 @@ describe('update', () => {
           toWei('1', 'ether'),
           midpointPrice.toString(),
           toWei('1', 'ether')
-        ],
-        true
+        ]
       ],
       deployerTxOpts
     );
@@ -346,30 +342,11 @@ describe('update', () => {
             toWei('1', 'ether'),
             midpointPrice.toString(),
             toWei('1', 'ether')
-          ],
-          true
+          ]
         ],
         deployerTxOpts
       )
     ).rejects.toThrowFlexible('update: Aborting due to invalid price');
-
-    await send(
-      kyberPriceFeed,
-      'update',
-      [
-        registeredAssets,
-        [
-          toWei('1', 'ether'),
-          midpointPrice.toString(),
-          toWei('1', 'ether')
-        ],
-        false
-      ],
-      deployerTxOpts
-    );
-
-    const validPricePostUpdate2 = await call(kyberPriceFeed, 'hasValidPrice', [mln.options.address]);
-    expect(validPricePostUpdate2).toBe(false);
   });
 });
 
@@ -384,7 +361,9 @@ describe('getPrice', () => {
         kyberNetworkProxy.options.address,
         toWei('0.5', 'ether'),
         weth.options.address,
-        toWei('0.1', 'ether')
+        toWei('0.1', 'ether'),
+        toWei('0.1', 'ether'),
+        deployer
       ],
       deployerTxOpts
     );
@@ -427,8 +406,7 @@ describe('getPrice', () => {
           eurPrice.toString(),
           mlnPrice.toString(),
           toWei('1', 'ether')
-        ],
-        false
+        ]
       ],
       deployerTxOpts
     );
@@ -480,8 +458,7 @@ describe('getPrice', () => {
           preEurPrice.price_.toString(),
           midpointPrice.toString(),
           toWei('1', 'ether')
-        ],
-        false
+        ]
       ],
       deployerTxOpts
     );
@@ -530,8 +507,7 @@ describe('getPrice', () => {
           preEurPrice.price_.toString(),
           midpointPrice,
           toWei('1', 'ether')
-        ],
-        false
+        ]
       ],
       deployerTxOpts
     );
