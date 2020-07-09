@@ -46,6 +46,7 @@ contract KyberPriceFeed is DSMath {
         maxPriceDeviation = _maxPriceDeviation;
         expectedRateWethQty = _expectedRateWethQty;
         updater = _updater;
+        prices[_quoteAsset] = 10 ** KYBER_PRECISION;
     }
 
     modifier onlyRegistryOwner() {
@@ -56,15 +57,9 @@ contract KyberPriceFeed is DSMath {
     // EXTERNAL FUNCTIONS
 
     /// @notice Update prices for registered assets
-    /// @dev Stores zero as a convention for invalid price
     /// @param _saneAssets Asset addresses (must match assets array from getRegisteredAssets)
     /// @param _sanePrices Asset price hints (checked against prices from Kyber)
-    /// @param _failIfInvalid Whether to abort the update if an invalid price appears
-    function update(
-        address[] calldata _saneAssets,
-        uint256[] calldata _sanePrices,
-        bool _failIfInvalid
-    ) external {
+    function update(address[] calldata _saneAssets, uint256[] calldata _sanePrices) external {
         require(
             msg.sender == registry.owner() || msg.sender == updater,
             "update: Only registry owner or updater can call"
@@ -77,25 +72,24 @@ contract KyberPriceFeed is DSMath {
         );
         uint256[] memory newPrices = new uint256[](_saneAssets.length);
         for (uint256 i; i < _saneAssets.length; i++) {
-            bool isValid;
-            uint256 kyberPrice;
             if (_saneAssets[i] == QUOTE_ASSET) {
-                isValid = true;
-                kyberPrice = 1 ether;
-            } else {
-                (isValid, kyberPrice) = getKyberPrice(_saneAssets[i], QUOTE_ASSET);
+                newPrices[i] = 10 ** KYBER_PRECISION;
+                continue;
             }
+
+            (bool isValid, uint256 kyberPrice) = getKyberPrice(_saneAssets[i], QUOTE_ASSET);
+            // Allow for prices that are expected to be 0
+            if (kyberPrice == 0 && _sanePrices[i] == 0) {
+                prices[_saneAssets[i]] = 0;
+                continue;
+            }
+            require(isValid, "update: Aborting due to invalid price");
             require(
                 __priceIsSane(kyberPrice, _sanePrices[i]),
                 "update: Kyber price deviates too much from maxPriceDeviation"
             );
-            if (_failIfInvalid) {
-                require(
-                    isValid,
-                    "update: Aborting due to invalid price"
-                );
-            }
-            newPrices[i] = isValid ? kyberPrice : 0;
+
+            newPrices[i] = kyberPrice;
             prices[_saneAssets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
