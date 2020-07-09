@@ -12,7 +12,7 @@ contract KyberPriceFeed is DSMath {
     event ExpectedRateWethQtySet(uint256 expectedRateWethQty);
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
     event MaxSpreadSet(uint256 maxSpread);
-    event PricesUpdated(address[] assets, uint256[] prices);
+    event PriceUpdate(address[] assets, uint256[] prices);
     event RegistrySet(address newRegistry);
     event UpdaterSet(address updater);
 
@@ -99,7 +99,7 @@ contract KyberPriceFeed is DSMath {
             prices[_saneAssets[i]] = newPrices[i];
         }
         lastUpdate = block.timestamp;
-        emit PricesUpdated(_saneAssets, newPrices);
+        emit PriceUpdate(_saneAssets, newPrices);
     }
 
     /// @notice Update the srcQty to use in getExpectedRate(), in terms of WETH
