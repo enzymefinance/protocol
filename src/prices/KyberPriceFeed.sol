@@ -4,11 +4,12 @@ import "../dependencies/DSMath.sol";
 import "../dependencies/token/IERC20.sol";
 import "../exchanges/interfaces/IKyberNetworkProxy.sol";
 import "../registry/IRegistry.sol";
+import "./IPriceSource.sol";
 
 /// @title Price Feed Template
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Routes external prices to smart contracts from Kyber
-contract KyberPriceFeed is DSMath {
+contract KyberPriceFeed is IPriceSource, DSMath {
     event ExpectedRateWethQtySet(uint256 expectedRateWethQty);
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
     event MaxSpreadSet(uint256 maxSpread);
@@ -135,6 +136,12 @@ contract KyberPriceFeed is DSMath {
 
     // EXTERNAL VIEW FUNCTIONS
 
+    /// @notice Returns timestamp of the last successful pricefeed update
+    /// @return The timestamp of the last successful pricefeed update
+    function getLastUpdate() external view override returns (uint256) {
+        return lastUpdate;
+    }
+
     /// @notice Return getPrice for each of _assets
     /// @param _assets Assets for which prices should be returned
     /// @return prices_ Prices for each of the assets_
@@ -142,6 +149,7 @@ contract KyberPriceFeed is DSMath {
     function getPrices(address[] calldata _assets)
         external
         view
+        override
         returns (uint256[] memory prices_, uint256[] memory timestamps_)
     {
         prices_ = new uint256[](_assets.length);
@@ -158,6 +166,7 @@ contract KyberPriceFeed is DSMath {
     function hasValidPrices(address[] calldata _assets)
         external
         view
+        override
         returns (bool allValid_)
     {
         for (uint256 i; i < _assets.length; i++) {
@@ -166,12 +175,6 @@ contract KyberPriceFeed is DSMath {
             }
         }
         return true;
-    }
-
-    /// @notice Returns timestamp of the last successful pricefeed update
-    /// @return The timestamp of the last successful pricefeed update
-    function getLastUpdate() external view returns (uint256) {
-        return lastUpdate;
     }
 
     /// @notice Returns price as determined by an order
@@ -186,6 +189,7 @@ contract KyberPriceFeed is DSMath {
     )
         external
         view
+        override
         returns (uint256 orderPrice_)
     {
         orderPrice_ = mul(
@@ -206,6 +210,7 @@ contract KyberPriceFeed is DSMath {
     )
         external
         view
+        override
         returns (uint256 toAssetQuantity_)
     {
         uint256 fromAssetPrice;
@@ -227,6 +232,7 @@ contract KyberPriceFeed is DSMath {
     function getPrice(address _asset)
         public
         view
+        override
         returns (uint256 price_, uint256 timestamp_)
     {
         (price_,) =  getReferencePriceInfo(_asset, QUOTE_ASSET);
@@ -239,6 +245,7 @@ contract KyberPriceFeed is DSMath {
     function hasValidPrice(address _asset)
         public
         view
+        override
         returns (bool isValid_)
     {
         bool isRegistered = registry.assetIsRegistered(_asset);
@@ -255,6 +262,7 @@ contract KyberPriceFeed is DSMath {
     function getReferencePriceInfo(address _baseAsset, address _quoteAsset)
         public
         view
+        override
         returns (uint256 referencePrice_, uint256 decimals_)
     {
         bool isValid;
@@ -383,5 +391,39 @@ contract KyberPriceFeed is DSMath {
             deviation = sub(_sanePrice, _priceFromKyber);
         }
         return mul(deviation, 10 ** KYBER_PRECISION) / _sanePrice <= maxPriceDeviation;
+    }
+
+
+    // LEGACY FUNCTIONS TO SATISFY INTERFACE (unused in protocol)
+
+    function existsPriceOnAssetPair(address _asset1, address _asset2)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return hasValidPrice(_asset1) && hasValidPrice(_asset2);
+    }
+
+    function getInvertedPriceInfo(address _asset)
+        external
+        view
+        override
+        returns (uint256, uint256)
+    {
+        return getReferencePriceInfo(QUOTE_ASSET, _asset);
+    }
+
+    function getPriceInfo(address _asset)
+        external
+        view
+        override
+        returns (uint256, uint256)
+    {
+        return getReferencePriceInfo(_asset, QUOTE_ASSET);
+    }
+
+    function getQuoteAsset() external view override returns (address) {
+        return QUOTE_ASSET;
     }
 }
