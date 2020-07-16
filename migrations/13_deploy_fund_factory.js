@@ -12,6 +12,8 @@ module.exports = async deployer => {
   const vaultFactory = await VaultFactory.deployed();
   const policyManagerFactory = await PolicyManagerFactory.deployed();
 
+  const block = await web3.eth.getBlock("latest");
+
   const fundFactory = await deployer.deploy(
     FundFactory,
     feeManagerFactory.address,
@@ -19,6 +21,7 @@ module.exports = async deployer => {
     vaultFactory.address,
     policyManagerFactory.address,
     registry.address,
+    {gas: block.gasLimit}
   );
 
   await registry.setFundFactory(fundFactory.address);

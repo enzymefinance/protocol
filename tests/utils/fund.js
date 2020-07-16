@@ -105,7 +105,9 @@ export const setupFundWithParams = async ({
   quoteToken,
   fundFactory
 }) => {
-  const managerTxOpts = { from: manager, gas: 8000000 };
+  const block = await web3.eth.getBlock("latest");
+
+  const managerTxOpts = { from: manager, gas: block.gasLimit };
 
   // TODO: need to calculate amgu estimates here instead of passing in arbitrary value
   if (!amguTxValue) {

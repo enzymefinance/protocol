@@ -3,3 +3,8 @@ node_modules/
 
 # ignore built code
 build/
+
+# coverage
+coverage.json
+coverage/
+.coverage_contracts/

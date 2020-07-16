@@ -20,6 +20,7 @@
     "Solidity"
   ],
   "scripts": {
+    "coverage": "COVERAGE=true GANACHE_FORK_PORT=9545 node scripts/coverage",
     "download-thirdparty": "node scripts/download-thirdparty",
     "compile": "truffle compile",
     "postcompile": "yarn download-thirdparty",
@@ -37,11 +38,15 @@
     "@0x/utils": "^5.1.2",
     "@airswap/order-utils": "^0.3.20",
     "@openzeppelin/contracts": "3.0.1",
+    "@truffle/config": "^1.2.21",
+    "death": "^1.1.0",
     "ganache-core": "^2.11.0-beta.0",
     "jest": "^26.1.0",
     "jest-matcher-utils": "^26.1.0",
     "request-promise": "^4.2.2",
+    "shelljs": "^0.8.4",
     "solhint": "^3.0.0",
+    "solidity-coverage": "^0.7.9",
     "truffle": "^5.1.32",
     "ts-jest": "^26.1.1",
     "typescript": "^3.9.5",

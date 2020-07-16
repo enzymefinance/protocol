@@ -11,9 +11,10 @@ class MelonEnvironment extends NodeEnvironment {
     await super.setup();
 
     const provider = ganache.provider({
+      // allowUnlimitedContractSize: true,
       fork: `http://127.0.0.1:${this.global.forkPort}`,
       network_id: 1,
-      gasLimit: this.global.forkGasLimit,
+      // gasLimit: process.env.COVERAGE ? undefined : this.global.forkGasLimit,
       unlocked_accounts: this.global.forkUnlockedAccounts || [],
       accounts: (this.global.forkPrivateKeys || []).map(privateKey => ({
         secretKey: privateKey,

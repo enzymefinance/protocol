@@ -48,6 +48,7 @@ const call = async (contract, method=undefined, args=[], opts={}) => {
     return result;
   } catch (e) {
     // TODO: This is a temporary solution to catch and rethrow non-standard errors.
+    console.log("Error method:", method);
     throw new Error(e.toString());
   }
 }
@@ -63,6 +64,7 @@ const signAndSendRawTx = async (tx, account) => {
 }
 
 const send = async (contract, method=undefined, args=[], overrideOpts={}) => {
+  console.log('method:', method);
   try {
     stdout(
       `Sending${
@@ -109,6 +111,7 @@ const send = async (contract, method=undefined, args=[], overrideOpts={}) => {
     return receipt;
   } catch (e) {
     // TODO: This is a temporary solution to catch and rethrow non-standard errors.
+    console.log("Error method:", method);
     throw new Error(e.toString());
   }
 }
