@@ -16,6 +16,7 @@ const PriceTolerance = artifacts.require('PriceTolerance');
 const Registry = artifacts.require('Registry');
 const SharesRequestor = artifacts.require('SharesRequestor');
 const UniswapAdapter = artifacts.require('UniswapAdapter');
+const UniswapV2Adapter = artifacts.require('UniswapV2Adapter');
 const UserWhitelist = artifacts.require('UserWhitelist');
 const ValueInterpreter = artifacts.require('ValueInterpreter');
 const ZeroExV2Adapter = artifacts.require('ZeroExV2Adapter');
@@ -57,6 +58,7 @@ module.exports = async _ => {
     (await KyberAdapter.deployed()).address,
     (await OasisDexAdapter.deployed()).address,
     (await UniswapAdapter.deployed()).address,
+    (await UniswapV2Adapter.deployed()).address,
     (await ZeroExV2Adapter.deployed()).address,
     (await ZeroExV3Adapter.deployed()).address
   ];

@@ -1,6 +1,7 @@
 const KyberAdapter = artifacts.require('KyberAdapter');
 const OasisDexAdapter = artifacts.require('OasisDexAdapter');
 const UniswapAdapter = artifacts.require('UniswapAdapter');
+const UniswapV2Adapter = artifacts.require('UniswapV2Adapter');
 const ZeroExV2Adapter = artifacts.require('ZeroExV2Adapter');
 const ZeroExV3Adapter = artifacts.require('ZeroExV3Adapter');
 const EngineAdapter = artifacts.require('EngineAdapter');
@@ -16,6 +17,7 @@ module.exports = async deployer => {
   await deployer.deploy(KyberAdapter, registryAddress, mainnetAddrs.kyber.KyberNetworkProxy);
   await deployer.deploy(OasisDexAdapter, registryAddress, mainnetAddrs.oasis.OasisDexExchange);
   await deployer.deploy(UniswapAdapter, registryAddress, mainnetAddrs.uniswap.UniswapFactory);
+  await deployer.deploy(UniswapV2Adapter, registryAddress, mainnetAddrs.uniswapV2.UniswapV2Router2);
   await deployer.deploy(ZeroExV2Adapter, registryAddress, mainnetAddrs.zeroExV2.ZeroExV2Exchange);
   await deployer.deploy(ZeroExV3Adapter, registryAddress, mainnetAddrs.zeroExV3.ZeroExV3Exchange);
   await deployer.deploy(AirSwapAdapter, registryAddress, mainnetAddrs.airSwap.AirSwapSwap);
