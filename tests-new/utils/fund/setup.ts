@@ -1,13 +1,13 @@
 import { ethers } from 'ethers';
 import { FeeParams } from './fees';
 import { PolicyParams } from './policies';
-import { stringToBytes, encodeArgs } from '../utils';
-import { FundFactory } from '../contracts/FundFactory';
-import { FeeManager } from '../contracts/FeeManager';
-import { Hub } from '../contracts/Hub';
-import { PolicyManager } from '../contracts/PolicyManager';
-import { Shares } from '../contracts/Shares';
-import { Vault } from '../contracts/Vault';
+import { stringToBytes, encodeArgs } from '../common';
+import { FundFactory } from '../../contracts/FundFactory';
+import { FeeManager } from '../../contracts/FeeManager';
+import { Hub } from '../../contracts/Hub';
+import { PolicyManager } from '../../contracts/PolicyManager';
+import { Shares } from '../../contracts/Shares';
+import { Vault } from '../../contracts/Vault';
 
 export interface SetupFundParams {
   factory: FundFactory;

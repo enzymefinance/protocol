@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { Contract } from 'crestproject';
+import { Contract } from '@crestproject/crestproject';
 
 /**
  * @todo Write this.

@@ -1,4 +1,4 @@
-import { SharesRequestor } from '../contracts/SharesRequestor';
+import { SharesRequestor } from '../../contracts/SharesRequestor';
 import { FundComponents } from './setup';
 import { ethers } from 'ethers';
 

@@ -649,41 +649,41 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.0.4":
-  version "0.0.4"
-  resolved "https://npm.pkg.github.com/download/@crestproject/codegen/0.0.4/a21b3e87ebd8087f76cb8f3e768982b367668a69a2af3fe10d6bf908b9c039cb#537995a700475cebfc82d1a9a430d381d3074ffa"
-  integrity sha512-if8seDsrsCw/bIokGmz/q1S97wZ1g4lgEqsHzleQSarfz2Tvm/dc6QjokkVpgCFmlilQ59FCoHH4hlKMmAff7w==
+"@crestproject/codegen@^0.0.5":
+  version "0.0.5"
+  resolved "https://npm.pkg.github.com/download/@crestproject/codegen/0.0.5/6f685522debd5bb97fa958d5c96242e4a675a3f986f02dd4cfd986ff08098bf0#0fffc236aa9f8bccc246c615e5a4a3d0d13d3eeb"
+  integrity sha512-fHpNZcNhFxht3GrYMutB4tYfdQUG/sgN5BNXqKQLU0r7FBobBfpoAbvahZuXk5ajGtntFMkinIohCCdEPthiRQ==
 
-"@crestproject/crestproject@^0.0.4":
-  version "0.0.4"
-  resolved "https://npm.pkg.github.com/download/@crestproject/crestproject/0.0.4/322b64a22d2e7fa42e6894197dc1227b730dc85f7809b8b40e56caa70d6e1f01#2c7f503211641dd80567c19d7a002066980cd850"
-  integrity sha512-CzGxB3nPyag+EGG5kLl16lYMXF2l+4C1LZhyai88QCXCnzwWGNXZSxpvjykxRWvxKb11nYIg1vrbKQPgV8Trbg==
+"@crestproject/crestproject@^0.0.5":
+  version "0.0.5"
+  resolved "https://npm.pkg.github.com/download/@crestproject/crestproject/0.0.5/646f905a8fa0e35457eeb7e832c4bba8aad261de44255beb068d93ac403554a3#fa74642357f4c0eee72426980f60cb49c5650088"
+  integrity sha512-Q9ra8iAjUNMbfg641KqsA+Ap9iCRTkfMcRnqZNmvp4DNwZea5M254vk6QT/qz75oBvwKTeSqGWdAFcUvt1g5WA==
   dependencies:
-    "@crestproject/codegen" "^0.0.4"
-    "@crestproject/ethers" "^0.0.4"
-    "@crestproject/evm" "^0.0.4"
-    "@crestproject/jest" "^0.0.4"
+    "@crestproject/codegen" "^0.0.5"
+    "@crestproject/ethers" "^0.0.5"
+    "@crestproject/evm" "^0.0.5"
+    "@crestproject/jest" "^0.0.5"
     glob "^7.1.6"
     jest-worker "^26.1.0"
     throat "^5.0.0"
     yargs "^15.4.1"
 
-"@crestproject/ethers@^0.0.4":
-  version "0.0.4"
-  resolved "https://npm.pkg.github.com/download/@crestproject/ethers/0.0.4/69a9868fba11d47d88338a5c2cdaad8a9e729603fb9a016736c96e2401e813d3#ade5bb55667c4232669232660818fc9dd8b11000"
-  integrity sha512-vcq2hqP1xPpYEE0Q9KlE1MsBhbFPbFYd3GpgEVhA2Zdf13aV0zr/11HjxcsiRjjlJOJ+1cUdIyYtQ8X7puGBGQ==
+"@crestproject/ethers@^0.0.5":
+  version "0.0.5"
+  resolved "https://npm.pkg.github.com/download/@crestproject/ethers/0.0.5/570f8c72e3a44d72d3024468cb456f5665bb8d9f3ea906dca53299a0703f1c6a#b7b63236fdb10fb61df9c14955e09dfacebaa6d9"
+  integrity sha512-e7MHl5B5G6EFJtZbt11yPwrWR2yn0QX31Ao1jF2//hb9ckkzBw70+yedWAKumwUxKcz8qBHHhJUiqWB1NgDa2A==
 
-"@crestproject/evm@^0.0.4":
-  version "0.0.4"
-  resolved "https://npm.pkg.github.com/download/@crestproject/evm/0.0.4/04bc6c4c4bfd6d4b1a3e5a6a85f7b925cca4cf0968523e15a62b0c98ba42045d#322db66bd7c031b2779df15be9a3f38f6e3395ca"
-  integrity sha512-jnwDSyfvnoCUwDEGFq6p6uyGi9cR9Ud+8SSrk7CASWheljkikxr0MRm6sIkYeu8KKhUstffoO96OajEn1652sw==
+"@crestproject/evm@^0.0.5":
+  version "0.0.5"
+  resolved "https://npm.pkg.github.com/download/@crestproject/evm/0.0.5/17f1936d9c833b7c6da031006859f1640b72a0c7d4dd1c859dbb5bc358b1a533#1a08ca3bc138c28ac89000043aaff3cf841d130a"
+  integrity sha512-sP9OurhQTIdd5gHb3nvvK+u709ETHmW1c0O3URyqB7xROvpico8DLEbcL2qo9gz2poFmw9SiAjCvTtlAd/LmZg==
 
-"@crestproject/jest@^0.0.4":
-  version "0.0.4"
-  resolved "https://npm.pkg.github.com/download/@crestproject/jest/0.0.4/abebc113f55395814d5b9c077e0e168595f245db0b862cb6b145063d53dbab70#e07257152ada7dc8b2e4beddbfb7db44d8f89166"
-  integrity sha512-j6na0IcikbLVkoW9c9ZLJ6TLwtAJnbRHF9YCg3XmJFqS790FN4EezVbz8sCXTi02gzjKxylgtE0SLkkRMJfP+g==
+"@crestproject/jest@^0.0.5":
+  version "0.0.5"
+  resolved "https://npm.pkg.github.com/download/@crestproject/jest/0.0.5/4c237f9ad10c0fc15c069e467bdb0566e92eb42f37888830ca1c8a4d477adff7#ffe7ebf7949cd5ec6c7883efbe4bf3a8aa7dc32b"
+  integrity sha512-8lrfhgLo9oH1xIG+WXZxyPJkDkbzn7pxjDk7RWhfYg3UXuY5aAFSIfvtMjmY1FzxhljWPbbrBmy1khiCVi1d/w==
   dependencies:
-    "@crestproject/evm" "^0.0.4"
+    "@crestproject/evm" "^0.0.5"
     ts-jest "^26.1.3"
 
 "@ethersproject/abi@5.0.0-beta.153":

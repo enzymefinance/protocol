@@ -1,4 +1,4 @@
-import { BuidlerProvider } from 'crestproject';
+import { BuidlerProvider } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
 import { Registry } from '../contracts/Registry';
 import { randomAddress } from '../utils';
