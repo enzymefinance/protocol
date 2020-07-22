@@ -86,7 +86,7 @@
       },
       {
         "displayName": "unit",
-        "preset": "crestproject",
+        "preset": "@crestproject/crestproject",
         "roots": [
           "<rootDir>/tests-new/unit"
         ]
