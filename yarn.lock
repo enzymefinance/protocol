@@ -649,42 +649,42 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.0.6":
-  version "0.0.6"
-  resolved "https://npm.pkg.github.com/download/@crestproject/codegen/0.0.6/f1bfb0dcd7d39a4b9577b110772123864e35fac702c374f67098a11223b3c809#7f8d37a7e16a832b36608f7f111b5349a64ec966"
-  integrity sha512-KsT1uh+vBfNulj5Zlo8wdRYFVedUEo9g+EWDVRE3zsI68WRlPKPMlfa9i7kC6sgxn25vLyBu4PkHSx0tJNwgdA==
+"@crestproject/codegen@^0.0.7":
+  version "0.0.7"
+  resolved "https://npm.pkg.github.com/download/@crestproject/codegen/0.0.7/6312192b95d08eef2f695a8ff34dbbc4ddc9326e7dc3e5dcbbe1de602c07bd44#dc3b20ea1afec64864aba1b1fd6b4b9401ea9f85"
+  integrity sha512-S9LAhNOFhlRGSSVXvx/ihQL1L12I1+fhYRGrYikaCIFMHALx5IkxKx2jLMiUCaP4HZU1BpYUq56xFXr/EFPbNg==
 
-"@crestproject/crestproject@^0.0.6":
-  version "0.0.6"
-  resolved "https://npm.pkg.github.com/download/@crestproject/crestproject/0.0.6/df8257a211e8683db1e9145927c5f210f21b863251b0d7b6f15524ab777dc612#36dac284a204c7cb8fbc83d9ecf38d900053de15"
-  integrity sha512-wN3h7Uke6K/aLbZNwKF3IBP7wZAuGpTJ5uqAO/z5cf+5AylXP9g4qcCpBeW9DXsGJ05UltnHTowq8z1l9u0yVA==
+"@crestproject/crestproject@^0.0.7":
+  version "0.0.7"
+  resolved "https://npm.pkg.github.com/download/@crestproject/crestproject/0.0.7/761db3eb7e65ace24f404a6029dfad253676bd848a1c2939ab331233ee083ddc#af3c679490ae1a6201d6db16c211afb750994845"
+  integrity sha512-EL0sJ+8rXiHV6ybuM2iYU4Hk4O9N//hu1AyEq363mB57suqQJ3h3DrAZ2b2Rky9gP0Oje3ZHe8JGFojgLHJc4A==
   dependencies:
-    "@crestproject/codegen" "^0.0.6"
-    "@crestproject/ethers" "^0.0.6"
-    "@crestproject/evm" "^0.0.6"
-    "@crestproject/jest" "^0.0.6"
+    "@crestproject/codegen" "^0.0.7"
+    "@crestproject/ethers" "^0.0.7"
+    "@crestproject/evm" "^0.0.7"
+    "@crestproject/jest" "^0.0.7"
     glob "^7.1.6"
     jest-worker "^26.1.0"
     throat "^5.0.0"
     yargs "^15.4.1"
 
-"@crestproject/ethers@^0.0.6":
-  version "0.0.6"
-  resolved "https://npm.pkg.github.com/download/@crestproject/ethers/0.0.6/d00bff89adc93992d2cf53d6b5ebd7eddb2850658925fd78658f5706343905da#78d5ce39ed5c4ff28ba94473322ebb34c04dde1e"
-  integrity sha512-onWz16/br5rLT5aMw2e2nXQFt2gJnTOY8mnA48wYPdJuZ+1/1xg6EUnz1U5TsE9P6YZiT+7m83DW7vcWArplOw==
+"@crestproject/ethers@^0.0.7":
+  version "0.0.7"
+  resolved "https://npm.pkg.github.com/download/@crestproject/ethers/0.0.7/871dbc85d0b983e42d45ba9de6a909fca8a20abbbba7ac05d761dd5a083f2206#68e0f432ff4024fe0891f60c482d1525d3426e7f"
+  integrity sha512-SEcnRgIAvnJ1aXTt724Gj4NJU0te0VPiR0LRMNcoAxV0ZqbTuXi32u24CUylyFWp7Q55ewi5GHTXKIeDAe0p6g==
 
-"@crestproject/evm@^0.0.6":
-  version "0.0.6"
-  resolved "https://npm.pkg.github.com/download/@crestproject/evm/0.0.6/7bb755d998b27114a6a6748b216dbf69f1e9b0015cbaa0200e5a468ba239edf9#ec93c009fad4e408bc41a145820b0e18534b4f0e"
-  integrity sha512-aR8haCbYtYL5a8/p9xpcyk2Na/PP16ZWGf3qbQ0Itmz+B6uMhyb8/i3sHU0JHyF1U6ftX/wSXST9UctuyIO/1A==
+"@crestproject/evm@^0.0.7":
+  version "0.0.7"
+  resolved "https://npm.pkg.github.com/download/@crestproject/evm/0.0.7/ce970f5bd491f9370ea3a75770cb0a516d83d548b7cd148b5a170eba5c26729a#aff9fc6abf6fc53750e3dfaedfc5e630d887e474"
+  integrity sha512-iyD5VLz01emyBFgCf9emzLqSqR3WbLcrevgUvUEgOPg9Vpz1ZVc5QvHtM2z+RZHE4hmujg4UdcQkOvwhfecGig==
 
-"@crestproject/jest@^0.0.6":
-  version "0.0.6"
-  resolved "https://npm.pkg.github.com/download/@crestproject/jest/0.0.6/49c8608ab35c34c0af33ddfb10a94eda6b1856659195782aa9f0224c8b815a9a#64f6335035e40424119b6b8554ef451d7369a1ae"
-  integrity sha512-7UCI4OdNKmPQm2DYpXKHrOOM/1LvC4P+nEx5Sa5BlZua4tdgnqCuYxmU/550G9X5g8K7LknBA1tnvJvk3OwzwA==
+"@crestproject/jest@^0.0.7":
+  version "0.0.7"
+  resolved "https://npm.pkg.github.com/download/@crestproject/jest/0.0.7/31bb87db9380e73be9a234376d2acfc62ba58a7d1d27837a83e92d676dd8243e#6f3912e503fbe936cd6e75b59997bd61cb8e43ac"
+  integrity sha512-WMWzN5DhFD2+HlR8pJ0V5VrLnLKlW/MszKeQP9bfQqAzS2VAxent9koJL7KO8ykpbATV+vAtrabX6xCXiEZYWw==
   dependencies:
-    "@crestproject/ethers" "^0.0.6"
-    "@crestproject/evm" "^0.0.6"
+    "@crestproject/ethers" "^0.0.7"
+    "@crestproject/evm" "^0.0.7"
     ts-jest "^26.1.3"
 
 "@ethersproject/abi@5.0.0-beta.153":
