@@ -4,61 +4,64 @@ import { Registry } from '../contracts/Registry';
 import { randomAddress } from '../utils';
 
 async function deploy(provider: BuidlerProvider) {
-  const signer = provider.getSigner(0);
-  const mtc = await provider.getSigner(1).getAddress();
-  const mgm = await provider.getSigner(2).getAddress();
-  const stranger = await provider.getSigner(5).getAddress();
-
-  const deployer = await signer.getAddress();
+  const [deployer, stranger, mtc, mgm] = await provider.listAccounts();
+  const signer = provider.getSigner(deployer);
   const registry = await Registry.deploy(signer, mtc, mgm);
 
   return {
-    stranger,
-    deployer,
     registry,
+    deployer,
+    stranger,
     mtc,
     mgm,
   };
 }
 
+let tx;
+
 describe('Registry', () => {
   describe('constructor', () => {
     it('MTC is set', async () => {
       const { registry, mtc } = await provider.snapshot(deploy);
-      await expect(registry.MTC()).resolves.toBe(mtc);
+
+      tx = registry.MTC();
+      await expect(tx).resolves.toBe(mtc);
     });
 
     it('MGM is set', async () => {
       const { registry, mgm } = await provider.snapshot(deploy);
-      await expect(registry.MGM()).resolves.toBe(mgm);
+
+      tx = registry.MGM();
+      await expect(tx).resolves.toBe(mgm);
     });
   });
 
   describe('transferOwnership', () => {
     it('can only be called by owner', async () => {
-      const fixtures = await provider.snapshot(deploy);
-      const registry = fixtures.registry.connect(
-        provider.getSigner(fixtures.stranger),
-      );
+      const { registry, stranger } = await provider.snapshot(deploy);
+      const disallowed = registry.connect(provider.getSigner(stranger));
 
-      await expect(
-        registry.transferOwnership(fixtures.stranger),
-      ).rejects.toBeRevertedWith('caller is not the owner');
+      tx = disallowed.transferOwnership(stranger);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('cannot be called when the owner is the MTC', async () => {
       const { registry, mtc, deployer } = await provider.snapshot(deploy);
 
-      await expect(registry.transferOwnership(mtc)).resolves.toBeReceipt();
-      await expect(registry.owner()).resolves.toBe(mtc);
-      await expect(
-        registry.transferOwnership(deployer),
-      ).rejects.toBeRevertedWith('caller is not the owner');
+      tx = registry.transferOwnership(mtc);
+      await expect(tx).resolves.toBeReceipt();
 
-      const connected = registry.connect(provider.getSigner(mtc));
-      await expect(
-        connected.transferOwnership(deployer),
-      ).rejects.toBeRevertedWith('MTC cannot transfer ownership');
+      tx = registry.owner();
+      await expect(tx).resolves.toBe(mtc);
+
+      tx = registry.transferOwnership(deployer);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
+
+      const disallowed = registry.connect(provider.getSigner(mtc));
+      tx = disallowed.transferOwnership(deployer);
+      await expect(tx).rejects.toBeRevertedWith(
+        'MTC cannot transfer ownership',
+      );
     });
   });
 
@@ -68,39 +71,33 @@ describe('Registry', () => {
       const disallowed = registry.connect(provider.getSigner(stranger));
       const primitive = randomAddress();
 
-      await expect(
-        disallowed.deregisterPrimitive(primitive),
-      ).rejects.toBeRevertedWith('caller is not the owner');
+      tx = disallowed.deregisterPrimitive(primitive);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow unregistered asset', async () => {
       const { registry } = await provider.snapshot(deploy);
       const primitive = randomAddress();
 
-      await expect(
-        registry.deregisterPrimitive(primitive),
-      ).rejects.toBeRevertedWith('_primitive is not registered');
+      tx = registry.deregisterPrimitive(primitive);
+      await expect(tx).rejects.toBeRevertedWith('_primitive is not registered');
     });
 
     it('primitive is removed', async () => {
       const { registry } = await provider.snapshot(deploy);
       const primitive = randomAddress();
 
-      await expect(
-        registry.registerPrimitive(primitive),
-      ).resolves.toBeReceipt();
+      tx = registry.registerPrimitive(primitive);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.primitiveIsRegistered(primitive),
-      ).resolves.toBeTruthy();
+      tx = registry.primitiveIsRegistered(primitive);
+      await expect(tx).resolves.toBeTruthy();
 
-      await expect(
-        registry.deregisterPrimitive(primitive),
-      ).resolves.toBeReceipt();
+      tx = registry.deregisterPrimitive(primitive);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.primitiveIsRegistered(primitive),
-      ).resolves.toBeFalsy();
+      tx = registry.primitiveIsRegistered(primitive);
+      await expect(tx).resolves.toBeFalsy();
     });
 
     it.todo('emits PrimitiveRemoved');
@@ -112,35 +109,32 @@ describe('Registry', () => {
       const disallowed = registry.connect(provider.getSigner(stranger));
       const primitive = randomAddress();
 
-      await expect(
-        disallowed.registerPrimitive(primitive),
-      ).rejects.toBeRevertedWith('caller is not the owner');
+      tx = disallowed.registerPrimitive(primitive);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow registered asset', async () => {
       const { registry } = await provider.snapshot(deploy);
       const primitive = randomAddress();
 
-      await expect(
-        registry.registerPrimitive(primitive),
-      ).resolves.toBeReceipt();
+      tx = registry.registerPrimitive(primitive);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.registerPrimitive(primitive),
-      ).rejects.toBeRevertedWith('_primitive already registered');
+      tx = registry.registerPrimitive(primitive);
+      await expect(tx).rejects.toBeRevertedWith(
+        '_primitive already registered',
+      );
     });
 
     it('primitive is added', async () => {
       const { registry } = await provider.snapshot(deploy);
       const primitive = randomAddress();
 
-      await expect(
-        registry.registerPrimitive(primitive),
-      ).resolves.toBeReceipt();
+      tx = registry.registerPrimitive(primitive);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.primitiveIsRegistered(primitive),
-      ).resolves.toBeTruthy();
+      tx = registry.primitiveIsRegistered(primitive);
+      await expect(tx).resolves.toBeTruthy();
     });
 
     it.todo('emits PrimitiveAdded');
@@ -153,9 +147,8 @@ describe('Registry', () => {
       const derivative = randomAddress();
       const source = randomAddress();
 
-      await expect(
-        disallowed.registerDerivativePriceSource(derivative, source),
-      ).rejects.toBeRevertedWith('caller is not the owner');
+      tx = disallowed.registerDerivativePriceSource(derivative, source);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow registered asset', async () => {
@@ -163,13 +156,13 @@ describe('Registry', () => {
       const derivative = randomAddress();
       const source = randomAddress();
 
-      await expect(
-        registry.registerDerivativePriceSource(derivative, source),
-      ).resolves.toBeReceipt();
+      tx = registry.registerDerivativePriceSource(derivative, source);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.registerDerivativePriceSource(derivative, source),
-      ).rejects.toBeRevertedWith('derivative already set to specified source');
+      tx = registry.registerDerivativePriceSource(derivative, source);
+      await expect(tx).rejects.toBeRevertedWith(
+        'derivative already set to specified source',
+      );
     });
 
     it('derivative is added', async () => {
@@ -177,13 +170,11 @@ describe('Registry', () => {
       const derivative = randomAddress();
       const source = randomAddress();
 
-      await expect(
-        registry.registerDerivativePriceSource(derivative, source),
-      ).resolves.toBeReceipt();
+      tx = registry.registerDerivativePriceSource(derivative, source);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(registry.derivativeToPriceSource(derivative)).resolves.toBe(
-        source,
-      );
+      tx = registry.derivativeToPriceSource(derivative);
+      await expect(tx).resolves.toBe(source);
     });
 
     it('derivative price source can be changed', async () => {
@@ -192,21 +183,17 @@ describe('Registry', () => {
       const source = randomAddress();
       const other = randomAddress();
 
-      await expect(
-        registry.registerDerivativePriceSource(derivative, source),
-      ).resolves.toBeReceipt();
+      tx = registry.registerDerivativePriceSource(derivative, source);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(registry.derivativeToPriceSource(derivative)).resolves.toBe(
-        source,
-      );
+      tx = registry.derivativeToPriceSource(derivative);
+      await expect(tx).resolves.toBe(source);
 
-      await expect(
-        registry.registerDerivativePriceSource(derivative, other),
-      ).resolves.toBeReceipt();
+      tx = registry.registerDerivativePriceSource(derivative, other);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(registry.derivativeToPriceSource(derivative)).resolves.toBe(
-        other,
-      );
+      tx = registry.derivativeToPriceSource(derivative);
+      await expect(tx).resolves.toBe(other);
     });
 
     it.todo('emits DerivativePriceSourceUpdated');
@@ -218,28 +205,33 @@ describe('Registry', () => {
       const disallowed = registry.connect(provider.getSigner(stranger));
       const fee = randomAddress();
 
-      await expect(disallowed.deregisterFee(fee)).rejects.toBeRevertedWith(
-        'caller is not the owner',
-      );
+      tx = disallowed.deregisterFee(fee);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow unregistered fee', async () => {
       const { registry } = await provider.snapshot(deploy);
       const fee = randomAddress();
 
-      await expect(registry.deregisterFee(fee)).rejects.toBeRevertedWith(
-        '_fee is not registered',
-      );
+      tx = registry.deregisterFee(fee);
+      await expect(tx).rejects.toBeRevertedWith('_fee is not registered');
     });
 
     it('fee is removed', async () => {
       const { registry } = await provider.snapshot(deploy);
       const fee = randomAddress();
 
-      await expect(registry.registerFee(fee)).resolves.toBeReceipt();
-      await expect(registry.feeIsRegistered(fee)).resolves.toBeTruthy();
-      await expect(registry.deregisterFee(fee)).resolves.toBeReceipt();
-      await expect(registry.feeIsRegistered(fee)).resolves.toBeFalsy();
+      tx = registry.registerFee(fee);
+      await expect(tx).resolves.toBeReceipt();
+
+      tx = registry.feeIsRegistered(fee);
+      await expect(tx).resolves.toBeTruthy();
+
+      tx = registry.deregisterFee(fee);
+      await expect(tx).resolves.toBeReceipt();
+
+      tx = registry.feeIsRegistered(fee);
+      await expect(tx).resolves.toBeFalsy();
     });
 
     it.todo('feeIdentifierIsRegistered is set to false');
@@ -252,29 +244,30 @@ describe('Registry', () => {
       const disallowed = registry.connect(provider.getSigner(stranger));
       const fee = randomAddress();
 
-      await expect(disallowed.registerFee(fee)).rejects.toBeRevertedWith(
-        'caller is not the owner',
-      );
+      tx = disallowed.registerFee(fee);
+      await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow registered asset', async () => {
       const { registry } = await provider.snapshot(deploy);
       const fee = randomAddress();
 
-      await expect(registry.registerFee(fee)).resolves.toBeReceipt();
+      tx = registry.registerFee(fee);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(registry.registerFee(fee)).rejects.toBeRevertedWith(
-        '_fee already registered',
-      );
+      tx = registry.registerFee(fee);
+      await expect(tx).rejects.toBeRevertedWith('_fee already registered');
     });
 
     it('fee is added', async () => {
       const { registry } = await provider.snapshot(deploy);
       const fee = randomAddress();
 
-      await expect(registry.registerFee(fee)).resolves.toBeReceipt();
+      tx = registry.registerFee(fee);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(registry.feeIsRegistered(fee)).resolves.toBeTruthy();
+      tx = registry.feeIsRegistered(fee);
+      await expect(tx).resolves.toBeTruthy();
     });
 
     it.todo('emits FeeAdded(fee, identifier)');
@@ -291,9 +284,10 @@ describe('Registry', () => {
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      await expect(
-        disallowed.registerFund(fund, manager, name),
-      ).rejects.toBeRevertedWith('Only fundFactory can call this function');
+      tx = disallowed.registerFund(fund, manager, name);
+      await expect(tx).rejects.toBeRevertedWith(
+        'Only fundFactory can call this function',
+      );
     });
 
     it('does not allow registered fund', async () => {
@@ -304,65 +298,66 @@ describe('Registry', () => {
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      await expect(
-        registry.registerFund(fund, manager, name),
-      ).resolves.toBeReceipt();
+      tx = registry.registerFund(fund, manager, name);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.registerFund(fund, manager, name),
-      ).rejects.toBeRevertedWith('Fund is already registered');
+      tx = registry.registerFund(fund, manager, name);
+      await expect(tx).rejects.toBeRevertedWith('Fund is already registered');
     });
 
     it('fund is added', async () => {
       const { deployer, registry } = await provider.snapshot(deploy);
-      await expect(registry.setFundFactory(deployer)).resolves.toBeReceipt();
-
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      await expect(
-        registry.registerFund(fund, manager, name),
-      ).resolves.toBeReceipt();
+      tx = registry.setFundFactory(deployer);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(registry.fundIsRegistered(fund)).resolves.toBeTruthy();
-      await expect(registry.fundNameHashIsTaken(name)).resolves.toBeTruthy();
-      await expect(registry.managerToFunds(manager, 0)).resolves.toBe(fund);
+      tx = registry.registerFund(fund, manager, name);
+      await expect(tx).resolves.toBeReceipt();
+
+      tx = registry.fundIsRegistered(fund);
+      await expect(tx).resolves.toBeTruthy();
+
+      tx = registry.fundNameHashIsTaken(name);
+      await expect(tx).resolves.toBeTruthy();
+
+      tx = registry.managerToFunds(manager, 0);
+      await expect(tx).resolves.toBe(fund);
     });
 
     it('does not allow duplicate fund registration', async () => {
       const { deployer, registry } = await provider.snapshot(deploy);
-      await expect(registry.setFundFactory(deployer)).resolves.toBeReceipt();
-
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      await expect(
-        registry.registerFund(fund, manager, name),
-      ).resolves.toBeReceipt();
+      tx = registry.setFundFactory(deployer);
+      await expect(tx).resolves.toBeReceipt();
 
-      await expect(
-        registry.registerFund(fund, manager, name),
-      ).rejects.toBeRevertedWith('Fund is already registered');
+      tx = registry.registerFund(fund, manager, name);
+      await expect(tx).resolves.toBeReceipt();
+
+      tx = registry.registerFund(fund, manager, name);
+      await expect(tx).rejects.toBeRevertedWith('Fund is already registered');
     });
 
     it('does not allow fund with duplicate name', async () => {
       const { deployer, registry } = await provider.snapshot(deploy);
-      await expect(registry.setFundFactory(deployer)).resolves.toBeReceipt();
-
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      await expect(
-        registry.registerFund(fund, manager, name),
-      ).resolves.toBeReceipt();
+      tx = registry.setFundFactory(deployer);
+      await expect(tx).resolves.toBeReceipt();
+
+      tx = registry.registerFund(fund, manager, name);
+      await expect(tx).resolves.toBeReceipt();
 
       const other = randomAddress();
-      await expect(
-        registry.registerFund(other, manager, name),
-      ).rejects.toBeRevertedWith('Fund name is already taken');
+      tx = registry.registerFund(other, manager, name);
+      await expect(tx).rejects.toBeRevertedWith('Fund name is already taken');
     });
 
     it.todo('emits FundAdded(manager, hub, hashName)');
