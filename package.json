@@ -94,6 +94,6 @@
     ]
   },
   "dependencies": {
-    "@crestproject/crestproject": "^0.0.5"
+    "@crestproject/crestproject": "^0.0.6"
   }
 }
