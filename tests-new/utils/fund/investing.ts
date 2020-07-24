@@ -18,7 +18,7 @@ export function requestShares({
   shares = ethers.utils.parseEther('1'),
 }: RequestSharesParams) {
   return requestor.requestShares
-    .args(fund.hub.address, amount, shares)
+    .args(fund.hub, amount, shares)
     .value(amgu)
     .send();
 }

@@ -6,7 +6,6 @@ import { IKyberNetworkProxy } from '../contracts/IKyberNetworkProxy';
 import { Registry } from '../contracts/Registry';
 import { Vault } from '../contracts/Vault';
 import { randomAddress } from '../utils';
-import { encodeArgs } from '../utils/common';
 import { kyberTakeOrder } from '../utils/fund/integrations';
 
 async function deploy(provider: BuidlerProvider) {
@@ -18,8 +17,8 @@ async function deploy(provider: BuidlerProvider) {
   const mockVault = await Vault.mock(signer);
   const kyberAdapter = await KyberAdapter.deploy(
     signer,
-    mockRegistry.contract.address,
-    mockKyberNetworkProxy.contract.address,
+    mockRegistry,
+    mockKyberNetworkProxy,
   );
 
   return {
@@ -42,14 +41,14 @@ describe('KyberAdapter', () => {
       );
 
       tx = kyberAdapter.EXCHANGE();
-      await expect(tx).resolves.toBe(mockKyberNetworkProxy.contract.address);
+      await expect(tx).resolves.toBe(mockKyberNetworkProxy.address);
     });
 
     it('sets registry', async () => {
       const { kyberAdapter, mockRegistry } = await provider.snapshot(deploy);
 
       tx = kyberAdapter.REGISTRY();
-      await expect(tx).resolves.toBe(mockRegistry.contract.address);
+      await expect(tx).resolves.toBe(mockRegistry.address);
     });
   });
 
