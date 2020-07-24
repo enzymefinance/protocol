@@ -123,7 +123,7 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
             ) = __calcAssetValue(underlyings[i], underlyingAmount, _quoteAsset, _useLiveRate);
 
             if (!underlyingIsValid) isValid_ = false;
-            add(value_, underlyingValue);
+            value_ = add(value_, underlyingValue);
         }
     }
 
