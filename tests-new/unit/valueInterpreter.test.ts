@@ -6,33 +6,45 @@ import { IPriceSource } from '../contracts/IPriceSource';
 import { Registry } from '../contracts/Registry';
 import { ValueInterpreter } from '../contracts/ValueInterpreter';
 import {
+  covertRateToValue,
   mockDerivativeRate,
   mockPrimitiveCanonicalRate,
+  mockPrimitiveLiveRate,
 } from '../utils/fund/prices';
 
 async function deploy(provider: BuidlerProvider) {
   const [deployer] = await provider.listAccounts();
   const signer = provider.getSigner(deployer);
-  const mockBaseAsset = await ERC20WithFields.mock(signer);
-  const mockQuoteAsset = await ERC20WithFields.mock(signer);
+  const mockAsset1 = await ERC20WithFields.mock(signer);
+  const mockAsset2 = await ERC20WithFields.mock(signer);
   const mockAsset3 = await ERC20WithFields.mock(signer);
+  const mockAsset4 = await ERC20WithFields.mock(signer);
   const mockDerivativePriceSource = await IDerivativePriceSource.mock(signer);
   const mockPriceSource = await IPriceSource.mock(signer);
   const mockRegistry = await Registry.mock(signer);
   const valueInterpreter = await ValueInterpreter.deploy(signer, mockRegistry);
 
-  // Config mockRegistry
+  // Config mocks
+
   await mockRegistry.priceSource.returns(mockPriceSource);
 
-  // Config mockAssets
-  await mockBaseAsset.decimals.returns(18);
-  await mockAsset3.decimals.returns(18);
+  // Set all assets as unregistered and give standard decimals
+  for (const asset of [mockAsset1, mockAsset2, mockAsset3, mockAsset4]) {
+    await mockRegistry.primitiveIsRegistered.given(asset).returns(false);
+
+    await mockRegistry.derivativeToPriceSource
+      .given(asset)
+      .returns(ethers.constants.AddressZero);
+
+    await asset.decimals.returns(18);
+  }
 
   // Config vars
+
   const defaultCalcValueParams = {
-    baseAsset: mockBaseAsset,
+    baseAsset: mockAsset1,
     baseAmount: ethers.utils.parseEther('1'),
-    quoteAsset: mockQuoteAsset,
+    quoteAsset: mockAsset2,
     primitivePerUnderlyingRate: ethers.utils.parseEther('1.5'),
     quotePerPrimitiveRate: ethers.utils.parseEther('0.5'),
     underlyingPerDerivativeRate: ethers.utils.parseEther('0.25'),
@@ -42,6 +54,7 @@ async function deploy(provider: BuidlerProvider) {
     defaultCalcValueParams,
     deployer,
     mockAsset3,
+    mockAsset4,
     mockDerivativePriceSource,
     mockPriceSource,
     mockRegistry,
@@ -52,13 +65,8 @@ async function deploy(provider: BuidlerProvider) {
 let tx, res;
 
 describe('ValueInterpreter', () => {
-  // TODO: how many of the same tests need to be run with the live rate?
-  describe('calcLiveAssetValue', () => {
-    it.todo('define tests');
-  });
-
   describe('calcCanonicalAssetValue', () => {
-    fit('uses getCanonicalRate for primitive', async () => {
+    it('uses canonical rate', async () => {
       const {
         defaultCalcValueParams,
         mockPriceSource,
@@ -86,6 +94,8 @@ describe('ValueInterpreter', () => {
         .args(baseAsset, baseAmount, quoteAsset)
         .call();
 
+      expect(mockPriceSource.getLiveRate).toHaveBeenCalledOnContractTimes(0);
+
       expect(mockPriceSource.getCanonicalRate).toHaveBeenCalledOnContractTimes(
         1,
       );
@@ -94,10 +104,6 @@ describe('ValueInterpreter', () => {
         mockPriceSource.getCanonicalRate.ref,
       ).toHaveBeenCalledOnContractWith(baseAsset, quoteAsset);
     });
-
-    it.todo('uses getCanonicalRate for derivative');
-
-    it.todo('uses getRatesToUnderlyings for derivative');
 
     it('returns zeroed values when base asset not in registry', async () => {
       const {
@@ -121,12 +127,6 @@ describe('ValueInterpreter', () => {
         rate: quotePerPrimitiveRate,
       });
 
-      // Set baseAsset to unregistered
-      await mockRegistry.primitiveIsRegistered.given(baseAsset).returns(false);
-      await mockRegistry.derivativeToPriceSource
-        .given(baseAsset)
-        .returns(ethers.constants.AddressZero);
-
       res = await valueInterpreter.calcCanonicalAssetValue
         .args(baseAsset, baseAmount, quoteAsset)
         .call();
@@ -136,11 +136,19 @@ describe('ValueInterpreter', () => {
 
       // Register baseAsset as primitive
       await mockRegistry.primitiveIsRegistered.given(baseAsset).returns(true);
+
       res = await valueInterpreter.calcCanonicalAssetValue
         .args(baseAsset, baseAmount, quoteAsset)
         .call();
 
-      expect(res.value_).toEqBigNumber(quotePerPrimitiveRate);
+      const expectedQuoteAssetAmount = await covertRateToValue(
+        baseAsset,
+        baseAmount,
+        quotePerPrimitiveRate,
+      );
+
+      expect(res.value_).toEqBigNumber(expectedQuoteAssetAmount);
+
       expect(res.isValid_).toBeTruthy();
     });
   });
@@ -166,11 +174,7 @@ describe('ValueInterpreter', () => {
         } = defaultCalcValueParams;
         const underlying = mockAsset3;
 
-        // baseAsset must be registered as derivative, and underlying must be registered as primary
-        await mockRegistry.primitiveIsRegistered
-          .given(baseAsset)
-          .returns(false);
-
+        // baseAsset must be registered as derivative, and underlying must be registered as primitive
         await mockRegistry.derivativeToPriceSource
           .given(baseAsset)
           .returns(mockDerivativePriceSource.address);
@@ -196,16 +200,24 @@ describe('ValueInterpreter', () => {
           rate: quotePerPrimitiveRate,
         });
 
+        // Test that rate is the underlying asset value.
         res = await valueInterpreter.calcCanonicalAssetValue
           .args(baseAsset, baseAmount, quoteAsset)
           .call();
+
         expect(res.isValid_).toBeTruthy();
-        // TODO: replace with asset decimals
-        expect(res.value_).toEqBigNumber(
-          underlyingPerDerivativeRate
-            .mul(quotePerPrimitiveRate)
-            .div(ethers.BigNumber.from(10).pow(18)),
+
+        const expectedUnderlyingAmount = await covertRateToValue(
+          baseAsset,
+          baseAmount,
+          underlyingPerDerivativeRate,
         );
+        const expectedQuoteAssetAmount = await covertRateToValue(
+          underlying,
+          expectedUnderlyingAmount,
+          quotePerPrimitiveRate,
+        );
+        expect(res.value_).toEqBigNumber(expectedQuoteAssetAmount);
       });
 
       it.todo('handles un-registered underlying asset');
@@ -213,10 +225,240 @@ describe('ValueInterpreter', () => {
       it.todo('handles empty rate');
     });
 
-    describe('2 underlying primitives', () => {});
+    // E.g., WETH <-> DAI Uniswap LP tokens
+    describe('2 underlying primitives', () => {
+      it('returns a valid rate', async () => {
+        const {
+          defaultCalcValueParams,
+          mockAsset3,
+          mockAsset4,
+          mockDerivativePriceSource,
+          mockPriceSource,
+          mockRegistry,
+          valueInterpreter,
+        } = await provider.snapshot(deploy);
 
-    describe('1 underlying derivative with recursion', () => {});
+        const {
+          baseAsset,
+          baseAmount,
+          quoteAsset,
+          quotePerPrimitiveRate,
+          underlyingPerDerivativeRate,
+        } = defaultCalcValueParams;
+        const underlying1 = mockAsset3;
+        const underlying2 = mockAsset4;
 
-    describe('2 underlying derivatives with recursion', () => {});
+        // The baseAsset must be registered as a derivative, and both underlyings must be registered as primitives,
+        // to provide the expected path from baseAsset (derivative) -> primitives -> quoteAsset
+        await mockRegistry.derivativeToPriceSource
+          .given(baseAsset)
+          .returns(mockDerivativePriceSource.address);
+
+        await mockRegistry.primitiveIsRegistered
+          .given(underlying1)
+          .returns(true);
+
+        await mockRegistry.primitiveIsRegistered
+          .given(underlying2)
+          .returns(true);
+
+        // Set rates for:
+        // - baseAsset-to-underlying
+        // - underlying1-to-quoteAsset
+        // - underlying2-to-quoteAsset
+        const underlyingPerDerivativeRate2 = underlyingPerDerivativeRate.div(2);
+        await mockDerivativeRate({
+          mockDerivativePriceSource,
+          derivative: baseAsset,
+          underlyings: [underlying1, underlying2],
+          rates: [underlyingPerDerivativeRate, underlyingPerDerivativeRate2],
+        });
+
+        await mockPrimitiveCanonicalRate({
+          mockPriceSource,
+          baseAsset: underlying1,
+          quoteAsset,
+          rate: quotePerPrimitiveRate,
+        });
+
+        const quotePerPrimitiveRate2 = quotePerPrimitiveRate.div(10);
+        await mockPrimitiveCanonicalRate({
+          mockPriceSource,
+          baseAsset: underlying2,
+          quoteAsset,
+          rate: quotePerPrimitiveRate2,
+        });
+
+        // Test that rate is the sum of the underlying asset values.
+        res = await valueInterpreter.calcCanonicalAssetValue
+          .args(baseAsset, baseAmount, quoteAsset)
+          .call();
+
+        expect(res.isValid_).toBeTruthy();
+
+        const expectedUnderlying1Amount = await covertRateToValue(
+          baseAsset,
+          baseAmount,
+          underlyingPerDerivativeRate,
+        );
+        const expectedQuoteAssetAmount1 = await covertRateToValue(
+          underlying1,
+          expectedUnderlying1Amount,
+          quotePerPrimitiveRate,
+        );
+
+        const expectedUnderlying2Amount = await covertRateToValue(
+          baseAsset,
+          baseAmount,
+          underlyingPerDerivativeRate2,
+        );
+        const expectedQuoteAssetAmount2 = await covertRateToValue(
+          underlying2,
+          expectedUnderlying2Amount,
+          quotePerPrimitiveRate2,
+        );
+
+        expect(res.value_).toEqBigNumber(
+          expectedQuoteAssetAmount1.add(expectedQuoteAssetAmount2),
+        );
+      });
+    });
+
+    // E.g., wrappedCDai -> cDai -> Dai
+    describe('1 underlying derivative with recursion', () => {
+      it.todo('uses getRatesToUnderlyings for derivative');
+
+      it('returns a valid rate', async () => {
+        const {
+          defaultCalcValueParams,
+          mockAsset3,
+          mockAsset4,
+          mockDerivativePriceSource,
+          mockPriceSource,
+          mockRegistry,
+          valueInterpreter,
+        } = await provider.snapshot(deploy);
+
+        const {
+          baseAsset,
+          baseAmount,
+          quoteAsset,
+          quotePerPrimitiveRate,
+          underlyingPerDerivativeRate,
+        } = defaultCalcValueParams;
+        const underlying1 = mockAsset3;
+        const underlying2 = mockAsset4;
+
+        // The baseAsset must be registered as a derivative, underlying1 must be registered as a derivative, and underlying2 must be registered as a primitive.
+        // This provides the expected path from baseAsset (derivative) -> derivative2 -> primitive -> quoteAsset
+        await mockRegistry.derivativeToPriceSource
+          .given(baseAsset)
+          .returns(mockDerivativePriceSource.address);
+
+        await mockRegistry.derivativeToPriceSource
+          .given(underlying1)
+          .returns(mockDerivativePriceSource.address);
+
+        await mockRegistry.primitiveIsRegistered
+          .given(underlying2)
+          .returns(true);
+
+        // Set rates for:
+        // - baseAsset-to-underlying1
+        // - underlying1-to-underlying2
+        // - underlying2-to-quoteAsset
+        await mockDerivativeRate({
+          mockDerivativePriceSource,
+          derivative: baseAsset,
+          underlyings: [underlying1],
+          rates: [underlyingPerDerivativeRate],
+        });
+
+        const underlyingPerDerivativeRate2 = underlyingPerDerivativeRate.div(2);
+        await mockDerivativeRate({
+          mockDerivativePriceSource,
+          derivative: underlying1,
+          underlyings: [underlying2],
+          rates: [underlyingPerDerivativeRate2],
+        });
+
+        await mockPrimitiveCanonicalRate({
+          mockPriceSource,
+          baseAsset: underlying2,
+          quoteAsset,
+          rate: quotePerPrimitiveRate,
+        });
+
+        // Test that rate is the sum of the underlying asset values.
+        res = await valueInterpreter.calcCanonicalAssetValue
+          .args(baseAsset, baseAmount, quoteAsset)
+          .call();
+
+        expect(res.isValid_).toBeTruthy();
+
+        const expectedUnderlying1Amount = await covertRateToValue(
+          baseAsset,
+          baseAmount,
+          underlyingPerDerivativeRate,
+        );
+        const expectedUnderlying2Amount = await covertRateToValue(
+          underlying1,
+          expectedUnderlying1Amount,
+          underlyingPerDerivativeRate2,
+        );
+        const expectedQuoteAssetAmount = await covertRateToValue(
+          underlying2,
+          expectedUnderlying2Amount,
+          quotePerPrimitiveRate,
+        );
+
+        expect(res.value_).toEqBigNumber(expectedQuoteAssetAmount);
+      });
+    });
+
+    describe('2 underlying derivatives with recursion', () => {
+      it.todo('same tests as above');
+    });
+  });
+
+  describe('calcLiveAssetValue', () => {
+    it('uses live rate', async () => {
+      const {
+        defaultCalcValueParams,
+        mockPriceSource,
+        mockRegistry,
+        valueInterpreter,
+      } = await provider.snapshot(deploy);
+
+      const {
+        baseAsset,
+        baseAmount,
+        quoteAsset,
+        quotePerPrimitiveRate,
+      } = defaultCalcValueParams;
+
+      await mockPrimitiveLiveRate({
+        mockPriceSource,
+        baseAsset,
+        quoteAsset,
+        rate: quotePerPrimitiveRate,
+      });
+
+      await mockRegistry.primitiveIsRegistered.given(baseAsset).returns(true);
+
+      res = await valueInterpreter.calcLiveAssetValue
+        .args(baseAsset, baseAmount, quoteAsset)
+        .call();
+
+      expect(mockPriceSource.getLiveRate).toHaveBeenCalledOnContractTimes(1);
+
+      expect(mockPriceSource.getCanonicalRate).toHaveBeenCalledOnContractTimes(
+        0,
+      );
+
+      await expect(
+        mockPriceSource.getLiveRate.ref,
+      ).toHaveBeenCalledOnContractWith(baseAsset, quoteAsset);
+    });
   });
 });
