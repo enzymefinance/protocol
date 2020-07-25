@@ -63,7 +63,7 @@ let tx, res;
 
 describe('Shares', () => {
   describe('constructor', () => {
-    it('cannot set a non-primitive asset as denomination asset', async () => {
+    fit('cannot set a non-primitive asset as denomination asset', async () => {
       const {
         denominationAsset,
         mockHub,
@@ -83,7 +83,7 @@ describe('Shares', () => {
         .given(denominationAsset)
         .returns(true);
       tx = Shares.deploy(signer, mockHub, denominationAsset, tokenName);
-      await expect(tx).resolves.toBeInstanceOf(Contract);
+      await expect(tx).resolves.toBeInstanceOf(Shares);
     });
 
     it('sets initial storage values', async () => {

@@ -649,42 +649,42 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.0.10":
-  version "0.0.10"
-  resolved "https://npm.pkg.github.com/download/@crestproject/codegen/0.0.10/910540e35a04c349428ce48e70841aa01eb3caf536ca68629bcb4fb08952c67d#e2be21e9158c39b28c9aaa4caaede4183b7927f6"
-  integrity sha512-wOvGb02b69hQPaPRIqWS6ngJ9yMjovZgRZ9njDxSXWiGCWNoCSJtsKPdCG47BmAPauXbMTB8S2YenoWT9X+ETg==
+"@crestproject/codegen@^0.0.12":
+  version "0.0.12"
+  resolved "https://npm.pkg.github.com/download/@crestproject/codegen/0.0.12/8de98159154c35f22c0baa28a3a4c868fc5131e5b30d44da704fdcabe6ceee26#6738c4a290202aa1d854045cc6b288f7b14f1700"
+  integrity sha512-N8MRbV6Uu7fU8YYX55qwc3NpCptSH498lwjSnBd+D30dOOZ2Tiyh7WjC1dI5ix/qUQXFZNJ/c1h2fFBiMnCExA==
 
-"@crestproject/crestproject@^0.0.10":
-  version "0.0.10"
-  resolved "https://npm.pkg.github.com/download/@crestproject/crestproject/0.0.10/743d57348f67d73396fc64dc37dbd03e675c946e18aec45981cb3ff956848731#135eb99eb8924989c8f1bd3532b4da54ba6b1840"
-  integrity sha512-FdUB6x0DTumPRe5zmTFexUnymKJ+pUSCPesd1QCr/qABna+9n9DIz+VYgST5VYToppC6qcX1uNTg4bMiX+M6cw==
+"@crestproject/crestproject@^0.0.12":
+  version "0.0.12"
+  resolved "https://npm.pkg.github.com/download/@crestproject/crestproject/0.0.12/6a768c049aa650fa44edace0e73d22a16bb9519b2ceef258e32c70b958db2231#898b8c0ea18159d7a157f87b21d7b06674c0499e"
+  integrity sha512-B03nOqU2kqtEkYeGszHwfab3ECt+JN6gnMQSO6qs2cpOVnM6nQArs+U43rQx90E7fp/QXp4MP/EXzQY/VZ0/6g==
   dependencies:
-    "@crestproject/codegen" "^0.0.10"
-    "@crestproject/ethers" "^0.0.10"
-    "@crestproject/evm" "^0.0.10"
-    "@crestproject/jest" "^0.0.10"
+    "@crestproject/codegen" "^0.0.12"
+    "@crestproject/ethers" "^0.0.12"
+    "@crestproject/evm" "^0.0.12"
+    "@crestproject/jest" "^0.0.12"
     glob "^7.1.6"
     jest-worker "^26.1.0"
     throat "^5.0.0"
     yargs "^15.4.1"
 
-"@crestproject/ethers@^0.0.10":
-  version "0.0.10"
-  resolved "https://npm.pkg.github.com/download/@crestproject/ethers/0.0.10/6b34099b1ec8253a2e724e4b042e92f3b7db903d1525b7154938c221dab652ed#2567db6afdd81ab4ef7fc41532a580563fe37f82"
-  integrity sha512-aZAVQZ/Pwi3B81BcefSdL6I/0m59Aq0KHvAi25qZYz6EIKjOF5vc3rnDS+TZUyt1pH+RyhfYsZr6aDFbgCzuVA==
+"@crestproject/ethers@^0.0.12":
+  version "0.0.12"
+  resolved "https://npm.pkg.github.com/download/@crestproject/ethers/0.0.12/9fd9e0f169f65a66389cd32911088d55cb7746a9e5dbea8d1f8eda90f3fb2fbc#5455bb4f3e2fe3decefb0f0aa267c6a2141face5"
+  integrity sha512-93JxkaWZjQwauilPqSA6kyQhsnL26of07tdCva9WFlnll4oelEHE0dT60C532skILNrECGl4sG8FHi6MeW7AMg==
 
-"@crestproject/evm@^0.0.10":
-  version "0.0.10"
-  resolved "https://npm.pkg.github.com/download/@crestproject/evm/0.0.10/37867239d3adfdf5310403b158f8843679d7a22867fff584feeaef8a7d546443#59b636932ece72ee0a4f70237ba07042d842271f"
-  integrity sha512-4UdbTgVfRj6ikBxtW4dESve3yQbFFnVlA0hD0S/Rt59Y8NqgCBr7uSna+v4CdmH2JUT8suwQrOnyR2j1Wi0TWA==
+"@crestproject/evm@^0.0.12":
+  version "0.0.12"
+  resolved "https://npm.pkg.github.com/download/@crestproject/evm/0.0.12/a5ed3e5b6763e4c6fcc3530f5dd66bee43325fa8c1d8f108acc47d7f664eb1d9#eacbba0d206e0283945bf62f074b07a7aea34648"
+  integrity sha512-zBHi/7QBI5r2dhUtAxdiplLSq9wJsPaC6qFqsski642ZFAYlIsWJ0NLjWdadFbFj9nPYmOoJKDQdxPSBTT+NTg==
 
-"@crestproject/jest@^0.0.10":
-  version "0.0.10"
-  resolved "https://npm.pkg.github.com/download/@crestproject/jest/0.0.10/949d1f7919eaa9cdb3ad140635ae83b59d1500124a1824db449fc084c6c89416#5473c34ce90c3500a26035c41730e38fc85903e2"
-  integrity sha512-SWAVWEldykwv76gN7tHYY+mSGcB44IxPM8BEbzJ4CyK/gAZASTfZzAyGtvgqebwTMOhliFIX9valAl/IfIki7w==
+"@crestproject/jest@^0.0.12":
+  version "0.0.12"
+  resolved "https://npm.pkg.github.com/download/@crestproject/jest/0.0.12/d5486f74af0b8445a216334f2aec3d1e20e17e92ba5be1384cf5d8ffa9c127f0#87d14ddedb45b81e48286b5a027281bd8a64e3e8"
+  integrity sha512-/VeJYdNgzevdtS3L04yl+GgwQ1/zjjvwB10McODCPblOzsWgLhf1JQHyV114Qar1MxwO3/zuuuB77+IxEIM/ug==
   dependencies:
-    "@crestproject/ethers" "^0.0.10"
-    "@crestproject/evm" "^0.0.10"
+    "@crestproject/ethers" "^0.0.12"
+    "@crestproject/evm" "^0.0.12"
     ts-jest "^26.1.3"
 
 "@ethersproject/abi@5.0.0-beta.153":

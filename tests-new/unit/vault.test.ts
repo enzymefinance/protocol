@@ -99,7 +99,7 @@ describe('Vault', () => {
       );
 
       tx = Vault.deploy(signer, mockHub, []);
-      await expect(tx).resolves.toBeInstanceOf(Contract);
+      await expect(tx).resolves.toBeInstanceOf(Vault);
     });
 
     it('sets initial storage values', async () => {
