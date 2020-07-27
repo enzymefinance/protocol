@@ -6,7 +6,7 @@ import { IKyberNetworkProxy } from '../contracts/IKyberNetworkProxy';
 import { Registry } from '../contracts/Registry';
 import { Vault } from '../contracts/Vault';
 import { randomAddress } from '../utils';
-import { kyberTakeOrder } from '../utils/fund/integrations';
+import { assetTransferArgs, kyberTakeOrder } from '../utils/fund/integrations';
 
 async function deploy(provider: BuidlerProvider) {
   const [deployer] = await provider.listAccounts();
@@ -21,13 +21,32 @@ async function deploy(provider: BuidlerProvider) {
     mockKyberNetworkProxy,
   );
 
+  // Set mockVault config
+  await mockVault.HUB.returns(mockHub);
+  await mockRegistry.fundIsRegistered.given(mockHub).returns(true);
+  await mockHub.vault.returns(mockVault);
+
+  // Default config
+  const defaultTakeOrderParams = {
+    incomingAsset: randomAddress(),
+    expectedIncomingAssetAmount: ethers.utils.parseEther('1'),
+    outgoingAsset: randomAddress(),
+    outgoingAssetAmount: ethers.utils.parseEther('2'),
+  };
+
+  const takeOrderSelector = kyberAdapter.abi.getSighash(
+    kyberAdapter.takeOrder.fragment,
+  );
+
   return {
+    defaultTakeOrderParams,
     deployer,
     kyberAdapter,
     mockHub,
     mockKyberNetworkProxy,
     mockRegistry,
     mockVault,
+    takeOrderSelector,
   };
 }
 
@@ -58,12 +77,18 @@ describe('KyberAdapter', () => {
     // });
 
     it('generates expected output', async () => {
-      const { kyberAdapter } = await provider.snapshot(deploy);
+      const {
+        defaultTakeOrderParams,
+        kyberAdapter,
+        takeOrderSelector,
+      } = await provider.snapshot(deploy);
+      const {
+        incomingAsset,
+        expectedIncomingAssetAmount,
+        outgoingAsset,
+        outgoingAssetAmount,
+      } = defaultTakeOrderParams;
 
-      const incomingAsset = randomAddress();
-      const expectedIncomingAssetAmount = ethers.utils.parseEther('1');
-      const outgoingAsset = randomAddress();
-      const outgoingAssetAmount = ethers.utils.parseEther('2');
       const encodedCallArgs = kyberTakeOrder(
         incomingAsset,
         expectedIncomingAssetAmount,
@@ -71,12 +96,8 @@ describe('KyberAdapter', () => {
         outgoingAssetAmount,
       );
 
-      const selector = kyberAdapter.abi.getSighash(
-        kyberAdapter.takeOrder.fragment,
-      );
-
       const result = await kyberAdapter.parseAssetsForMethod(
-        selector,
+        takeOrderSelector,
         encodedCallArgs,
       );
 
@@ -91,39 +112,44 @@ describe('KyberAdapter', () => {
     });
   });
 
-  describe('takeOrder', () => {
-    // it('can only be called by a valid fund vault', async () => {
-    //   const {
-    //     kyberAdapter,
-    //     mockHub,
-    //     mockRegistry,
-    //     mockVault,
-    //   } = await provider.snapshot(deploy);
-    //   const incomingAsset = randomAddress();
-    //   const expectedIncomingAssetAmount = ethers.utils.parseEther('1');
-    //   const outgoingAsset = randomAddress();
-    //   const outgoingAssetAmount = ethers.utils.parseEther('2');
-    //   const encodedCallArgs = kyberTakeOrder(
-    //     incomingAsset,
-    //     expectedIncomingAssetAmount,
-    //     outgoingAsset,
-    //     outgoingAssetAmount,
-    //   );
-    //   const selector = kyberAdapter.abi.getSighash(
-    //     kyberAdapter.takeOrder.fragment,
-    //   );
-    //   const {
-    //     spendAssets_: spendAssets,
-    //     spendAssetAmounts_: spendAssetAmounts,
-    //     incomingAssets_: incomingAssets,
-    //   } = await kyberAdapter.parseAssetsForMethod(selector, encodedCallArgs);
-    //   tx = await kyberAdapter.takeOrder(
-    //     encodedCallArgs,
-    //     encodeArgs(
-    //       ['address[]', 'uint[]', 'address[]'],
-    //       [spendAssets, spendAssetAmounts, incomingAssets],
-    //     ),
-    //   );
-    // });
-  });
+  // describe('takeOrder', () => {
+  //   it('can only be called by a valid fund vault', async () => {
+  //     const {
+  //       defaultTakeOrderParams,
+  //       kyberAdapter,
+  //       mockVault,
+  //       takeOrderSelector,
+  //     } = await provider.snapshot(deploy);
+  //     const {
+  //       incomingAsset,
+  //       expectedIncomingAssetAmount,
+  //       outgoingAsset,
+  //       outgoingAssetAmount,
+  //     } = defaultTakeOrderParams;
+
+  //     const encodedCallArgs = kyberTakeOrder(
+  //       incomingAsset,
+  //       expectedIncomingAssetAmount,
+  //       outgoingAsset,
+  //       outgoingAssetAmount,
+  //     );
+  //     const encodedTransferArgs = await assetTransferArgs(
+  //       kyberAdapter,
+  //       takeOrderSelector,
+  //       encodedCallArgs,
+  //     );
+
+  //     // Reverts without a message because __isVault() asks the sender for HUB(), which an EOA doesn't have
+  //     tx = kyberAdapter.takeOrder(encodedCallArgs, encodedTransferArgs);
+  //     await expect(tx).rejects.toBeRevertedWith('');
+
+  //     // TODO: there will still be several problems that cause this to revert
+  //     tx = mockVault.forward(
+  //       kyberAdapter.takeOrder,
+  //       encodedCallArgs,
+  //       encodedTransferArgs,
+  //     );
+  //     await expect(tx).resolves.toBeReceipt();
+  //   });
+  // });
 });
