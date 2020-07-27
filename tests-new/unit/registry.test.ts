@@ -83,7 +83,18 @@ describe('Registry', () => {
       await expect(tx).rejects.toBeRevertedWith('_primitive is not registered');
     });
 
-    it('primitive is removed', async () => {
+    it('primitive can be added', async () => {
+      const { registry } = await provider.snapshot(deploy);
+      const primitive = randomAddress();
+
+      tx = registry.registerPrimitive(primitive);
+      await expect(tx).resolves.toBeReceipt();
+
+      tx = registry.primitiveIsRegistered(primitive);
+      await expect(tx).resolves.toBeTruthy();
+    });
+
+    it('primitive can be removed', async () => {
       const { registry } = await provider.snapshot(deploy);
       const primitive = randomAddress();
 
@@ -95,12 +106,11 @@ describe('Registry', () => {
 
       tx = registry.deregisterPrimitive(primitive);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('PrimitiveRemoved');
 
       tx = registry.primitiveIsRegistered(primitive);
       await expect(tx).resolves.toBeFalsy();
     });
-
-    it.todo('emits PrimitiveRemoved');
   });
 
   describe('registerPrimitive', () => {
@@ -126,18 +136,17 @@ describe('Registry', () => {
       );
     });
 
-    it('primitive is added', async () => {
+    it('primitive can be added', async () => {
       const { registry } = await provider.snapshot(deploy);
       const primitive = randomAddress();
 
       tx = registry.registerPrimitive(primitive);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('PrimitiveAdded');
 
       tx = registry.primitiveIsRegistered(primitive);
       await expect(tx).resolves.toBeTruthy();
     });
-
-    it.todo('emits PrimitiveAdded');
   });
 
   describe('registerDerivativePriceSource', () => {
@@ -185,6 +194,7 @@ describe('Registry', () => {
 
       tx = registry.registerDerivativePriceSource(derivative, source);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('DerivativePriceSourceUpdated');
 
       tx = registry.derivativeToPriceSource(derivative);
       await expect(tx).resolves.toBe(source);
@@ -195,8 +205,6 @@ describe('Registry', () => {
       tx = registry.derivativeToPriceSource(derivative);
       await expect(tx).resolves.toBe(other);
     });
-
-    it.todo('emits DerivativePriceSourceUpdated');
   });
 
   describe('deregisterFee', () => {
@@ -229,13 +237,13 @@ describe('Registry', () => {
 
       tx = registry.deregisterFee(fee);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('FeeRemoved');
 
       tx = registry.feeIsRegistered(fee);
       await expect(tx).resolves.toBeFalsy();
     });
 
     it.todo('feeIdentifierIsRegistered is set to false');
-    it.todo('emits FeeRemoved(fee, identifier)');
   });
 
   describe('registerFee', () => {
@@ -265,12 +273,12 @@ describe('Registry', () => {
 
       tx = registry.registerFee(fee);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('FeeAdded');
 
       tx = registry.feeIsRegistered(fee);
       await expect(tx).resolves.toBeTruthy();
     });
 
-    it.todo('emits FeeAdded(fee, identifier)');
     it.todo('does not allow empty Fee.FeeHook()');
     it.todo('does not allow empty Fee.identifier()');
     it.todo('does not allow fee with same Fee.identifier()');
@@ -316,6 +324,7 @@ describe('Registry', () => {
 
       tx = registry.registerFund(fund, manager, name);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('FundAdded');
 
       tx = registry.fundIsRegistered(fund);
       await expect(tx).resolves.toBeTruthy();
@@ -359,7 +368,5 @@ describe('Registry', () => {
       tx = registry.registerFund(other, manager, name);
       await expect(tx).rejects.toBeRevertedWith('Fund name is already taken');
     });
-
-    it.todo('emits FundAdded(manager, hub, hashName)');
   });
 });
