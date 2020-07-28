@@ -2,15 +2,10 @@ import { ethers } from 'ethers';
 import { FeeParams } from './fees';
 import { PolicyParams } from './policies';
 import { stringToBytes, encodeArgs } from '../common';
-import { FundFactory } from '../../contracts/FundFactory';
-import { FeeManager } from '../../contracts/FeeManager';
-import { Hub } from '../../contracts/Hub';
-import { PolicyManager } from '../../contracts/PolicyManager';
-import { Shares } from '../../contracts/Shares';
-import { Vault } from '../../contracts/Vault';
+import * as contracts from '../../contracts';
 
 export interface SetupFundParams {
-  factory: FundFactory;
+  factory: contracts.FundFactory;
   denominator: string;
   manager?: ethers.Signer;
   name?: string;
@@ -80,18 +75,18 @@ export async function setupFundWithParams({
 }
 
 export interface FundComponents {
-  hub: Hub;
-  feeManager: FeeManager;
-  policyManager: PolicyManager;
-  shares: Shares;
-  vault: Vault;
+  hub: contracts.Hub;
+  feeManager: contracts.FeeManager;
+  policyManager: contracts.PolicyManager;
+  shares: contracts.Shares;
+  vault: contracts.Vault;
 }
 
 export async function getFundComponents(
   address: string,
   signerOrProvider: ethers.Signer | ethers.providers.Provider,
 ): Promise<FundComponents> {
-  const hub = new Hub(address, signerOrProvider);
+  const hub = new contracts.Hub(address, signerOrProvider);
   const [
     feeManagerAddress,
     policyManagerAddress,
@@ -104,14 +99,18 @@ export async function getFundComponents(
     hub.vault(),
   ]);
 
-  const feeManager = new FeeManager(feeManagerAddress, signerOrProvider);
-  const policyManager = new PolicyManager(
+  const feeManager = new contracts.FeeManager(
+    feeManagerAddress,
+    signerOrProvider,
+  );
+
+  const policyManager = new contracts.PolicyManager(
     policyManagerAddress,
     signerOrProvider,
   );
 
-  const shares = new Shares(sharesAddress, signerOrProvider);
-  const vault = new Vault(vaultAddress, signerOrProvider);
+  const shares = new contracts.Shares(sharesAddress, signerOrProvider);
+  const vault = new contracts.Vault(vaultAddress, signerOrProvider);
 
   return {
     hub,

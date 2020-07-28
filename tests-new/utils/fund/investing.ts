@@ -1,10 +1,10 @@
-import { SharesRequestor } from '../../contracts/SharesRequestor';
-import { FundComponents } from './setup';
 import { ethers } from 'ethers';
+import { FundComponents } from './setup';
+import * as contracts from '../../contracts';
 
 export interface RequestSharesParams {
   fund: FundComponents;
-  requestor: SharesRequestor;
+  requestor: contracts.SharesRequestor;
   amgu?: ethers.BigNumberish;
   amount?: ethers.BigNumberish;
   shares?: ethers.BigNumberish;

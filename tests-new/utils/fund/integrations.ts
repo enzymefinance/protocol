@@ -1,4 +1,4 @@
-import { Call, Contract } from '@crestproject/crestproject';
+import { Call } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
 import { encodeArgs } from '../common';
 
