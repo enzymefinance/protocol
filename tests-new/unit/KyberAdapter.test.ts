@@ -1,10 +1,10 @@
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
-import { Hub } from '../contracts/Hub';
-import { KyberAdapter } from '../contracts/KyberAdapter';
-import { IKyberNetworkProxy } from '../contracts/IKyberNetworkProxy';
-import { Registry } from '../contracts/Registry';
-import { Vault } from '../contracts/Vault';
+import { Hub } from '../codegen/Hub';
+import { KyberAdapter } from '../codegen/KyberAdapter';
+import { IKyberNetworkProxy } from '../codegen/IKyberNetworkProxy';
+import { Registry } from '../codegen/Registry';
+import { Vault } from '../codegen/Vault';
 import { randomAddress } from '../utils';
 import { assetTransferArgs, kyberTakeOrder } from '../utils/fund/integrations';
 

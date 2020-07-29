@@ -1,10 +1,10 @@
 import { BuidlerProvider, Contract } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
-import { ERC20WithFields } from '../contracts/ERC20WithFields';
-import { Hub } from '../contracts/Hub';
-import { Registry } from '../contracts/Registry';
-import { Vault } from '../contracts/Vault';
-import { KyberAdapter } from '../contracts/KyberAdapter';
+import { ERC20WithFields } from '../codegen/ERC20WithFields';
+import { Hub } from '../codegen/Hub';
+import { Registry } from '../codegen/Registry';
+import { Vault } from '../codegen/Vault';
+import { KyberAdapter } from '../codegen/KyberAdapter';
 import { randomAddress } from '../utils';
 
 async function preVaultDeploySnapshot(provider: BuidlerProvider) {

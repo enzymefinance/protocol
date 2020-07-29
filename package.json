@@ -21,16 +21,18 @@
   ],
   "scripts": {
     "download-thirdparty": "node scripts/download-thirdparty",
-    "codegen": "crestproject codegen \"build/contracts/**.json\" tests-new/contracts",
-    "compile": "truffle compile",
+    "codegen": "yarn codegen:contracts && yarn codegen:tests",
+    "codegen:contracts": "crestproject codegen \"build/contracts/*.json\" tests-new/codegen",
+    "codegen:tests": "crestproject codegen \"tests-new/contracts/artifacts/*.json\" tests-new/codegen",
+    "compile": "truffle compile && waffle compile tests-new/waffle.json",
     "postcompile": "yarn download-thirdparty",
     "deploy": "truffle migrate --skip-dry-run",
     "devchain": "ts-node --require tsconfig-paths/register tests/ganache/fork",
-    "format": "prettier --write {scripts,tests}/{*,**/*}.ts",
+    "format": "prettier --write {*,**/*}.ts",
     "typecheck": "tsc --noEmit",
     "lint": "solhint src/**/*.sol",
     "test": "yarn jest --selectProjects old",
-    "test-new": "yarn jest --selectProjects unit"
+    "test-new": "yarn jest --selectProjects new"
   },
   "devDependencies": {
     "@0x/order-utils": "^8.5.0-beta.4",
@@ -43,10 +45,13 @@
     "@nomiclabs/buidler": "^1.3.8",
     "@openzeppelin/contracts": "3.0.1",
     "@types/jest": "^26.0.3",
+    "@types/ramda": "^0.27.12",
+    "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.5",
     "ganache-core": "^2.11.0-beta.0",
     "jest": "^26.1.0",
     "prettier": "^2.0.5",
+    "ramda": "^0.27.0",
     "request-promise": "^4.2.2",
     "solhint": "^3.0.0",
     "truffle": "^5.1.32",
@@ -85,11 +90,18 @@
         }
       },
       {
-        "displayName": "unit",
+        "displayName": "new",
         "preset": "@crestproject/crestproject",
         "roots": [
-          "<rootDir>/tests-new/unit"
-        ]
+          "<rootDir>/tests-new"
+        ],
+        "globals": {
+          "ts-jest": {
+            "diagnostics": {
+              "warnOnly": true
+            }
+          }
+        }
       }
     ]
   },

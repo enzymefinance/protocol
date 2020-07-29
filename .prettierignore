@@ -1,3 +1,2 @@
-# Only format files in the testing framework directory for now.
-/*
-!/tests-new
+# Ignore generated contracts
+/tests-new/codegen

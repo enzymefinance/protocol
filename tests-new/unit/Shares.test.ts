@@ -1,9 +1,9 @@
 import { BuidlerProvider, Contract } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
-import { ERC20WithFields } from '../contracts/ERC20WithFields';
-import { Hub } from '../contracts/Hub';
-import { Registry } from '../contracts/Registry';
-import { Shares } from '../contracts/Shares';
+import { ERC20WithFields } from '../codegen/ERC20WithFields';
+import { Hub } from '../codegen/Hub';
+import { Registry } from '../codegen/Registry';
+import { Shares } from '../codegen/Shares';
 
 async function preSharesDeploySnapshot(provider: BuidlerProvider) {
   const [deployer] = await provider.listAccounts();

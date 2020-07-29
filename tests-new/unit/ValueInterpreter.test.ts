@@ -1,10 +1,10 @@
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
-import { ERC20WithFields } from '../contracts/ERC20WithFields';
-import { IDerivativePriceSource } from '../contracts/IDerivativePriceSource';
-import { IPriceSource } from '../contracts/IPriceSource';
-import { Registry } from '../contracts/Registry';
-import { ValueInterpreter } from '../contracts/ValueInterpreter';
+import { ERC20WithFields } from '../codegen/ERC20WithFields';
+import { IDerivativePriceSource } from '../codegen/IDerivativePriceSource';
+import { IPriceSource } from '../codegen/IPriceSource';
+import { Registry } from '../codegen/Registry';
+import { ValueInterpreter } from '../codegen/ValueInterpreter';
 import {
   covertRateToValue,
   mockDerivativeRate,
