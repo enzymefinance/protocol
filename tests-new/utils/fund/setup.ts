@@ -6,7 +6,7 @@ import * as contracts from '../../contracts';
 
 export interface SetupFundParams {
   factory: contracts.FundFactory;
-  denominator: string;
+  denominationAsset: string;
   manager?: ethers.Signer;
   name?: string;
   adapters?: string[];
@@ -16,13 +16,13 @@ export interface SetupFundParams {
 
 export async function setupFundWithParams({
   factory,
-  denominator,
+  denominationAsset,
   name = `test-fund-${Date.now()}`,
   fees = [],
   policies = [],
   adapters = [],
 }: SetupFundParams) {
-  const denominatorAddress = ethers.utils.getAddress(denominator);
+  const denominationAssetAddress = ethers.utils.getAddress(denominationAsset);
   const fundName = stringToBytes(name);
   const feesRates = fees.map((item) => item.rate);
   const feesPeriods = fees.map((item) => item.period);
@@ -51,24 +51,26 @@ export async function setupFundWithParams({
     policiesAddresses,
     policiesSettings as any,
     adapterAddresses,
-    denominatorAddress,
+    denominationAssetAddress,
   );
-
   await factory.createFeeManager();
   await factory.createPolicyManager();
   await factory.createShares();
   await factory.createVault();
 
   const result = await factory.completeFundSetup();
-  const event = result.events?.find(
-    (item) => item.event === 'FundSetupCompleted',
+  const fragment = factory.abi.getEvent('FundSetupCompleted');
+  const eventLog = result.logs?.find(
+    (item) => item.topics[0] == factory.abi.getEventTopic(fragment),
   );
 
-  if (!event) {
+  if (!eventLog) {
     throw new Error(
       `Missing 'FundSetupCompleted' event in transaction receipt`,
     );
   }
+
+  const event = factory.abi.parseLog(eventLog);
 
   const components = await getFundComponents(event.args!.hub, factory.signer!);
   return components;
