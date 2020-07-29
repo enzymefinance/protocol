@@ -129,13 +129,13 @@ const constructors: ContractConstructors = {
       FeeManagerFactory,
       SharesFactory,
       VaultFactory,
-      MaxPositions,
+      PolicyManagerFactory,
       Registry,
     ] = await Promise.all([
       deployment.feeManagerFactory,
       deployment.sharesFactory,
       deployment.vaultFactory,
-      deployment.maxPositions,
+      deployment.policyManagerFactory,
       deployment.registry,
     ]);
 
@@ -144,7 +144,7 @@ const constructors: ContractConstructors = {
       FeeManagerFactory,
       SharesFactory,
       VaultFactory,
-      MaxPositions,
+      PolicyManagerFactory,
       Registry,
     );
   },
