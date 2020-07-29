@@ -26,10 +26,6 @@ export async function assetTransferArgs(
     spendAssetAmounts_,
     incomingAssets_,
   } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
-  console.log('spendAssets_', spendAssets_);
-  console.log('spendAssetAmounts_', spendAssetAmounts_);
-  console.log('incomingAssets_', incomingAssets_);
-
   return encodeArgs(
     ['address[]', 'uint[]', 'address[]'],
     [spendAssets_, spendAssetAmounts_, incomingAssets_],
