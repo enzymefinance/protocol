@@ -1,42 +1,35 @@
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { randomAddress } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
-import { randomAddress } from '../utils';
-import { commonConfigSnapshot } from '../utils/snapshots/commonConfig';
-import { registrySnapshot } from '../utils/snapshots/infrastructure';
-
-async function deploy(provider: BuidlerProvider) {
-  const { accounts } = await commonConfigSnapshot(provider);
-
-  const mlnAddress = randomAddress();
-  const nativeAssetAddress = randomAddress();
-  const { registry } = await registrySnapshot(
-    provider,
-    mlnAddress,
-    nativeAssetAddress,
-  );
-
-  return {
-    accounts,
-    registry,
-  };
-}
+import { configureTestDeployment } from '../deployment';
 
 let tx;
 
 describe('Registry', () => {
+  const snapshot = configureTestDeployment();
+
   describe('constructor', () => {
     it('MTC is set', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: {
+          owners: { mtc },
+        },
+      } = await provider.snapshot(snapshot);
 
       tx = registry.MTC();
-      await expect(tx).resolves.toBe(accounts.mtc);
+      await expect(tx).resolves.toBe(mtc);
     });
 
     it('MGM is set', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: {
+          owners: { mgm },
+        },
+      } = await provider.snapshot(snapshot);
 
       tx = registry.MGM();
-      await expect(tx).resolves.toBe(accounts.mgm);
+      await expect(tx).resolves.toBe(mgm);
     });
 
     it.todo('check mln and nativeAsset (once added to constructor');
@@ -44,29 +37,38 @@ describe('Registry', () => {
 
   describe('transferOwnership', () => {
     it('can only be called by owner', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
 
-      tx = disallowed.transferOwnership(accounts.maliciousUser);
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
+      tx = disallowed.transferOwnership(maliciousUser);
       await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('cannot be called when the owner is the MTC', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: {
+          deployer,
+          owners: { mtc },
+        },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.transferOwnership(accounts.mtc);
+      tx = registry.transferOwnership(mtc);
       await expect(tx).resolves.toBeReceipt();
 
       tx = registry.owner();
-      await expect(tx).resolves.toBe(accounts.mtc);
+      await expect(tx).resolves.toBe(mtc);
 
-      tx = registry.transferOwnership(accounts.deployer);
+      tx = registry.transferOwnership(deployer);
       await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
 
-      const disallowed = registry.connect(provider.getSigner(accounts.mtc));
-      tx = disallowed.transferOwnership(accounts.deployer);
+      const disallowed = registry.connect(provider.getSigner(mtc));
+      tx = disallowed.transferOwnership(deployer);
       await expect(tx).rejects.toBeRevertedWith(
         'MTC cannot transfer ownership',
       );
@@ -75,10 +77,14 @@ describe('Registry', () => {
 
   describe('deregisterPrimitive', () => {
     it('can only be called by owner', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
+
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
       const primitive = randomAddress();
 
       tx = disallowed.deregisterPrimitive(primitive);
@@ -86,7 +92,9 @@ describe('Registry', () => {
     });
 
     it('does not allow unregistered asset', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const primitive = randomAddress();
 
       tx = registry.deregisterPrimitive(primitive);
@@ -94,7 +102,9 @@ describe('Registry', () => {
     });
 
     it('primitive can be added', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const primitive = randomAddress();
 
       tx = registry.registerPrimitive(primitive);
@@ -105,7 +115,9 @@ describe('Registry', () => {
     });
 
     it('primitive can be removed', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const primitive = randomAddress();
 
       tx = registry.registerPrimitive(primitive);
@@ -125,18 +137,23 @@ describe('Registry', () => {
 
   describe('registerPrimitive', () => {
     it('can only be called by owner', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
       const primitive = randomAddress();
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
 
       tx = disallowed.registerPrimitive(primitive);
       await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow registered asset', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const primitive = randomAddress();
 
       tx = registry.registerPrimitive(primitive);
@@ -149,7 +166,9 @@ describe('Registry', () => {
     });
 
     it('primitive can be added', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const primitive = randomAddress();
 
       tx = registry.registerPrimitive(primitive);
@@ -163,10 +182,13 @@ describe('Registry', () => {
 
   describe('registerDerivativePriceSource', () => {
     it('can only be called by owner', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
       const derivative = randomAddress();
       const source = randomAddress();
 
@@ -175,7 +197,9 @@ describe('Registry', () => {
     });
 
     it('does not allow registered asset', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const derivative = randomAddress();
       const source = randomAddress();
 
@@ -189,7 +213,9 @@ describe('Registry', () => {
     });
 
     it('derivative is added', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const derivative = randomAddress();
       const source = randomAddress();
 
@@ -201,7 +227,9 @@ describe('Registry', () => {
     });
 
     it('derivative price source can be changed', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const derivative = randomAddress();
       const source = randomAddress();
       const other = randomAddress();
@@ -223,10 +251,13 @@ describe('Registry', () => {
 
   describe('deregisterFee', () => {
     it('can only be called by owner', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
       const fee = randomAddress();
 
       tx = disallowed.deregisterFee(fee);
@@ -234,7 +265,9 @@ describe('Registry', () => {
     });
 
     it('does not allow unregistered fee', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const fee = randomAddress();
 
       tx = registry.deregisterFee(fee);
@@ -242,7 +275,9 @@ describe('Registry', () => {
     });
 
     it('fee is removed', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const fee = randomAddress();
 
       tx = registry.registerFee(fee);
@@ -264,10 +299,13 @@ describe('Registry', () => {
 
   describe('registerFee', () => {
     it('can only be called by owner', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
       const fee = randomAddress();
 
       tx = disallowed.registerFee(fee);
@@ -275,7 +313,9 @@ describe('Registry', () => {
     });
 
     it('does not allow registered asset', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const fee = randomAddress();
 
       tx = registry.registerFee(fee);
@@ -286,7 +326,9 @@ describe('Registry', () => {
     });
 
     it('fee is added', async () => {
-      const { registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+      } = await provider.snapshot(snapshot);
       const fee = randomAddress();
 
       tx = registry.registerFee(fee);
@@ -304,10 +346,13 @@ describe('Registry', () => {
 
   describe('registerFund', () => {
     it('cannot be called by non-fund factory', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      const disallowed = registry.connect(
-        provider.getSigner(accounts.maliciousUser),
-      );
+      const {
+        system: { registry },
+        config: {
+          accounts: [maliciousUser],
+        },
+      } = await provider.snapshot(snapshot);
+      const disallowed = registry.connect(provider.getSigner(maliciousUser));
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
@@ -319,11 +364,11 @@ describe('Registry', () => {
     });
 
     it('does not allow registered fund', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
-      await expect(
-        registry.setFundFactory(accounts.deployer),
-      ).resolves.toBeReceipt();
-
+      const {
+        system: { registry },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
+      await expect(registry.setFundFactory(deployer)).resolves.toBeReceipt();
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
@@ -336,12 +381,15 @@ describe('Registry', () => {
     });
 
     it('fund is added', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      tx = registry.setFundFactory(accounts.deployer);
+      tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       tx = registry.registerFund(fund, manager, name);
@@ -359,12 +407,15 @@ describe('Registry', () => {
     });
 
     it('does not allow duplicate fund registration', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      tx = registry.setFundFactory(accounts.deployer);
+      tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       tx = registry.registerFund(fund, manager, name);
@@ -375,12 +426,15 @@ describe('Registry', () => {
     });
 
     it('does not allow fund with duplicate name', async () => {
-      const { accounts, registry } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
       const fund = randomAddress();
       const manager = randomAddress();
       const name = ethers.utils.hashMessage('my fund');
 
-      tx = registry.setFundFactory(accounts.deployer);
+      tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       tx = registry.registerFund(fund, manager, name);

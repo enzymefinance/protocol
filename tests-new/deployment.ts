@@ -1,7 +1,5 @@
 import { ethers } from 'ethers';
-import { mergeDeepRight } from 'ramda';
 import {
-  AddressLike,
   BuidlerProvider,
   Contract,
   randomAddress,
@@ -14,56 +12,40 @@ export interface Token {
   decimals: number;
 }
 
-export async function deployPrimitives(
-  signer: ethers.Signer,
-  tokens: { [symbol: string]: number },
-) {
-  const symbols = Object.keys(tokens);
-  const deployed = await Promise.all(
-    symbols.map((symbol) => {
-      const name = `${symbol} Token`;
-      const decimals = tokens[symbol];
-      return contracts.PreminedToken.deploy(signer, name, symbol, decimals);
-    }),
-  );
-
-  return symbols.reduce((carry, symbol, index) => {
-    return { ...carry, [symbol]: deployed[index] };
-  }, {} as { [symbol: string]: contracts.PreminedToken });
-}
-
 export type ContractConstructor<TContract extends Contract> = (
-  signer: ethers.Signer,
   config: DeploymentConfig,
   deployment: PendingDeployment,
 ) => Promise<TContract>;
 
 export interface DeploymentConfig {
-  primitives: {
-    [key: string]: AddressLike;
+  deployer: ethers.Signer;
+  primitives: string[];
+  owners: {
+    mgm: string;
+    mtc: string;
   };
   registry: {
-    mgmAddress: AddressLike;
-    mtcAddress: AddressLike;
-    mlnToken: AddressLike;
-    nativeAsset: AddressLike;
+    mlnToken: string;
+    nativeAsset: string;
   };
   engine: {
     thawingDelay: ethers.BigNumberish;
   };
-  pricefeed: {
-    quoteAsset: AddressLike;
-    maxPriceDeviation: ethers.BigNumberish;
-    maxSpread: ethers.BigNumberish;
+  pricefeeds: {
+    kyber: {
+      quoteAsset: string;
+      maxPriceDeviation: ethers.BigNumberish;
+      maxSpread: ethers.BigNumberish;
+    };
   };
   exchanges: {
-    kyber: AddressLike;
-    airswap: AddressLike;
-    oasisdex: AddressLike;
-    uniswap: AddressLike;
-    uniswapv2: AddressLike;
-    zeroexv2: AddressLike;
-    zeroexv3: AddressLike;
+    kyber: string;
+    airswap: string;
+    oasisdex: string;
+    uniswap: string;
+    uniswapv2: string;
+    zeroexv2: string;
+    zeroexv3: string;
   };
   constructors?: Partial<ContractConstructors>;
 }
@@ -73,83 +55,75 @@ export type PendingDeployment = {
   [TKey in keyof ContractConstructors]: ReturnType<ContractConstructors[TKey]>;
 };
 
-export type RecursivePartial<T> = {
-  [P in keyof T]?: T[P] extends (infer U)[]
-    ? RecursivePartial<U>[]
-    : T[P] extends object
-    ? RecursivePartial<T[P]>
-    : T[P];
-};
-
 export type Deployment = {
   [TKey in keyof PendingDeployment]: ResolvePromise<PendingDeployment[TKey]>;
 };
 
 export interface ContractConstructors {
-  Registry: ContractConstructor<contracts.Registry>;
-  Engine: ContractConstructor<contracts.Engine>;
-  KyberPriceFeed: ContractConstructor<contracts.KyberPriceFeed>;
-  ValueInterpreter: ContractConstructor<contracts.ValueInterpreter>;
-  SharesRequestor: ContractConstructor<contracts.SharesRequestor>;
-  FundFactory: ContractConstructor<contracts.FundFactory>;
-  FeeManagerFactory: ContractConstructor<contracts.FeeManagerFactory>;
-  PolicyManagerFactory: ContractConstructor<contracts.PolicyManagerFactory>;
-  SharesFactory: ContractConstructor<contracts.SharesFactory>;
-  VaultFactory: ContractConstructor<contracts.VaultFactory>;
-  ManagementFee: ContractConstructor<contracts.ManagementFee>;
-  PerformanceFee: ContractConstructor<contracts.PerformanceFee>;
-  AssetBlacklist: ContractConstructor<contracts.AssetBlacklist>;
-  AssetWhitelist: ContractConstructor<contracts.AssetWhitelist>;
-  MaxConcentration: ContractConstructor<contracts.MaxConcentration>;
-  MaxPositions: ContractConstructor<contracts.MaxPositions>;
-  PriceTolerance: ContractConstructor<contracts.PriceTolerance>;
-  UserWhitelist: ContractConstructor<contracts.UserWhitelist>;
-  KyberAdapter: ContractConstructor<contracts.KyberAdapter>;
-  OasisDexAdapter: ContractConstructor<contracts.OasisDexAdapter>;
-  UniswapAdapter: ContractConstructor<contracts.UniswapAdapter>;
-  UniswapV2Adapter: ContractConstructor<contracts.UniswapV2Adapter>;
-  ZeroExV2Adapter: ContractConstructor<contracts.ZeroExV2Adapter>;
-  ZeroExV3Adapter: ContractConstructor<contracts.ZeroExV3Adapter>;
-  AirSwapAdapter: ContractConstructor<contracts.AirSwapAdapter>;
-  EngineAdapter: ContractConstructor<contracts.EngineAdapter>;
+  registry: ContractConstructor<contracts.Registry>;
+  engine: ContractConstructor<contracts.Engine>;
+  kyberPriceFeed: ContractConstructor<contracts.KyberPriceFeed>;
+  valueInterpreter: ContractConstructor<contracts.ValueInterpreter>;
+  sharesRequestor: ContractConstructor<contracts.SharesRequestor>;
+  fundFactory: ContractConstructor<contracts.FundFactory>;
+  feeManagerFactory: ContractConstructor<contracts.FeeManagerFactory>;
+  policyManagerFactory: ContractConstructor<contracts.PolicyManagerFactory>;
+  sharesFactory: ContractConstructor<contracts.SharesFactory>;
+  vaultFactory: ContractConstructor<contracts.VaultFactory>;
+  managementFee: ContractConstructor<contracts.ManagementFee>;
+  performanceFee: ContractConstructor<contracts.PerformanceFee>;
+  assetBlacklist: ContractConstructor<contracts.AssetBlacklist>;
+  assetWhitelist: ContractConstructor<contracts.AssetWhitelist>;
+  maxConcentration: ContractConstructor<contracts.MaxConcentration>;
+  maxPositions: ContractConstructor<contracts.MaxPositions>;
+  priceTolerance: ContractConstructor<contracts.PriceTolerance>;
+  userWhitelist: ContractConstructor<contracts.UserWhitelist>;
+  kyberAdapter: ContractConstructor<contracts.KyberAdapter>;
+  oasisDexAdapter: ContractConstructor<contracts.OasisDexAdapter>;
+  uniswapAdapter: ContractConstructor<contracts.UniswapAdapter>;
+  uniswapV2Adapter: ContractConstructor<contracts.UniswapV2Adapter>;
+  zeroExV2Adapter: ContractConstructor<contracts.ZeroExV2Adapter>;
+  zeroExV3Adapter: ContractConstructor<contracts.ZeroExV3Adapter>;
+  airSwapAdapter: ContractConstructor<contracts.AirSwapAdapter>;
+  engineAdapter: ContractConstructor<contracts.EngineAdapter>;
 }
 
 const constructors: ContractConstructors = {
-  Registry: (signer, config) => {
+  registry: (config) => {
     return contracts.Registry.deploy(
-      signer,
-      config.registry.mtcAddress,
-      config.registry.mgmAddress,
+      config.deployer,
+      config.owners.mtc,
+      config.owners.mgm,
     );
   },
-  Engine: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  engine: async (config, deployment) => {
+    const Registry = await deployment.registry;
     return contracts.Engine.deploy(
-      signer,
+      config.deployer,
       config.engine.thawingDelay,
       Registry,
     );
   },
-  KyberPriceFeed: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  kyberPriceFeed: async (config, deployment) => {
+    const Registry = await deployment.registry;
     return contracts.KyberPriceFeed.deploy(
-      signer,
+      config.deployer,
       Registry,
       config.exchanges.kyber,
-      config.pricefeed.maxSpread,
-      config.pricefeed.quoteAsset,
-      config.pricefeed.maxPriceDeviation,
+      config.pricefeeds.kyber.maxSpread,
+      config.pricefeeds.kyber.quoteAsset,
+      config.pricefeeds.kyber.maxPriceDeviation,
     );
   },
-  ValueInterpreter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.ValueInterpreter.deploy(signer, Registry);
+  valueInterpreter: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.ValueInterpreter.deploy(config.deployer, Registry);
   },
-  SharesRequestor: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.SharesRequestor.deploy(signer, Registry);
+  sharesRequestor: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.SharesRequestor.deploy(config.deployer, Registry);
   },
-  FundFactory: async (signer, config, deployment) => {
+  fundFactory: async (config, deployment) => {
     const [
       FeeManagerFactory,
       SharesFactory,
@@ -157,15 +131,15 @@ const constructors: ContractConstructors = {
       MaxPositions,
       Registry,
     ] = await Promise.all([
-      deployment.FeeManagerFactory,
-      deployment.SharesFactory,
-      deployment.VaultFactory,
-      deployment.MaxPositions,
-      deployment.Registry,
+      deployment.feeManagerFactory,
+      deployment.sharesFactory,
+      deployment.vaultFactory,
+      deployment.maxPositions,
+      deployment.registry,
     ]);
 
     return contracts.FundFactory.deploy(
-      signer,
+      config.deployer,
       FeeManagerFactory,
       SharesFactory,
       VaultFactory,
@@ -173,102 +147,113 @@ const constructors: ContractConstructors = {
       Registry,
     );
   },
-  FeeManagerFactory: (signer) => {
-    return contracts.FeeManagerFactory.deploy(signer);
+  feeManagerFactory: (config) => {
+    return contracts.FeeManagerFactory.deploy(config.deployer);
   },
-  PolicyManagerFactory: (signer) => {
-    return contracts.PolicyManagerFactory.deploy(signer);
+  policyManagerFactory: (config) => {
+    return contracts.PolicyManagerFactory.deploy(config.deployer);
   },
-  SharesFactory: (signer) => {
-    return contracts.SharesFactory.deploy(signer);
+  sharesFactory: (config) => {
+    return contracts.SharesFactory.deploy(config.deployer);
   },
-  VaultFactory: (signer) => {
-    return contracts.VaultFactory.deploy(signer);
+  vaultFactory: (config) => {
+    return contracts.VaultFactory.deploy(config.deployer);
   },
-  ManagementFee: (signer) => {
-    return contracts.ManagementFee.deploy(signer);
+  managementFee: (config) => {
+    return contracts.ManagementFee.deploy(config.deployer);
   },
-  PerformanceFee: (signer) => {
-    return contracts.PerformanceFee.deploy(signer);
+  performanceFee: (config) => {
+    return contracts.PerformanceFee.deploy(config.deployer);
   },
-  AssetBlacklist: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.AssetBlacklist.deploy(signer, Registry);
+  assetBlacklist: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.AssetBlacklist.deploy(config.deployer, Registry);
   },
-  AssetWhitelist: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.AssetWhitelist.deploy(signer, Registry);
+  assetWhitelist: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.AssetWhitelist.deploy(config.deployer, Registry);
   },
-  MaxConcentration: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.MaxConcentration.deploy(signer, Registry);
+  maxConcentration: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.MaxConcentration.deploy(config.deployer, Registry);
   },
-  MaxPositions: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.MaxPositions.deploy(signer, Registry);
+  maxPositions: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.MaxPositions.deploy(config.deployer, Registry);
   },
-  PriceTolerance: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.PriceTolerance.deploy(signer, Registry);
+  priceTolerance: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.PriceTolerance.deploy(config.deployer, Registry);
   },
-  UserWhitelist: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    return contracts.UserWhitelist.deploy(signer, Registry);
+  userWhitelist: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.UserWhitelist.deploy(config.deployer, Registry);
   },
-  KyberAdapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  kyberAdapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.kyber;
-    return contracts.KyberAdapter.deploy(signer, Registry, Exchange);
+    return contracts.KyberAdapter.deploy(config.deployer, Registry, Exchange);
   },
-  OasisDexAdapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  oasisDexAdapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.oasisdex;
-    return contracts.OasisDexAdapter.deploy(signer, Registry, Exchange);
+    return contracts.OasisDexAdapter.deploy(
+      config.deployer,
+      Registry,
+      Exchange,
+    );
   },
-  UniswapAdapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  uniswapAdapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.uniswap;
-    return contracts.UniswapAdapter.deploy(signer, Registry, Exchange);
+    return contracts.UniswapAdapter.deploy(config.deployer, Registry, Exchange);
   },
-  UniswapV2Adapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  uniswapV2Adapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.uniswapv2;
-    return contracts.UniswapV2Adapter.deploy(signer, Registry, Exchange);
+    return contracts.UniswapV2Adapter.deploy(
+      config.deployer,
+      Registry,
+      Exchange,
+    );
   },
-  ZeroExV2Adapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  zeroExV2Adapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.zeroexv2;
-    return contracts.ZeroExV2Adapter.deploy(signer, Registry, Exchange);
+    return contracts.ZeroExV2Adapter.deploy(
+      config.deployer,
+      Registry,
+      Exchange,
+    );
   },
-  ZeroExV3Adapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  zeroExV3Adapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.zeroexv3;
-    return contracts.ZeroExV3Adapter.deploy(signer, Registry, Exchange);
+    return contracts.ZeroExV3Adapter.deploy(
+      config.deployer,
+      Registry,
+      Exchange,
+    );
   },
-  AirSwapAdapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
+  airSwapAdapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
     const Exchange = config.exchanges.airswap;
-    return contracts.AirSwapAdapter.deploy(signer, Registry, Exchange);
+    return contracts.AirSwapAdapter.deploy(config.deployer, Registry, Exchange);
   },
-  EngineAdapter: async (signer, config, deployment) => {
-    const Registry = await deployment.Registry;
-    const Exchange = await deployment.Engine;
-    return contracts.EngineAdapter.deploy(signer, Registry, Exchange);
+  engineAdapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    const Exchange = await deployment.engine;
+    return contracts.EngineAdapter.deploy(config.deployer, Registry, Exchange);
   },
 };
 
-export function createDeployment(
-  signer: ethers.Signer,
-  config: DeploymentConfig,
-) {
+export function createDeployment(config: DeploymentConfig) {
   function deploy<TKey extends keyof ContractConstructors>(
     name: TKey,
     deployment: PendingDeployment,
   ): ReturnType<ContractConstructors[TKey]> {
     const ctor = config.constructors?.[name] ?? constructors[name];
-    return ctor(signer, config, deployment) as ReturnType<
-      ContractConstructors[TKey]
-    >;
+    return ctor(config, deployment) as ReturnType<ContractConstructors[TKey]>;
   }
 
   const deployment = {} as PendingDeployment;
@@ -301,113 +286,144 @@ export async function resolveDeployment(pending: PendingDeployment) {
   return deployment;
 }
 
-export async function deploySystem(
-  signer: ethers.Signer,
-  config: DeploymentConfig,
-) {
-  const pending = createDeployment(signer, config);
+export async function deploySystem(config: DeploymentConfig) {
+  const pending = createDeployment(config);
   const deployment = await resolveDeployment(pending);
 
   await Promise.all([
     // Misc
-    deployment.Registry.setMlnToken(config.registry.mlnToken),
-    deployment.Registry.setNativeAsset(config.registry.nativeAsset),
-    deployment.Registry.setEngine(deployment.Engine),
-    deployment.Registry.setFundFactory(deployment.FundFactory),
-    deployment.Registry.setSharesRequestor(deployment.SharesRequestor),
-    deployment.Registry.setValueInterpreter(deployment.ValueInterpreter),
-    deployment.Registry.setPriceSource(deployment.KyberPriceFeed),
+    deployment.registry.setMlnToken(config.registry.mlnToken),
+    deployment.registry.setNativeAsset(config.registry.nativeAsset),
+    deployment.registry.setEngine(deployment.engine),
+    deployment.registry.setFundFactory(deployment.fundFactory),
+    deployment.registry.setSharesRequestor(deployment.sharesRequestor),
+    deployment.registry.setValueInterpreter(deployment.valueInterpreter),
+    deployment.registry.setPriceSource(deployment.kyberPriceFeed),
 
     // Fees
-    deployment.Registry.registerFee(deployment.ManagementFee),
-    deployment.Registry.registerFee(deployment.PerformanceFee),
+    deployment.registry.registerFee(deployment.managementFee),
+    deployment.registry.registerFee(deployment.performanceFee),
 
     // Policies
-    deployment.Registry.registerPolicy(deployment.AssetBlacklist),
-    deployment.Registry.registerPolicy(deployment.AssetWhitelist),
-    deployment.Registry.registerPolicy(deployment.MaxConcentration),
-    deployment.Registry.registerPolicy(deployment.MaxPositions),
-    deployment.Registry.registerPolicy(deployment.PriceTolerance),
-    deployment.Registry.registerPolicy(deployment.UserWhitelist),
+    deployment.registry.registerPolicy(deployment.assetBlacklist),
+    deployment.registry.registerPolicy(deployment.assetWhitelist),
+    deployment.registry.registerPolicy(deployment.maxConcentration),
+    deployment.registry.registerPolicy(deployment.maxPositions),
+    deployment.registry.registerPolicy(deployment.priceTolerance),
+    deployment.registry.registerPolicy(deployment.userWhitelist),
 
     // Adapters
-    deployment.Registry.registerIntegrationAdapter(deployment.KyberAdapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.OasisDexAdapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.UniswapAdapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.UniswapV2Adapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.ZeroExV2Adapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.ZeroExV3Adapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.AirSwapAdapter),
-    deployment.Registry.registerIntegrationAdapter(deployment.EngineAdapter),
+    deployment.registry.registerIntegrationAdapter(deployment.kyberAdapter),
+    deployment.registry.registerIntegrationAdapter(deployment.oasisDexAdapter),
+    deployment.registry.registerIntegrationAdapter(deployment.uniswapAdapter),
+    deployment.registry.registerIntegrationAdapter(deployment.uniswapV2Adapter),
+    deployment.registry.registerIntegrationAdapter(deployment.zeroExV2Adapter),
+    deployment.registry.registerIntegrationAdapter(deployment.zeroExV3Adapter),
+    deployment.registry.registerIntegrationAdapter(deployment.airSwapAdapter),
+    deployment.registry.registerIntegrationAdapter(deployment.engineAdapter),
   ]);
 
   const primitives = Object.values(config.primitives);
   await Promise.all(
     primitives.map((primitive) => {
-      return deployment.Registry.registerPrimitive(primitive);
+      return deployment.registry.registerPrimitive(primitive);
     }),
   );
 
   return deployment;
 }
 
-const defaults: RecursivePartial<DeploymentConfig> = {
-  primitives: {},
-  engine: {
-    thawingDelay: 2592000,
-  },
-  registry: {
-    mgmAddress: randomAddress(),
-    mtcAddress: randomAddress(),
-    nativeAsset: randomAddress(),
-  },
-  exchanges: {
-    kyber: randomAddress(),
-    oasisdex: randomAddress(),
-    airswap: randomAddress(),
-    uniswap: randomAddress(),
-    uniswapv2: randomAddress(),
-    zeroexv2: randomAddress(),
-    zeroexv3: randomAddress(),
-  },
-  pricefeed: {
-    maxPriceDeviation: ethers.utils.parseEther('0.1'),
-    maxSpread: ethers.utils.parseEther('0.1'),
-    quoteAsset: randomAddress(),
-  },
-};
+async function defaultConfig(
+  provider: BuidlerProvider,
+): Promise<TestDeploymentConfig> {
+  const [
+    deployerAddress,
+    mtcAddress,
+    mgmAddress,
+    ...accounts
+  ] = await provider.listAccounts();
 
-export interface TestDeployment {
-  system: Deployment;
-  config: DeploymentConfig;
+  const deployer = provider.getSigner(deployerAddress);
+
+  const weth = await contracts.WETH.deploy(deployer);
+  const [mln, dai, rep, knc, zrx] = await Promise.all([
+    contracts.PreminedToken.deploy(deployer, 'MLN Token', 'MLN', 18),
+    contracts.PreminedToken.deploy(deployer, 'DAI Token', 'DAI', 18),
+    contracts.PreminedToken.deploy(deployer, 'REP Token', 'REP', 18),
+    contracts.PreminedToken.deploy(deployer, 'KNC Token', 'KNC', 18),
+    contracts.PreminedToken.deploy(deployer, 'ZRX Token', 'ZRX', 18),
+  ]);
+
+  const primitives = [
+    mln.address,
+    dai.address,
+    rep.address,
+    knc.address,
+    zrx.address,
+    weth.address,
+  ];
+
+  return {
+    tokens: { weth, mln, dai, rep, knc, zrx } as any,
+    deployer,
+    accounts,
+    primitives,
+    engine: {
+      thawingDelay: 2592000,
+    },
+    owners: {
+      mgm: mgmAddress,
+      mtc: mtcAddress,
+    },
+    registry: {
+      nativeAsset: weth.address,
+      mlnToken: mln.address,
+    },
+    // TODO: Mock exchanges by
+    exchanges: {
+      kyber: randomAddress(),
+      oasisdex: randomAddress(),
+      airswap: randomAddress(),
+      uniswap: randomAddress(),
+      uniswapv2: randomAddress(),
+      zeroexv2: randomAddress(),
+      zeroexv3: randomAddress(),
+    },
+    pricefeeds: {
+      kyber: {
+        maxPriceDeviation: ethers.utils.parseEther('0.1'),
+        maxSpread: ethers.utils.parseEther('0.1'),
+        quoteAsset: weth.address,
+      },
+    },
+  };
 }
 
-export function configureTestDeployment(
-  overrides: Partial<DeploymentConfig> = {},
-) {
-  return async (provider: BuidlerProvider): Promise<TestDeployment> => {
-    const signer = provider.getSigner(0);
-    const config = mergeDeepRight(defaults, overrides) as DeploymentConfig;
+export interface TestDeploymentConfig extends DeploymentConfig {
+  accounts: string[];
+  tokens: {
+    weth: contracts.WETH;
+  } & {
+    [symbol: string]: undefined | contracts.PreminedToken;
+  };
+}
 
-    if (!Object.keys(config.primitives).length) {
-      config.primitives = await deployPrimitives(signer, {
-        MLN: 18,
-        DAI: 18,
-        REP: 18,
-        KNC: 18,
-        ZRX: 18,
-      });
-    }
+export interface TestDeployment<
+  TConfig extends DeploymentConfig = TestDeploymentConfig
+> {
+  system: Deployment;
+  config: TConfig;
+}
 
-    if (!config.registry.mlnToken) {
-      config.registry.mlnToken = config.primitives.MLN;
-    }
-
-    if (!config.registry.mlnToken) {
-      throw new Error('Missing configuration for "registry.mlnToken"');
-    }
-
-    const system = await deploySystem(signer, config);
+export function configureTestDeployment<
+  TConfig extends DeploymentConfig = TestDeploymentConfig
+>(custom?: TConfig) {
+  return async (
+    provider: BuidlerProvider,
+  ): Promise<TestDeployment<TConfig>> => {
+    const config = ((custom ??
+      (await defaultConfig(provider))) as any) as TConfig;
+    const system = await deploySystem(config);
 
     return {
       system,

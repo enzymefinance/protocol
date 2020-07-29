@@ -6,7 +6,7 @@ import { IKyberNetworkProxy } from '../codegen/IKyberNetworkProxy';
 import { Registry } from '../codegen/Registry';
 import { Vault } from '../codegen/Vault';
 import { randomAddress } from '../utils';
-import { assetTransferArgs, kyberTakeOrder } from '../utils/fund/integrations';
+import { kyberTakeOrder } from '../utils/fund/integrations';
 
 async function deploy(provider: BuidlerProvider) {
   const [deployer] = await provider.listAccounts();

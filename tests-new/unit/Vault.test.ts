@@ -1,124 +1,51 @@
-import { BuidlerProvider, Contract } from '@crestproject/crestproject';
-import { ethers } from 'ethers';
-import { ERC20WithFields } from '../codegen/ERC20WithFields';
-import { Hub } from '../codegen/Hub';
-import { Registry } from '../codegen/Registry';
-import { Vault } from '../codegen/Vault';
-import { KyberAdapter } from '../codegen/KyberAdapter';
-import { randomAddress } from '../utils';
+import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import * as contracts from '../contracts';
+import { configureTestDeployment } from '../deployment';
 
-async function preVaultDeploySnapshot(provider: BuidlerProvider) {
-  const [deployer] = await provider.listAccounts();
-  const signer = provider.getSigner(deployer);
-  const mockAdapter1 = await KyberAdapter.mock(signer);
-  const mockAdapter2 = await KyberAdapter.mock(signer);
-  const mockAdapter3 = await KyberAdapter.mock(signer);
-  const mockAdapter4 = await KyberAdapter.mock(signer);
-  const mockAsset1 = await ERC20WithFields.mock(signer);
-  const mockAsset2 = await ERC20WithFields.mock(signer);
-  const mockHub = await Hub.mock(signer);
-  const mockRegistry = await Registry.mock(signer);
-
-  // Set mock config
-
-  await mockHub.REGISTRY.returns(mockRegistry);
-  await mockHub.MANAGER.returns(deployer);
-
-  for (const adapter of [
-    mockAdapter1,
-    mockAdapter2,
-    mockAdapter3,
-    mockAdapter4,
-  ]) {
-    await mockRegistry.integrationAdapterIsRegistered
-      .given(adapter)
-      .returns(false);
-  }
-
-  for (const asset of [mockAsset1, mockAsset2]) {
-    await mockRegistry.primitiveIsRegistered.given(asset).returns(false);
-
-    await mockRegistry.derivativeToPriceSource
-      .given(asset)
-      .returns(ethers.constants.AddressZero);
-
-    await asset.decimals.returns(18);
-  }
-
-  return {
-    deployer,
-    mockAdapter1,
-    mockAdapter2,
-    mockAdapter3,
-    mockAdapter4,
-    mockAsset1,
-    mockAsset2,
-    mockHub,
-    mockRegistry,
-    signer,
-  };
-}
-
-async function vaultDeployedSnapshot(provider: BuidlerProvider) {
-  const prevSnapshot = await preVaultDeploySnapshot(provider);
-
-  // Register the mock adapters, so they can be enabled on the Vault
-  for (const adapter of [
-    prevSnapshot.mockAdapter1,
-    prevSnapshot.mockAdapter2,
-    prevSnapshot.mockAdapter3,
-    prevSnapshot.mockAdapter4,
-  ]) {
-    await prevSnapshot.mockRegistry.integrationAdapterIsRegistered
-      .given(adapter)
-      .returns(true);
-  }
-
-  const vault = await Vault.deploy(prevSnapshot.signer, prevSnapshot.mockHub, [
-    prevSnapshot.mockAdapter1,
-    prevSnapshot.mockAdapter2,
-  ]);
-
-  return {
-    ...prevSnapshot,
-    disabledAdapter1: prevSnapshot.mockAdapter3,
-    disabledAdapter2: prevSnapshot.mockAdapter4,
-    enabledAdapter1: prevSnapshot.mockAdapter1,
-    enabledAdapter2: prevSnapshot.mockAdapter2,
-    vault,
-  };
-}
-
-let tx, res;
+let tx;
 
 describe('Vault', () => {
+  const snapshot = async (provider: BuidlerProvider) => {
+    const deployment = await provider.snapshot(configureTestDeployment());
+    const hub = await contracts.Hub.mock(deployment.config.deployer);
+    await hub.REGISTRY.returns(deployment.system.registry);
+    await hub.MANAGER.returns(deployment.config.deployer);
+
+    return { ...deployment, hub };
+  };
+
   describe('constructor', () => {
     it('can deploy without any adapters', async () => {
-      const { mockHub, signer } = await provider.snapshot(
-        preVaultDeploySnapshot,
-      );
+      const {
+        hub,
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = Vault.deploy(signer, mockHub, []);
-      await expect(tx).resolves.toBeInstanceOf(Vault);
+      tx = contracts.Vault.deploy(deployer, hub, []);
+      await expect(tx).resolves.toBeInstanceOf(contracts.Vault);
     });
 
     it('sets initial storage values', async () => {
       const {
-        enabledAdapter1,
-        enabledAdapter2,
-        mockHub,
-        vault,
-      } = await provider.snapshot(vaultDeployedSnapshot);
+        hub,
+        config: { deployer },
+        system: { kyberAdapter, uniswapAdapter },
+      } = await provider.snapshot(snapshot);
+
+      const vault = await contracts.Vault.deploy(deployer, hub, [
+        kyberAdapter,
+        uniswapAdapter,
+      ]);
 
       // storage var: HUB
       tx = vault.HUB();
-      await expect(tx).resolves.toBe(mockHub.address);
+      await expect(tx).resolves.toBe(hub.address);
 
       // storage var: enabledAdapters
-      res = vault.getEnabledAdapters();
-      await expect(res).resolves.toMatchObject([
-        enabledAdapter1.address,
-        enabledAdapter2.address,
+      tx = vault.getEnabledAdapters();
+      await expect(tx).resolves.toMatchObject([
+        kyberAdapter.address,
+        uniswapAdapter.address,
       ]);
     });
   });
@@ -140,31 +67,38 @@ describe('Vault', () => {
   describe('disableAdapters', () => {
     it('can only be called by manager', async () => {
       const {
-        deployer,
-        enabledAdapter1,
-        mockHub,
-        vault,
-      } = await provider.snapshot(vaultDeployedSnapshot);
+        hub,
+        config: { deployer },
+        system: { kyberAdapter, uniswapAdapter },
+      } = await provider.snapshot(snapshot);
+
+      const vault = await contracts.Vault.deploy(deployer, hub, [
+        kyberAdapter,
+        uniswapAdapter,
+      ]);
 
       // Should fail, due to the sender not being the manager
-      await mockHub.MANAGER.returns(randomAddress());
-      tx = vault.disableAdapters([enabledAdapter1]);
+      await hub.MANAGER.returns(randomAddress());
+      tx = vault.disableAdapters([kyberAdapter]);
       await expect(tx).rejects.toBeRevertedWith(
         'Only the fund manager can call this function',
       );
 
       // Set manager to sender, and it should succeed
-      await mockHub.MANAGER.returns(deployer);
-      tx = vault.disableAdapters([enabledAdapter1]);
+      await hub.MANAGER.returns(deployer);
+      tx = vault.disableAdapters([kyberAdapter]);
       await expect(tx).resolves.toBeReceipt();
     });
 
     it('does not allow already disabled adapter', async () => {
-      const { disabledAdapter1, vault } = await provider.snapshot(
-        vaultDeployedSnapshot,
-      );
+      const {
+        hub,
+        config: { deployer },
+        system: { kyberAdapter, uniswapAdapter },
+      } = await provider.snapshot(snapshot);
 
-      tx = vault.disableAdapters([disabledAdapter1]);
+      const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
+      tx = vault.disableAdapters([uniswapAdapter]);
       await expect(tx).rejects.toBeRevertedWith('adapter already disabled');
     });
 
@@ -173,59 +107,65 @@ describe('Vault', () => {
 
   describe('enableAdapters', () => {
     it('does not allow an empty value', async () => {
-      const { vault } = await provider.snapshot(vaultDeployedSnapshot);
+      const {
+        hub,
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
+      const vault = await contracts.Vault.deploy(deployer, hub, []);
       tx = vault.enableAdapters([]);
       await expect(tx).rejects.toBeRevertedWith('_adapters cannot be empty');
     });
 
     it('can only be called by manager', async () => {
       const {
-        deployer,
-        disabledAdapter1,
-        mockHub,
-        vault,
-      } = await provider.snapshot(vaultDeployedSnapshot);
+        hub,
+        config: { deployer },
+        system: { kyberAdapter, uniswapAdapter },
+      } = await provider.snapshot(snapshot);
+
+      const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
 
       // Should fail, due to the sender not being the manager
-      await mockHub.MANAGER.returns(randomAddress());
-      tx = vault.enableAdapters([disabledAdapter1]);
+      await hub.MANAGER.returns(randomAddress());
+      tx = vault.enableAdapters([uniswapAdapter]);
       await expect(tx).rejects.toBeRevertedWith(
         'Only the fund manager can call this function',
       );
 
       // Set manager to sender, and it should succeed
-      await mockHub.MANAGER.returns(deployer);
-      tx = vault.enableAdapters([disabledAdapter1]);
+      await hub.MANAGER.returns(deployer);
+      tx = vault.enableAdapters([uniswapAdapter]);
       await expect(tx).resolves.toBeReceipt();
     });
 
     it('does not allow duplicate value', async () => {
-      const { enabledAdapter1, vault } = await provider.snapshot(
-        vaultDeployedSnapshot,
-      );
+      const {
+        hub,
+        config: { deployer },
+        system: { kyberAdapter },
+      } = await provider.snapshot(snapshot);
 
-      tx = vault.enableAdapters([enabledAdapter1]);
+      const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
+      tx = vault.enableAdapters([kyberAdapter]);
       await expect(tx).rejects.toBeRevertedWith('Adapter is already enabled');
     });
 
     it('does not allow an un-registered adapter', async () => {
-      const { disabledAdapter1, mockRegistry, vault } = await provider.snapshot(
-        vaultDeployedSnapshot,
-      );
+      const {
+        hub,
+        config: { deployer },
+        system: { kyberAdapter, uniswapAdapter },
+      } = await provider.snapshot(snapshot);
+
+      const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
 
       // Should fail, due to the adapter not being registered
-      await mockRegistry.integrationAdapterIsRegistered
-        .given(disabledAdapter1)
-        .returns(false);
-      tx = vault.enableAdapters([disabledAdapter1]);
+      tx = vault.enableAdapters([randomAddress()]);
       await expect(tx).rejects.toBeRevertedWith('Adapter is not on Registry');
 
       // Register adapter, and it should succeed
-      await mockRegistry.integrationAdapterIsRegistered
-        .given(disabledAdapter1)
-        .returns(true);
-      tx = vault.enableAdapters([disabledAdapter1]);
+      tx = vault.enableAdapters([uniswapAdapter]);
       await expect(tx).resolves.toBeReceipt();
     });
 

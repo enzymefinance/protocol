@@ -41,3 +41,4 @@ export { PriceTolerance } from './codegen/PriceTolerance';
 
 // Testing
 export { PreminedToken } from './codegen/PreminedToken';
+export { WETH } from './codegen/WETH';

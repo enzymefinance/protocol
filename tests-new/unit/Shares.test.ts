@@ -1,113 +1,66 @@
-import { BuidlerProvider, Contract } from '@crestproject/crestproject';
-import { ethers } from 'ethers';
-import { ERC20WithFields } from '../codegen/ERC20WithFields';
-import { Hub } from '../codegen/Hub';
-import { Registry } from '../codegen/Registry';
-import { Shares } from '../codegen/Shares';
+import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import { configureTestDeployment } from '../deployment';
+import * as contracts from '../contracts';
 
-async function preSharesDeploySnapshot(provider: BuidlerProvider) {
-  const [deployer] = await provider.listAccounts();
-  const signer = provider.getSigner(deployer);
-  const mockAsset1 = await ERC20WithFields.mock(signer);
-  const mockAsset2 = await ERC20WithFields.mock(signer);
-  const mockHub = await Hub.mock(signer);
-  const mockRegistry = await Registry.mock(signer);
-  const tokenName = 'My Fund';
-
-  // Set mock config
-
-  await mockHub.REGISTRY.returns(mockRegistry);
-
-  for (const asset of [mockAsset1, mockAsset2]) {
-    await mockRegistry.primitiveIsRegistered.given(asset).returns(false);
-
-    await mockRegistry.derivativeToPriceSource
-      .given(asset)
-      .returns(ethers.constants.AddressZero);
-
-    await asset.decimals.returns(18);
-  }
-
-  return {
-    deployer,
-    denominationAsset: mockAsset1,
-    mockAsset2,
-    mockHub,
-    mockRegistry,
-    signer,
-    tokenName,
-  };
-}
-
-async function sharesDeployedSnapshot(provider: BuidlerProvider) {
-  const prevSnapshot = await preSharesDeploySnapshot(provider);
-
-  await prevSnapshot.mockRegistry.primitiveIsRegistered
-    .given(prevSnapshot.denominationAsset)
-    .returns(true);
-
-  const shares = await Shares.deploy(
-    prevSnapshot.signer,
-    prevSnapshot.mockHub,
-    prevSnapshot.denominationAsset,
-    prevSnapshot.tokenName,
-  );
-
-  return {
-    ...prevSnapshot,
-    shares,
-  };
-}
-
-let tx, res;
+let tx;
 
 describe('Shares', () => {
+  const snapshot = async (provider: BuidlerProvider) => {
+    const deployment = await provider.snapshot(configureTestDeployment());
+    const hub = await contracts.Hub.mock(deployment.config.deployer);
+    await hub.REGISTRY.returns(deployment.system.registry);
+    await hub.MANAGER.returns(deployment.config.deployer);
+
+    return { ...deployment, hub };
+  };
+
   describe('constructor', () => {
-    fit('cannot set a non-primitive asset as denomination asset', async () => {
+    it('cannot set a non-primitive asset as denomination asset', async () => {
       const {
-        denominationAsset,
-        mockHub,
-        mockRegistry,
-        signer,
-        tokenName,
-      } = await provider.snapshot(preSharesDeploySnapshot);
+        hub,
+        system: { registry },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
+      const denomination = randomAddress();
 
       // Should fail, due to the denomination asset not being registered
-      tx = Shares.deploy(signer, mockHub, denominationAsset, tokenName);
+      tx = contracts.Shares.deploy(deployer, hub, denomination, 'shares');
       await expect(tx).rejects.toBeRevertedWith(
         'Denomination asset must be registered',
       );
 
       // Register denomination asset, and it should succeed
-      await mockRegistry.primitiveIsRegistered
-        .given(denominationAsset)
-        .returns(true);
-      tx = Shares.deploy(signer, mockHub, denominationAsset, tokenName);
-      await expect(tx).resolves.toBeInstanceOf(Shares);
+      await registry.registerPrimitive(denomination);
+      tx = contracts.Shares.deploy(deployer, hub, denomination, 'shares');
+      await expect(tx).resolves.toBeInstanceOf(contracts.Shares);
     });
 
     it('sets initial storage values', async () => {
       const {
-        shares,
-        denominationAsset,
-        mockHub,
-        tokenName,
-      } = await provider.snapshot(sharesDeployedSnapshot);
+        hub,
+        config: {
+          deployer,
+          tokens: { weth },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const name = 'My Shares';
+      const shares = await contracts.Shares.deploy(deployer, hub, weth, name);
 
       tx = shares.HUB();
-      await expect(tx).resolves.toBe(mockHub.address);
+      await expect(tx).resolves.toBe(hub.address);
 
       tx = shares.DENOMINATION_ASSET();
-      await expect(tx).resolves.toBe(denominationAsset.address);
+      await expect(tx).resolves.toBe(weth.address);
 
       tx = shares.name();
-      await expect(tx).resolves.toBe(tokenName);
+      await expect(tx).resolves.toBe(name);
 
       tx = shares.symbol();
       await expect(tx).resolves.toBe('MLNF');
 
       tx = shares.decimals();
-      await expect(tx).resolves.toBe(await denominationAsset.decimals());
+      await expect(tx).resolves.toBe(18);
     });
   });
 
