@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import {
+  AddressLike,
   BuidlerProvider,
   Contract,
   randomAddress,
@@ -38,7 +39,7 @@ export interface DeploymentConfig {
       maxSpread: ethers.BigNumberish;
     };
   };
-  exchanges: {
+  integratees: {
     kyber: string;
     airswap: string;
     oasisdex: string;
@@ -109,7 +110,7 @@ const constructors: ContractConstructors = {
     return contracts.KyberPriceFeed.deploy(
       config.deployer,
       Registry,
-      config.exchanges.kyber,
+      config.integratees.kyber,
       config.pricefeeds.kyber.maxSpread,
       config.pricefeeds.kyber.quoteAsset,
       config.pricefeeds.kyber.maxPriceDeviation,
@@ -191,12 +192,12 @@ const constructors: ContractConstructors = {
   },
   kyberAdapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.kyber;
+    const Exchange = config.integratees.kyber;
     return contracts.KyberAdapter.deploy(config.deployer, Registry, Exchange);
   },
   oasisDexAdapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.oasisdex;
+    const Exchange = config.integratees.oasisdex;
     return contracts.OasisDexAdapter.deploy(
       config.deployer,
       Registry,
@@ -205,12 +206,12 @@ const constructors: ContractConstructors = {
   },
   uniswapAdapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.uniswap;
+    const Exchange = config.integratees.uniswap;
     return contracts.UniswapAdapter.deploy(config.deployer, Registry, Exchange);
   },
   uniswapV2Adapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.uniswapv2;
+    const Exchange = config.integratees.uniswapv2;
     return contracts.UniswapV2Adapter.deploy(
       config.deployer,
       Registry,
@@ -219,7 +220,7 @@ const constructors: ContractConstructors = {
   },
   zeroExV2Adapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.zeroexv2;
+    const Exchange = config.integratees.zeroexv2;
     return contracts.ZeroExV2Adapter.deploy(
       config.deployer,
       Registry,
@@ -228,7 +229,7 @@ const constructors: ContractConstructors = {
   },
   zeroExV3Adapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.zeroexv3;
+    const Exchange = config.integratees.zeroexv3;
     return contracts.ZeroExV3Adapter.deploy(
       config.deployer,
       Registry,
@@ -237,7 +238,7 @@ const constructors: ContractConstructors = {
   },
   airSwapAdapter: async (config, deployment) => {
     const Registry = await deployment.registry;
-    const Exchange = config.exchanges.airswap;
+    const Exchange = config.integratees.airswap;
     return contracts.AirSwapAdapter.deploy(config.deployer, Registry, Exchange);
   },
   engineAdapter: async (config, deployment) => {
@@ -333,19 +334,29 @@ export async function deploySystem(config: DeploymentConfig) {
   return deployment;
 }
 
-async function defaultConfig(
+export async function defaultTestConfig(
   provider: BuidlerProvider,
 ): Promise<TestDeploymentConfig> {
+  const accounts = await provider.listAccounts();
   const [
     deployerAddress,
     mtcAddress,
     mgmAddress,
-    ...accounts
-  ] = await provider.listAccounts();
+    ...remainingAccounts
+  ] = accounts;
 
   const deployer = provider.getSigner(deployerAddress);
 
+  // TODO: Initialize accounts with much more ether.
   const weth = await contracts.WETH.deploy(deployer);
+  await Promise.all(
+    accounts.map((account) => {
+      const connected = weth.connect(provider.getSigner(account));
+      const amount = ethers.utils.parseEther('1000');
+      return connected.deposit.value(amount).send();
+    }),
+  );
+
   const [mln, dai, rep, knc, zrx] = await Promise.all([
     contracts.PreminedToken.deploy(deployer, 'MLN Token', 'MLN', 18),
     contracts.PreminedToken.deploy(deployer, 'DAI Token', 'DAI', 18),
@@ -354,20 +365,30 @@ async function defaultConfig(
     contracts.PreminedToken.deploy(deployer, 'ZRX Token', 'ZRX', 18),
   ]);
 
-  const primitives = [
-    mln.address,
-    dai.address,
-    rep.address,
-    knc.address,
-    zrx.address,
-    weth.address,
-  ];
+  const [kyber] = await Promise.all([
+    contracts.MockKyberNetwork.deploy(deployer),
+  ]);
+
+  const tokens = [mln, dai, rep, knc, zrx];
+  const primitives = [...tokens, weth];
+  const integratees = [kyber];
+
+  await Promise.all(accounts.map((account) => mintTokens(tokens, account)));
+  await Promise.all(
+    integratees.map((integratee) => {
+      return Promise.all([
+        mintTokens(tokens, integratee),
+        transferWeth(weth, integratee),
+      ]);
+    }),
+  );
 
   return {
     tokens: { weth, mln, dai, rep, knc, zrx } as any,
+    mocks: { kyber },
     deployer,
-    accounts,
-    primitives,
+    accounts: remainingAccounts,
+    primitives: primitives.map((item) => item.address),
     engine: {
       thawingDelay: 2592000,
     },
@@ -379,9 +400,8 @@ async function defaultConfig(
       nativeAsset: weth.address,
       mlnToken: mln.address,
     },
-    // TODO: Mock exchanges by
-    exchanges: {
-      kyber: randomAddress(),
+    integratees: {
+      kyber: kyber.address,
       oasisdex: randomAddress(),
       airswap: randomAddress(),
       uniswap: randomAddress(),
@@ -401,6 +421,9 @@ async function defaultConfig(
 
 export interface TestDeploymentConfig extends DeploymentConfig {
   accounts: string[];
+  mocks: {
+    kyber: contracts.MockKyberNetwork;
+  };
   tokens: {
     weth: contracts.WETH;
   } & {
@@ -422,7 +445,7 @@ export function configureTestDeployment<
     provider: BuidlerProvider,
   ): Promise<TestDeployment<TConfig>> => {
     const config = ((custom ??
-      (await defaultConfig(provider))) as any) as TConfig;
+      (await defaultTestConfig(provider))) as any) as TConfig;
     const system = await deploySystem(config);
 
     return {
@@ -430,4 +453,27 @@ export function configureTestDeployment<
       config,
     };
   };
+}
+
+export async function mintTokens(
+  tokens: contracts.PreminedToken[],
+  who: AddressLike,
+  amount: string = '10000',
+) {
+  return await Promise.all(
+    tokens.map(async (token) => {
+      const decimals = await token.decimals();
+      const units = ethers.utils.parseUnits(amount, decimals);
+      return token.mint(who, units);
+    }),
+  );
+}
+
+export async function transferWeth(
+  weth: contracts.WETH,
+  who: AddressLike,
+  amount: string = '100',
+) {
+  const units = ethers.utils.parseEther(amount);
+  return await weth.transfer(who, units);
 }
