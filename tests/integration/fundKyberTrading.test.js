@@ -260,5 +260,5 @@ test('swap fails if make quantity is too high', async () => {
       ],
       managerTxOpts
     )
-  ).rejects.toThrowFlexible("received incoming asset less than expected");
+  ).rejects.toThrow();
 });
