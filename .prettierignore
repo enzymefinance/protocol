@@ -1,2 +1,2 @@
 # Ignore generated contracts
-/tests-new/codegen
+/tests/contracts/codegen
