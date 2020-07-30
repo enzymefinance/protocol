@@ -5,3 +5,6 @@ node_modules/
 build/
 tests/contracts/build/
 tests/contracts/codegen/
+
+# ignore system files
+.DS_Store
