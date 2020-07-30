@@ -347,12 +347,11 @@ export async function defaultTestConfig(
 
   const deployer = provider.getSigner(deployerAddress);
 
-  // TODO: Initialize accounts with much more ether.
   const weth = await contracts.WETH.deploy(deployer);
   await Promise.all(
     accounts.map((account) => {
       const connected = weth.connect(provider.getSigner(account));
-      const amount = utils.parseEther('1000');
+      const amount = utils.parseEther('5000');
       return connected.deposit.value(amount).send();
     }),
   );
@@ -502,7 +501,9 @@ export async function mintTokens(
 }
 
 // TODO: Increase the initial balance on all accounts so we can send more.
-const defaultWethAmount = utils.parseEther('500');
+// Currently, each account only gets 10000 WETH of which we deposit 5000
+// into WETH. Of these we then transfer 100 to each mocked integratee.
+const defaultWethAmount = utils.parseEther('100');
 export async function transferWeth(
   weth: contracts.WETH,
   who: AddressLike,

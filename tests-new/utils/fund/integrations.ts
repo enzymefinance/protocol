@@ -1,5 +1,5 @@
 import { AddressLike, Call, Contract } from '@crestproject/crestproject';
-import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
+import { BigNumber, BigNumberish, Bytes, BytesLike, utils } from 'ethers';
 import { encodeArgs } from '../common';
 
 // prettier-ignore

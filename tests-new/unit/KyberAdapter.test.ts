@@ -2,12 +2,12 @@ import { utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
 import {
-  assetTransferArgs,
-  kyberTakeOrderArgs,
-  takeOrderSelector,
-  takeOrderSignature,
   requestShares,
   setupFundWithParams,
+  kyberTakeOrderArgs,
+  assetTransferArgs,
+  takeOrderSelector,
+  takeOrderSignature,
 } from '../utils';
 
 let tx;
@@ -166,6 +166,37 @@ describe('KyberAdapter', () => {
         encodedTakeOrderArgs,
       );
       await expect(tx).resolves.toBeReceipt();
+    });
+
+    it('reverts if the incoming asset amount is too low', async () => {
+      const {
+        fund: { vault },
+        system: { kyberAdapter },
+        config: {
+          tokens: { mln, weth },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const incomingAsset = mln;
+      const incomingAmount = utils.parseEther('2');
+      const outgoingAsset = weth;
+      const outgoingAmount = utils.parseEther('1');
+
+      const encodedTakeOrderArgs = await kyberTakeOrderArgs(
+        incomingAsset,
+        incomingAmount,
+        outgoingAsset,
+        outgoingAmount,
+      );
+
+      tx = vault.callOnIntegration(
+        kyberAdapter,
+        takeOrderSignature,
+        encodedTakeOrderArgs,
+      );
+      await expect(tx).rejects.toBeRevertedWith(
+        'rate below min conversion rate',
+      );
     });
   });
 });
