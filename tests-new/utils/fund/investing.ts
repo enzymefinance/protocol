@@ -3,25 +3,26 @@ import { FundComponents } from './setup';
 import * as contracts from '../../contracts';
 
 export interface RequestSharesParams {
-  denominationAsset: contracts.IERC20;
-  fund: FundComponents;
-  requestor: contracts.SharesRequestor;
-  amgu?: ethers.BigNumberish;
-  amount?: ethers.BigNumberish;
-  shares?: ethers.BigNumberish;
+  denominationAsset: contracts.ERC20;
+  fundComponents: FundComponents;
+  sharesRequestor: contracts.SharesRequestor;
+  amguValue?: ethers.BigNumberish;
+  investmentAmount?: ethers.BigNumberish;
+  sharesAmount?: ethers.BigNumberish;
 }
 
 export async function requestShares({
   denominationAsset,
-  fund,
-  requestor,
-  amgu = ethers.utils.parseEther('1'),
-  amount = ethers.utils.parseEther('1'),
-  shares = ethers.utils.parseEther('1'),
+  fundComponents,
+  sharesRequestor,
+  amguValue = ethers.utils.parseEther('1'),
+  investmentAmount = ethers.utils.parseEther('1'),
+  sharesAmount = ethers.utils.parseEther('1'),
 }: RequestSharesParams) {
-  await denominationAsset.approve(requestor, amount);
-  return requestor.requestShares
-    .args(fund.hub, amount, shares)
-    .value(amgu)
+  await denominationAsset.approve(sharesRequestor, investmentAmount);
+
+  return sharesRequestor.requestShares
+    .args(fundComponents.hub, investmentAmount, sharesAmount)
+    .value(amguValue)
     .send();
 }

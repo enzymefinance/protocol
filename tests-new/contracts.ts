@@ -40,7 +40,7 @@ export { MaxPositions } from './codegen/MaxPositions';
 export { PriceTolerance } from './codegen/PriceTolerance';
 
 // Testing
-export { IERC20 } from './codegen/IERC20';
-export { PreminedToken } from './codegen/PreminedToken';
+export { ERC20 } from './codegen/ERC20';
 export { WETH } from './codegen/WETH';
+export { PreminedToken } from './codegen/PreminedToken';
 export { MockKyberNetwork } from './codegen/MockKyberNetwork';
