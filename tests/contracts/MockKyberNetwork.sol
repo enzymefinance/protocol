@@ -264,7 +264,11 @@ contract MockKyberNetwork is IKyberNetworkProxy {
         if (_dest == ETH_TOKEN_ADDRESS) {
             payable(_destAddress).transfer(destAmount);
         } else {
-            require(_dest.transfer(_destAddress, destAmount), 'failed to transfer');
+            _dest.transfer(_destAddress, destAmount);
+        }
+
+        if (_src != ETH_TOKEN_ADDRESS) {
+            _src.transferFrom(msg.sender, address(this), _srcAmount);
         }
 
         return destAmount;
@@ -284,7 +288,6 @@ contract MockKyberNetwork is IKyberNetworkProxy {
             require(msg.value == _srcAmount, 'src amount does not match message value for ether-to-token trade');
         } else {
             require(msg.value == 0, 'non-zero message value for token-to-token trade');
-            //funds should have been moved to this contract already.
             require(_src.balanceOf(address(this)) >= _srcAmount, 'funds not moved to network');
         }
 

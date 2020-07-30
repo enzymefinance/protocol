@@ -252,18 +252,16 @@ describe('KyberAdapter', () => {
         expect(outgoingAfter).toEqBigNumber(outgoingBefore.sub(outgoingAmount));
       }
 
-      // TODO: For some reason this fails? It shouldn't!
-
       // Buy 10 MLN for 10 WETH
       await trade(mln, utils.parseEther('10'), weth, utils.parseEther('10'));
       // Buy 8 DAI for 8 MLN
-      await trade(dai, utils.parseEther('1'), mln, utils.parseEther('1'));
+      await trade(dai, utils.parseEther('5'), mln, utils.parseEther('5'));
       // Buy 3 REP for 3 WETH
       await trade(rep, utils.parseEther('3'), weth, utils.parseEther('3'));
       // // Buy 7 REP for 7 DAI
-      await trade(rep, utils.parseEther('7'), dai, utils.parseEther('7'));
+      await trade(rep, utils.parseEther('1'), dai, utils.parseEther('1'));
       // // Buy 10 WETH for 10 REP
-      await trade(weth, utils.parseEther('10'), dai, utils.parseEther('10'));
+      await trade(weth, utils.parseEther('4'), dai, utils.parseEther('4'));
     });
   });
 });
