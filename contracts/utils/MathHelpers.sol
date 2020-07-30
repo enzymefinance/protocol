@@ -2,6 +2,7 @@
 pragma solidity 0.6.8;
 
 import "../dependencies/DSMath.sol";
+import "../dependencies/token/IERC20.sol";
 
 /// @title MathHelpers Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -20,5 +21,21 @@ contract MathHelpers is DSMath {
         returns (uint256 relativeQuantity2_)
     {
         relativeQuantity2_ = mul(_relativeQuantity1, _quantity2) / _quantity1;
+    }
+
+    /// @dev Calculates a rate for a given base asset to any other asset using given amounts
+    function __calcRate(
+        address _baseAsset,
+        uint256 _baseAssetAmount,
+        uint256 _quoteAssetAmount
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        return mul(
+            _quoteAssetAmount,
+            10 ** uint256(ERC20WithFields(_baseAsset).decimals())
+        ) / _baseAssetAmount;
     }
 }
