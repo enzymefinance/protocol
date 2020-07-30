@@ -3,47 +3,35 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-interface KyberNetworkInterface {
+interface IKyberNetworkProxy {
     function maxGasPrice() external view returns(uint);
-    function getUserCapInWei(address user) external view returns(uint);
-    function getUserCapInTokenWei(address user, ERC20 token) external view returns(uint);
+    function getUserCapInWei(address) external view returns(uint);
+    function getUserCapInTokenWei(address, ERC20) external view returns(uint);
     function enabled() external view returns(bool);
-    function info(bytes32 id) external view returns(uint);
-
-    function getExpectedRate(ERC20 src, ERC20 dest, uint srcQty) external view
-        returns (uint expectedRate, uint slippageRate);
-
-    function tradeWithHint(
-        address trader,
-        ERC20 src,
-        uint srcAmount,
-        ERC20 dest,
-        address destAddress,
-        uint maxDestAmount,
-        uint minConversionRate,
-        address walletId,
-        bytes calldata hint
-    ) external payable returns(uint);
+    function info(bytes32) external view returns(uint256);
+    function swapEtherToToken(ERC20, uint256) external payable returns(uint256);
+    function swapTokenToEther(ERC20, uint256, uint256) external returns(uint256);
+    function swapTokenToToken(ERC20, uint256, ERC20, uint256) external returns(uint256);
+    function getExpectedRate(ERC20, ERC20, uint256) external view returns (uint256, uint256);
+    function tradeWithHint(ERC20, uint256, ERC20, address, uint256, uint256, address, bytes calldata) external payable returns(uint);
 }
 
-/// this mock is used when only simple actions are required. no reserves are involved.
-contract MockKyberNetwork is KyberNetworkInterface {
+contract MockKyberNetwork is IKyberNetworkProxy {
 
     ERC20 constant internal ETH_TOKEN_ADDRESS = ERC20(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
-    uint  constant internal PRECISION = (10**18);
-    uint  constant internal MAX_QTY   = (10**28); // 10B tokens
-    uint  constant internal MAX_RATE  = (PRECISION * 10**6); // up to 1M tokens per ETH
-    uint  constant internal MAX_DECIMALS = 18;
-    uint  constant internal ETH_DECIMALS = 18;
-
-    bool                 public override enabled = true;
-    uint                 public override maxGasPrice = uint(-1);
-    mapping(ERC20=>uint) public tokenPerEther; //rate in precision units relative to eth. i.e. if rate is 10**18 its same as 1:1
-    mapping(ERC20=>uint) public etherPerToken; //rate in precision units relative to eth. i.e. if rate is 10**18 its same as 1:1
+    uint256 constant internal PRECISION = (10**18);
+    uint256 constant internal MAX_QTY   = (10**28); // 10B tokens
+    uint256 constant internal MAX_RATE  = (PRECISION * 10**6); // up to 1M tokens per ETH
+    uint256 constant internal MAX_DECIMALS = 18;
+    uint256 constant internal ETH_DECIMALS = 18;
+    uint256 public override maxGasPrice = uint256(-1);
+    bool public override enabled = true;
+    mapping(ERC20=>uint256) public tokenPerEther; //rate in precision units relative to eth. i.e. if rate is 10**18 its same as 1:1
+    mapping(ERC20=>uint256) public etherPerToken; //rate in precision units relative to eth. i.e. if rate is 10**18 its same as 1:1
 
     receive() external payable {}
 
-    function setRates(ERC20[] memory _tokens, uint[] memory _tokenPerEther, uint[] memory _etherPerToken) public {
+    function setRates(ERC20[] memory _tokens, uint256[] memory _tokenPerEther, uint256[] memory _etherPerToken) public {
       require(_tokens.length == _tokenPerEther.length, 'length mismatch');
       require(_tokens.length == _etherPerToken.length, 'length mismatch');
 
@@ -52,7 +40,7 @@ contract MockKyberNetwork is KyberNetworkInterface {
       }
     }
 
-    function setRate(ERC20 _token, uint _tokenPerEther, uint _etherPerToken) public {
+    function setRate(ERC20 _token, uint256 _tokenPerEther, uint256 _etherPerToken) public {
         require(_tokenPerEther >= 0, 'rate must not be negative');
         require(_etherPerToken >= 0, 'rate must not be negative');
         require(_token != ETH_TOKEN_ADDRESS, 'cannot set the rate of eth');
@@ -64,7 +52,7 @@ contract MockKyberNetwork is KyberNetworkInterface {
     function getRate(ERC20 _src, ERC20 _dest)
         public
         view
-        returns(uint rate)
+        returns(uint256 rate)
     {
         if (_dest == _src) {
             return 0;
@@ -78,8 +66,8 @@ contract MockKyberNetwork is KyberNetworkInterface {
             return tokenPerEther[_dest];
         }
 
-        uint srcRate = etherPerToken[_src];
-        uint destRate = tokenPerEther[_dest];
+        uint256 srcRate = etherPerToken[_src];
+        uint256 destRate = tokenPerEther[_dest];
 
         if (srcRate <= 0 || destRate <= 0) {
             return 0;
@@ -92,7 +80,7 @@ contract MockKyberNetwork is KyberNetworkInterface {
     function getDecimals(ERC20 _token)
         internal
         view
-        returns(uint)
+        returns(uint256)
     {
         if (_token == ETH_TOKEN_ADDRESS) {
             return ETH_DECIMALS;
@@ -101,10 +89,10 @@ contract MockKyberNetwork is KyberNetworkInterface {
         return _token.decimals();
     }
 
-    function calcDestAmount(uint _srcQty, uint _srcDecimals, uint _dstDecimals, uint _rate)
+    function calcDestAmount(uint256 _srcQty, uint256 _srcDecimals, uint256 _dstDecimals, uint256 _rate)
         internal
         pure
-        returns(uint)
+        returns(uint256)
     {
         if (_dstDecimals >= _srcDecimals) {
             return (_srcQty * _rate * (10**(_dstDecimals - _srcDecimals))) / PRECISION;
@@ -116,7 +104,7 @@ contract MockKyberNetwork is KyberNetworkInterface {
     function getBalance(ERC20 _token)
         internal
         view
-        returns(uint)
+        returns(uint256)
     {
         if (_token == ETH_TOKEN_ADDRESS) {
             return address(this).balance;
@@ -129,78 +117,146 @@ contract MockKyberNetwork is KyberNetworkInterface {
         external
         override 
         view
-        returns(uint)
+        returns(uint256)
     {
         user;
 
-        return uint(-1);
+        return uint256(-1);
     }
 
     function info(bytes32 _id)
         external
         override 
         view
-        returns(uint)
+        returns(uint256)
     {
         _id;
 
-        return uint(-1);
+        return uint256(-1);
     }
 
     function getUserCapInTokenWei(address user, ERC20 token)
         external
         override 
         view
-        returns(uint)
+        returns(uint256)
     {
         user;
         token;
 
-        return uint(-1);
+        return uint256(-1);
     }
 
-    function getExpectedRate(ERC20 _src, ERC20 _dest, uint _srcQty)
+    function getExpectedRate(ERC20 _src, ERC20 _dest, uint256 _srcQty)
         external
         override
         view
-        returns(uint expectedRate, uint slippageRate)
+        returns(uint256 expectedRate, uint256 slippageRate)
     {
         _srcQty;
         expectedRate = getRate(_src, _dest);
         slippageRate = expectedRate * 97 / 100;
     }
 
-    function tradeWithHint(
-        address _trader,
+    function swapTokenToToken(
         ERC20 _src,
-        uint _srcAmount,
+        uint256 _srcAmount,
+        ERC20 _dest,
+        uint256 _minConversionRate
+    )
+        external
+        override
+        returns(uint256)
+    {
+        bytes memory hint;
+
+        return tradeWithHint(
+            _src,
+            _srcAmount,
+            _dest,
+            msg.sender,
+            MAX_QTY,
+            _minConversionRate,
+            address(0),
+            hint
+        );
+    }
+
+    function swapEtherToToken(
+        ERC20 _token,
+        uint256 _minConversionRate
+    )
+        external
+        override
+        payable
+        returns(uint256)
+    {
+        bytes memory hint;
+
+        return tradeWithHint(
+            ETH_TOKEN_ADDRESS,
+            msg.value,
+            _token,
+            msg.sender,
+            MAX_QTY,
+            _minConversionRate,
+            address(0),
+            hint
+        );
+    }
+
+    function swapTokenToEther(
+        ERC20 _token,
+        uint256 _srcAmount,
+        uint256 _minConversionRate
+    )
+        external
+        override
+        returns(uint256)
+    {
+        bytes memory hint;
+
+        return tradeWithHint(
+            _token,
+            _srcAmount,
+            ETH_TOKEN_ADDRESS,
+            msg.sender,
+            MAX_QTY,
+            _minConversionRate,
+            address(0),
+            hint
+        );
+    }
+
+    function tradeWithHint(
+        ERC20 _src,
+        uint256 _srcAmount,
         ERC20 _dest,
         address _destAddress,
-        uint _maxDestAmount,
-        uint _minConversionRate,
+        uint256 _maxDestAmount,
+        uint256 _minConversionRate,
         address _walletId,
         bytes memory _hint
     )
         public
         override
         payable
-        returns(uint)
+        returns(uint256)
     {
         require(validateTradeInput(_src, _srcAmount, _dest, _destAddress), 'invalid trade input');
 
-        _trader;
         _hint;
         _walletId;
 
-        uint rate = getRate(_src, _dest);
+        uint256 rate = getRate(_src, _dest);
 
         require(rate > 0, 'rate is zero');
         require(rate < MAX_RATE, 'rate above max rate');
         require(rate >= _minConversionRate, 'rate below min conversion rate');
 
-        uint srcDecimals = getDecimals(_src);
-        uint destDecimals = getDecimals(_dest);
-        uint destAmount = calcDestAmount(_srcAmount, srcDecimals, destDecimals, rate);
+        uint256 srcDecimals = getDecimals(_src);
+        uint256 destDecimals = getDecimals(_dest);
+        uint256 destAmount = calcDestAmount(_srcAmount, srcDecimals, destDecimals, rate);
 
         require(destAmount <= _maxDestAmount, 'maxDestAmount not supported');
         require(getBalance(_dest) >= destAmount, 'insufficient balanace');
@@ -214,7 +270,7 @@ contract MockKyberNetwork is KyberNetworkInterface {
         return destAmount;
     }
 
-    function validateTradeInput(ERC20 _src, uint _srcAmount, ERC20 _dest, address _destAddress)
+    function validateTradeInput(ERC20 _src, uint256 _srcAmount, ERC20 _dest, address _destAddress)
         internal
         view
         returns(bool)

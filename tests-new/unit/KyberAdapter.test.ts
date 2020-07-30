@@ -10,28 +10,36 @@ let tx;
 describe('KyberAdapter', () => {
   const snapshot = async (provider: BuidlerProvider) => {
     const deployment = await provider.snapshot(configureTestDeployment());
-    const denominationAsset = deployment.config.tokens.weth;
+    const {
+      system: { kyberAdapter, sharesRequestor, fundFactory },
+      config: {
+        deployer,
+        tokens: { weth },
+      },
+    } = deployment;
 
     // Deploy fund
+    const denominationAsset = weth;
     const fund = await setupFundWithParams({
-      adapters: [deployment.system.kyberAdapter.address],
-      denominationAsset: denominationAsset.address,
-      factory: deployment.system.fundFactory,
-      manager: deployment.config.deployer,
+      adapters: [kyberAdapter],
+      factory: fundFactory,
+      manager: deployer,
+      denominationAsset: denominationAsset,
     });
 
     // Define default takeOrder config
-    const takeOrderFragment = deployment.system.kyberAdapter.takeOrder.fragment;
-    const takeOrderSignature = takeOrderFragment.format();
-    const takeOrderSelector = deployment.system.kyberAdapter.abi.getSighash(
-      takeOrderFragment,
+    const takeOrderSignature = kyberAdapter.takeOrder.fragment.format();
+    const takeOrderSelector = kyberAdapter.abi.getSighash(
+      kyberAdapter.takeOrder.fragment,
     );
+
     const defaultTakeOrderParams = {
       incomingAsset: deployment.config.tokens.mln.address,
       expectedIncomingAssetAmount: ethers.utils.parseEther('1'),
       outgoingAsset: denominationAsset.address,
       outgoingAssetAmount: ethers.utils.parseEther('2'),
     };
+
     const defaultEncodedCallArgs = kyberTakeOrder(
       defaultTakeOrderParams.incomingAsset,
       defaultTakeOrderParams.expectedIncomingAssetAmount,
@@ -43,7 +51,7 @@ describe('KyberAdapter', () => {
     await requestShares({
       denominationAsset,
       fund,
-      requestor: deployment.system.sharesRequestor,
+      requestor: sharesRequestor,
       amount: defaultTakeOrderParams.outgoingAssetAmount,
     });
 
@@ -124,6 +132,7 @@ describe('KyberAdapter', () => {
       expect((result.spendAssetAmounts_ as any)[0]).toEqBigNumber(
         outgoingAssetAmount,
       );
+
       expect((result.minIncomingAssetAmounts_ as any)[0]).toEqBigNumber(
         expectedIncomingAssetAmount,
       );
@@ -148,16 +157,14 @@ describe('KyberAdapter', () => {
 
       // Reverts without a message because __isVault() asks the sender for HUB(), which an EOA doesn't have
       tx = kyberAdapter.takeOrder(defaultEncodedCallArgs, encodedTransferArgs);
-      await expect(tx).rejects.toBeRevertedWith('');
+      await expect(tx).rejects.toBeReverted();
 
-      // TODO: THIS SHOULD PASS ONCE KYBER NETWORK IS ADDED TO THE ADAPTER
-
-      // tx = vault.callOnIntegration(
-      //   kyberAdapter,
-      //   takeOrderSignature,
-      //   defaultEncodedCallArgs,
-      // );
-      // await expect(tx).resolves.toBeReceipt();
+      tx = vault.callOnIntegration(
+        kyberAdapter,
+        takeOrderSignature,
+        defaultEncodedCallArgs,
+      );
+      await expect(tx).resolves.toBeReceipt();
     });
   });
 });

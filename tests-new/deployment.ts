@@ -373,6 +373,9 @@ export async function defaultTestConfig(
   const primitives = [...tokens, weth];
   const integratees = [kyber];
 
+  const rates = primitives.map(() => ethers.utils.parseEther('1'));
+  await kyber.setRates(primitives, rates, rates);
+
   await Promise.all(accounts.map((account) => mintTokens(tokens, account)));
   await Promise.all(
     integratees.map((integratee) => {
@@ -384,7 +387,7 @@ export async function defaultTestConfig(
   );
 
   return {
-    tokens: { weth, mln, dai, rep, knc, zrx } as any,
+    tokens: { weth, mln, dai, rep, knc, zrx },
     mocks: { kyber },
     deployer,
     accounts: remainingAccounts,
@@ -425,9 +428,7 @@ export interface TestDeploymentConfig extends DeploymentConfig {
     kyber: contracts.MockKyberNetwork;
   };
   tokens: {
-    weth: contracts.WETH;
-  } & {
-    [symbol: string]: undefined | contracts.PreminedToken;
+    [symbol: string]: contracts.PreminedToken | contracts.WETH;
   };
 }
 

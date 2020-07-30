@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { AddressLike, resolveAddress } from '@crestproject/crestproject';
 import { FeeParams } from './fees';
 import { PolicyParams } from './policies';
 import { stringToBytes, encodeArgs } from '../common';
@@ -6,10 +7,10 @@ import * as contracts from '../../contracts';
 
 export interface SetupFundParams {
   factory: contracts.FundFactory;
-  denominationAsset: string;
+  denominationAsset: AddressLike;
   manager?: ethers.Signer;
   name?: string;
-  adapters?: string[];
+  adapters?: AddressLike[];
   fees?: FeeParams[];
   policies?: PolicyParams[];
 }
@@ -22,37 +23,36 @@ export async function setupFundWithParams({
   policies = [],
   adapters = [],
 }: SetupFundParams) {
-  const denominationAssetAddress = ethers.utils.getAddress(denominationAsset);
   const fundName = stringToBytes(name);
   const feesRates = fees.map((item) => item.rate);
   const feesPeriods = fees.map((item) => item.period);
+  const policiesSettings = policies.map((item) => {
+    return encodeArgs(item.encoding, item.settings);
+  });
 
-  const policiesSettings = policies.map((item) =>
-    encodeArgs(item.encoding, item.settings),
-  );
-
-  const feesAddresses = fees.map((item) =>
-    ethers.utils.getAddress(item.address),
-  );
-
-  const policiesAddresses = policies.map((item) =>
-    ethers.utils.getAddress(item.address),
-  );
-
-  const adapterAddresses = adapters.map((item) =>
-    ethers.utils.getAddress(item),
-  );
+  const [
+    denominationAssetAddress,
+    adapterAddresses,
+    policiesAddresses,
+    feesAddresses,
+  ] = await Promise.all([
+    resolveAddress(denominationAsset),
+    Promise.all(adapters.map((address) => resolveAddress(address))),
+    Promise.all(policies.map((item) => resolveAddress(item.address))),
+    Promise.all(fees.map((item) => resolveAddress(item.address))),
+  ]);
 
   await factory.beginFundSetup(
     fundName,
     feesAddresses,
-    feesRates as any,
-    feesPeriods as any,
+    feesRates,
+    feesPeriods,
     policiesAddresses,
-    policiesSettings as any,
+    policiesSettings,
     adapterAddresses,
     denominationAssetAddress,
   );
+
   await factory.createFeeManager();
   await factory.createPolicyManager();
   await factory.createShares();
@@ -78,47 +78,42 @@ export async function setupFundWithParams({
 
 export interface FundComponents {
   hub: contracts.Hub;
+  vault: contracts.Vault;
+  shares: contracts.Shares;
   feeManager: contracts.FeeManager;
   policyManager: contracts.PolicyManager;
-  shares: contracts.Shares;
-  vault: contracts.Vault;
 }
 
 export async function getFundComponents(
   address: string,
-  signerOrProvider: ethers.Signer | ethers.providers.Provider,
+  providider: ethers.Signer | ethers.providers.Provider,
 ): Promise<FundComponents> {
-  const hub = new contracts.Hub(address, signerOrProvider);
+  const hub = new contracts.Hub(address, providider);
   const [
+    vaultAddress,
+    sharesAddress,
     feeManagerAddress,
     policyManagerAddress,
-    sharesAddress,
-    vaultAddress,
   ] = await Promise.all([
+    hub.vault(),
+    hub.shares(),
     hub.feeManager(),
     hub.policyManager(),
-    hub.shares(),
-    hub.vault(),
   ]);
 
-  const feeManager = new contracts.FeeManager(
-    feeManagerAddress,
-    signerOrProvider,
-  );
-
+  const vault = new contracts.Vault(vaultAddress, providider);
+  const shares = new contracts.Shares(sharesAddress, providider);
+  const feeManager = new contracts.FeeManager(feeManagerAddress, providider);
   const policyManager = new contracts.PolicyManager(
     policyManagerAddress,
-    signerOrProvider,
+    providider,
   );
-
-  const shares = new contracts.Shares(sharesAddress, signerOrProvider);
-  const vault = new contracts.Vault(vaultAddress, signerOrProvider);
 
   return {
     hub,
+    vault,
+    shares,
     feeManager,
     policyManager,
-    shares,
-    vault,
   };
 }
