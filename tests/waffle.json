@@ -1,0 +1,5 @@
+{
+  "sourceDirectory": "./tests/contracts",
+  "outputDirectory": "./tests/contracts/build",
+  "compilerVersion": "0.6.8"
+}

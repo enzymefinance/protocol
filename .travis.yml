@@ -1,24 +1,25 @@
 language: node_js
-sudo: required
-os:
-  - linux
+dist: bionic
 services:
   - docker
+
 node_js:
   - '12'
+  - '13'
+  - '14'
+
+install: yarn --frozen-lockfile
+script:
+  - node --version
+  - yarn --version
+  - yarn build
+  - yarn test
+
+notifications:
+  email:
+    on_failure: change
+
 cache:
   yarn: true
   directories:
     - node_modules
-install:
-  - yarn install
-before_script:
-  - yarn devchain > ganache.log &
-  - until curl 127.0.0.1:8545 -X POST --data '{"method":"net_listening"}' >/dev/null 2>&1; do :; done
-script:
-  - yarn compile
-  - yarn codegen
-  - yarn deploy
-  - yarn test
-after_failure:
-  - cat ganache.log

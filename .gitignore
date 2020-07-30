@@ -3,5 +3,5 @@ node_modules/
 
 # ignore built code
 build/
-tests-new/codegen/
-tests-new/contracts/artifacts/
+tests/codegen/
+tests/contracts/artifacts/
