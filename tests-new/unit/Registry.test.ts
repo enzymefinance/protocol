@@ -1,5 +1,5 @@
-import { randomAddress } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
+import { randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
 
 let tx;

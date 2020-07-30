@@ -26,20 +26,21 @@ export async function setupFundWithParams({
   const fundName = stringToBytes(name);
   const feesRates = fees.map((item) => item.rate);
   const feesPeriods = fees.map((item) => item.period);
-  const policiesSettings = policies.map((item) => {
-    return encodeArgs(item.encoding, item.settings);
-  });
 
   const [
     denominationAssetAddress,
     adapterAddresses,
     policiesAddresses,
     feesAddresses,
+    policiesSettings,
   ] = await Promise.all([
     resolveAddress(denominationAsset),
     Promise.all(adapters.map((address) => resolveAddress(address))),
     Promise.all(policies.map((item) => resolveAddress(item.address))),
     Promise.all(fees.map((item) => resolveAddress(item.address))),
+    Promise.all(
+      policies.map((item) => encodeArgs(item.encoding, item.settings)),
+    ),
   ]);
 
   await factory.beginFundSetup(

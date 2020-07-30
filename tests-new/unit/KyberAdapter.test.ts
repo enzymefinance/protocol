@@ -1,9 +1,14 @@
 import { ethers } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
-import { setupFundWithParams } from '../utils/fund';
-import { assetTransferArgs, kyberTakeOrder } from '../utils/fund/integrations';
-import { requestShares } from '../utils/fund/investing';
+import {
+  assetTransferArgs,
+  kyberTakeOrderArgs,
+  takeOrderSelector,
+  takeOrderSignature,
+  requestShares,
+  setupFundWithParams,
+} from '../utils';
 
 let tx;
 
@@ -19,49 +24,24 @@ describe('KyberAdapter', () => {
     } = deployment;
 
     // Deploy fund
-    const denominationAsset = weth;
     const fund = await setupFundWithParams({
       adapters: [kyberAdapter],
       factory: fundFactory,
       manager: deployer,
-      denominationAsset: denominationAsset,
+      denominationAsset: weth,
     });
-
-    // Define default takeOrder config
-    const takeOrderSignature = kyberAdapter.takeOrder.fragment.format();
-    const takeOrderSelector = kyberAdapter.abi.getSighash(
-      kyberAdapter.takeOrder.fragment,
-    );
-
-    const defaultTakeOrderParams = {
-      incomingAsset: deployment.config.tokens.mln.address,
-      expectedIncomingAssetAmount: ethers.utils.parseEther('1'),
-      outgoingAsset: denominationAsset.address,
-      outgoingAssetAmount: ethers.utils.parseEther('2'),
-    };
-
-    const defaultEncodedCallArgs = kyberTakeOrder(
-      defaultTakeOrderParams.incomingAsset,
-      defaultTakeOrderParams.expectedIncomingAssetAmount,
-      defaultTakeOrderParams.outgoingAsset,
-      defaultTakeOrderParams.outgoingAssetAmount,
-    );
 
     // Invest in fund (immediately grants shares since it is the first investment)
     await requestShares({
-      denominationAsset,
+      denominationAsset: weth,
       fund,
       requestor: sharesRequestor,
-      amount: defaultTakeOrderParams.outgoingAssetAmount,
+      amount: ethers.utils.parseEther('1'),
     });
 
     return {
       ...deployment,
-      defaultEncodedCallArgs,
-      defaultTakeOrderParams,
       fund,
-      takeOrderSelector,
-      takeOrderSignature,
     };
   };
 
@@ -92,50 +72,60 @@ describe('KyberAdapter', () => {
     it('does not allow a bad selector', async () => {
       const {
         system: { kyberAdapter },
-        defaultEncodedCallArgs,
-        takeOrderSelector,
+        config: {
+          tokens: { mln, weth },
+        },
       } = await provider.snapshot(snapshot);
 
-      tx = kyberAdapter.parseAssetsForMethod(
-        ethers.utils.randomBytes(4),
-        defaultEncodedCallArgs,
-      );
+      const args = await kyberTakeOrderArgs(mln, 1, weth, 1);
+      tx = kyberAdapter.parseAssetsForMethod(ethers.utils.randomBytes(4), args);
       await expect(tx).rejects.toBeRevertedWith('_selector invalid');
 
-      tx = kyberAdapter.parseAssetsForMethod(
-        takeOrderSelector,
-        defaultEncodedCallArgs,
-      );
+      tx = kyberAdapter.parseAssetsForMethod(takeOrderSelector, args);
       await expect(tx).resolves.toBeTruthy();
     });
 
     it('generates expected output', async () => {
       const {
         system: { kyberAdapter },
-        defaultEncodedCallArgs,
-        defaultTakeOrderParams: {
-          incomingAsset,
-          expectedIncomingAssetAmount,
-          outgoingAsset,
-          outgoingAssetAmount,
+        config: {
+          tokens: { mln, weth },
         },
-        takeOrderSelector,
       } = await provider.snapshot(snapshot);
 
-      const result = await kyberAdapter.parseAssetsForMethod(
+      const incomingAsset = mln;
+      const incomingAmount = ethers.utils.parseEther('1');
+      const outgoingAsset = weth;
+      const outgoingAmount = ethers.utils.parseEther('1');
+
+      const encodedTakeOrderArgs = await kyberTakeOrderArgs(
+        incomingAsset,
+        incomingAmount,
+        outgoingAsset,
+        outgoingAmount,
+      );
+
+      const {
+        incomingAssets_,
+        spendAssets_,
+        spendAssetAmounts_,
+        minIncomingAssetAmounts_,
+      } = await kyberAdapter.parseAssetsForMethod(
         takeOrderSelector,
-        defaultEncodedCallArgs,
+        encodedTakeOrderArgs,
       );
 
-      expect(result.incomingAssets_[0]).toBe(incomingAsset);
-      expect(result.spendAssets_[0]).toBe(outgoingAsset);
-      expect((result.spendAssetAmounts_ as any)[0]).toEqBigNumber(
-        outgoingAssetAmount,
-      );
-
-      expect((result.minIncomingAssetAmounts_ as any)[0]).toEqBigNumber(
-        expectedIncomingAssetAmount,
-      );
+      expect({
+        incomingAssets_,
+        spendAssets_,
+        spendAssetAmounts_,
+        minIncomingAssetAmounts_,
+      }).toMatchObject({
+        incomingAssets_: [incomingAsset.address],
+        spendAssets_: [outgoingAsset.address],
+        spendAssetAmounts_: [outgoingAmount],
+        minIncomingAssetAmounts_: [incomingAmount],
+      });
     });
   });
 
@@ -144,25 +134,37 @@ describe('KyberAdapter', () => {
       const {
         fund: { vault },
         system: { kyberAdapter },
-        defaultEncodedCallArgs,
-        takeOrderSelector,
-        takeOrderSignature,
+        config: {
+          tokens: { mln, weth },
+        },
       } = await provider.snapshot(snapshot);
+
+      const incomingAsset = mln;
+      const incomingAmount = ethers.utils.parseEther('1');
+      const outgoingAsset = weth;
+      const outgoingAmount = ethers.utils.parseEther('1');
+
+      const encodedTakeOrderArgs = await kyberTakeOrderArgs(
+        incomingAsset,
+        incomingAmount,
+        outgoingAsset,
+        outgoingAmount,
+      );
 
       const encodedTransferArgs = await assetTransferArgs(
         kyberAdapter,
         takeOrderSelector,
-        defaultEncodedCallArgs,
+        encodedTakeOrderArgs,
       );
 
       // Reverts without a message because __isVault() asks the sender for HUB(), which an EOA doesn't have
-      tx = kyberAdapter.takeOrder(defaultEncodedCallArgs, encodedTransferArgs);
+      tx = kyberAdapter.takeOrder(encodedTakeOrderArgs, encodedTransferArgs);
       await expect(tx).rejects.toBeReverted();
 
       tx = vault.callOnIntegration(
         kyberAdapter,
         takeOrderSignature,
-        defaultEncodedCallArgs,
+        encodedTakeOrderArgs,
       );
       await expect(tx).resolves.toBeReceipt();
     });

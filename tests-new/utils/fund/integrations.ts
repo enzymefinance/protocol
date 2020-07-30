@@ -1,8 +1,8 @@
-import { Call } from '@crestproject/crestproject';
+import { AddressLike, Call } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
 import { encodeArgs } from '../common';
 
-export interface IIntegrationAdapter {
+export interface IntegrationAdapterInterface {
   parseAssetsForMethod: Call<
     (
       _selector: ethers.utils.BytesLike,
@@ -16,8 +16,17 @@ export interface IIntegrationAdapter {
   >;
 }
 
+export const takeOrderFragment = ethers.utils.FunctionFragment.fromString(
+  'takeOrder(bytes,bytes)',
+);
+
+export const takeOrderSignature = takeOrderFragment.format();
+export const takeOrderSelector = new ethers.utils.Interface([
+  takeOrderFragment,
+]).getSighash(takeOrderFragment);
+
 export async function assetTransferArgs(
-  adapter: IIntegrationAdapter,
+  adapter: IntegrationAdapterInterface,
   selector: ethers.utils.BytesLike,
   encodedCallArgs: ethers.utils.BytesLike,
 ) {
@@ -26,16 +35,17 @@ export async function assetTransferArgs(
     spendAssetAmounts_,
     incomingAssets_,
   } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
+
   return encodeArgs(
     ['address[]', 'uint[]', 'address[]'],
     [spendAssets_, spendAssetAmounts_, incomingAssets_],
   );
 }
 
-export function kyberTakeOrder(
-  incomingAsset: string,
+export async function kyberTakeOrderArgs(
+  incomingAsset: AddressLike,
   expectedIncomingAssetAmount: ethers.BigNumberish,
-  outgoingAsset: string,
+  outgoingAsset: AddressLike,
   outgoingAssetAmount: ethers.BigNumberish,
 ) {
   return encodeArgs(

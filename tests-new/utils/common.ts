@@ -1,4 +1,6 @@
+import { resolveArguments } from '@crestproject/crestproject';
 import { ethers } from 'ethers';
+import { ParamType } from 'ethers/lib/utils';
 
 export const stringToBytes = (value: string, numBytes: number = 32) => {
   const string = Buffer.from(value, 'utf8').toString('hex');
@@ -6,11 +8,13 @@ export const stringToBytes = (value: string, numBytes: number = 32) => {
   return ethers.utils.hexZeroPad(prefixed, numBytes);
 };
 
-export function encodeArgs(
+export async function encodeArgs(
   types: (string | ethers.utils.ParamType)[],
   args: any[],
 ) {
-  const hex = ethers.utils.defaultAbiCoder.encode(types, args);
+  const params = types.map((type) => ParamType.from(type));
+  const resolved = await resolveArguments(params, args);
+  const hex = ethers.utils.defaultAbiCoder.encode(params, resolved);
   return ethers.utils.arrayify(hex);
 }
 

@@ -1,6 +1,6 @@
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
-import * as contracts from '../contracts';
 import { configureTestDeployment } from '../deployment';
+import * as contracts from '../contracts';
 
 let tx;
 
