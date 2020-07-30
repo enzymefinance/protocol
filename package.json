@@ -20,8 +20,8 @@
   ],
   "scripts": {
     "codegen": "yarn codegen:contracts && yarn codegen:tests",
-    "codegen:contracts": "crestproject codegen \"build/*.json\" tests/codegen",
-    "codegen:tests": "crestproject codegen \"tests/contracts/build/*.json\" tests/codegen",
+    "codegen:contracts": "crestproject codegen \"build/*.json\" tests/contracts/codegen",
+    "codegen:tests": "crestproject codegen \"tests/contracts/build/*.json\" tests/contracts/codegen",
     "compile:contracts": "waffle compile waffle.json",
     "compile:tests": "waffle compile tests/waffle.json",
     "compile": "yarn compile:contracts && yarn compile:tests",

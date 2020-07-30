@@ -1,9 +1,9 @@
 import { utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
-import { Registry } from '../codegen/Registry';
-import { Engine } from '../codegen/Engine';
-import { ERC20WithFields } from '../codegen/ERC20WithFields';
-import { IPriceSource } from '../codegen/IPriceSource';
+import { Registry } from '../contracts/codegen/Registry';
+import { Engine } from '../contracts/codegen/Engine';
+import { ERC20WithFields } from '../contracts/codegen/ERC20WithFields';
+import { IPriceSource } from '../contracts/codegen/IPriceSource';
 
 async function deploy(provider: BuidlerProvider) {
   const signer = provider.getSigner(0);
