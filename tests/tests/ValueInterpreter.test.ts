@@ -94,11 +94,8 @@ describe('ValueInterpreter', () => {
         .args(baseAsset, baseAmount, quoteAsset)
         .call();
 
-      expect(mockPriceSource.getLiveRate).toHaveBeenCalledOnContractTimes(0);
-
-      expect(mockPriceSource.getCanonicalRate).toHaveBeenCalledOnContractTimes(
-        1,
-      );
+      expect(mockPriceSource.getLiveRate).not.toHaveBeenCalledOnContract();
+      expect(mockPriceSource.getCanonicalRate).toHaveBeenCalledOnContract();
 
       await expect(
         mockPriceSource.getCanonicalRate.ref,
@@ -450,11 +447,8 @@ describe('ValueInterpreter', () => {
         .args(baseAsset, baseAmount, quoteAsset)
         .call();
 
-      expect(mockPriceSource.getLiveRate).toHaveBeenCalledOnContractTimes(1);
-
-      expect(mockPriceSource.getCanonicalRate).toHaveBeenCalledOnContractTimes(
-        0,
-      );
+      expect(mockPriceSource.getLiveRate).toHaveBeenCalledOnContract();
+      expect(mockPriceSource.getCanonicalRate).not.toHaveBeenCalledOnContract();
 
       await expect(
         mockPriceSource.getLiveRate.ref,
