@@ -23,7 +23,7 @@ export async function requestShares({
   sharesRequestor,
   amguValue = utils.parseEther('1'),
   investmentAmount = utils.parseEther('1'),
-  sharesAmount = utils.parseEther('1'),
+  sharesAmount = investmentAmount,
 }: RequestSharesParams) {
   await denominationAsset.approve(sharesRequestor, investmentAmount);
 
