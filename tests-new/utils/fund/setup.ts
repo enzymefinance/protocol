@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { Signer, providers } from 'ethers';
 import { AddressLike, resolveAddress } from '@crestproject/crestproject';
 import { FeeParams } from './fees';
 import { PolicyParams } from './policies';
@@ -8,7 +8,7 @@ import * as contracts from '../../contracts';
 export interface SetupFundParams {
   factory: contracts.FundFactory;
   denominationAsset: AddressLike;
-  manager?: ethers.Signer;
+  manager?: Signer;
   name?: string;
   adapters?: AddressLike[];
   fees?: FeeParams[];
@@ -87,7 +87,7 @@ export interface FundComponents {
 
 export async function getFundComponents(
   address: string,
-  providider: ethers.Signer | ethers.providers.Provider,
+  providider: Signer | providers.Provider,
 ): Promise<FundComponents> {
   const hub = new contracts.Hub(address, providider);
   const [

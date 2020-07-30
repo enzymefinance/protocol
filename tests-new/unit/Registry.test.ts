@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { utils } from 'ethers';
 import { randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
 
@@ -355,7 +355,7 @@ describe('Registry', () => {
       const disallowed = registry.connect(provider.getSigner(maliciousUser));
       const fund = randomAddress();
       const manager = randomAddress();
-      const name = ethers.utils.hashMessage('my fund');
+      const name = utils.hashMessage('my fund');
 
       tx = disallowed.registerFund(fund, manager, name);
       await expect(tx).rejects.toBeRevertedWith(
@@ -371,7 +371,7 @@ describe('Registry', () => {
       await expect(registry.setFundFactory(deployer)).resolves.toBeReceipt();
       const fund = randomAddress();
       const manager = randomAddress();
-      const name = ethers.utils.hashMessage('my fund');
+      const name = utils.hashMessage('my fund');
 
       tx = registry.registerFund(fund, manager, name);
       await expect(tx).resolves.toBeReceipt();
@@ -387,7 +387,7 @@ describe('Registry', () => {
       } = await provider.snapshot(snapshot);
       const fund = randomAddress();
       const manager = randomAddress();
-      const name = ethers.utils.hashMessage('my fund');
+      const name = utils.hashMessage('my fund');
 
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
@@ -413,7 +413,7 @@ describe('Registry', () => {
       } = await provider.snapshot(snapshot);
       const fund = randomAddress();
       const manager = randomAddress();
-      const name = ethers.utils.hashMessage('my fund');
+      const name = utils.hashMessage('my fund');
 
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
@@ -432,7 +432,7 @@ describe('Registry', () => {
       } = await provider.snapshot(snapshot);
       const fund = randomAddress();
       const manager = randomAddress();
-      const name = ethers.utils.hashMessage('my fund');
+      const name = utils.hashMessage('my fund');
 
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();

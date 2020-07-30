@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { BigNumberish, Signer, utils } from 'ethers';
 import {
   AddressLike,
   BuidlerProvider,
@@ -19,7 +19,7 @@ export type ContractConstructor<TContract extends Contract> = (
 ) => Promise<TContract>;
 
 export interface DeploymentConfig {
-  deployer: ethers.Signer;
+  deployer: Signer;
   primitives: string[];
   owners: {
     mgm: string;
@@ -30,13 +30,13 @@ export interface DeploymentConfig {
     nativeAsset: string;
   };
   engine: {
-    thawingDelay: ethers.BigNumberish;
+    thawingDelay: BigNumberish;
   };
   pricefeeds: {
     kyber: {
       quoteAsset: string;
-      maxPriceDeviation: ethers.BigNumberish;
-      maxSpread: ethers.BigNumberish;
+      maxPriceDeviation: BigNumberish;
+      maxSpread: BigNumberish;
     };
   };
   integratees: {
@@ -352,42 +352,72 @@ export async function defaultTestConfig(
   await Promise.all(
     accounts.map((account) => {
       const connected = weth.connect(provider.getSigner(account));
-      const amount = ethers.utils.parseEther('1000');
+      const amount = utils.parseEther('1000');
       return connected.deposit.value(amount).send();
     }),
   );
 
-  const [mln, dai, rep, knc, zrx] = await Promise.all([
-    contracts.PreminedToken.deploy(deployer, 'MLN Token', 'MLN', 18),
-    contracts.PreminedToken.deploy(deployer, 'DAI Token', 'DAI', 18),
-    contracts.PreminedToken.deploy(deployer, 'REP Token', 'REP', 18),
-    contracts.PreminedToken.deploy(deployer, 'KNC Token', 'KNC', 18),
-    contracts.PreminedToken.deploy(deployer, 'ZRX Token', 'ZRX', 18),
-  ]);
+  const premine = [
+    { name: 'MLN Token', symbol: 'MLN', decimals: 18 },
+    { name: 'DAI Token', symbol: 'DAI', decimals: 18 },
+    { name: 'REP Token', symbol: 'REP', decimals: 18 },
+    { name: 'KNC Token', symbol: 'KNC', decimals: 18 },
+    { name: 'ZRX Token', symbol: 'ZRX', decimals: 18 },
+  ];
 
+  // Deploy a few premined tokens as configured.
+  const premined = await Promise.all(
+    premine.map((token) => {
+      return contracts.PreminedToken.deploy(
+        deployer,
+        token.name,
+        token.symbol,
+        token.decimals,
+      );
+    }),
+  );
+
+  // Produce a map of tokens for easy access in our tests.
+  const symbols = premine.map((item) => item.symbol.toLowerCase());
+  const tokens: {
+    [symbol: string]: contracts.WETH | contracts.PreminedToken;
+  } = symbols.reduce(
+    (carry, symbol, index) => ({ ...carry, [symbol]: premined[index] }),
+    { weth },
+  );
+
+  // Deploy mock contracts for our integrations.
   const [kyber] = await Promise.all([
     contracts.MockKyberNetwork.deploy(deployer),
   ]);
 
-  const tokens = [mln, dai, rep, knc, zrx];
-  const primitives = [...tokens, weth];
+  const primitives = [...premined, weth];
   const integratees = [kyber];
 
-  const rates = primitives.map(() => ethers.utils.parseEther('1'));
+  // Set default rates for all our deployed & premined assets.
+  const rates = primitives.map(() => utils.parseEther('1'));
   await kyber.setRates(primitives, rates, rates);
 
-  await Promise.all(accounts.map((account) => mintTokens(tokens, account)));
+  // Make all accounts and integratees (exchanges) rich so we can test trading.
+  const mint = premine.map((token) => {
+    return utils.parseUnits('10000', token.decimals);
+  });
+
+  await Promise.all(
+    accounts.map((account) => mintTokens(premined, account, mint)),
+  );
+
   await Promise.all(
     integratees.map((integratee) => {
       return Promise.all([
-        mintTokens(tokens, integratee),
+        mintTokens(premined, integratee, mint),
         transferWeth(weth, integratee),
       ]);
     }),
   );
 
   return {
-    tokens: { weth, mln, dai, rep, knc, zrx },
+    tokens,
     mocks: { kyber },
     deployer,
     accounts: remainingAccounts,
@@ -401,9 +431,10 @@ export async function defaultTestConfig(
     },
     registry: {
       nativeAsset: weth.address,
-      mlnToken: mln.address,
+      mlnToken: tokens.mln.address,
     },
     integratees: {
+      // TODO: Mock all integrations.
       kyber: kyber.address,
       oasisdex: randomAddress(),
       airswap: randomAddress(),
@@ -414,8 +445,8 @@ export async function defaultTestConfig(
     },
     pricefeeds: {
       kyber: {
-        maxPriceDeviation: ethers.utils.parseEther('0.1'),
-        maxSpread: ethers.utils.parseEther('0.1'),
+        maxPriceDeviation: utils.parseEther('0.1'),
+        maxSpread: utils.parseEther('0.1'),
         quoteAsset: weth.address,
       },
     },
@@ -456,25 +487,26 @@ export function configureTestDeployment<
   };
 }
 
+const defaultAmount = utils.parseEther('10000');
 export async function mintTokens(
   tokens: contracts.PreminedToken[],
   who: AddressLike,
-  amount: string = '10000',
+  amounts: BigNumberish[] = tokens.map(() => defaultAmount),
 ) {
   return await Promise.all(
-    tokens.map(async (token) => {
-      const decimals = await token.decimals();
-      const units = ethers.utils.parseUnits(amount, decimals);
-      return token.mint(who, units);
+    tokens.map(async (token, index) => {
+      const amount = amounts[index] ?? defaultAmount;
+      return token.mint(who, amount);
     }),
   );
 }
 
+// TODO: Increase the initial balance on all accounts so we can send more.
+const defaultWethAmount = utils.parseEther('500');
 export async function transferWeth(
   weth: contracts.WETH,
   who: AddressLike,
-  amount: string = '100',
+  amount: BigNumberish = defaultWethAmount,
 ) {
-  const units = ethers.utils.parseEther(amount);
-  return await weth.transfer(who, units);
+  return await weth.transfer(who, amount);
 }

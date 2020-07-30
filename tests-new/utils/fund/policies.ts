@@ -1,8 +1,8 @@
-import { ethers } from 'ethers';
+import { utils } from 'ethers';
 
 export interface PolicyParams {
   address: string;
-  encoding: (string | ethers.utils.ParamType)[];
+  encoding: (string | utils.ParamType)[];
   settings: any[];
 }
 
@@ -11,9 +11,9 @@ export async function assetBlacklistPolicy(
   address: string,
 ): Promise<PolicyParams> {
   return {
-    address: ethers.utils.getAddress(address),
+    address: utils.getAddress(address),
     encoding: ['address[]'],
-    settings: [blacklist.map((item) => ethers.utils.getAddress(item))],
+    settings: [blacklist.map((item) => utils.getAddress(item))],
   };
 }
 
@@ -22,9 +22,9 @@ export function assetWhitelistPolicy(
   address: string,
 ): PolicyParams {
   return {
-    address: ethers.utils.getAddress(address),
+    address: utils.getAddress(address),
     encoding: ['address[]'],
-    settings: [whitelist.map((item) => ethers.utils.getAddress(item))],
+    settings: [whitelist.map((item) => utils.getAddress(item))],
   };
 }
 
@@ -33,8 +33,8 @@ export function userWhitelistPolicy(
   address: string,
 ): PolicyParams {
   return {
-    address: ethers.utils.getAddress(address),
+    address: utils.getAddress(address),
     encoding: ['address[]'],
-    settings: [whitelist.map((item) => ethers.utils.getAddress(item))],
+    settings: [whitelist.map((item) => utils.getAddress(item))],
   };
 }

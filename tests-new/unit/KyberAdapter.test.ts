@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
 import {
@@ -34,9 +34,8 @@ describe('KyberAdapter', () => {
     // Invest in fund (immediately grants shares since it is the first investment)
     await requestShares({
       denominationAsset: weth,
-      fund,
-      requestor: sharesRequestor,
-      amount: ethers.utils.parseEther('1'),
+      fundComponents: fund,
+      sharesRequestor,
     });
 
     return {
@@ -78,7 +77,7 @@ describe('KyberAdapter', () => {
       } = await provider.snapshot(snapshot);
 
       const args = await kyberTakeOrderArgs(mln, 1, weth, 1);
-      tx = kyberAdapter.parseAssetsForMethod(ethers.utils.randomBytes(4), args);
+      tx = kyberAdapter.parseAssetsForMethod(utils.randomBytes(4), args);
       await expect(tx).rejects.toBeRevertedWith('_selector invalid');
 
       tx = kyberAdapter.parseAssetsForMethod(takeOrderSelector, args);
@@ -94,9 +93,9 @@ describe('KyberAdapter', () => {
       } = await provider.snapshot(snapshot);
 
       const incomingAsset = mln;
-      const incomingAmount = ethers.utils.parseEther('1');
+      const incomingAmount = utils.parseEther('1');
       const outgoingAsset = weth;
-      const outgoingAmount = ethers.utils.parseEther('1');
+      const outgoingAmount = utils.parseEther('1');
 
       const encodedTakeOrderArgs = await kyberTakeOrderArgs(
         incomingAsset,
@@ -140,9 +139,9 @@ describe('KyberAdapter', () => {
       } = await provider.snapshot(snapshot);
 
       const incomingAsset = mln;
-      const incomingAmount = ethers.utils.parseEther('1');
+      const incomingAmount = utils.parseEther('1');
       const outgoingAsset = weth;
-      const outgoingAmount = ethers.utils.parseEther('1');
+      const outgoingAmount = utils.parseEther('1');
 
       const encodedTakeOrderArgs = await kyberTakeOrderArgs(
         incomingAsset,

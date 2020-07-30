@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { AddressLike, MockContract } from '@crestproject/crestproject';
 import { ERC20WithFields } from '../../codegen/ERC20WithFields';
 import { IDerivativePriceSource } from '../../codegen/IDerivativePriceSource';
@@ -13,7 +13,7 @@ export function mockDerivativeRate({
   mockDerivativePriceSource: MockContract<IDerivativePriceSource>;
   derivative: AddressLike;
   underlyings: AddressLike[];
-  rates: ethers.BigNumberish[];
+  rates: BigNumberish[];
 }) {
   return mockDerivativePriceSource.getRatesToUnderlyings
     .given(derivative)
@@ -31,7 +31,7 @@ export function mockPrimitiveCanonicalRate({
   mockPriceSource: MockContract<IPriceSource>;
   baseAsset: AddressLike;
   quoteAsset: AddressLike;
-  rate: ethers.BigNumberish;
+  rate: BigNumberish;
   rateIsValid?: boolean;
   lastUpdated?: number;
 }) {
@@ -50,7 +50,7 @@ export function mockPrimitiveLiveRate({
   mockPriceSource: MockContract<IPriceSource>;
   baseAsset: AddressLike;
   quoteAsset: AddressLike;
-  rate: ethers.BigNumberish;
+  rate: BigNumberish;
   rateIsValid?: boolean;
 }) {
   return mockPriceSource.getLiveRate
@@ -60,10 +60,10 @@ export function mockPrimitiveLiveRate({
 
 export async function covertRateToValue(
   baseAsset: MockContract<ERC20WithFields> | ERC20WithFields,
-  amount: ethers.BigNumberish,
-  rate: ethers.BigNumberish,
+  amount: BigNumberish,
+  rate: BigNumberish,
 ) {
-  return ethers.BigNumber.from(rate)
+  return BigNumber.from(rate)
     .mul(amount)
-    .div(ethers.BigNumber.from(10).pow(await baseAsset.decimals()));
+    .div(BigNumber.from(10).pow(await baseAsset.decimals()));
 }

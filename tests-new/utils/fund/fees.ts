@@ -1,9 +1,9 @@
-import { ethers } from 'ethers';
+import { BigNumberish, utils } from 'ethers';
 
 export interface FeeParams {
   address: string;
-  rate: ethers.BigNumberish;
-  period: ethers.BigNumberish;
+  rate: BigNumberish;
+  period: BigNumberish;
 }
 
 export function managementFee(
@@ -12,8 +12,8 @@ export function managementFee(
   address: string,
 ): FeeParams {
   return {
-    address: ethers.utils.getAddress(address),
-    rate: ethers.utils.parseEther(`${rate}`),
+    address: utils.getAddress(address),
+    rate: utils.parseEther(`${rate}`),
     period: 60 * 60 * 24 * period,
   };
 }
@@ -24,8 +24,8 @@ export function performanceFee(
   address: string,
 ): FeeParams {
   return {
-    address: ethers.utils.getAddress(address),
-    rate: ethers.utils.parseEther(`${rate}`),
+    address: utils.getAddress(address),
+    rate: utils.parseEther(`${rate}`),
     period: 60 * 60 * 24 * period,
   };
 }

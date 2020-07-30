@@ -1,5 +1,5 @@
+import { ethers, utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
-import { ethers } from 'ethers';
 import { ERC20WithFields } from '../codegen/ERC20WithFields';
 import { IDerivativePriceSource } from '../codegen/IDerivativePriceSource';
 import { IPriceSource } from '../codegen/IPriceSource';
@@ -43,11 +43,11 @@ async function deploy(provider: BuidlerProvider) {
 
   const defaultCalcValueParams = {
     baseAsset: mockAsset1,
-    baseAmount: ethers.utils.parseEther('1'),
+    baseAmount: utils.parseEther('1'),
     quoteAsset: mockAsset2,
-    primitivePerUnderlyingRate: ethers.utils.parseEther('1.5'),
-    quotePerPrimitiveRate: ethers.utils.parseEther('0.5'),
-    underlyingPerDerivativeRate: ethers.utils.parseEther('0.25'),
+    primitivePerUnderlyingRate: utils.parseEther('1.5'),
+    quotePerPrimitiveRate: utils.parseEther('0.5'),
+    underlyingPerDerivativeRate: utils.parseEther('0.25'),
   };
 
   return {

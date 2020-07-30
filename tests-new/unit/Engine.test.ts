@@ -1,9 +1,8 @@
-import { BuidlerProvider } from '@crestproject/crestproject';
-import { ethers } from 'ethers';
+import { utils } from 'ethers';
+import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { Registry } from '../codegen/Registry';
 import { Engine } from '../codegen/Engine';
 import { ERC20WithFields } from '../codegen/ERC20WithFields';
-import { randomAddress } from '../utils';
 import { IPriceSource } from '../codegen/IPriceSource';
 
 async function deploy(provider: BuidlerProvider) {
@@ -24,7 +23,7 @@ async function deploy(provider: BuidlerProvider) {
   await registry.setNativeAsset(nativeAsset);
   await mockPriceSource.getCanonicalRate
     .given(mlnToken, nativeAsset)
-    .returns(ethers.utils.parseEther('1'), true, 0);
+    .returns(utils.parseEther('1'), true, 0);
 
   const engine = await Engine.deploy(
     signer,
@@ -51,11 +50,9 @@ async function deployMock(provider: BuidlerProvider) {
   const mgm = await provider.getSigner(2).getAddress();
   const stranger = await provider.getSigner(5).getAddress();
   const melonEngineDelay = 2592000;
-  const nativeAsset = randomAddress();
 
   const deployer = await signer.getAddress();
 
-  const registry = await Registry.deploy(signer, mtc, mgm);
   const mockRegistry = await Registry.mock(signer);
   const mockMln = await ERC20WithFields.mock(signer);
 
@@ -68,7 +65,7 @@ async function deployMock(provider: BuidlerProvider) {
   await mockRegistry.mlnToken.returns(mockMln);
   await mockRegistry.fundFactory.returns(deployer);
   await mockMln.transferFrom
-    .given(deployer, engine, ethers.utils.parseEther('1'))
+    .given(deployer, engine, utils.parseEther('1'))
     .returns(true);
 
   return {
@@ -135,24 +132,21 @@ describe('Engine', () => {
 
   describe('setAmguPrice', () => {
     it('can only be called by Registry.MGM', async () => {
-      const { engine, stranger } = await provider.snapshot(deploy);
-      const disallowed = engine.connect(provider.getSigner(stranger));
-      const price = 1;
+      const { engine } = await provider.snapshot(deploy);
 
-      tx = engine.setAmguPrice(price);
+      tx = engine.setAmguPrice(1);
       await expect(tx).rejects.toBeRevertedWith('Only MGM can call this');
     });
 
     it('sets amguPrice', async () => {
       const { engine, mgm } = await provider.snapshot(deploy);
       const connected = engine.connect(provider.getSigner(mgm));
-      const price = 1;
 
-      tx = connected.setAmguPrice(price);
+      tx = connected.setAmguPrice(1);
       await expect(tx).resolves.toBeReceipt();
 
       call = engine.amguPrice();
-      await expect(call).resolves.toEqBigNumber(price);
+      await expect(call).resolves.toEqBigNumber(1);
     });
 
     it.todo('emits SetAmguPrice(price)');
@@ -163,11 +157,12 @@ describe('Engine', () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('0.99');
+      const ethAmount = utils.parseEther('0.99');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -198,11 +193,12 @@ describe('Engine', () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('1');
+      const ethAmount = utils.parseEther('1');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -233,11 +229,12 @@ describe('Engine', () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('5');
+      const ethAmount = utils.parseEther('5');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -268,11 +265,12 @@ describe('Engine', () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('10');
+      const ethAmount = utils.parseEther('10');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -303,11 +301,12 @@ describe('Engine', () => {
   describe('payAmguInEther', () => {
     it('adds sent ETH to frozenEther', async () => {
       const { registry, engine, deployer } = await provider.snapshot(deploy);
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('0.01');
+      const ethAmount = utils.parseEther('0.01');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -354,7 +353,7 @@ describe('Engine', () => {
       const { registry, engine, lastThaw, deployer } = await provider.snapshot(
         deploy,
       );
-      const ethAmount = ethers.utils.parseEther('0.01');
+      const ethAmount = utils.parseEther('0.01');
 
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
@@ -387,11 +386,12 @@ describe('Engine', () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('0.99');
+      const ethAmount = utils.parseEther('0.99');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -418,18 +418,19 @@ describe('Engine', () => {
       await expect(call).resolves.toEqBigNumber(0);
 
       tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(ethers.utils.parseEther('1'));
+      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1'));
     });
 
     it('returns 105% of ethPerMln rate when liquidEther is 1 ether', async () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('1');
+      const ethAmount = utils.parseEther('1');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -456,18 +457,19 @@ describe('Engine', () => {
       await expect(call).resolves.toEqBigNumber(5);
 
       tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(ethers.utils.parseEther('1.05'));
+      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.05'));
     });
 
     it('returns 110% of ethPerMln rate when liquidEther is 5 ether', async () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('5');
+      const ethAmount = utils.parseEther('5');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -494,18 +496,19 @@ describe('Engine', () => {
       await expect(call).resolves.toEqBigNumber(10);
 
       tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(ethers.utils.parseEther('1.10'));
+      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.10'));
     });
 
     it('returns 115% of ethPerMln rate when liquidEther is 10 ether', async () => {
       const { registry, engine, deployer, lastThaw } = await provider.snapshot(
         deploy,
       );
+
       tx = registry.setFundFactory(deployer);
       await expect(tx).resolves.toBeReceipt();
 
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('10');
+      const ethAmount = utils.parseEther('10');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -532,21 +535,15 @@ describe('Engine', () => {
       await expect(call).resolves.toEqBigNumber(15);
 
       tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(ethers.utils.parseEther('1.15'));
+      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.15'));
     });
   });
 
   describe('sellAndBurnMln', () => {
     it('reverts if mlnAmount value is greater than available liquidEther', async () => {
-      const {
-        mockRegistry,
-        engine,
-        deployer,
-        lastThaw,
-      } = await provider.snapshot(deployMock);
-
+      const { engine, lastThaw } = await provider.snapshot(deployMock);
       await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = ethers.utils.parseEther('1');
+      const ethAmount = utils.parseEther('1');
 
       tx = engine.payAmguInEther.value(ethAmount).send();
       await expect(tx).resolves.toBeReceipt();
@@ -573,7 +570,7 @@ describe('Engine', () => {
       await expect(call).resolves.toEqBigNumber(5);
 
       tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(ethers.utils.parseEther('1.05'));
+      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.05'));
 
       // TODO
     });
