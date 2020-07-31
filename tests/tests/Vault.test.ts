@@ -29,12 +29,12 @@ describe('Vault', () => {
       const {
         hub,
         config: { deployer },
-        system: { kyberAdapter, uniswapAdapter },
+        system: { kyberAdapter, uniswapV2Adapter },
       } = await provider.snapshot(snapshot);
 
       const vault = await contracts.Vault.deploy(deployer, hub, [
         kyberAdapter,
-        uniswapAdapter,
+        uniswapV2Adapter,
       ]);
 
       // storage var: HUB
@@ -45,7 +45,7 @@ describe('Vault', () => {
       tx = vault.getEnabledAdapters();
       await expect(tx).resolves.toMatchObject([
         kyberAdapter.address,
-        uniswapAdapter.address,
+        uniswapV2Adapter.address,
       ]);
     });
   });
@@ -69,12 +69,12 @@ describe('Vault', () => {
       const {
         hub,
         config: { deployer },
-        system: { kyberAdapter, uniswapAdapter },
+        system: { kyberAdapter, uniswapV2Adapter },
       } = await provider.snapshot(snapshot);
 
       const vault = await contracts.Vault.deploy(deployer, hub, [
         kyberAdapter,
-        uniswapAdapter,
+        uniswapV2Adapter,
       ]);
 
       // Should fail, due to the sender not being the manager
@@ -94,11 +94,11 @@ describe('Vault', () => {
       const {
         hub,
         config: { deployer },
-        system: { kyberAdapter, uniswapAdapter },
+        system: { kyberAdapter, uniswapV2Adapter },
       } = await provider.snapshot(snapshot);
 
       const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
-      tx = vault.disableAdapters([uniswapAdapter]);
+      tx = vault.disableAdapters([uniswapV2Adapter]);
       await expect(tx).rejects.toBeRevertedWith('adapter already disabled');
     });
 
@@ -121,21 +121,21 @@ describe('Vault', () => {
       const {
         hub,
         config: { deployer },
-        system: { kyberAdapter, uniswapAdapter },
+        system: { kyberAdapter, uniswapV2Adapter },
       } = await provider.snapshot(snapshot);
 
       const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
 
       // Should fail, due to the sender not being the manager
       await hub.MANAGER.returns(randomAddress());
-      tx = vault.enableAdapters([uniswapAdapter]);
+      tx = vault.enableAdapters([uniswapV2Adapter]);
       await expect(tx).rejects.toBeRevertedWith(
         'Only the fund manager can call this function',
       );
 
       // Set manager to sender, and it should succeed
       await hub.MANAGER.returns(deployer);
-      tx = vault.enableAdapters([uniswapAdapter]);
+      tx = vault.enableAdapters([uniswapV2Adapter]);
       await expect(tx).resolves.toBeReceipt();
     });
 
@@ -155,7 +155,7 @@ describe('Vault', () => {
       const {
         hub,
         config: { deployer },
-        system: { kyberAdapter, uniswapAdapter },
+        system: { kyberAdapter, uniswapV2Adapter },
       } = await provider.snapshot(snapshot);
 
       const vault = await contracts.Vault.deploy(deployer, hub, [kyberAdapter]);
@@ -165,7 +165,7 @@ describe('Vault', () => {
       await expect(tx).rejects.toBeRevertedWith('Adapter is not on Registry');
 
       // Register adapter, and it should succeed
-      tx = vault.enableAdapters([uniswapAdapter]);
+      tx = vault.enableAdapters([uniswapV2Adapter]);
       await expect(tx).resolves.toBeReceipt();
     });
 

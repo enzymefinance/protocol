@@ -3,9 +3,8 @@ pragma solidity 0.6.8;
 
 import "./utils/MockIntegrateeBase.sol";
 
-// TODO: revert if minRate is not met? Or allow it to be ignored? Use same revert as Kyber?
 contract MockKyberIntegratee is MockIntegrateeBase {
-    function swapEtherToToken(address _destToken, uint256 _minRate)
+    function swapEtherToToken(address _destToken, uint256)
         external
         payable
         returns (uint256)
@@ -13,20 +12,18 @@ contract MockKyberIntegratee is MockIntegrateeBase {
         return __validateRateAndSwapAssets(
             ETH_ADDRESS,
             msg.value,
-            _destToken,
-            _minRate
+            _destToken
         );
     }
 
-    function swapTokenToEther(address _srcToken, uint256 _srcAmount, uint256 _minRate)
+    function swapTokenToEther(address _srcToken, uint256 _srcAmount, uint256)
         external
         returns (uint256)
     {
         return __validateRateAndSwapAssets(
             _srcToken,
             _srcAmount,
-            ETH_ADDRESS,
-            _minRate
+            ETH_ADDRESS
         );
     }
 
@@ -34,7 +31,7 @@ contract MockKyberIntegratee is MockIntegrateeBase {
         address _srcToken,
         uint256 _srcAmount,
         address _destToken,
-        uint256 _minRate
+        uint256
     )
         external
         returns (uint256)
@@ -42,23 +39,19 @@ contract MockKyberIntegratee is MockIntegrateeBase {
         return __validateRateAndSwapAssets(
             _srcToken,
             _srcAmount,
-            _destToken,
-            _minRate
+            _destToken
         );
     }
 
     function __validateRateAndSwapAssets(
         address _srcToken,
         uint256 _srcAmount,
-        address _destToken,
-        uint256 _minRate
+        address _destToken
     )
         private
         returns (uint256 destAmount_)
     {
         uint256 actualRate = __getRate(_srcToken, _destToken);
-        // TODO: revert message should be empty or same as Kyber's?
-        require(_minRate >= actualRate);
 
         address[] memory assetsToIntegratee = new address[](1);
         assetsToIntegratee[0] = _srcToken;

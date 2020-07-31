@@ -2,10 +2,7 @@
 
 [![Build Status](https://img.shields.io/travis/melonproject/protocol/master.svg?style=flat-square)](https://travis-ci.org/melonproject/protocol)
 
-Melon is blockchain software that seeks to enable participants to set up, manage and invest in technology regulated investment funds in a way that reduces barriers to entry, while minimizing the requirements for trust.
-
-The Melon protocol is a set of rules for how digital assets can be spent once held in a Melon smart-contract, or a Melon investment fund.
-These rules are meant to protect the investor and fund manager from malevolent behaviour of each other, even when both parties remain private.
+Melon is an Ethereum-based protocol for decentralized on-chain asset management. It is a protocol for people or entities to manage their wealth & the wealth of others within a customizable and safe environment. Melon empowers anyone to set up, manage and invest in customized on-chain investment vehicles.
 
 ## Install
 

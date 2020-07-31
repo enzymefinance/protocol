@@ -41,9 +41,6 @@ export interface DeploymentConfig {
   };
   integratees: {
     kyber: string;
-    airswap: string;
-    oasisdex: string;
-    uniswap: string;
     uniswapv2: string;
     zeroexv2: string;
     zeroexv3: string;
@@ -80,12 +77,9 @@ export interface ContractConstructors {
   priceTolerance: ContractConstructor<contracts.PriceTolerance>;
   userWhitelist: ContractConstructor<contracts.UserWhitelist>;
   kyberAdapter: ContractConstructor<contracts.KyberAdapter>;
-  oasisDexAdapter: ContractConstructor<contracts.OasisDexAdapter>;
-  uniswapAdapter: ContractConstructor<contracts.UniswapAdapter>;
   uniswapV2Adapter: ContractConstructor<contracts.UniswapV2Adapter>;
   zeroExV2Adapter: ContractConstructor<contracts.ZeroExV2Adapter>;
   zeroExV3Adapter: ContractConstructor<contracts.ZeroExV3Adapter>;
-  airSwapAdapter: ContractConstructor<contracts.AirSwapAdapter>;
   engineAdapter: ContractConstructor<contracts.EngineAdapter>;
 }
 
@@ -195,20 +189,6 @@ const constructors: ContractConstructors = {
     const Exchange = config.integratees.kyber;
     return contracts.KyberAdapter.deploy(config.deployer, Registry, Exchange);
   },
-  oasisDexAdapter: async (config, deployment) => {
-    const Registry = await deployment.registry;
-    const Exchange = config.integratees.oasisdex;
-    return contracts.OasisDexAdapter.deploy(
-      config.deployer,
-      Registry,
-      Exchange,
-    );
-  },
-  uniswapAdapter: async (config, deployment) => {
-    const Registry = await deployment.registry;
-    const Exchange = config.integratees.uniswap;
-    return contracts.UniswapAdapter.deploy(config.deployer, Registry, Exchange);
-  },
   uniswapV2Adapter: async (config, deployment) => {
     const Registry = await deployment.registry;
     const Exchange = config.integratees.uniswapv2;
@@ -235,11 +215,6 @@ const constructors: ContractConstructors = {
       Registry,
       Exchange,
     );
-  },
-  airSwapAdapter: async (config, deployment) => {
-    const Registry = await deployment.registry;
-    const Exchange = config.integratees.airswap;
-    return contracts.AirSwapAdapter.deploy(config.deployer, Registry, Exchange);
   },
   engineAdapter: async (config, deployment) => {
     const Registry = await deployment.registry;
@@ -315,12 +290,9 @@ export async function deploySystem(config: DeploymentConfig) {
 
     // Adapters
     deployment.registry.registerIntegrationAdapter(deployment.kyberAdapter),
-    deployment.registry.registerIntegrationAdapter(deployment.oasisDexAdapter),
-    deployment.registry.registerIntegrationAdapter(deployment.uniswapAdapter),
     deployment.registry.registerIntegrationAdapter(deployment.uniswapV2Adapter),
     deployment.registry.registerIntegrationAdapter(deployment.zeroExV2Adapter),
     deployment.registry.registerIntegrationAdapter(deployment.zeroExV3Adapter),
-    deployment.registry.registerIntegrationAdapter(deployment.airSwapAdapter),
     deployment.registry.registerIntegrationAdapter(deployment.engineAdapter),
   ]);
 
@@ -431,9 +403,6 @@ export async function defaultTestConfig(
     integratees: {
       // TODO: Mock all integrations.
       kyber: kyber.address,
-      oasisdex: randomAddress(),
-      airswap: randomAddress(),
-      uniswap: randomAddress(),
       uniswapv2: randomAddress(),
       zeroexv2: randomAddress(),
       zeroexv3: randomAddress(),
