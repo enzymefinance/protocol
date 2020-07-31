@@ -899,7 +899,7 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@nomiclabs/buidler@^1.3.8":
+"@nomiclabs/buidler@^1.4.3":
   version "1.4.3"
   resolved "https://registry.yarnpkg.com/@nomiclabs/buidler/-/buidler-1.4.3.tgz#4ac50d82830bd660fbd3b25ffd08e1d649da172e"
   integrity sha512-EcUurzBFN9yJxoAzeKW+72NCyWa2WIe1pC0AOIapoUsIhElFy8OpIKERK28EWB2yuQlIxhI98hg5ieAWVg3qJw==
