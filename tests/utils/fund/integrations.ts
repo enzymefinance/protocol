@@ -49,3 +49,13 @@ export async function kyberTakeOrderArgs(
     ],
   );
 }
+
+export async function engineTakeOrderArgs(
+  minNativeAssetAmount: BigNumberish,
+  mlnTokenAmount: BigNumberish,
+) {
+  return encodeArgs(
+    ['uint256', 'uint256'],
+    [minNativeAssetAmount, mlnTokenAmount],
+  );
+}

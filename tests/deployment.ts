@@ -1,4 +1,4 @@
-import { BigNumberish, Signer, utils } from 'ethers';
+import { BigNumberish, providers, Signer, utils } from 'ethers';
 import {
   AddressLike,
   BuidlerProvider,
@@ -461,6 +461,7 @@ export interface TestDeploymentConfig extends DeploymentConfig {
 export interface TestDeployment<
   TConfig extends DeploymentConfig = TestDeploymentConfig
 > {
+  provider: providers.Provider;
   system: Deployment;
   config: TConfig;
 }
@@ -476,6 +477,7 @@ export function configureTestDeployment<
     const system = await deploySystem(config);
 
     return {
+      provider,
       system,
       config,
     };

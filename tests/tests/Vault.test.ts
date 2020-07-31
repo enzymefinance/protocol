@@ -4,16 +4,16 @@ import * as contracts from '../contracts';
 
 let tx;
 
+async function snapshot(provider: BuidlerProvider) {
+  const deployment = await configureTestDeployment()(provider);
+  const hub = await contracts.Hub.mock(deployment.config.deployer);
+  await hub.REGISTRY.returns(deployment.system.registry);
+  await hub.MANAGER.returns(deployment.config.deployer);
+
+  return { ...deployment, hub };
+}
+
 describe('Vault', () => {
-  const snapshot = async (provider: BuidlerProvider) => {
-    const deployment = await provider.snapshot(configureTestDeployment());
-    const hub = await contracts.Hub.mock(deployment.config.deployer);
-    await hub.REGISTRY.returns(deployment.system.registry);
-    await hub.MANAGER.returns(deployment.config.deployer);
-
-    return { ...deployment, hub };
-  };
-
   describe('constructor', () => {
     it('can deploy without any adapters', async () => {
       const {
