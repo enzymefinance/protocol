@@ -7,6 +7,7 @@ As an open source project, we will consider changes to the code base from the co
 The main branch that development work occurs on is the `develop` branch. It is usually encouraged to branch from there, and make pull requests back to `develop` when the change is made.
 
 When making a pull request, please:
+
 - follow the "Git Branching Model" outlined in this document
 - follow the "Styleguide" outlined in this document
 - add tests that cover newly introduced code
@@ -22,12 +23,14 @@ Please always make PRs into the `develop` branch.
 We follow this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/).
 
 Each branch name should be prefixed with either `feature/`, `fix/`, `refactor/`, or `chore/` depending on the type of work that is being done:
+
 - `feature/my-branch` (for code that adds functionality)
 - `fix/my-branch` (for fixing existing code)
 - `refactor/my-branch` (for refactoring production code)
 - `chore/my-branch` (for updating linters, documentation, etc)
 
 The branch name should end with the Github issue number (where applicable):
+
 - e.g., `feature/my-feature-#123` refers to issue #123.
 
 ## Styleguide
@@ -45,13 +48,9 @@ Using a linter is not a substitute for understanding the style guide, however, s
 
 We use [solhint](https://github.com/protofire/solhint) for linting Solidity code. We extend solhint's [recommended rules](https://github.com/protofire/solhint/blob/master/docs/rules.md) with a few of our own, which can be found in `.solhint.json`.
 
-#### ESLint
-
-We will soon be implementing [ESLint](https://eslint.org/) for the javascript (e.g., tests, deployment scripts, utils) in the repo.
-
 ### Solidity
 
-Please adhere to the recommended [official Solidity style guide for v0.6.1](https://solidity.readthedocs.io/en/v0.6.1/style-guide.html), in addition to the following styling choices:
+Please adhere to the recommended [official Solidity style guide for v0.6.8](https://solidity.readthedocs.io/en/v0.6.8/style-guide.html), in addition to the following styling choices:
 
 #### Namespacing
 

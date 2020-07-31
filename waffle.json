@@ -1,0 +1,12 @@
+{
+  "sourceDirectory": "./contracts",
+  "outputDirectory": "./build",
+  "compilerVersion": "0.6.8",
+  "compilerOptions": {
+    "evmVersion": "istanbul",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    }
+  }
+}

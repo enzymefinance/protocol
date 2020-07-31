@@ -7,10 +7,6 @@ Melon is blockchain software that seeks to enable participants to set up, manage
 The Melon protocol is a set of rules for how digital assets can be spent once held in a Melon smart-contract, or a Melon investment fund.
 These rules are meant to protect the investor and fund manager from malevolent behaviour of each other, even when both parties remain private.
 
-### Contract addresses
-
-For the addresses of the latest deployed contracts, check out the `deployments/latest` directory on the `master` branch.
-
 ## Install
 
 ### Prerequisites
@@ -27,22 +23,12 @@ yarn install
 ## Compile contracts
 
 ```sh
-yarn compile
+yarn build
 ```
 
 ## Test
 
-After the above "Compile contracts" step, follow the instructions below.
-
-The tests are meant to be run on a ganache fork of mainnet.
-
 ```sh
-# first terminal
-export MAINNET_NODE_URL=https://mainnet.infura.io/v3/<infura id>
-yarn devchain
-
-# in a second terminal
-yarn deploy
 yarn test
 ```
 

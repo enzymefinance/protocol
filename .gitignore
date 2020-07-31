@@ -3,3 +3,8 @@ node_modules/
 
 # ignore built code
 build/
+tests/contracts/build/
+tests/contracts/codegen/
+
+# ignore system files
+.DS_Store
