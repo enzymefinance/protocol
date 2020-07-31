@@ -1,12 +1,14 @@
 import { utils } from 'ethers';
-import { randomAddress } from '@crestproject/crestproject';
+import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
 
 let tx;
 
-describe('Registry', () => {
-  const snapshot = configureTestDeployment();
+async function snapshot(provider: BuidlerProvider) {
+  return configureTestDeployment()(provider);
+}
 
+describe('Registry', () => {
   describe('constructor', () => {
     it('MTC is set', async () => {
       const {

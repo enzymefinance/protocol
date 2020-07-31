@@ -12,39 +12,39 @@ import {
 
 let tx;
 
-describe('KyberAdapter', () => {
-  const snapshot = async (provider: BuidlerProvider) => {
-    const deployment = await provider.snapshot(configureTestDeployment());
-    const {
-      system: { kyberAdapter, sharesRequestor, fundFactory },
-      config: {
-        deployer,
-        tokens: { weth },
-      },
-    } = deployment;
+async function snapshot(provider: BuidlerProvider) {
+  const deployment = await configureTestDeployment()(provider);
+  const {
+    system: { kyberAdapter, sharesRequestor, fundFactory },
+    config: {
+      deployer,
+      tokens: { weth },
+    },
+  } = deployment;
 
-    // Deploy fund
-    const fund = await setupFundWithParams({
-      adapters: [kyberAdapter],
-      factory: fundFactory,
-      manager: deployer,
-      denominationAsset: weth,
-    });
+  // Deploy fund
+  const fund = await setupFundWithParams({
+    adapters: [kyberAdapter],
+    factory: fundFactory,
+    manager: deployer,
+    denominationAsset: weth,
+  });
 
-    // Invest in fund (immediately grants shares since it is the first investment)
-    await requestShares({
-      denominationAsset: weth,
-      fundComponents: fund,
-      sharesRequestor,
-      investmentAmount: utils.parseEther('100'),
-    });
+  // Invest in fund (immediately grants shares since it is the first investment)
+  await requestShares({
+    denominationAsset: weth,
+    fundComponents: fund,
+    sharesRequestor,
+    investmentAmount: utils.parseEther('100'),
+  });
 
-    return {
-      ...deployment,
-      fund,
-    };
+  return {
+    ...deployment,
+    fund,
   };
+}
 
+describe('KyberAdapter', () => {
   describe('constructor', () => {
     it('sets exchange', async () => {
       const {
