@@ -1,114 +1,117 @@
-import { utils } from 'ethers';
+import { BigNumberish, Signer, utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
-import { Registry } from '../contracts/codegen/Registry';
-import { Engine } from '../contracts/codegen/Engine';
-import { ERC20WithFields } from '../contracts/codegen/ERC20WithFields';
-import { IPriceSource } from '../contracts/codegen/IPriceSource';
+import { configureTestDeployment } from '../deployment';
+import * as contracts from '../contracts';
+import {
+  engineTakeOrderArgs,
+  setupFundWithParams,
+  takeOrderSignature,
+} from '../utils';
 
-async function deploy(provider: BuidlerProvider) {
-  const signer = provider.getSigner(0);
-  const mtc = await provider.getSigner(1).getAddress();
-  const mgm = await provider.getSigner(2).getAddress();
-  const stranger = await provider.getSigner(5).getAddress();
-  const melonEngineDelay = 2592000;
-  const mlnToken = randomAddress();
-  const nativeAsset = randomAddress();
-
-  const deployer = await signer.getAddress();
-
-  const registry = await Registry.deploy(signer, mtc, mgm);
-  const mockPriceSource = await IPriceSource.mock(signer);
-  await registry.setPriceSource(mockPriceSource);
-  await registry.setMlnToken(mlnToken);
-  await registry.setNativeAsset(nativeAsset);
-  await mockPriceSource.getCanonicalRate
-    .given(mlnToken, nativeAsset)
-    .returns(utils.parseEther('1'), true, 0);
-
-  const engine = await Engine.deploy(
-    signer,
-    melonEngineDelay,
-    registry.address,
-  );
-  const lastThaw = (await provider.getBlock('latest')).timestamp;
-
-  return {
-    stranger,
-    deployer,
-    registry,
-    engine,
-    mtc,
-    mgm,
-    melonEngineDelay,
-    lastThaw,
-  };
+async function snapshot(provider: BuidlerProvider) {
+  return configureTestDeployment()(provider);
 }
 
-async function deployMock(provider: BuidlerProvider) {
-  const signer = provider.getSigner(0);
-  const mtc = await provider.getSigner(1).getAddress();
-  const mgm = await provider.getSigner(2).getAddress();
-  const stranger = await provider.getSigner(5).getAddress();
-  const melonEngineDelay = 2592000;
-
-  const deployer = await signer.getAddress();
-
-  const mockRegistry = await Registry.mock(signer);
-  const mockMln = await ERC20WithFields.mock(signer);
-
-  const engine = await Engine.deploy(signer, melonEngineDelay, mockRegistry);
-  const lastThaw = (await provider.getBlock('latest')).timestamp;
-
-  await mockRegistry.integrationAdapterIsRegistered
-    .given(deployer)
-    .returns(true);
-  await mockRegistry.mlnToken.returns(mockMln);
-  await mockRegistry.fundFactory.returns(deployer);
-  await mockMln.transferFrom
-    .given(deployer, engine, utils.parseEther('1'))
-    .returns(true);
-
-  return {
-    stranger,
-    deployer,
-    mockRegistry,
-    engine,
-    mtc,
-    mgm,
-    melonEngineDelay,
-    lastThaw,
-  };
+async function warpEngine(provider: BuidlerProvider, engine: contracts.Engine) {
+  const delay = await engine.thawingDelay();
+  const warp = delay.add(1).toNumber();
+  await provider.send('evm_increaseTime', [warp]);
+  await provider.send('evm_mine', []);
 }
 
-let call, tx;
+async function seedEngine(
+  deployer: Signer,
+  registry: contracts.Registry,
+  engine: contracts.Engine,
+  amount: BigNumberish,
+) {
+  let tx;
+
+  // Pretend to be the fund factory so we can call `payAmguInEther`.
+  tx = registry.setFundFactory(deployer);
+  await expect(tx).resolves.toBeReceipt();
+
+  tx = engine.frozenEther();
+  await expect(tx).resolves.toEqBigNumber(0);
+
+  tx = engine.payAmguInEther.value(amount).send();
+  await expect(tx).resolves.toBeReceipt();
+  await expect(tx).resolves.toHaveEmitted('AmguPaid');
+
+  tx = engine.frozenEther();
+  await expect(tx).resolves.toEqBigNumber(amount);
+}
+
+async function thawEngine(engine: contracts.Engine, amount?: BigNumberish) {
+  let tx;
+
+  tx = engine.thaw();
+  await expect(tx).resolves.toBeReceipt();
+  await expect(tx).resolves.toHaveEmitted('Thaw');
+
+  tx = engine.frozenEther();
+  await expect(tx).resolves.toEqBigNumber(0);
+
+  if (amount != null) {
+    tx = engine.liquidEther();
+    await expect(tx).resolves.toEqBigNumber(amount);
+  }
+}
+
+let tx;
 
 describe('Engine', () => {
   describe('constructor', () => {
     it('sets lastThaw to block.timestamp', async () => {
-      const { engine, lastThaw } = await provider.snapshot(deploy);
+      const {
+        system: { registry },
+        config: {
+          deployer,
+          engine: { thawingDelay },
+        },
+      } = await provider.snapshot(snapshot);
 
-      call = engine.lastThaw();
-      await expect(call).resolves.toEqBigNumber(lastThaw);
+      const engine = await contracts.Engine.deploy(
+        deployer,
+        thawingDelay,
+        registry,
+      );
+
+      const block = await provider.getBlock('latest');
+      tx = engine.lastThaw();
+      await expect(tx).resolves.toEqBigNumber(block.timestamp);
     });
 
     it('sets registry', async () => {
-      const { registry, engine } = await provider.snapshot(deploy);
+      const {
+        system: { engine, registry },
+      } = await provider.snapshot(snapshot);
 
-      call = engine.registry();
-      await expect(call).resolves.toBe(registry.address);
+      tx = engine.registry();
+      await expect(tx).resolves.toBe(registry.address);
     });
 
     it('sets thawingDelay', async () => {
-      const { engine, melonEngineDelay } = await provider.snapshot(deploy);
+      const {
+        system: { engine },
+        config: {
+          engine: { thawingDelay },
+        },
+      } = await provider.snapshot(snapshot);
 
-      call = engine.thawingDelay();
-      await expect(call).resolves.toEqBigNumber(melonEngineDelay);
+      tx = engine.thawingDelay();
+      await expect(tx).resolves.toEqBigNumber(thawingDelay);
     });
   });
 
   describe('setRegistry', () => {
     it('can only be called by Registry.MTC', async () => {
-      const { engine, stranger } = await provider.snapshot(deploy);
+      const {
+        system: { engine },
+        config: {
+          accounts: [stranger],
+        },
+      } = await provider.snapshot(snapshot);
       const disallowed = engine.connect(provider.getSigner(stranger));
       const registry = randomAddress();
 
@@ -117,471 +120,240 @@ describe('Engine', () => {
     });
 
     it('sets registry', async () => {
-      const { engine } = await provider.snapshot(deploy);
+      const {
+        system: { engine },
+      } = await provider.snapshot(snapshot);
       const registry = randomAddress();
 
       tx = engine.setRegistry(registry);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('RegistryChange');
 
-      call = engine.registry();
-      await expect(call).resolves.toBe(registry);
+      tx = engine.registry();
+      await expect(tx).resolves.toBe(registry);
     });
-
-    it.todo('emits RegistryChange(registry)');
   });
 
   describe('setAmguPrice', () => {
     it('can only be called by Registry.MGM', async () => {
-      const { engine } = await provider.snapshot(deploy);
+      const {
+        system: { engine },
+      } = await provider.snapshot(snapshot);
 
       tx = engine.setAmguPrice(1);
       await expect(tx).rejects.toBeRevertedWith('Only MGM can call this');
     });
 
     it('sets amguPrice', async () => {
-      const { engine, mgm } = await provider.snapshot(deploy);
+      const {
+        system: { engine },
+        config: {
+          owners: { mgm },
+        },
+      } = await provider.snapshot(snapshot);
       const connected = engine.connect(provider.getSigner(mgm));
 
       tx = connected.setAmguPrice(1);
       await expect(tx).resolves.toBeReceipt();
+      await expect(tx).resolves.toHaveEmitted('SetAmguPrice');
 
-      call = engine.amguPrice();
-      await expect(call).resolves.toEqBigNumber(1);
+      tx = engine.amguPrice();
+      await expect(tx).resolves.toEqBigNumber(1);
     });
-
-    it.todo('emits SetAmguPrice(price)');
   });
 
   describe('premiumPercent', () => {
     it('returns 0 if liquidEther is under 1 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
+      const amount = utils.parseEther('0.99');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
+      await thawEngine(engine, amount);
 
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('0.99');
-
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
+      tx = engine.premiumPercent();
       await expect(tx).resolves.toEqBigNumber(0);
 
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(0);
+      // TODO: Re-enable this after mock price source
+      // tx = engine.enginePrice();
+      // await expect(tx).resolves.toEqBigNumber(utils.parseEther('1'));
     });
 
     it('returns 5 if liquidEther is 1 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
+      const amount = utils.parseEther('1');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
+      await thawEngine(engine, amount);
 
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('1');
+      tx = engine.premiumPercent();
+      await expect(tx).resolves.toEqBigNumber(5);
 
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(5);
+      // TODO: Re-enable this after mock price source
+      // tx = engine.enginePrice();
+      // await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.05'));
     });
 
     it('returns 10 if liquidEther is 5 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
+      const amount = utils.parseEther('5');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
+      await thawEngine(engine, amount);
 
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('5');
+      tx = engine.premiumPercent();
+      await expect(tx).resolves.toEqBigNumber(10);
 
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(10);
+      // TODO: Re-enable this after mock price source
+      // tx = engine.enginePrice();
+      // await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.10'));
     });
 
     it('returns 15 if liquidEther is 10 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
+      const amount = utils.parseEther('10');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
+      await thawEngine(engine, amount);
 
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('10');
+      tx = engine.premiumPercent();
+      await expect(tx).resolves.toEqBigNumber(15);
 
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(15);
+      // TODO: Re-enable this after mock price source
+      // tx = engine.enginePrice();
+      // await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.15'));
     });
   });
 
   describe('payAmguInEther', () => {
     it('adds sent ETH to frozenEther', async () => {
-      const { registry, engine, deployer } = await provider.snapshot(deploy);
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
+      const amount = utils.parseEther('1337');
+      await seedEngine(deployer, registry, engine, amount);
 
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('0.01');
-
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
+      tx = engine.frozenEther();
+      await expect(tx).resolves.toEqBigNumber(amount);
     });
-
-    it.todo(
-      'emits AmguPaid(amguConsumed) [can ignore for now, need to change]',
-    );
   });
 
   describe('thaw', () => {
     it('cannot be called when thawingDelay has not elapsed since lastThaw', async () => {
-      const { engine, lastThaw } = await provider.snapshot(deploy);
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp - 60,
-      ]);
-      await provider.send('evm_mine', []);
-
+      const amount = utils.parseEther('1337');
+      await seedEngine(deployer, registry, engine, amount);
       tx = engine.thaw();
       await expect(tx).rejects.toBeRevertedWith('Thawing delay has not passed');
     });
 
     it('cannot be called when frozenEther is 0', async () => {
-      const { engine, lastThaw } = await provider.snapshot(deploy);
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
+      const {
+        system: { engine },
+      } = await provider.snapshot(snapshot);
 
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
+      await warpEngine(provider, engine);
       tx = engine.thaw();
       await expect(tx).rejects.toBeRevertedWith('No frozen ether to thaw');
     });
 
     it('frozenEther is added to liquidEther and reset to 0', async () => {
-      const { registry, engine, lastThaw, deployer } = await provider.snapshot(
-        deploy,
-      );
-      const ethAmount = utils.parseEther('0.01');
+      const {
+        system: { registry, engine },
+        config: { deployer },
+      } = await provider.snapshot(snapshot);
 
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
+      const amount = utils.parseEther('0.01');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
 
       const preLiquidEther = await engine.liquidEther();
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
+      await thawEngine(engine, amount);
       const postLiquidEther = await engine.liquidEther();
 
-      expect(postLiquidEther.sub(preLiquidEther)).toEqBigNumber(ethAmount);
+      expect(postLiquidEther.sub(preLiquidEther)).toEqBigNumber(amount);
+
       tx = engine.frozenEther();
       await expect(tx).resolves.toEqBigNumber(0);
-    });
-
-    it.todo('emits Thaw(frozenEther)');
-  });
-
-  describe('enginePrice', () => {
-    it('returns 100% of ethPerMln rate when liquidEther is under 1 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
-
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
-
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('0.99');
-
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(0);
-
-      tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1'));
-    });
-
-    it('returns 105% of ethPerMln rate when liquidEther is 1 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
-
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
-
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('1');
-
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(5);
-
-      tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.05'));
-    });
-
-    it('returns 110% of ethPerMln rate when liquidEther is 5 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
-
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
-
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('5');
-
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(10);
-
-      tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.10'));
-    });
-
-    it('returns 115% of ethPerMln rate when liquidEther is 10 ether', async () => {
-      const { registry, engine, deployer, lastThaw } = await provider.snapshot(
-        deploy,
-      );
-
-      tx = registry.setFundFactory(deployer);
-      await expect(tx).resolves.toBeReceipt();
-
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('10');
-
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
-
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
-
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(15);
-
-      tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.15'));
     });
   });
 
   describe('sellAndBurnMln', () => {
-    // TODO: Re-enable this.
     it.skip('reverts if mlnAmount value is greater than available liquidEther', async () => {
-      const { engine, lastThaw } = await provider.snapshot(deployMock);
-      await expect(engine.frozenEther()).resolves.toEqBigNumber(0);
-      const ethAmount = utils.parseEther('1');
+      const {
+        system: {
+          registry,
+          engine,
+          engineAdapter,
+          sharesRequestor,
+          valueInterpreter,
+          fundFactory,
+        },
+        config: {
+          deployer,
+          tokens: { weth, mln },
+        },
+      } = await provider.snapshot(snapshot);
 
-      tx = engine.payAmguInEther.value(ethAmount).send();
-      await expect(tx).resolves.toBeReceipt();
+      const amount = utils.parseEther('1');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
+      await thawEngine(engine, amount);
 
-      call = engine.frozenEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
+      const liquidEther = await engine.liquidEther();
+      const mlnValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(weth, liquidEther, mln)
+        .call();
 
-      const thawingDelay = (await engine.thawingDelay()).toNumber();
-      const currentTimestamp = (await provider.getBlock('latest')).timestamp;
+      // Create a fund denominated in mln with a small initial investment for
+      // burning mln on the engine.
+      const fund = await setupFundWithParams({
+        denominationAsset: mln,
+        factory: fundFactory,
+        adapters: [engineAdapter],
+        investment: {
+          sharesRequestor,
+          investmentAmount: utils.parseEther('10'),
+        },
+      });
 
-      await provider.send('evm_increaseTime', [
-        lastThaw + thawingDelay - currentTimestamp + 1,
-      ]);
-      await provider.send('evm_mine', []);
+      const mlnAmount = mlnValue.value_.add(1);
+      const encodedArgs = await engineTakeOrderArgs(1, mlnAmount);
+      tx = fund.vault.callOnIntegration(
+        engineAdapter,
+        takeOrderSignature,
+        encodedArgs,
+      );
 
-      tx = engine.thaw();
-      await expect(tx).resolves.toBeReceipt();
-      call = engine.liquidEther();
-      await expect(call).resolves.toEqBigNumber(ethAmount);
-      tx = engine.frozenEther();
-      await expect(tx).resolves.toEqBigNumber(0);
-
-      call = engine.premiumPercent();
-      await expect(call).resolves.toEqBigNumber(5);
-
-      tx = engine.enginePrice();
-      await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.05'));
-
-      // TODO
+      await expect(tx).rejects.toBeRevertedWith(
+        'TODO: This should revert with the right message',
+      );
     });
 
-    it('burns mlnAmount', async () => {});
-
-    it('transfers expected ether amount to sender', async () => {});
-
-    it('subtracts sent ETH from frozenEther', async () => {});
-
+    it.todo('burns mlnAmount');
+    it.todo('transfers expected ether amount to sender');
+    it.todo('subtracts sent ETH from frozenEther');
     it.todo('emits Burn(mlnAmount)');
   });
 });

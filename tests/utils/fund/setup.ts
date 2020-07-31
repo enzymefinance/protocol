@@ -3,16 +3,27 @@ import { AddressLike, resolveAddress } from '@crestproject/crestproject';
 import { FeeParams } from './fees';
 import { PolicyParams } from './policies';
 import { stringToBytes, encodeArgs } from '../common';
+import {
+  DemoninationAssetInterface,
+  requestShares,
+  RequestSharesParams,
+} from './investing';
 import * as contracts from '../../contracts';
+
+export type InitialInvestmentParams = Omit<
+  RequestSharesParams,
+  'fundComponents' | 'denominationAsset'
+>;
 
 export interface SetupFundParams {
   factory: contracts.FundFactory;
-  denominationAsset: AddressLike;
+  denominationAsset: DemoninationAssetInterface;
   manager?: Signer;
   name?: string;
   adapters?: AddressLike[];
   fees?: FeeParams[];
   policies?: PolicyParams[];
+  investment?: InitialInvestmentParams;
 }
 
 export async function setupFundWithParams({
@@ -22,6 +33,7 @@ export async function setupFundWithParams({
   fees = [],
   policies = [],
   adapters = [],
+  investment,
 }: SetupFundParams) {
   const fundName = stringToBytes(name);
   const feesRates = fees.map((item) => item.rate);
@@ -72,8 +84,16 @@ export async function setupFundWithParams({
   }
 
   const event = factory.abi.parseLog(eventLog);
-
   const components = await getFundComponents(event.args!.hub, factory.signer!);
+
+  if (investment != null) {
+    await requestShares({
+      denominationAsset: denominationAsset,
+      fundComponents: components,
+      ...investment,
+    });
+  }
+
   return components;
 }
 
