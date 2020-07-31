@@ -387,15 +387,11 @@ export async function defaultTestConfig(
 
   // Deploy mock contracts for our integrations.
   const [kyber] = await Promise.all([
-    contracts.MockKyberNetwork.deploy(deployer),
+    contracts.MockKyberIntegratee.deploy(deployer),
   ]);
 
   const primitives = [...premined, weth];
   const integratees = [kyber];
-
-  // Set default rates for all our deployed & premined assets.
-  const rates = primitives.map(() => utils.parseEther('1'));
-  await kyber.setRates(primitives, rates, rates);
 
   // Make all accounts and integratees (exchanges) rich so we can test trading.
   const mint = premine.map((token) => {
@@ -455,7 +451,7 @@ export async function defaultTestConfig(
 export interface TestDeploymentConfig extends DeploymentConfig {
   accounts: string[];
   mocks: {
-    kyber: contracts.MockKyberNetwork;
+    kyber: contracts.MockKyberIntegratee;
   };
   tokens: {
     [symbol: string]: contracts.PreminedToken | contracts.WETH;
@@ -510,14 +506,4 @@ export async function transferWeth(
   amount: BigNumberish = defaultWethAmount,
 ) {
   return await weth.transfer(who, amount);
-}
-
-export async function setPrice(
-  kyber: contracts.MockKyberNetwork,
-  asset: AddressLike,
-  price: number,
-) {
-  const etherPerToken = utils.parseEther(`${price}`);
-  const tokenPerEther = utils.parseEther(`${1 / price}`);
-  return kyber.setRate(asset, tokenPerEther, etherPerToken);
 }

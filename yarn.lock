@@ -271,42 +271,42 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.0.15.tgz#cdc13468ecdc330e1e376b29d8371bfc89b3e0b3"
-  integrity sha512-nyNQHXk/pKdu4KxSA9bttVnFQzsgF+++YsHYPg99nc95HaHgRyAH73p1/sYK56I7xwISjDTIT2r/Tg84NOXB6w==
+"@crestproject/codegen@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.0.16.tgz#a6f9f18b4bc9424bad734249e4ed248ca76ba7a3"
+  integrity sha512-+yN5dKiKN7JIr8cpvCNJBrG5W8quMr9R0/I8n69WtmNCkQcwndVGbTNg13zzTe7qnEf6566xseFQev00QFzrPQ==
 
-"@crestproject/crestproject@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.0.15.tgz#bbe0299289806070f1aada8fba808576a1b573c6"
-  integrity sha512-G9pMMb9nkqizcX5vO85yjc4H2lOWPMGLuNnxnwOBENKXmfVMoRnOnyrMpXCL1/oAXhPPY21zlAPvnWp1Pp7nfw==
+"@crestproject/crestproject@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.0.16.tgz#153a414ef245d7717646f718d36d985542cdc0cf"
+  integrity sha512-JkJttztb6H0aOoejPOSyGV1SppUztDF2DMyBJwVsQ61Gbd0egPGlG+s0ajAdaFCCb+wmsHY4Nybt+jCa2OfZoA==
   dependencies:
-    "@crestproject/codegen" "^0.0.15"
-    "@crestproject/ethers" "^0.0.15"
-    "@crestproject/evm" "^0.0.15"
-    "@crestproject/jest" "^0.0.15"
+    "@crestproject/codegen" "^0.0.16"
+    "@crestproject/ethers" "^0.0.16"
+    "@crestproject/evm" "^0.0.16"
+    "@crestproject/jest" "^0.0.16"
     glob "^7.1.6"
     jest-worker "^26.1.0"
     throat "^5.0.0"
     yargs "^15.4.1"
 
-"@crestproject/ethers@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.15.tgz#9dfe0e4edbae8979addaceec8857b5d0fbf42bb7"
-  integrity sha512-qjww2QOwdzl77E2E5SvboBcdgsAXCFf3SXHYH157pEEFD6saKlG2NL+JUM/xlTjs9pDmRwtnYDK+Fb8hYpzowg==
+"@crestproject/ethers@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.16.tgz#b42581230bab5860f949328597e37a80f63a7f79"
+  integrity sha512-NONGtsLaNr1wUTbf+qKsyL+7pjxr38FjXJz1gCfV6zJ0bHJabQkgEGPPKDCfZ7arYAUZkqWV6PmYbQoGwYdezg==
 
-"@crestproject/evm@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.15.tgz#16742cebab5b71b8e378f7a769d4db38a0ff8e54"
-  integrity sha512-DTcsRxBlcEwMRMqcH1uXORUyBSn/cmP664fyYeroygH+M42Y+MtW+lVS6y/YSdbpTIX6adn+yqNZr3wyN76Jwg==
+"@crestproject/evm@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.16.tgz#6d56853f20ce60280667d7c1e264290023a69bd7"
+  integrity sha512-JbJ5C9qkvAH6AQ5BByGE1jPpapHiwALW6QaZktHC9jKnUpH4wIHZLQnqDAfOFA+svkmrLu7jK8JPrtK1+vdVcQ==
 
-"@crestproject/jest@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.0.15.tgz#d048b169a42c44d230809b698b1514f2962c4920"
-  integrity sha512-41kdztQnBpvSJIalOT2piMJzwiLQ6dUB0Aw6lMrihmJS+Oc43MatfpzFW2fFGDY423U8FcuR/H44U8F1NtdQYg==
+"@crestproject/jest@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.0.16.tgz#1c1e5e904dd0946c28231500d41ad4b6a43236d4"
+  integrity sha512-ehWRnXtGB5UPhgNsWRFqESMwD+lJ1BRmn8g+04YKxUH3BaeqDb6t2PqYBD/wKtrACFsgdrXIljjYNBHCW9iIwQ==
   dependencies:
-    "@crestproject/ethers" "^0.0.15"
-    "@crestproject/evm" "^0.0.15"
+    "@crestproject/ethers" "^0.0.16"
+    "@crestproject/evm" "^0.0.16"
     ts-jest "^26.1.3"
 
 "@ensdomains/ens@^0.4.4":
@@ -6536,7 +6536,7 @@ ts-essentials@^2.0.7:
   resolved "https://registry.yarnpkg.com/ts-essentials/-/ts-essentials-2.0.12.tgz#c9303f3d74f75fa7528c3d49b80e089ab09d8745"
   integrity sha512-3IVX4nI6B5cc31/GFFE+i8ey/N2eA0CZDbo6n0yrz0zDX8ZJ8djmU1p+XRz7G3is0F3bB3pu2pAroFdAWQKU3w==
 
-ts-jest@^26.1.1, ts-jest@^26.1.3:
+ts-jest@^26.1.3, ts-jest@^26.1.4:
   version "26.1.4"
   resolved "https://registry.yarnpkg.com/ts-jest/-/ts-jest-26.1.4.tgz#87d41a96016a8efe4b8cc14501d3785459af6fa6"
   integrity sha512-Nd7diUX6NZWfWq6FYyvcIPR/c7GbEF75fH1R6coOp3fbNzbRJBZZAn0ueVS0r8r9ral1VcrpneAFAwB3TsVS1Q==

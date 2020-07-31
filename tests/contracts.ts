@@ -41,4 +41,4 @@ export { PriceTolerance } from './contracts/codegen/PriceTolerance';
 export { ERC20 } from './contracts/codegen/ERC20';
 export { WETH } from './contracts/codegen/WETH';
 export { PreminedToken } from './contracts/codegen/PreminedToken';
-export { MockKyberNetwork } from './contracts/codegen/MockKyberNetwork';
+export { MockKyberIntegratee } from './contracts/codegen/MockKyberIntegratee';

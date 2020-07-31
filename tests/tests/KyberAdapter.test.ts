@@ -178,7 +178,7 @@ describe('KyberAdapter', () => {
         takeOrderArgs,
       );
       await expect(tx).rejects.toBeRevertedWith(
-        'rate below min conversion rate',
+        'received incoming asset less than expected',
       );
     });
 
