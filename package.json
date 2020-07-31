@@ -28,13 +28,14 @@
     "build": "yarn compile && yarn codegen",
     "test": "yarn jest",
     "format": "prettier --write {*,**/*}.ts",
+    "lint": "prettier --list-different {*,**/*}.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.17",
+    "@crestproject/crestproject": "^0.0.18",
     "@nomiclabs/buidler": "^1.4.3",
     "@types/jest": "^26.0.3",
     "ethereum-waffle": "^3.0.2",
@@ -53,9 +54,6 @@
         "preset": "@crestproject/crestproject",
         "roots": [
           "<rootDir>/tests"
-        ],
-        "setupFilesAfterEnv": [
-          "<rootDir>/tests/setup.ts"
         ],
         "globals": {
           "ts-jest": {
