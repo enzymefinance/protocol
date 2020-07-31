@@ -20,11 +20,8 @@ export { SharesFactory } from './contracts/codegen/SharesFactory';
 export { VaultFactory } from './contracts/codegen/VaultFactory';
 
 // Adapters
-export { AirSwapAdapter } from './contracts/codegen/AirSwapAdapter';
 export { KyberAdapter } from './contracts/codegen/KyberAdapter';
 export { EngineAdapter } from './contracts/codegen/EngineAdapter';
-export { OasisDexAdapter } from './contracts/codegen/OasisDexAdapter';
-export { UniswapAdapter } from './contracts/codegen/UniswapAdapter';
 export { UniswapV2Adapter } from './contracts/codegen/UniswapV2Adapter';
 export { ZeroExV2Adapter } from './contracts/codegen/ZeroExV2Adapter';
 export { ZeroExV3Adapter } from './contracts/codegen/ZeroExV3Adapter';
