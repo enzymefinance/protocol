@@ -13,4 +13,5 @@
 artifacts/
 codegen/
 package/
+cache/
 node_modules/

@@ -1,5 +1,0 @@
-{
-  "sourceDirectory": "./tests/contracts",
-  "outputDirectory": "./tests/artifacts",
-  "compilerVersion": "0.6.8"
-}

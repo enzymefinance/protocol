@@ -23,14 +23,12 @@
     "Solidity"
   ],
   "scripts": {
-    "precodegen": "rimraf tests/codegen",
     "codegen": "yarn codegen:contracts && yarn codegen:tests",
     "codegen:contracts": "crestproject codegen \"artifacts/*.json\" tests/codegen",
     "codegen:tests": "crestproject codegen \"tests/artifacts/*.json\" tests/codegen",
-    "precompile": "rimraf artifacts tests/artifacts",
     "compile": "yarn compile:contracts && yarn compile:tests",
-    "compile:contracts": "waffle compile waffle.json",
-    "compile:tests": "waffle compile tests/waffle.json",
+    "compile:contracts": "buidler compile",
+    "compile:tests": "buidler compile --config tests/buidler.config.js",
     "build": "yarn compile && yarn codegen",
     "prepackage": "rimraf package",
     "package": "tsc && node scripts/package",
@@ -49,7 +47,6 @@
     "@crestproject/crestproject": "^0.0.19",
     "@nomiclabs/buidler": "^1.4.3",
     "@types/jest": "^26.0.3",
-    "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.5",
     "fs-extra": "^9.0.1",
     "jest": "^26.1.0",
@@ -57,9 +54,6 @@
     "rimraf": "^3.0.2",
     "ts-jest": "^26.1.4",
     "typescript": "^4.0.0-beta"
-  },
-  "resolutions": {
-    "ganache-core": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
   },
   "jest": {
     "projects": [
