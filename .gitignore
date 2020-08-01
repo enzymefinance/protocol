@@ -1,10 +1,17 @@
-node_modules/
+# ignore log output
 *.log
 
-# ignore built code
-build/
-tests/contracts/build/
-tests/contracts/codegen/
+# ignore all dotfiles except the whitelisted ones
+.*
+!.gitignore
+!.gitattributes
+!.prettierignore
+!.prettierrc
+!.travis.yml
 
-# ignore system files
-.DS_Store
+# ignore build output and dependencies
+artifacts/
+codegen/
+package/
+cache/
+node_modules/

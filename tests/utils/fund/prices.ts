@@ -1,8 +1,8 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { AddressLike, MockContract } from '@crestproject/crestproject';
-import { ERC20WithFields } from '../../contracts/codegen/ERC20WithFields';
-import { IDerivativePriceSource } from '../../contracts/codegen/IDerivativePriceSource';
-import { IPriceSource } from '../../contracts/codegen/IPriceSource';
+import { ERC20WithFields } from '../../codegen/ERC20WithFields';
+import { IDerivativePriceSource } from '../../codegen/IDerivativePriceSource';
+import { IPriceSource } from '../../codegen/IPriceSource';
 
 export function mockDerivativeRate({
   mockDerivativePriceSource,
