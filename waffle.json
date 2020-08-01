@@ -1,6 +1,6 @@
 {
   "sourceDirectory": "./contracts",
-  "outputDirectory": "./build",
+  "outputDirectory": "./artifacts",
   "compilerVersion": "0.6.8",
   "compilerOptions": {
     "evmVersion": "istanbul",

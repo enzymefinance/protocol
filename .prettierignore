@@ -1,2 +1,4 @@
-# Ignore generated contracts
-/tests/contracts/codegen
+# Ignore generated output
+codegen/
+package/
+artifacts/
