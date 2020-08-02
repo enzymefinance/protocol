@@ -24,6 +24,7 @@ export interface DeploymentConfig {
   owners: {
     mgm: string;
     mtc: string;
+    priceSourceUpdater: string;
   };
   registry: {
     mlnToken: string;
@@ -34,9 +35,12 @@ export interface DeploymentConfig {
   };
   pricefeeds: {
     kyber: {
+      kyberNetworkProxy: string;
+      expectedRateWethQty: BigNumberish;
       quoteAsset: string;
       maxPriceDeviation: BigNumberish;
       maxSpread: BigNumberish;
+      updater: string;
     };
   };
   integratees: {
@@ -104,9 +108,11 @@ const constructors: ContractConstructors = {
     return contracts.KyberPriceFeed.deploy(
       config.deployer,
       Registry,
-      config.integratees.kyber,
-      config.pricefeeds.kyber.maxSpread,
+      config.pricefeeds.kyber.kyberNetworkProxy,
       config.pricefeeds.kyber.quoteAsset,
+      config.pricefeeds.kyber.updater,
+      config.pricefeeds.kyber.expectedRateWethQty,
+      config.pricefeeds.kyber.maxSpread,
       config.pricefeeds.kyber.maxPriceDeviation,
     );
   },
@@ -314,6 +320,7 @@ export async function defaultTestConfig(
     deployerAddress,
     mtcAddress,
     mgmAddress,
+    priceSourceUpdaterAddress,
     ...remainingAccounts
   ] = accounts;
 
@@ -359,11 +366,17 @@ export async function defaultTestConfig(
 
   // Deploy mock contracts for our integrations.
   const [kyber] = await Promise.all([
-    contracts.MockKyberIntegratee.deploy(deployer),
+    contracts.MockKyberIntegratee.deploy(deployer, []),
   ]);
 
   const primitives = [...premined, weth];
+  const primitiveAddresses = primitives.map((item) => item.address);
   const integratees = [kyber];
+
+  // Deploy mock contracts for our price sources.
+  const [kyberPriceSource] = await Promise.all([
+    contracts.MockKyberPriceSource.deploy(deployer, primitiveAddresses),
+  ]);
 
   // Make all accounts and integratees (exchanges) rich so we can test trading.
   const mint = premine.map((token) => {
@@ -389,16 +402,20 @@ export async function defaultTestConfig(
       integratees: {
         kyber,
       },
+      priceSources: {
+        kyber: kyberPriceSource,
+      },
     },
     deployer,
     accounts: remainingAccounts,
-    primitives: primitives.map((item) => item.address),
+    primitives: primitiveAddresses,
     engine: {
       thawingDelay: 2592000,
     },
     owners: {
       mgm: mgmAddress,
       mtc: mtcAddress,
+      priceSourceUpdater: priceSourceUpdaterAddress,
     },
     registry: {
       nativeAsset: weth.address,
@@ -413,9 +430,12 @@ export async function defaultTestConfig(
     },
     pricefeeds: {
       kyber: {
+        expectedRateWethQty: utils.parseEther('1'),
+        kyberNetworkProxy: kyberPriceSource.address,
         maxPriceDeviation: utils.parseEther('0.1'),
         maxSpread: utils.parseEther('0.1'),
         quoteAsset: weth.address,
+        updater: priceSourceUpdaterAddress,
       },
     },
   };
@@ -426,6 +446,9 @@ export interface TestDeploymentConfig extends DeploymentConfig {
   mocks: {
     integratees: {
       kyber: contracts.MockKyberIntegratee;
+    };
+    priceSources: {
+      kyber: contracts.MockKyberPriceSource;
     };
   };
   tokens: {
