@@ -35,6 +35,7 @@
     "test": "yarn jest",
     "format": "prettier --write \"tests/{*,**/*}.ts\"",
     "lint": "prettier --list-different \"tests/{*,**/*}.ts\"",
+    "check": "yarn buidler check",
     "typecheck": "tsc --noEmit",
     "preversion": "yarn build && yarn test",
     "postversion": "yarn package",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@crestproject/crestproject": "^0.0.19",
     "@nomiclabs/buidler": "^1.4.3",
+    "@nomiclabs/buidler-solhint": "^1.3.3",
     "@types/jest": "^26.0.3",
     "ethers": "^5.0.5",
     "fs-extra": "^9.0.1",
