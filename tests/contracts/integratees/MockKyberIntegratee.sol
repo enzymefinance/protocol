@@ -4,6 +4,8 @@ pragma solidity 0.6.8;
 import "./utils/MockIntegrateeBase.sol";
 
 contract MockKyberIntegratee is MockIntegrateeBase {
+    constructor() public MockIntegrateeBase(new address[](0), new uint8[](0), 18) {}
+
     function swapEtherToToken(address _destToken, uint256)
         external
         payable

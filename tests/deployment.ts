@@ -385,7 +385,11 @@ export async function defaultTestConfig(
 
   return {
     tokens,
-    mocks: { kyber },
+    mocks: {
+      integratees: {
+        kyber,
+      },
+    },
     deployer,
     accounts: remainingAccounts,
     primitives: primitives.map((item) => item.address),
@@ -420,7 +424,9 @@ export async function defaultTestConfig(
 export interface TestDeploymentConfig extends DeploymentConfig {
   accounts: string[];
   mocks: {
-    kyber: contracts.MockKyberIntegratee;
+    integratees: {
+      kyber: contracts.MockKyberIntegratee;
+    };
   };
   tokens: {
     [symbol: string]: contracts.PreminedToken | contracts.WETH;
