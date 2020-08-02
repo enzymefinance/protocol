@@ -387,8 +387,8 @@ export async function defaultTestConfig(
     tokens,
     mocks: {
       integratees: {
-        kyber
-      }
+        kyber,
+      },
     },
     deployer,
     accounts: remainingAccounts,
@@ -425,8 +425,8 @@ export interface TestDeploymentConfig extends DeploymentConfig {
   accounts: string[];
   mocks: {
     integratees: {
-      kyber: contracts.MockKyberIntegratee
-    }
+      kyber: contracts.MockKyberIntegratee;
+    };
   };
   tokens: {
     [symbol: string]: contracts.PreminedToken | contracts.WETH;

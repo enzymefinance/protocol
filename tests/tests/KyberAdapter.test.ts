@@ -213,7 +213,9 @@ describe('KyberAdapter', () => {
         fund: { vault },
         system: { kyberAdapter },
         config: {
-          mocks: { integratees: { kyber } },
+          mocks: {
+            integratees: { kyber },
+          },
           tokens: { weth, mln, dai, rep },
         },
       } = await provider.snapshot(snapshot);
