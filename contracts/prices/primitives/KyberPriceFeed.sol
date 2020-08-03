@@ -7,44 +7,55 @@ import "../../integrations/interfaces/IKyberNetworkProxy.sol";
 import "../../registry/IRegistry.sol";
 import "./IPriceSource.sol";
 
-
 /// @title KyberPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Routes external prices to smart contracts from Kyber
 contract KyberPriceFeed is IPriceSource, DSMath {
+    event ExpectedRateWethQtySet(uint256 expectedRateWethQty);
+
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
+
     event MaxSpreadSet(uint256 maxSpread);
-    event PricesUpdated(address[] assets, uint256[] prices);
+
+    event PricesUpdated(address[] assets, uint256[] sanePrices, uint256[] newPrices);
+
     event RegistrySet(address newRegistry);
+
     event UpdaterSet(address updater);
 
     uint256 public constant KYBER_PRECISION = 18;
     uint256 public constant override VALIDITY_INTERVAL = 2 days;
-    address public KYBER_NETWORK_PROXY;
-    address public PRICEFEED_QUOTE_ASSET;
+    address immutable public KYBER_NETWORK_PROXY;
+    address immutable public PRICE_FEED_QUOTE_ASSET;
 
+    uint256 public expectedRateWethQty;
     uint256 public override lastUpdate;
-    uint256 public maxPriceDeviation; // percent, expressed as a uint256 (fraction of 10^18)
+    uint256 public maxPriceDeviation; // percent (fraction of 10^18)
     uint256 public maxSpread;
     address public updater;
-    mapping (address => uint256) public prices; // TODO: Prices should be structs with a price, timestamp, and possibly validity
+    mapping (address => uint256) public prices;
     IRegistry public registry;
 
     constructor(
         address _registry,
         address _kyberNetworkProxy,
+        address _priceFeedQuoteAsset,
+        address _updater,
+        uint256 _expectedRateWethQty,
         uint256 _maxSpread,
-        address _quoteAsset,
         uint256 _maxPriceDeviation
     )
         public
     {
-        registry = IRegistry(_registry);
+        expectedRateWethQty = _expectedRateWethQty;
         KYBER_NETWORK_PROXY = _kyberNetworkProxy;
         maxSpread = _maxSpread;
-        PRICEFEED_QUOTE_ASSET = _quoteAsset;
+        PRICE_FEED_QUOTE_ASSET = _priceFeedQuoteAsset;
         maxPriceDeviation = _maxPriceDeviation;
-        updater = registry.owner();
+        registry = IRegistry(_registry);
+        updater = _updater;
+
+        prices[_priceFeedQuoteAsset] = 10 ** KYBER_PRECISION;
     }
 
     modifier onlyRegistryOwner() {
@@ -54,78 +65,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Update prices for registered assets
-    /// @dev Stores zero as a convention for invalid price
-    /// @param _saneAssets Asset addresses (must match assets array from getRegisteredPrimitives)
-    /// @param _sanePrices Asset price hints (checked against prices from Kyber)
-    function update(
-        address[] calldata _saneAssets,
-        uint256[] calldata _sanePrices
-    ) external {
-        require(
-            msg.sender == registry.owner() || msg.sender == updater,
-            "update: Only registry owner or updater can call"
-        );
-        address[] memory registeredAssets = registry.getRegisteredPrimitives();
-        require(
-            keccak256(abi.encodePacked(_saneAssets)) ==
-            keccak256(abi.encodePacked(registeredAssets)),
-            "update: Passed and registered assets are not identical"
-        );
-        uint256[] memory newPrices = new uint256[](_saneAssets.length);
-        for (uint256 i; i < _saneAssets.length; i++) {
-            bool isValid;
-            uint256 kyberPrice;
-            if (_saneAssets[i] == registry.nativeAsset()) {
-                isValid = true;
-                kyberPrice = 1 ether;
-            } else {
-                (kyberPrice, isValid) = getLiveRate(_saneAssets[i], PRICEFEED_QUOTE_ASSET);
-            }
-            require(
-                __priceIsSane(kyberPrice, _sanePrices[i]),
-                "update: Kyber price deviates too much from maxPriceDeviation"
-            );
-            newPrices[i] = isValid ? kyberPrice : 0;
-            prices[_saneAssets[i]] = newPrices[i];
-        }
-        lastUpdate = block.timestamp;
-        emit PricesUpdated(_saneAssets, newPrices);
-    }
-
-    /// @notice Update maximum price deviation between price hints and Kyber price
-    /// @notice Price deviation becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
-    /// @param _newMaxPriceDeviation New maximum price deviation
-    function setMaxPriceDeviation(uint256 _newMaxPriceDeviation) external onlyRegistryOwner {
-        maxPriceDeviation = _newMaxPriceDeviation;
-        emit MaxPriceDeviationSet(_newMaxPriceDeviation);
-    }
-
-    /// @notice Update maximum spread for prices derived from Kyber
-    /// @notice Max spread becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
-    /// @param _newMaxSpread New maximum spread
-    function setMaxSpread(uint256 _newMaxSpread) external onlyRegistryOwner {
-        maxSpread = _newMaxSpread;
-        emit MaxSpreadSet(_newMaxSpread);
-    }
-
-    /// @notice Update this feed's Registry reference
-    /// @param _newRegistry New Registry this feed should point to
-    function setRegistry(address _newRegistry) external onlyRegistryOwner {
-        registry = IRegistry(_newRegistry);
-        emit RegistrySet(_newRegistry);
-    }
-
-    /// @notice Update this feed's designated updater
-    /// @param _newUpdater New designated updater for this feed
-    function setUpdater(address _newUpdater) external onlyRegistryOwner {
-        updater = _newUpdater;
-        emit UpdaterSet(_newUpdater);
-    }
-
-    // EXTERNAL VIEW FUNCTIONS
-
-    /// @notice Returns rate and validity for some pair of assets using pricefeed prices
+    /// @notice Returns rate and validity for some pair of assets using price feed prices
     /// @param _baseAsset Address of base asset from the pair
     /// @param _quoteAsset Address of quote asset from the pair
     /// @return rate_ The price of _baseAsset in terms of _quoteAsset
@@ -162,8 +102,8 @@ contract KyberPriceFeed is IPriceSource, DSMath {
 
         isValid_ = hasValidPrice(_baseAsset) && hasValidPrice(_quoteAsset);
 
-        // If diff quote asset from pricefeed's quote asset, convert value
-        if (_quoteAsset != PRICEFEED_QUOTE_ASSET) {
+        // If diff quote asset from price feed's quote asset, convert value
+        if (_quoteAsset != PRICE_FEED_QUOTE_ASSET) {
             rate_ = mul(
                 baseAssetPrice,
                 10 ** uint256(ERC20WithFields(_quoteAsset).decimals())
@@ -172,6 +112,88 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         else {
             rate_ = baseAssetPrice;
         }
+    }
+
+    /// @notice Update the srcQty to use in getExpectedRate(), in terms of WETH
+    /// @param _expectedRateWethQty New srcQty, in terms of WETH
+    function setExpectedRateWethQty(uint256 _expectedRateWethQty) external onlyRegistryOwner {
+        expectedRateWethQty = _expectedRateWethQty;
+        emit ExpectedRateWethQtySet(_expectedRateWethQty);
+    }
+
+    /// @notice Update maximum price deviation between price hints and Kyber price
+    /// @notice Price deviation becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
+    /// @param _newMaxPriceDeviation New maximum price deviation
+    function setMaxPriceDeviation(uint256 _newMaxPriceDeviation) external onlyRegistryOwner {
+        maxPriceDeviation = _newMaxPriceDeviation;
+        emit MaxPriceDeviationSet(_newMaxPriceDeviation);
+    }
+
+    /// @notice Update maximum spread for prices derived from Kyber
+    /// @notice Max spread becomes a % when divided by 10^18 (e.g. 10^17 becomes 10%)
+    /// @param _newMaxSpread New maximum spread
+    function setMaxSpread(uint256 _newMaxSpread) external onlyRegistryOwner {
+        maxSpread = _newMaxSpread;
+        emit MaxSpreadSet(_newMaxSpread);
+    }
+
+    /// @notice Update this feed's Registry reference
+    /// @param _newRegistry New Registry this feed should point to
+    function setRegistry(address _newRegistry) external onlyRegistryOwner {
+        registry = IRegistry(_newRegistry);
+        emit RegistrySet(_newRegistry);
+    }
+
+    /// @notice Update this feed's designated updater
+    /// @param _newUpdater New designated updater for this feed
+    function setUpdater(address _newUpdater) external onlyRegistryOwner {
+        updater = _newUpdater;
+        emit UpdaterSet(_newUpdater);
+    }
+
+    /// @notice Update prices for registered assets
+    /// @dev Stores zero as a convention for invalid price
+    /// @param _saneAssets Asset addresses (must match assets array from getRegisteredPrimitives)
+    /// @param _sanePrices Asset price hints (checked against prices from Kyber)
+    function update(address[] calldata _saneAssets, uint256[] calldata _sanePrices) external {
+        require(
+            msg.sender == registry.owner() || msg.sender == updater,
+            "update: Only registry owner or updater can call"
+        );
+
+        address[] memory registeredAssets = registry.getRegisteredPrimitives();
+        require(
+            keccak256(abi.encodePacked(_saneAssets)) ==
+            keccak256(abi.encodePacked(registeredAssets)),
+            "update: Passed and registered assets are not identical"
+        );
+
+        uint256[] memory newPrices = new uint256[](_saneAssets.length);
+        for (uint256 i; i < _saneAssets.length; i++) {
+            if (_saneAssets[i] == PRICE_FEED_QUOTE_ASSET) {
+                newPrices[i] = 10 ** KYBER_PRECISION;
+                continue;
+            }
+
+            (uint256 kyberPrice,) = getLiveRate(_saneAssets[i], PRICE_FEED_QUOTE_ASSET);
+
+            // Allow for prices that are expected to be 0
+            if (kyberPrice == 0 && _sanePrices[i] == 0) {
+                prices[_saneAssets[i]] = 0;
+                continue;
+            }
+            require(
+                __priceIsSane(kyberPrice, _sanePrices[i]),
+                "update: Kyber price deviates too much from maxPriceDeviation"
+            );
+
+            newPrices[i] = kyberPrice;
+            prices[_saneAssets[i]] = newPrices[i];
+        }
+
+        lastUpdate = block.timestamp;
+
+        emit PricesUpdated(_saneAssets, _sanePrices, newPrices);
     }
 
     // PUBLIC FUNCTIONS
@@ -200,12 +222,12 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         (bidRate,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
             __getKyberMaskAsset(_baseAsset),
             __getKyberMaskAsset(_quoteAsset),
-            1
+            __calcSrcQtyForExpectedRateLookup(_baseAsset)
         );
         (bidRateOfReversePair,) = IKyberNetworkProxy(KYBER_NETWORK_PROXY).getExpectedRate(
             __getKyberMaskAsset(_quoteAsset),
             __getKyberMaskAsset(_baseAsset),
-            1
+            __calcSrcQtyForExpectedRateLookup(_quoteAsset)
         );
 
         // Return early and avoid revert
@@ -252,10 +274,23 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         isValid_ = prices[_asset] != 0 && isRegistered && isFresh;
     }
 
-    // INTERNAL FUNCTIONS
+    // PRIVATE FUNCTIONS
+
+    /// @dev Helper to calculate the srcQty with which to call getExpectedRate()
+    function __calcSrcQtyForExpectedRateLookup(address _srcAsset) private view returns (uint256) {
+        uint256 lastSrcAssetPrice = prices[_srcAsset];
+        // If there has not been a price update yet, use 1 unit of the srcAsset
+        if (lastSrcAssetPrice == 0) {
+            return 10 ** uint256(ERC20WithFields(_srcAsset).decimals());
+        }
+        return mul(
+            expectedRateWethQty,
+            10 ** uint256(ERC20WithFields(_srcAsset).decimals())
+        ) / lastSrcAssetPrice;
+    }
 
     /// @dev Return Kyber ETH asset symbol if _asset is WETH
-    function __getKyberMaskAsset(address _asset) internal view returns (address) {
+    function __getKyberMaskAsset(address _asset) private view returns (address) {
         if (_asset == registry.nativeAsset()) {
             return address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
         }
@@ -267,7 +302,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         uint256 _priceFromKyber,
         uint256 _sanePrice
     )
-        internal
+        private
         view
         returns (bool)
     {

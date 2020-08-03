@@ -32,6 +32,15 @@ abstract contract RateProviderBase {
         return decimals;
     }
 
+    function __getRate(address _baseAsset, address _quoteAsset)
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
+        return assetToAssetRate[_baseAsset][_quoteAsset];
+    }
+
     function setRates(
         address[] calldata _baseAssets,
         address[] calldata _quoteAssets,

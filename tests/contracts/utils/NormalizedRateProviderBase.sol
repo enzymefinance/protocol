@@ -10,6 +10,7 @@ abstract contract NormalizedRateProviderBase is RateProviderBase {
     uint256 immutable public RATE_PRECISION;
 
     constructor(
+        address[] memory _defaultRateAssets,
         address[] memory _specialAssets,
         uint8[] memory _specialAssetDecimals,
         uint256 _ratePrecision
@@ -18,6 +19,13 @@ abstract contract NormalizedRateProviderBase is RateProviderBase {
         RateProviderBase(_specialAssets, _specialAssetDecimals)
     {
         RATE_PRECISION = _ratePrecision;
+
+        for (uint256 i = 0; i < _defaultRateAssets.length; i++) {
+            for (uint256 j = i + 1; j < _defaultRateAssets.length; j++) {
+                assetToAssetRate[_defaultRateAssets[i]][_defaultRateAssets[j]] = 10 ** _ratePrecision;
+                assetToAssetRate[_defaultRateAssets[j]][_defaultRateAssets[i]] = 10 ** _ratePrecision;
+            }
+        }
     }
 
     // TODO: move to main contracts' utils for use with prices
@@ -35,27 +43,5 @@ abstract contract NormalizedRateProviderBase is RateProviderBase {
             .mul(_baseAssetAmount)
             .mul(10 ** _quoteAssetDecimals)
             .div(10 ** (RATE_PRECISION.add(_baseAssetDecimals)));
-    }
-
-    function __getRate(address _baseAsset, address _quoteAsset) internal view returns (uint256) {
-        // 1. Return constant if base asset is quote asset
-        if (_baseAsset == _quoteAsset) {
-            return 10 ** RATE_PRECISION;
-        }
-
-        // 2. Check for a direct rate
-        uint256 directRate = assetToAssetRate[_baseAsset][_quoteAsset];
-        if (directRate > 0) {
-            return directRate;
-        }
-
-        // 3. Check for inverse direct rate
-        uint256 iDirectRate = assetToAssetRate[_quoteAsset][_baseAsset];
-        if (iDirectRate > 0) {
-            return 10 ** (RATE_PRECISION.mul(2)).div(iDirectRate);
-        }
-
-        // 4. Else return 1
-        return 10 ** RATE_PRECISION;
     }
 }

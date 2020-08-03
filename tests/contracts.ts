@@ -39,3 +39,4 @@ export { ERC20 } from './codegen/ERC20';
 export { WETH } from './codegen/WETH';
 export { PreminedToken } from './codegen/PreminedToken';
 export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';
+export { MockKyberPriceSource } from './codegen/MockKyberPriceSource';
