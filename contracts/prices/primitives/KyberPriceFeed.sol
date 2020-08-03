@@ -291,7 +291,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
 
     /// @dev Return Kyber ETH asset symbol if _asset is WETH
     function __getKyberMaskAsset(address _asset) private view returns (address) {
-        if (_asset == registry.nativeAsset()) {
+        if (_asset == registry.WETH_TOKEN()) {
             return address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
         }
         return _asset;

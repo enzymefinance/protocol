@@ -26,7 +26,7 @@ contract EngineAdapter is AdapterBase {
         return "MELON_ENGINE";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
@@ -52,12 +52,12 @@ contract EngineAdapter is AdapterBase {
             Registry registry = Registry(__getRegistry());
 
             spendAssets_ = new address[](1);
-            spendAssets_[0] = registry.mlnToken();
+            spendAssets_[0] = registry.MLN_TOKEN();
             spendAssetAmounts_ = new uint256[](1);
             spendAssetAmounts_[0] = mlnTokenAmount;
 
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = registry.nativeAsset();
+            incomingAssets_[0] = registry.WETH_TOKEN();
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minNativeAssetAmount;
         }
@@ -81,13 +81,13 @@ contract EngineAdapter is AdapterBase {
 
         // Execute fill
         Registry registry = Registry(__getRegistry());
-        IERC20(registry.mlnToken()).approve(EXCHANGE, mlnTokenAmount);
+        IERC20(registry.MLN_TOKEN()).approve(EXCHANGE, mlnTokenAmount);
         uint256 preEthBalance = payable(address(this)).balance;
         IEngine(EXCHANGE).sellAndBurnMln(mlnTokenAmount);
         uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
         // Return ETH to WETH
-        WETH(payable(registry.nativeAsset())).deposit{value: ethFilledAmount}();
+        WETH(payable(registry.WETH_TOKEN())).deposit{value: ethFilledAmount}();
     }
 
     // PRIVATE FUNCTIONS
