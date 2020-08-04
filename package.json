@@ -1,13 +1,10 @@
 {
   "name": "@melonproject/protocol",
-  "version": "2.0.0-prealpha.0",
+  "version": "2.0.0",
   "description": "Technology Regulated and Operated Investment Funds",
   "author": "Melon Council DAO <team@meloncouncil.io>",
   "license": "GPL-3.0",
   "homepage": "https://melonprotocol.com",
-  "publishConfig": {
-    "access": "public"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/melonproject/protocol.git"
@@ -36,10 +33,7 @@
     "format": "prettier --write \"tests/{*,**/*}.ts\"",
     "lint": "prettier --list-different \"tests/{*,**/*}.ts\"",
     "check": "yarn buidler check",
-    "typecheck": "tsc --noEmit",
-    "preversion": "yarn build && yarn test",
-    "postversion": "yarn package",
-    "release": "yarn publish package --new-version $npm_package_version"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.1.0"
