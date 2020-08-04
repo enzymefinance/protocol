@@ -34,7 +34,29 @@ describe('Registry', () => {
       await expect(tx).resolves.toBe(mgm);
     });
 
-    it.todo('check mln and nativeAsset (once added to constructor');
+    it('check mln is set', async () => {
+      const {
+        system: { registry },
+        config: {
+          registry: { mlnToken },
+        },
+      } = await provider.snapshot(snapshot);
+
+      tx = registry.MLN_TOKEN();
+      await expect(tx).resolves.toBe(mlnToken);
+    });
+
+    it('check weth is set', async () => {
+      const {
+        system: { registry },
+        config: {
+          registry: { wethToken },
+        },
+      } = await provider.snapshot(snapshot);
+
+      tx = registry.WETH_TOKEN();
+      await expect(tx).resolves.toBe(wethToken);
+    });
   });
 
   describe('transferOwnership', () => {
