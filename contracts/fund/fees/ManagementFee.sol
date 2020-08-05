@@ -29,7 +29,7 @@ contract ManagementFee is DSMath {
         return feeInShares;
     }
 
-    function initializeForUser(uint feeRate, uint feePeriod, address denominationAsset) external {
+    function initializeForUser(uint feeRate, uint, address) external {
         require(lastPayoutTime[msg.sender] == 0);
         managementFeeRate[msg.sender] = feeRate;
         lastPayoutTime[msg.sender] = block.timestamp;

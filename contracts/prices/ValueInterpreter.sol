@@ -12,7 +12,7 @@ import "../registry/IRegistry.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Interprets price sources to yield values across asset pairs
 contract ValueInterpreter is IValueInterpreter, DSMath {
-    address REGISTRY;
+    address public REGISTRY;
 
     constructor(address _registry) public {
         REGISTRY = _registry;

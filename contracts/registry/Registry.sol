@@ -14,7 +14,7 @@ import "./utils/MelonCouncilOwnable.sol";
 /// infrastructural contracts
 /// @dev This contract should be kept relatively abstract,
 /// so that it requires minimal changes as the protocol evolves
-contract Registry is MelonCouncilOwnable {
+contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-count
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event PrimitiveAdded (address primitive);
