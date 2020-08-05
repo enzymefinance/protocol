@@ -16,10 +16,7 @@ async function snapshot(provider: BuidlerProvider) {
   const deployment = await configureTestDeployment()(provider);
   const {
     system: { kyberAdapter, sharesRequestor, fundFactory },
-    config: {
-      deployer,
-      tokens: { weth },
-    },
+    config: { deployer, weth },
   } = deployment;
 
   // Deploy fund
@@ -73,7 +70,8 @@ describe('KyberAdapter', () => {
       const {
         system: { kyberAdapter },
         config: {
-          tokens: { mln, weth },
+          weth,
+          tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
 
@@ -89,7 +87,8 @@ describe('KyberAdapter', () => {
       const {
         system: { kyberAdapter },
         config: {
-          tokens: { mln, weth },
+          weth,
+          tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
 
@@ -135,7 +134,8 @@ describe('KyberAdapter', () => {
         fund: { vault },
         system: { kyberAdapter },
         config: {
-          tokens: { mln, weth },
+          weth,
+          tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
       const amount = utils.parseEther('1');
@@ -164,7 +164,8 @@ describe('KyberAdapter', () => {
         fund: { vault },
         system: { kyberAdapter },
         config: {
-          tokens: { mln, weth },
+          weth,
+          tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
 
@@ -186,9 +187,7 @@ describe('KyberAdapter', () => {
       const {
         fund: { vault },
         system: { kyberAdapter },
-        config: {
-          tokens: { weth },
-        },
+        config: { weth },
       } = await provider.snapshot(snapshot);
       const amount = utils.parseEther('1');
       const takeOrderArgs = await kyberTakeOrderArgs(
@@ -216,7 +215,8 @@ describe('KyberAdapter', () => {
           mocks: {
             integratees: { kyber },
           },
-          tokens: { weth, mln, dai, rep },
+          weth,
+          tokens: { mln, dai, rep },
         },
       } = await provider.snapshot(snapshot);
 

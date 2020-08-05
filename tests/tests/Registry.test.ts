@@ -38,24 +38,22 @@ describe('Registry', () => {
       const {
         system: { registry },
         config: {
-          registry: { mlnToken },
+          tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
 
       tx = registry.MLN_TOKEN();
-      await expect(tx).resolves.toBe(mlnToken);
+      await expect(tx).resolves.toBe(mln.address);
     });
 
     it('check weth is set', async () => {
       const {
         system: { registry },
-        config: {
-          registry: { wethToken },
-        },
+        config: { weth },
       } = await provider.snapshot(snapshot);
 
       tx = registry.WETH_TOKEN();
-      await expect(tx).resolves.toBe(wethToken);
+      await expect(tx).resolves.toBe(weth.address);
     });
   });
 

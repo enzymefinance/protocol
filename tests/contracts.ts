@@ -20,6 +20,7 @@ export { SharesFactory } from './codegen/SharesFactory';
 export { VaultFactory } from './codegen/VaultFactory';
 
 // Adapters
+export { ChaiAdapter } from './codegen/ChaiAdapter';
 export { KyberAdapter } from './codegen/KyberAdapter';
 export { EngineAdapter } from './codegen/EngineAdapter';
 export { UniswapV2Adapter } from './codegen/UniswapV2Adapter';
@@ -38,5 +39,7 @@ export { PriceTolerance } from './codegen/PriceTolerance';
 export { ERC20 } from './codegen/ERC20';
 export { WETH } from './codegen/WETH';
 export { PreminedToken } from './codegen/PreminedToken';
+export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
+export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
 export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';
 export { MockKyberPriceSource } from './codegen/MockKyberPriceSource';

@@ -312,7 +312,8 @@ describe('Engine', () => {
         },
         config: {
           deployer,
-          tokens: { weth, mln },
+          weth,
+          tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
 

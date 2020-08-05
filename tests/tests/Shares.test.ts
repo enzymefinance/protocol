@@ -38,10 +38,7 @@ describe('Shares', () => {
     it('sets initial storage values', async () => {
       const {
         hub,
-        config: {
-          deployer,
-          tokens: { weth },
-        },
+        config: { deployer, weth },
       } = await provider.snapshot(snapshot);
 
       const name = 'My Shares';
