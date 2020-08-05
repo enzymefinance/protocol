@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
 import "../../../dependencies/libs/EnumerableSet.sol";
@@ -12,7 +13,7 @@ abstract contract AddressListPolicyMixin {
 
     event AddressesRemoved(address policyManager, address[] items);
 
-    mapping (address => EnumerableSet.AddressSet) policyManagerToList;
+    mapping (address => EnumerableSet.AddressSet) private policyManagerToList;
 
     // EXTERNAL FUNCTIONS
 

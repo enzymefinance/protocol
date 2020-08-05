@@ -12,7 +12,7 @@ import "../registry/IRegistry.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Interprets price sources to yield values across asset pairs
 contract ValueInterpreter is IValueInterpreter, DSMath {
-    address REGISTRY;
+    address public REGISTRY;
 
     constructor(address _registry) public {
         REGISTRY = _registry;
@@ -78,12 +78,12 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         }
 
         // Else use derivative oracle to get value via underlying assets
-        else if (registry.derivativeToPriceSource(_baseAsset) != address(0)) {
+        if (registry.derivativeToPriceSource(_baseAsset) != address(0)) {
             return __calcDerivativeValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 
         // If not in Registry as an asset or derivative
-        else return (0, false);
+        return (0, false);
     }
 
     /// @notice Helper to covert from one asset to another with a given conversion rate
@@ -123,7 +123,7 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
             ) = __calcAssetValue(underlyings[i], underlyingAmount, _quoteAsset, _useLiveRate);
 
             if (!underlyingIsValid) isValid_ = false;
-            add(value_, underlyingValue);
+            value_ = add(value_, underlyingValue);
         }
     }
 

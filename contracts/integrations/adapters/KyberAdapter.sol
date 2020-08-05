@@ -2,13 +2,14 @@
 pragma solidity 0.6.8;
 
 import "../../dependencies/WETH.sol";
+import "../../utils/MathHelpers.sol";
 import "../interfaces/IKyberNetworkProxy.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title KyberAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for interacting with Kyber Network
-contract KyberAdapter is AdapterBase {
+contract KyberAdapter is AdapterBase, MathHelpers {
     address immutable public EXCHANGE;
 
     constructor(address _registry, address _exchange) public AdapterBase(_registry) {
@@ -26,7 +27,7 @@ contract KyberAdapter is AdapterBase {
         return "KYBER_NETWORK";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
@@ -90,15 +91,21 @@ contract KyberAdapter is AdapterBase {
         require(outgoingAsset != address(0), "takeOrder: outgoingAsset cannot be empty");
 
         // Execute fill
-        address nativeAsset = Registry(__getRegistry()).nativeAsset();
+        uint256 minExpectedRate = __calcRate(
+            outgoingAsset,
+            outgoingAssetAmount,
+            minIncomingAssetAmount
+        );
+
+        address nativeAsset = Registry(__getRegistry()).WETH_TOKEN();
         if (outgoingAsset == nativeAsset) {
-            __swapNativeAssetToToken(incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount);
+            __swapNativeAssetToToken(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
         }
         else if (incomingAsset == nativeAsset) {
-            __swapTokenToNativeAsset(incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount);
+            __swapTokenToNativeAsset(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
         }
         else {
-            __swapTokenToToken(incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount);
+            __swapTokenToToken(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
         }
     }
 
@@ -129,9 +136,9 @@ contract KyberAdapter is AdapterBase {
     /// @dev Executes a swap of ETH to ERC20
     function __swapNativeAssetToToken(
         address _incomingAsset,
-        uint256 _minIncomingAssetAmount,
         address _outgoingAsset,
-        uint256 _outgoingAssetAmount
+        uint256 _outgoingAssetAmount,
+        uint256 _minExpectedRate
     )
         private
     {
@@ -144,16 +151,16 @@ contract KyberAdapter is AdapterBase {
             {value: _outgoingAssetAmount}
             (
                 _incomingAsset,
-                _minIncomingAssetAmount
+                _minExpectedRate
             );
     }
 
     /// @dev Executes a swap of ERC20 to ETH
     function __swapTokenToNativeAsset(
         address _incomingAsset,
-        uint256 _minIncomingAssetAmount,
         address _outgoingAsset,
-        uint256 _outgoingAssetAmount
+        uint256 _outgoingAssetAmount,
+        uint256 _minExpectedRate
     )
         private
     {
@@ -163,7 +170,7 @@ contract KyberAdapter is AdapterBase {
         IKyberNetworkProxy(EXCHANGE).swapTokenToEther(
             _outgoingAsset,
             _outgoingAssetAmount,
-            _minIncomingAssetAmount
+            _minExpectedRate
         );
         uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
 
@@ -174,9 +181,9 @@ contract KyberAdapter is AdapterBase {
     /// @dev Executes a swap of ERC20 to ERC20
     function __swapTokenToToken(
         address _incomingAsset,
-        uint256 _minIncomingAssetAmount,
         address _outgoingAsset,
-        uint256 _outgoingAssetAmount
+        uint256 _outgoingAssetAmount,
+        uint256 _minExpectedRate
     )
         private
     {
@@ -185,7 +192,7 @@ contract KyberAdapter is AdapterBase {
             _outgoingAsset,
             _outgoingAssetAmount,
             _incomingAsset,
-            _minIncomingAssetAmount
+            _minExpectedRate
         );
     }
 }

@@ -207,14 +207,16 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
             // Return incentive to sender
             msg.sender.transfer(REGISTRY.incentive());
         }
-        // Create the Request and take custody of investment asset
         else {
+            // Create the Request and take custody of investment asset
             Request memory request = Request({
                 investmentAmount: _investmentAmount,
                 minSharesQuantity: _minSharesQuantity,
                 timestamp: block.timestamp,
                 incentiveFee: REGISTRY.incentive()
             });
+
+            // solhint-disable-next-line reentrancy
             ownerToRequestByFund[msg.sender][_hub] = request;
             __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
 

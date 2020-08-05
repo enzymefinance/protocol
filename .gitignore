@@ -1,5 +1,19 @@
-node_modules/
+# ignore log output
 *.log
 
-# ignore built code
-build/
+# ignore all dotfiles except the whitelisted ones
+.*
+!.gitignore
+!.gitattributes
+!.prettierignore
+!.prettierrc
+!.travis.yml
+!.solhint.json
+!.solhintignore
+
+# ignore build output and dependencies
+artifacts/
+codegen/
+package/
+cache/
+node_modules/

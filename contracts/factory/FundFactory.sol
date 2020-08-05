@@ -61,8 +61,8 @@ contract FundFactory is AmguConsumer {
         address _policyManagerFactory,
         address _registry
     )
-        AmguConsumer(_registry)
         public
+        AmguConsumer(_registry)
     {
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         sharesFactory = ISharesFactory(_sharesFactory);

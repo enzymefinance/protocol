@@ -14,7 +14,7 @@ import "./utils/MelonCouncilOwnable.sol";
 /// infrastructural contracts
 /// @dev This contract should be kept relatively abstract,
 /// so that it requires minimal changes as the protocol evolves
-contract Registry is MelonCouncilOwnable {
+contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-count
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event PrimitiveAdded (address primitive);
@@ -41,10 +41,6 @@ contract Registry is MelonCouncilOwnable {
 
     event MGMChanged (address MGM);
 
-    event MlnTokenChanged (address mlnToken);
-
-    event NativeAssetChanged (address nativeAsset);
-
     event PolicyAdded (address indexed policy, string indexed identifier);
 
     event PolicyRemoved (address indexed policy, string indexed identifier);
@@ -54,6 +50,10 @@ contract Registry is MelonCouncilOwnable {
     event SharesRequestorChanged(address sharesRequestor);
 
     event ValueInterpreterChanged(address valueInterpreter);
+
+    // Constants
+    address immutable public MLN_TOKEN;
+    address immutable public WETH_TOKEN;
 
     // Assets
     // Primitives are tokens that have an explicit value based on our primary pricefeed, e.g., Dai
@@ -80,13 +80,21 @@ contract Registry is MelonCouncilOwnable {
     address public fundFactory;
     uint256 public incentive;
     address public priceSource;
-    address public mlnToken;
-    address public nativeAsset;
     address public sharesRequestor;
     address public valueInterpreter;
 
-    constructor(address _MTC, address _MGM) public MelonCouncilOwnable(_MTC, _MGM) {
+    constructor(
+        address _MTC,
+        address _MGM,
+        address _mlnToken,
+        address _wethToken
+    )
+        public
+        MelonCouncilOwnable(_MTC, _MGM)
+    {
         incentive = 10 finney;
+        MLN_TOKEN = _mlnToken;
+        WETH_TOKEN = _wethToken;
     }
 
     // ASSETS
@@ -352,20 +360,6 @@ contract Registry is MelonCouncilOwnable {
     function setPriceSource(address _priceSource) external onlyOwner {
         priceSource = _priceSource;
         emit PriceSourceChanged(_priceSource);
-    }
-
-    /// @notice Set the mlnToken storage var
-    /// @param _mlnToken The MlnToken contract to set
-    function setMlnToken(address _mlnToken) external onlyOwner {
-        mlnToken = _mlnToken;
-        emit MlnTokenChanged(_mlnToken);
-    }
-
-    /// @notice Set the nativeAsset storage var
-    /// @param _nativeAsset The native asset contract to set
-    function setNativeAsset(address _nativeAsset) external onlyOwner {
-        nativeAsset = _nativeAsset;
-        emit NativeAssetChanged(_nativeAsset);
     }
 
     /// @notice Set the engine storage var

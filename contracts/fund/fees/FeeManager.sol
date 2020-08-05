@@ -31,8 +31,8 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
         uint[] memory _rates,
         uint[] memory _periods
     )
-        Spoke(_hub)
         public
+        Spoke(_hub)
     {
         for (uint i = 0; i < _fees.length; i++) {
             require(

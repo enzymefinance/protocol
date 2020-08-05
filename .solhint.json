@@ -1,12 +1,13 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "max-line-length": ["error", 99],
-    "separate-by-one-line-in-contract": "error",
-    "two-lines-top-level-separator": "error",
-    "func-order": "error",
-    "reason-string": ["error"],
-    "constructor-syntax": "error",
-    "compiler-version": "0.5.13"
+    "compiler-version": ["error", "0.6.8"],
+    "no-empty-blocks": "off",
+    "not-rely-on-time": "off",
+    "avoid-low-level-calls": "off",
+    "no-inline-assembly": "off",
+    "var-name-mixedcase": "off",
+    "func-name-mixedcase": "off",
+    "reason-string": ["off"]
   }
 }

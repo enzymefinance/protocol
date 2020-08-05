@@ -1,6 +1,6 @@
 {
   "name": "@melonproject/protocol",
-  "version": "1.0.12",
+  "version": "2.0.0",
   "description": "Technology Regulated and Operated Investment Funds",
   "author": "Melon Council DAO <team@meloncouncil.io>",
   "license": "GPL-3.0",
@@ -20,36 +20,54 @@
     "Solidity"
   ],
   "scripts": {
-    "download-thirdparty": "node scripts/download-thirdparty",
-    "compile": "truffle compile",
-    "postcompile": "yarn download-thirdparty",
-    "deploy": "truffle migrate --skip-dry-run",
-    "devchain": "node tests/ganache/fork",
-    "lint": "solhint src/**/*.sol",
-    "test": "yarn jest --config tests/jest.config.js"
+    "codegen": "yarn codegen:contracts && yarn codegen:tests",
+    "codegen:contracts": "crestproject codegen \"artifacts/*.json\" tests/codegen",
+    "codegen:tests": "crestproject codegen \"tests/artifacts/*.json\" tests/codegen",
+    "compile": "yarn compile:contracts && yarn compile:tests",
+    "compile:contracts": "buidler compile",
+    "compile:tests": "buidler compile --config tests/buidler.config.js",
+    "build": "yarn compile && yarn codegen",
+    "prepackage": "rimraf package",
+    "package": "tsc && node scripts/package",
+    "test": "yarn jest",
+    "format": "prettier --write \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
+    "lint": "yarn lint:prettier && yarn lint:solhint",
+    "lint:prettier": "prettier --list-different \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
+    "lint:solhint": "solhint --max-warnings 0 \"tests/**/*.sol\" \"contracts/**/*.sol\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
-    "@0x/order-utils": "^8.5.0-beta.4",
-    "@0x/order-utils-v2": "npm:@0x/order-utils@8.4.0",
-    "@0x/subproviders": "^6.0.3",
-    "@0x/types": "^2.5.0-beta.3",
-    "@0x/types-v2": "npm:@0x/types@2.4.3",
-    "@0x/utils": "^5.1.2",
-    "@airswap/order-utils": "^0.3.20",
-    "@openzeppelin/contracts": "3.0.1",
-    "ganache-core": "^2.11.0-beta.0",
+    "@crestproject/crestproject": "^0.0.19",
+    "@nomiclabs/buidler": "^1.4.3",
+    "@types/jest": "^26.0.3",
+    "ethers": "^5.0.5",
+    "fs-extra": "^9.0.1",
     "jest": "^26.1.0",
-    "jest-matcher-utils": "^26.1.0",
-    "request-promise": "^4.2.2",
-    "solhint": "^3.0.0",
-    "truffle": "^5.1.32",
-    "ts-jest": "^26.1.1",
-    "typescript": "^3.9.5",
-    "web3": "1.2.9",
-    "web3-eth-abi": "1.2.9",
-    "web3-utils": "1.2.9"
+    "prettier": "^2.0.5",
+    "prettier-plugin-solidity": "^1.0.0-alpha.55",
+    "rimraf": "^3.0.2",
+    "solhint": "^3.1.0",
+    "ts-jest": "^26.1.4",
+    "typescript": "^4.0.0-beta"
   },
-  "engines": {
-    "node": "^12"
+  "jest": {
+    "projects": [
+      {
+        "preset": "@crestproject/crestproject",
+        "roots": [
+          "<rootDir>/tests"
+        ],
+        "globals": {
+          "ts-jest": {
+            "diagnostics": {
+              "warnOnly": true
+            }
+          }
+        }
+      }
+    ]
   }
 }

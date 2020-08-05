@@ -25,7 +25,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
         return "ZERO_EX_V3";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
@@ -50,7 +50,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             ) = __decodeTakeOrderArgs(_encodedCallArgs);
             IZeroExV3.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
             address makerAsset = __getAssetAddress(order.makerAssetData);
-            address protocolFeeAsset = Registry(REGISTRY).nativeAsset(); // TODO: store as immutable var?
+            address protocolFeeAsset = Registry(REGISTRY).WETH_TOKEN(); // TODO: store as immutable var?
             uint256 protocolFee = __calcProtocolFeeAmount();
             address takerFeeAsset = __getAssetAddress(order.takerFeeAssetData);
             uint256 takerFee = __calcRelativeQuantity(
@@ -60,7 +60,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             ); // fee calculated relative to taker fill amount
 
             // Format spend assets
-            address[] memory rawSpendAssets = new address[](3); 
+            address[] memory rawSpendAssets = new address[](3);
             rawSpendAssets[0] = __getAssetAddress(order.takerAssetData);
             rawSpendAssets[1] = protocolFeeAsset;
             rawSpendAssets[2] = takerFeeAsset;
@@ -134,9 +134,9 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
         uint256 protocolFee = __calcProtocolFeeAmount();
         if (protocolFee > 0) {
             __increaseApproval(
-                Registry(REGISTRY).nativeAsset(),
+                Registry(REGISTRY).WETH_TOKEN(),
                 IZeroExV3(EXCHANGE).protocolFeeCollector(),
-                protocolFee 
+                protocolFee
             );
         }
 

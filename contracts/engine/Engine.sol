@@ -100,7 +100,7 @@ contract Engine is IEngine, DSMath {
         );
         uint256 mlnPerAmgu = getAmguPrice();
         uint256 ethPerMln;
-        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.nativeAsset());
+        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.WETH_TOKEN());
         uint256 amguConsumed;
         if (mlnPerAmgu > 0 && ethPerMln > 0) {
             amguConsumed = (mul(msg.value, 10 ** uint256(MLN_DECIMALS))) / (mul(ethPerMln, mlnPerAmgu));
@@ -130,7 +130,7 @@ contract Engine is IEngine, DSMath {
     /// @return ETH per MLN including premium
     function enginePrice() public view returns (uint256) {
         uint256 ethPerMln;
-        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.nativeAsset());
+        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.WETH_TOKEN());
         uint256 premium = (mul(ethPerMln, premiumPercent()) / 100);
         return add(ethPerMln, premium);
     }
@@ -166,7 +166,7 @@ contract Engine is IEngine, DSMath {
         view
         returns (IMelonToken)
     {
-        return IMelonToken(registry.mlnToken());
+        return IMelonToken(registry.MLN_TOKEN());
     }
 
     /// @dev Get PriceSource from the registry
