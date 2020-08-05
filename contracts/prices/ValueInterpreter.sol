@@ -78,12 +78,12 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         }
 
         // Else use derivative oracle to get value via underlying assets
-        else if (registry.derivativeToPriceSource(_baseAsset) != address(0)) {
+        if (registry.derivativeToPriceSource(_baseAsset) != address(0)) {
             return __calcDerivativeValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 
         // If not in Registry as an asset or derivative
-        else return (0, false);
+        return (0, false);
     }
 
     /// @notice Helper to covert from one asset to another with a given conversion rate

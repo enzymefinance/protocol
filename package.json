@@ -30,9 +30,10 @@
     "prepackage": "rimraf package",
     "package": "tsc && node scripts/package",
     "test": "yarn jest",
-    "format": "prettier --write \"tests/{*,**/*}.ts\"",
-    "lint": "prettier --list-different \"tests/{*,**/*}.ts\"",
-    "check": "yarn buidler check",
+    "format": "prettier --write \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
+    "lint": "yarn lint:prettier && yarn lint:solhint",
+    "lint:prettier": "prettier --list-different \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
+    "lint:solhint": "solhint \"tests/**/*.sol\" \"contracts/**/*.sol\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -41,13 +42,14 @@
   "devDependencies": {
     "@crestproject/crestproject": "^0.0.19",
     "@nomiclabs/buidler": "^1.4.3",
-    "@nomiclabs/buidler-solhint": "^1.3.3",
     "@types/jest": "^26.0.3",
     "ethers": "^5.0.5",
     "fs-extra": "^9.0.1",
     "jest": "^26.1.0",
     "prettier": "^2.0.5",
+    "prettier-plugin-solidity": "^1.0.0-alpha.55",
     "rimraf": "^3.0.2",
+    "solhint": "^3.1.0",
     "ts-jest": "^26.1.4",
     "typescript": "^4.0.0-beta"
   },

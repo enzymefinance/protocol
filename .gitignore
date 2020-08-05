@@ -8,6 +8,8 @@
 !.prettierignore
 !.prettierrc
 !.travis.yml
+!.solhint.json
+!.solhintignore
 
 # ignore build output and dependencies
 artifacts/
