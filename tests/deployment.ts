@@ -20,6 +20,9 @@ export type ContractConstructor<TContract extends Contract> = (
 export interface DeploymentConfig {
   deployer: Signer;
   primitives: string[];
+  derivatives: {
+    [derivative: string]: string;
+  };
   owners: {
     mgm: string;
     mtc: string;
@@ -43,6 +46,8 @@ export interface DeploymentConfig {
     };
     chai: {
       dsrPot: string;
+      daiToken: string;
+      chaiToken: string;
     };
   };
   adapters: {
@@ -73,6 +78,7 @@ export interface ContractConstructors {
   registry: ContractConstructor<contracts.Registry>;
   engine: ContractConstructor<contracts.Engine>;
   kyberPriceFeed: ContractConstructor<contracts.KyberPriceFeed>;
+  chaiPriceSource: ContractConstructor<contracts.ChaiPriceSource>;
   valueInterpreter: ContractConstructor<contracts.ValueInterpreter>;
   sharesRequestor: ContractConstructor<contracts.SharesRequestor>;
   fundFactory: ContractConstructor<contracts.FundFactory>;
@@ -125,6 +131,14 @@ const constructors: ContractConstructors = {
       config.pricefeeds.kyber.expectedRateWethQty,
       config.pricefeeds.kyber.maxSpread,
       config.pricefeeds.kyber.maxPriceDeviation,
+    );
+  },
+  chaiPriceSource: async (config, deployment) => {
+    return contracts.ChaiPriceSource.deploy(
+      config.deployer,
+      config.pricefeeds.chai.chaiToken,
+      config.pricefeeds.chai.daiToken,
+      config.pricefeeds.chai.dsrPot,
     );
   },
   valueInterpreter: async (config, deployment) => {
@@ -321,10 +335,20 @@ export async function deploySystem(config: DeploymentConfig) {
     deployment.registry.registerIntegrationAdapter(deployment.engineAdapter),
   ]);
 
-  const primitives = Object.values(config.primitives);
   await Promise.all(
-    primitives.map((primitive) => {
+    config.primitives.map((primitive) => {
       return deployment.registry.registerPrimitive(primitive);
+    }),
+  );
+
+  const derivatives = Object.keys(config.derivatives);
+  await Promise.all(
+    derivatives.map((derivative) => {
+      const source = config.derivatives[derivative];
+      return deployment.registry.registerDerivativePriceSource(
+        derivative,
+        source,
+      );
     }),
   );
 
@@ -409,6 +433,9 @@ export async function defaultTestConfig(
     deployer,
     accounts: remainingAccounts,
     primitives: primitives.map((primitive) => primitive.address),
+    derivatives: {
+      [chai.address]: chaiPriceSource.address,
+    },
     registry: {
       mlnToken: mln.address,
       wethToken: weth.address,
@@ -444,6 +471,8 @@ export async function defaultTestConfig(
         updater: priceSourceUpdaterAddress,
       },
       chai: {
+        chaiToken: chai.address,
+        daiToken: dai.address,
         dsrPot: chaiPriceSource.address,
       },
     },
