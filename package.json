@@ -33,7 +33,7 @@
     "format": "prettier --write \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
     "lint": "yarn lint:prettier && yarn lint:solhint",
     "lint:prettier": "prettier --list-different \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
-    "lint:solhint": "solhint \"tests/**/*.sol\" \"contracts/**/*.sol\"",
+    "lint:solhint": "solhint --max-warnings 0 \"tests/**/*.sol\" \"contracts/**/*.sol\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
