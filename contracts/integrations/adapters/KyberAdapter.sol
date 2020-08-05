@@ -27,7 +27,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         return "KYBER_NETWORK";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
@@ -97,7 +97,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             minIncomingAssetAmount
         );
 
-        address nativeAsset = Registry(__getRegistry()).nativeAsset();
+        address nativeAsset = Registry(__getRegistry()).WETH_TOKEN();
         if (outgoingAsset == nativeAsset) {
             __swapNativeAssetToToken(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
         }

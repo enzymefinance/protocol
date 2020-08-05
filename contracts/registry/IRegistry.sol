@@ -22,8 +22,8 @@ interface IRegistry {
     function incentive() external view returns(uint256);
     function integrationAdapterIsRegistered(address) external view returns (bool);
     function MGM() external view returns(address);
-    function mlnToken() external view returns(address);
-    function nativeAsset() external view returns(address);
+    function MLN_TOKEN() external view returns(address);
+    function WETH_TOKEN() external view returns(address);
     function owner() external view returns(address);
     function policyIsRegistered(address) external view returns (bool);
     function priceSource() external view returns(address);
