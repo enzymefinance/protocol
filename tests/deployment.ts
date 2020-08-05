@@ -28,7 +28,7 @@ export interface DeploymentConfig {
   };
   registry: {
     mlnToken: string;
-    nativeAsset: string;
+    wethToken: string;
   };
   engine: {
     thawingDelay: BigNumberish;
@@ -93,6 +93,8 @@ const constructors: ContractConstructors = {
       config.deployer,
       config.owners.mtc,
       config.owners.mgm,
+      config.registry.mlnToken,
+      config.registry.wethToken,
     );
   },
   engine: async (config, deployment) => {
@@ -274,8 +276,6 @@ export async function deploySystem(config: DeploymentConfig) {
 
   await Promise.all([
     // Misc
-    deployment.registry.setMlnToken(config.registry.mlnToken),
-    deployment.registry.setNativeAsset(config.registry.nativeAsset),
     deployment.registry.setEngine(deployment.engine),
     deployment.registry.setFundFactory(deployment.fundFactory),
     deployment.registry.setSharesRequestor(deployment.sharesRequestor),
@@ -418,7 +418,7 @@ export async function defaultTestConfig(
       priceSourceUpdater: priceSourceUpdaterAddress,
     },
     registry: {
-      nativeAsset: weth.address,
+      wethToken: weth.address,
       mlnToken: tokens.mln.address,
     },
     integratees: {

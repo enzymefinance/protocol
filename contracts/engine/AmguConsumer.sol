@@ -65,9 +65,9 @@ abstract contract AmguConsumer is DSMath {
         if (mlnPerAmgu > 0) {
             uint256 mlnQuantity = mul(mlnPerAmgu, _gasUsed);
             (ethCharged_,) = IValueInterpreter(REGISTRY.valueInterpreter()).calcCanonicalAssetValue(
-                REGISTRY.mlnToken(),
+                REGISTRY.MLN_TOKEN(),
                 mlnQuantity,
-                REGISTRY.nativeAsset()
+                REGISTRY.WETH_TOKEN()
             );
             require(
                 msg.value >= ethCharged_,
