@@ -51,6 +51,10 @@ contract Registry is MelonCouncilOwnable {
 
     event ValueInterpreterChanged(address valueInterpreter);
 
+    // Constants
+    address immutable public MLN_TOKEN;
+    address immutable public WETH_TOKEN;
+
     // Assets
     // Primitives are tokens that have an explicit value based on our primary pricefeed, e.g., Dai
     EnumerableSet.AddressSet private primitives;
@@ -68,9 +72,6 @@ contract Registry is MelonCouncilOwnable {
     mapping (address => bool) public fundFactoryIsRegistered;
 
     // Funds
-    address immutable public MLN_TOKEN;
-    address immutable public WETH_TOKEN;
-
     mapping (address => bool) public fundIsRegistered;
     mapping (bytes32 => bool) public fundNameHashIsTaken;
     mapping (address => address[]) public managerToFunds;
