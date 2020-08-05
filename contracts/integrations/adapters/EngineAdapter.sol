@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../dependencies/WETH.sol";
+import "../../interfaces/IWETH.sol";
 import "../../engine/IEngine.sol";
 import "../utils/AdapterBase.sol";
 
@@ -84,10 +84,10 @@ contract EngineAdapter is AdapterBase {
         IERC20(registry.MLN_TOKEN()).approve(EXCHANGE, mlnTokenAmount);
         uint256 preEthBalance = payable(address(this)).balance;
         IEngine(EXCHANGE).sellAndBurnMln(mlnTokenAmount);
-        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
+        uint256 ethFilledAmount = payable(address(this)).balance.sub(preEthBalance);
 
         // Return ETH to WETH
-        WETH(payable(registry.WETH_TOKEN())).deposit{value: ethFilledAmount}();
+        IWETH(payable(registry.WETH_TOKEN())).deposit{value: ethFilledAmount}();
     }
 
     // PRIVATE FUNCTIONS

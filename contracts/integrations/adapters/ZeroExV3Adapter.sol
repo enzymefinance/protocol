@@ -2,7 +2,9 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../dependencies/TokenUser.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../utils/MathHelpers.sol";
 import "../interfaces/IZeroExV3.sol";
 import "../utils/AdapterBase.sol";
@@ -11,6 +13,9 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter to 0xV3 Exchange Contract
 contract ZeroExV3Adapter is AdapterBase, MathHelpers {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
+
     address immutable public EXCHANGE;
 
     constructor(address _registry, address _exchange) public AdapterBase(_registry) {
@@ -87,11 +92,11 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             );
             // If maker asset is protocol fee asset, subtract protocol fee
             if (protocolFeeAsset == makerAsset && protocolFee > 0) {
-                minIncomingAssetAmounts_[0] = sub(minIncomingAssetAmounts_[0], protocolFee);
+                minIncomingAssetAmounts_[0] = minIncomingAssetAmounts_[0].sub(protocolFee);
             }
             // If maker asset is taker fee asset, subtract taker fee
             if (takerFeeAsset == makerAsset && takerFee > 0) {
-                minIncomingAssetAmounts_[0] = sub(minIncomingAssetAmounts_[0], takerFee);
+                minIncomingAssetAmounts_[0] = minIncomingAssetAmounts_[0].sub(takerFee);
             }
         }
         else {
@@ -125,24 +130,21 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
         );
 
         // Approve spend assets
-        __increaseApproval(
-            __getAssetAddress(order.takerAssetData),
+        IERC20(__getAssetAddress(order.takerAssetData)).safeIncreaseAllowance(
             __getAssetProxy(order.takerAssetData),
             takerAssetFillAmount
         );
 
         uint256 protocolFee = __calcProtocolFeeAmount();
         if (protocolFee > 0) {
-            __increaseApproval(
-                Registry(REGISTRY).WETH_TOKEN(),
+            IERC20(Registry(REGISTRY).WETH_TOKEN()).safeIncreaseAllowance(
                 IZeroExV3(EXCHANGE).protocolFeeCollector(),
                 protocolFee
             );
         }
 
         if (order.takerFee > 0) {
-            __increaseApproval(
-                __getAssetAddress(order.takerFeeAssetData),
+            IERC20(__getAssetAddress(order.takerFeeAssetData)).safeIncreaseAllowance(
                 __getAssetProxy(order.takerFeeAssetData),
                 __calcRelativeQuantity(
                     order.takerAssetAmount,
@@ -159,7 +161,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
     // PRIVATE FUNCTIONS
 
     function __calcProtocolFeeAmount() private view returns (uint256) {
-        return mul(IZeroExV3(EXCHANGE).protocolFeeMultiplier(), tx.gasprice);
+        return IZeroExV3(EXCHANGE).protocolFeeMultiplier().mul(tx.gasprice);
     }
 
     /// @notice Parses user inputs into a ZeroExV3.Order format

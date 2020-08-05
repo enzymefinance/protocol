@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../dependencies/DSMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../fund/shares/Shares.sol";
 import "../../../prices/ValueInterpreter.sol";
 import "../../../registry/Registry.sol";
@@ -10,7 +10,9 @@ import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
 /// @title PriceTolerance Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Validate the price tolerance of a trade
-contract PriceTolerance is DSMath, PolicyBase, CallOnIntegrationPostValidatePolicyBase {
+contract PriceTolerance is PolicyBase, CallOnIntegrationPostValidatePolicyBase {
+    using SafeMath for uint256;
+
     event PriceToleranceSet(address policyManager, uint256 value);
 
     uint256 internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
@@ -67,9 +69,9 @@ contract PriceTolerance is DSMath, PolicyBase, CallOnIntegrationPostValidatePoli
         if (incomingAssetsValue >= outgoingAssetsValue) return true;
 
         // Tolerance threshold is 'value defecit over total value of incoming assets'
-        uint256 diff = sub(outgoingAssetsValue, incomingAssetsValue);
+        uint256 diff = outgoingAssetsValue.sub(incomingAssetsValue);
         if (
-            mul(diff, ONE_HUNDRED_PERCENT) / incomingAssetsValue <=
+            diff.mul(ONE_HUNDRED_PERCENT).div(incomingAssetsValue) <=
             policyManagerToPriceTolerance[msg.sender]
         ) return true;
 
@@ -99,7 +101,7 @@ contract PriceTolerance is DSMath, PolicyBase, CallOnIntegrationPostValidatePoli
                 assetValue > 0 && isValid,
                 "__calcCumulativeAssetsValue: No valid price available for asset"
             );
-            cumulativeValue_ = add(cumulativeValue_, assetValue);
+            cumulativeValue_ = cumulativeValue_.add(assetValue);
         }
     }
 }

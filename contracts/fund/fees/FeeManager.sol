@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../dependencies/DSMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../hub/Spoke.sol";
 import "./IFee.sol";
 import "./IFeeManager.sol";
@@ -10,7 +10,8 @@ import "./IFeeManager.sol";
 /// @title FeeManager Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages and allocates fees for a particular fund
-contract FeeManager is IFeeManager, DSMath, Spoke {
+contract FeeManager is IFeeManager, Spoke {
+    using SafeMath for uint256;
 
     event FeeReward(uint shareQuantity);
     event FeeRegistration(address fee);
@@ -70,9 +71,9 @@ contract FeeManager is IFeeManager, DSMath, Spoke {
         emit FeeRegistration(feeAddress);
     }
 
-    function totalFeeAmount() external override returns (uint total) {
+    function totalFeeAmount() external override returns (uint256 total) {
         for (uint i = 0; i < fees.length; i++) {
-            total = add(total, fees[i].feeAmount());
+            total = total.add(fees[i].feeAmount());
         }
         return total;
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../dependencies/WETH.sol";
+import "../../interfaces/IWETH.sol";
 import "../../utils/MathHelpers.sol";
 import "../interfaces/IKyberNetworkProxy.sol";
 import "../utils/AdapterBase.sol";
@@ -143,7 +143,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         private
     {
         // Convert WETH to ETH
-        WETH(payable(_outgoingAsset)).withdraw(_outgoingAssetAmount);
+        IWETH(payable(_outgoingAsset)).withdraw(_outgoingAssetAmount);
 
         // Swap tokens
         IKyberNetworkProxy(EXCHANGE)
@@ -172,10 +172,10 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             _outgoingAssetAmount,
             _minExpectedRate
         );
-        uint256 ethFilledAmount = sub(payable(address(this)).balance, preEthBalance);
+        uint256 ethFilledAmount = payable(address(this)).balance.sub(preEthBalance);
 
         // Convert ETH to WETH
-        WETH(payable(_incomingAsset)).deposit{value: ethFilledAmount}();
+        IWETH(payable(_incomingAsset)).deposit{value: ethFilledAmount}();
     }
 
     /// @dev Executes a swap of ERC20 to ERC20
