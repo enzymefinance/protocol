@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/libs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../fund/policies/IPolicy.sol";
 import "../integrations/IIntegrationAdapter.sol";
 import "./utils/MelonCouncilOwnable.sol";
@@ -115,7 +115,11 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     /// @notice Get all registered primitives
     /// @return A list of all registered primitive addresses
     function getRegisteredPrimitives() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(primitives);
+        uint256 length = primitives.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = primitives.at(i);
+        }
     }
 
     /// @notice Add a primitive to the Registry
@@ -169,7 +173,12 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     /// @notice Get all registered fees
     /// @return A list of all registered fee addresses
     function getRegisteredFees() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(fees);
+        uint256 length = fees.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = fees.at(i);
+        }
+        return output_;
     }
 
     /// @notice Add a fee to the Registry
@@ -227,7 +236,12 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     /// @notice Get all registered policies
     /// @return A list of all registered policy addresses
     function getRegisteredPolicies() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(policies);
+        uint256 length = policies.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = policies.at(i);
+        }
+        return output_;
     }
 
     /// @notice Add a policy to the Registry
@@ -291,7 +305,12 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     /// @notice Get all registered integration adapters
     /// @return A list of all registered integration adapters
     function getRegisteredIntegrationAdapters() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(integrationAdapters);
+        uint256 length = integrationAdapters.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = integrationAdapters.at(i);
+        }
+        return output_;
     }
 
     /// @notice Register an integration adapter with its associated external contract and type

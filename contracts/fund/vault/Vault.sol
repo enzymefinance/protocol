@@ -2,8 +2,10 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../dependencies/libs/EnumerableSet.sol";
-import "../../dependencies/TokenUser.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../integrations/IIntegrationAdapter.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../hub/Spoke.sol";
@@ -12,7 +14,9 @@ import "./IVault.sol";
 /// @title Vault Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Stores fund assets and plugs into external services via integrations
-contract Vault is IVault, TokenUser, Spoke {
+contract Vault is IVault, Spoke {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
     using AddressArrayLib for address[];
 
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -99,7 +103,7 @@ contract Vault is IVault, TokenUser, Spoke {
     function deposit(address _asset, uint256 _amount) external override onlyShares {
         require(_amount > 0, "deposit: _amount must be >0");
         __addOwnedAsset(_asset);
-        __safeTransferFrom(_asset, msg.sender, address(this), _amount);
+        IERC20(_asset).safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /// @notice Disable integration adapters from use in the fund
@@ -123,7 +127,12 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @notice Get a list of enabled adapters
     /// @return An array of enabled adapter addresses
     function getEnabledAdapters() external view returns (address[] memory) {
-        return EnumerableSet.enumerate(enabledAdapters);
+        uint256 length = enabledAdapters.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = enabledAdapters.at(i);
+        }
+        return output_;
     }
 
     /// @notice Withdraw an asset from the Vault
@@ -131,10 +140,10 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @param _asset The asset to withdraw
     /// @param _amount The amount of the asset to withdraw
     function withdraw(address _asset, uint256 _amount) external override onlyShares {
-        if (sub(__getAssetBalance(_asset), _amount) == 0) {
+        if (__getAssetBalance(_asset).sub(_amount) == 0) {
             __removeOwnedAsset(_asset);
         }
-        __safeTransfer(_asset, msg.sender, _amount);
+        IERC20(_asset).safeTransfer(msg.sender, _amount);
     }
 
     // PUBLIC FUNCTIONS
@@ -156,7 +165,12 @@ contract Vault is IVault, TokenUser, Spoke {
     /// @notice Retrieves the assets owned by the fund
     /// @return The addresses of assets owned by the fund
     function getOwnedAssets() public view override returns(address[] memory) {
-        return EnumerableSet.enumerate(ownedAssets);
+        uint256 length = ownedAssets.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = ownedAssets.at(i);
+        }
+        return output_;
     }
 
     // PRIVATE FUNCTIONS
@@ -311,7 +325,7 @@ contract Vault is IVault, TokenUser, Spoke {
             // TODO: decide whether or not to revoke approval at the end of an action,
             // and/or how to deal with the extreme edge case of overflow.
             // This will probably involve considering how limit orders could work.
-            __increaseApproval(spendAssets_[i], _adapter, spendAssetAmounts_[i]);
+            IERC20(spendAssets_[i]).safeIncreaseAllowance(_adapter, spendAssetAmounts_[i]);
             preCallSpendAssetBalances_[i] = IERC20(spendAssets_[i]).balanceOf(address(this));
         }
     }
@@ -387,7 +401,7 @@ contract Vault is IVault, TokenUser, Spoke {
                 "__reconcileCoIAssets: incoming asset balance cannot decrease"
             );
 
-            uint256 balanceDiff = sub(newBalance, _preCallIncomingAssetBalances[i]);
+            uint256 balanceDiff = newBalance.sub(_preCallIncomingAssetBalances[i]);
             require(
                 balanceDiff >= _minIncomingAssetAmounts[i],
                 "__reconcileCoIAssets: received incoming asset less than expected"
@@ -412,7 +426,7 @@ contract Vault is IVault, TokenUser, Spoke {
             );
 
             if (newBalance < _preCallSpendAssetBalances[i]) {
-                spendAssetBalanceDiffs[i] = sub(_preCallSpendAssetBalances[i], newBalance);
+                spendAssetBalanceDiffs[i] = _preCallSpendAssetBalances[i].sub(newBalance);
                 outgoingAssetsCount++;
             }
         }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../dependencies/libs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 /// @title AddressListPolicyBase Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -23,7 +23,12 @@ abstract contract AddressListPolicyMixin {
     /// @param _policyManager The fund's PolicyManager address
     /// @return An array of addresses
     function getList(address _policyManager) external view returns (address[] memory) {
-        return EnumerableSet.enumerate(policyManagerToList[_policyManager]);
+        uint256 length = policyManagerToList[_policyManager].length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = policyManagerToList[_policyManager].at(i);
+        }
+        return output_;
     }
 
     // PUBLIC FUNCTIONS

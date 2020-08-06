@@ -2,7 +2,9 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../dependencies/TokenUser.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../utils/MathHelpers.sol";
 import "../interfaces/IZeroExV2.sol";
 import "../utils/AdapterBase.sol";
@@ -11,6 +13,9 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter to 0xV2 Exchange Contract
 contract ZeroExV2Adapter is AdapterBase, MathHelpers {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
+
     address immutable public EXCHANGE;
 
     constructor(address _registry, address _exchange) public AdapterBase(_registry) {
@@ -82,7 +87,7 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
             );
             // If there is a taker fee and the maker asset is zrx, need to subtract fee
             if (takerFee > 0 && makerAsset == takerFeeAsset) {
-                minIncomingAssetAmounts_[0] = sub(minIncomingAssetAmounts_[0], takerFee);
+                minIncomingAssetAmounts_[0] = minIncomingAssetAmounts_[0].sub(takerFee);
             }
         }
         else {
@@ -111,15 +116,14 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
         );
 
         // Approve spend assets
-        __increaseApproval(
-            __getAssetAddress(order.takerAssetData),
+        IERC20(__getAssetAddress(order.takerAssetData)).safeIncreaseAllowance(
             __getAssetProxy(order.takerAssetData),
             takerAssetFillAmount
         );
         if (order.takerFee > 0) {
             bytes memory zrxData = IZeroExV2(EXCHANGE).ZRX_ASSET_DATA();
-            __increaseApproval(
-                __getAssetAddress(zrxData),
+            // Approve spend assets
+            IERC20(__getAssetAddress(zrxData)).safeIncreaseAllowance(
                 __getAssetProxy(zrxData),
                 __calcRelativeQuantity(
                     order.takerAssetAmount,
@@ -171,6 +175,7 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
         returns (address assetProxy_)
     {
         bytes4 assetProxyId;
+
         assembly {
             assetProxyId := and(mload(
                 add(_assetData, 32)),

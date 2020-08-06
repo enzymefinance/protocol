@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../dependencies/DSMath.sol";
-import "../../dependencies/token/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../integrations/interfaces/IKyberNetworkProxy.sol";
 import "../../registry/IRegistry.sol";
 import "./IPriceSource.sol";
@@ -10,7 +10,9 @@ import "./IPriceSource.sol";
 /// @title KyberPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Routes external prices to smart contracts from Kyber
-contract KyberPriceFeed is IPriceSource, DSMath {
+contract KyberPriceFeed is IPriceSource {
+    using SafeMath for uint256;
+
     event ExpectedRateWethQtySet(uint256 expectedRateWethQty);
 
     event MaxPriceDeviationSet(uint256 maxPriceDeviation);
@@ -86,7 +88,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         // Return early if assets are same
         if (_baseAsset == _quoteAsset) {
             return (
-                10 ** uint256(ERC20WithFields(_quoteAsset).decimals()),
+                10 ** uint256(ERC20(_quoteAsset).decimals()),
                 true,
                 timestamp_
             );
@@ -104,10 +106,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
 
         // If diff quote asset from price feed's quote asset, convert value
         if (_quoteAsset != PRICE_FEED_QUOTE_ASSET) {
-            rate_ = mul(
-                baseAssetPrice,
-                10 ** uint256(ERC20WithFields(_quoteAsset).decimals())
-            ) / quoteAssetPrice;
+            rate_ = baseAssetPrice.mul(10 ** uint256(ERC20(_quoteAsset).decimals())).div(quoteAssetPrice);
         }
         else {
             rate_ = baseAssetPrice;
@@ -212,7 +211,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         // Return early if assets are same
         if (_baseAsset == _quoteAsset) {
             return (
-                10 ** uint256(ERC20WithFields(_quoteAsset).decimals()),
+                10 ** uint256(ERC20(_quoteAsset).decimals()),
                 true
             );
         }
@@ -235,7 +234,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
             return (0, false);
         }
 
-        uint256 askRate = 10 ** (KYBER_PRECISION * 2) / bidRateOfReversePair;
+        uint256 askRate = (10 ** (KYBER_PRECISION.mul(2))).div(bidRateOfReversePair);
         /**
           Average the bid/ask prices:
           avgPriceFromKyber = (bidRate + askRate) / 2
@@ -243,19 +242,15 @@ contract KyberPriceFeed is IPriceSource, DSMath {
           or, rearranged:
           kyberPrice = ((bidRate + askRate) * 10^quoteDecimals) / 2 * 10^kyberPrecision
         */
-        rate_ = mul(
-            add(bidRate, askRate),
-            10 ** uint256(ERC20WithFields(_quoteAsset).decimals()) // use original quote decimals (not defined on mask)
-        ) / mul(2, 10 ** KYBER_PRECISION);
+        rate_ = bidRate.add(askRate)
+            .mul(10 ** uint256(ERC20(_quoteAsset).decimals())) // use original quote decimals (not defined on mask)
+            .div((10 ** KYBER_PRECISION).mul(2));
 
         // Rate is valid if deviation between buy and ask rates is less than threshold
         // Ignores crossed condition where bidRate > askRate
         uint256 spreadFromKyber;
         if (bidRate < askRate) {
-            spreadFromKyber = mul(
-                sub(askRate, bidRate),
-                10 ** KYBER_PRECISION
-            ) / askRate;
+            spreadFromKyber = askRate.sub(bidRate).mul(10 ** KYBER_PRECISION).div(askRate);
         }
         isValid_ = spreadFromKyber <= maxSpread && bidRate != 0 && askRate != 0;
     }
@@ -270,7 +265,7 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         returns (bool isValid_)
     {
         bool isRegistered = registry.primitiveIsRegistered(_asset);
-        bool isFresh = block.timestamp < add(lastUpdate, VALIDITY_INTERVAL);
+        bool isFresh = block.timestamp < lastUpdate.add(VALIDITY_INTERVAL);
         isValid_ = prices[_asset] != 0 && isRegistered && isFresh;
     }
 
@@ -281,12 +276,9 @@ contract KyberPriceFeed is IPriceSource, DSMath {
         uint256 lastSrcAssetPrice = prices[_srcAsset];
         // If there has not been a price update yet, use 1 unit of the srcAsset
         if (lastSrcAssetPrice == 0) {
-            return 10 ** uint256(ERC20WithFields(_srcAsset).decimals());
+            return 10 ** uint256(ERC20(_srcAsset).decimals());
         }
-        return mul(
-            expectedRateWethQty,
-            10 ** uint256(ERC20WithFields(_srcAsset).decimals())
-        ) / lastSrcAssetPrice;
+        return expectedRateWethQty.mul(10 ** uint256(ERC20(_srcAsset).decimals())).div(lastSrcAssetPrice);
     }
 
     /// @dev Return Kyber ETH asset symbol if _asset is WETH
@@ -308,10 +300,10 @@ contract KyberPriceFeed is IPriceSource, DSMath {
     {
         uint256 deviation;
         if (_priceFromKyber >= _sanePrice) {
-            deviation = sub(_priceFromKyber, _sanePrice);
+            deviation = _priceFromKyber.sub(_sanePrice);
         } else {
-            deviation = sub(_sanePrice, _priceFromKyber);
+            deviation = _sanePrice.sub(_priceFromKyber);
         }
-        return mul(deviation, 10 ** KYBER_PRECISION) / _sanePrice <= maxPriceDeviation;
+        return deviation.mul(10 ** KYBER_PRECISION).div(_sanePrice) <= maxPriceDeviation;
     }
 }

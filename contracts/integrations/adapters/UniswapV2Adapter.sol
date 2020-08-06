@@ -88,7 +88,7 @@ contract UniswapV2Adapter is AdapterBase {
             minIncomingAssetAmount,
             path,
             msg.sender,
-            add(block.timestamp, 1)
+            block.timestamp.add(1)
         );
     }
 

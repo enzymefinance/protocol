@@ -2,7 +2,10 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../dependencies/TokenUser.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../interfaces/IERC20Flexible.sol";
 import "../../prices/IValueInterpreter.sol";
 import "../hub/Spoke.sol";
 import "./IShares.sol";
@@ -11,7 +14,10 @@ import "./SharesToken.sol";
 /// @title Shares Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Buy and sell shares for a Melon fund
-contract Shares is IShares, TokenUser, Spoke, SharesToken {
+contract Shares is IShares, Spoke, SharesToken {
+    using SafeMath for uint256;
+    using SafeERC20 for ERC20;
+
     event SharesBought(
         address indexed buyer,
         uint256 sharesQuantity,
@@ -72,17 +78,14 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         __getFeeManager().rewardAllFees();
 
         // Calculate shares quantity
-        sharesBought_ = mul(
-            _investmentAmount,
-            10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals())
-        ) / calcSharePrice();
+        sharesBought_ = _investmentAmount.mul(10 ** uint256(ERC20(DENOMINATION_ASSET).decimals())).div(calcSharePrice());
         require(sharesBought_ >= _minSharesQuantity, "buyShares: minimum shares quantity not met");
 
         // Issue shares and transfer investment asset to vault
         address vaultAddress = address(__getVault());
         _mint(_buyer, sharesBought_);
-        __safeTransferFrom(DENOMINATION_ASSET, msg.sender, address(this), _investmentAmount);
-        __increaseApproval(DENOMINATION_ASSET, vaultAddress, _investmentAmount);
+        ERC20(DENOMINATION_ASSET).safeTransferFrom(msg.sender, address(this), _investmentAmount);
+        ERC20(DENOMINATION_ASSET).safeIncreaseAllowance(vaultAddress, _investmentAmount);
         IVault(vaultAddress).deposit(DENOMINATION_ASSET, _investmentAmount);
 
         emit SharesBought(
@@ -148,7 +151,7 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
             );
             require(assetGav > 0 && isValid, "calcGav: No valid price available for asset");
 
-            gav = add(gav, assetGav);
+            gav = gav.add(assetGav);
         }
 
         return gav;
@@ -160,10 +163,10 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
     /// Rounding favors the investor (rounds the price down).
     function calcSharePrice() public returns (uint256) {
         if (totalSupply() == 0) {
-            return 10 ** uint256(ERC20WithFields(DENOMINATION_ASSET).decimals());
+            return 10 ** uint256(ERC20(DENOMINATION_ASSET).decimals());
         }
         else {
-            return calcGav() * 10 ** uint256(decimals) / totalSupply();
+            return calcGav().mul(10 ** uint256(decimals())).div(totalSupply());
         }
     }
 
@@ -197,17 +200,17 @@ contract Shares is IShares, TokenUser, Spoke, SharesToken {
         uint256[] memory payoutQuantities = new uint256[](payoutAssets.length);
         for (uint256 i = 0; i < payoutAssets.length; i++) {
             // Redeemer's ownership percentage of asset holdings
-            payoutQuantities[i] = mul(assetBalances[i], _sharesQuantity) / sharesSupply;
+            payoutQuantities[i] = assetBalances[i].mul(_sharesQuantity).div(sharesSupply);
 
             // Transfer payout asset to redeemer
             try vault.withdraw(payoutAssets[i], payoutQuantities[i]) {}
             catch {}
 
-            uint256 receiverPreBalance = IERC20(payoutAssets[i]).balanceOf(msg.sender);
+            uint256 receiverPreBalance = ERC20(payoutAssets[i]).balanceOf(msg.sender);
             try IERC20Flexible(payoutAssets[i]).transfer(msg.sender, payoutQuantities[i]) {
-                uint256 receiverPostBalance = IERC20(payoutAssets[i]).balanceOf(msg.sender);
+                uint256 receiverPostBalance = ERC20(payoutAssets[i]).balanceOf(msg.sender);
                 require(
-                    add(receiverPreBalance, payoutQuantities[i]) == receiverPostBalance,
+                    receiverPreBalance.add(payoutQuantities[i]) == receiverPostBalance,
                     "__redeemShares: Receiver did not receive tokens in transfer"
                 );
             }

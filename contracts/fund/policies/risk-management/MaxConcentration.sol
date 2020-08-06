@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../dependencies/DSMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../prices/ValueInterpreter.sol";
 import "../../shares/Shares.sol";
 import "../../vault/Vault.sol";
@@ -10,7 +10,9 @@ import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
 /// @title MaxConcentration Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Validates concentration limitations per asset for its equity of a particular fund
-contract MaxConcentration is DSMath, CallOnIntegrationPostValidatePolicyBase {
+contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
+    using SafeMath for uint256;
+
     event MaxConcentrationSet(address policyManager, uint256 value);
 
     uint256 internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
@@ -92,6 +94,6 @@ contract MaxConcentration is DSMath, CallOnIntegrationPostValidatePolicyBase {
         pure
         returns (uint256)
     {
-        return mul(_assetGav, ONE_HUNDRED_PERCENT) / _totalGav;
+        return _assetGav.mul(ONE_HUNDRED_PERCENT).div(_totalGav);
     }
 }

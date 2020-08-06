@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../dependencies/DSMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../hub/Spoke.sol";
 import "../shares/Shares.sol";
 import "../vault/Vault.sol";
@@ -9,7 +10,8 @@ import "../vault/Vault.sol";
 /// @title PerformanceFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Calculates the performace fee for a particular fund
-contract PerformanceFee is DSMath {
+contract PerformanceFee {
+    using SafeMath for uint256;
 
     event HighWaterMarkUpdate(address indexed feeManager, uint indexed hwm);
 
@@ -27,7 +29,7 @@ contract PerformanceFee is DSMath {
         require(lastPayoutTime[msg.sender] == 0, "Already initialized");
         performanceFeeRate[msg.sender] = feeRate;
         performanceFeePeriod[msg.sender] = feePeriod;
-        highWaterMark[msg.sender] = 10 ** uint(ERC20WithFields(denominationAsset).decimals());
+        highWaterMark[msg.sender] = 10 ** uint(ERC20(denominationAsset).decimals());
         lastPayoutTime[msg.sender] = block.timestamp;
         initializeTime[msg.sender] = block.timestamp;
     }
@@ -39,24 +41,21 @@ contract PerformanceFee is DSMath {
         if (sharesSupply == 0) return 0;
 
         uint gav = shares.calcGav();
-        uint gavPerShare = mul(gav, 10 ** uint256(shares.decimals())) / sharesSupply;
+        uint gavPerShare = gav.mul(10 ** uint256(shares.decimals())).div(sharesSupply);
         if (gavPerShare <= highWaterMark[msg.sender]) return 0;
 
-        uint sharePriceGain = sub(gavPerShare, highWaterMark[msg.sender]);
-        uint totalGain = mul(sharePriceGain, sharesSupply) / DIVISOR;
-        uint feeInAsset = mul(totalGain, performanceFeeRate[msg.sender]) / DIVISOR;
-        uint preDilutionFee = mul(sharesSupply, feeInAsset) / gav;
+        uint sharePriceGain = gavPerShare.sub(highWaterMark[msg.sender]);
+        uint totalGain = sharePriceGain.mul(sharesSupply).div(DIVISOR);
+        uint feeInAsset = totalGain.mul(performanceFeeRate[msg.sender]).div(DIVISOR);
+        uint preDilutionFee = sharesSupply.mul(feeInAsset).div(gav);
 
-        return mul(preDilutionFee, sharesSupply) / sub(sharesSupply, preDilutionFee);
+        return preDilutionFee.mul(sharesSupply).div(sharesSupply.sub(preDilutionFee));
     }
 
     function canUpdate(address _who) public view returns (bool) {
-        uint timeSinceInit = sub(
-            block.timestamp,
-            initializeTime[_who]
-        );
-        uint secondsSinceLastPeriod = timeSinceInit % performanceFeePeriod[_who];
-        uint lastPeriodEnd = sub(block.timestamp, secondsSinceLastPeriod);
+        uint timeSinceInit = uint256(block.timestamp).sub(initializeTime[_who]);
+        uint secondsSinceLastPeriod = timeSinceInit.mod(performanceFeePeriod[_who]);
+        uint lastPeriodEnd = uint256(block.timestamp).sub(secondsSinceLastPeriod);
         return (
             secondsSinceLastPeriod <= REDEEM_WINDOW &&
             lastPayoutTime[_who] < lastPeriodEnd
@@ -72,10 +71,7 @@ contract PerformanceFee is DSMath {
         );
         Shares shares = Shares(IHub(Spoke(msg.sender).HUB()).shares());
 
-        uint currentGavPerShare = mul(
-            shares.calcGav(),
-            10 ** uint256(shares.decimals())
-        ) / shares.totalSupply();
+        uint currentGavPerShare = shares.calcGav().mul(10 ** uint256(shares.decimals())).div(shares.totalSupply());
         require(
             currentGavPerShare > highWaterMark[msg.sender],
             "Current share price does not pass high water mark"

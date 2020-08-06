@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../dependencies/libs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../hub/Spoke.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
@@ -81,7 +81,12 @@ contract PolicyManager is IPolicyManager, Spoke {
     /// @notice Get a list of enabled policies
     /// @return An array of enabled policy addresses
     function getEnabledPolicies() public view returns (address[] memory) {
-        return EnumerableSet.enumerate(enabledPolicies);
+        uint256 length = enabledPolicies.length();
+        address[] memory output_ = new address[](length);
+        for (uint256 i = 0; i < length; i++){
+            output_[i] = enabledPolicies.at(i);
+        }
+        return output_;
     }
 
     // PRIVATE FUNCTIONS

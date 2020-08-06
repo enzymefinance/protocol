@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../dependencies/DSMath.sol";
-import "../dependencies/token/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../prices/IValueInterpreter.sol";
 import "../registry/IRegistry.sol";
 import "./IEngine.sol";
@@ -10,7 +9,8 @@ import "./IEngine.sol";
 /// @title AmguConsumer Base Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Inherit this to pay AMGU on a function call
-abstract contract AmguConsumer is DSMath {
+abstract contract AmguConsumer {
+    using SafeMath for uint256;
 
     event AmguPaid(
         address indexed payer,
@@ -33,7 +33,7 @@ abstract contract AmguConsumer is DSMath {
         uint256 preGas = gasleft();
         _;
         uint256 postGas = gasleft();
-        uint256 ethChargedForAmgu = __chargeAmgu(sub(preGas, postGas));
+        uint256 ethChargedForAmgu = __chargeAmgu(preGas.sub(postGas));
         __refundExtraEther(ethChargedForAmgu);
     }
 
@@ -46,13 +46,13 @@ abstract contract AmguConsumer is DSMath {
         uint256 preGas = gasleft();
         _;
         uint256 postGas = gasleft();
-        uint256 ethChargedForAmgu = __chargeAmgu(sub(preGas, postGas));
-        uint256 totalEthCharged = add(ethChargedForAmgu, incentiveAmount);
+        uint256 ethChargedForAmgu = __chargeAmgu(preGas.sub(postGas));
+        uint256 totalEthCharged = ethChargedForAmgu.add(incentiveAmount);
         require(
             msg.value >= totalEthCharged,
             "amguPayableWithIncentive: Insufficent value for incentive + AMGU"
         );
-        __refundExtraEther(add(incentiveAmount, ethChargedForAmgu));
+        __refundExtraEther(incentiveAmount.add(ethChargedForAmgu));
         emit IncentivePaid(msg.sender, incentiveAmount);
     }
 
@@ -63,7 +63,7 @@ abstract contract AmguConsumer is DSMath {
     function __chargeAmgu(uint256 _gasUsed) private returns (uint256 ethCharged_) {
         uint256 mlnPerAmgu = IEngine(REGISTRY.engine()).getAmguPrice();
         if (mlnPerAmgu > 0) {
-            uint256 mlnQuantity = mul(mlnPerAmgu, _gasUsed);
+            uint256 mlnQuantity = mlnPerAmgu.mul(_gasUsed);
             (ethCharged_,) = IValueInterpreter(REGISTRY.valueInterpreter()).calcCanonicalAssetValue(
                 REGISTRY.MLN_TOKEN(),
                 mlnQuantity,
@@ -75,7 +75,7 @@ abstract contract AmguConsumer is DSMath {
             );
             IEngine(
                 REGISTRY.engine()
-            ).payAmguInEther.value(ethCharged_)();
+            ).payAmguInEther{value: ethCharged_}();
             emit AmguPaid(msg.sender, ethCharged_, _gasUsed);
         }
         return ethCharged_;
@@ -85,7 +85,7 @@ abstract contract AmguConsumer is DSMath {
     /// @param _totalEthCharged Total amount of eth charged for this transaction
     function __refundExtraEther(uint256 _totalEthCharged) private {
         require(
-            msg.sender.send(sub(msg.value, _totalEthCharged)),
+            msg.sender.send(msg.value.sub(_totalEthCharged)),
             "__refundExtraEther: Refund failed"
         );
     }

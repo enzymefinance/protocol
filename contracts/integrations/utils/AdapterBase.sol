@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../dependencies/token/IERC20.sol";
-import "../../dependencies/TokenUser.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../fund/hub/SpokeCallee.sol";
 import "../../registry/Registry.sol";
 import "../IIntegrationAdapter.sol";
@@ -11,7 +12,10 @@ import "./IntegrationSignatures.sol";
 /// @title AdapterBase Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A base contract for integration adapters
-abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, SpokeCallee, TokenUser {
+abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, SpokeCallee {
+    using SafeERC20 for IERC20;
+    using SafeMath for uint256;
+
     address immutable public REGISTRY;
 
     /// @dev Provides a standard implementation for transferring assets between
@@ -54,7 +58,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
             spentAssetPreCallAmounts[i] = IERC20(spendAssets[i]).balanceOf(address(this));
 
             // Custody asset
-            __safeTransferFrom(spendAssets[i], msg.sender, address(this), spendAssetAmounts[i]);
+            IERC20(spendAssets[i]).safeTransferFrom(msg.sender, address(this), spendAssetAmounts[i]);
         }
 
         // Get incoming asset balances before call
@@ -77,10 +81,9 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
             // can send assets directly to the Vault
             if (postCallAmount <= incomingAssetPreCallAmounts[i]) continue;
 
-            __safeTransfer(
-                incomingAssets[i],
+            IERC20(incomingAssets[i]).safeTransfer(
                 msg.sender,
-                sub(postCallAmount, incomingAssetPreCallAmounts[i])
+                postCallAmount.sub(incomingAssetPreCallAmounts[i])
             );
         }
 
@@ -88,10 +91,9 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
         for (uint256 i = 0; i < spendAssets.length; i++) {
             uint256 postCallAmount = IERC20(spendAssets[i]).balanceOf(address(this));
             if (postCallAmount > spentAssetPreCallAmounts[i]) {
-                __safeTransfer(
-                    spendAssets[i],
+                IERC20(spendAssets[i]).safeTransfer(
                     msg.sender,
-                    sub(postCallAmount, spentAssetPreCallAmounts[i])
+                    postCallAmount.sub(spentAssetPreCallAmounts[i])
                 );
             }
         }
@@ -149,7 +151,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
             for (uint256 j = 0; j < aggregatedAssets_.length; j++) {
                 if (aggregatedAssets_[j] == address(0)) break; // If address(0), no more array items
                 if (_assets[i] == aggregatedAssets_[j]) {
-                    aggregatedAssetAmounts_[j] = add(aggregatedAssetAmounts_[j], _amounts[i]);
+                    aggregatedAssetAmounts_[j] = aggregatedAssetAmounts_[j].add(_amounts[i]);
                     assetAdded = true;
                     break;
                 }
