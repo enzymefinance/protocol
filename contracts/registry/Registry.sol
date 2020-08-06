@@ -2,6 +2,8 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
+// solhint-disable max-states-count
+
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../fund/fees/IFee.sol";
 import "../fund/policies/IPolicy.sol";
