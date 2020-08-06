@@ -234,7 +234,7 @@ contract KyberPriceFeed is IPriceSource {
             return (0, false);
         }
 
-        uint256 askRate = (10 ** KYBER_PRECISION).mul(2).div(bidRateOfReversePair);
+        uint256 askRate = 10 ** (KYBER_PRECISION.mul(2)).div(bidRateOfReversePair);
         /**
           Average the bid/ask prices:
           avgPriceFromKyber = (bidRate + askRate) / 2
