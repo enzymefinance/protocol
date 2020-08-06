@@ -2,23 +2,25 @@
 pragma solidity 0.6.8;
 
 import "../PreminedToken.sol";
-import "./utils/MockIntegrateeBase.sol";
+import "./utils/SimpleMockIntegrateeBase.sol";
 
-contract MockChaiIntegratee is MockIntegrateeBase, PreminedToken("Chai", "CHAI", 18) {
-    address public dai;
+contract MockChaiIntegratee is SimpleMockIntegrateeBase {
+    address public immutable DAI;
+    address public immutable CHAI;
 
-    constructor(address _dai)
+    constructor(address _chai, address _dai)
         public
-        MockIntegrateeBase(new address[](0), new address[](0), new uint8[](0), 18)
+        SimpleMockIntegrateeBase(new address[](0), new address[](0), new uint8[](0), 18)
     {
-        dai = _dai;
+        DAI = _dai;
+        CHAI = _chai;
     }
 
     function join(address payable _trader, uint256 _daiAmount) external {
-        __getRateAndSwapAssets(_trader, dai, _daiAmount, address(this));
+        __getRateAndSwapAssets(_trader, DAI, _daiAmount, CHAI);
     }
 
     function exit(address payable _trader, uint256 _chaiAmount) external {
-        __getRateAndSwapAssets(_trader, address(this), _chaiAmount, dai);
+        __getRateAndSwapAssets(_trader, CHAI, _chaiAmount, DAI);
     }
 }

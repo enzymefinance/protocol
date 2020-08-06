@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./IDerivativePriceSource.sol";
 
 /// @title Chai Price Source
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Price source oracle for Chai
 contract ChaiPriceSource is IDerivativePriceSource {
+    using SafeMath for uint256;
+
     address immutable public CHAI;
     address immutable public DAI;
     address immutable public DSR_POT;
@@ -38,14 +41,14 @@ contract ChaiPriceSource is IDerivativePriceSource {
     function __calcChaiRate() private returns (uint256) {
         IPot pot = IPot(DSR_POT);
         uint256 chi = (now > pot.rho()) ? pot.drip() : pot.chi();
-        return chi / 10 ** 9; // Refactor of mul(chi, 10 ** 18) / 10 ** 27
+        return chi.div(10 ** 9); // Refactor of mul(chi, 10 ** 18) / 10 ** 27
     }
 }
 
 /// @notice Limited interface for Maker DSR's Pot contract
 /// @dev See DSR integration guide: https://github.com/makerdao/developerguides/blob/master/dai/dsr-integration-guide/dsr-integration-guide-01.md
 interface IPot {
-    function chi() external returns (uint256);
-    function rho() external returns (uint256);
+    function chi() external view returns (uint256);
+    function rho() external view returns (uint256);
     function drip() external returns (uint256);
 }

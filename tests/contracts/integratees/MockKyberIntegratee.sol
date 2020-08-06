@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "./utils/MockIntegrateeBase.sol";
+import "./utils/SimpleMockIntegrateeBase.sol";
 
-contract MockKyberIntegratee is MockIntegrateeBase {
+contract MockKyberIntegratee is SimpleMockIntegrateeBase {
     constructor(address[] memory _defaultRateAssets)
         public
-        MockIntegrateeBase(_defaultRateAssets, new address[](0), new uint8[](0), 18) {}
+        SimpleMockIntegrateeBase(_defaultRateAssets, new address[](0), new uint8[](0), 18) {}
 
     function swapEtherToToken(address _destToken, uint256)
         external

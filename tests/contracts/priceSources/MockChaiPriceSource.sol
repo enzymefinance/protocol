@@ -1,28 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 contract MockChaiPriceSource {
-    uint256 public chi;
-    uint256 public rho;
-    uint256 public drip;
+    using SafeMath for uint256;
 
-    constructor(uint256 _chi, uint256 _rho, uint256 _drip)
-        public
-    {
-        chi = _chi;
-        rho = _rho;
-        drip = _drip;
-    }
+    uint256 public chi = 10 ** 27;
+    uint256 public rho = now;
 
-    function setChi(uint256 _chi) external {
-        chi = _chi;
-    }
+    function drip() external returns(uint256) {
+        require(now >= rho, "drip: invalid now");
 
-    function setRho(uint256 _rho) external {
-        rho = _rho;
-    }
-
-    function setDrip(uint256 _drip) external {
-        drip = _drip;
+        rho = now;
+        chi = chi.mul(99).div(100);
+        return chi;
     }
 }

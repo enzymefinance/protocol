@@ -3,6 +3,7 @@ import {
   BuidlerProvider,
   Contract,
   randomAddress,
+  ContractReceipt,
 } from '@crestproject/crestproject';
 import * as contracts from './contracts';
 
@@ -133,7 +134,7 @@ const constructors: ContractConstructors = {
       config.pricefeeds.kyber.maxPriceDeviation,
     );
   },
-  chaiPriceSource: async (config, deployment) => {
+  chaiPriceSource: async (config) => {
     return contracts.ChaiPriceSource.deploy(
       config.deployer,
       config.pricefeeds.chai.chaiToken,
@@ -370,61 +371,65 @@ export async function defaultTestConfig(
   const deployer = provider.getSigner(deployerAddress);
 
   const weth = await contracts.WETH.deploy(deployer);
-  const [mln, rep, knc, zrx, dai] = await Promise.all([
+  const [mln, rep, knc, zrx, dai, chai] = await Promise.all([
     contracts.PreminedToken.deploy(deployer, 'mln', 'MLN', 18),
     contracts.PreminedToken.deploy(deployer, 'rep', 'REP', 18),
     contracts.PreminedToken.deploy(deployer, 'knc', 'KNC', 18),
     contracts.PreminedToken.deploy(deployer, 'zrx', 'ZRX', 18),
     contracts.PreminedToken.deploy(deployer, 'dai', 'DAI', 18),
+    contracts.PreminedToken.deploy(deployer, 'chai', 'CHAI', 18),
   ]);
-
-  await Promise.all(
-    accounts.map((account) => {
-      const connected = weth.connect(provider.getSigner(account));
-      const amount = utils.parseEther('1000');
-      return connected.deposit.value(amount).send();
-    }),
-  );
 
   // Deploy mock contracts for our integrations.
-  const [kyber, chai] = await Promise.all([
+  const [kyberIntegratee, chaiIntegratee] = await Promise.all([
     contracts.MockKyberIntegratee.deploy(deployer, []),
-    contracts.MockChaiIntegratee.deploy(deployer, dai),
+    contracts.MockChaiIntegratee.deploy(deployer, chai, dai),
   ]);
 
-  const exchanges = [kyber];
+  const exchanges = [kyberIntegratee, chaiIntegratee];
   const primitives = [mln, rep, knc, zrx, dai, weth];
 
   // Deploy mock contracts for our price sources.
   const [kyberPriceSource, chaiPriceSource] = await Promise.all([
     contracts.MockKyberPriceSource.deploy(deployer, primitives),
-    contracts.MockChaiPriceSource.deploy(deployer, 1, 1, 1),
+    contracts.MockChaiPriceSource.deploy(deployer),
   ]);
 
+  const derivatives = {
+    [chai.address]: chaiPriceSource.address,
+  };
+
   // Make all accounts and exchanges rich so we can test investing & trading.
-  await Promise.all([
+  await Promise.all<ContractReceipt<any>>([
+    // Mint each token for each account and exchange.
     ...[...exchanges, ...accounts].flatMap((account) => [
       mln.mint(account, utils.parseEther('10000')),
       rep.mint(account, utils.parseEther('10000')),
       knc.mint(account, utils.parseEther('10000')),
       zrx.mint(account, utils.parseEther('10000')),
       dai.mint(account, utils.parseEther('10000')),
+      chai.mint(account, utils.parseEther('10000')),
     ]),
-  ]);
-
-  // Unlike the initial accounts, the deployed contracts don't have any ETH balance,
-  // hence we send some WETH their way.
-  await Promise.all(
-    exchanges.map((exchange) => {
+    // Deposit eth into weth on behalf of every account.
+    ...accounts.map((account) => {
+      const connected = weth.connect(provider.getSigner(account));
+      const amount = utils.parseEther('1000');
+      return connected.deposit.value(amount).send();
+    }),
+    // Send weth to each exchange.
+    ...exchanges.map((exchange) => {
       return weth.transfer(exchange, utils.parseEther('100'));
     }),
-  );
+  ]);
 
   return {
     weth,
     tokens: { mln, rep, knc, zrx, dai, chai },
     mocks: {
-      integratees: { kyber, chai },
+      integratees: {
+        kyber: kyberIntegratee,
+        chai: chaiIntegratee,
+      },
       priceSources: {
         kyber: kyberPriceSource,
         chai: chaiPriceSource,
@@ -433,9 +438,7 @@ export async function defaultTestConfig(
     deployer,
     accounts: remainingAccounts,
     primitives: primitives.map((primitive) => primitive.address),
-    derivatives: {
-      [chai.address]: chaiPriceSource.address,
-    },
+    derivatives,
     registry: {
       mlnToken: mln.address,
       wethToken: weth.address,
@@ -450,8 +453,8 @@ export async function defaultTestConfig(
     },
     integratees: {
       // TODO: Mock all integrations.
-      chai: chai.address,
-      kyber: kyber.address,
+      chai: chaiIntegratee.address,
+      kyber: kyberIntegratee.address,
       uniswapv2: randomAddress(),
       zeroexv2: randomAddress(),
       zeroexv3: randomAddress(),
