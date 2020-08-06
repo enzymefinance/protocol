@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./derivatives/IDerivativePriceSource.sol";
 import "./primitives/IPriceSource.sol";
 import "./IValueInterpreter.sol";
-import "../dependencies/DSMath.sol";
-import "../dependencies/token/IERC20.sol";
 import "../registry/IRegistry.sol";
 
 /// @title ValueInterpreter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Interprets price sources to yield values across asset pairs
-contract ValueInterpreter is IValueInterpreter, DSMath {
+contract ValueInterpreter is IValueInterpreter {
+    using SafeMath for uint256;
+
     address public REGISTRY;
 
     constructor(address _registry) public {
@@ -92,7 +94,7 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
         view
         returns (uint256)
     {
-        return mul(_rate, _amount) / 10 ** uint256(ERC20WithFields(_asset).decimals());
+        return _rate.mul(_amount).div(10 ** uint256(ERC20(_asset).decimals()));
     }
 
     /// @dev Helper to calculate the value of a derivative in an arbitrary asset.
@@ -123,7 +125,7 @@ contract ValueInterpreter is IValueInterpreter, DSMath {
             ) = __calcAssetValue(underlyings[i], underlyingAmount, _quoteAsset, _useLiveRate);
 
             if (!underlyingIsValid) isValid_ = false;
-            value_ = add(value_, underlyingValue);
+            value_ = value_.add(underlyingValue);
         }
     }
 

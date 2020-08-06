@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../dependencies/DSMath.sol";
-import "../dependencies/token/IMelonToken.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "../fund/hub/IHub.sol";
 import "../fund/hub/ISpoke.sol";
 import "../prices/primitives/IPriceSource.sol";
@@ -12,15 +12,14 @@ import "./IEngine.sol";
 /// @title Engine Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Liquidity contract and token sink
-contract Engine is IEngine, DSMath {
+contract Engine is IEngine {
+    using SafeMath for uint256;
 
     event RegistryChange(address registry);
     event SetAmguPrice(uint256 amguPrice);
     event AmguPaid(uint256 amount);
     event Thaw(uint256 amount);
     event Burn(uint256 amount);
-
-    uint256 public constant MLN_DECIMALS = 18;
 
     IRegistry public registry;
     uint256 public amguPrice;
@@ -103,13 +102,13 @@ contract Engine is IEngine, DSMath {
         (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.WETH_TOKEN());
         uint256 amguConsumed;
         if (mlnPerAmgu > 0 && ethPerMln > 0) {
-            amguConsumed = (mul(msg.value, 10 ** uint256(MLN_DECIMALS))) / (mul(ethPerMln, mlnPerAmgu));
+            amguConsumed = msg.value.mul(10 ** uint256(mlnToken().decimals())).div(ethPerMln.mul(mlnPerAmgu));
         } else {
             amguConsumed = 0;
         }
-        totalEtherConsumed = add(totalEtherConsumed, msg.value);
-        totalAmguConsumed = add(totalAmguConsumed, amguConsumed);
-        frozenEther = add(frozenEther, msg.value);
+        totalEtherConsumed = totalEtherConsumed.add(msg.value);
+        totalAmguConsumed = totalAmguConsumed.add(amguConsumed);
+        frozenEther = frozenEther.add(msg.value);
         emit AmguPaid(amguConsumed);
     }
 
@@ -117,12 +116,12 @@ contract Engine is IEngine, DSMath {
     /// @dev Delay only restarts when this function is called
     function thaw() external {
         require(
-            block.timestamp >= add(lastThaw, thawingDelay),
+            block.timestamp >= lastThaw.add(thawingDelay),
             "Thawing delay has not passed"
         );
         require(frozenEther > 0, "No frozen ether to thaw");
         lastThaw = block.timestamp;
-        liquidEther = add(liquidEther, frozenEther);
+        liquidEther = liquidEther.add(frozenEther);
         emit Thaw(frozenEther);
         frozenEther = 0;
     }
@@ -131,12 +130,12 @@ contract Engine is IEngine, DSMath {
     function enginePrice() public view returns (uint256) {
         uint256 ethPerMln;
         (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.WETH_TOKEN());
-        uint256 premium = (mul(ethPerMln, premiumPercent()) / 100);
-        return add(ethPerMln, premium);
+        uint256 premium = ethPerMln.mul(premiumPercent()).div(100);
+        return ethPerMln.add(premium);
     }
 
     function ethPayoutForMlnAmount(uint256 _mlnAmount) public view returns (uint256) {
-        return mul(_mlnAmount, enginePrice()) / 10 ** uint256(MLN_DECIMALS);
+        return _mlnAmount.mul(enginePrice()).div(10 ** uint256(mlnToken().decimals()));
     }
 
     /// @notice MLN must be approved first
@@ -153,8 +152,8 @@ contract Engine is IEngine, DSMath {
         uint256 ethToSend = ethPayoutForMlnAmount(_mlnAmount);
         require(ethToSend > 0, "No ether to pay out");
         require(liquidEther >= ethToSend, "Not enough liquid ether to send");
-        liquidEther = sub(liquidEther, ethToSend);
-        totalMlnBurned = add(totalMlnBurned, _mlnAmount);
+        liquidEther = liquidEther.sub(ethToSend);
+        totalMlnBurned = totalMlnBurned.add(_mlnAmount);
         msg.sender.transfer(ethToSend);
         mlnToken().burn(_mlnAmount);
         emit Burn(_mlnAmount);
@@ -164,9 +163,9 @@ contract Engine is IEngine, DSMath {
     function mlnToken()
         public
         view
-        returns (IMelonToken)
+        returns (ERC20Burnable)
     {
-        return IMelonToken(registry.MLN_TOKEN());
+        return ERC20Burnable(registry.MLN_TOKEN());
     }
 
     /// @dev Get PriceSource from the registry

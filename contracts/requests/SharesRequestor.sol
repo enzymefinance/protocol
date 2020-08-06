@@ -2,9 +2,9 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../dependencies/DSMath.sol";
-import "../dependencies/TokenUser.sol";
-import "../dependencies/token/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../engine/AmguConsumer.sol";
 import "../fund/hub/FundRouterMixin.sol";
 import "../fund/hub/IHub.sol";
@@ -15,7 +15,10 @@ import "../prices/primitives/IPriceSource.sol";
 /// @title SharesRequestor Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Entry point for users to buy shares in funds
-contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
+contract SharesRequestor is AmguConsumer, FundRouterMixin {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
+
     event RequestCanceled (
         address indexed requestOwner,
         address indexed hub,
@@ -86,7 +89,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
         msg.sender.transfer(request.incentiveFee);
         address denominationAsset = IShares(__getShares(_hub)).DENOMINATION_ASSET();
 
-        __safeTransfer(denominationAsset, msg.sender, request.investmentAmount);
+        IERC20(denominationAsset).safeTransfer(msg.sender, request.investmentAmount);
 
         emit RequestCanceled(
             msg.sender,
@@ -196,7 +199,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
 
         // The initial investment in a fund can skip the request process and settle directly
         if (IERC20(shares).totalSupply() == 0) {
-            __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
+            IERC20(denominationAsset).safeTransferFrom(msg.sender, address(this), _investmentAmount);
             __validateAndBuyShares(
                 _hub,
                 msg.sender,
@@ -218,7 +221,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
 
             // solhint-disable-next-line reentrancy
             ownerToRequestByFund[msg.sender][_hub] = request;
-            __safeTransferFrom(denominationAsset, msg.sender, address(this), _investmentAmount);
+            IERC20(denominationAsset).safeTransferFrom(msg.sender, address(this), _investmentAmount);
 
             emit RequestCreated(
                 msg.sender,
@@ -255,12 +258,12 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
 
         // Price feed's validity interval has expired
         IPriceSource priceSource = IPriceSource(REGISTRY.priceSource());
-        if (now >= add(requestTimestamp, priceSource.VALIDITY_INTERVAL())) return true;
+        if (now >= requestTimestamp.add(priceSource.VALIDITY_INTERVAL())) return true;
 
         // Cancellation buffer has passed after a price feed update
         uint256 lastPriceSourceUpdate = priceSource.lastUpdate();
         return requestTimestamp < lastPriceSourceUpdate &&
-            now >= add(lastPriceSourceUpdate, CANCELLATION_BUFFER);
+            now >= lastPriceSourceUpdate.add(CANCELLATION_BUFFER);
     }
 
     /// @notice Check if a pending shares request is able to be executed
@@ -315,8 +318,7 @@ contract SharesRequestor is DSMath, TokenUser, AmguConsumer, FundRouterMixin {
 
         // Buy the shares via Shares
         IShares shares = IShares(__getShares(_hub));
-        __increaseApproval(
-            shares.DENOMINATION_ASSET(),
+        IERC20(shares.DENOMINATION_ASSET()).safeIncreaseAllowance(
             address(shares),
             _investmentAmount
         );

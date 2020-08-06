@@ -1,6 +1,6 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { AddressLike, MockContract } from '@crestproject/crestproject';
-import { ERC20WithFields } from '../../codegen/ERC20WithFields';
+import { ERC20 } from '../../codegen/ERC20';
 import { IDerivativePriceSource } from '../../codegen/IDerivativePriceSource';
 import { IPriceSource } from '../../codegen/IPriceSource';
 
@@ -59,7 +59,7 @@ export function mockPrimitiveLiveRate({
 }
 
 export async function covertRateToValue(
-  baseAsset: MockContract<ERC20WithFields> | ERC20WithFields,
+  baseAsset: MockContract<ERC20> | ERC20,
   amount: BigNumberish,
   rate: BigNumberish,
 ) {

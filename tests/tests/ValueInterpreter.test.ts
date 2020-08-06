@@ -1,6 +1,6 @@
 import { ethers, utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
-import { ERC20WithFields } from '../codegen/ERC20WithFields';
+import { ERC20 } from '../codegen/ERC20';
 import { IDerivativePriceSource } from '../codegen/IDerivativePriceSource';
 import { IPriceSource } from '../codegen/IPriceSource';
 import { Registry } from '../codegen/Registry';
@@ -15,10 +15,10 @@ import {
 async function deploy(provider: BuidlerProvider) {
   const [deployer] = await provider.listAccounts();
   const signer = provider.getSigner(deployer);
-  const mockAsset1 = await ERC20WithFields.mock(signer);
-  const mockAsset2 = await ERC20WithFields.mock(signer);
-  const mockAsset3 = await ERC20WithFields.mock(signer);
-  const mockAsset4 = await ERC20WithFields.mock(signer);
+  const mockAsset1 = await ERC20.mock(signer);
+  const mockAsset2 = await ERC20.mock(signer);
+  const mockAsset3 = await ERC20.mock(signer);
+  const mockAsset4 = await ERC20.mock(signer);
   const mockDerivativePriceSource = await IDerivativePriceSource.mock(signer);
   const mockPriceSource = await IPriceSource.mock(signer);
   const mockRegistry = await Registry.mock(signer);
