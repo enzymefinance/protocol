@@ -1,88 +1,94 @@
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import { BuidlerProvider } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
-import * as contracts from '../contracts';
+import {
+    dummyFee,
+    setupFundWithParams,
+  } from '../utils';
+  import { IFee } from '../codegen/IFee';
 
 let tx;
 
 async function snapshot(provider: BuidlerProvider) {
-  const deployment = await configureTestDeployment()(provider);
-  const hub = await contracts.Hub.mock(deployment.config.deployer);
-  await hub.REGISTRY.returns(deployment.system.registry);
-  await hub.MANAGER.returns(deployment.config.deployer);
 
-  return { ...deployment, hub };
+  const deployment = await configureTestDeployment()(provider);
+  const {
+    system: { fundFactory, registry },
+    config: {
+      deployer,
+      tokens: { weth },
+    },
+  } = deployment;
+
+  const mockFee = await IFee.mock(deployer);
+  await mockFee.identifier.returns("MOCK");
+  await mockFee.feeHook.returns(2); // Continuous fee
+  await mockFee.addFundSettings.returns("");
+  await registry.registerFee(mockFee);
+
+  const fund = await setupFundWithParams({
+    factory: fundFactory,
+    manager: deployer,
+    denominationAsset: weth,
+    fees: [await dummyFee(mockFee.address)]
+  });
+
+  return { ...deployment, fund, mockFee };
 }
 
-describe('Shares', () => {
-  describe('constructor', () => {
-    it('cannot set a non-primitive asset as denomination asset', async () => {
+describe('FeeManager', () => {
+  describe('enableFees', () => {
+    // TODO: All these tests should be done with a FeeManager mock.
+    it.todo('does not allow an empty fees array');
+    it.todo('does not allow uneven fees and settings arrays');
+    it.todo('does not allow an un-registered fee');
+    it.todo('does not allow an already enabled fee');
+
+    // Called by FundFactory on fund deployment, but could also do this with a mock.
+    // TODO: need to do a mock FeeManager if we want to test the event.
+    it('enables only the specified fee', async () => {
       const {
-        hub,
-        system: { registry },
-        config: { deployer },
-      } = await provider.snapshot(snapshot);
-      const denomination = randomAddress();
-
-      // Should fail, due to the denomination asset not being registered
-      tx = contracts.Shares.deploy(deployer, hub, denomination, 'shares');
-      await expect(tx).rejects.toBeRevertedWith(
-        'Denomination asset must be registered',
-      );
-
-      // Register denomination asset, and it should succeed
-      await registry.registerPrimitive(denomination);
-      tx = contracts.Shares.deploy(deployer, hub, denomination, 'shares');
-      await expect(tx).resolves.toBeInstanceOf(contracts.Shares);
-    });
-
-    it('sets initial storage values', async () => {
-      const {
-        hub,
-        config: {
-          deployer,
-          tokens: { weth },
+        fund: {
+          feeManager
         },
+        mockFee
       } = await provider.snapshot(snapshot);
 
-      const name = 'My Shares';
-      const shares = await contracts.Shares.deploy(deployer, hub, weth, name);
+      tx = feeManager.feeIsEnabled(mockFee);
+      await expect(tx).resolves.toBe(true);
 
-      tx = shares.HUB();
-      await expect(tx).resolves.toBe(hub.address);
-
-      tx = shares.DENOMINATION_ASSET();
-      await expect(tx).resolves.toBe(weth.address);
-
-      tx = shares.name();
-      await expect(tx).resolves.toBe(name);
-
-      tx = shares.symbol();
-      await expect(tx).resolves.toBe('MLNF');
-
-      tx = shares.decimals();
-      await expect(tx).resolves.toBe(18);
+      tx = await feeManager.getEnabledFees();
+      expect(tx.length).toBe(1);
+      expect(tx[0]).toBe(mockFee.address);
     });
   });
 
-  describe('buyShares', () => {
-    it.todo('can only be called by SharesRequestor');
+  // Note: It may be easier to test most of these with `settleContinuousFees` for the time being,
+  // due to ease of access control (don't need to call from Shares)
+  describe('settleFees', () => {
+    it.todo('is only callable by Shares');
+    it.todo('is only callable for an active fund');
+    it.todo('only calls fees of the specified FeeHook');
+    it.todo('only calls fees of the specified FeeHook');
 
-    it.todo('reverts if _minSharesQuantity is not met');
-
-    it.todo('deducts owed fees');
-
-    it.todo('updates state and emits SharesBought');
+    it.todo('calls Fee.payoutSharesOutstanding even if there are 0 shares due from Fee.settle');
   });
 
-  describe('__redeemShares', () => {
-    it.todo('reverts if a user does not have enough shares');
+  describe('__distributeSharesDue', () => {
+    it.todo('returns if the _payer and _payee are the same');
+    it.todo('only burns _payer shares if _payee is Shares');
+    it.todo('only mints shares to _payee if _payer is Shares');
+    it.todo('burns _payer shares and mints _payee shares if neither _payer nor _payee is Shares');
+  });
 
-    it.todo('reverts if the fund has no assets');
+  describe('__payoutFeeSharesOutstanding', () => {
+    it.todo('calls payoutSharesOutstanding on the Fee');
+    it.todo('does not attempt to distribute fees or emit event if no shares are due');
+    it.todo('emits FeeSharesOutstandingPaid with correct return values');
+  });
 
-    it.todo('reverts with a bad asset transfer function');
-
-    it.todo('deducts owed fees');
-
-    it.todo('updates state and emits SharesBought');
+  describe('__settleFee', () => {
+    it.todo('calls settle on the Fee with the proper args');
+    it.todo('does not attempt to distribute fees or emit event if no shares are due');
+    it.todo('emits FeeSettled with correct return values');
   });
 });
