@@ -20,7 +20,7 @@ export { VaultFactory } from './codegen/VaultFactory';
 
 // Price sources
 export { KyberPriceFeed } from './codegen/KyberPriceFeed';
-export { ChaiPriceSource } from './codegen/ChaiPriceSource';
+export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
 
 // Adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';

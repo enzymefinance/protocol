@@ -80,7 +80,7 @@ export interface ContractConstructors {
   registry: ContractConstructor<contracts.Registry>;
   engine: ContractConstructor<contracts.Engine>;
   kyberPriceFeed: ContractConstructor<contracts.KyberPriceFeed>;
-  chaiPriceSource: ContractConstructor<contracts.ChaiPriceSource>;
+  chaiPriceFeed: ContractConstructor<contracts.ChaiPriceFeed>;
   valueInterpreter: ContractConstructor<contracts.ValueInterpreter>;
   sharesRequestor: ContractConstructor<contracts.SharesRequestor>;
   fundFactory: ContractConstructor<contracts.FundFactory>;
@@ -135,8 +135,8 @@ const constructors: ContractConstructors = {
       config.pricefeeds.kyber.maxPriceDeviation,
     );
   },
-  chaiPriceSource: async (config) => {
-    return contracts.ChaiPriceSource.deploy(
+  chaiPriceFeed: async (config) => {
+    return contracts.ChaiPriceFeed.deploy(
       config.deployer,
       config.pricefeeds.chai.chaiToken,
       config.pricefeeds.chai.daiToken,
@@ -390,13 +390,13 @@ export async function defaultTestConfig(
   const primitives = [mln, rep, knc, zrx, dai, weth];
 
   // Deploy mock contracts for our price sources.
-  const [kyberPriceSource, chaiPriceSource] = await Promise.all([
+  const [kyberPriceSource, chaiPriceFeed] = await Promise.all([
     contracts.MockKyberPriceSource.deploy(deployer, primitives),
     contracts.MockChaiPriceSource.deploy(deployer),
   ]);
 
   const derivatives = {
-    [chaiIntegratee.address]: chaiPriceSource.address,
+    [chaiIntegratee.address]: chaiPriceFeed.address,
   };
 
   // Make all accounts and exchanges rich so we can test investing & trading.
@@ -432,7 +432,7 @@ export async function defaultTestConfig(
       },
       priceSources: {
         kyber: kyberPriceSource,
-        chai: chaiPriceSource,
+        chai: chaiPriceFeed,
       },
     },
     deployer,
@@ -477,7 +477,7 @@ export async function defaultTestConfig(
       chai: {
         daiToken: dai.address,
         chaiToken: chaiIntegratee.address,
-        dsrPot: chaiPriceSource.address,
+        dsrPot: chaiPriceFeed.address,
       },
     },
   };

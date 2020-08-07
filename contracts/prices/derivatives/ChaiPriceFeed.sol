@@ -4,10 +4,10 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./IDerivativePriceSource.sol";
 
-/// @title Chai Price Source
+/// @title ChaiPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Price source oracle for Chai
-contract ChaiPriceSource is IDerivativePriceSource {
+contract ChaiPriceFeed is IDerivativePriceSource {
     using SafeMath for uint256;
 
     address immutable public CHAI;
