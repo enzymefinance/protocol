@@ -54,6 +54,7 @@ export interface DeploymentConfig {
   adapters: {
     chai: {
       daiToken: string;
+      chaiToken: string;
     };
   };
   integratees: {
@@ -221,7 +222,7 @@ const constructors: ContractConstructors = {
     return contracts.ChaiAdapter.deploy(
       config.deployer,
       Registry,
-      config.integratees.chai,
+      config.adapters.chai.chaiToken,
       config.adapters.chai.daiToken,
     );
   },
@@ -371,19 +372,18 @@ export async function defaultTestConfig(
   const deployer = provider.getSigner(deployerAddress);
 
   const weth = await contracts.WETH.deploy(deployer);
-  const [mln, rep, knc, zrx, dai, chai] = await Promise.all([
+  const [mln, rep, knc, zrx, dai] = await Promise.all([
     contracts.PreminedToken.deploy(deployer, 'mln', 'MLN', 18),
     contracts.PreminedToken.deploy(deployer, 'rep', 'REP', 18),
     contracts.PreminedToken.deploy(deployer, 'knc', 'KNC', 18),
     contracts.PreminedToken.deploy(deployer, 'zrx', 'ZRX', 18),
     contracts.PreminedToken.deploy(deployer, 'dai', 'DAI', 18),
-    contracts.PreminedToken.deploy(deployer, 'chai', 'CHAI', 18),
   ]);
 
   // Deploy mock contracts for our integrations.
   const [kyberIntegratee, chaiIntegratee] = await Promise.all([
     contracts.MockKyberIntegratee.deploy(deployer, []),
-    contracts.MockChaiIntegratee.deploy(deployer, chai, dai),
+    contracts.MockChaiIntegratee.deploy(deployer, dai),
   ]);
 
   const exchanges = [kyberIntegratee, chaiIntegratee];
@@ -396,19 +396,19 @@ export async function defaultTestConfig(
   ]);
 
   const derivatives = {
-    [chai.address]: chaiPriceSource.address,
+    [chaiIntegratee.address]: chaiPriceSource.address,
   };
 
   // Make all accounts and exchanges rich so we can test investing & trading.
   await Promise.all<ContractReceipt<any>>([
     // Mint each token for each account and exchange.
-    ...[...exchanges, ...accounts].flatMap((account) => [
-      mln.mint(account, utils.parseEther('10000')),
-      rep.mint(account, utils.parseEther('10000')),
-      knc.mint(account, utils.parseEther('10000')),
-      zrx.mint(account, utils.parseEther('10000')),
-      dai.mint(account, utils.parseEther('10000')),
-      chai.mint(account, utils.parseEther('10000')),
+    ...[...exchanges, ...accounts].flatMap((receiver) => [
+      mln.mint(receiver, utils.parseEther('10000')),
+      rep.mint(receiver, utils.parseEther('10000')),
+      knc.mint(receiver, utils.parseEther('10000')),
+      zrx.mint(receiver, utils.parseEther('10000')),
+      dai.mint(receiver, utils.parseEther('10000')),
+      chaiIntegratee.mint(receiver, utils.parseEther('10000')),
     ]),
     // Deposit eth into weth on behalf of every account.
     ...accounts.map((account) => {
@@ -424,7 +424,7 @@ export async function defaultTestConfig(
 
   return {
     weth,
-    tokens: { mln, rep, knc, zrx, dai, chai },
+    tokens: { mln, rep, knc, zrx, dai, chai: chaiIntegratee },
     mocks: {
       integratees: {
         kyber: kyberIntegratee,
@@ -462,6 +462,7 @@ export async function defaultTestConfig(
     adapters: {
       chai: {
         daiToken: dai.address,
+        chaiToken: chaiIntegratee.address,
       },
     },
     pricefeeds: {
@@ -474,8 +475,8 @@ export async function defaultTestConfig(
         updater: priceSourceUpdaterAddress,
       },
       chai: {
-        chaiToken: chai.address,
         daiToken: dai.address,
+        chaiToken: chaiIntegratee.address,
         dsrPot: chaiPriceSource.address,
       },
     },

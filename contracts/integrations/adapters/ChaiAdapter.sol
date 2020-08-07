@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IChai.sol";
 import "../utils/AdapterBase.sol";
 
@@ -8,6 +9,8 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for Chai <https://github.com/dapphub/chai>
 contract ChaiAdapter is AdapterBase {
+    using SafeERC20 for IERC20;
+
     address immutable public CHAI;
     address immutable public DAI;
 
@@ -89,8 +92,9 @@ contract ChaiAdapter is AdapterBase {
         require(daiAmount > 0, "lend: daiAmount must be >0");
 
         // Execute Lend on Chai
-        IERC20(DAI).approve(CHAI, daiAmount);
-        IChai(CHAI).join(msg.sender, daiAmount);
+        // TODO: could use Vault as src and not use fundAssetsTransferHandler to save gas
+        IERC20(DAI).safeIncreaseAllowance(CHAI, daiAmount);
+        IChai(CHAI).join(address(this), daiAmount);
     }
 
     /// @notice Redeem Chai for Dai
@@ -104,7 +108,7 @@ contract ChaiAdapter is AdapterBase {
         (uint256 chaiAmount,) = __decodeCallArgs(_encodedCallArgs);
         require(chaiAmount > 0, "redeem: chaiAmount must be >0");
 
-        // Execute Lend on Chai
+        // Execute Redeem on Chai
         // TODO: could use Vault as src and not use fundAssetsTransferHandler to save gas
         IChai(CHAI).exit(address(this), chaiAmount);
     }
