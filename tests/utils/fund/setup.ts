@@ -4,7 +4,7 @@ import { FeeParams } from './fees';
 import { PolicyParams } from './policies';
 import { stringToBytes, encodeArgs } from '../common';
 import {
-  DemoninationAssetInterface,
+  DenominationAssetInterface,
   requestShares,
   RequestSharesParams,
 } from './investing';
@@ -17,7 +17,7 @@ export type InitialInvestmentParams = Omit<
 
 export interface SetupFundParams {
   factory: contracts.FundFactory;
-  denominationAsset: DemoninationAssetInterface;
+  denominationAsset: DenominationAssetInterface;
   manager?: Signer;
   name?: string;
   adapters?: AddressLike[];
@@ -107,9 +107,9 @@ export interface FundComponents {
 
 export async function getFundComponents(
   address: string,
-  providider: Signer | providers.Provider,
+  provider: Signer | providers.Provider,
 ): Promise<FundComponents> {
-  const hub = new contracts.Hub(address, providider);
+  const hub = new contracts.Hub(address, provider);
   const [
     vaultAddress,
     sharesAddress,
@@ -122,12 +122,12 @@ export async function getFundComponents(
     hub.policyManager(),
   ]);
 
-  const vault = new contracts.Vault(vaultAddress, providider);
-  const shares = new contracts.Shares(sharesAddress, providider);
-  const feeManager = new contracts.FeeManager(feeManagerAddress, providider);
+  const vault = new contracts.Vault(vaultAddress, provider);
+  const shares = new contracts.Shares(sharesAddress, provider);
+  const feeManager = new contracts.FeeManager(feeManagerAddress, provider);
   const policyManager = new contracts.PolicyManager(
     policyManagerAddress,
-    providider,
+    provider,
   );
 
   return {
