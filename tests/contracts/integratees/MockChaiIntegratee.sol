@@ -3,7 +3,7 @@ pragma solidity 0.6.8;
 
 import "../PreminedToken.sol";
 
-// TODO: Add ability to set DAI/CHAI rate.
+// TODO: Consider adding ability to set DAI/CHAI rate.
 contract MockChaiIntegratee is PreminedToken("Chai", "CHAI", 18) {
     address public immutable DAI;
 
@@ -12,16 +12,16 @@ contract MockChaiIntegratee is PreminedToken("Chai", "CHAI", 18) {
     }
 
     function join(address payable _trader, uint256 _daiAmount) external {
-        // Take custory of the trader's DAI.
-        ERC20(DAI).transferFrom(_trader, address(this), _daiAmount);
         // Mint CHAI for the trader.
         _mint(_trader, _daiAmount);
+        // Take custody of the trader's DAI.
+        ERC20(DAI).transferFrom(msg.sender, address(this), _daiAmount);
     }
 
     function exit(address payable _trader, uint256 _chaiAmount) external {
-        // Release DAI to the trader.
-        ERC20(DAI).transfer(_trader, _chaiAmount);
         // Burn CHAI of the trader.
         _burn(_trader, _chaiAmount);
+        // Release DAI to the trader.
+        ERC20(DAI).transfer(msg.sender, _chaiAmount);
     }
 }

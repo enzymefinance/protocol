@@ -109,7 +109,6 @@ contract ChaiAdapter is AdapterBase {
         require(chaiAmount > 0, "redeem: chaiAmount must be >0");
 
         // Execute Redeem on Chai
-        // TODO: could use Vault as src and not use fundAssetsTransferHandler to save gas
         IChai(CHAI).exit(address(this), chaiAmount);
     }
 
