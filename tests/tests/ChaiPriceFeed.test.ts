@@ -1,6 +1,5 @@
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
-import { BigNumber, utils } from 'ethers';
 
 let tx;
 
@@ -54,26 +53,20 @@ describe('ChaiPriceFeed', () => {
         system: { chaiPriceFeed },
         config: {
           tokens: { chai, dai },
+          mocks: {
+            priceSources: { chai: chaiPriceSource },
+          },
         },
       } = await provider.snapshot(snapshot);
 
       tx = chaiPriceFeed.getRatesToUnderlyings(chai);
       await expect(tx).resolves.toBeReceipt();
 
-      tx = await chaiPriceFeed.getRatesToUnderlyings.args(chai).call();
-      expect(tx).toMatchObject({
-        // NOTE: The rate changes by 1% on every call to drip().
-        rates_: [utils.parseEther('0.99')],
-        underlyings_: [dai.address],
-      });
-
-      tx = chaiPriceFeed.getRatesToUnderlyings(chai);
-      await expect(tx).resolves.toBeReceipt();
+      const chi = await chaiPriceSource.chi();
 
       tx = await chaiPriceFeed.getRatesToUnderlyings.args(chai).call();
       expect(tx).toMatchObject({
-        // NOTE: The rate changes by 1% on every call to drip().
-        rates_: [utils.parseEther('0.9801')],
+        rates_: [chi.div(10 ** 9)],
         underlyings_: [dai.address],
       });
     });
