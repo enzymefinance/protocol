@@ -9,7 +9,6 @@ export { Hub } from './codegen/Hub';
 // Core
 export { Registry } from './codegen/Registry';
 export { Engine } from './codegen/Engine';
-export { KyberPriceFeed } from './codegen/KyberPriceFeed';
 export { ValueInterpreter } from './codegen/ValueInterpreter';
 export { SharesRequestor } from './codegen/SharesRequestor';
 export { FeeManagerFactory } from './codegen/FeeManagerFactory';
@@ -19,7 +18,12 @@ export { PolicyManagerFactory } from './codegen/PolicyManagerFactory';
 export { SharesFactory } from './codegen/SharesFactory';
 export { VaultFactory } from './codegen/VaultFactory';
 
+// Price sources
+export { KyberPriceFeed } from './codegen/KyberPriceFeed';
+export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
+
 // Adapters
+export { ChaiAdapter } from './codegen/ChaiAdapter';
 export { KyberAdapter } from './codegen/KyberAdapter';
 export { EngineAdapter } from './codegen/EngineAdapter';
 export { UniswapV2Adapter } from './codegen/UniswapV2Adapter';
@@ -38,5 +42,7 @@ export { PriceTolerance } from './codegen/PriceTolerance';
 export { ERC20 } from './codegen/ERC20';
 export { WETH } from './codegen/WETH';
 export { PreminedToken } from './codegen/PreminedToken';
+export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
+export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
 export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';
 export { MockKyberPriceSource } from './codegen/MockKyberPriceSource';

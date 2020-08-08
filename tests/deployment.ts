@@ -1,9 +1,9 @@
 import { BigNumberish, providers, Signer, utils } from 'ethers';
 import {
-  AddressLike,
   BuidlerProvider,
   Contract,
   randomAddress,
+  ContractReceipt,
 } from '@crestproject/crestproject';
 import * as contracts from './contracts';
 
@@ -21,6 +21,9 @@ export type ContractConstructor<TContract extends Contract> = (
 export interface DeploymentConfig {
   deployer: Signer;
   primitives: string[];
+  derivatives: {
+    [derivative: string]: string;
+  };
   owners: {
     mgm: string;
     mtc: string;
@@ -42,8 +45,20 @@ export interface DeploymentConfig {
       maxSpread: BigNumberish;
       updater: string;
     };
+    chai: {
+      dsrPot: string;
+      daiToken: string;
+      chaiToken: string;
+    };
+  };
+  adapters: {
+    chai: {
+      daiToken: string;
+      chaiToken: string;
+    };
   };
   integratees: {
+    chai: string;
     kyber: string;
     uniswapv2: string;
     zeroexv2: string;
@@ -65,6 +80,7 @@ export interface ContractConstructors {
   registry: ContractConstructor<contracts.Registry>;
   engine: ContractConstructor<contracts.Engine>;
   kyberPriceFeed: ContractConstructor<contracts.KyberPriceFeed>;
+  chaiPriceFeed: ContractConstructor<contracts.ChaiPriceFeed>;
   valueInterpreter: ContractConstructor<contracts.ValueInterpreter>;
   sharesRequestor: ContractConstructor<contracts.SharesRequestor>;
   fundFactory: ContractConstructor<contracts.FundFactory>;
@@ -80,6 +96,7 @@ export interface ContractConstructors {
   maxPositions: ContractConstructor<contracts.MaxPositions>;
   priceTolerance: ContractConstructor<contracts.PriceTolerance>;
   userWhitelist: ContractConstructor<contracts.UserWhitelist>;
+  chaiAdapter: ContractConstructor<contracts.ChaiAdapter>;
   kyberAdapter: ContractConstructor<contracts.KyberAdapter>;
   uniswapV2Adapter: ContractConstructor<contracts.UniswapV2Adapter>;
   zeroExV2Adapter: ContractConstructor<contracts.ZeroExV2Adapter>;
@@ -116,6 +133,14 @@ const constructors: ContractConstructors = {
       config.pricefeeds.kyber.expectedRateWethQty,
       config.pricefeeds.kyber.maxSpread,
       config.pricefeeds.kyber.maxPriceDeviation,
+    );
+  },
+  chaiPriceFeed: async (config) => {
+    return contracts.ChaiPriceFeed.deploy(
+      config.deployer,
+      config.pricefeeds.chai.chaiToken,
+      config.pricefeeds.chai.daiToken,
+      config.pricefeeds.chai.dsrPot,
     );
   },
   valueInterpreter: async (config, deployment) => {
@@ -193,6 +218,15 @@ const constructors: ContractConstructors = {
   userWhitelist: async (config, deployment) => {
     const Registry = await deployment.registry;
     return contracts.UserWhitelist.deploy(config.deployer, Registry);
+  },
+  chaiAdapter: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.ChaiAdapter.deploy(
+      config.deployer,
+      Registry,
+      config.adapters.chai.chaiToken,
+      config.adapters.chai.daiToken,
+    );
   },
   kyberAdapter: async (config, deployment) => {
     const Registry = await deployment.registry;
@@ -297,6 +331,7 @@ export async function deploySystem(config: DeploymentConfig) {
     deployment.registry.registerPolicy(deployment.userWhitelist),
 
     // Adapters
+    deployment.registry.registerIntegrationAdapter(deployment.chaiAdapter),
     deployment.registry.registerIntegrationAdapter(deployment.kyberAdapter),
     deployment.registry.registerIntegrationAdapter(deployment.uniswapV2Adapter),
     deployment.registry.registerIntegrationAdapter(deployment.zeroExV2Adapter),
@@ -304,10 +339,20 @@ export async function deploySystem(config: DeploymentConfig) {
     deployment.registry.registerIntegrationAdapter(deployment.engineAdapter),
   ]);
 
-  const primitives = Object.values(config.primitives);
   await Promise.all(
-    primitives.map((primitive) => {
+    config.primitives.map((primitive) => {
       return deployment.registry.registerPrimitive(primitive);
+    }),
+  );
+
+  const derivatives = Object.keys(config.derivatives);
+  await Promise.all(
+    derivatives.map((derivative) => {
+      const source = config.derivatives[derivative];
+      return deployment.registry.registerDerivativePriceSource(
+        derivative,
+        source,
+      );
     }),
   );
 
@@ -329,88 +374,77 @@ export async function defaultTestConfig(
   const deployer = provider.getSigner(deployerAddress);
 
   const weth = await contracts.WETH.deploy(deployer);
-  await Promise.all(
-    accounts.map((account) => {
+  const [mln, rep, knc, zrx, dai] = await Promise.all([
+    contracts.PreminedToken.deploy(deployer, 'mln', 'MLN', 18),
+    contracts.PreminedToken.deploy(deployer, 'rep', 'REP', 18),
+    contracts.PreminedToken.deploy(deployer, 'knc', 'KNC', 18),
+    contracts.PreminedToken.deploy(deployer, 'zrx', 'ZRX', 18),
+    contracts.PreminedToken.deploy(deployer, 'dai', 'DAI', 18),
+  ]);
+
+  // Deploy mock contracts for our integrations.
+  const [kyberIntegratee, chaiIntegratee] = await Promise.all([
+    contracts.MockKyberIntegratee.deploy(deployer, []),
+    contracts.MockChaiIntegratee.deploy(deployer, dai),
+  ]);
+
+  const exchanges = [kyberIntegratee, chaiIntegratee];
+  const primitives = [mln, rep, knc, zrx, dai, weth];
+
+  // Deploy mock contracts for our price sources.
+  const [kyberPriceSource, chaiPriceFeed] = await Promise.all([
+    contracts.MockKyberPriceSource.deploy(deployer, primitives),
+    contracts.MockChaiPriceSource.deploy(deployer),
+  ]);
+
+  const derivatives = {
+    [chaiIntegratee.address]: chaiPriceFeed.address,
+  };
+
+  // Make all accounts and exchanges rich so we can test investing & trading.
+  await Promise.all<ContractReceipt<any>>([
+    // Mint each token for each account and exchange.
+    ...[...exchanges, ...accounts].flatMap((receiver) => [
+      mln.mint(receiver, utils.parseEther('10000')),
+      rep.mint(receiver, utils.parseEther('10000')),
+      knc.mint(receiver, utils.parseEther('10000')),
+      zrx.mint(receiver, utils.parseEther('10000')),
+      dai.mint(receiver, utils.parseEther('10000')),
+      chaiIntegratee.mint(receiver, utils.parseEther('10000')),
+    ]),
+    // Deposit eth into weth on behalf of every account.
+    ...accounts.map((account) => {
       const connected = weth.connect(provider.getSigner(account));
       const amount = utils.parseEther('1000');
       return connected.deposit.value(amount).send();
     }),
-  );
-
-  const premine = [
-    { name: 'MLN Token', symbol: 'MLN', decimals: 18 },
-    { name: 'DAI Token', symbol: 'DAI', decimals: 18 },
-    { name: 'REP Token', symbol: 'REP', decimals: 18 },
-    { name: 'KNC Token', symbol: 'KNC', decimals: 18 },
-    { name: 'ZRX Token', symbol: 'ZRX', decimals: 18 },
-  ];
-
-  // Deploy a few premined tokens as configured.
-  const premined = await Promise.all(
-    premine.map((token) => {
-      return contracts.PreminedToken.deploy(
-        deployer,
-        token.name,
-        token.symbol,
-        token.decimals,
-      );
+    // Send weth to each exchange.
+    ...exchanges.map((exchange) => {
+      return weth.transfer(exchange, utils.parseEther('100'));
     }),
-  );
-
-  // Produce a map of tokens for easy access in our tests.
-  const symbols = premine.map((item) => item.symbol.toLowerCase());
-  const tokens: {
-    [symbol: string]: contracts.WETH | contracts.PreminedToken;
-  } = symbols.reduce(
-    (carry, symbol, index) => ({ ...carry, [symbol]: premined[index] }),
-    { weth },
-  );
-
-  // Deploy mock contracts for our integrations.
-  const [kyber] = await Promise.all([
-    contracts.MockKyberIntegratee.deploy(deployer, []),
   ]);
-
-  const primitives = [...premined, weth];
-  const primitiveAddresses = primitives.map((item) => item.address);
-  const integratees = [kyber];
-
-  // Deploy mock contracts for our price sources.
-  const [kyberPriceSource] = await Promise.all([
-    contracts.MockKyberPriceSource.deploy(deployer, primitiveAddresses),
-  ]);
-
-  // Make all accounts and integratees (exchanges) rich so we can test trading.
-  const mint = premine.map((token) => {
-    return utils.parseUnits('10000', token.decimals);
-  });
-
-  await Promise.all(
-    accounts.map((account) => mintTokens(premined, account, mint)),
-  );
-
-  await Promise.all(
-    integratees.map((integratee) => {
-      return Promise.all([
-        mintTokens(premined, integratee, mint),
-        transferWeth(weth, integratee),
-      ]);
-    }),
-  );
 
   return {
-    tokens,
+    weth,
+    tokens: { mln, rep, knc, zrx, dai, chai: chaiIntegratee },
     mocks: {
       integratees: {
-        kyber,
+        kyber: kyberIntegratee,
+        chai: chaiIntegratee,
       },
       priceSources: {
         kyber: kyberPriceSource,
+        chai: chaiPriceFeed,
       },
     },
     deployer,
     accounts: remainingAccounts,
-    primitives: primitiveAddresses,
+    primitives: primitives.map((primitive) => primitive.address),
+    derivatives,
+    registry: {
+      mlnToken: mln.address,
+      wethToken: weth.address,
+    },
     engine: {
       thawingDelay: 2592000,
     },
@@ -419,16 +453,19 @@ export async function defaultTestConfig(
       mtc: mtcAddress,
       priceSourceUpdater: priceSourceUpdaterAddress,
     },
-    registry: {
-      wethToken: weth.address,
-      mlnToken: tokens.mln.address,
-    },
     integratees: {
       // TODO: Mock all integrations.
-      kyber: kyber.address,
+      chai: chaiIntegratee.address,
+      kyber: kyberIntegratee.address,
       uniswapv2: randomAddress(),
       zeroexv2: randomAddress(),
       zeroexv3: randomAddress(),
+    },
+    adapters: {
+      chai: {
+        daiToken: dai.address,
+        chaiToken: chaiIntegratee.address,
+      },
     },
     pricefeeds: {
       kyber: {
@@ -439,22 +476,30 @@ export async function defaultTestConfig(
         quoteAsset: weth.address,
         updater: priceSourceUpdaterAddress,
       },
+      chai: {
+        daiToken: dai.address,
+        chaiToken: chaiIntegratee.address,
+        dsrPot: chaiPriceFeed.address,
+      },
     },
   };
 }
 
 export interface TestDeploymentConfig extends DeploymentConfig {
   accounts: string[];
+  weth: contracts.WETH;
+  tokens: {
+    [symbol: string]: contracts.PreminedToken;
+  };
   mocks: {
     integratees: {
       kyber: contracts.MockKyberIntegratee;
+      chai: contracts.MockChaiIntegratee;
     };
     priceSources: {
       kyber: contracts.MockKyberPriceSource;
+      chai: contracts.MockChaiPriceSource;
     };
-  };
-  tokens: {
-    [symbol: string]: contracts.PreminedToken | contracts.WETH;
   };
 }
 
@@ -482,30 +527,4 @@ export function configureTestDeployment<
       config,
     };
   };
-}
-
-const defaultAmount = utils.parseEther('10000');
-export async function mintTokens(
-  tokens: contracts.PreminedToken[],
-  who: AddressLike,
-  amounts: BigNumberish[] = tokens.map(() => defaultAmount),
-) {
-  return await Promise.all(
-    tokens.map(async (token, index) => {
-      const amount = amounts[index] ?? defaultAmount;
-      return token.mint(who, amount);
-    }),
-  );
-}
-
-// TODO: Increase the initial balance on all accounts so we can send more.
-// Currently, each account only gets 10000 WETH of which we deposit 5000
-// into WETH. Of these we then transfer 100 to each mocked integratee.
-const defaultWethAmount = utils.parseEther('100');
-export async function transferWeth(
-  weth: contracts.WETH,
-  who: AddressLike,
-  amount: BigNumberish = defaultWethAmount,
-) {
-  return await weth.transfer(who, amount);
 }

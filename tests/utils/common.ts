@@ -16,3 +16,7 @@ export async function encodeArgs(
   const hex = utils.defaultAbiCoder.encode(params, resolved);
   return utils.arrayify(hex);
 }
+
+export function sighash(fragment: utils.FunctionFragment) {
+  return utils.hexDataSlice(utils.id(fragment.format()), 0, 4);
+}

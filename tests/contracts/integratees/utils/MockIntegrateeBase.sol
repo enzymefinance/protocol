@@ -42,6 +42,7 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
     }
 
     function __swap(
+        address payable _trader,
         address[] memory _assetsToIntegratee,
         uint256[] memory _assetsToIntegrateeAmounts,
         address[] memory _assetsFromIntegratee,
@@ -59,7 +60,7 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
             if (asset == ETH_ADDRESS) {
                 continue;
             }
-            ERC20(asset).transferFrom(msg.sender, address(this), amount);
+            ERC20(asset).transferFrom(_trader, address(this), amount);
         }
 
         // Distribute outgoing assets
@@ -69,10 +70,10 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
             require(asset != address(0), "__swap: empty value in _assetsFromIntegratee");
             require(amount > 0, "__swap: empty value in _assetsFromIntegrateeAmounts");
             if (asset == ETH_ADDRESS) {
-                msg.sender.transfer(amount);
+                _trader.transfer(amount);
             }
             else {
-                ERC20(asset).transfer(msg.sender, amount);
+                ERC20(asset).transfer(_trader, amount);
             }   
         }
     }

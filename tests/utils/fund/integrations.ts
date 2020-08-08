@@ -1,20 +1,32 @@
 import { AddressLike, Call, Contract } from '@crestproject/crestproject';
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
-import { encodeArgs } from '../common';
+import { encodeArgs, sighash } from '../common';
 
 // prettier-ignore
 export interface IntegrationAdapterInterface extends Contract {
   parseAssetsForMethod: Call<(_selector: BytesLike, _encodedCallArgs: BytesLike) => { spendAssets_: string[]; spendAssetAmounts_: BigNumber[]; incomingAssets_: string[]; minIncomingAssetAmounts_: BigNumber[]; }>;
 }
 
+export const lendFragment = utils.FunctionFragment.fromString(
+  'lend(bytes,bytes)',
+);
+
+export const redeemFragment = utils.FunctionFragment.fromString(
+  'redeem(bytes,bytes)',
+);
+
 export const takeOrderFragment = utils.FunctionFragment.fromString(
   'takeOrder(bytes,bytes)',
 );
 
 export const takeOrderSignature = takeOrderFragment.format();
-export const takeOrderSelector = new utils.Interface([
-  takeOrderFragment,
-]).getSighash(takeOrderFragment);
+export const takeOrderSelector = sighash(takeOrderFragment);
+
+export const redeemSignature = redeemFragment.format();
+export const redeemSelector = sighash(redeemFragment);
+
+export const lendSignature = lendFragment.format();
+export const lendSelector = sighash(lendFragment);
 
 export async function assetTransferArgs(
   adapter: IntegrationAdapterInterface,
@@ -47,6 +59,26 @@ export async function kyberTakeOrderArgs(
       outgoingAsset,
       outgoingAssetAmount,
     ],
+  );
+}
+
+export async function chaiLendArgs(
+  outgoingDaiAmount: BigNumberish,
+  expectedIncomingChaiAmount: BigNumberish,
+) {
+  return encodeArgs(
+    ['uint256', 'uint256'],
+    [outgoingDaiAmount, expectedIncomingChaiAmount],
+  );
+}
+
+export async function chaiRedeemArgs(
+  outgoingChaiAmount: BigNumberish,
+  expectedIncomingDaiAmount: BigNumberish,
+) {
+  return encodeArgs(
+    ['uint256', 'uint256'],
+    [outgoingChaiAmount, expectedIncomingDaiAmount],
   );
 }
 
