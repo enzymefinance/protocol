@@ -1,11 +1,21 @@
 import { utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
+import { IFee } from '../codegen/IFee';
 
 let tx;
 
 async function snapshot(provider: BuidlerProvider) {
-  return configureTestDeployment()(provider);
+  const deployment = await configureTestDeployment()(provider);
+  const {
+    config: { deployer },
+  } = deployment;
+
+  const mockFee = await IFee.mock(deployer);
+  await mockFee.identifier.returns('MOCK');
+  await mockFee.feeHook.returns(1);
+
+  return { ...deployment, mockFee };
 }
 
 describe('Registry', () => {
@@ -274,45 +284,45 @@ describe('Registry', () => {
   describe('deregisterFee', () => {
     it('can only be called by owner', async () => {
       const {
+        mockFee,
         system: { registry },
         config: {
           accounts: [maliciousUser],
         },
       } = await provider.snapshot(snapshot);
       const disallowed = registry.connect(provider.getSigner(maliciousUser));
-      const fee = randomAddress();
 
-      tx = disallowed.deregisterFee(fee);
+      tx = disallowed.deregisterFee(mockFee);
       await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow unregistered fee', async () => {
       const {
+        mockFee,
         system: { registry },
       } = await provider.snapshot(snapshot);
-      const fee = randomAddress();
 
-      tx = registry.deregisterFee(fee);
+      tx = registry.deregisterFee(mockFee);
       await expect(tx).rejects.toBeRevertedWith('_fee is not registered');
     });
 
     it('fee is removed', async () => {
       const {
+        mockFee,
         system: { registry },
       } = await provider.snapshot(snapshot);
-      const fee = randomAddress();
 
-      tx = registry.registerFee(fee);
+      tx = registry.registerFee(mockFee);
       await expect(tx).resolves.toBeReceipt();
 
-      tx = registry.feeIsRegistered(fee);
+      tx = registry.feeIsRegistered(mockFee);
       await expect(tx).resolves.toBeTruthy();
 
-      tx = registry.deregisterFee(fee);
+      tx = registry.deregisterFee(mockFee);
       await expect(tx).resolves.toBeReceipt();
       await expect(tx).resolves.toHaveEmitted('FeeRemoved');
 
-      tx = registry.feeIsRegistered(fee);
+      tx = registry.feeIsRegistered(mockFee);
       await expect(tx).resolves.toBeFalsy();
     });
 
@@ -322,42 +332,43 @@ describe('Registry', () => {
   describe('registerFee', () => {
     it('can only be called by owner', async () => {
       const {
+        mockFee,
         system: { registry },
         config: {
           accounts: [maliciousUser],
         },
       } = await provider.snapshot(snapshot);
       const disallowed = registry.connect(provider.getSigner(maliciousUser));
-      const fee = randomAddress();
 
-      tx = disallowed.registerFee(fee);
+      tx = disallowed.registerFee(mockFee);
       await expect(tx).rejects.toBeRevertedWith('caller is not the owner');
     });
 
     it('does not allow registered asset', async () => {
       const {
+        mockFee,
         system: { registry },
       } = await provider.snapshot(snapshot);
       const fee = randomAddress();
 
-      tx = registry.registerFee(fee);
+      tx = registry.registerFee(mockFee);
       await expect(tx).resolves.toBeReceipt();
 
-      tx = registry.registerFee(fee);
+      tx = registry.registerFee(mockFee);
       await expect(tx).rejects.toBeRevertedWith('_fee already registered');
     });
 
     it('fee is added', async () => {
       const {
+        mockFee,
         system: { registry },
       } = await provider.snapshot(snapshot);
-      const fee = randomAddress();
 
-      tx = registry.registerFee(fee);
+      tx = registry.registerFee(mockFee);
       await expect(tx).resolves.toBeReceipt();
       await expect(tx).resolves.toHaveEmitted('FeeAdded');
 
-      tx = registry.feeIsRegistered(fee);
+      tx = registry.feeIsRegistered(mockFee);
       await expect(tx).resolves.toBeTruthy();
     });
 

@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "../fund/fees/IFee.sol";
 import "../fund/policies/IPolicy.sol";
 import "../integrations/IIntegrationAdapter.sol";
 import "./utils/MelonCouncilOwnable.sol";
@@ -25,9 +26,9 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
 
     event EngineChanged (address engine);
 
-    event FeeAdded (address fee);
+    event FeeAdded (address indexed fee, string indexed identifier);
 
-    event FeeRemoved (address fee);
+    event FeeRemoved (address indexed fee, string indexed identifier);
 
     event FundAdded (address indexed manager, address hub, bytes32 hashedName);
 
@@ -65,6 +66,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     EnumerableSet.AddressSet private fees;
     EnumerableSet.AddressSet private integrationAdapters;
     EnumerableSet.AddressSet private policies;
+    mapping (bytes32 => bool) private feeIdentifierIsRegistered;
     mapping (bytes32 => bool) private integrationAdapterIdentifierIsRegistered;
     mapping (bytes32 => bool) private policyIdentifierIsRegistered;
 
@@ -167,7 +169,10 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
 
         EnumerableSet.remove(fees, _fee);
 
-        emit FeeRemoved(_fee);
+        string memory identifier = IFee(_fee).identifier();
+        feeIdentifierIsRegistered[keccak256(bytes(identifier))] = false;
+
+        emit FeeRemoved(_fee, identifier);
     }
 
     /// @notice Get all registered fees
@@ -186,9 +191,28 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     function registerFee(address _fee) external onlyOwner {
         require(!feeIsRegistered(_fee), "registerFee: _fee already registered");
 
+        IFee fee = IFee(_fee);
+        require(
+            fee.feeHook() != IFeeManager.FeeHook.None,
+            "registerFee: FeeHook must be defined in the fee"
+        );
+
+        // Plugins should only have their latest version registered
+        string memory identifier = fee.identifier();
+        require(
+            bytes(identifier).length != 0,
+            "registerFee: Identifier must be defined in the fee"
+        );
+        bytes32 identifierHash = keccak256(bytes(identifier));
+        require(
+            !feeIdentifierIsRegistered[identifierHash],
+            string(abi.encodePacked("registerFee: Fee with identifier exists: ", identifier))
+        );
+        feeIdentifierIsRegistered[identifierHash] = true;
+
         EnumerableSet.add(fees, _fee);
 
-        emit FeeAdded(_fee);
+        emit FeeAdded(_fee, identifier);
     }
 
     /// @notice Check whether a fee is registered

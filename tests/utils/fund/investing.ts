@@ -4,12 +4,12 @@ import { FundComponents } from './setup';
 import * as contracts from '../../contracts';
 
 // prettier-ignore
-export interface DemoninationAssetInterface extends Contract {
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, DemoninationAssetInterface>;
+export interface DenominationAssetInterface extends Contract {
+  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, DenominationAssetInterface>;
 }
 
 export interface RequestSharesParams {
-  denominationAsset: DemoninationAssetInterface;
+  denominationAsset: DenominationAssetInterface;
   fundComponents: FundComponents;
   sharesRequestor: contracts.SharesRequestor;
   amguValue?: BigNumberish;

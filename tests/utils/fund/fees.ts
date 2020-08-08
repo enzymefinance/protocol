@@ -1,31 +1,38 @@
-import { BigNumberish, utils } from 'ethers';
+import { utils, BigNumberish } from 'ethers';
 
 export interface FeeParams {
   address: string;
-  rate: BigNumberish;
-  period: BigNumberish;
+  encoding: (string | utils.ParamType)[];
+  settings: any[];
 }
 
-export function managementFee(
-  rate: number = 0.1,
-  period: number = 30,
-  address: string,
-): FeeParams {
+export async function dummyFee(address: string): Promise<FeeParams> {
   return {
     address: utils.getAddress(address),
-    rate: utils.parseEther(`${rate}`),
-    period: 60 * 60 * 24 * period,
+    encoding: [],
+    settings: [],
   };
 }
 
-export function performanceFee(
-  rate: number = 0.1,
-  period: number = 30,
+export async function managementFee(
   address: string,
-): FeeParams {
+  rate: BigNumberish,
+): Promise<FeeParams> {
   return {
     address: utils.getAddress(address),
-    rate: utils.parseEther(`${rate}`),
-    period: 60 * 60 * 24 * period,
+    encoding: ['uint256'],
+    settings: [rate],
+  };
+}
+
+export async function performanceFee(
+  address: string,
+  rate: BigNumberish,
+  period: BigNumberish,
+): Promise<FeeParams> {
+  return {
+    address: utils.getAddress(address),
+    encoding: ['uint256', 'uint256'],
+    settings: [rate, period],
   };
 }
