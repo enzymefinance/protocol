@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "../fees/IFeeManager.sol";
 import "./IHub.sol";
 
 /// @title Hub Contract
@@ -23,7 +24,7 @@ contract Hub is IHub {
     string public NAME;
     FundStatus public override status;
 
-    // Infrastruture
+    // Infrastructure
     address public override FUND_FACTORY;
     address public override REGISTRY;
 
@@ -61,7 +62,7 @@ contract Hub is IHub {
     /// @notice Sets the feeManager address for the fund
     /// @param _feeManager The FeeManager component for the fund
     function setFeeManager(address _feeManager) external onlyFundFactory {
-        require(feeManager == address(0), "setFeeManager: feeMangaer is already set");
+        require(feeManager == address(0), "setFeeManager: feeManager is already set");
 
         feeManager = _feeManager;
         emit FeeManagerSet(feeManager);

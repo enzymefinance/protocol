@@ -162,11 +162,13 @@ const constructors: ContractConstructors = {
   vaultFactory: (config) => {
     return contracts.VaultFactory.deploy(config.deployer);
   },
-  managementFee: (config) => {
-    return contracts.ManagementFee.deploy(config.deployer);
+  managementFee: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.ManagementFee.deploy(config.deployer, Registry);
   },
-  performanceFee: (config) => {
-    return contracts.PerformanceFee.deploy(config.deployer);
+  performanceFee: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.PerformanceFee.deploy(config.deployer, Registry);
   },
   assetBlacklist: async (config, deployment) => {
     const Registry = await deployment.registry;
