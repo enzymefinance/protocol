@@ -9,16 +9,13 @@ async function snapshot(provider: BuidlerProvider) {
   const deployment = await configureTestDeployment()(provider);
   const {
     system: { fundFactory, registry },
-    config: {
-      deployer,
-      tokens: { weth },
-    },
+    config: { deployer, weth },
   } = deployment;
 
   const mockFee = await IFee.mock(deployer);
   await mockFee.identifier.returns('MOCK');
   await mockFee.feeHook.returns(2); // Continuous fee
-  await mockFee.addFundSettings.returns('');
+  await mockFee.addFundSettings.returns(undefined);
   await registry.registerFee(mockFee);
 
   const fund = await setupFundWithParams({
