@@ -20,8 +20,8 @@ contract ManagementFee is ContinuousFeeBase {
 		uint256 lastPaid;
 	}
 
-	uint256 public constant RATE_PERIOD = 365 days;
-	uint256 public constant RATE_DIVISOR = 10**18;
+	uint256 constant private RATE_PERIOD = 365 days;
+	uint256 constant private RATE_DIVISOR = 10**18;
 
 	mapping(address => FeeInfo) public feeManagerToFeeInfo;
 

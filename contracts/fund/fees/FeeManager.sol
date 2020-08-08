@@ -60,7 +60,7 @@ contract FeeManager is IFeeManager, Spoke {
 	/// @dev Anyone can call this function. Useful in case there is little activity
 	/// and a manager wants to cull fees.
 	function settleContinuousFees() external onlyActiveFund {
-		__settleAndPayoutFeesForHook(IFeeManager.FeeHook.Continuous, '');
+		__settleAndPayoutFeesForHook(IFeeManager.FeeHook.Continuous, "");
 	}
 
 	/// @notice Settles all fees for a particular FeeHook, paying out shares wherever possible.

@@ -34,7 +34,7 @@ contract PerformanceFee is ContinuousFeeBase {
 		uint256 lastSharePrice;
 	}
 
-	uint256 constant RATE_DIVISOR = 10**18;
+	uint256 constant private RATE_DIVISOR = 10**18;
 
 	mapping(address => FeeInfo) public feeManagerToFeeInfo;
 

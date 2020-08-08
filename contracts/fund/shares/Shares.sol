@@ -82,7 +82,7 @@ contract Shares is IShares, Spoke, SharesToken {
         IFeeManager feeManager = __getFeeManager();
 
         // Calculate full shares quantity for investment amount after updating continuous fees
-        feeManager.settleFees(IFeeManager.FeeHook.Continuous, '');
+        feeManager.settleFees(IFeeManager.FeeHook.Continuous, "");
         uint256 sharesQuantity = _investmentAmount.mul(10 ** uint256(ERC20(DENOMINATION_ASSET).decimals())).div(calcSharePrice());
 
         // This is inefficient to mint, and then allow the feeManager to burn/mint to settle the fee,
@@ -192,7 +192,7 @@ contract Shares is IShares, Spoke, SharesToken {
 
         // Attempt to settle fees, but don't allow an error to block redemption
         // This also handles a rejection from onlyActiveFund when the fund is shutdown
-        try __getFeeManager().settleFees(IFeeManager.FeeHook.Continuous, '') {}
+        try __getFeeManager().settleFees(IFeeManager.FeeHook.Continuous, "") {}
         catch {}
 
         // Check the shares quantity against the user's balance after settling fees
