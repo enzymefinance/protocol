@@ -6,9 +6,7 @@ export interface FeeParams {
   settings: any[];
 }
 
-export async function dummyFee(
-  address: string
-): Promise<FeeParams> {
+export async function dummyFee(address: string): Promise<FeeParams> {
   return {
     address: utils.getAddress(address),
     encoding: [],
@@ -18,7 +16,7 @@ export async function dummyFee(
 
 export async function managementFee(
   address: string,
-  rate: BigNumberish
+  rate: BigNumberish,
 ): Promise<FeeParams> {
   return {
     address: utils.getAddress(address),

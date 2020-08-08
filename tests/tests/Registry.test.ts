@@ -8,13 +8,11 @@ let tx;
 async function snapshot(provider: BuidlerProvider) {
   const deployment = await configureTestDeployment()(provider);
   const {
-    config: {
-      deployer,
-    },
+    config: { deployer },
   } = deployment;
 
   const mockFee = await IFee.mock(deployer);
-  await mockFee.identifier.returns("MOCK");
+  await mockFee.identifier.returns('MOCK');
   await mockFee.feeHook.returns(1);
 
   return { ...deployment, mockFee };

@@ -48,9 +48,7 @@ export async function setupFundWithParams({
     resolveAddress(denominationAsset),
     Promise.all(adapters.map((address) => resolveAddress(address))),
     Promise.all(fees.map((item) => resolveAddress(item.address))),
-    Promise.all(
-      fees.map((item) => encodeArgs(item.encoding, item.settings)),
-    ),
+    Promise.all(fees.map((item) => encodeArgs(item.encoding, item.settings))),
     Promise.all(policies.map((item) => resolveAddress(item.address))),
     Promise.all(
       policies.map((item) => encodeArgs(item.encoding, item.settings)),
