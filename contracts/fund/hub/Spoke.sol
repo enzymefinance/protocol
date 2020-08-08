@@ -20,12 +20,18 @@ abstract contract Spoke is ISpoke, FundRouterMixin {
     address public override HUB;
 
     modifier onlyActiveFund() {
-        require(IHub(HUB).status() == IHub.FundStatus.Active, "Only an active fund can use this function");
+        require(
+            IHub(HUB).status() == IHub.FundStatus.Active,
+            "Only an active fund can use this function"
+        );
         _;
     }
 
     modifier onlyFeeManager() {
-        require(msg.sender == address(__getFeeManager()), "Only FeeManager can call this function");
+        require(
+            msg.sender == address(__getFeeManager()),
+            "Only FeeManager can call this function"
+        );
         _;
     }
 

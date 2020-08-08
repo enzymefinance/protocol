@@ -11,7 +11,12 @@ abstract contract SimpleMockIntegrateeBase is MockIntegrateeBase {
         uint256 _ratePrecision
     )
         public
-        MockIntegrateeBase(_defaultRateAssets, _specialAssets, _specialAssetDecimals, _ratePrecision)
+        MockIntegrateeBase(
+            _defaultRateAssets,
+            _specialAssets,
+            _specialAssetDecimals,
+            _ratePrecision
+        )
     {}
 
     function __getRateAndSwapAssets(
@@ -19,10 +24,7 @@ abstract contract SimpleMockIntegrateeBase is MockIntegrateeBase {
         address _srcToken,
         uint256 _srcAmount,
         address _destToken
-    )
-        internal
-        returns (uint256 destAmount_)
-    {
+    ) internal returns (uint256 destAmount_) {
         uint256 actualRate = __getRate(_srcToken, _destToken);
 
         address[] memory assetsToIntegratee = new address[](1);

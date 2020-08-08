@@ -16,7 +16,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address immutable public EXCHANGE;
+    address public immutable EXCHANGE;
 
     constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
@@ -26,7 +26,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "ZERO_EX_V3";
     }
 
@@ -39,8 +39,8 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
-        view
         override
+        view
         returns (
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
@@ -98,8 +98,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             if (takerFeeAsset == makerAsset && takerFee > 0) {
                 minIncomingAssetAmounts_[0] = minIncomingAssetAmounts_[0].sub(takerFee);
             }
-        }
-        else {
+        } else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
@@ -117,7 +116,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             uint256 takerAssetFillAmount
         ) = __decodeTakeOrderArgs(_encodedCallArgs);
         IZeroExV3.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
-        (,,,bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
+        (, , , bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
 
         // Validate args
         require(
@@ -174,6 +173,7 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             address[4] memory orderAddresses,
             uint256[6] memory orderValues,
             bytes[4] memory orderData,
+
         ) = __decodeZeroExOrderArgs(_encodedOrderArgs);
 
         order_ = IZeroExV3.Order({
@@ -195,15 +195,11 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
     }
 
     /// @notice Gets the 0x assetProxy address for an ERC20 token
-    function __getAssetProxy(bytes memory _assetData)
-        private
-        view
-        returns (address assetProxy_)
-    {
+    function __getAssetProxy(bytes memory _assetData) private view returns (address assetProxy_) {
         bytes4 assetProxyId;
         assembly {
-            assetProxyId := and(mload(
-                add(_assetData, 32)),
+            assetProxyId := and(
+                mload(add(_assetData, 32)),
                 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
             )
         }
@@ -228,18 +224,9 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
     function __decodeTakeOrderArgs(bytes memory _encodedCallArgs)
         private
         pure
-        returns (
-            bytes memory encodedZeroExOrderArgs_,
-            uint256 takerAssetFillAmount_
-        )
+        returns (bytes memory encodedZeroExOrderArgs_, uint256 takerAssetFillAmount_)
     {
-        return abi.decode(
-            _encodedCallArgs,
-            (
-                bytes,
-                uint256
-            )
-        );
+        return abi.decode(_encodedCallArgs, (bytes, uint256));
     }
 
     /// @dev Decode the parameters of a 0x order
@@ -272,14 +259,6 @@ contract ZeroExV3Adapter is AdapterBase, MathHelpers {
             bytes memory signature_
         )
     {
-        return abi.decode(
-            _encodedZeroExOrderArgs,
-            (
-                address[4],
-                uint256[6],
-                bytes[4],
-                bytes
-            )
-        );
+        return abi.decode(_encodedZeroExOrderArgs, (address[4], uint256[6], bytes[4], bytes));
     }
 }

@@ -17,7 +17,7 @@ contract PolicyManager is IPolicyManager, Spoke {
 
     EnumerableSet.AddressSet private enabledPolicies;
 
-    constructor (address _hub) public Spoke(_hub) {}
+    constructor(address _hub) public Spoke(_hub) {}
 
     /// @notice Enable policies for use in the fund
     /// @param _policies The policies to enable
@@ -79,7 +79,7 @@ contract PolicyManager is IPolicyManager, Spoke {
     function getEnabledPolicies() public view returns (address[] memory) {
         uint256 length = enabledPolicies.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = enabledPolicies.at(i);
         }
         return output_;
@@ -97,21 +97,21 @@ contract PolicyManager is IPolicyManager, Spoke {
         PolicyHook _hook,
         PolicyHookExecutionTime _executionTime,
         bytes memory _encodedArgs
-    )
-        private
-    {
+    ) private {
         address[] memory policies = getEnabledPolicies();
-        for (uint i = 0; i < policies.length; i++) {
+        for (uint256 i = 0; i < policies.length; i++) {
             if (
                 IPolicy(policies[i]).policyHook() == _hook &&
                 IPolicy(policies[i]).policyHookExecutionTime() == _executionTime
             ) {
                 require(
                     IPolicy(policies[i]).validateRule(_encodedArgs),
-                    string(abi.encodePacked(
-                        "Rule evaluated to false: ",
-                        IPolicy(policies[i]).identifier()
-                    ))
+                    string(
+                        abi.encodePacked(
+                            "Rule evaluated to false: ",
+                            IPolicy(policies[i]).identifier()
+                        )
+                    )
                 );
             }
         }

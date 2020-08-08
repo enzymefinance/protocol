@@ -9,13 +9,18 @@ import "./PolicyBase.sol";
 abstract contract BuySharesPreValidatePolicyBase is PolicyBase {
     /// @notice Get the PolicyHook for a policy
     /// @return The PolicyHook
-    function policyHook() external view override returns (IPolicyManager.PolicyHook) {
+    function policyHook() external override view returns (IPolicyManager.PolicyHook) {
         return IPolicyManager.PolicyHook.BuyShares;
     }
 
     /// @notice Get the PolicyHookExecutionTime for a policy
     /// @return The PolicyHookExecutionTime
-    function policyHookExecutionTime() external view override returns (IPolicyManager.PolicyHookExecutionTime) {
+    function policyHookExecutionTime()
+        external
+        override
+        view
+        returns (IPolicyManager.PolicyHookExecutionTime)
+    {
         return IPolicyManager.PolicyHookExecutionTime.Pre;
     }
 
@@ -29,13 +34,6 @@ abstract contract BuySharesPreValidatePolicyBase is PolicyBase {
             uint256 minSharesQuantity_
         )
     {
-        return abi.decode(
-            _encodedArgs,
-            (
-                address,
-                uint256,
-                uint256
-            )
-        );
+        return abi.decode(_encodedArgs, (address, uint256, uint256));
     }
 }

@@ -5,15 +5,15 @@ pragma experimental ABIEncoderV2;
 /// @title FeeManager Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IFeeManager {
-	enum FeeHook { None, BuyShares, Continuous }
+    enum FeeHook {None, BuyShares, Continuous}
 
-	function enableFees(address[] calldata, bytes[] calldata) external;
+    function enableFees(address[] calldata, bytes[] calldata) external;
 
-	function settleFees(FeeHook, bytes calldata) external;
+    function settleFees(FeeHook, bytes calldata) external;
 }
 
 /// @title FeeManagerFactory Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IFeeManagerFactory {
-	function createInstance(address) external returns (address);
+    function createInstance(address) external returns (address);
 }

@@ -31,11 +31,7 @@ contract ValueInterpreter is IValueInterpreter {
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    )
-        external
-        override
-        returns (uint256 value_, bool isValid_)
-    {
+    ) external override returns (uint256 value_, bool isValid_) {
         return __calcAssetValue(_baseAsset, _amount, _quoteAsset, false);
     }
 
@@ -50,11 +46,7 @@ contract ValueInterpreter is IValueInterpreter {
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    )
-        external
-        override
-        returns (uint256 value_, bool isValid_)
-    {
+    ) external override returns (uint256 value_, bool isValid_) {
         return __calcAssetValue(_baseAsset, _amount, _quoteAsset, true);
     }
 
@@ -67,10 +59,7 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset,
         bool _useLiveRate
-    )
-        private
-        returns (uint256 value_, bool isValid_)
-    {
+    ) private returns (uint256 value_, bool isValid_) {
         IRegistry registry = IRegistry(REGISTRY);
 
         // Check if registered _asset first
@@ -89,12 +78,12 @@ contract ValueInterpreter is IValueInterpreter {
     }
 
     /// @notice Helper to covert from one asset to another with a given conversion rate
-    function __calcConversionAmount(address _asset, uint256 _amount, uint256 _rate)
-        private
-        view
-        returns (uint256)
-    {
-        return _rate.mul(_amount).div(10 ** uint256(ERC20(_asset).decimals()));
+    function __calcConversionAmount(
+        address _asset,
+        uint256 _amount,
+        uint256 _rate
+    ) private view returns (uint256) {
+        return _rate.mul(_amount).div(10**uint256(ERC20(_asset).decimals()));
     }
 
     /// @dev Helper to calculate the value of a derivative in an arbitrary asset.
@@ -105,24 +94,23 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset,
         bool _useLiveRate
-    )
-        private
-        returns (uint256 value_, bool isValid_)
-    {
+    ) private returns (uint256 value_, bool isValid_) {
         address derivativePriceSource = IRegistry(REGISTRY).derivativeToPriceSource(_derivative);
-        (
-            address[] memory underlyings,
-            uint256[] memory rates
-        ) = IDerivativePriceSource(derivativePriceSource).getRatesToUnderlyings(_derivative);
+        (address[] memory underlyings, uint256[] memory rates) = IDerivativePriceSource(
+            derivativePriceSource
+        )
+            .getRatesToUnderlyings(_derivative);
 
         // Let validity be negated if any of the underlying value caculations are invalid.
         isValid_ = true;
         for (uint256 i = 0; i < underlyings.length; i++) {
             uint256 underlyingAmount = __calcConversionAmount(underlyings[i], _amount, rates[i]);
-            (
-                uint256 underlyingValue,
-                bool underlyingIsValid
-            ) = __calcAssetValue(underlyings[i], underlyingAmount, _quoteAsset, _useLiveRate);
+            (uint256 underlyingValue, bool underlyingIsValid) = __calcAssetValue(
+                underlyings[i],
+                underlyingAmount,
+                _quoteAsset,
+                _useLiveRate
+            );
 
             if (!underlyingIsValid) isValid_ = false;
             value_ = value_.add(underlyingValue);
@@ -136,19 +124,14 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset,
         bool _useLiveRate
-    )
-        private
-        view
-        returns (uint256 value_, bool isValid_)
-    {
+    ) private view returns (uint256 value_, bool isValid_) {
         IPriceSource priceSource = IPriceSource(IRegistry(REGISTRY).priceSource());
 
         uint256 rate;
         if (_useLiveRate) {
             (rate, isValid_) = priceSource.getLiveRate(_primitive, _quoteAsset);
-        }
-        else {
-            (rate, isValid_,) = priceSource.getCanonicalRate(_primitive, _quoteAsset);
+        } else {
+            (rate, isValid_, ) = priceSource.getCanonicalRate(_primitive, _quoteAsset);
         }
 
         value_ = __calcConversionAmount(_primitive, _amount, rate);

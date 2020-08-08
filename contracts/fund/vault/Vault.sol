@@ -21,9 +21,9 @@ contract Vault is IVault, Spoke {
 
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event AdapterDisabled (address indexed adapter);
+    event AdapterDisabled(address indexed adapter);
 
-    event AdapterEnabled (address indexed adapter);
+    event AdapterEnabled(address indexed adapter);
 
     event AssetAdded(address asset);
 
@@ -37,7 +37,7 @@ contract Vault is IVault, Spoke {
         uint256[] outgoingAssetAmounts
     );
 
-    uint8 constant public MAX_OWNED_ASSETS = 20; // TODO: Keep this?
+    uint8 public constant MAX_OWNED_ASSETS = 20; // TODO: Keep this?
 
     EnumerableSet.AddressSet private ownedAssets;
     EnumerableSet.AddressSet private enabledAdapters;
@@ -59,11 +59,7 @@ contract Vault is IVault, Spoke {
         address _adapter,
         string calldata _methodSignature,
         bytes calldata _encodedCallArgs
-    )
-        external
-        onlyManager
-        onlyActiveFund
-    {
+    ) external onlyManager onlyActiveFund {
         bytes4 selector = bytes4(keccak256(bytes(_methodSignature)));
 
         (
@@ -73,11 +69,7 @@ contract Vault is IVault, Spoke {
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             uint256[] memory preCallSpendAssetBalances
-        ) = __preProcessCoI(
-            _adapter,
-            selector,
-            _encodedCallArgs
-        );
+        ) = __preProcessCoI(_adapter, selector, _encodedCallArgs);
 
         __executeCoI(
             _adapter,
@@ -130,7 +122,7 @@ contract Vault is IVault, Spoke {
     function getEnabledAdapters() external view returns (address[] memory) {
         uint256 length = enabledAdapters.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = enabledAdapters.at(i);
         }
         return output_;
@@ -153,8 +145,8 @@ contract Vault is IVault, Spoke {
     /// @return balances_ The amount of each asset owned by the fund
     function getAssetBalances(address[] memory _assets)
         public
-        view
         override
+        view
         returns (uint256[] memory balances_)
     {
         balances_ = new uint256[](_assets.length);
@@ -165,10 +157,10 @@ contract Vault is IVault, Spoke {
 
     /// @notice Retrieves the assets owned by the fund
     /// @return The addresses of assets owned by the fund
-    function getOwnedAssets() public view override returns(address[] memory) {
+    function getOwnedAssets() public override view returns (address[] memory) {
         uint256 length = ownedAssets.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = ownedAssets.at(i);
         }
         return output_;
@@ -202,10 +194,7 @@ contract Vault is IVault, Spoke {
                 registry.integrationAdapterIsRegistered(adapter),
                 "__enableAdapters: Adapter is not on Registry"
             );
-            require(
-                !__adapterIsEnabled(adapter),
-                "__enableAdapters: Adapter is already enabled"
-            );
+            require(!__adapterIsEnabled(adapter), "__enableAdapters: Adapter is already enabled");
 
             EnumerableSet.add(enabledAdapters, adapter);
 
@@ -220,9 +209,7 @@ contract Vault is IVault, Spoke {
         string memory _methodSignature,
         bytes memory _encodedCallArgs,
         bytes memory _encodedAssetTransferArgs
-    )
-        private
-    {
+    ) private {
         (bool success, bytes memory returnData) = _adapter.call(
             abi.encodeWithSignature(_methodSignature, _encodedCallArgs, _encodedAssetTransferArgs)
         );
@@ -230,11 +217,7 @@ contract Vault is IVault, Spoke {
     }
 
     /// @dev Helper to get an owned asset's balance
-    function __getAssetBalance(address _asset)
-        private
-        view
-        returns (uint256)
-    {
+    function __getAssetBalance(address _asset) private view returns (uint256) {
         return IERC20(_asset).balanceOf(address(this));
     }
 
@@ -269,10 +252,7 @@ contract Vault is IVault, Spoke {
             __getHub().status() == IHub.FundStatus.Active,
             "__preProcessCoI: Hub must be active"
         );
-        require(
-            __adapterIsEnabled(_adapter),
-            "__preProcessCoI: Adapter is not enabled for fund"
-        );
+        require(__adapterIsEnabled(_adapter), "__preProcessCoI: Adapter is not enabled for fund");
 
         // Get and validate assets to transact
         // Notes:
@@ -340,9 +320,7 @@ contract Vault is IVault, Spoke {
         uint256[] memory _minIncomingAssetAmounts,
         address[] memory _spendAssets,
         uint256[] memory _preCallSpendAssetBalances
-    )
-        private
-    {
+    ) private {
         // Calc incoming/outgoing amounts, validate incoming amounts, remove excess approvals
         (
             uint256[] memory incomingAssetAmounts,

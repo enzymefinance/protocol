@@ -11,18 +11,23 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
         uint256 _ratePrecision
     )
         public
-        NormalizedRateProviderBase(_defaultRateAssets, _specialAssets, _specialAssetDecimals, _ratePrecision)
+        NormalizedRateProviderBase(
+            _defaultRateAssets,
+            _specialAssets,
+            _specialAssetDecimals,
+            _ratePrecision
+        )
     {}
 
     function __getRate(address _baseAsset, address _quoteAsset)
         internal
-        view
         override
+        view
         returns (uint256)
     {
         // 1. Return constant if base asset is quote asset
         if (_baseAsset == _quoteAsset) {
-            return 10 ** RATE_PRECISION;
+            return 10**RATE_PRECISION;
         }
 
         // 2. Check for a direct rate
@@ -34,11 +39,11 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
         // 3. Check for inverse direct rate
         uint256 iDirectRate = assetToAssetRate[_quoteAsset][_baseAsset];
         if (iDirectRate > 0) {
-            return 10 ** (RATE_PRECISION.mul(2)).div(iDirectRate);
+            return 10**(RATE_PRECISION.mul(2)).div(iDirectRate);
         }
 
         // 4. Else return 1
-        return 10 ** RATE_PRECISION;
+        return 10**RATE_PRECISION;
     }
 
     function __swap(
@@ -47,9 +52,7 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
         uint256[] memory _assetsToIntegrateeAmounts,
         address[] memory _assetsFromIntegratee,
         uint256[] memory _assetsFromIntegrateeAmounts
-    )
-        internal
-    {
+    ) internal {
         // Take custody of incoming assets
         for (uint256 i = 0; i < _assetsToIntegratee.length; i++) {
             address asset = _assetsToIntegratee[i];
@@ -71,10 +74,9 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
             require(amount > 0, "__swap: empty value in _assetsFromIntegrateeAmounts");
             if (asset == ETH_ADDRESS) {
                 _trader.transfer(amount);
-            }
-            else {
+            } else {
                 ERC20(asset).transfer(_trader, amount);
-            }   
+            }
         }
     }
 }

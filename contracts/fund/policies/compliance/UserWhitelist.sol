@@ -19,7 +19,7 @@ contract UserWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin
     }
 
     /// @notice Provides a constant string identifier for a policy
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "USER_WHITELIST";
     }
 
@@ -31,10 +31,10 @@ contract UserWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin
         override
         onlyPolicyManager
     {
-        (
-            address[] memory itemsToAdd,
-            address[] memory itemsToRemove
-        ) = abi.decode(_encodedSettings, (address[], address[]));
+        (address[] memory itemsToAdd, address[] memory itemsToRemove) = abi.decode(
+            _encodedSettings,
+            (address[], address[])
+        );
         require(
             itemsToAdd.length > 0 || itemsToRemove.length > 0,
             "updateFundSettings: must pass addresses to add or remove"
@@ -54,7 +54,7 @@ contract UserWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin
         onlyPolicyManager
         returns (bool)
     {
-        (address buyer,,) = __decodeRuleArgs(_encodedArgs);
+        (address buyer, , ) = __decodeRuleArgs(_encodedArgs);
         return isInList(msg.sender, buyer);
     }
 }

@@ -10,7 +10,7 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for interacting with Kyber Network
 contract KyberAdapter is AdapterBase, MathHelpers {
-    address immutable public EXCHANGE;
+    address public immutable EXCHANGE;
 
     constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
@@ -23,7 +23,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "KYBER_NETWORK";
     }
 
@@ -36,8 +36,8 @@ contract KyberAdapter is AdapterBase, MathHelpers {
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
-        view
         override
+        view
         returns (
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
@@ -62,8 +62,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             incomingAssets_[0] = incomingAsset;
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-        }
-        else {
+        } else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
@@ -86,7 +85,10 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         // Validate args
         require(minIncomingAssetAmount > 0, "takeOrder: minIncomingAssetAmount must be >0");
         require(outgoingAssetAmount > 0, "takeOrder: outgoingAssetAmount must be >0");
-        require(incomingAsset != outgoingAsset, "takeOrder: incomingAsset and outgoingAsset asset cannot be the same");
+        require(
+            incomingAsset != outgoingAsset,
+            "takeOrder: incomingAsset and outgoingAsset asset cannot be the same"
+        );
         require(incomingAsset != address(0), "takeOrder: incomingAsset cannot be empty");
         require(outgoingAsset != address(0), "takeOrder: outgoingAsset cannot be empty");
 
@@ -99,12 +101,20 @@ contract KyberAdapter is AdapterBase, MathHelpers {
 
         address nativeAsset = Registry(__getRegistry()).WETH_TOKEN();
         if (outgoingAsset == nativeAsset) {
-            __swapNativeAssetToToken(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
-        }
-        else if (incomingAsset == nativeAsset) {
-            __swapTokenToNativeAsset(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
-        }
-        else {
+            __swapNativeAssetToToken(
+                incomingAsset,
+                outgoingAsset,
+                outgoingAssetAmount,
+                minExpectedRate
+            );
+        } else if (incomingAsset == nativeAsset) {
+            __swapTokenToNativeAsset(
+                incomingAsset,
+                outgoingAsset,
+                outgoingAssetAmount,
+                minExpectedRate
+            );
+        } else {
             __swapTokenToToken(incomingAsset, outgoingAsset, outgoingAssetAmount, minExpectedRate);
         }
     }
@@ -122,15 +132,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             uint256 outgoingAssetAmount_
         )
     {
-        return abi.decode(
-            _encodedCallArgs,
-            (
-                address,
-                uint256,
-                address,
-                uint256
-            )
-        );
+        return abi.decode(_encodedCallArgs, (address, uint256, address, uint256));
     }
 
     /// @dev Executes a swap of ETH to ERC20
@@ -139,20 +141,15 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         address _outgoingAsset,
         uint256 _outgoingAssetAmount,
         uint256 _minExpectedRate
-    )
-        private
-    {
+    ) private {
         // Convert WETH to ETH
         IWETH(payable(_outgoingAsset)).withdraw(_outgoingAssetAmount);
 
         // Swap tokens
-        IKyberNetworkProxy(EXCHANGE)
-            .swapEtherToToken
-            {value: _outgoingAssetAmount}
-            (
-                _incomingAsset,
-                _minExpectedRate
-            );
+        IKyberNetworkProxy(EXCHANGE).swapEtherToToken{value: _outgoingAssetAmount}(
+            _incomingAsset,
+            _minExpectedRate
+        );
     }
 
     /// @dev Executes a swap of ERC20 to ETH
@@ -161,9 +158,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         address _outgoingAsset,
         uint256 _outgoingAssetAmount,
         uint256 _minExpectedRate
-    )
-        private
-    {
+    ) private {
         IERC20(_outgoingAsset).approve(EXCHANGE, _outgoingAssetAmount);
 
         uint256 preEthBalance = payable(address(this)).balance;
@@ -184,9 +179,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         address _outgoingAsset,
         uint256 _outgoingAssetAmount,
         uint256 _minExpectedRate
-    )
-        private
-    {
+    ) private {
         IERC20(_outgoingAsset).approve(EXCHANGE, _outgoingAssetAmount);
         IKyberNetworkProxy(EXCHANGE).swapTokenToToken(
             _outgoingAsset,

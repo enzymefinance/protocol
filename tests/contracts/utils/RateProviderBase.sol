@@ -4,12 +4,12 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 abstract contract RateProviderBase {
-    address constant public ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    mapping (address => mapping(address => uint256)) public assetToAssetRate;
+    mapping(address => mapping(address => uint256)) public assetToAssetRate;
 
     // Handles non-ERC20 compliant assets like ETH and USD
-    mapping (address => uint8) public specialAssetToDecimals;
+    mapping(address => uint8) public specialAssetToDecimals;
 
     constructor(address[] memory _specialAssets, uint8[] memory _specialAssetDecimals) public {
         require(
@@ -34,8 +34,8 @@ abstract contract RateProviderBase {
 
     function __getRate(address _baseAsset, address _quoteAsset)
         internal
-        view
         virtual
+        view
         returns (uint256)
     {
         return assetToAssetRate[_baseAsset][_quoteAsset];
@@ -45,9 +45,7 @@ abstract contract RateProviderBase {
         address[] calldata _baseAssets,
         address[] calldata _quoteAssets,
         uint256[] calldata _rates
-    )
-        external
-    {
+    ) external {
         require(
             _baseAssets.length == _quoteAssets.length,
             "setRates: _baseAssets and _quoteAssets are uneven lengths"
@@ -58,6 +56,6 @@ abstract contract RateProviderBase {
         );
         for (uint256 i = 0; i < _baseAssets.length; i++) {
             assetToAssetRate[_baseAssets[i]][_quoteAssets[i]] = _rates[i];
-        } 
+        }
     }
 }

@@ -13,7 +13,7 @@ import "../engine/AmguConsumer.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Creates fund routes and links them together
 contract FundFactory is AmguConsumer {
-     // TODO: Add PendingFundSettings if we keep them
+    // TODO: Add PendingFundSettings if we keep them
     event FundSetupBegun(address indexed manager, address hub);
 
     event FundSetupCompleted(address indexed manager, address indexed hub);
@@ -40,8 +40,8 @@ contract FundFactory is AmguConsumer {
     IVaultFactory public vaultFactory;
 
     // A manager can only have one pending fund
-    mapping (address => address) public managerToPendingFundHub;
-    mapping (address => PendingFundSettings) public managerToPendingFundSettings;
+    mapping(address => address) public managerToPendingFundHub;
+    mapping(address => PendingFundSettings) public managerToPendingFundSettings;
 
     // Parameters stored when beginning setup
     struct PendingFundSettings {
@@ -59,10 +59,7 @@ contract FundFactory is AmguConsumer {
         address _vaultFactory,
         address _policyManagerFactory,
         address _registry
-    )
-        public
-        AmguConsumer(_registry)
-    {
+    ) public AmguConsumer(_registry) {
         feeManagerFactory = IFeeManagerFactory(_feeManagerFactory);
         sharesFactory = ISharesFactory(_sharesFactory);
         vaultFactory = IVaultFactory(_vaultFactory);
@@ -92,10 +89,8 @@ contract FundFactory is AmguConsumer {
         address[] memory _policies,
         bytes[] memory _policySettings,
         address[] memory _adapters,
-        address _denominationAsset
-    )
-        public // TODO: change to `external` in future solidity version (calldata fails on stack error)
-    {
+        address _denominationAsset // TODO: change to `external` in future solidity version (calldata fails on stack error)
+    ) public {
         require(!__hasPendingFund(msg.sender), "beginFundSetup: Sender has another fund pending");
         require(
             REGISTRY.primitiveIsRegistered(_denominationAsset),
@@ -127,56 +122,56 @@ contract FundFactory is AmguConsumer {
 
     /// @notice Creates a FeeManager component for a particular fund manager's fund
     /// @param _manager The fund manager for whom the component should be created
-    function createFeeManagerFor(address _manager) external amguPayable payable {
+    function createFeeManagerFor(address _manager) external payable amguPayable {
         __createFeeManagerFor(_manager);
     }
 
     /// @notice Creates a FeeManager component for the sender's fund
-    function createFeeManager() external amguPayable payable {
+    function createFeeManager() external payable amguPayable {
         __createFeeManagerFor(msg.sender);
     }
 
     /// @notice Creates a PolicyManager component for a particular fund manager's fund
     /// @param _manager The fund manager for whom the component should be created
-    function createPolicyManagerFor(address _manager) external amguPayable payable {
+    function createPolicyManagerFor(address _manager) external payable amguPayable {
         __createPolicyManagerFor(_manager);
     }
 
     /// @notice Creates a PolicyManager component for the sender's fund
-    function createPolicyManager() external amguPayable payable {
+    function createPolicyManager() external payable amguPayable {
         __createPolicyManagerFor(msg.sender);
     }
 
     /// @notice Creates a Shares component for a particular fund manager's fund
     /// @param _manager The fund manager for whom the component should be created
-    function createSharesFor(address _manager) external amguPayable payable {
+    function createSharesFor(address _manager) external payable amguPayable {
         __createSharesFor(_manager);
     }
 
     /// @notice Creates a Shares component for the sender's fund
-    function createShares() external amguPayable payable {
+    function createShares() external payable amguPayable {
         __createSharesFor(msg.sender);
     }
 
     /// @notice Creates a Vault component for a particular fund manager's fund
     /// @param _manager The fund manager for whom the component should be created
-    function createVaultFor(address _manager) external amguPayable payable {
+    function createVaultFor(address _manager) external payable amguPayable {
         __createVaultFor(_manager);
     }
 
     /// @notice Creates a Vault component for the sender's fund
-    function createVault() external amguPayable payable {
+    function createVault() external payable amguPayable {
         __createVaultFor(msg.sender);
     }
 
     /// @notice Complete setup for a particular fund manager's fund
     /// @param _manager The fund manager for whom the fund setup should be completed
-    function completeFundSetupFor(address _manager) external amguPayable payable {
+    function completeFundSetupFor(address _manager) external payable amguPayable {
         __completeFundSetupFor(_manager);
     }
 
     /// @notice Complete setup for the sender's fund
-    function completeFundSetup() external amguPayable payable {
+    function completeFundSetup() external payable amguPayable {
         __completeFundSetupFor(msg.sender);
     }
 
@@ -219,14 +214,8 @@ contract FundFactory is AmguConsumer {
             hub.policyManager() != address(0),
             "__completeFundSetup: policyManager has not been created"
         );
-        require(
-            hub.shares() != address(0),
-            "__completeFundSetup: shares has not been created"
-        );
-        require(
-            hub.vault() != address(0),
-            "__completeFundSetup: vault has not been created"
-        );
+        require(hub.shares() != address(0), "__completeFundSetup: shares has not been created");
+        require(hub.vault() != address(0), "__completeFundSetup: vault has not been created");
 
         // Initialize fund
         hub.initializeFund();
@@ -238,10 +227,7 @@ contract FundFactory is AmguConsumer {
     }
 
     /// @notice Helper to create a FeeManger component for a specified manager
-    function __createFeeManagerFor(address _manager)
-        private
-        onlyHasPendingFund(_manager)
-    {
+    function __createFeeManagerFor(address _manager) private onlyHasPendingFund(_manager) {
         Hub hub = Hub(managerToPendingFundHub[_manager]);
         require(hub.feeManager() == address(0), "__createFeeManagerFor: feeManager already set");
 
@@ -263,10 +249,7 @@ contract FundFactory is AmguConsumer {
     }
 
     /// @notice Helper to create a PolicyManger component for a specified manager
-    function __createPolicyManagerFor(address _manager)
-        private
-        onlyHasPendingFund(_manager)
-    {
+    function __createPolicyManagerFor(address _manager) private onlyHasPendingFund(_manager) {
         Hub hub = Hub(managerToPendingFundHub[_manager]);
         require(
             hub.policyManager() == address(0),
@@ -291,15 +274,9 @@ contract FundFactory is AmguConsumer {
     }
 
     /// @notice Helper to create a Shares component for a specified manager
-    function __createSharesFor(address _manager)
-        private
-        onlyHasPendingFund(_manager)
-    {
+    function __createSharesFor(address _manager) private onlyHasPendingFund(_manager) {
         Hub hub = Hub(managerToPendingFundHub[_manager]);
-        require(
-            hub.shares() == address(0),
-            "__createSharesFor: shares already set"
-        );
+        require(hub.shares() == address(0), "__createSharesFor: shares already set");
 
         // Deploy
         address shares = sharesFactory.createInstance(
@@ -313,15 +290,9 @@ contract FundFactory is AmguConsumer {
         hub.setShares(shares);
     }
 
-    function __createVaultFor(address _manager)
-        private
-        onlyHasPendingFund(_manager)
-    {
+    function __createVaultFor(address _manager) private onlyHasPendingFund(_manager) {
         Hub hub = Hub(managerToPendingFundHub[_manager]);
-        require(
-            hub.vault() == address(0),
-            "__createVaultFor: vault already set"
-        );
+        require(hub.vault() == address(0), "__createVaultFor: vault already set");
 
         // Deploy
         address vault = vaultFactory.createInstance(

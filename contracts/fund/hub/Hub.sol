@@ -35,16 +35,16 @@ contract Hub is IHub {
     address public override vault;
 
     modifier onlyFundFactory() {
-        require(
-            msg.sender == FUND_FACTORY,
-            "Only FundFactory can make this call"
-        );
+        require(msg.sender == FUND_FACTORY, "Only FundFactory can make this call");
         _;
     }
 
-    constructor(address _registry, address _fundFactory, address _manager, string memory _name)
-        public
-    {
+    constructor(
+        address _registry,
+        address _fundFactory,
+        address _manager,
+        string memory _name
+    ) public {
         FUND_FACTORY = _fundFactory;
         MANAGER = _manager;
         NAME = _name;
@@ -82,7 +82,7 @@ contract Hub is IHub {
     function setShares(address _shares) external onlyFundFactory {
         require(shares == address(0), "setShares: shares is already set");
 
-        shares =_shares;
+        shares = _shares;
         emit SharesSet(shares);
     }
 
@@ -91,7 +91,7 @@ contract Hub is IHub {
     function setVault(address _vault) external onlyFundFactory {
         require(vault == address(0), "setVault: vault is already set");
 
-        vault =_vault;
+        vault = _vault;
         emit VaultSet(vault);
     }
 

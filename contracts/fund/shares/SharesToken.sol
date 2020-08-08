@@ -17,11 +17,7 @@ contract SharesToken is ERC20 {
         address,
         address,
         uint256
-    )
-        public
-        override
-        returns (bool)
-    {
+    ) public override returns (bool) {
         revert("Unimplemented");
     }
 
@@ -29,25 +25,11 @@ contract SharesToken is ERC20 {
         revert("Unimplemented");
     }
 
-    function increaseAllowance(
-        address,
-        uint256
-    )
-        public
-        override
-        returns (bool)
-    {
+    function increaseAllowance(address, uint256) public override returns (bool) {
         revert("Unimplemented");
     }
 
-    function decreaseAllowance(
-        address,
-        uint256
-    )
-        public
-        override
-        returns (bool)
-    {
+    function decreaseAllowance(address, uint256) public override returns (bool) {
         revert("Unimplemented");
     }
 }

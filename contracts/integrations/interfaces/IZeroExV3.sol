@@ -36,14 +36,28 @@ interface IZeroExV3 {
     }
 
     function cancelled(bytes32) external view returns (bool);
+
     function cancelOrder(Order calldata) external;
+
     function filled(bytes32) external view returns (uint256);
-    function fillOrder(Order calldata, uint256, bytes calldata) external payable returns (FillResults memory);
+
+    function fillOrder(
+        Order calldata,
+        uint256,
+        bytes calldata
+    ) external payable returns (FillResults memory);
+
     function getAssetProxy(bytes4) external view returns (address);
+
     function getOrderInfo(Order calldata) external view returns (OrderInfo memory);
+
     function isValidOrderSignature(Order calldata, bytes calldata) external view returns (bool);
+
     function preSign(bytes32) external;
+
     function protocolFeeCollector() external view returns (address);
+
     function protocolFeeMultiplier() external view returns (uint256);
+
     function setProtocolFeeMultiplier(uint256 _feeMultiplier) external;
 }

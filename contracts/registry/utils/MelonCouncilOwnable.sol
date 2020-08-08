@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice A base contract for ownership of Melon's top-level contract,
 /// which ensures Melon Council control after setup
 contract MelonCouncilOwnable is Ownable {
-    address immutable public MGM;
-    address immutable public MTC;
+    address public immutable MGM;
+    address public immutable MTC;
 
     constructor(address _MTC, address _MGM) public {
         MTC = _MTC;

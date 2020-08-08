@@ -7,9 +7,17 @@ import "./IPolicyManager.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IPolicy {
     function addFundSettings(bytes calldata) external;
+
     function identifier() external pure returns (string memory);
+
     function policyHook() external view returns (IPolicyManager.PolicyHook);
-    function policyHookExecutionTime() external view returns (IPolicyManager.PolicyHookExecutionTime);
+
+    function policyHookExecutionTime()
+        external
+        view
+        returns (IPolicyManager.PolicyHookExecutionTime);
+
     function updateFundSettings(bytes calldata) external;
+
     function validateRule(bytes calldata) external returns (bool);
 }

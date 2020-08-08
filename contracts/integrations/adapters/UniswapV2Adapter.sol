@@ -8,7 +8,7 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for interacting with Uniswap v2
 contract UniswapV2Adapter is AdapterBase {
-    address immutable public ROUTER;
+    address public immutable ROUTER;
 
     constructor(address _registry, address _router) public AdapterBase(_registry) {
         ROUTER = _router;
@@ -18,11 +18,11 @@ contract UniswapV2Adapter is AdapterBase {
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "UNISWAP_V2";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
@@ -31,8 +31,8 @@ contract UniswapV2Adapter is AdapterBase {
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
-        view
         override
+        view
         returns (
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
@@ -56,8 +56,7 @@ contract UniswapV2Adapter is AdapterBase {
             incomingAssets_[0] = path[path.length - 1];
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-        }
-        else {
+        } else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
@@ -104,13 +103,6 @@ contract UniswapV2Adapter is AdapterBase {
             uint256 outgoingAssetAmount_
         )
     {
-        return abi.decode(
-            _encodedCallArgs,
-            (
-                address[],
-                uint256,
-                uint256
-            )
-        );
+        return abi.decode(_encodedCallArgs, (address[], uint256, uint256));
     }
 }
