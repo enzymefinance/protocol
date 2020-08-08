@@ -17,11 +17,7 @@ contract MathHelpers {
         uint256 _quantity1,
         uint256 _quantity2,
         uint256 _relativeQuantity1
-    )
-        internal
-        pure
-        returns (uint256 relativeQuantity2_)
-    {
+    ) internal pure returns (uint256 relativeQuantity2_) {
         relativeQuantity2_ = _relativeQuantity1.mul(_quantity2).div(_quantity1);
     }
 
@@ -30,11 +26,8 @@ contract MathHelpers {
         address _baseAsset,
         uint256 _baseAssetAmount,
         uint256 _quoteAssetAmount
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        return _quoteAssetAmount.mul(10 ** uint256(ERC20(_baseAsset).decimals())).div(_baseAssetAmount);
+    ) internal view returns (uint256) {
+        return
+            _quoteAssetAmount.mul(10**uint256(ERC20(_baseAsset).decimals())).div(_baseAssetAmount);
     }
 }

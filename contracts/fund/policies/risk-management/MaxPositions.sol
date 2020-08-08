@@ -10,7 +10,7 @@ import "../utils/CallOnIntegrationPostValidatePolicyBase.sol";
 contract MaxPositions is CallOnIntegrationPostValidatePolicyBase {
     event MaxPositionsSet(address policyManager, uint256 value);
 
-    mapping (address => uint256) public policyManagerToMaxPositions;
+    mapping(address => uint256) public policyManagerToMaxPositions;
 
     constructor(address _registry) public PolicyBase(_registry) {}
 
@@ -29,19 +29,14 @@ contract MaxPositions is CallOnIntegrationPostValidatePolicyBase {
     }
 
     /// @notice Provides a constant string identifier for a policy
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "MAX_POSITIONS";
     }
 
     /// @notice Apply the rule with specified paramters, in the context of a fund
     /// @return True if the rule passes
     /// @dev A fund's PolicyManager is always the sender
-    function validateRule(bytes calldata)
-        external
-        override
-        onlyPolicyManager
-        returns (bool)
-    {
+    function validateRule(bytes calldata) external override onlyPolicyManager returns (bool) {
         uint256 ownedAssetsCount = Vault(payable(__getVault())).getOwnedAssets().length;
         return ownedAssetsCount <= policyManagerToMaxPositions[msg.sender];
     }

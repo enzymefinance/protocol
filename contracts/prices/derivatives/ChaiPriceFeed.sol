@@ -10,11 +10,15 @@ import "./IDerivativePriceSource.sol";
 contract ChaiPriceFeed is IDerivativePriceSource {
     using SafeMath for uint256;
 
-    address immutable public CHAI;
-    address immutable public DAI;
-    address immutable public DSR_POT;
+    address public immutable CHAI;
+    address public immutable DAI;
+    address public immutable DSR_POT;
 
-    constructor(address _chai, address _dai, address _dsrPot) public {
+    constructor(
+        address _chai,
+        address _dai,
+        address _dsrPot
+    ) public {
         CHAI = _chai;
         DAI = _dai;
         DSR_POT = _dsrPot;
@@ -41,7 +45,7 @@ contract ChaiPriceFeed is IDerivativePriceSource {
     function __calcChaiRate() private returns (uint256) {
         IPot pot = IPot(DSR_POT);
         uint256 chi = (now > pot.rho()) ? pot.drip() : pot.chi();
-        return chi.div(10 ** 9); // Refactor of mul(chi, 10 ** 18) / 10 ** 27
+        return chi.div(10**9); // Refactor of mul(chi, 10 ** 18) / 10 ** 27
     }
 }
 
@@ -49,6 +53,8 @@ contract ChaiPriceFeed is IDerivativePriceSource {
 /// @dev See DSR integration guide: https://github.com/makerdao/developerguides/blob/master/dai/dsr-integration-guide/dsr-integration-guide-01.md
 interface IPot {
     function chi() external view returns (uint256);
+
     function rho() external view returns (uint256);
+
     function drip() external returns (uint256);
 }

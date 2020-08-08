@@ -34,8 +34,7 @@ abstract contract PolicyBase is IPolicy, SpokeCallee {
         // 2. Is the policy manager of the registered fund
         try Spoke(_who).HUB() returns (address hub) {
             return Registry(REGISTRY).fundIsRegistered(hub) && __getPolicyManager(hub) == _who;
-        }
-        catch {
+        } catch {
             return false;
         }
     }

@@ -20,7 +20,7 @@ contract AssetBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPo
     }
 
     /// @notice Provides a constant string identifier for a policy
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "ASSET_BLACKLIST";
     }
 
@@ -34,7 +34,7 @@ contract AssetBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPo
         onlyPolicyManager
         returns (bool)
     {
-        (,,address[] memory incomingAssets,,,) = __decodeRuleArgs(_encodedArgs);
+        (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
         for (uint256 i = 0; i < incomingAssets.length; i++) {
             if (isInList(msg.sender, incomingAssets[i])) return false;
         }

@@ -11,21 +11,25 @@ import "../utils/AdapterBase.sol";
 contract ChaiAdapter is AdapterBase {
     using SafeERC20 for IERC20;
 
-    address immutable public CHAI;
-    address immutable public DAI;
+    address public immutable CHAI;
+    address public immutable DAI;
 
-    constructor(address _registry, address _chai, address _dai) public AdapterBase(_registry) {
+    constructor(
+        address _registry,
+        address _chai,
+        address _dai
+    ) public AdapterBase(_registry) {
         CHAI = _chai;
         DAI = _dai;
     }
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "CHAI";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration 
+    /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @return spendAssets_ The assets to spend in the call
@@ -34,8 +38,8 @@ contract ChaiAdapter is AdapterBase {
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
-        view
         override
+        view
         returns (
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
@@ -44,10 +48,7 @@ contract ChaiAdapter is AdapterBase {
         )
     {
         if (_selector == LEND_SELECTOR) {
-            (
-                uint256 daiAmount,
-                uint256 minChaiAmount
-            ) = __decodeCallArgs(_encodedCallArgs);
+            (uint256 daiAmount, uint256 minChaiAmount) = __decodeCallArgs(_encodedCallArgs);
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = DAI;
@@ -58,12 +59,8 @@ contract ChaiAdapter is AdapterBase {
             incomingAssets_[0] = CHAI;
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minChaiAmount;
-        }
-        else if (_selector == REDEEM_SELECTOR) {
-            (
-                uint256 chaiAmount,
-                uint256 minDaiAmount
-            ) = __decodeCallArgs(_encodedCallArgs);
+        } else if (_selector == REDEEM_SELECTOR) {
+            (uint256 chaiAmount, uint256 minDaiAmount) = __decodeCallArgs(_encodedCallArgs);
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = CHAI;
@@ -74,8 +71,7 @@ contract ChaiAdapter is AdapterBase {
             incomingAssets_[0] = DAI;
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minDaiAmount;
-        }
-        else {
+        } else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
@@ -88,7 +84,7 @@ contract ChaiAdapter is AdapterBase {
         onlyVault
         fundAssetsTransferHandler(_encodedAssetTransferArgs)
     {
-        (uint256 daiAmount,) = __decodeCallArgs(_encodedCallArgs);
+        (uint256 daiAmount, ) = __decodeCallArgs(_encodedCallArgs);
         require(daiAmount > 0, "lend: daiAmount must be >0");
 
         // Execute Lend on Chai
@@ -105,7 +101,7 @@ contract ChaiAdapter is AdapterBase {
         onlyVault
         fundAssetsTransferHandler(_encodedAssetTransferArgs)
     {
-        (uint256 chaiAmount,) = __decodeCallArgs(_encodedCallArgs);
+        (uint256 chaiAmount, ) = __decodeCallArgs(_encodedCallArgs);
         require(chaiAmount > 0, "redeem: chaiAmount must be >0");
 
         // Execute Redeem on Chai
@@ -119,6 +115,6 @@ contract ChaiAdapter is AdapterBase {
         pure
         returns (uint256 outgoingAmount_, uint256 minIncomingAmount_)
     {
-        return abi.decode(_encodedCallArgs, (uint256,uint256));
+        return abi.decode(_encodedCallArgs, (uint256, uint256));
     }
 }

@@ -9,7 +9,7 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Trading adapter to Melon Engine
 contract EngineAdapter is AdapterBase {
-    address immutable public EXCHANGE;
+    address public immutable EXCHANGE;
 
     constructor(address _registry, address _exchange) public AdapterBase(_registry) {
         EXCHANGE = _exchange;
@@ -22,7 +22,7 @@ contract EngineAdapter is AdapterBase {
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "MELON_ENGINE";
     }
 
@@ -35,8 +35,8 @@ contract EngineAdapter is AdapterBase {
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
-        view
         override
+        view
         returns (
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
@@ -45,10 +45,9 @@ contract EngineAdapter is AdapterBase {
         )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            (
-                uint256 minNativeAssetAmount,
-                uint256 mlnTokenAmount
-            ) = __decodeCallArgs(_encodedCallArgs);
+            (uint256 minNativeAssetAmount, uint256 mlnTokenAmount) = __decodeCallArgs(
+                _encodedCallArgs
+            );
             Registry registry = Registry(__getRegistry());
 
             spendAssets_ = new address[](1);
@@ -60,8 +59,7 @@ contract EngineAdapter is AdapterBase {
             incomingAssets_[0] = registry.WETH_TOKEN();
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minNativeAssetAmount;
-        }
-        else {
+        } else {
             revert("parseIncomingAssets: _selector invalid");
         }
     }
@@ -74,7 +72,7 @@ contract EngineAdapter is AdapterBase {
         onlyVault
         fundAssetsTransferHandler(_encodedAssetTransferArgs)
     {
-        (,uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
+        (, uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
 
         // Validate args
         require(mlnTokenAmount > 0, "takeOrder: mlnTokenAmount must be >0");
@@ -96,17 +94,8 @@ contract EngineAdapter is AdapterBase {
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
-        returns (
-            uint256 minNativeAssetAmount_,
-            uint256 mlnTokenAmount_
-        )
+        returns (uint256 minNativeAssetAmount_, uint256 mlnTokenAmount_)
     {
-        return abi.decode(
-            _encodedCallArgs,
-            (
-                uint256,
-                uint256
-            )
-        );
+        return abi.decode(_encodedCallArgs, (uint256, uint256));
     }
 }

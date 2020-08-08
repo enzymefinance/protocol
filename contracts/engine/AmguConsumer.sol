@@ -12,16 +12,9 @@ import "./IEngine.sol";
 abstract contract AmguConsumer {
     using SafeMath for uint256;
 
-    event AmguPaid(
-        address indexed payer,
-        uint256 totalAmguPaidInEth,
-        uint256 amguChargableGas
-    );
+    event AmguPaid(address indexed payer, uint256 totalAmguPaidInEth, uint256 amguChargableGas);
 
-    event IncentivePaid(
-        address indexed payer,
-        uint256 incentiveAmount
-    );
+    event IncentivePaid(address indexed payer, uint256 incentiveAmount);
 
     IRegistry public REGISTRY;
 
@@ -64,18 +57,10 @@ abstract contract AmguConsumer {
         uint256 mlnPerAmgu = IEngine(REGISTRY.engine()).getAmguPrice();
         if (mlnPerAmgu > 0) {
             uint256 mlnQuantity = mlnPerAmgu.mul(_gasUsed);
-            (ethCharged_,) = IValueInterpreter(REGISTRY.valueInterpreter()).calcCanonicalAssetValue(
-                REGISTRY.MLN_TOKEN(),
-                mlnQuantity,
-                REGISTRY.WETH_TOKEN()
-            );
-            require(
-                msg.value >= ethCharged_,
-                "__chargeAmgu: Insufficent value for AMGU"
-            );
-            IEngine(
-                REGISTRY.engine()
-            ).payAmguInEther{value: ethCharged_}();
+            (ethCharged_, ) = IValueInterpreter(REGISTRY.valueInterpreter())
+                .calcCanonicalAssetValue(REGISTRY.MLN_TOKEN(), mlnQuantity, REGISTRY.WETH_TOKEN());
+            require(msg.value >= ethCharged_, "__chargeAmgu: Insufficent value for AMGU");
+            IEngine(REGISTRY.engine()).payAmguInEther{value: ethCharged_}();
             emit AmguPaid(msg.sender, ethCharged_, _gasUsed);
         }
         return ethCharged_;

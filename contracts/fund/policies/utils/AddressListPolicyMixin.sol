@@ -13,7 +13,7 @@ abstract contract AddressListPolicyMixin {
 
     event AddressesRemoved(address policyManager, address[] items);
 
-    mapping (address => EnumerableSet.AddressSet) private policyManagerToList;
+    mapping(address => EnumerableSet.AddressSet) private policyManagerToList;
 
     // EXTERNAL FUNCTIONS
 
@@ -25,7 +25,7 @@ abstract contract AddressListPolicyMixin {
     function getList(address _policyManager) external view returns (address[] memory) {
         uint256 length = policyManagerToList[_policyManager].length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = policyManagerToList[_policyManager].at(i);
         }
         return output_;

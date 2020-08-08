@@ -9,7 +9,7 @@ import "./PolicyBase.sol";
 abstract contract CallOnIntegrationPreValidatePolicyBase is PolicyBase {
     /// @notice Get the PolicyHook for a policy
     /// @return The PolicyHook
-    function policyHook() external view override returns (IPolicyManager.PolicyHook) {
+    function policyHook() external override view returns (IPolicyManager.PolicyHook) {
         return IPolicyManager.PolicyHook.CallOnIntegration;
     }
 
@@ -17,8 +17,8 @@ abstract contract CallOnIntegrationPreValidatePolicyBase is PolicyBase {
     /// @return The PolicyHookExecutionTime
     function policyHookExecutionTime()
         external
-        view
         override
+        view
         returns (IPolicyManager.PolicyHookExecutionTime)
     {
         return IPolicyManager.PolicyHookExecutionTime.Pre;
@@ -37,16 +37,10 @@ abstract contract CallOnIntegrationPreValidatePolicyBase is PolicyBase {
             uint256[] memory spendAssetAmounts_
         )
     {
-        return abi.decode(
-            _encodedRuleArgs,
-            (
-                bytes4,
-                address,
-                address[],
-                uint256[],
-                address[],
-                uint256[]
-            )
-        );
+        return
+            abi.decode(
+                _encodedRuleArgs,
+                (bytes4, address, address[], uint256[], address[], uint256[])
+            );
     }
 }

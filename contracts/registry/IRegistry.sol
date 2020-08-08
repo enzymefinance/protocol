@@ -11,24 +11,48 @@ interface IRegistry {
     }
 
     function adapterToIntegrationInfo(address) external view returns (IntegrationInfo memory);
+
     function derivativeToPriceSource(address) external view returns (address);
-    function engine() external view returns(address);
+
+    function engine() external view returns (address);
+
     function feeIsRegistered(address) external view returns (bool);
+
     function fundIsRegistered(address) external view returns (bool);
+
     function fundNameHashIsTaken(bytes32) external view returns (bool);
+
     function fundFactory() external view returns (address);
+
     function getRegisteredPrimitives() external view returns (address[] memory);
+
     function getReserveMin(address) external view returns (uint256);
-    function incentive() external view returns(uint256);
+
+    function incentive() external view returns (uint256);
+
     function integrationAdapterIsRegistered(address) external view returns (bool);
-    function MGM() external view returns(address);
-    function MLN_TOKEN() external view returns(address);
-    function WETH_TOKEN() external view returns(address);
-    function owner() external view returns(address);
+
+    function MGM() external view returns (address);
+
+    function MLN_TOKEN() external view returns (address);
+
+    function WETH_TOKEN() external view returns (address);
+
+    function owner() external view returns (address);
+
     function policyIsRegistered(address) external view returns (bool);
-    function priceSource() external view returns(address);
+
+    function priceSource() external view returns (address);
+
     function primitiveIsRegistered(address) external view returns (bool);
-    function registerFund(address, address, bytes32) external;
-    function sharesRequestor() external view returns(address);
-    function valueInterpreter() external view returns(address);
+
+    function registerFund(
+        address,
+        address,
+        bytes32
+    ) external;
+
+    function sharesRequestor() external view returns (address);
+
+    function valueInterpreter() external view returns (address);
 }

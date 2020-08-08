@@ -15,9 +15,9 @@ contract PriceTolerance is PolicyBase, CallOnIntegrationPostValidatePolicyBase {
 
     event PriceToleranceSet(address policyManager, uint256 value);
 
-    uint256 internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
+    uint256 internal constant ONE_HUNDRED_PERCENT = 10**18; // 100%
 
-    mapping (address => uint256) public policyManagerToPriceTolerance;
+    mapping(address => uint256) public policyManagerToPriceTolerance;
 
     constructor(address _registry) public PolicyBase(_registry) {}
 
@@ -39,7 +39,7 @@ contract PriceTolerance is PolicyBase, CallOnIntegrationPostValidatePolicyBase {
     }
 
     /// @notice Provides a constant string identifier for a policy
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "PRICE_TOLERANCE";
     }
 
@@ -89,14 +89,8 @@ contract PriceTolerance is PolicyBase, CallOnIntegrationPostValidatePolicyBase {
         address denominationAsset = Shares(__getShares()).DENOMINATION_ASSET();
 
         for (uint256 i = 0; i < _assets.length; i++) {
-            (
-                uint256 assetValue,
-                bool isValid
-            ) = ValueInterpreter(__getValueInterpreter()).calcLiveAssetValue(
-                _assets[i],
-                _amounts[i],
-                denominationAsset
-            );
+            (uint256 assetValue, bool isValid) = ValueInterpreter(__getValueInterpreter())
+                .calcLiveAssetValue(_assets[i], _amounts[i], denominationAsset);
             require(
                 assetValue > 0 && isValid,
                 "__calcCumulativeAssetsValue: No valid price available for asset"

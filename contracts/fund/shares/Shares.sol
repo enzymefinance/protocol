@@ -18,11 +18,7 @@ contract Shares is IShares, Spoke, SharesToken {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
-    event SharesBought(
-        address indexed buyer,
-        uint256 sharesQuantity,
-        uint256 investmentAmount
-    );
+    event SharesBought(address indexed buyer, uint256 sharesQuantity, uint256 investmentAmount);
 
     event SharesRedeemed(
         address indexed redeemer,
@@ -31,7 +27,7 @@ contract Shares is IShares, Spoke, SharesToken {
         uint256[] receivedAssetQuantities
     );
 
-    address immutable public override DENOMINATION_ASSET;
+    address public immutable override DENOMINATION_ASSET;
 
     modifier onlySharesRequestor() {
         require(
@@ -45,11 +41,7 @@ contract Shares is IShares, Spoke, SharesToken {
         address _hub,
         address _denominationAsset,
         string memory _tokenName
-    )
-        public
-        Spoke(_hub)
-        SharesToken(_tokenName)
-    {
+    ) public Spoke(_hub) SharesToken(_tokenName) {
         require(
             __getRegistry().primitiveIsRegistered(_denominationAsset),
             "Denomination asset must be registered"
@@ -72,18 +64,18 @@ contract Shares is IShares, Spoke, SharesToken {
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
     /// @return The amount of shares bought
-    function buyShares(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
-        external
-        override
-        onlySharesRequestor
-        onlyActiveFund
-        returns (uint256)
-    {
+    function buyShares(
+        address _buyer,
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
+    ) external override onlySharesRequestor onlyActiveFund returns (uint256) {
         IFeeManager feeManager = __getFeeManager();
 
         // Calculate full shares quantity for investment amount after updating continuous fees
         feeManager.settleFees(IFeeManager.FeeHook.Continuous, "");
-        uint256 sharesQuantity = _investmentAmount.mul(10 ** uint256(ERC20(DENOMINATION_ASSET).decimals())).div(calcSharePrice());
+        uint256 sharesQuantity = _investmentAmount
+            .mul(10**uint256(ERC20(DENOMINATION_ASSET).decimals()))
+            .div(calcSharePrice());
 
         // This is inefficient to mint, and then allow the feeManager to burn/mint to settle the fee,
         // but we need the FeeManager to handle minting/burning of shares if we want to move
@@ -150,10 +142,7 @@ contract Shares is IShares, Spoke, SharesToken {
 
         uint256 gav;
         for (uint256 i = 0; i < assets.length; i++) {
-            (
-                uint256 assetGav,
-                bool isValid
-            ) = valueInterpreter.calcCanonicalAssetValue(
+            (uint256 assetGav, bool isValid) = valueInterpreter.calcCanonicalAssetValue(
                 assets[i],
                 balances[i],
                 DENOMINATION_ASSET
@@ -172,10 +161,9 @@ contract Shares is IShares, Spoke, SharesToken {
     /// Rounding favors the investor (rounds the price down).
     function calcSharePrice() public returns (uint256) {
         if (totalSupply() == 0) {
-            return 10 ** uint256(ERC20(DENOMINATION_ASSET).decimals());
-        }
-        else {
-            return calcGav().mul(10 ** uint256(decimals())).div(totalSupply());
+            return 10**uint256(ERC20(DENOMINATION_ASSET).decimals());
+        } else {
+            return calcGav().mul(10**uint256(decimals())).div(totalSupply());
         }
     }
 
@@ -192,8 +180,7 @@ contract Shares is IShares, Spoke, SharesToken {
 
         // Attempt to settle fees, but don't allow an error to block redemption
         // This also handles a rejection from onlyActiveFund when the fund is shutdown
-        try __getFeeManager().settleFees(IFeeManager.FeeHook.Continuous, "") {}
-        catch {}
+        try __getFeeManager().settleFees(IFeeManager.FeeHook.Continuous, "")  {} catch {}
 
         // Check the shares quantity against the user's balance after settling fees
         require(
@@ -217,30 +204,23 @@ contract Shares is IShares, Spoke, SharesToken {
             payoutQuantities[i] = assetBalances[i].mul(_sharesQuantity).div(sharesSupply);
 
             // Transfer payout asset to redeemer
-            try vault.withdraw(payoutAssets[i], payoutQuantities[i]) {}
-            catch {}
+            try vault.withdraw(payoutAssets[i], payoutQuantities[i])  {} catch {}
 
             uint256 receiverPreBalance = ERC20(payoutAssets[i]).balanceOf(msg.sender);
-            try IERC20Flexible(payoutAssets[i]).transfer(msg.sender, payoutQuantities[i]) {
+            try IERC20Flexible(payoutAssets[i]).transfer(msg.sender, payoutQuantities[i])  {
                 uint256 receiverPostBalance = ERC20(payoutAssets[i]).balanceOf(msg.sender);
                 require(
                     receiverPreBalance.add(payoutQuantities[i]) == receiverPostBalance,
                     "__redeemShares: Receiver did not receive tokens in transfer"
                 );
-            }
-            catch {
+            } catch {
                 if (!_bypassFailure) {
                     revert("__redeemShares: Token transfer failed");
                 }
             }
         }
 
-        emit SharesRedeemed(
-            msg.sender,
-            _sharesQuantity,
-            payoutAssets,
-            payoutQuantities
-        );
+        emit SharesRedeemed(msg.sender, _sharesQuantity, payoutAssets, payoutQuantities);
     }
 }
 
@@ -249,10 +229,7 @@ contract SharesFactory {
         address _hub,
         address _denominationAsset,
         string calldata _tokenName
-    )
-        external
-        returns (address)
-    {
+    ) external returns (address) {
         return address(new Shares(_hub, _denominationAsset, _tokenName));
     }
 }

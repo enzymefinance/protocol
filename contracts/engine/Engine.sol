@@ -32,19 +32,13 @@ contract Engine is IEngine {
     uint256 public totalMlnBurned;
 
     modifier onlyMGM() {
-        require(
-            msg.sender == registry.MGM(),
-            "Only MGM can call this"
-        );
+        require(msg.sender == registry.MGM(), "Only MGM can call this");
         _;
     }
 
     /// @dev Registry owner is MTC
     modifier onlyMTC() {
-        require(
-            msg.sender == registry.owner(),
-            "Only MTC can call this"
-        );
+        require(msg.sender == registry.owner(), "Only MTC can call this");
         _;
     }
 
@@ -60,24 +54,20 @@ contract Engine is IEngine {
     }
 
     /// @dev only callable by MTC
-    function setRegistry(address _registry)
-        external
-        onlyMTC
-    {
+    function setRegistry(address _registry) external onlyMTC {
         __setRegistry(_registry);
     }
 
     /// @dev set price of AMGU in MLN (base units)
     /// @dev only callable by MGM
-    function setAmguPrice(uint256 _price)
-        external
-        onlyMGM
-    {
+    function setAmguPrice(uint256 _price) external onlyMGM {
         amguPrice = _price;
         emit SetAmguPrice(_price);
     }
 
-    function getAmguPrice() public view override returns (uint256) { return amguPrice; }
+    function getAmguPrice() public override view returns (uint256) {
+        return amguPrice;
+    }
 
     function premiumPercent() public view returns (uint256) {
         if (liquidEther < 1 ether) {
@@ -91,18 +81,22 @@ contract Engine is IEngine {
         }
     }
 
-    function payAmguInEther() external payable override {
+    function payAmguInEther() external override payable {
         require(
-            msg.sender == registry.fundFactory() ||
-            msg.sender == registry.sharesRequestor(),
+            msg.sender == registry.fundFactory() || msg.sender == registry.sharesRequestor(),
             "Sender must be FundFactory or SharesRequestor"
         );
         uint256 mlnPerAmgu = getAmguPrice();
         uint256 ethPerMln;
-        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.WETH_TOKEN());
+        (ethPerMln, , ) = priceSource().getCanonicalRate(
+            address(mlnToken()),
+            registry.WETH_TOKEN()
+        );
         uint256 amguConsumed;
         if (mlnPerAmgu > 0 && ethPerMln > 0) {
-            amguConsumed = msg.value.mul(10 ** uint256(mlnToken().decimals())).div(ethPerMln.mul(mlnPerAmgu));
+            amguConsumed = msg.value.mul(10**uint256(mlnToken().decimals())).div(
+                ethPerMln.mul(mlnPerAmgu)
+            );
         } else {
             amguConsumed = 0;
         }
@@ -115,10 +109,7 @@ contract Engine is IEngine {
     /// @notice Move frozen ether to liquid pool after delay
     /// @dev Delay only restarts when this function is called
     function thaw() external {
-        require(
-            block.timestamp >= lastThaw.add(thawingDelay),
-            "Thawing delay has not passed"
-        );
+        require(block.timestamp >= lastThaw.add(thawingDelay), "Thawing delay has not passed");
         require(frozenEther > 0, "No frozen ether to thaw");
         lastThaw = block.timestamp;
         liquidEther = liquidEther.add(frozenEther);
@@ -129,13 +120,16 @@ contract Engine is IEngine {
     /// @return ETH per MLN including premium
     function enginePrice() public view returns (uint256) {
         uint256 ethPerMln;
-        (ethPerMln,,) = priceSource().getCanonicalRate(address(mlnToken()), registry.WETH_TOKEN());
+        (ethPerMln, , ) = priceSource().getCanonicalRate(
+            address(mlnToken()),
+            registry.WETH_TOKEN()
+        );
         uint256 premium = ethPerMln.mul(premiumPercent()).div(100);
         return ethPerMln.add(premium);
     }
 
     function ethPayoutForMlnAmount(uint256 _mlnAmount) public view returns (uint256) {
-        return _mlnAmount.mul(enginePrice()).div(10 ** uint256(mlnToken().decimals()));
+        return _mlnAmount.mul(enginePrice()).div(10**uint256(mlnToken().decimals()));
     }
 
     /// @notice MLN must be approved first
@@ -160,20 +154,12 @@ contract Engine is IEngine {
     }
 
     /// @dev Get MLN from the registry
-    function mlnToken()
-        public
-        view
-        returns (ERC20Burnable)
-    {
+    function mlnToken() public view returns (ERC20Burnable) {
         return ERC20Burnable(registry.MLN_TOKEN());
     }
 
     /// @dev Get PriceSource from the registry
-    function priceSource()
-        public
-        view
-        returns (IPriceSource)
-    {
+    function priceSource() public view returns (IPriceSource) {
         return IPriceSource(registry.priceSource());
     }
 }

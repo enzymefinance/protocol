@@ -2,6 +2,3 @@
 codegen/
 package/
 artifacts/
-
-# TODO: Re-enable this once contracts are formatted with prettier
-contracts/

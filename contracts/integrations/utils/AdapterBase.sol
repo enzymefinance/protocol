@@ -16,7 +16,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    address immutable public REGISTRY;
+    address public immutable REGISTRY;
 
     /// @dev Provides a standard implementation for transferring assets between
     /// the fund and the adapter, by wrapping the adapter action.
@@ -27,14 +27,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = abi.decode(
-            _encodedAssetTransferArgs,
-            (
-                address[],
-                uint256[],
-                address[]
-            )
-        );
+        ) = abi.decode(_encodedAssetTransferArgs, (address[], uint256[], address[]));
 
         // Sanity check
         require(
@@ -58,7 +51,11 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
             spentAssetPreCallAmounts[i] = IERC20(spendAssets[i]).balanceOf(address(this));
 
             // Custody asset
-            IERC20(spendAssets[i]).safeTransferFrom(msg.sender, address(this), spendAssetAmounts[i]);
+            IERC20(spendAssets[i]).safeTransferFrom(
+                msg.sender,
+                address(this),
+                spendAssetAmounts[i]
+            );
         }
 
         // Get incoming asset balances before call
@@ -117,10 +114,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
     function __aggregateAssets(address[] memory _assets, uint256[] memory _amounts)
         internal
         pure
-        returns (
-            address[] memory aggregatedAssets_,
-            uint256[] memory aggregatedAssetAmounts_
-        )
+        returns (address[] memory aggregatedAssets_, uint256[] memory aggregatedAssetAmounts_)
     {
         // Get count of unique assets with non-zero values
         uint256 aggregatedAssetsCount;
@@ -170,8 +164,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSignatures, Spo
         // 2. Is the vault of the registered fund
         try ISpoke(_who).HUB() returns (address hub) {
             return Registry(REGISTRY).fundIsRegistered(hub) && __getVault(hub) == _who;
-        }
-        catch {
+        } catch {
             return false;
         }
     }

@@ -19,7 +19,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    event RequestCanceled (
+    event RequestCanceled(
         address indexed requestOwner,
         address indexed hub,
         uint256 investmentAmount,
@@ -28,7 +28,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
         uint256 incentiveFee
     );
 
-    event RequestExecuted (
+    event RequestExecuted(
         address caller,
         address indexed requestOwner,
         address indexed hub,
@@ -39,7 +39,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
         uint256 sharesBought
     );
 
-    event RequestCreated (
+    event RequestCreated(
         address indexed requestOwner,
         address indexed hub,
         uint256 investmentAmount,
@@ -54,9 +54,9 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
         uint256 incentiveFee;
     }
 
-    uint256 constant private CANCELLATION_BUFFER = 1 hours;
+    uint256 private constant CANCELLATION_BUFFER = 1 hours;
 
-    mapping (address => mapping(address => Request)) public ownerToRequestByFund;
+    mapping(address => mapping(address => Request)) public ownerToRequestByFund;
 
     /// @notice Assure that a hub address is valid
     modifier validHub(address _hub) {
@@ -105,10 +105,10 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
     /// @param _requestOwner The owner of the pending shares request
     /// @param _hub The fund for which to execute the request
     function executeRequestFor(address _requestOwner, address _hub) external {
-        (
-            bool isExecutable,
-            string memory notExecutableReason
-        ) = requestIsExecutable(_requestOwner, _hub);
+        (bool isExecutable, string memory notExecutableReason) = requestIsExecutable(
+            _requestOwner,
+            _hub
+        );
         require(isExecutable, string(abi.encodePacked("executeRequestFor:", notExecutableReason)));
 
         Request memory request = ownerToRequestByFund[_requestOwner][_hub];
@@ -156,10 +156,9 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
 
         // Execute requests
         for (uint256 i = 0; i < _requestOwners.length; i++) {
-            try this.executeRequestFor(_requestOwners[i], _hubs[i]) {
+            try this.executeRequestFor(_requestOwners[i], _hubs[i])  {
                 successes_[i] = true;
-            }
-            catch {}
+            } catch {}
         }
     }
 
@@ -171,12 +170,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
         address _hub,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
-    )
-        external
-        payable
-        validHub(_hub)
-        amguPayableWithIncentive
-    {
+    ) external payable validHub(_hub) amguPayableWithIncentive {
         // Sanity checks
         require(_hub != address(0), "requestShares: _hub cannot be empty");
         require(_investmentAmount > 0, "requestShares: _investmentAmount must be > 0");
@@ -186,10 +180,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
             ownerToRequestByFund[msg.sender][_hub].timestamp == 0,
             "requestShares: Only one request can exist (per fund)"
         );
-        require(
-            __fundIsActive(_hub),
-            "requestShares: Fund is not active"
-        );
+        require(__fundIsActive(_hub), "requestShares: Fund is not active");
         address shares = __getShares(_hub);
         address denominationAsset = IShares(shares).DENOMINATION_ASSET();
         require(
@@ -199,18 +190,16 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
 
         // The initial investment in a fund can skip the request process and settle directly
         if (IERC20(shares).totalSupply() == 0) {
-            IERC20(denominationAsset).safeTransferFrom(msg.sender, address(this), _investmentAmount);
-            __validateAndBuyShares(
-                _hub,
+            IERC20(denominationAsset).safeTransferFrom(
                 msg.sender,
-                _investmentAmount,
-                _minSharesQuantity
+                address(this),
+                _investmentAmount
             );
+            __validateAndBuyShares(_hub, msg.sender, _investmentAmount, _minSharesQuantity);
 
             // Return incentive to sender
             msg.sender.transfer(REGISTRY.incentive());
-        }
-        else {
+        } else {
             // Create the Request and take custody of investment asset
             Request memory request = Request({
                 investmentAmount: _investmentAmount,
@@ -221,7 +210,11 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
 
             // solhint-disable-next-line reentrancy
             ownerToRequestByFund[msg.sender][_hub] = request;
-            IERC20(denominationAsset).safeTransferFrom(msg.sender, address(this), _investmentAmount);
+            IERC20(denominationAsset).safeTransferFrom(
+                msg.sender,
+                address(this),
+                _investmentAmount
+            );
 
             emit RequestCreated(
                 msg.sender,
@@ -262,7 +255,8 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
 
         // Cancellation buffer has passed after a price feed update
         uint256 lastPriceSourceUpdate = priceSource.lastUpdate();
-        return requestTimestamp < lastPriceSourceUpdate &&
+        return
+            requestTimestamp < lastPriceSourceUpdate &&
             now >= lastPriceSourceUpdate.add(CANCELLATION_BUFFER);
     }
 
@@ -283,8 +277,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
         else if (!__fundIsActive(_hub)) reason_ = "Fund is not active";
         else if (request.timestamp >= IPriceSource(REGISTRY.priceSource()).lastUpdate()) {
             reason_ = "Price has not updated since request";
-        }
-        else {
+        } else {
             pass_ = true;
         }
     }
@@ -304,10 +297,7 @@ contract SharesRequestor is AmguConsumer, FundRouterMixin {
         address _buyer,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
-    )
-        private
-        returns (uint256 sharesBought_)
-    {
+    ) private returns (uint256 sharesBought_) {
         IPolicyManager policyManager = IPolicyManager(__getPolicyManager(_hub));
 
         // Pre-validate against fund policies

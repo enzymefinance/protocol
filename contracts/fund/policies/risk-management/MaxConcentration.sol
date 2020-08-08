@@ -15,9 +15,9 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
 
     event MaxConcentrationSet(address policyManager, uint256 value);
 
-    uint256 internal constant ONE_HUNDRED_PERCENT = 10 ** 18;  // 100%
+    uint256 internal constant ONE_HUNDRED_PERCENT = 10**18; // 100%
 
-    mapping (address => uint256) public policyManagerToMaxConcentration;
+    mapping(address => uint256) public policyManagerToMaxConcentration;
 
     constructor(address _registry) public PolicyBase(_registry) {}
 
@@ -40,7 +40,7 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     }
 
     /// @notice Provides a constant string identifier for a policy
-    function identifier() external pure override returns (string memory) {
+    function identifier() external override pure returns (string memory) {
         return "MAX_CONCENTRATION";
     }
 
@@ -55,25 +55,23 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
         onlyPolicyManager
         returns (bool)
     {
-        (,,address[] memory incomingAssets,,,) = __decodeRuleArgs(_encodedArgs);
+        (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
         Shares shares = Shares(__getShares());
         address denominationAsset = shares.DENOMINATION_ASSET();
         uint256 totalGav = shares.calcGav();
-        uint256[] memory incomingAssetBalances = Vault(payable(__getVault()))
-            .getAssetBalances(incomingAssets);
+        uint256[] memory incomingAssetBalances = Vault(payable(__getVault())).getAssetBalances(
+            incomingAssets
+        );
 
         for (uint256 i = 0; i < incomingAssets.length; i++) {
             if (incomingAssets[i] == denominationAsset) continue;
 
-            (
-                uint256 assetGav,
-                bool isValid
-            ) = ValueInterpreter(__getValueInterpreter())
-                    .calcCanonicalAssetValue(
-                        incomingAssets[i],
-                        incomingAssetBalances[i],
-                        denominationAsset
-                    );
+            (uint256 assetGav, bool isValid) = ValueInterpreter(__getValueInterpreter())
+                .calcCanonicalAssetValue(
+                incomingAssets[i],
+                incomingAssetBalances[i],
+                denominationAsset
+            );
 
             require(assetGav > 0 && isValid, "validateRule: No valid price available for asset");
 

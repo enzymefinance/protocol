@@ -2,6 +2,8 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
+// solhint-disable max-states-count
+
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../fund/fees/IFee.sol";
 import "../fund/policies/IPolicy.sol";
@@ -15,68 +17,70 @@ import "./utils/MelonCouncilOwnable.sol";
 /// infrastructural contracts
 /// @dev This contract should be kept relatively abstract,
 /// so that it requires minimal changes as the protocol evolves
-contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-count
+contract Registry is
+    MelonCouncilOwnable // solhint-disable-line max-states-count
+{
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event PrimitiveAdded (address primitive);
+    event PrimitiveAdded(address primitive);
 
-    event PrimitiveRemoved (address primitive);
+    event PrimitiveRemoved(address primitive);
 
     event DerivativePriceSourceUpdated(address derivative, address priceSource);
 
-    event EngineChanged (address engine);
+    event EngineChanged(address engine);
 
-    event FeeAdded (address indexed fee, string indexed identifier);
+    event FeeAdded(address indexed fee, string indexed identifier);
 
-    event FeeRemoved (address indexed fee, string indexed identifier);
+    event FeeRemoved(address indexed fee, string indexed identifier);
 
-    event FundAdded (address indexed manager, address hub, bytes32 hashedName);
+    event FundAdded(address indexed manager, address hub, bytes32 hashedName);
 
-    event FundFactoryChanged (address fundFactory);
+    event FundFactoryChanged(address fundFactory);
 
-    event IncentiveChanged (uint256 incentiveAmount);
+    event IncentiveChanged(uint256 incentiveAmount);
 
-    event IntegrationAdapterAdded (address indexed adapter, string indexed identifier);
+    event IntegrationAdapterAdded(address indexed adapter, string indexed identifier);
 
-    event IntegrationAdapterRemoved (address indexed adapter, string indexed identifier);
+    event IntegrationAdapterRemoved(address indexed adapter, string indexed identifier);
 
-    event MGMChanged (address MGM);
+    event MGMChanged(address MGM);
 
-    event PolicyAdded (address indexed policy, string indexed identifier);
+    event PolicyAdded(address indexed policy, string indexed identifier);
 
-    event PolicyRemoved (address indexed policy, string indexed identifier);
+    event PolicyRemoved(address indexed policy, string indexed identifier);
 
-    event PriceSourceChanged (address priceSource);
+    event PriceSourceChanged(address priceSource);
 
     event SharesRequestorChanged(address sharesRequestor);
 
     event ValueInterpreterChanged(address valueInterpreter);
 
     // Constants
-    address immutable public MLN_TOKEN;
-    address immutable public WETH_TOKEN;
+    address public immutable MLN_TOKEN;
+    address public immutable WETH_TOKEN;
 
     // Assets
     // Primitives are tokens that have an explicit value based on our primary pricefeed, e.g., Dai
     EnumerableSet.AddressSet private primitives;
     // Derivatives are tokens representing underlying assets, e.g,. cDai
-    mapping (address => address) public derivativeToPriceSource;
+    mapping(address => address) public derivativeToPriceSource;
 
     // Plugins
     EnumerableSet.AddressSet private fees;
     EnumerableSet.AddressSet private integrationAdapters;
     EnumerableSet.AddressSet private policies;
-    mapping (bytes32 => bool) private feeIdentifierIsRegistered;
-    mapping (bytes32 => bool) private integrationAdapterIdentifierIsRegistered;
-    mapping (bytes32 => bool) private policyIdentifierIsRegistered;
+    mapping(bytes32 => bool) private feeIdentifierIsRegistered;
+    mapping(bytes32 => bool) private integrationAdapterIdentifierIsRegistered;
+    mapping(bytes32 => bool) private policyIdentifierIsRegistered;
 
     // Fund Factories
-    mapping (address => bool) public fundFactoryIsRegistered;
+    mapping(address => bool) public fundFactoryIsRegistered;
 
     // Funds
-    mapping (address => bool) public fundIsRegistered;
-    mapping (bytes32 => bool) public fundNameHashIsTaken;
-    mapping (address => address[]) public managerToFunds;
+    mapping(address => bool) public fundIsRegistered;
+    mapping(bytes32 => bool) public fundNameHashIsTaken;
+    mapping(address => address[]) public managerToFunds;
 
     address public engine;
     address public fundFactory;
@@ -90,10 +94,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
         address _MGM,
         address _mlnToken,
         address _wethToken
-    )
-        public
-        MelonCouncilOwnable(_MTC, _MGM)
-    {
+    ) public MelonCouncilOwnable(_MTC, _MGM) {
         incentive = 10 finney;
         MLN_TOKEN = _mlnToken;
         WETH_TOKEN = _wethToken;
@@ -119,7 +120,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     function getRegisteredPrimitives() external view returns (address[] memory) {
         uint256 length = primitives.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = primitives.at(i);
         }
     }
@@ -180,7 +181,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     function getRegisteredFees() external view returns (address[] memory) {
         uint256 length = fees.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = fees.at(i);
         }
         return output_;
@@ -227,7 +228,11 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     /// @notice Add a fund to the Registry
     /// @param _hub The Hub for the fund
     /// @param _manager The manager of the fund
-    function registerFund(address _hub, address _manager, bytes32 _hashedName) external {
+    function registerFund(
+        address _hub,
+        address _manager,
+        bytes32 _hashedName
+    ) external {
         require(
             fundFactoryIsRegistered[msg.sender],
             "registerFund: Only fundFactory can call this function"
@@ -262,7 +267,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     function getRegisteredPolicies() external view returns (address[] memory) {
         uint256 length = policies.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = policies.at(i);
         }
         return output_;
@@ -331,7 +336,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     function getRegisteredIntegrationAdapters() external view returns (address[] memory) {
         uint256 length = integrationAdapters.length();
         address[] memory output_ = new address[](length);
-        for (uint256 i = 0; i < length; i++){
+        for (uint256 i = 0; i < length; i++) {
             output_[i] = integrationAdapters.at(i);
         }
         return output_;
@@ -342,10 +347,7 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
     // There may be different adapters with the same identifier.
     /// @param _adapter Address of integration adapter contract
     function registerIntegrationAdapter(address _adapter) external onlyOwner {
-        require(
-            _adapter != address(0),
-            "registerIntegrationAdapter: _adapter cannot be empty"
-        );
+        require(_adapter != address(0), "registerIntegrationAdapter: _adapter cannot be empty");
         require(
             !integrationAdapterIsRegistered(_adapter),
             "registerIntegrationAdapter: Adapter already registered"
@@ -360,10 +362,12 @@ contract Registry is MelonCouncilOwnable { // solhint-disable-line max-states-co
         bytes32 identifierHash = keccak256(bytes(identifier));
         require(
             !integrationAdapterIdentifierIsRegistered[identifierHash],
-            string(abi.encodePacked(
-                "registerIntegrationAdapter: Adapter with identifier exists: ",
-                identifier
-            ))
+            string(
+                abi.encodePacked(
+                    "registerIntegrationAdapter: Adapter with identifier exists: ",
+                    identifier
+                )
+            )
         );
 
         EnumerableSet.add(policies, _adapter);
