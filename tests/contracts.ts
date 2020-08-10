@@ -42,6 +42,7 @@ export { PriceTolerance } from './codegen/PriceTolerance';
 export { ERC20 } from './codegen/ERC20';
 export { WETH } from './codegen/WETH';
 export { PreminedToken } from './codegen/PreminedToken';
+export { BurnableToken } from './codegen/BurnableToken';
 export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
 export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
 export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';

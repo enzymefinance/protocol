@@ -375,7 +375,7 @@ export async function defaultTestConfig(
 
   const weth = await contracts.WETH.deploy(deployer);
   const [mln, rep, knc, zrx, dai] = await Promise.all([
-    contracts.PreminedToken.deploy(deployer, 'mln', 'MLN', 18),
+    contracts.BurnableToken.deploy(deployer, 'mln', 'MLN', 18),
     contracts.PreminedToken.deploy(deployer, 'rep', 'REP', 18),
     contracts.PreminedToken.deploy(deployer, 'knc', 'KNC', 18),
     contracts.PreminedToken.deploy(deployer, 'zrx', 'ZRX', 18),
