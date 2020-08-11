@@ -33,6 +33,8 @@ yarn test
 
 See [our contributing instructions](CONTRIBUTING.md).
 
+Please note that all repositories hosted under this organization follow our [Code of Conduct](CODE_OF_CONDUCT.md), make sure to review and follow it.
+
 ### Security Issues
 
 If you find a vulnerability that may affect live or testnet deployments, please send your report privately to [security@meloncouncil.io](mailto:security@meloncouncil.io). Please **DO NOT** file a public issue.
