@@ -29,7 +29,7 @@
     "build": "yarn compile && yarn codegen",
     "prepackage": "rimraf package",
     "package": "tsc && node scripts/package",
-    "test": "yarn jest",
+    "test": "TS_JEST_DISABLE_VER_CHECKER=true yarn jest",
     "format": "prettier --write \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
     "lint": "yarn lint:prettier && yarn lint:solhint",
     "lint:prettier": "prettier --list-different \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
@@ -50,7 +50,7 @@
     "prettier-plugin-solidity": "^1.0.0-alpha.55",
     "rimraf": "^3.0.2",
     "solhint": "^3.1.0",
-    "ts-jest": "^26.1.4",
+    "ts-jest": "^26.2.0",
     "typescript": "^4.0.0-beta"
   },
   "jest": {
