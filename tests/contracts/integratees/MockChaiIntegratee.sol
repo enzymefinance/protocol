@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../PreminedToken.sol";
+import "../MockToken.sol";
 
 // TODO: Consider adding ability to set DAI/CHAI rate.
-contract MockChaiIntegratee is PreminedToken("Chai", "CHAI", 18) {
+contract MockChaiIntegratee is MockToken("Chai", "CHAI", 18) {
     address public immutable DAI;
 
     constructor(address _dai) public {

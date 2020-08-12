@@ -375,11 +375,11 @@ export async function defaultTestConfig(
 
   const weth = await contracts.WETH.deploy(deployer);
   const [mln, rep, knc, zrx, dai] = await Promise.all([
-    contracts.BurnableToken.deploy(deployer, 'mln', 'MLN', 18),
-    contracts.PreminedToken.deploy(deployer, 'rep', 'REP', 18),
-    contracts.PreminedToken.deploy(deployer, 'knc', 'KNC', 18),
-    contracts.PreminedToken.deploy(deployer, 'zrx', 'ZRX', 18),
-    contracts.PreminedToken.deploy(deployer, 'dai', 'DAI', 18),
+    contracts.MockToken.deploy(deployer, 'mln', 'MLN', 18),
+    contracts.MockToken.deploy(deployer, 'rep', 'REP', 18),
+    contracts.MockToken.deploy(deployer, 'knc', 'KNC', 18),
+    contracts.MockToken.deploy(deployer, 'zrx', 'ZRX', 18),
+    contracts.MockToken.deploy(deployer, 'dai', 'DAI', 18),
   ]);
 
   // Deploy mock contracts for our integrations.
@@ -405,12 +405,12 @@ export async function defaultTestConfig(
   await Promise.all<ContractReceipt<any>>([
     // Mint each token for each account and exchange.
     ...[...exchanges, ...accounts].flatMap((receiver) => [
-      mln.mint(receiver, utils.parseEther('10000')),
-      rep.mint(receiver, utils.parseEther('10000')),
-      knc.mint(receiver, utils.parseEther('10000')),
-      zrx.mint(receiver, utils.parseEther('10000')),
-      dai.mint(receiver, utils.parseEther('10000')),
-      chaiIntegratee.mint(receiver, utils.parseEther('10000')),
+      mln.mintFor(receiver, utils.parseEther('10000')),
+      rep.mintFor(receiver, utils.parseEther('10000')),
+      knc.mintFor(receiver, utils.parseEther('10000')),
+      zrx.mintFor(receiver, utils.parseEther('10000')),
+      dai.mintFor(receiver, utils.parseEther('10000')),
+      chaiIntegratee.mintFor(receiver, utils.parseEther('10000')),
     ]),
     // Deposit eth into weth on behalf of every account.
     ...accounts.map((account) => {
@@ -489,7 +489,7 @@ export interface TestDeploymentConfig extends DeploymentConfig {
   accounts: string[];
   weth: contracts.WETH;
   tokens: {
-    [symbol: string]: contracts.PreminedToken;
+    [symbol: string]: contracts.MockToken;
   };
   mocks: {
     integratees: {
