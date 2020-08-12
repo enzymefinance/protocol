@@ -7,6 +7,10 @@ const out = path.join(root, 'package');
 
 fs.copySync(path.join(root, 'LICENSE'), path.join(out, 'LICENSE'));
 fs.copySync(path.join(root, 'README.md'), path.join(out, 'README.md'));
+fs.copySync(
+  path.join(root, 'CODE_OF_CONDUCT.md'),
+  path.join(out, 'CODE_OF_CONDUCT.md'),
+);
 fs.copySync(path.join(root, 'contracts'), path.join(out, 'contracts'));
 fs.copySync(
   path.join(root, 'tests/contracts'),
