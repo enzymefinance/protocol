@@ -30,6 +30,7 @@ fs.writeJSON(
     repository: package.repository,
     bugs: package.bugs,
     keywords: package.keywords,
+    main: 'index.js',
     dependencies: package.dependencies,
   },
   {

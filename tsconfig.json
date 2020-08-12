@@ -67,6 +67,6 @@
     /* Advanced Options */
     // "forceConsistentCasingInFileNames": true  /* Disallow inconsistently-cased references to the same file. */
   },
-  "include": ["tests", "codegen", "artifacts"],
+  "include": ["index.ts", "tests", "codegen", "artifacts"],
   "exclude": ["tests/tests"]
 }
