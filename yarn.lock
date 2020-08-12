@@ -271,42 +271,42 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.0.21.tgz#ca2dd9be5f4813cb479bb073c6128c10842d5b04"
-  integrity sha512-jt33sv2DJb59j9le62zxRT/t7HFiQWwE3na7wZJabkrp2LUS2eXyXi0TMcfc4f/axYaRA3Tk3nSb2JAojiOaGw==
+"@crestproject/codegen@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.0.22.tgz#1a5e62c24bb3e761503c7821987d2976b6027ec5"
+  integrity sha512-9XH9oaaH+E2QShFhOjvE/6eYg8GGypzRfBt15dRJ9xjDUsW08YKRgi5dWUoXnR85NJ2oPszCaVmFHUt+Xu5kJA==
 
-"@crestproject/crestproject@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.0.21.tgz#5c00aa4f23c7e6a772af489594036773270596aa"
-  integrity sha512-fOWA3UzvLJb+0TaUCoR0WZzzapGdevQi5DSe00F4AtkePL7yM4ilu9FYGVp5sMkx13SiPA/CAHv9cpVm1LTqUQ==
+"@crestproject/crestproject@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.0.22.tgz#823ace722be53dddb8cf94a1959a2e7751c56b16"
+  integrity sha512-xHlLqiV6YvGu5Si9/M4PUcVRvRwKWuM5ZQKr8xKMMckfM/kgX8V9YmlOhKBphZ97rqXgkFbB2iBxZyrW4XXClg==
   dependencies:
-    "@crestproject/codegen" "^0.0.21"
-    "@crestproject/ethers" "^0.0.21"
-    "@crestproject/evm" "^0.0.21"
-    "@crestproject/jest" "^0.0.21"
+    "@crestproject/codegen" "^0.0.22"
+    "@crestproject/ethers" "^0.0.22"
+    "@crestproject/evm" "^0.0.22"
+    "@crestproject/jest" "^0.0.22"
     glob "^7.1.6"
     jest-worker "^26.1.0"
     throat "^5.0.0"
     yargs "^15.4.1"
 
-"@crestproject/ethers@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.21.tgz#b20ece60189881120677f3fb4a6485ead4078254"
-  integrity sha512-V5+gLE+Z5NM2l/J6/avkhwWx/YyUUXWhE/DJvRl9eo4c6W1BeJdPafCbM81xgB6bC7bTnFaCB/oSG57sasfQRQ==
+"@crestproject/ethers@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.22.tgz#cbb856a1e2ee2b66a8b2a7b599c3ef11b8c420e9"
+  integrity sha512-LDzWveuDv4PBT7AsW5AvIBVZgDVm1DsrYZAu7F8iu7rsQoK5SC0g8neWZyLW/jabf4UfcMZO8hgvUf5Iajrbng==
 
-"@crestproject/evm@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.21.tgz#53cd33825e9c912fafb150b3926fd25a429debf9"
-  integrity sha512-OpM8+zHDuhatPOLD+9JMdQlA8cgl9OJtaJIik7geq3gdomygxa88bxgt4C+ieJXNgKXVu0pxQ3jLjgfPPsIJtg==
+"@crestproject/evm@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.22.tgz#e70f011a7ea5058cd33112646352a7e0016f48a9"
+  integrity sha512-Dv2eIQ1PC/SJBLbk3wIoAdJ79D2BSuhRp5B21iZgoGBMdpWrsJ4CZh7HFdcnR5V1uwjlrKXegI1JryakziA/pg==
 
-"@crestproject/jest@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.0.21.tgz#b9085e9447abb83b815bc35f15711128eb11351a"
-  integrity sha512-IlFWIUX6wM7R2BY91Zxfudtz2uvBxvKsnsrQhHXU3nyYoMDYOp2aJPDk76Lbq7UAyeYbkMIt88+78ev+IJKbkQ==
+"@crestproject/jest@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.0.22.tgz#1f7b597645ae9acff276957f761cc93a179d9ab2"
+  integrity sha512-/Vtl7L8YIHP1ap8Cg6+R+iriG8mDNtvCxIl8rRMTr0PmZ4ZvOxNufS/6R3Z3lOTnjr/gwU/kYXIQeKHluN3lBg==
   dependencies:
-    "@crestproject/ethers" "^0.0.21"
-    "@crestproject/evm" "^0.0.21"
+    "@crestproject/ethers" "^0.0.22"
+    "@crestproject/evm" "^0.0.22"
     ts-jest "^26.1.3"
 
 "@ethersproject/abi@^5.0.0":
