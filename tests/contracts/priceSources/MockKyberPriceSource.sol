@@ -29,7 +29,7 @@ contract MockKyberPriceSource is NormalizedRateProviderBase {
     }
 
     function __getReverseKyberMaskAsset(address _asset) private view returns (address) {
-        if (_asset == address(0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)) {
+        if (_asset == ETH_ADDRESS) {
             return WETH_ADDRESS;
         }
         return _asset;
