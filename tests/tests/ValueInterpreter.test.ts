@@ -1,10 +1,10 @@
 import { ethers, utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
-import { ERC20 } from '../codegen/ERC20';
-import { IDerivativePriceSource } from '../codegen/IDerivativePriceSource';
-import { IPriceSource } from '../codegen/IPriceSource';
-import { Registry } from '../codegen/Registry';
-import { ValueInterpreter } from '../codegen/ValueInterpreter';
+import { ERC20 } from '../../codegen/ERC20';
+import { IDerivativePriceSource } from '../../codegen/IDerivativePriceSource';
+import { IPriceSource } from '../../codegen/IPriceSource';
+import { Registry } from '../../codegen/Registry';
+import { ValueInterpreter } from '../../codegen/ValueInterpreter';
 import {
   covertRateToValue,
   mockDerivativeRate,

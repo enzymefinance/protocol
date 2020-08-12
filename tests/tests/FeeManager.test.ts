@@ -1,7 +1,7 @@
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
 import { dummyFee, setupFundWithParams } from '../utils';
-import { IFee } from '../codegen/IFee';
+import { IFee } from '../../codegen/IFee';
 
 let tx;
 
