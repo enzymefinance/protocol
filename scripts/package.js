@@ -9,6 +9,7 @@ const copy = [
   'LICENSE',
   'README.md',
   'CODE_OF_CONDUCT.md',
+  'buidler.config.js',
   'contracts',
   'cache',
 ];
