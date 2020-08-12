@@ -167,10 +167,7 @@ describe('Engine', () => {
     it('returns 0 if liquidEther is under 1 ether', async () => {
       const {
         system: { registry, engine },
-        config: {
-          deployer,
-          registry: { wethToken, mlnToken },
-        },
+        config: { deployer },
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('0.99');
@@ -188,10 +185,7 @@ describe('Engine', () => {
     it('returns 5 if liquidEther is 1 ether', async () => {
       const {
         system: { registry, engine },
-        config: {
-          deployer,
-          registry: { wethToken, mlnToken },
-        },
+        config: { deployer },
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('1');
@@ -209,10 +203,7 @@ describe('Engine', () => {
     it('returns 10 if liquidEther is 5 ether', async () => {
       const {
         system: { registry, engine },
-        config: {
-          deployer,
-          registry: { wethToken, mlnToken },
-        },
+        config: { deployer },
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('5');
@@ -230,10 +221,7 @@ describe('Engine', () => {
     it('returns 15 if liquidEther is 10 ether', async () => {
       const {
         system: { registry, engine },
-        config: {
-          deployer,
-          registry: { wethToken, mlnToken },
-        },
+        config: { deployer },
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('10');
