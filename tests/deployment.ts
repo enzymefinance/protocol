@@ -417,11 +417,12 @@ export async function defaultTestConfig(
       const amount = utils.parseEther('1000');
       return connected.deposit.value(amount).send();
     }),
-    // Send weth to each exchange.
-    ...exchanges.map((exchange) => {
-      return weth.transfer(exchange, utils.parseEther('100'));
-    }),
   ]);
+
+  // Send weth to each exchange.
+  await exchanges.map((exchange) => {
+    return weth.transfer(exchange, utils.parseEther('100'));
+  });
 
   return {
     weth,
