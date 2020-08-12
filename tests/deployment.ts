@@ -393,7 +393,7 @@ export async function defaultTestConfig(
 
   // Deploy mock contracts for our price sources.
   const [kyberPriceSource, chaiPriceFeed] = await Promise.all([
-    contracts.MockKyberPriceSource.deploy(deployer, primitives),
+    contracts.MockKyberPriceSource.deploy(deployer, primitives, weth),
     contracts.MockChaiPriceSource.deploy(deployer),
   ]);
 
@@ -520,6 +520,13 @@ export function configureTestDeployment<
     const config = ((custom ??
       (await defaultTestConfig(provider))) as any) as TConfig;
     const system = await deploySystem(config);
+
+    const rate = utils.parseEther('1');
+    const primitives = await system.registry.getRegisteredPrimitives();
+    await system.kyberPriceFeed.update(
+      primitives,
+      primitives.map(() => rate),
+    );
 
     return {
       provider,

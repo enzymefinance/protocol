@@ -1,11 +1,6 @@
 import { BigNumberish, Signer, utils } from 'ethers';
-import {
-  BuidlerProvider,
-  randomAddress,
-  MockContract,
-} from '@crestproject/crestproject';
+import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
-import { IPriceSource } from '../codegen/IPriceSource';
 import * as contracts from '../contracts';
 import {
   engineTakeOrderArgs,
@@ -15,9 +10,7 @@ import {
 
 async function snapshot(provider: BuidlerProvider) {
   const deployment = await configureTestDeployment()(provider);
-  const mockPriceSource = await IPriceSource.mock(deployment.config.deployer);
-
-  return { ...deployment, mockPriceSource };
+  return deployment;
 }
 
 async function warpEngine(provider: BuidlerProvider, engine: contracts.Engine) {
@@ -64,20 +57,6 @@ async function thawEngine(engine: contracts.Engine, amount?: BigNumberish) {
     tx = engine.liquidEther();
     await expect(tx).resolves.toEqBigNumber(amount);
   }
-}
-
-async function setMockPriceSource(
-  registry: contracts.Registry,
-  mockPriceSource: MockContract<IPriceSource>,
-  baseAsset: string,
-  quoteAsset: string,
-) {
-  tx = registry.setPriceSource(mockPriceSource);
-  await expect(tx).resolves.toBeReceipt();
-
-  await mockPriceSource.getCanonicalRate
-    .given(baseAsset, quoteAsset)
-    .returns(utils.parseEther('1'), true, 0);
 }
 
 let tx;
@@ -192,7 +171,6 @@ describe('Engine', () => {
           deployer,
           registry: { wethToken, mlnToken },
         },
-        mockPriceSource,
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('0.99');
@@ -202,8 +180,6 @@ describe('Engine', () => {
 
       tx = engine.premiumPercent();
       await expect(tx).resolves.toEqBigNumber(0);
-
-      await setMockPriceSource(registry, mockPriceSource, mlnToken, wethToken);
 
       tx = engine.enginePrice();
       await expect(tx).resolves.toEqBigNumber(utils.parseEther('1'));
@@ -216,7 +192,6 @@ describe('Engine', () => {
           deployer,
           registry: { wethToken, mlnToken },
         },
-        mockPriceSource,
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('1');
@@ -226,8 +201,6 @@ describe('Engine', () => {
 
       tx = engine.premiumPercent();
       await expect(tx).resolves.toEqBigNumber(5);
-
-      await setMockPriceSource(registry, mockPriceSource, mlnToken, wethToken);
 
       tx = engine.enginePrice();
       await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.05'));
@@ -240,7 +213,6 @@ describe('Engine', () => {
           deployer,
           registry: { wethToken, mlnToken },
         },
-        mockPriceSource,
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('5');
@@ -250,8 +222,6 @@ describe('Engine', () => {
 
       tx = engine.premiumPercent();
       await expect(tx).resolves.toEqBigNumber(10);
-
-      await setMockPriceSource(registry, mockPriceSource, mlnToken, wethToken);
 
       tx = engine.enginePrice();
       await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.10'));
@@ -264,7 +234,6 @@ describe('Engine', () => {
           deployer,
           registry: { wethToken, mlnToken },
         },
-        mockPriceSource,
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('10');
@@ -274,8 +243,6 @@ describe('Engine', () => {
 
       tx = engine.premiumPercent();
       await expect(tx).resolves.toEqBigNumber(15);
-
-      await setMockPriceSource(registry, mockPriceSource, mlnToken, wethToken);
 
       tx = engine.enginePrice();
       await expect(tx).resolves.toEqBigNumber(utils.parseEther('1.15'));
@@ -357,20 +324,12 @@ describe('Engine', () => {
           weth,
           tokens: { mln },
         },
-        mockPriceSource,
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('1');
       await seedEngine(deployer, registry, engine, amount);
       await warpEngine(provider, engine);
       await thawEngine(engine, amount);
-
-      await setMockPriceSource(
-        registry,
-        mockPriceSource,
-        mln.address,
-        weth.address,
-      );
 
       const liquidEther = await engine.liquidEther();
       const mlnValue = await valueInterpreter.calcCanonicalAssetValue
@@ -409,7 +368,6 @@ describe('Engine', () => {
           engine,
           engineAdapter,
           sharesRequestor,
-          valueInterpreter,
           fundFactory,
         },
         config: {
@@ -417,7 +375,6 @@ describe('Engine', () => {
           weth,
           tokens: { mln },
         },
-        mockPriceSource,
       } = await provider.snapshot(snapshot);
 
       const amount = utils.parseEther('100');
@@ -425,15 +382,7 @@ describe('Engine', () => {
       await warpEngine(provider, engine);
       await thawEngine(engine, amount);
 
-      await setMockPriceSource(
-        registry,
-        mockPriceSource,
-        mln.address,
-        weth.address,
-      );
-
       const mlnAmount = utils.parseEther('1');
-
       const ethToSend = await engine.ethPayoutForMlnAmount(mlnAmount);
       const preLiquidEther = await engine.liquidEther();
 
@@ -457,9 +406,10 @@ describe('Engine', () => {
         takeOrderSignature,
         encodedArgs,
       );
+
+      const event = contracts.Engine.abi.getEvent('Burn');
       await expect(tx).resolves.toBeReceipt();
-      //TODO: This assertion doesn't work when the function (sellAndBurnMln) is called indirectly
-      // await expect(tx).resolves.toHaveEmitted('Burn');
+      await expect(tx).resolves.toHaveEmitted(event);
 
       const postLiquidEther = await engine.liquidEther();
       expect(preLiquidEther.sub(ethToSend)).toEqBigNumber(postLiquidEther);
