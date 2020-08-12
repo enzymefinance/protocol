@@ -89,6 +89,8 @@ export interface ContractConstructors {
   vaultFactory: ContractConstructor<contracts.VaultFactory>;
   managementFee: ContractConstructor<contracts.ManagementFee>;
   performanceFee: ContractConstructor<contracts.PerformanceFee>;
+  adapterBlacklist: ContractConstructor<contracts.AdapterBlacklist>;
+  adapterWhitelist: ContractConstructor<contracts.AdapterWhitelist>;
   assetBlacklist: ContractConstructor<contracts.AssetBlacklist>;
   assetWhitelist: ContractConstructor<contracts.AssetWhitelist>;
   maxConcentration: ContractConstructor<contracts.MaxConcentration>;
@@ -193,6 +195,14 @@ const constructors: ContractConstructors = {
   performanceFee: async (config, deployment) => {
     const Registry = await deployment.registry;
     return contracts.PerformanceFee.deploy(config.deployer, Registry);
+  },
+  adapterBlacklist: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.AdapterBlacklist.deploy(config.deployer, Registry);
+  },
+  adapterWhitelist: async (config, deployment) => {
+    const Registry = await deployment.registry;
+    return contracts.AdapterWhitelist.deploy(config.deployer, Registry);
   },
   assetBlacklist: async (config, deployment) => {
     const Registry = await deployment.registry;
@@ -322,6 +332,8 @@ export async function deploySystem(config: DeploymentConfig) {
     deployment.registry.registerFee(deployment.performanceFee),
 
     // Policies
+    deployment.registry.registerPolicy(deployment.adapterBlacklist),
+    deployment.registry.registerPolicy(deployment.adapterWhitelist),
     deployment.registry.registerPolicy(deployment.assetBlacklist),
     deployment.registry.registerPolicy(deployment.assetWhitelist),
     deployment.registry.registerPolicy(deployment.maxConcentration),
