@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-contract PreminedToken is ERC20 {
+contract MockToken is ERC20Burnable {
     using SafeMath for uint256;
 
     constructor(
@@ -16,7 +16,11 @@ contract PreminedToken is ERC20 {
         _mint(msg.sender, uint256(1000000).mul(10**uint256(_decimals)));
     }
 
-    function mint(address _who, uint256 _amount) external {
+    function mintFor(address _who, uint256 _amount) external {
         _mint(_who, _amount);
+    }
+
+    function mint(uint256 _amount) external {
+        _mint(msg.sender, _amount);
     }
 }

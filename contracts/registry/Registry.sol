@@ -123,6 +123,7 @@ contract Registry is
         for (uint256 i = 0; i < length; i++) {
             output_[i] = primitives.at(i);
         }
+        return output_;
     }
 
     /// @notice Add a primitive to the Registry
