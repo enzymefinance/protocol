@@ -1,6 +1,6 @@
 import { BigNumberish, Signer, utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
-import { configureTestDeployment } from '../deployment';
+import { deployTestEnvironment } from '../deployment';
 import * as contracts from '../contracts';
 import {
   engineTakeOrderArgs,
@@ -8,9 +8,8 @@ import {
   takeOrderSignature,
 } from '../utils';
 
-async function snapshot(provider: BuidlerProvider) {
-  const deployment = await configureTestDeployment()(provider);
-  return deployment;
+function snapshot(provider: BuidlerProvider) {
+  return deployTestEnvironment(provider);
 }
 
 async function warpEngine(provider: BuidlerProvider, engine: contracts.Engine) {

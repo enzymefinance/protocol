@@ -1,12 +1,12 @@
 import { BuidlerProvider } from '@crestproject/crestproject';
-import { configureTestDeployment } from '../deployment';
+import { deployTestEnvironment } from '../deployment';
 import { dummyFee, setupFundWithParams } from '../utils';
 import { IFee } from '../../codegen/IFee';
 
 let tx;
 
 async function snapshot(provider: BuidlerProvider) {
-  const deployment = await configureTestDeployment()(provider);
+  const deployment = await deployTestEnvironment(provider);
   const {
     system: { fundFactory, registry },
     config: { deployer, weth },

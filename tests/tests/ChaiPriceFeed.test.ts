@@ -1,11 +1,10 @@
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
-import { configureTestDeployment } from '../deployment';
+import { deployTestEnvironment } from '../deployment';
 
 let tx;
 
-async function snapshot(provider: BuidlerProvider) {
-  const deployment = await configureTestDeployment()(provider);
-  return deployment;
+function snapshot(provider: BuidlerProvider) {
+  return deployTestEnvironment(provider);
 }
 
 describe('ChaiPriceFeed', () => {

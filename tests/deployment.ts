@@ -315,7 +315,7 @@ export async function resolveDeployment(pending: PendingDeployment) {
   return deployment;
 }
 
-export async function deploySystem(config: DeploymentConfig) {
+export async function deployProtocol(config: DeploymentConfig) {
   const pending = createDeployment(config);
   const deployment = await resolveDeployment(pending);
 
@@ -525,27 +525,27 @@ export interface TestDeployment<
   config: TConfig;
 }
 
-export function configureTestDeployment<
-  TConfig extends DeploymentConfig = TestDeploymentConfig
->(custom?: TConfig) {
-  return async (
-    provider: providers.JsonRpcProvider,
-  ): Promise<TestDeployment<TConfig>> => {
-    const config = ((custom ??
-      (await defaultTestConfig(provider))) as any) as TConfig;
-    const system = await deploySystem(config);
+export async function deployTestEnvironment<
+  TConfig extends TestDeploymentConfig = TestDeploymentConfig
+>(
+  provider: providers.JsonRpcProvider,
+  cfg: TConfig | Promise<TConfig> = defaultTestConfig(provider) as Promise<
+    TConfig
+  >,
+): Promise<TestDeployment<TConfig>> {
+  const config = await cfg;
+  const system = await deployProtocol(config);
 
-    const rate = utils.parseEther('1');
-    const primitives = await system.registry.getRegisteredPrimitives();
-    await system.kyberPriceFeed.update(
-      primitives,
-      primitives.map(() => rate),
-    );
+  const rate = utils.parseEther('1');
+  const primitives = await system.registry.getRegisteredPrimitives();
+  await system.kyberPriceFeed.update(
+    primitives,
+    primitives.map(() => rate),
+  );
 
-    return {
-      provider,
-      system,
-      config,
-    };
+  return {
+    provider,
+    system,
+    config,
   };
 }

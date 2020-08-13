@@ -1,6 +1,6 @@
 import { BigNumberish, utils } from 'ethers';
 import { AddressLike, BuidlerProvider } from '@crestproject/crestproject';
-import { configureTestDeployment } from '../deployment';
+import { deployTestEnvironment } from '../deployment';
 import {
   requestShares,
   setupFundWithParams,
@@ -13,7 +13,7 @@ import {
 let tx;
 
 async function snapshot(provider: BuidlerProvider) {
-  const deployment = await configureTestDeployment()(provider);
+  const deployment = await deployTestEnvironment(provider);
   const {
     system: { kyberAdapter, sharesRequestor, fundFactory },
     config: { deployer, weth },
