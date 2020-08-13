@@ -432,9 +432,11 @@ export async function defaultTestConfig(
   ]);
 
   // Send weth to each exchange.
-  await exchanges.map((exchange) => {
-    return weth.transfer(exchange, utils.parseEther('100'));
-  });
+  await Promise.all(
+    exchanges.map((exchange) => {
+      return weth.transfer(exchange, utils.parseEther('100'));
+    }),
+  );
 
   return {
     weth,
