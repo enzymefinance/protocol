@@ -1,7 +1,7 @@
 import { utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
-import { IFee } from '../codegen/IFee';
+import { IFee } from '../../codegen/IFee';
 
 let tx;
 

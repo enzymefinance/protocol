@@ -1,6 +1,5 @@
-import { BigNumberish, providers, Signer, utils } from 'ethers';
+import { BigNumberish, Signer, utils, providers } from 'ethers';
 import {
-  BuidlerProvider,
   Contract,
   randomAddress,
   ContractReceipt,
@@ -360,7 +359,7 @@ export async function deploySystem(config: DeploymentConfig) {
 }
 
 export async function defaultTestConfig(
-  provider: BuidlerProvider,
+  provider: providers.JsonRpcProvider,
 ): Promise<TestDeploymentConfig> {
   const accounts = await provider.listAccounts();
   const [
@@ -418,11 +417,12 @@ export async function defaultTestConfig(
       const amount = utils.parseEther('1000');
       return connected.deposit.value(amount).send();
     }),
-    // Send weth to each exchange.
-    ...exchanges.map((exchange) => {
-      return weth.transfer(exchange, utils.parseEther('100'));
-    }),
   ]);
+
+  // Send weth to each exchange.
+  await exchanges.map((exchange) => {
+    return weth.transfer(exchange, utils.parseEther('100'));
+  });
 
   return {
     weth,
@@ -515,7 +515,7 @@ export function configureTestDeployment<
   TConfig extends DeploymentConfig = TestDeploymentConfig
 >(custom?: TConfig) {
   return async (
-    provider: BuidlerProvider,
+    provider: providers.JsonRpcProvider,
   ): Promise<TestDeployment<TConfig>> => {
     const config = ((custom ??
       (await defaultTestConfig(provider))) as any) as TConfig;

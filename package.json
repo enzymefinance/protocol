@@ -20,12 +20,8 @@
     "Solidity"
   ],
   "scripts": {
-    "codegen": "yarn codegen:contracts && yarn codegen:tests",
-    "codegen:contracts": "crestproject codegen \"artifacts/*.json\" tests/codegen",
-    "codegen:tests": "crestproject codegen \"tests/artifacts/*.json\" tests/codegen",
-    "compile": "yarn compile:contracts && yarn compile:tests",
-    "compile:contracts": "buidler compile",
-    "compile:tests": "buidler compile --config tests/buidler.config.js",
+    "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
+    "compile": "buidler compile",
     "build": "yarn compile && yarn codegen",
     "prepackage": "rimraf package",
     "package": "tsc && node scripts/package",
@@ -40,7 +36,7 @@
     "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.21",
+    "@crestproject/crestproject": "^0.0.23",
     "@nomiclabs/buidler": "^1.4.3",
     "@types/jest": "^26.0.3",
     "ethers": "^5.0.5",
