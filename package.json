@@ -37,7 +37,7 @@
     "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.23",
+    "@crestproject/crestproject": "^0.0.24",
     "@nomiclabs/buidler": "^1.4.3",
     "@types/jest": "^26.0.9",
     "ethers": "^5.0.8",
