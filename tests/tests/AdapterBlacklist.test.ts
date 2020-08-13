@@ -1,6 +1,6 @@
 import { utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
-import { configureTestDeployment } from '../deployment';
+import { deployTestEnvironment } from '../deployment';
 import {
   engineTakeOrderArgs,
   setupFundWithParams,
@@ -11,8 +11,8 @@ import {
   thawEngine,
 } from '../utils';
 
-async function snapshot(provider: BuidlerProvider) {
-  return configureTestDeployment()(provider);
+function snapshot(provider: BuidlerProvider) {
+  return deployTestEnvironment(provider);
 }
 
 let tx;
