@@ -1,11 +1,15 @@
-import { utils } from 'ethers';
+import { BigNumberish, Signer, utils } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
 import { configureTestDeployment } from '../deployment';
+import * as contracts from '../contracts';
 import {
   engineTakeOrderArgs,
   setupFundWithParams,
   takeOrderSignature,
   adapterWhitelistPolicy,
+  warpEngine,
+  seedEngine,
+  thawEngine,
 } from '../utils';
 
 async function snapshot(provider: BuidlerProvider) {
@@ -85,18 +89,25 @@ describe('AdapterWhitelist', () => {
     it('return true when the rule passes', async () => {
       const {
         system: {
+          registry,
+          engine,
           engineAdapter,
           sharesRequestor,
           fundFactory,
           adapterWhitelist,
         },
         config: {
+          deployer,
           tokens: { mln },
         },
       } = await provider.snapshot(snapshot);
 
-      const mlnAmount = utils.parseEther('1');
+      const amount = utils.parseEther('100');
+      await seedEngine(deployer, registry, engine, amount);
+      await warpEngine(provider, engine);
+      await thawEngine(engine, amount);
 
+      const mlnAmount = utils.parseEther('1');
       const fund = await setupFundWithParams({
         denominationAsset: mln,
         factory: fundFactory,
@@ -120,8 +131,7 @@ describe('AdapterWhitelist', () => {
         encodedArgs,
       );
 
-      // this revert message is reached only when the pre-validate policies pass
-      await expect(tx).rejects.toBeRevertedWith('Not enough liquid ether to send');
+      await expect(tx).resolves.toBeReceipt();
     });
   });
 });
