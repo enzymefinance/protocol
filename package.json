@@ -20,6 +20,7 @@
     "Solidity"
   ],
   "scripts": {
+    "clean": "rimraf cache artifacts codegen package",
     "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
     "compile": "buidler compile",
     "build": "yarn compile && yarn codegen",
@@ -36,34 +37,23 @@
     "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.23",
+    "@crestproject/crestproject": "^0.0.24",
     "@nomiclabs/buidler": "^1.4.3",
-    "@types/jest": "^26.0.3",
-    "ethers": "^5.0.5",
+    "@types/jest": "^26.0.9",
+    "ethers": "^5.0.8",
     "fs-extra": "^9.0.1",
-    "jest": "^26.1.0",
+    "jest": "^26.4.0",
     "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.55",
+    "prettier-plugin-solidity": "^1.0.0-alpha.56",
     "rimraf": "^3.0.2",
     "solhint": "^3.1.0",
     "ts-jest": "^26.2.0",
     "typescript": "^4.0.0-beta"
   },
   "jest": {
-    "projects": [
-      {
-        "preset": "@crestproject/crestproject",
-        "roots": [
-          "<rootDir>/tests"
-        ],
-        "globals": {
-          "ts-jest": {
-            "diagnostics": {
-              "warnOnly": true
-            }
-          }
-        }
-      }
+    "preset": "@crestproject/crestproject",
+    "roots": [
+      "<rootDir>/tests"
     ]
   }
 }

@@ -6,6 +6,28 @@ export interface PolicyParams {
   settings: any[];
 }
 
+export function adapterBlacklistPolicy(
+  blacklist: string[],
+  address: string,
+): PolicyParams {
+  return {
+    address: utils.getAddress(address),
+    encoding: ['address[]'],
+    settings: [blacklist.map((item) => utils.getAddress(item))],
+  };
+}
+
+export function adapterWhitelistPolicy(
+  whitelist: string[],
+  address: string,
+): PolicyParams {
+  return {
+    address: utils.getAddress(address),
+    encoding: ['address[]'],
+    settings: [whitelist.map((item) => utils.getAddress(item))],
+  };
+}
+
 export async function assetBlacklistPolicy(
   blacklist: string[],
   address: string,
