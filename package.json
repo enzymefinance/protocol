@@ -20,6 +20,7 @@
     "Solidity"
   ],
   "scripts": {
+    "clean": "rimraf cache artifacts codegen package",
     "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
     "compile": "buidler compile",
     "build": "yarn compile && yarn codegen",
