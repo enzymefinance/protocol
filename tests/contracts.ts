@@ -32,8 +32,8 @@ export { ZeroExV3Adapter } from '../codegen/ZeroExV3Adapter';
 
 // Policies
 export { UserWhitelist } from '../codegen/UserWhitelist';
-export { AdapterBlacklist } from './codegen/AdapterBlacklist';
-export { AdapterWhitelist } from './codegen/AdapterWhitelist';
+export { AdapterBlacklist } from '../codegen/AdapterBlacklist';
+export { AdapterWhitelist } from '../codegen/AdapterWhitelist';
 export { AssetBlacklist } from '../codegen/AssetBlacklist';
 export { AssetWhitelist } from '../codegen/AssetWhitelist';
 export { MaxConcentration } from '../codegen/MaxConcentration';

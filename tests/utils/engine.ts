@@ -1,6 +1,6 @@
 import { BigNumberish, Signer } from 'ethers';
 import { BuidlerProvider } from '@crestproject/crestproject';
-import * as contracts from '../../contracts';
+import * as contracts from '../contracts';
 
 export async function warpEngine(
   provider: BuidlerProvider,
