@@ -22,8 +22,11 @@
   "scripts": {
     "clean": "rimraf cache artifacts codegen package",
     "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
+    "codegen-new": "crestproject codegen \"new-artifacts/*.json\" new-codegen",
     "compile": "buidler compile",
+    "compile-new": "buidler compile --config buidler.config.new.js",
     "build": "yarn compile && yarn codegen",
+    "build-new": "yarn compile-new && yarn codegen-new",
     "prepackage": "rimraf package",
     "package": "tsc && node scripts/package",
     "test": "TS_JEST_DISABLE_VER_CHECKER=true yarn jest",
@@ -37,7 +40,7 @@
     "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.24",
+    "@crestproject/crestproject": "^0.0.28",
     "@nomiclabs/buidler": "^1.4.3",
     "@types/jest": "^26.0.9",
     "ethers": "^5.0.8",
