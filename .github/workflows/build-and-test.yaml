@@ -1,0 +1,31 @@
+# TODO: Also release the built packages when pushing into `develop`
+#
+# yarn config set _authToken $NPM_AUTH_TOKEN &&
+# yarn version --cwd package --non-interactive --no-git-tag-version --new-version=$(jq -r .version package.json)-dev.${TRAVIS_COMMIT::8} &&
+# yarn publish --cwd package --non-interactive --tag=dev
+
+name: Build & Test Protocol
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12]
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: yarn install
+    - run: yarn build
+    - run: yarn test
+    - run: yarn typecheck
+    - run: yarn lint

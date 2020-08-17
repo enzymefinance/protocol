@@ -3,6 +3,7 @@
 
 # ignore all dotfiles except the whitelisted ones
 .*
+!.github
 !.gitignore
 !.gitattributes
 !.prettierignore
