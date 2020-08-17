@@ -6,6 +6,7 @@
   "scripts": {
     "postinstall": "lerna bootstrap && lerna link",
     "build": "lerna run build",
+    "package": "lerna run package",
     "test": "lerna run test",
     "format": "lerna run format",
     "lint": "lerna run lint",
