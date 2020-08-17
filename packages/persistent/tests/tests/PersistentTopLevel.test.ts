@@ -1,4 +1,4 @@
-import { constants, utils, BigNumber } from 'ethers';
+import { constants, BigNumber } from 'ethers';
 import {
   BuidlerProvider,
   randomAddress,
@@ -21,6 +21,7 @@ async function snapshot(provider: BuidlerProvider) {
   const mockRelease1 = await contracts.IMigrationHookHandler.mock(
     config.deployer,
   );
+
   const mockRelease2 = await contracts.IMigrationHookHandler.mock(
     config.deployer,
   );

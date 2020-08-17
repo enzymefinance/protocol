@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../persistent/vault/VaultLibBaseCore.sol";
+import "../vault/VaultLibBaseCore.sol";
 
 /// @title MockVaultLib Contract
 /// @author Melon Council DAO <security@meloncoucil.io>

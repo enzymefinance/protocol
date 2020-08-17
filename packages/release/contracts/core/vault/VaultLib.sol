@@ -3,7 +3,7 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../../persistent/vault/VaultLibBase1.sol";
+import "@melonproject/persistent/contracts/vault/VaultLibBase1.sol";
 import "./IVault.sol";
 
 /// @title VaultLib Contract

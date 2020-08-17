@@ -1,21 +1,24 @@
 const fs = require('fs-extra');
+const { basename } = require('path');
 const path = require('path');
 
-const package = require('../package.json');
-const root = path.resolve(__dirname, '..');
-const out = path.join(root, 'package');
+const root = path.join(__dirname, '..');
+const dir = process.cwd();
+const package = fs.readJSONSync(path.join(dir, 'package.json'));
+const out = path.join(dir, 'package');
 
 const copy = [
-  'LICENSE',
-  'README.md',
-  'CODE_OF_CONDUCT.md',
-  'buidler.config.js',
-  'contracts',
-  'cache',
+  path.join(root, 'LICENSE'),
+  path.join(root, 'README.md'),
+  path.join(root, 'CODE_OF_CONDUCT.md'),
+  path.join(dir, 'buidler.config.js'),
+  path.join(dir, 'contracts'),
+  path.join(dir, 'cache'),
 ];
 
 copy.forEach((file) => {
-  fs.copySync(path.join(root, file), path.join(out, file));
+  const filename = basename(file);
+  fs.copySync(file, path.join(out, filename));
 });
 
 fs.writeJSON(

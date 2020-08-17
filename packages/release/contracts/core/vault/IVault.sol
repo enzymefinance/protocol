@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../persistent/vault/IProxiableVault.sol";
+import "@melonproject/persistent/contracts/vault/IProxiableVault.sol";
 
 /// @title IVault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>

@@ -16,16 +16,16 @@ script:
   - yarn lint
   - yarn package
 
-deploy:
-  skip_cleanup: true
-  provider: script
-  script: >-
-    yarn config set _authToken $NPM_AUTH_TOKEN &&
-    yarn version --cwd package --non-interactive --no-git-tag-version --new-version=$(jq -r .version package.json)-dev.${TRAVIS_COMMIT::8} &&
-    yarn publish --cwd package --non-interactive --tag=dev
-  on:
-    branch: develop
-    condition: $TRAVIS_NODE_VERSION = 14
+# deploy:
+#   skip_cleanup: true
+#   provider: script
+#   script: >-
+#     yarn config set _authToken $NPM_AUTH_TOKEN &&
+#     yarn version --cwd package --non-interactive --no-git-tag-version --new-version=$(jq -r .version package.json)-dev.${TRAVIS_COMMIT::8} &&
+#     yarn publish --cwd package --non-interactive --tag=dev
+#   on:
+#     branch: develop
+#     condition: $TRAVIS_NODE_VERSION = 14
 
 notifications:
   email:

@@ -1,62 +1,18 @@
 {
-  "name": "@melonproject/protocol",
-  "version": "2.0.0",
-  "description": "Technology Regulated and Operated Investment Funds",
-  "author": "Melon Council DAO <team@meloncouncil.io>",
-  "license": "GPL-3.0",
-  "homepage": "https://melonprotocol.com",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/melonproject/protocol.git"
-  },
-  "bugs": {
-    "url": "https://github.com/melonproject/protocol/issues"
-  },
-  "keywords": [
-    "Defi",
-    "Ethereum",
-    "Melon",
-    "Smart Contracts",
-    "Solidity"
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "clean": "rimraf cache artifacts codegen package",
-    "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
-    "codegen-new": "crestproject codegen \"new-artifacts/*.json\" new-codegen",
-    "compile": "buidler compile",
-    "compile-new": "buidler compile --config buidler.config.new.js",
-    "build": "yarn compile && yarn codegen",
-    "build-new": "yarn compile-new && yarn codegen-new",
-    "prepackage": "rimraf package",
-    "package": "tsc && node scripts/package",
-    "test": "TS_JEST_DISABLE_VER_CHECKER=true yarn jest",
-    "format": "prettier --write \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
-    "lint": "yarn lint:prettier && yarn lint:solhint",
-    "lint:prettier": "prettier --list-different \"{tests,contracts}/{*,**/*}.{sol,ts}\"",
-    "lint:solhint": "solhint --max-warnings 0 \"tests/**/*.sol\" \"contracts/**/*.sol\"",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^3.1.0"
+    "postinstall": "lerna bootstrap && lerna link",
+    "build": "lerna run build",
+    "test": "lerna run test",
+    "format": "lerna run format",
+    "lint": "lerna run lint",
+    "typecheck": "lerna run typecheck",
+    "clean": "lerna run clean"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.28",
-    "@nomiclabs/buidler": "^1.4.3",
-    "@types/jest": "^26.0.9",
-    "ethers": "^5.0.8",
-    "fs-extra": "^9.0.1",
-    "jest": "^26.4.0",
-    "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.56",
-    "rimraf": "^3.0.2",
-    "solhint": "^3.1.0",
-    "ts-jest": "^26.2.0",
-    "typescript": "^4.0.0-beta"
-  },
-  "jest": {
-    "preset": "@crestproject/crestproject",
-    "roots": [
-      "<rootDir>/tests"
-    ]
+    "lerna": "^3.22.1"
   }
 }
