@@ -4,15 +4,11 @@
 # yarn version --cwd package --non-interactive --no-git-tag-version --new-version=$(jq -r .version package.json)-dev.${TRAVIS_COMMIT::8} &&
 # yarn publish --cwd package --non-interactive --tag=dev
 
-name: Build & Test Protocol
-
-on:
-  push:
-    branches: [develop]
-  pull_request:
-    branches: [develop]
+name: Build & Test
+on: [push]
 
 jobs:
+  name: Build & Test
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -20,12 +16,20 @@ jobs:
         node-version: [12]
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: yarn install --frozen-lockfile
-    - run: yarn build
-    - run: yarn test
-    - run: yarn typecheck
-    - run: yarn lint
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        # TODO: Consider caching this step
+        run: yarn install --frozen-lockfile
+      - name: Build contracts
+        run: yarn build
+      - name: Run test suite
+        run: yarn test
+      - name: Check types
+        run: yarn typecheck
+      - name: Check linting
+        run: yarn lint
