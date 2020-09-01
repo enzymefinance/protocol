@@ -113,6 +113,7 @@ contract VaultLib is VaultLibBase1, IVault {
         if (__getAssetBalance(_asset).sub(_amount) == 0) {
             __removeTrackedAsset(_asset);
         }
+        // TODO: any need to assert that the _target receives the tokens?
         IERC20(_asset).safeTransfer(_target, _amount);
 
         AssetWithdrawn(_asset, _target, _amount);

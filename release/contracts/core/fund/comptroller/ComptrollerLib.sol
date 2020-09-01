@@ -484,15 +484,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             payoutQuantities[i] = assetBalances[i].mul(_sharesQuantity).div(sharesSupply);
 
             // Transfer payout asset to redeemer
-            // TODO: do we really need to check the transfer balance here? What's the edge case we're trying to prevent?
-            uint256 receiverPreBalance = IERC20Extended(payoutAssets[i]).balanceOf(redeemer);
-            try vaultContract.withdrawAssetTo(payoutAssets[i], redeemer, payoutQuantities[i])  {
-                require(
-                    receiverPreBalance.add(payoutQuantities[i]) ==
-                        IERC20Extended(payoutAssets[i]).balanceOf(redeemer),
-                    "__redeemShares: Receiver did not receive tokens in transfer"
-                );
-            } catch {
+            try
+                vaultContract.withdrawAssetTo(payoutAssets[i], redeemer, payoutQuantities[i])
+             {} catch {
                 if (!_bypassFailure) {
                     revert("__redeemShares: Token transfer failed");
                 }
