@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Set up node
         uses: actions/setup-node@v1
         with:
@@ -27,6 +29,7 @@ jobs:
       - name: Check linting
         run: yarn lint
       - name: Authenticate with registry
+        if: github.ref == 'refs/heads/develop'
         run: |
           echo @melonproject:registry=https://npm.fury.io/melonproject/ >> .npmrc
           echo //npm.fury.io/melonproject/:_authToken=${GEMFURY_TOKEN} >> .npmrc
@@ -34,4 +37,5 @@ jobs:
         env:
           GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
       - name: Publish development packages
+        if: github.ref == 'refs/heads/develop'
         run: yarn lerna publish --yes --skip-git --canary --preid dev --registry https://npm.fury.io/melonproject/
