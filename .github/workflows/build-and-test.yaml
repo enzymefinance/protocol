@@ -38,4 +38,4 @@ jobs:
           GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
       - name: Publish development packages
         if: github.ref == 'refs/heads/develop'
-        run: yarn lerna publish --yes --skip-git --canary --preid dev --registry https://npm.fury.io/melonproject/
+        run: yarn lerna publish --yes --force-publish --no-git-tag-version --no-push --canary --preid dev --registry https://npm.fury.io/melonproject/
