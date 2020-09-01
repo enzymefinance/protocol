@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+
+const fs = require('fs-extra');
+const path = require('path');
+
+const dir = process.cwd();
+const out = path.join(dir, 'package');
+const properties = ((package) => ({
+  name: package.name,
+  version: package.version,
+  description: package.description,
+  author: package.author,
+  contributors: package.contributors,
+  license: package.license,
+  homepage: package.homepage,
+  repository: package.repository,
+  bugs: package.bugs,
+  keywords: package.keywords,
+  bin: package.bin,
+  directories: package.directories,
+  main: package.main,
+  browser: package.browser,
+  dependencies: package.dependencies,
+  peerDependencies: package.peerDependencies,
+  optionalDependencies: package.optionalDependencies,
+}))(fs.readJSONSync(path.join(dir, 'package.json')));
+
+fs.writeJSON(path.join(out, 'package.json'), properties, {
+  spaces: 2,
+});

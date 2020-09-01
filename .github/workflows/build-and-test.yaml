@@ -1,9 +1,3 @@
-# TODO: Also release the built packages when pushing into `develop`
-#
-# yarn config set _authToken $NPM_AUTH_TOKEN &&
-# yarn version --cwd package --non-interactive --no-git-tag-version --new-version=$(jq -r .version package.json)-dev.${TRAVIS_COMMIT::8} &&
-# yarn publish --cwd package --non-interactive --tag=dev
-
 name: Build & Test
 on: [push]
 
@@ -11,9 +5,6 @@ jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [12]
 
     steps:
       - name: Check out repository
@@ -21,7 +12,9 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 12
+          registry-url: https://npm.fury.io/melonproject/
+          scope: '@melonproject'
       - name: Install dependencies
         # TODO: Consider caching this step
         run: yarn install --frozen-lockfile
@@ -33,3 +26,12 @@ jobs:
         run: yarn typecheck
       - name: Check linting
         run: yarn lint
+      - name: Authenticate with registry
+        run: |
+          echo @melonproject:registry=https://npm.fury.io/melonproject/ >> .npmrc
+          echo //npm.fury.io/melonproject/:_authToken=${GEMFURY_TOKEN} >> .npmrc
+          echo //npm.fury.io/melonproject/:always-auth=true >> .npmrc
+        env:
+          GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
+      - name: Publish development packages
+        run: yarn lerna publish --yes --skip-git --canary --preid dev --registry https://npm.fury.io/melonproject/
