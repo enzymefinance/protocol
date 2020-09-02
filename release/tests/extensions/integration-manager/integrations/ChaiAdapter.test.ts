@@ -201,6 +201,14 @@ describe('lend', () => {
     const daiAmount = utils.parseEther('1');
     const minChaiAmount = daiAmount; // Mock rate is 1:1
 
+    // Seed fund vault with enough DAI for tx
+    await dai.transfer(vaultProxy, daiAmount);
+
+    const [
+      preTxChaiBalance,
+      preTxDaiBalance,
+    ] = await vaultProxy.getAssetBalances([chai, dai]);
+
     const lendTx = chaiLend({
       comptrollerProxy,
       vaultProxy,
@@ -210,8 +218,18 @@ describe('lend', () => {
       dai,
       daiAmount,
       minChaiAmount,
-      seedFund: true,
     });
+
+    const [
+      postTxChaiBalance,
+      postTxDaiBalance,
+    ] = await vaultProxy.getAssetBalances([chai, dai]);
+
+    const expectedChaiAmount = daiAmount;
+    expect(postTxChaiBalance).toEqBigNumber(
+      preTxChaiBalance.add(expectedChaiAmount),
+    );
+    expect(postTxDaiBalance).toEqBigNumber(preTxDaiBalance.sub(daiAmount));
 
     const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
       'CallOnIntegrationExecuted',
@@ -293,6 +311,14 @@ describe('redeem', () => {
     const chaiAmount = utils.parseEther('1');
     const minDaiAmount = chaiAmount; // Mock rate is 1:1
 
+    // Seed fund vault with enough CHAI for tx
+    await chai.transfer(vaultProxy, chaiAmount);
+
+    const [
+      preTxChaiBalance,
+      preTxDaiBalance,
+    ] = await vaultProxy.getAssetBalances([chai, dai]);
+
     const redeemTx = chaiRedeem({
       comptrollerProxy,
       vaultProxy,
@@ -302,8 +328,18 @@ describe('redeem', () => {
       chai,
       chaiAmount,
       minDaiAmount,
-      seedFund: true,
     });
+
+    const [
+      postTxChaiBalance,
+      postTxDaiBalance,
+    ] = await vaultProxy.getAssetBalances([chai, dai]);
+
+    const expectedDaiAmount = chaiAmount;
+    expect(postTxChaiBalance).toEqBigNumber(preTxChaiBalance.sub(chaiAmount));
+    expect(postTxDaiBalance).toEqBigNumber(
+      preTxDaiBalance.add(expectedDaiAmount),
+    );
 
     const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
       'CallOnIntegrationExecuted',
