@@ -11,6 +11,8 @@ contract MockChaiIntegratee is MockToken("Chai", "CHAI", 18) {
         DAI = _dai;
     }
 
+    receive() external payable {}
+
     function join(address payable _trader, uint256 _daiAmount) external {
         // Mint CHAI for the trader.
         _mint(_trader, _daiAmount);

@@ -1,7 +1,6 @@
-import { AddressLike, Call, Contract } from '@crestproject/crestproject';
-import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
-import { VaultLib } from '../../../utils/contracts';
-import { encodeArgs, sighash } from '../common';
+import { Call, Contract } from '@crestproject/crestproject';
+import { BigNumber, BytesLike, utils } from 'ethers';
+import { encodeArgs, sighash } from '../../common';
 
 // prettier-ignore
 export interface IntegrationAdapterInterface extends Contract {
@@ -57,52 +56,5 @@ export function callOnIntegrationArgs(
   return encodeArgs(
     ['address', 'bytes4', 'bytes'],
     [adapter, selector, encodedCallArgs],
-  );
-}
-
-export async function kyberTakeOrderArgs(
-  incomingAsset: AddressLike,
-  expectedIncomingAssetAmount: BigNumberish,
-  outgoingAsset: AddressLike,
-  outgoingAssetAmount: BigNumberish,
-) {
-  return encodeArgs(
-    ['address', 'uint256', 'address', 'uint256'],
-    [
-      incomingAsset,
-      expectedIncomingAssetAmount,
-      outgoingAsset,
-      outgoingAssetAmount,
-    ],
-  );
-}
-
-export async function chaiLendArgs(
-  outgoingDaiAmount: BigNumberish,
-  expectedIncomingChaiAmount: BigNumberish,
-) {
-  return encodeArgs(
-    ['uint256', 'uint256'],
-    [outgoingDaiAmount, expectedIncomingChaiAmount],
-  );
-}
-
-export async function chaiRedeemArgs(
-  outgoingChaiAmount: BigNumberish,
-  expectedIncomingDaiAmount: BigNumberish,
-) {
-  return encodeArgs(
-    ['uint256', 'uint256'],
-    [outgoingChaiAmount, expectedIncomingDaiAmount],
-  );
-}
-
-export async function engineTakeOrderArgs(
-  minNativeAssetAmount: BigNumberish,
-  mlnTokenAmount: BigNumberish,
-) {
-  return encodeArgs(
-    ['uint256', 'uint256'],
-    [minNativeAssetAmount, mlnTokenAmount],
   );
 }

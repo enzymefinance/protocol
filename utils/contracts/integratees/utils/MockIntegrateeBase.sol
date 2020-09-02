@@ -19,6 +19,8 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
         )
     {}
 
+    receive() external payable {}
+
     function __getRate(address _baseAsset, address _quoteAsset)
         internal
         override

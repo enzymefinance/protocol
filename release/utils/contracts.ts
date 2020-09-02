@@ -21,3 +21,4 @@ export { ChaiPriceFeed } from '../codegen/ChaiPriceFeed';
 
 // Integration adapters
 export { ChaiAdapter } from '../codegen/ChaiAdapter';
+export { KyberAdapter } from '../codegen/KyberAdapter';

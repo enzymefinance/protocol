@@ -7,6 +7,7 @@ import {
   ChaiPriceFeed,
   FeeManager,
   IntegrationManager,
+  KyberAdapter,
   PolicyManager,
   VaultLib,
   ChainlinkPriceFeed,
@@ -32,12 +33,13 @@ export interface ReleaseDeploymentConfig {
     primitives: AddressLike[];
     aggregators: AddressLike[];
   };
-  derivatives: {
+  integratees: {
     chai: AddressLike;
-  };
-  makerDao: {
-    dai: AddressLike;
-    pot: AddressLike;
+    kyber: AddressLike;
+    makerDao: {
+      dai: AddressLike;
+      pot: AddressLike;
+    };
   };
 }
 
@@ -134,16 +136,16 @@ export const deployRelease = describeDeployment<
   async chaiPriceFeed(config, deployment) {
     return ChaiPriceFeed.deploy(
       config.deployer,
-      config.derivatives.chai,
-      config.makerDao.dai,
-      config.makerDao.pot,
+      config.integratees.chai,
+      config.integratees.makerDao.dai,
+      config.integratees.makerDao.pot,
     );
   },
   async aggregatedDerivativePriceFeed(config, deployment) {
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
       config.dispatcher,
-      [config.derivatives.chai],
+      [config.integratees.chai],
       [await deployment.chaiPriceFeed],
     );
   },
@@ -152,8 +154,16 @@ export const deployRelease = describeDeployment<
     return ChaiAdapter.deploy(
       config.deployer,
       await deployment.integrationManager,
-      config.derivatives.chai,
-      config.makerDao.dai,
+      config.integratees.chai,
+      config.integratees.makerDao.dai,
+    );
+  },
+  async kyberAdapter(config, deployment) {
+    return KyberAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      config.integratees.kyber,
+      config.weth,
     );
   },
 });

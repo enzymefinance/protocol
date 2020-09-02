@@ -42,12 +42,13 @@ export async function defaultTestDeployment(
         (symbol) => (mocks.tokens as any)[symbol].address,
       ),
     },
-    makerDao: {
-      dai: mocks.tokens.dai.address,
-      pot: mocks.chaiPriceSource.address,
-    },
-    derivatives: {
+    integratees: {
       chai: mocks.chaiIntegratee.address,
+      kyber: mocks.kyberIntegratee.address,
+      makerDao: {
+        dai: mocks.tokens.dai.address,
+        pot: mocks.chaiPriceSource.address,
+      },
     },
   };
 
