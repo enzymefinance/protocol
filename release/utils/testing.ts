@@ -54,6 +54,10 @@ export async function defaultTestDeployment(
 
   const release = await deployRelease(config);
 
+  await persistent.dispatcher
+    .connect(provider.getSigner(config.mtc))
+    .setCurrentFundDeployer(release.fundDeployer);
+
   return {
     config,
     accounts,

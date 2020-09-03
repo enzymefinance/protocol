@@ -1,6 +1,6 @@
 import { BigNumberish, Signer, utils } from 'ethers';
 import { AddressLike, Contract, Send } from '@crestproject/crestproject';
-import * as contracts from '../../../utils/contracts';
+import { ComptrollerLib } from '../../../utils/contracts';
 
 // prettier-ignore
 export interface DenominationAssetInterface extends Contract {
@@ -8,7 +8,7 @@ export interface DenominationAssetInterface extends Contract {
 }
 
 export interface BuySharesParams {
-  comptrollerProxy: contracts.ComptrollerLib;
+  comptrollerProxy: ComptrollerLib;
   signer: Signer;
   buyer: AddressLike;
   denominationAsset: DenominationAssetInterface;
@@ -18,7 +18,7 @@ export interface BuySharesParams {
 }
 
 export interface RedeemSharesParams {
-  comptrollerProxy: contracts.ComptrollerLib;
+  comptrollerProxy: ComptrollerLib;
   signer: Signer;
   quantity?: BigNumberish;
   bypassFailure?: boolean;

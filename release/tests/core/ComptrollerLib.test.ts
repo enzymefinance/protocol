@@ -10,11 +10,6 @@ async function snapshot(provider: BuidlerProvider) {
     provider,
   );
 
-  const mtcDispatcher = deployment.dispatcher.connect(
-    provider.getSigner(config.mtc),
-  );
-  await mtcDispatcher.setCurrentFundDeployer(deployment.fundDeployer);
-
   return {
     accounts,
     deployment,

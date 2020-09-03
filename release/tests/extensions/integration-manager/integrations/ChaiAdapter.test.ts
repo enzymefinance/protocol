@@ -18,10 +18,6 @@ async function snapshot(provider: BuidlerProvider) {
     provider,
   );
 
-  await deployment.dispatcher
-    .connect(provider.getSigner(config.mtc))
-    .setCurrentFundDeployer(deployment.fundDeployer);
-
   const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,

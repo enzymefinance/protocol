@@ -1,3 +1,4 @@
+import { Signer } from 'ethers';
 import {
   AddressLike,
   randomAddress,
@@ -9,8 +10,11 @@ import {
   BuySharesParams,
   DenominationAssetInterface,
 } from './shares';
-import * as contracts from '../../../utils/contracts';
-import { Signer } from 'ethers';
+import {
+  ComptrollerLib,
+  FundDeployer,
+  VaultLib,
+} from '../../../utils/contracts';
 
 export type InitialInvestmentParams = Omit<
   BuySharesParams,
@@ -19,7 +23,7 @@ export type InitialInvestmentParams = Omit<
 
 export interface CreateNewFundParams {
   signer: Signer;
-  fundDeployer: contracts.FundDeployer;
+  fundDeployer: FundDeployer;
   denominationAsset: DenominationAssetInterface;
   fundOwner?: AddressLike;
   fundName?: string;
@@ -58,7 +62,7 @@ export async function createNewFund({
     },
   );
 
-  const comptrollerProxy = new contracts.ComptrollerLib(
+  const comptrollerProxy = new ComptrollerLib(
     comptrollerDeployedArgs.comptrollerProxy,
     provider,
   ).connect(signer);
@@ -71,7 +75,7 @@ export async function createNewFund({
     policyManagerConfig,
   });
 
-  const vaultProxy = new contracts.VaultLib(
+  const vaultProxy = new VaultLib(
     fundConfigSetArgs.vaultProxy,
     provider,
   ).connect(signer);
