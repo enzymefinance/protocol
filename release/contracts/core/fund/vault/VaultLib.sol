@@ -142,6 +142,8 @@ contract VaultLib is VaultLibBase1, IVault {
                     break;
                 }
             }
+
+            emit TrackedAssetRemoved(_asset);
         }
     }
 
