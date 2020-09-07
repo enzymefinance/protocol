@@ -116,7 +116,7 @@ contract VaultLib is VaultLibBase1, IVault {
         // TODO: any need to assert that the _target receives the tokens?
         IERC20(_asset).safeTransfer(_target, _amount);
 
-        AssetWithdrawn(_asset, _target, _amount);
+        emit AssetWithdrawn(_asset, _target, _amount);
     }
 
     function isTrackedAsset(address _asset) public view returns (bool) {
