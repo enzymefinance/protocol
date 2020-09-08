@@ -23,14 +23,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     // TODO: add/improve events
 
-    event CallOnIntegrationExecuted(
-        address adapter,
-        address[] incomingAssets,
-        uint256[] incomingAssetAmounts,
-        address[] outgoingAssets,
-        uint256[] outgoingAssetAmounts
-    );
-
     event FundConfigSet(
         address indexed vaultProxy,
         address indexed denominationAsset,
