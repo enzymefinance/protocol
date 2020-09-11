@@ -81,6 +81,7 @@ export async function createNewFund({
   ).connect(signer);
 
   await assertEvent(newFundTx, 'NewFundDeployed', {
+    caller: await resolveAddress(signer),
     comptrollerProxy: comptrollerProxy.address,
     vaultProxy: vaultProxy.address,
     fundOwner: await resolveAddress(fundOwner),

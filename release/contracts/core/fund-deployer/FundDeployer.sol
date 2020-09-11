@@ -17,6 +17,7 @@ contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguCon
     event ComptrollerProxyDeployed(address comptrollerProxy, address indexed fundOwner);
 
     event NewFundDeployed(
+        address caller,
         address comptrollerProxy,
         address vaultProxy,
         address indexed fundOwner,
@@ -89,6 +90,7 @@ contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguCon
         );
 
         emit NewFundDeployed(
+            msg.sender,
             comptrollerProxy_,
             vaultProxy_,
             _fundOwner,
