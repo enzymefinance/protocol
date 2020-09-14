@@ -1,4 +1,5 @@
 # Ignore generated output
-codegen/
-package/
 artifacts/
+codegen/
+cache/
+dist/

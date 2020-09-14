@@ -36,7 +36,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.37",
+    "@crestproject/crestproject": "^0.0.47",
     "@nomiclabs/buidler": "^1.4.3",
     "@openzeppelin/contracts": "^3.1.0",
     "@types/jest": "^26.0.9",

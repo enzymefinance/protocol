@@ -1,6 +1,10 @@
 {
   "private": true,
-  "workspaces": ["persistent", "release", "utils"],
+  "workspaces": [
+    "persistent",
+    "release",
+    "utils"
+  ],
   "scripts": {
     "postinstall": "lerna bootstrap && lerna link",
     "build": "lerna run build",
@@ -12,5 +16,10 @@
   },
   "devDependencies": {
     "lerna": "^3.22.1"
+  },
+  "resolutions": {
+    "@typescript-eslint/parser": "^4.1.0",
+    "prettier": "^2.1.1",
+    "typescript": "^4.0.2"
   }
 }

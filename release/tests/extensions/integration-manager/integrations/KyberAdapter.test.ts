@@ -1,4 +1,4 @@
-import { BigNumberish, constants, Signer, utils } from 'ethers';
+import { BigNumberish, Signer, utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';

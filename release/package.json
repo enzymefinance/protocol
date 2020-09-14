@@ -23,49 +23,49 @@
     "Smart Contracts",
     "Solidity"
   ],
-  "main": "index.js",
+  "main": "dist/index.js",
+  "module": "dist/mjs.esm.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "cache",
+    "contracts",
+    "artifacts",
+    "buidler.config.js"
+  ],
   "scripts": {
-    "clean": "rimraf cache artifacts codegen package",
+    "clean": "rimraf cache artifacts codegen",
+    "prepare": "yarn build",
     "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
     "compile": "buidler compile",
-    "build": "yarn compile && yarn codegen && yarn package",
-    "prepackage": "rimraf package",
-    "package": "tsc && melon-copy-files && melon-copy-package",
-    "test": "TS_JEST_DISABLE_VER_CHECKER=true yarn jest",
-    "format": "prettier --write \"*.{sol,ts}\" \"{tests,contracts,utils}/{*,**/*}.{sol,ts}\"",
+    "build": "yarn compile && yarn codegen && tsdx build --entry index.ts",
+    "test": "tsdx test",
     "lint": "yarn lint:prettier && yarn lint:solhint",
     "lint:prettier": "prettier --list-different \"*.{sol,ts}\" \"{tests,contracts,utils}/{*,**/*}.{sol,ts}\"",
     "lint:solhint": "solhint --max-warnings 0 \"contracts/{*,**/*}.sol\"",
-    "typecheck": "tsc --noEmit",
-    "prepack": "melon-copy-package"
+    "format": "prettier --write \"*.{sol,ts}\" \"{tests,contracts,utils}/{*,**/*}.{sol,ts}\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@crestproject/crestproject": "^0.0.47",
     "@melonproject/persistent": "^2.0.0",
-    "@melonproject/utils": "^2.0.0"
+    "@melonproject/utils": "^2.0.0",
+    "ethers": "^5.0.13"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.37",
-    "@nomiclabs/buidler": "^1.4.3",
-    "@openzeppelin/contracts": "^3.1.0",
-    "@types/jest": "^26.0.9",
-    "ethers": "^5.0.8",
-    "fs-extra": "^8.1.0",
-    "jest": "^26.4.1",
-    "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.56",
-    "rimraf": "^2.7.1",
+    "@nomiclabs/buidler": "^1.4.5",
+    "@openzeppelin/contracts": "^3.2.0",
+    "eslint-plugin-prettier": "3.1.4",
+    "husky": "^4.3.0",
+    "prettier": "^2.1.1",
+    "prettier-plugin-solidity": "^1.0.0-alpha.57",
+    "rimraf": "^3.0.2",
     "solhint": "^3.1.0",
-    "ts-jest": "^26.2.0",
+    "tsdx": "^0.13.3",
+    "tslib": "^2.0.1",
     "typescript": "^4.0.2"
   },
-  "peerDependencies": {
-    "@crestproject/crestproject": "^0.0.37",
-    "@nomiclabs/buidler": "^1.4.3"
-  },
   "jest": {
-    "preset": "@crestproject/crestproject",
-    "roots": [
-      "<rootDir>/tests"
-    ]
+    "preset": "@crestproject/crestproject"
   }
 }

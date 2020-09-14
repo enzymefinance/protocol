@@ -15,6 +15,6 @@
 # ignore build output and dependencies
 artifacts/
 codegen/
-package/
 cache/
+dist/
 node_modules/

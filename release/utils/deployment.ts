@@ -133,7 +133,7 @@ export const deployRelease = describeDeployment<
     );
   },
   // Derivative price feeds
-  async chaiPriceFeed(config, deployment) {
+  async chaiPriceFeed(config) {
     return ChaiPriceFeed.deploy(
       config.deployer,
       config.integratees.chai,

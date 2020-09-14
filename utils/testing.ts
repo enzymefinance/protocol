@@ -17,5 +17,5 @@ export async function assertEvent<TResult = any>(
     expect(args).toMatchObject(match);
   }
 
-  return (args as typeof match)!;
+  return ((args as unknown) as typeof match)!;
 }
