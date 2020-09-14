@@ -6,8 +6,7 @@
   "license": "GPL-3.0",
   "homepage": "https://melonprotocol.com",
   "publishConfig": {
-    "access": "public",
-    "directory": "package"
+    "access": "public"
   },
   "repository": {
     "type": "git",
