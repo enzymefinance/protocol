@@ -1,5 +1,5 @@
 {
-  "include": ["*.ts", "codegen", "artifacts"],
+  "include": ["*.ts", "codegen", "artifacts", "utils", "tests"],
   "compilerOptions": {
     "module": "esnext",
     "lib": ["dom", "esnext"],
@@ -8,7 +8,9 @@
     "sourceMap": true,
     "rootDir": ".",
     "outDir": "dist",
+    "noEmit": true,
     "strict": true,
+    "strictFunctionTypes": true,
     "skipLibCheck": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -16,7 +18,6 @@
     "noFallthroughCasesInSwitch": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "jsx": "react",
     "esModuleInterop": true
   }
 }

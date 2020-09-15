@@ -23,17 +23,19 @@
     "Solidity"
   ],
   "main": "dist/index.js",
-  "module": "dist/mjs.esm.js",
+  "module": "dist/persistent.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist",
+    "utils",
     "cache",
     "contracts",
     "artifacts",
+    "index.ts",
     "buidler.config.js"
   ],
   "scripts": {
-    "clean": "rimraf cache artifacts codegen",
+    "clean": "rimraf cache artifacts codegen dist",
     "prepare": "yarn build",
     "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
     "compile": "buidler compile",
