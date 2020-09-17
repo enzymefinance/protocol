@@ -2,11 +2,9 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../IExtension.sol";
-
 /// @title PolicyManager Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
-interface IPolicyManager is IExtension {
+interface IPolicyManager {
     enum PolicyHook {None, BuyShares, CallOnIntegration}
     enum PolicyHookExecutionTime {None, Pre, Post}
 

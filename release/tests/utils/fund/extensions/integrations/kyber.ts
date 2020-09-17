@@ -5,9 +5,9 @@ import {
   ComptrollerLib,
   IntegrationManager,
   VaultLib,
-} from '../../../../utils/contracts';
-import { IERC20 } from '../../../../codegen/IERC20';
-import { encodeArgs } from '../../common';
+} from '../../../../../utils/contracts';
+import { IERC20 } from '../../../../../codegen/IERC20';
+import { encodeArgs } from '../../../common';
 import {
   callOnIntegrationArgs,
   callOnIntegrationSelector,

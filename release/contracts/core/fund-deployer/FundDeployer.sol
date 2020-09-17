@@ -5,6 +5,7 @@ import "@melonproject/persistent/contracts/dispatcher/IDispatcher.sol";
 import "../../infrastructure/engine/AmguConsumer.sol";
 import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
+import "../fund/vault/IVault.sol";
 import "./utils/MelonCouncilOwnable.sol";
 import "./utils/MigrationHookHandlerMixin.sol";
 
@@ -14,7 +15,7 @@ import "./utils/MigrationHookHandlerMixin.sol";
 /// coordinates fund deployment and fund migration. It serves as the top-level contract
 /// for a release, and is thus also deferred to for contract ownership access control.
 contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguConsumer {
-    event ComptrollerProxyDeployed(address comptrollerProxy, address indexed fundOwner);
+    event ComptrollerProxyDeployed(address deployer, address comptrollerProxy);
 
     event NewFundDeployed(
         address caller,
@@ -71,7 +72,7 @@ contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguCon
         require(_fundOwner != address(0), "createNewFund: _owner cannot be empty");
 
         // 1. Deploy ComptrollerProxy
-        comptrollerProxy_ = __deployComptrollerProxy(_fundOwner);
+        comptrollerProxy_ = __deployComptrollerProxy();
 
         // 2. Deploy VaultProxy
         vaultProxy_ = IDispatcher(DISPATCHER).deployVaultProxy(
@@ -81,8 +82,8 @@ contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguCon
             _fundName
         );
 
-        // 3. Set config via ComptrollerProxy and activate fund
-        IComptroller(comptrollerProxy_).setFundConfigAndActivate(
+        // 3. Set config, set vaultProxy, and activate fund
+        IComptroller(comptrollerProxy_).quickSetup(
             vaultProxy_,
             _denominationAsset,
             _feeManagerConfig,
@@ -102,8 +103,9 @@ contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguCon
     }
 
     // TODO: do we want to do something when a migration is signaled, or only when it is executed?
-    function postMigrateOriginHook(
-        address,
+    /// @dev Must use pre-migration hook to be able to know the ComptrollerProxy (prev accessor)
+    function preMigrateOriginHook(
+        address _vaultProxy,
         address,
         address,
         address,
@@ -113,22 +115,21 @@ contract FundDeployer is MigrationHookHandlerMixin, MelonCouncilOwnable, AmguCon
             msg.sender == DISPATCHER,
             "postMigrateOriginHook: Only Dispatcher can call this function"
         );
-        // TODO: call out to fee manager to pay out all shares... could also be to shutdown the whole fund / delete state
-        // IFeeManager.shutdown(_vaultProxy);
+
+        // Shutdown the fund
+        address comptrollerProxy = IVault(_vaultProxy).getAccessor();
+        IComptroller(comptrollerProxy).shutdown();
+
+        // TODO: self-destruct ComptrollerProxy?
+
+        // TODO: need event?
     }
 
-    function __deployComptrollerProxy(address _fundOwner)
-        private
-        returns (address comptrollerProxy_)
-    {
-        // Deploy ComptrollerProxy
-        bytes memory constructData = abi.encodeWithSelector(
-            IComptroller.init.selector,
-            _fundOwner
-        );
+    function __deployComptrollerProxy() private returns (address comptrollerProxy_) {
+        bytes memory constructData = abi.encodeWithSelector(IComptroller.init.selector, "");
         comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
 
-        emit ComptrollerProxyDeployed(comptrollerProxy_, _fundOwner);
+        emit ComptrollerProxyDeployed(msg.sender, comptrollerProxy_);
     }
 
     ///////////////////

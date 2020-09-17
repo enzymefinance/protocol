@@ -22,3 +22,7 @@ export { ChaiPriceFeed } from '../codegen/ChaiPriceFeed';
 // Integration adapters
 export { ChaiAdapter } from '../codegen/ChaiAdapter';
 export { KyberAdapter } from '../codegen/KyberAdapter';
+
+// Fees
+export { ManagementFee } from '../codegen/ManagementFee';
+export { PerformanceFee } from '../codegen/PerformanceFee';

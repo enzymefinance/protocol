@@ -11,12 +11,13 @@ import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../policy-manager/IPolicyManager.sol";
+import "../utils/ExtensionBase.sol";
 import "./IIntegrationAdapter.sol";
 
 /// @title IntegrationManager
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Extension to handle DeFi integration actions for funds
-contract IntegrationManager is IExtension, FundDeployerOwnable {
+contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
@@ -64,6 +65,8 @@ contract IntegrationManager is IExtension, FundDeployerOwnable {
         // 2. be the designated `accessor` of the VaultProxy
         IComptroller comptrollerContract = IComptroller(msg.sender);
         address vaultProxy = comptrollerContract.getVaultProxy();
+
+        // TODO: we might not need this validation because access will be blocked by the VaultProxy
         require(
             IVault(vaultProxy).getAccessor() == msg.sender,
             "callOnIntegration: sender is not the designated accessor of its vaultProxy"
@@ -109,10 +112,6 @@ contract IntegrationManager is IExtension, FundDeployerOwnable {
             spendAssets,
             preCallSpendAssetBalances
         );
-    }
-
-    function setFundConfig(bytes calldata) external override {
-        // UNIMPLEMENTED
     }
 
     // PRIVATE FUNCTIONS

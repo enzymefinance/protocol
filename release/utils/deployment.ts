@@ -4,17 +4,19 @@ import { BigNumberish, Signer } from 'ethers';
 import {
   AggregatedDerivativePriceFeed,
   ChaiAdapter,
-  ChaiPriceFeed,
-  FeeManager,
-  IntegrationManager,
-  KyberAdapter,
-  PolicyManager,
-  VaultLib,
   ChainlinkPriceFeed,
+  ChaiPriceFeed,
   ComptrollerLib,
   Engine,
+  FeeManager,
   FundDeployer,
+  IntegrationManager,
+  KyberAdapter,
+  ManagementFee,
+  PerformanceFee,
+  PolicyManager,
   ValueInterpreter,
+  VaultLib,
 } from './contracts';
 
 export interface ReleaseDeploymentConfig {
@@ -44,52 +46,35 @@ export interface ReleaseDeploymentConfig {
 }
 
 export interface ReleaseDeploymentOutput {
-  vaultLib: Promise<VaultLib>;
-  fundDeployer: Promise<FundDeployer>;
-  engine: Promise<Engine>;
-  chainlinkPriceFeed: Promise<ChainlinkPriceFeed>;
-  aggregatedDerivativePriceFeed: Promise<AggregatedDerivativePriceFeed>;
-  valueInterpreter: Promise<ValueInterpreter>;
+  // Core
   comptrollerLib: Promise<ComptrollerLib>;
+  fundDeployer: Promise<FundDeployer>;
+  vaultLib: Promise<VaultLib>;
+  // Shared Infrastructure
+  engine: Promise<Engine>;
+  valueInterpreter: Promise<ValueInterpreter>;
+  // Extensions
   feeManager: Promise<FeeManager>;
   integrationManager: Promise<IntegrationManager>;
   policyManager: Promise<PolicyManager>;
-  chaiAdapter: Promise<ChaiAdapter>;
+  // Price feeds
+  chainlinkPriceFeed: Promise<ChainlinkPriceFeed>;
+  // Derivative price feeds
+  aggregatedDerivativePriceFeed: Promise<AggregatedDerivativePriceFeed>;
   chaiPriceFeed: Promise<ChaiPriceFeed>;
+  // Integration adapters
+  chaiAdapter: Promise<ChaiAdapter>;
+  kyberAdapter: Promise<KyberAdapter>;
+  // Fees
+  managementFee: Promise<ManagementFee>;
+  performanceFee: Promise<PerformanceFee>;
 }
 
 export const deployRelease = describeDeployment<
   ReleaseDeploymentConfig,
   ReleaseDeploymentOutput
 >({
-  async vaultLib(config) {
-    return VaultLib.deploy(config.deployer);
-  },
-  async fundDeployer(config, deployment) {
-    return FundDeployer.deploy(
-      config.deployer,
-      config.dispatcher,
-      await deployment.engine,
-      await deployment.vaultLib,
-      config.mtc,
-    );
-  },
-  async valueInterpreter(config) {
-    return ValueInterpreter.deploy(config.deployer);
-  },
-  async engine(config, deployment) {
-    return Engine.deploy(
-      config.deployer,
-      config.mgm,
-      config.mtc,
-      config.mln,
-      config.weth,
-      await deployment.chainlinkPriceFeed,
-      await deployment.valueInterpreter,
-      config.engine.thawDelay,
-      config.engine.etherTakers,
-    );
-  },
+  // Core
   async comptrollerLib(config, deployment) {
     const comptrollerLib = await ComptrollerLib.deploy(
       config.deployer,
@@ -108,9 +93,41 @@ export const deployRelease = describeDeployment<
 
     return comptrollerLib;
   },
+  async fundDeployer(config, deployment) {
+    return FundDeployer.deploy(
+      config.deployer,
+      config.dispatcher,
+      await deployment.engine,
+      await deployment.vaultLib,
+      config.mtc,
+    );
+  },
+  async vaultLib(config) {
+    return VaultLib.deploy(config.deployer);
+  },
+  // Shared Infrastructure
+  async engine(config, deployment) {
+    return Engine.deploy(
+      config.deployer,
+      config.mgm,
+      config.mtc,
+      config.mln,
+      config.weth,
+      await deployment.chainlinkPriceFeed,
+      await deployment.valueInterpreter,
+      config.engine.thawDelay,
+      config.engine.etherTakers,
+    );
+  },
+  async valueInterpreter(config) {
+    return ValueInterpreter.deploy(config.deployer);
+  },
   // Extensions
   async feeManager(config, deployment) {
-    return FeeManager.deploy(config.deployer, await deployment.fundDeployer);
+    return await FeeManager.deploy(
+      config.deployer,
+      await deployment.fundDeployer,
+    );
   },
   async integrationManager(config, deployment) {
     return IntegrationManager.deploy(
@@ -133,20 +150,20 @@ export const deployRelease = describeDeployment<
     );
   },
   // Derivative price feeds
-  async chaiPriceFeed(config) {
-    return ChaiPriceFeed.deploy(
-      config.deployer,
-      config.integratees.chai,
-      config.integratees.makerDao.dai,
-      config.integratees.makerDao.pot,
-    );
-  },
   async aggregatedDerivativePriceFeed(config, deployment) {
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
       config.dispatcher,
       [config.integratees.chai],
       [await deployment.chaiPriceFeed],
+    );
+  },
+  async chaiPriceFeed(config) {
+    return ChaiPriceFeed.deploy(
+      config.deployer,
+      config.integratees.chai,
+      config.integratees.makerDao.dai,
+      config.integratees.makerDao.pot,
     );
   },
   // Adapters
@@ -165,5 +182,22 @@ export const deployRelease = describeDeployment<
       config.integratees.kyber,
       config.weth,
     );
+  },
+  // Fees
+  async managementFee(config, deployment) {
+    return ManagementFee.deploy(config.deployer, await deployment.feeManager);
+  },
+  async performanceFee(config, deployment) {
+    return PerformanceFee.deploy(config.deployer, await deployment.feeManager);
+  },
+  // Post-deployment config
+  async postDeployment(_config, deployment) {
+    // Register fees
+    const fees = [
+      await deployment.managementFee,
+      await deployment.performanceFee,
+    ];
+    const feeManager = await deployment.feeManager;
+    await feeManager.registerFees(fees);
   },
 });

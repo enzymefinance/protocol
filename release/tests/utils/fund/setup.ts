@@ -1,4 +1,4 @@
-import { Signer } from 'ethers';
+import { BytesLike, Signer, utils } from 'ethers';
 import {
   AddressLike,
   randomAddress,
@@ -27,8 +27,8 @@ export interface CreateNewFundParams {
   denominationAsset: DenominationAssetInterface;
   fundOwner?: AddressLike;
   fundName?: string;
-  feeManagerConfig?: string;
-  policyManagerConfig?: string;
+  feeManagerConfig?: BytesLike;
+  policyManagerConfig?: BytesLike;
   investment?: InitialInvestmentParams;
 }
 
@@ -58,7 +58,7 @@ export async function createNewFund({
     'ComptrollerProxyDeployed',
     {
       comptrollerProxy: expect.any(String) as string,
-      fundOwner: await resolveAddress(fundOwner),
+      deployer: await resolveAddress(signer),
     },
   );
 
@@ -71,8 +71,8 @@ export async function createNewFund({
   const fundConfigSetArgs = await assertEvent(newFundTx, event, {
     vaultProxy: expect.any(String) as string,
     denominationAsset: await resolveAddress(denominationAsset),
-    feeManagerConfig,
-    policyManagerConfig,
+    feeManagerConfigData: utils.hexlify(feeManagerConfig),
+    policyManagerConfigData: utils.hexlify(policyManagerConfig),
   });
 
   const vaultProxy = new VaultLib(
@@ -87,8 +87,8 @@ export async function createNewFund({
     fundOwner: await resolveAddress(fundOwner),
     fundName,
     denominationAsset: fundConfigSetArgs.denominationAsset,
-    feeManagerConfig: fundConfigSetArgs.feeManagerConfig,
-    policyManagerConfig: fundConfigSetArgs.policyManagerConfig,
+    feeManagerConfig: fundConfigSetArgs.feeManagerConfigData,
+    policyManagerConfig: fundConfigSetArgs.policyManagerConfigData,
   });
 
   if (investment != null) {
@@ -101,6 +101,7 @@ export async function createNewFund({
 
   return {
     comptrollerProxy,
+    newFundTx,
     vaultProxy,
   };
 }

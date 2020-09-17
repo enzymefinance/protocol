@@ -1,6 +1,6 @@
 import { Call, Contract } from '@crestproject/crestproject';
 import { BigNumber, BytesLike, utils } from 'ethers';
-import { encodeArgs, sighash } from '../../common';
+import { encodeArgs, sighash } from '../../../common';
 
 // prettier-ignore
 export interface IntegrationAdapterInterface extends Contract {

@@ -7,13 +7,14 @@ import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../core/fund-deployer/utils/FundDeployerOwnable.sol";
 import "../../utils/AddressArrayLib.sol";
+import "../utils/ExtensionBase.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
 
 /// @title PolicyManager Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages policies for funds
-contract PolicyManager is IPolicyManager, FundDeployerOwnable {
+contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -57,7 +58,7 @@ contract PolicyManager is IPolicyManager, FundDeployerOwnable {
 
     /// @notice Enable policies for use in a fund
     /// @param _configData Encoded config data
-    function setFundConfig(bytes calldata _configData) external override {
+    function setConfigForFund(bytes calldata _configData) external override {
         (address[] memory policies, bytes[] memory settingsData) = abi.decode(
             _configData,
             (address[], bytes[])

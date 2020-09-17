@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
 import "../../../infrastructure/engine/AmguConsumer.sol";
@@ -15,19 +16,18 @@ import "./IComptroller.sol";
 
 /// @title ComptrollerLib Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice TODO
-/// @dev All state-changing functions should be marked as onlyDelegateCall
+/// @notice The core logic library shared by all funds
+/// @dev All state-changing functions should be marked as onlyDelegateCall,
+/// unless called directly by the FundDeployer
 contract ComptrollerLib is IComptroller, AmguConsumer {
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
 
-    // TODO: add/improve events
-
     event FundConfigSet(
         address indexed vaultProxy,
         address indexed denominationAsset,
-        bytes feeManagerConfig,
-        bytes policyManagerConfig
+        bytes feeManagerConfigData,
+        bytes policyManagerConfigData
     );
 
     event FundStatusUpdated(FundStatus indexed prevStatus, FundStatus indexed nextStatus);
@@ -47,8 +47,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         uint256[] receivedAssetQuantities
     );
 
+    event VaultProxySet(address vaultProxy);
+
     // Constants - shared by all proxies
-    uint8 private constant SHARES_DECIMALS = 18;
+    uint256 private constant SHARES_UNIT = 10**18;
     address private immutable FUND_DEPLOYER;
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable FEE_MANAGER;
@@ -57,12 +59,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
 
-    // TODO: getters
-
     // Pseudo-constants (can only be set once)
     address private denominationAsset;
     bool private initialized;
-    address private owner;
     address private vaultProxy;
 
     // Storage
@@ -72,58 +71,81 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // only allowing certain actions when they are the result of a call from this contract
     bool private callOnExtensionIsActive;
 
-    // TODO: add this or similar to actions that require a vault proxy is attached
-    // modifier onlyActiveFund() {
-    //     require(
-    //         msg.sender == FEE_MANAGER,
-    //         "Only FeeManager can call this function"
-    //     );
-    //     _;
-    // }
+    ///////////////
+    // MODIFIERS //
+    ///////////////
+
+    modifier onlyActiveFund() {
+        __assertIsActiveFund();
+        _;
+    }
+
+    modifier callsExtension {
+        callOnExtensionIsActive = true;
+        _;
+        callOnExtensionIsActive = false;
+    }
 
     modifier onlyDelegateCall() {
-        require(
-            initialized == true,
-            "onlyDelegateCall: Only a delegate call can access this function"
-        );
+        __assertIsDelegateCall();
         _;
     }
 
     modifier onlyFundDeployer() {
-        require(
-            msg.sender == FUND_DEPLOYER,
-            "onlyFundDeployer: Only the FundDeployer can call this function"
-        );
+        __assertIsFundDeployer(msg.sender);
         _;
     }
 
     /// @dev These permissions will eventually be defined on extensions themselves
     modifier onlyPermissionedRequest(IVault.VaultAction _action) {
-        require(
-            callOnExtensionIsActive,
-            "onlyPermissionedRequest: Call must originate from this contract"
-        );
+        __assertValidCallFromExtension(msg.sender, _action);
+        _;
+    }
 
-        if (msg.sender == INTEGRATION_MANAGER) {
+    // MODIFIER HELPERS
+    // Modifiers are inefficient in terms of reducing contract size,
+    // so we use helper functions to prevent repetitive inlining of expensive string values.
+
+    function __assertIsActiveFund() private view {
+        require(status == FundStatus.Active, "This function can only be called on an active fund");
+    }
+
+    function __assertIsFundDeployer(address _who) private view {
+        require(_who == FUND_DEPLOYER, "Only the FundDeployer can call this function");
+    }
+
+    function __assertIsDelegateCall() private view {
+        require(initialized == true, "Only a delegate call can access this function");
+    }
+
+    function __assertValidCallFromExtension(address _extension, IVault.VaultAction _action)
+        private
+        view
+    {
+        require(callOnExtensionIsActive, "Call does not originate from contract");
+
+        if (_extension == INTEGRATION_MANAGER) {
             require(
                 _action == IVault.VaultAction.ApproveAssetSpender ||
                     _action == IVault.VaultAction.WithdrawAssetTo ||
                     _action == IVault.VaultAction.AddTrackedAsset ||
                     _action == IVault.VaultAction.RemoveTrackedAsset,
-                "onlyPermissionedRequest: Not a valid action for IntegrationManager"
+                "Not a valid action for IntegrationManager"
             );
-        } else if (msg.sender == FEE_MANAGER) {
+        } else if (_extension == FEE_MANAGER) {
             require(
                 _action == IVault.VaultAction.BurnShares ||
                     _action == IVault.VaultAction.MintShares,
-                "onlyPermissionedRequest: Not a valid action for FeeManager"
+                "Not a valid action for FeeManager"
             );
         } else {
-            revert("onlyPermissionedRequest: Not a valid action for requestor");
+            revert("Not a valid call from extension");
         }
-
-        _;
     }
+
+    //////////
+    // CORE //
+    //////////
 
     /// @dev Constructor for library
     constructor(
@@ -145,35 +167,19 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         VALUE_INTERPRETER = _valueInterpreter;
     }
 
-    /// @dev Pseudo-constructor per proxy
-    function init(address _fundOwner) external override onlyFundDeployer {
-        require(!initialized, "init: Proxy already initialized");
-
-        owner = _fundOwner;
-        initialized = true;
-    }
-
-    //////////
-    // CORE //
-    //////////
-
     /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy (for access control).
     /// Uses a reverse-mutex of sorts that only allows permissioned calls to the vault during this stack.
     function callOnExtension(
         address _extension,
         bytes4 _selector,
         bytes calldata _callArgs
-    ) external onlyDelegateCall {
+    ) external onlyDelegateCall callsExtension {
         require(__isExtension(_extension), "callOnExtension: _extension is not valid");
-
-        callOnExtensionIsActive = true;
 
         (bool success, bytes memory returnData) = _extension.call(
             abi.encodeWithSelector(_selector, msg.sender, _callArgs)
         );
         require(success, string(returnData));
-
-        callOnExtensionIsActive = false;
     }
 
     function isReceivableAsset(address _asset) external override view returns (bool) {
@@ -186,66 +192,147 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // /// @param _who The acct for which to query management permission
     // // /// @param _extension The extension for which to query management permission
     // /// @return True if _who can manage protected functions of _extension
-    // function canManageExtension(address _who, address) public override view returns (bool) {
-    //     return _who == owner;
-    // }
-
-    /// @dev Essentially another constructor per-ComptrollerProxy
-    function setFundConfigAndActivate(
-        address _vaultProxy,
-        address _denominationAsset,
-        bytes calldata _feeManagerConfig,
-        bytes calldata _policyManagerConfig
-    ) external override onlyFundDeployer {
-        // TODO: is any validation necessary since we're only calling from a trusted contract?
-        // require(_vaultProxy != address(0), "setFundConfig: _vaultProxy cannot be empty");
-        // require(
-        //     _denominationAsset != address(0),
-        //     "setFundConfig: _denominationAsset cannot be empty"
-        // );
-        // Use vaultProxy as ref to see whether fund config has already been set
-        require(vaultProxy == address(0), "setFundConfig: fund has already been configured");
-
-        // 1. Configure core
-        require(
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
-            "setFundConfig: Denomination asset must be a supported primitive"
-        );
-        denominationAsset = _denominationAsset;
-        vaultProxy = _vaultProxy;
-
-        // 2. Configure extensions
-        if (_feeManagerConfig.length > 0) {
-            IFeeManager(FEE_MANAGER).setFundConfig(_feeManagerConfig);
-        }
-        if (_policyManagerConfig.length > 0) {
-            IPolicyManager(POLICY_MANAGER).setFundConfig(_policyManagerConfig);
-        }
-
-        emit FundConfigSet(
-            _vaultProxy,
-            _denominationAsset,
-            _feeManagerConfig,
-            _policyManagerConfig
-        );
-
-        // 3. Activate fund
-        status = FundStatus.Active;
-        emit FundStatusUpdated(FundStatus.None, FundStatus.Active);
-    }
-
-    // /// @notice Shut down the fund
-    // function shutDownFund() external {
-    //     require(msg.sender == MANAGER, "shutDownFund: Only fund manager can call this function");
-    //     require(status == FundStatus.Active, "shutDownFund: Fund is not active");
-
-    //     status = FundStatus.Inactive;
-    //     emit StatusUpdated(status);
+    // function canManageExtension(address _who, address) public view returns (bool) {
+    //     return _who == IVault(vaultProxy).getOwner();
     // }
 
     // TODO: make this specific to whether the fund uses an extension
     function __isExtension(address _who) private view returns (bool) {
         return _who == FEE_MANAGER || _who == POLICY_MANAGER || _who == INTEGRATION_MANAGER;
+    }
+
+    /////////////////////////////
+    // FUND SETUP AND TEARDOWN //
+    /////////////////////////////
+
+    function activate() external override onlyFundDeployer {
+        require(vaultProxy != address(0), "activate: Cannot activate without a vaultProxy");
+
+        __activate();
+    }
+
+    /// @dev Pseudo-constructor per proxy
+    function init() external override onlyFundDeployer {
+        require(!initialized, "init: Proxy already initialized");
+
+        initialized = true;
+    }
+
+    function quickSetup(
+        address _vaultProxy,
+        address _denominationAsset,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external override onlyFundDeployer {
+        // Set config without updating status
+        __setConfig(
+            _vaultProxy,
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData,
+            false
+        );
+
+        __setVaultProxy(_vaultProxy);
+
+        __activate();
+    }
+
+    function setConfig(
+        address _vaultProxy,
+        address _denominationAsset,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external override onlyFundDeployer {
+        __setConfig(
+            _vaultProxy,
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData,
+            true
+        );
+    }
+
+    function setVaultProxy(address _vaultProxy) external onlyFundDeployer {
+        __setVaultProxy(_vaultProxy);
+    }
+
+    /// @notice Shut down the fund
+    // TODO: need an emergency shutdown to bypass teardown functions on failure?
+    function shutdown() external override onlyDelegateCall onlyActiveFund callsExtension {
+        require(
+            msg.sender == FUND_DEPLOYER || msg.sender == IVault(vaultProxy).getOwner(),
+            "shutdown: Only the fund owner or FundDeployer can call this function"
+        );
+
+        // Distribute final fee settlement and destroy storage
+        IExtension(FEE_MANAGER).deactivateForFund();
+
+        // TODO: destroy unneeded PolicyManager storage?
+
+        __updateStatus(FundStatus.Shutdown);
+    }
+
+    function __activate() private {
+        IExtension(FEE_MANAGER).activateForFund();
+
+        __updateStatus(FundStatus.Active);
+    }
+
+    // TODO: is any validation necessary since we're only calling from a trusted contract?
+    function __setConfig(
+        address _vaultProxy,
+        address _denominationAsset,
+        bytes memory _feeManagerConfigData,
+        bytes memory _policyManagerConfigData,
+        bool _updateStatus
+    ) private {
+        // Use vaultProxy as ref to see whether fund config has already been set
+        require(
+            vaultProxy == address(0),
+            "setConfigAndActivate: fund has already been configured"
+        );
+
+        // Configure core
+        require(
+            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
+            "setConfigAndActivate: Denomination asset must be a supported primitive"
+        );
+        denominationAsset = _denominationAsset;
+        vaultProxy = _vaultProxy;
+
+        // Configure extensions
+        if (_feeManagerConfigData.length > 0) {
+            IExtension(FEE_MANAGER).setConfigForFund(_feeManagerConfigData);
+        }
+        if (_policyManagerConfigData.length > 0) {
+            IExtension(POLICY_MANAGER).setConfigForFund(_policyManagerConfigData);
+        }
+
+        emit FundConfigSet(
+            _vaultProxy,
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
+
+        // Only update fund status if not activating the fund atomically
+        if (_updateStatus) {
+            __updateStatus(FundStatus.Pending);
+        }
+    }
+
+    function __setVaultProxy(address _vaultProxy) private {
+        vaultProxy = _vaultProxy;
+
+        emit VaultProxySet(_vaultProxy);
+    }
+
+    function __updateStatus(FundStatus _nextStatus) private {
+        FundStatus prevStatus = status;
+        status = _nextStatus;
+
+        emit FundStatusUpdated(prevStatus, _nextStatus);
     }
 
     //////////////////////////////
@@ -306,7 +393,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         uint256[] memory balances = vaultContract.getAssetBalances(assets);
 
         uint256 gav;
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i; i < assets.length; i++) {
             (uint256 assetGav, bool isValid) = IValueInterpreter(VALUE_INTERPRETER)
                 .calcCanonicalAssetValue(
                 PRIMITIVE_PRICE_FEED,
@@ -324,17 +411,25 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         return gav;
     }
 
-    /// @notice Calculates the cost of 1 unit of shares in the fund's denomination asset
-    /// @return The amount of the denomination asset required to buy 1 unit of shares
-    /// @dev Does not account for latest fees.
-    // TODO: include function to account for latest fees. Confirm that any function that uses this does not rely on exact price.
-    function calcSharePrice() public onlyDelegateCall returns (uint256) {
+    /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
+    /// @return The amount of the denomination asset per share
+    /// @dev Does not account for any fees outstanding
+    function calcGrossShareValue() public onlyDelegateCall returns (uint256) {
         uint256 sharesSupply = IERC20Extended(vaultProxy).totalSupply();
         if (sharesSupply == 0) {
             return 10**uint256(IERC20Extended(denominationAsset).decimals());
-        } else {
-            return calcGav().mul(10**uint256(SHARES_DECIMALS)).div(sharesSupply);
         }
+
+        return calcGav().mul(SHARES_UNIT).div(sharesSupply);
+    }
+
+    /// @notice Calculates the net value of 1 unit of shares in the fund's denomination asset
+    /// @return The amount of the denomination asset per share
+    /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
+    /// that can be used to determine the cost of purchasing shares at any given point in time.
+    function calcNetShareValue() external onlyDelegateCall callsExtension returns (uint256) {
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
+        return calcGrossShareValue();
     }
 
     ///////////////////
@@ -351,12 +446,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _buyer,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
-    ) external override payable onlyDelegateCall amguPayable returns (uint256) {
+    ) external override payable onlyDelegateCall amguPayable callsExtension returns (uint256) {
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity);
 
         uint256 sharesBought = _investmentAmount
             .mul(10**uint256(IERC20Extended(denominationAsset).decimals()))
-            .div(calcSharePrice());
+            .div(calcGrossShareValue());
 
         // This is inefficient to mint, and then allow the feeManager to burn/mint to settle the fee,
         // but we need the FeeManager to handle minting/burning of shares if we want to move
@@ -445,13 +540,13 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// which the transfer function fails. This should always be false unless explicitly intended
     /// @param _sharesQuantity The amount of shares to redeem
     /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
-    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private {
+    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private callsExtension {
         address redeemer = msg.sender;
 
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
 
-        // Attempt to settle fees, but don't allow an error to block redemption
-        // This also handles a rejection from onlyActiveFund when the fund is shutdown
+        // Attempt to settle fees, but don't allow an error to block redemption.
+        // When a fund is shutdown, there will be no more enabled fees.
         try IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "")  {} catch {}
 
         // Check the shares quantity against the user's balance after settling fees
@@ -471,7 +566,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         // Calculate and transfer payout assets to redeemer
         uint256[] memory assetBalances = vaultContract.getAssetBalances(payoutAssets);
         uint256[] memory payoutQuantities = new uint256[](payoutAssets.length);
-        for (uint256 i = 0; i < payoutAssets.length; i++) {
+        for (uint256 i; i < payoutAssets.length; i++) {
             // Redeemer's ownership percentage of asset holdings
             payoutQuantities[i] = assetBalances[i].mul(_sharesQuantity).div(sharesSupply);
 
@@ -502,10 +597,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     function getInitialized() external view returns (bool) {
         return initialized;
-    }
-
-    function getOwner() external view returns (address) {
-        return owner;
     }
 
     // TODO: do we want individual getters also?

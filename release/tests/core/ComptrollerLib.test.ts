@@ -53,9 +53,6 @@ describe('constructor', () => {
     const initializedCall = comptrollerLib.getInitialized();
     await expect(initializedCall).resolves.toBe(false);
 
-    const ownerCall = comptrollerLib.getOwner();
-    await expect(ownerCall).resolves.toBe(constants.AddressZero);
-
     const vaultProxyCall = comptrollerLib.getVaultProxy();
     await expect(vaultProxyCall).resolves.toBe(constants.AddressZero);
   });
@@ -80,14 +77,12 @@ describe('init', () => {
       randomAddress(),
     );
 
-    const badInitTx = comptrollerLib.init(randomAddress());
+    const badInitTx = comptrollerLib.init();
     await expect(badInitTx).rejects.toBeRevertedWith(
       'Only the FundDeployer can call this function',
     );
 
-    const goodInitTx = comptrollerLib
-      .connect(fakeFundDeployer)
-      .init(randomAddress());
+    const goodInitTx = comptrollerLib.connect(fakeFundDeployer).init();
     await expect(goodInitTx).resolves.toBeReceipt();
   });
 
@@ -112,10 +107,10 @@ describe('init', () => {
     ).connect(fakeFundDeployer);
 
     // First init should succeed
-    await comptrollerLib.init(randomAddress());
+    await comptrollerLib.init();
 
     // Second init should fail
-    const badInitTx = comptrollerLib.init(randomAddress());
+    const badInitTx = comptrollerLib.init();
     await expect(badInitTx).rejects.toBeRevertedWith(
       'Proxy already initialized',
     );
@@ -170,8 +165,8 @@ describe('buyShares', () => {
     const calcGavCall = comptrollerProxy.calcGav.call();
     await expect(calcGavCall).resolves.toEqBigNumber(investmentAmount);
 
-    const calcSharePriceCall = comptrollerProxy.calcSharePrice.call();
-    await expect(calcSharePriceCall).resolves.toEqBigNumber(
+    const calcGrossShareValueCall = comptrollerProxy.calcGrossShareValue.call();
+    await expect(calcGrossShareValueCall).resolves.toEqBigNumber(
       utils.parseEther('1'),
     );
 

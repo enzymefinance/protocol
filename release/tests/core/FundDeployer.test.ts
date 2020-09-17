@@ -99,9 +99,6 @@ describe('createNewFund', () => {
     const initializedCall = comptrollerProxy.getInitialized();
     await expect(initializedCall).resolves.toBe(true);
 
-    const ownerCall = comptrollerProxy.getOwner();
-    await expect(ownerCall).resolves.toBe(fundOwner);
-
     const vaultProxyCall = comptrollerProxy.getVaultProxy();
     await expect(vaultProxyCall).resolves.toBe(vaultProxy.address);
   });
