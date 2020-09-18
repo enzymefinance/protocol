@@ -164,7 +164,6 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
     {
         // Get and validate assets to transact
         // Notes:
-        // - Incoming + spend assets both allowed to be empty
         // - Incoming asset amounts allowed to be 0 (e.g., in case of adding an airdropped token)
         // - Incoming + spend assets are allowed to overlap (e.g., a fee for the incomingAsset charged in a spend asset)
         (
@@ -187,6 +186,10 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
             "__preProcessCoI: duplicate incoming asset detected"
         );
         for (uint256 i = 0; i < incomingAssets_.length; i++) {
+            require(
+                incomingAssets_[i] != address(0),
+                "__preProcessCoI: empty incoming asset address detected"
+            );
             require(
                 IComptroller(msg.sender).isReceivableAsset(incomingAssets_[i]),
                 "__preProcessCoI: non-receivable asset detected"
@@ -219,6 +222,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
 
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
         for (uint256 i = 0; i < spendAssets_.length; i++) {
+            require(spendAssets_[i] != address(0), "__preProcessCoI: empty spendAsset detected");
             preCallSpendAssetBalances_[i] = __getVaultAssetBalance(_vaultProxy, spendAssets_[i]);
             // Use exact approve amount rather than increasing allowances,
             // because all adapters finish their actions atomically.

@@ -95,8 +95,6 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         ) = __decodeCallArgs(_encodedCallArgs);
 
         // Validate args
-        require(incomingAsset != address(0), "takeOrder: incomingAsset cannot be empty");
-        require(outgoingAsset != address(0), "takeOrder: outgoingAsset cannot be empty");
         require(
             incomingAsset != outgoingAsset,
             "takeOrder: incomingAsset and outgoingAsset asset cannot be the same"

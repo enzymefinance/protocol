@@ -41,10 +41,6 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         for (uint256 i = 0; i < spendAssets.length; i++) {
             // Sanity checks
             require(
-                spendAssets[i] != address(0),
-                "fundAssetsTransferHandler: spend asset cannot be empty"
-            );
-            require(
                 spendAssetAmounts[i] > 0,
                 "fundAssetsTransferHandler: spend asset amount must be >0"
             );
@@ -62,10 +58,6 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         // Get incoming asset balances before call
         uint256[] memory incomingAssetPreCallAmounts = new uint256[](incomingAssets.length);
         for (uint256 i = 0; i < incomingAssets.length; i++) {
-            require(
-                incomingAssets[i] != address(0),
-                "fundAssetsTransferHandler: incoming asset cannot be empty"
-            );
             incomingAssetPreCallAmounts[i] = IERC20(incomingAssets[i]).balanceOf(address(this));
         }
 
