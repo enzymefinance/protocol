@@ -1,6 +1,6 @@
 import { AddressLike } from '@crestproject/crestproject';
 import { describeDeployment } from '@melonproject/utils';
-import { BigNumberish, Signer } from 'ethers';
+import { BigNumberish, BytesLike, Signer } from 'ethers';
 import {
   AggregatedDerivativePriceFeed,
   ChaiAdapter,
@@ -26,6 +26,10 @@ export interface ReleaseDeploymentConfig {
   mgm: AddressLike;
   weth: AddressLike;
   mln: AddressLike;
+  registeredVaultCalls: {
+    contracts: AddressLike[];
+    selectors: BytesLike[];
+  };
   engine: {
     thawDelay: BigNumberish;
     etherTakers: AddressLike[];
@@ -100,6 +104,8 @@ export const deployRelease = describeDeployment<
       await deployment.engine,
       await deployment.vaultLib,
       config.mtc,
+      config.registeredVaultCalls.contracts,
+      config.registeredVaultCalls.selectors,
     );
   },
   async vaultLib(config) {

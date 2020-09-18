@@ -107,3 +107,11 @@ describe('createNewFund', () => {
 describe('postMigrateOriginHook', () => {
   it.todo('write tests');
 });
+
+describe('deregisterVaultCalls', () => {
+  it.todo('write tests');
+});
+
+describe('registerVaultCalls', () => {
+  it.todo('write tests');
+});

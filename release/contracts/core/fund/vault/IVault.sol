@@ -26,6 +26,8 @@ interface IVault is IProxiableVault {
 
     function burnShares(address, uint256) external;
 
+    function callOnContract(address, bytes calldata) external;
+
     function disallowAssetSpender(address, address) external;
 
     function getAccessor() external view returns (address);

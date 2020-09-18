@@ -29,6 +29,10 @@ export async function defaultTestDeployment(
     dispatcher: persistent.dispatcher.address,
     mln: mocks.tokens.mln.address,
     weth: mocks.tokens.weth.address,
+    registeredVaultCalls: {
+      contracts: [],
+      selectors: [],
+    },
     engine: {
       thawDelay: 10000000000,
       etherTakers: [randomAddress()], // What's this?!

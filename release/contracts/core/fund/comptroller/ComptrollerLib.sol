@@ -11,6 +11,7 @@ import "../../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol
 import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../interfaces/IERC20Extended.sol";
+import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
 import "./IComptroller.sol";
 
@@ -186,6 +187,26 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         return
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
             IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
+    }
+
+    function vaultCallOnContract(
+        address _contract,
+        bytes4 _selector,
+        bytes calldata _callData
+    ) external onlyDelegateCall {
+        IVault vaultContract = IVault(vaultProxy);
+        require(
+            msg.sender == vaultContract.getOwner(),
+            "Only the fund owner can call this function"
+        );
+        require(
+            IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
+            "vaultCallOnContract: not a registered call"
+        );
+
+        vaultContract.callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
+
+        // TODO: need event?
     }
 
     // // TODO: implement with roles

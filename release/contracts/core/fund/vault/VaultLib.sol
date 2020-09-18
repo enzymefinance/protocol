@@ -59,20 +59,6 @@ contract VaultLib is VaultLibBase1, IVault {
 
     // TODO: add increase/decrease approvals?
 
-    function approveAssetSpender(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) external override onlyAccessor {
-        IERC20(_asset).approve(_target, _amount);
-    }
-
-    function disallowAssetSpender(address _asset, address _target) external override onlyAccessor {
-        IERC20(_asset).approve(_target, 0);
-    }
-
-    // VAULT LOGIC
-
     // TODO: Should this function should not have an opinion about the actual asset balance?
     /// @dev Allows addition of already tracked assets to fail silently.
     function addTrackedAsset(address _asset) external override onlyAccessor {
@@ -82,6 +68,27 @@ contract VaultLib is VaultLibBase1, IVault {
 
             emit TrackedAssetAdded(_asset);
         }
+    }
+
+    function approveAssetSpender(
+        address _asset,
+        address _target,
+        uint256 _amount
+    ) external override onlyAccessor {
+        IERC20(_asset).approve(_target, _amount);
+    }
+
+    function callOnContract(address _contract, bytes calldata _callData)
+        external
+        override
+        onlyAccessor
+    {
+        (bool success, bytes memory returnData) = _contract.call(_callData);
+        require(success, string(returnData));
+    }
+
+    function disallowAssetSpender(address _asset, address _target) external override onlyAccessor {
+        IERC20(_asset).approve(_target, 0);
     }
 
     function getAssetBalances(address[] calldata _assets)
