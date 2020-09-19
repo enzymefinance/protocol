@@ -8,15 +8,10 @@ interface IPolicyManager {
     enum PolicyHook {None, BuyShares, CallOnIntegration}
     enum PolicyHookExecutionTime {None, Pre, Post}
 
-    function postValidatePolicies(
+    function validatePolicies(
         address,
         PolicyHook,
-        bytes calldata
-    ) external;
-
-    function preValidatePolicies(
-        address,
-        PolicyHook,
+        PolicyHookExecutionTime,
         bytes calldata
     ) external;
 }

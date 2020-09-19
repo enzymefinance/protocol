@@ -198,9 +198,10 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
         }
 
         // Pre-validate against fund policies
-        IPolicyManager(POLICY_MANAGER).preValidatePolicies(
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
             IPolicyManager.PolicyHook.CallOnIntegration,
+            IPolicyManager.PolicyHookExecutionTime.Pre,
             abi.encode(
                 _selector,
                 _adapter,
@@ -263,9 +264,10 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
         );
 
         // Post-validate against fund policies
-        IPolicyManager(POLICY_MANAGER).postValidatePolicies(
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
             IPolicyManager.PolicyHook.CallOnIntegration,
+            IPolicyManager.PolicyHookExecutionTime.Post,
             abi.encode(
                 _selector,
                 _adapter,

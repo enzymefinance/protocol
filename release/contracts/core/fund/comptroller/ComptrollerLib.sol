@@ -531,9 +531,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         // Calculate full shares quantity for investment amount after updating continuous fees
         IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
 
-        IPolicyManager(POLICY_MANAGER).preValidatePolicies(
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.BuyShares,
+            IPolicyManager.PolicyHookExecutionTime.Pre,
             abi.encode(_buyer, _investmentAmount, _minSharesQuantity)
         );
     }
@@ -548,9 +549,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             abi.encode(_buyer, _investmentAmount, _sharesBought)
         );
 
-        IPolicyManager(POLICY_MANAGER).postValidatePolicies(
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.BuyShares,
+            IPolicyManager.PolicyHookExecutionTime.Post,
             abi.encode(_buyer, _investmentAmount, _sharesBought)
         );
     }

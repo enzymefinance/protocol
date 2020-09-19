@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@melonproject/release/contracts/interfaces/IERC20Extended.sol";
+import "./EthConstantMixin.sol";
 
-abstract contract RateProviderBase {
-    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
+abstract contract RateProviderBase is EthConstantMixin {
     mapping(address => mapping(address => uint256)) public assetToAssetRate;
 
     // Handles non-ERC20 compliant assets like ETH and USD
@@ -26,7 +25,7 @@ abstract contract RateProviderBase {
     function __getDecimalsForAsset(address _asset) internal view returns (uint256) {
         uint256 decimals = specialAssetToDecimals[_asset];
         if (decimals == 0) {
-            decimals = uint256(ERC20(_asset).decimals());
+            decimals = uint256(IERC20Extended(_asset).decimals());
         }
 
         return decimals;

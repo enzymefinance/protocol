@@ -2,8 +2,9 @@
 pragma solidity 0.6.8;
 
 import "../../utils/NormalizedRateProviderBase.sol";
+import "../../utils/SwapperBase.sol";
 
-abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
+abstract contract MockIntegrateeBase is NormalizedRateProviderBase, SwapperBase {
     constructor(
         address[] memory _defaultRateAssets,
         address[] memory _specialAssets,
@@ -18,8 +19,6 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
             _ratePrecision
         )
     {}
-
-    receive() external payable {}
 
     function __getRate(address _baseAsset, address _quoteAsset)
         internal
@@ -46,39 +45,5 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase {
 
         // 4. Else return 1
         return 10**RATE_PRECISION;
-    }
-
-    function __swap(
-        address payable _trader,
-        address[] memory _assetsToIntegratee,
-        uint256[] memory _assetsToIntegrateeAmounts,
-        address[] memory _assetsFromIntegratee,
-        uint256[] memory _assetsFromIntegrateeAmounts
-    ) internal {
-        // Take custody of incoming assets
-        for (uint256 i = 0; i < _assetsToIntegratee.length; i++) {
-            address asset = _assetsToIntegratee[i];
-            uint256 amount = _assetsToIntegrateeAmounts[i];
-            require(asset != address(0), "__swap: empty value in _assetsToIntegratee");
-            require(amount > 0, "__swap: empty value in _assetsToIntegrateeAmounts");
-            // Incoming ETH amounts can be ignored
-            if (asset == ETH_ADDRESS) {
-                continue;
-            }
-            ERC20(asset).transferFrom(_trader, address(this), amount);
-        }
-
-        // Distribute outgoing assets
-        for (uint256 i = 0; i < _assetsFromIntegratee.length; i++) {
-            address asset = _assetsFromIntegratee[i];
-            uint256 amount = _assetsFromIntegrateeAmounts[i];
-            require(asset != address(0), "__swap: empty value in _assetsFromIntegratee");
-            require(amount > 0, "__swap: empty value in _assetsFromIntegrateeAmounts");
-            if (asset == ETH_ADDRESS) {
-                _trader.transfer(amount);
-            } else {
-                ERC20(asset).transfer(_trader, amount);
-            }
-        }
     }
 }

@@ -15,12 +15,16 @@ import "./IPolicyManager.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages policies for funds
 contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
+    // TODO: add activation and deactivation?
+
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event PolicyRegistered(address indexed policy, string indexed identifier);
+    // EVENTS
 
     event PolicyDeregistered(address indexed policy, string indexed identifier);
+
+    event PolicyDisabledForFund(address indexed comptrollerProxy, address indexed policy);
 
     event PolicyEnabledForFund(
         address indexed comptrollerProxy,
@@ -28,47 +32,69 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
         bytes settingsData
     );
 
-    EnumerableSet.AddressSet internal registeredPolicies;
-    mapping(address => EnumerableSet.AddressSet) internal comptrollerProxyToPolicies;
+    event PolicyRegistered(address indexed policy, string indexed identifier);
+
+    // STORAGE
+
+    EnumerableSet.AddressSet private registeredPolicies;
+    mapping(address => EnumerableSet.AddressSet) private comptrollerProxyToPolicies;
+
+    // MODIFIERS
+
+    modifier onlyFundOwner(address _comptrollerProxy) {
+        require(
+            msg.sender == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
+            "Only the fund owner can call this function"
+        );
+        _;
+    }
+
+    // CONSTRUCTOR
 
     constructor(address _fundDeployer) public FundDeployerOwnable(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
 
-    function preValidatePolicies(
-        address _comptrollerProxy,
-        PolicyHook _hook,
-        bytes calldata _validationData
-    ) external override {
-        __validatePolicies(_comptrollerProxy, _hook, PolicyHookExecutionTime.Pre, _validationData);
+    function disablePolicyForFund(address _comptrollerProxy, address _policy)
+        external
+        onlyFundOwner(_comptrollerProxy)
+    {
+        require(
+            policyIsEnabledForFund(_comptrollerProxy, _policy),
+            "disablePolicyForFund: policy not enabled"
+        );
+        require(
+            IPolicy(_policy).policyHook() == PolicyHook.BuyShares,
+            "disablePolicyForFund: only BuyShares policies can be disabled"
+        );
+
+        comptrollerProxyToPolicies[_comptrollerProxy].remove(_policy);
+
+        emit PolicyDisabledForFund(_comptrollerProxy, _policy);
+
+        // TODO: delete storage on the policy?
     }
 
-    function postValidatePolicies(
+    function validatePolicies(
         address _comptrollerProxy,
         PolicyHook _hook,
+        PolicyHookExecutionTime _executionTime,
         bytes calldata _validationData
     ) external override {
-        __validatePolicies(
-            _comptrollerProxy,
-            _hook,
-            PolicyHookExecutionTime.Post,
-            _validationData
-        );
+        __validatePolicies(_comptrollerProxy, _hook, _executionTime, _validationData);
     }
 
     /// @notice Enable policies for use in a fund
     /// @param _configData Encoded config data
     function setConfigForFund(bytes calldata _configData) external override {
+        address comptrollerProxy = msg.sender;
+
         (address[] memory policies, bytes[] memory settingsData) = abi.decode(
             _configData,
             (address[], bytes[])
         );
-        if (policies.length == 0) {
-            return;
-        }
 
         // Sanity check
-        require(policies.length > 0, "setFundConfig: policies cannot be empty");
         require(
             policies.length == settingsData.length,
             "setFundConfig: policies and settingsData array lengths unequal"
@@ -76,7 +102,6 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
         require(policies.isUniqueSet(), "setFundConfig: policies cannot include duplicates");
 
         // Enable each policy with settings
-        address comptrollerProxy = msg.sender;
         for (uint256 i = 0; i < policies.length; i++) {
             require(policyIsRegistered(policies[i]), "setFundConfig: Policy is not registered");
 
@@ -90,52 +115,20 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
         }
     }
 
-    function updatePolicySettings(address _caller, bytes calldata _callArgs) external {
-        // TODO: no need to verify whether caller is actual ComptrollerProxy?
-
-        // TODO: allow other roles to do this?
+    function updatePolicySettingsForFund(
+        address _comptrollerProxy,
+        address _policy,
+        bytes calldata _settingsData
+    ) external onlyFundOwner(_comptrollerProxy) {
         require(
-            _caller == IVault(IComptroller(msg.sender).getVaultProxy()).getOwner(),
-            "updatePolicySettings: Only an authorized account can call this function"
+            policyIsEnabledForFund(_comptrollerProxy, _policy),
+            "updatePolicySettingsForFund: policy not enabled"
         );
 
-        (address policy, bytes memory settingsData) = __decodeUpdatePolicySettingsArgs(_callArgs);
-        IPolicy(policy).updateFundSettings(msg.sender, settingsData);
-    }
-
-    // PUBLIC FUNCTIONS
-
-    /// @notice Get a list of enabled policies for a given fund
-    /// @return enabledPolicies_ An array of enabled policy addresses
-    function getPoliciesForFund(address _comptrollerProxy)
-        public
-        view
-        returns (address[] memory enabledPolicies_)
-    {
-        enabledPolicies_ = new address[](comptrollerProxyToPolicies[_comptrollerProxy].length());
-        for (uint256 i = 0; i < enabledPolicies_.length; i++) {
-            enabledPolicies_[i] = comptrollerProxyToPolicies[_comptrollerProxy].at(i);
-        }
-    }
-
-    /// @notice Check is a policy is enabled for the fund
-    function policyIsEnabledForFund(address _comptrollerProxy, address _policy)
-        external
-        view
-        returns (bool)
-    {
-        return comptrollerProxyToPolicies[_comptrollerProxy].contains(_policy);
+        IPolicy(_policy).updateFundSettings(_comptrollerProxy, _settingsData);
     }
 
     // PRIVATE FUNCTIONS
-
-    function __decodeUpdatePolicySettingsArgs(bytes memory _callArgs)
-        private
-        pure
-        returns (address policy_, bytes memory settingsData_)
-    {
-        return abi.decode(_callArgs, (address, bytes));
-    }
 
     /// @notice Helper to validate policies
     function __validatePolicies(
@@ -144,7 +137,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
         PolicyHookExecutionTime _executionTime,
         bytes memory _validationData
     ) private {
-        address[] memory policies = getPoliciesForFund(_comptrollerProxy);
+        address[] memory policies = getEnabledPoliciesForFund(_comptrollerProxy);
         for (uint256 i = 0; i < policies.length; i++) {
             if (
                 IPolicy(policies[i]).policyHook() == _hook &&
@@ -167,52 +160,55 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
     // POLICIES REGISTRY //
     ///////////////////////
 
-    /// @notice Remove a policy from the list of registered policies
-    /// @param _policy The address of the policy to remove
-    function deregisterPolicy(address _policy) external onlyFundDeployerOwner {
-        require(policyIsRegistered(_policy), "deregisterPolicy: _policy is not registered");
+    /// @notice Remove policies from the list of registered policies
+    /// @param _policies Addresses of policies to be registered
+    function deregisterPolicies(address[] calldata _policies) external onlyFundDeployerOwner {
+        require(_policies.length > 0, "deregisterPolicies: _policies cannot be empty");
 
-        registeredPolicies.remove(_policy);
+        for (uint256 i; i < _policies.length; i++) {
+            require(
+                policyIsRegistered(_policies[i]),
+                "deregisterPolicies: policy is not registered"
+            );
 
-        emit PolicyDeregistered(_policy, IPolicy(_policy).identifier());
+            registeredPolicies.remove(_policies[i]);
+
+            emit PolicyDeregistered(_policies[i], IPolicy(_policies[i]).identifier());
+        }
     }
 
-    /// @notice Add a policy to the Registry
-    /// @param _policy Address of policy to be registered
-    function registerPolicy(address _policy) external onlyFundDeployerOwner {
-        require(!policyIsRegistered(_policy), "registerPolicy: _policy already registered");
+    /// @notice Add policies to the list of registered policies
+    /// @param _policies Addresses of policies to be registered
+    function registerPolicies(address[] calldata _policies) external onlyFundDeployerOwner {
+        require(_policies.length > 0, "registerPolicies: _policies cannot be empty");
 
-        IPolicy policy = IPolicy(_policy);
-        require(
-            policy.policyHook() != PolicyHook.None,
-            "registerPolicy: PolicyHook must be defined in the policy"
-        );
-        require(
-            policy.policyHookExecutionTime() != PolicyHookExecutionTime.None,
-            "registerPolicy: PolicyHookExecutionTime must be defined in the policy"
-        );
+        for (uint256 i; i < _policies.length; i++) {
+            require(
+                !policyIsRegistered(_policies[i]),
+                "registerPolicies: policy already registered"
+            );
 
-        // Plugins should only have their latest version registered
-        string memory identifier = policy.identifier();
-        require(
-            bytes(identifier).length != 0,
-            "registerPolicy: Identifier must be defined in the policy"
-        );
+            registeredPolicies.add(_policies[i]);
 
-        registeredPolicies.add(_policy);
-
-        emit PolicyRegistered(_policy, identifier);
+            emit PolicyRegistered(_policies[i], IPolicy(_policies[i]).identifier());
+        }
     }
 
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Check whether a policy is registered
-    /// @param _policy The address of the policy to check
-    /// @return True if the policy is registered
-    function policyIsRegistered(address _policy) public view returns (bool) {
-        return registeredPolicies.contains(_policy);
+    /// @notice Get a list of enabled policies for a given fund
+    /// @return enabledPolicies_ An array of enabled policy addresses
+    function getEnabledPoliciesForFund(address _comptrollerProxy)
+        public
+        view
+        returns (address[] memory enabledPolicies_)
+    {
+        enabledPolicies_ = new address[](comptrollerProxyToPolicies[_comptrollerProxy].length());
+        for (uint256 i = 0; i < enabledPolicies_.length; i++) {
+            enabledPolicies_[i] = comptrollerProxyToPolicies[_comptrollerProxy].at(i);
+        }
     }
 
     /// @notice Get all registered policies
@@ -226,5 +222,21 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
         for (uint256 i = 0; i < registeredPoliciesArray_.length; i++) {
             registeredPoliciesArray_[i] = registeredPolicies.at(i);
         }
+    }
+
+    /// @notice Check is a policy is enabled for the fund
+    function policyIsEnabledForFund(address _comptrollerProxy, address _policy)
+        public
+        view
+        returns (bool)
+    {
+        return comptrollerProxyToPolicies[_comptrollerProxy].contains(_policy);
+    }
+
+    /// @notice Check whether a policy is registered
+    /// @param _policy The address of the policy to check
+    /// @return True if the policy is registered
+    function policyIsRegistered(address _policy) public view returns (bool) {
+        return registeredPolicies.contains(_policy);
     }
 }

@@ -18,6 +18,8 @@ export interface MockDeploymentOutput {
   }>;
   kyberIntegratee: Promise<mocks.MockKyberIntegratee>;
   chaiIntegratee: Promise<mocks.MockChaiIntegratee>;
+  mockGenericAdapter: Promise<mocks.MockGenericAdapter>;
+  mockGenericIntegratee: Promise<mocks.MockGenericIntegratee>;
   chainlinkPriceSources: Promise<{
     weth: mocks.MockChainlinkPriceSource;
     mln: mocks.MockChainlinkPriceSource;
@@ -70,6 +72,15 @@ export const deployMocks = describeDeployment<
   async kyberIntegratee(config) {
     return mocks.MockKyberIntegratee.deploy(config.deployer, []);
   },
+  async mockGenericAdapter(config, deployment) {
+    return mocks.MockGenericAdapter.deploy(
+      config.deployer,
+      await deployment.mockGenericIntegratee,
+    );
+  },
+  async mockGenericIntegratee(config) {
+    return mocks.MockGenericIntegratee.deploy(config.deployer);
+  },
   // Further config
   async makeEveryoneRich(config, deployment) {
     const accounts = (config.accounts ?? []).concat(config.deployer);
@@ -82,9 +93,10 @@ export const deployMocks = describeDeployment<
     const integratees = [
       await deployment.kyberIntegratee,
       await deployment.chaiIntegratee,
+      await deployment.mockGenericIntegratee,
     ];
 
-    // Make all accounts and integratees rich in WETH and tokens
+    // Make all accounts rich in WETH and tokens
     await Promise.all<any>([
       ...accounts.map((receiver) => {
         return makeTokenRich(Object.values(tokens), receiver);
