@@ -26,3 +26,6 @@ export { KyberAdapter } from '../codegen/KyberAdapter';
 // Fees
 export { ManagementFee } from '../codegen/ManagementFee';
 export { PerformanceFee } from '../codegen/PerformanceFee';
+
+// Policies
+export { AssetBlacklist } from '../codegen/AssetBlacklist';

@@ -126,11 +126,13 @@ async function snapshotWithMocksAndFund(provider: BuidlerProvider) {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { fundDeployer, policyManager },
+      deployment: { assetBlacklist, fundDeployer, policyManager },
     } = await provider.snapshot(snapshot);
 
     const getRegisteredPoliciesCall = policyManager.getRegisteredPolicies();
-    await expect(getRegisteredPoliciesCall).resolves.toMatchObject([]);
+    await expect(getRegisteredPoliciesCall).resolves.toMatchObject([
+      assetBlacklist.address,
+    ]);
 
     const getOwnerCall = policyManager.getOwner();
     await expect(getOwnerCall).resolves.toBe(await fundDeployer.getOwner());

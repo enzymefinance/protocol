@@ -3,6 +3,7 @@ import { describeDeployment } from '@melonproject/utils';
 import { BigNumberish, BytesLike, Signer } from 'ethers';
 import {
   AggregatedDerivativePriceFeed,
+  AssetBlacklist,
   ChaiAdapter,
   ChainlinkPriceFeed,
   ChaiPriceFeed,
@@ -72,6 +73,8 @@ export interface ReleaseDeploymentOutput {
   // Fees
   managementFee: Promise<ManagementFee>;
   performanceFee: Promise<PerformanceFee>;
+  // Policies
+  assetBlacklist: Promise<AssetBlacklist>;
 }
 
 export const deployRelease = describeDeployment<
@@ -196,6 +199,13 @@ export const deployRelease = describeDeployment<
   async performanceFee(config, deployment) {
     return PerformanceFee.deploy(config.deployer, await deployment.feeManager);
   },
+  // Policies
+  async assetBlacklist(config, deployment) {
+    return AssetBlacklist.deploy(
+      config.deployer,
+      await deployment.policyManager,
+    );
+  },
   // Post-deployment config
   async postDeployment(_config, deployment) {
     // Register fees
@@ -205,5 +215,10 @@ export const deployRelease = describeDeployment<
     ];
     const feeManager = await deployment.feeManager;
     await feeManager.registerFees(fees);
+
+    // Register policies
+    const policies = [await deployment.assetBlacklist];
+    const policyManager = await deployment.policyManager;
+    await policyManager.registerPolicies(policies);
   },
 });

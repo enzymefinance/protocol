@@ -2,6 +2,8 @@ import { AddressLike } from '@crestproject/crestproject';
 import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../../../common';
 
+// Policy Manager
+
 export const policyHooks = {
   None: 0,
   BuyShares: 1,
@@ -13,6 +15,13 @@ export const policyHookExecutionTimes = {
   Pre: 1,
   Post: 2,
 };
+
+export async function policyManagerConfigArgs(
+  policies: AddressLike[],
+  settingsData: BytesLike[],
+) {
+  return encodeArgs(['address[]', 'bytes[]'], [policies, settingsData]);
+}
 
 export function validateRulePreBuySharesArgs(
   buyer: AddressLike,
@@ -76,4 +85,10 @@ export function validateRulePostCoIArgs(
       outgoingAssetAmounts,
     ],
   );
+}
+
+// Policies
+
+export async function assetBlacklistArgs(assets: AddressLike[]) {
+  return encodeArgs(['address[]'], [assets]);
 }
