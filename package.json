@@ -19,7 +19,7 @@
   },
   "resolutions": {
     "@typescript-eslint/parser": "^4.1.0",
-    "prettier": "^2.1.1",
-    "typescript": "^4.0.2"
+    "prettier": "^2.1.2",
+    "typescript": "^4.0.3"
   }
 }
