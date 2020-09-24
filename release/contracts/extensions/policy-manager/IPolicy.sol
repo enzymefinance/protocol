@@ -19,5 +19,5 @@ interface IPolicy {
 
     function updateFundSettings(address, bytes calldata) external;
 
-    function validateRule(address, bytes calldata) external view returns (bool);
+    function validateRule(address, bytes calldata) external returns (bool);
 }

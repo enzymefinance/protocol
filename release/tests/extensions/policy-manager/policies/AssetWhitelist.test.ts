@@ -2,9 +2,9 @@ import { constants, utils } from 'ethers';
 import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';
-import { AssetBlacklist, ComptrollerLib } from '../../../../utils/contracts';
+import { AssetWhitelist, ComptrollerLib } from '../../../../utils/contracts';
 import {
-  assetBlacklistArgs,
+  assetWhitelistArgs,
   policyHooks,
   policyHookExecutionTimes,
   validateRulePreCoIArgs,
@@ -26,7 +26,7 @@ async function snapshotWithStandalonePolicy(provider: BuidlerProvider) {
   const { accounts, config } = await provider.snapshot(snapshot);
 
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
-  const assetBlacklist = await AssetBlacklist.deploy(
+  const assetWhitelist = await AssetWhitelist.deploy(
     config.deployer,
     EOAPolicyManager,
   );
@@ -39,11 +39,15 @@ async function snapshotWithStandalonePolicy(provider: BuidlerProvider) {
 
   return {
     accounts: remainingAccounts,
-    assetBlacklist,
-    blacklistedAssets: [randomAddress(), randomAddress()],
+    assetWhitelist,
     denominationAssetAddress,
     EOAPolicyManager,
     mockComptrollerProxy,
+    whitelistedAssets: [
+      denominationAssetAddress,
+      randomAddress(),
+      randomAddress(),
+    ],
   };
 }
 
@@ -52,41 +56,41 @@ async function snapshotWithConfiguredStandalonePolicy(
 ) {
   const {
     accounts,
-    assetBlacklist,
-    blacklistedAssets,
+    assetWhitelist,
+    whitelistedAssets,
     mockComptrollerProxy,
     EOAPolicyManager,
   } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-  const permissionedAssetBlacklist = assetBlacklist.connect(EOAPolicyManager);
-  const assetBlacklistConfig = await assetBlacklistArgs(blacklistedAssets);
-  await permissionedAssetBlacklist.addFundSettings(
+  const permissionedAssetWhitelist = assetWhitelist.connect(EOAPolicyManager);
+  const assetWhitelistConfig = await assetWhitelistArgs(whitelistedAssets);
+  await permissionedAssetWhitelist.addFundSettings(
     mockComptrollerProxy,
-    assetBlacklistConfig,
+    assetWhitelistConfig,
   );
 
   return {
     accounts,
-    assetBlacklist: permissionedAssetBlacklist,
-    blacklistedAssets,
+    assetWhitelist: permissionedAssetWhitelist,
     EOAPolicyManager,
     mockComptrollerProxy,
+    whitelistedAssets,
   };
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { policyManager, assetBlacklist },
+      deployment: { policyManager, assetWhitelist },
     } = await provider.snapshot(snapshot);
 
-    const getPolicyManagerCall = assetBlacklist.getPolicyManager();
+    const getPolicyManagerCall = assetWhitelist.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
 
-    const policyHookCall = assetBlacklist.policyHook();
+    const policyHookCall = assetWhitelist.policyHook();
     await expect(policyHookCall).resolves.toBe(policyHooks.CallOnIntegration);
 
-    const policyHookExecutionTimeCall = assetBlacklist.policyHookExecutionTime();
+    const policyHookExecutionTimeCall = assetWhitelist.policyHookExecutionTime();
     await expect(policyHookExecutionTimeCall).resolves.toBe(
       policyHookExecutionTimes.Pre,
     );
@@ -96,15 +100,15 @@ describe('constructor', () => {
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
     const {
-      assetBlacklist,
-      blacklistedAssets,
+      assetWhitelist,
       mockComptrollerProxy,
+      whitelistedAssets,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const assetBlacklistConfig = await assetBlacklistArgs(blacklistedAssets);
-    const addFundSettingsTx = assetBlacklist.addFundSettings(
+    const assetWhitelistConfig = await assetWhitelistArgs(whitelistedAssets);
+    const addFundSettingsTx = assetWhitelist.addFundSettings(
       mockComptrollerProxy,
-      assetBlacklistConfig,
+      assetWhitelistConfig,
     );
 
     await expect(addFundSettingsTx).rejects.toBeRevertedWith(
@@ -112,60 +116,59 @@ describe('addFundSettings', () => {
     );
   });
 
-  it('does not allow the denomination asset to be blacklisted', async () => {
+  it('requires that the denomination asset be whitelisted', async () => {
     const {
-      assetBlacklist,
-      blacklistedAssets,
+      assetWhitelist,
       denominationAssetAddress,
-      mockComptrollerProxy,
       EOAPolicyManager,
+      mockComptrollerProxy,
+      whitelistedAssets,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const assetBlacklistConfig = await assetBlacklistArgs([
-      ...blacklistedAssets,
-      denominationAssetAddress,
-    ]);
-    const addFundSettingsTx = assetBlacklist
+    const assetWhitelistConfig = await assetWhitelistArgs(
+      whitelistedAssets.filter((asset) => asset != denominationAssetAddress),
+    );
+    const addFundSettingsTx = assetWhitelist
       .connect(EOAPolicyManager)
-      .addFundSettings(mockComptrollerProxy, assetBlacklistConfig);
+      .addFundSettings(mockComptrollerProxy, assetWhitelistConfig);
 
     await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'cannot blacklist denominationAsset',
+      'must whitelist denominationAsset',
     );
   });
 
   it('sets initial config values for fund and fires events', async () => {
     const {
-      assetBlacklist,
-      blacklistedAssets,
+      assetWhitelist,
+      whitelistedAssets,
       mockComptrollerProxy,
       EOAPolicyManager,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const assetBlacklistConfig = await assetBlacklistArgs(blacklistedAssets);
-    const addFundSettingsTx = assetBlacklist
+    const assetWhitelistConfig = await assetWhitelistArgs(whitelistedAssets);
+    const addFundSettingsTx = assetWhitelist
       .connect(EOAPolicyManager)
-      .addFundSettings(mockComptrollerProxy, assetBlacklistConfig);
+      .addFundSettings(mockComptrollerProxy, assetWhitelistConfig);
 
-    // List should be the blacklisted assets
-    const getListCall = assetBlacklist.getList(mockComptrollerProxy);
-    await expect(getListCall).resolves.toMatchObject(blacklistedAssets);
+    // List should be the whitelisted assets
+    const getListCall = assetWhitelist.getList(mockComptrollerProxy);
+    await expect(getListCall).resolves.toMatchObject(whitelistedAssets);
 
     // Assert the AddressesAdded event was emitted
     await assertEvent(addFundSettingsTx, 'AddressesAdded', {
       comptrollerProxy: mockComptrollerProxy.address,
-      items: blacklistedAssets,
+      items: whitelistedAssets,
     });
   });
 });
 
 describe('updateFundSettings', () => {
   it('cannot be called', async () => {
-    const { assetBlacklist } = await provider.snapshot(
+    const { assetWhitelist } = await provider.snapshot(
       snapshotWithStandalonePolicy,
     );
 
-    const updateFundSettingsTx = assetBlacklist.updateFundSettings(
+    const updateFundSettingsTx = assetWhitelist.updateFundSettings(
       randomAddress(),
       '0x',
     );
@@ -176,30 +179,30 @@ describe('updateFundSettings', () => {
 });
 
 describe('validateRule', () => {
-  it('returns false if an asset is in the blacklist', async () => {
+  it('returns true if an asset is in the whitelist', async () => {
     const {
-      assetBlacklist,
-      blacklistedAssets,
+      assetWhitelist,
       mockComptrollerProxy,
+      whitelistedAssets,
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the incoming assets arg matters for this policy
     const preCoIArgs = await validateRulePreCoIArgs(
       utils.randomBytes(4),
       constants.AddressZero,
-      [blacklistedAssets[0]], // bad incoming asset
+      [whitelistedAssets[0]], // good incoming asset
       [],
       [],
       [],
     );
-    const validateRuleCall = assetBlacklist.validateRule
+    const validateRuleCall = assetWhitelist.validateRule
       .args(mockComptrollerProxy, preCoIArgs)
       .call();
-    await expect(validateRuleCall).resolves.toBeFalsy();
+    await expect(validateRuleCall).resolves.toBeTruthy();
   });
 
-  it('returns true if an asset is not in the blacklist', async () => {
-    const { assetBlacklist, mockComptrollerProxy } = await provider.snapshot(
+  it('returns false if an asset is not in the whitelist', async () => {
+    const { assetWhitelist, mockComptrollerProxy } = await provider.snapshot(
       snapshotWithConfiguredStandalonePolicy,
     );
 
@@ -207,14 +210,14 @@ describe('validateRule', () => {
     const preCoIArgs = await validateRulePreCoIArgs(
       utils.randomBytes(4),
       constants.AddressZero,
-      [randomAddress()], // good incoming asset
+      [randomAddress()], // bad incoming asset
       [],
       [],
       [],
     );
-    const validateRuleCall = assetBlacklist.validateRule
+    const validateRuleCall = assetWhitelist.validateRule
       .args(mockComptrollerProxy, preCoIArgs)
       .call();
-    await expect(validateRuleCall).resolves.toBeTruthy();
+    await expect(validateRuleCall).resolves.toBeFalsy();
   });
 });

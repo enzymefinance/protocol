@@ -89,6 +89,33 @@ export function validateRulePostCoIArgs(
 
 // Policies
 
+export async function adapterBlacklistArgs(adapters: AddressLike[]) {
+  return encodeArgs(['address[]'], [adapters]);
+}
+
+export async function adapterWhitelistArgs(adapters: AddressLike[]) {
+  return encodeArgs(['address[]'], [adapters]);
+}
+
 export async function assetBlacklistArgs(assets: AddressLike[]) {
   return encodeArgs(['address[]'], [assets]);
+}
+
+export async function assetWhitelistArgs(assets: AddressLike[]) {
+  return encodeArgs(['address[]'], [assets]);
+}
+
+export async function maxConcentrationArgs(maxConcentration: BigNumberish) {
+  return encodeArgs(['uint256'], [maxConcentration]);
+}
+
+export async function userWhitelistConfigArgs(users: AddressLike[]) {
+  return encodeArgs(['address[]'], [users]);
+}
+
+export async function userWhitelistUpdateArgs(
+  usersToAdd: AddressLike[],
+  usersToRemove: AddressLike[],
+) {
+  return encodeArgs(['address[]', 'address[]'], [usersToAdd, usersToRemove]);
 }

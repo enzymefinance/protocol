@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "./PolicyBase.sol";
+import "../../utils/PolicyBase.sol";
 
 /// @title CallOnIntegrationPreValidatePolicyMixin Contract
 /// @author Melon Council DAO <security@meloncoucil.io>

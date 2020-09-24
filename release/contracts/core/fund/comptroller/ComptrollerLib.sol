@@ -405,31 +405,47 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     ////////////////
 
     /// @notice Calculate the overall GAV of the fund
+    /// @param _useLiveRates True if should use live rates instead of canonical rates
     /// @return gav_ The fund GAV
+    /// @dev _useLiveRates is `false` within the core protocol, but plugins will often want to use
+    /// live rates, for example a MaxConcentration policy
     /// @dev Does not alter local state,
     /// but not a view because calls to price feeds can potentially update 3rd party state
-    function calcGav() public onlyDelegateCall returns (uint256) {
+    function calcGav(bool _useLiveRates) public onlyDelegateCall returns (uint256 gav_) {
         IVault vaultContract = IVault(vaultProxy);
         address[] memory assets = vaultContract.getTrackedAssets();
         uint256[] memory balances = vaultContract.getAssetBalances(assets);
 
-        uint256 gav;
         for (uint256 i; i < assets.length; i++) {
-            (uint256 assetGav, bool isValid) = IValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(
-                PRIMITIVE_PRICE_FEED,
-                DERIVATIVE_PRICE_FEED,
-                assets[i],
-                balances[i],
-                denominationAsset
-            );
+            uint256 assetGav;
+            bool isValid;
+            if (_useLiveRates) {
+                // TODO: make more efficient by ValueInterpreter returning multiple values
+                (assetGav, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcLiveAssetValue(
+                    PRIMITIVE_PRICE_FEED,
+                    DERIVATIVE_PRICE_FEED,
+                    assets[i],
+                    balances[i],
+                    denominationAsset
+                );
+            } else {
+                (assetGav, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+                    PRIMITIVE_PRICE_FEED,
+                    DERIVATIVE_PRICE_FEED,
+                    assets[i],
+                    balances[i],
+                    denominationAsset
+                );
+            }
+
             // TODO: more helpful revert string by converting/concatenating address?
+            // TODO: return validity instead of reverting?
             require(assetGav > 0 && isValid, "calcGav: No valid price available for asset");
 
-            gav = gav.add(assetGav);
+            gav_ = gav_.add(assetGav);
         }
 
-        return gav;
+        return gav_;
     }
 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
@@ -441,7 +457,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             return 10**uint256(IERC20Extended(denominationAsset).decimals());
         }
 
-        return calcGav().mul(SHARES_UNIT).div(sharesSupply);
+        return calcGav(false).mul(SHARES_UNIT).div(sharesSupply);
     }
 
     /// @notice Calculates the net value of 1 unit of shares in the fund's denomination asset

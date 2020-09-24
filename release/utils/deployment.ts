@@ -2,8 +2,11 @@ import { AddressLike } from '@crestproject/crestproject';
 import { describeDeployment } from '@melonproject/utils';
 import { BigNumberish, BytesLike, Signer } from 'ethers';
 import {
+  AdapterBlacklist,
+  AdapterWhitelist,
   AggregatedDerivativePriceFeed,
   AssetBlacklist,
+  AssetWhitelist,
   ChaiAdapter,
   ChainlinkPriceFeed,
   ChaiPriceFeed,
@@ -14,8 +17,10 @@ import {
   IntegrationManager,
   KyberAdapter,
   ManagementFee,
+  MaxConcentration,
   PerformanceFee,
   PolicyManager,
+  UserWhitelist,
   ValueInterpreter,
   VaultLib,
 } from './contracts';
@@ -74,7 +79,12 @@ export interface ReleaseDeploymentOutput {
   managementFee: Promise<ManagementFee>;
   performanceFee: Promise<PerformanceFee>;
   // Policies
+  adapterBlacklist: Promise<AdapterBlacklist>;
+  adapterWhitelist: Promise<AdapterWhitelist>;
   assetBlacklist: Promise<AssetBlacklist>;
+  assetWhitelist: Promise<AssetWhitelist>;
+  maxConcentration: Promise<MaxConcentration>;
+  userWhitelist: Promise<UserWhitelist>;
 }
 
 export const deployRelease = describeDeployment<
@@ -200,8 +210,38 @@ export const deployRelease = describeDeployment<
     return PerformanceFee.deploy(config.deployer, await deployment.feeManager);
   },
   // Policies
+  async adapterBlacklist(config, deployment) {
+    return AdapterBlacklist.deploy(
+      config.deployer,
+      await deployment.policyManager,
+    );
+  },
+  async adapterWhitelist(config, deployment) {
+    return AdapterWhitelist.deploy(
+      config.deployer,
+      await deployment.policyManager,
+    );
+  },
   async assetBlacklist(config, deployment) {
     return AssetBlacklist.deploy(
+      config.deployer,
+      await deployment.policyManager,
+    );
+  },
+  async assetWhitelist(config, deployment) {
+    return AssetWhitelist.deploy(
+      config.deployer,
+      await deployment.policyManager,
+    );
+  },
+  async maxConcentration(config, deployment) {
+    return MaxConcentration.deploy(
+      config.deployer,
+      await deployment.policyManager,
+    );
+  },
+  async userWhitelist(config, deployment) {
+    return UserWhitelist.deploy(
       config.deployer,
       await deployment.policyManager,
     );
@@ -217,7 +257,14 @@ export const deployRelease = describeDeployment<
     await feeManager.registerFees(fees);
 
     // Register policies
-    const policies = [await deployment.assetBlacklist];
+    const policies = [
+      await deployment.adapterBlacklist,
+      await deployment.adapterWhitelist,
+      await deployment.assetBlacklist,
+      await deployment.assetWhitelist,
+      await deployment.maxConcentration,
+      await deployment.userWhitelist,
+    ];
     const policyManager = await deployment.policyManager;
     await policyManager.registerPolicies(policies);
   },

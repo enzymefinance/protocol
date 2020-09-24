@@ -126,12 +126,26 @@ async function snapshotWithMocksAndFund(provider: BuidlerProvider) {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { assetBlacklist, fundDeployer, policyManager },
+      deployment: {
+        adapterBlacklist,
+        adapterWhitelist,
+        assetBlacklist,
+        assetWhitelist,
+        fundDeployer,
+        maxConcentration,
+        policyManager,
+        userWhitelist,
+      },
     } = await provider.snapshot(snapshot);
 
     const getRegisteredPoliciesCall = policyManager.getRegisteredPolicies();
     await expect(getRegisteredPoliciesCall).resolves.toMatchObject([
+      adapterBlacklist.address,
+      adapterWhitelist.address,
       assetBlacklist.address,
+      assetWhitelist.address,
+      maxConcentration.address,
+      userWhitelist.address,
     ]);
 
     const getOwnerCall = policyManager.getOwner();

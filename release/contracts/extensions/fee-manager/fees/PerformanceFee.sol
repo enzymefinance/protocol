@@ -122,7 +122,7 @@ contract PerformanceFee is ContinuousFeeBase {
         int256 settlementSharesDue = __settleAndUpdatePerformance(
             _comptrollerProxy,
             sharesSupply,
-            comptrollerContract.calcGav()
+            comptrollerContract.calcGav(false)
         );
         if (settlementSharesDue == 0) {
             return (IFeeManager.SettlementType.None, address(0), 0);

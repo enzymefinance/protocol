@@ -28,4 +28,9 @@ export { ManagementFee } from '../codegen/ManagementFee';
 export { PerformanceFee } from '../codegen/PerformanceFee';
 
 // Policies
+export { AdapterBlacklist } from '../codegen/AdapterBlacklist';
+export { AdapterWhitelist } from '../codegen/AdapterWhitelist';
 export { AssetBlacklist } from '../codegen/AssetBlacklist';
+export { AssetWhitelist } from '../codegen/AssetWhitelist';
+export { MaxConcentration } from '../codegen/MaxConcentration';
+export { UserWhitelist } from '../codegen/UserWhitelist';
