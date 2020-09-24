@@ -84,6 +84,8 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
             bytes memory integrationData
         ) = __decodeCallOnIntegrationArgs(_callArgs);
 
+        require(adapterIsRegistered(adapter), "callOnIntegration: adapter is not registered");
+
         (
             address[] memory incomingAssets,
             uint256[] memory preCallIncomingAssetBalances,
@@ -380,39 +382,47 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
     // INTEGRATIONS REGISTRY //
     ///////////////////////////
 
-    /// @notice Remove an integration adapter from the Registry
-    /// @param _adapter The address of the adapter to remove
-    function deregisterAdapter(address _adapter) external onlyFundDeployerOwner {
-        require(adapterIsRegistered(_adapter), "deregisterAdapter: Adapter already disabled");
+    /// @notice Remove integration adapters from the list of registered adapters
+    /// @param _adapters Addresses of adapters to be deregistered
+    function deregisterAdapters(address[] calldata _adapters) external onlyFundDeployerOwner {
+        require(_adapters.length > 0, "deregisterAdapters: _adapters cannot be empty");
 
-        registeredAdapters.remove(_adapter);
+        for (uint256 i; i < _adapters.length; i++) {
+            require(
+                adapterIsRegistered(_adapters[i]),
+                "deregisterAdapters: adapter is not registered"
+            );
 
-        emit AdapterDeregistered(_adapter, IIntegrationAdapter(_adapter).identifier());
+            registeredAdapters.remove(_adapters[i]);
+
+            emit AdapterDeregistered(_adapters[i], IIntegrationAdapter(_adapters[i]).identifier());
+        }
     }
 
-    /// @notice Register an integration adapter with its associated external contract and type
-    /// @param _adapter Address of integration adapter contract
-    function registerAdapter(address _adapter) external onlyFundDeployerOwner {
-        require(_adapter != address(0), "registerAdapter: _adapter cannot be empty");
-        require(!adapterIsRegistered(_adapter), "registerAdapter: Adapter already registered");
+    /// @notice Add integration adapters to the list of registered adapters
+    /// @param _adapters Addresses of adapters to be registered
+    function registerAdapters(address[] calldata _adapters) external onlyFundDeployerOwner {
+        require(_adapters.length > 0, "registerAdapters: _adapters cannot be empty");
 
-        // Plugins should only have their latest version registered
-        string memory identifier = IIntegrationAdapter(_adapter).identifier();
-        require(
-            bytes(identifier).length != 0,
-            "registerAdapter: Identifier must be defined in the adapter"
-        );
+        for (uint256 i; i < _adapters.length; i++) {
+            require(_adapters[i] != address(0), "registerAdapters: adapter cannot be empty");
 
-        registeredAdapters.add(_adapter);
+            require(
+                !adapterIsRegistered(_adapters[i]),
+                "registerAdapters: adapter already registered"
+            );
 
-        emit AdapterRegistered(_adapter, identifier);
+            registeredAdapters.add(_adapters[i]);
+
+            emit AdapterRegistered(_adapters[i], IIntegrationAdapter(_adapters[i]).identifier());
+        }
     }
 
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Check if an integration adapter is on the Registry
+    /// @notice Check if an integration adapter is registered
     /// @param _adapter The adapter to check
     /// @return True if the adapter is registered
     function adapterIsRegistered(address _adapter) public view returns (bool) {

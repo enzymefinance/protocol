@@ -66,9 +66,9 @@ async function snapshotWithMocks(provider: BuidlerProvider) {
 
   // Register all mock policies and the mock generic adapter
   await deployment.policyManager.registerPolicies(policies);
-  await deployment.integrationManager.registerAdapter(
+  await deployment.integrationManager.registerAdapters([
     deployment.mockGenericAdapter,
-  );
+  ]);
 
   return {
     accounts,

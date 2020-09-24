@@ -248,6 +248,14 @@ export const deployRelease = describeDeployment<
   },
   // Post-deployment config
   async postDeployment(_config, deployment) {
+    // Register adapters
+    const adapters = [
+      await deployment.chaiAdapter,
+      await deployment.kyberAdapter,
+    ];
+    const integrationManager = await deployment.integrationManager;
+    await integrationManager.registerAdapters(adapters);
+
     // Register fees
     const fees = [
       await deployment.managementFee,
