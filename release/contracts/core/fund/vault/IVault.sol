@@ -38,6 +38,8 @@ interface IVault is IProxiableVault {
 
     function getTrackedAssets() external view returns (address[] memory);
 
+    function isTrackedAsset(address) external view returns (bool);
+
     function mintShares(address, uint256) external;
 
     function removeTrackedAsset(address) external;

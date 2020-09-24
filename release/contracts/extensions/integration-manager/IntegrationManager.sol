@@ -187,6 +187,8 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
             incomingAssets_.isUniqueSet(),
             "__preProcessCoI: duplicate incoming asset detected"
         );
+
+        preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
         for (uint256 i = 0; i < incomingAssets_.length; i++) {
             require(
                 incomingAssets_[i] != address(0),
@@ -196,7 +198,15 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
                 IComptroller(msg.sender).isReceivableAsset(incomingAssets_[i]),
                 "__preProcessCoI: non-receivable asset detected"
             );
-            // Could also lookup balances here, but preference is to fail fast
+
+            // Get pre-call balance of each incoming asset.
+            // If the asset is not tracked by the fund, allow the balance to default to 0.
+            if (IVault(_vaultProxy).isTrackedAsset(incomingAssets_[i])) {
+                preCallIncomingAssetBalances_[i] = __getVaultAssetBalance(
+                    _vaultProxy,
+                    incomingAssets_[i]
+                );
+            }
         }
 
         // Pre-validate against fund policies
@@ -214,15 +224,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
             )
         );
 
-        // Get pre-call balances of relevant assets and grant approvals to adapter
-        preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
-        for (uint256 i = 0; i < incomingAssets_.length; i++) {
-            preCallIncomingAssetBalances_[i] = __getVaultAssetBalance(
-                _vaultProxy,
-                incomingAssets_[i]
-            );
-        }
-
+        // Get pre-call balances of spend assets and grant approvals to adapter
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
         for (uint256 i = 0; i < spendAssets_.length; i++) {
             require(spendAssets_[i] != address(0), "__preProcessCoI: empty spendAsset detected");

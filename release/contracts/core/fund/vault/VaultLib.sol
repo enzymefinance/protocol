@@ -126,7 +126,7 @@ contract VaultLib is VaultLibBase1, IVault {
         emit AssetWithdrawn(_asset, _target, _amount);
     }
 
-    function isTrackedAsset(address _asset) public view returns (bool) {
+    function isTrackedAsset(address _asset) public override view returns (bool) {
         return assetToIsTracked[_asset];
     }
 

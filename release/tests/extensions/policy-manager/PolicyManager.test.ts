@@ -335,6 +335,11 @@ describe('validatePolicies', () => {
     const spendAssetAmounts = [utils.parseEther('1'), utils.parseEther('1')];
     const incomingAssets = [dai, mln];
     const minIncomingAssetAmounts = [1234, 5678];
+
+    // Since `mockGenericSwap` seeds funds by sending directly to a vault,
+    // the incoming assets are not yet tracked, meaning the final token balance
+    // will be the reported incoming asset amount
+    // (rather than the diff in token balances from start to finish)
     const actualIncomingAssetAmounts = [
       utils.parseEther('10'),
       utils.parseEther('2'),
@@ -370,7 +375,6 @@ describe('validatePolicies', () => {
     // Outgoing assets are the spend assets that are not also incoming assets
     const outgoingAssets = [weth];
     const outgoingAssetAmounts = [utils.parseEther('1')];
-    const incomingAssetAmounts = [utils.parseEther('9'), utils.parseEther('2')];
 
     expect(mockPostCoIPolicy.validateRule.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
@@ -378,7 +382,7 @@ describe('validatePolicies', () => {
         mockGenericSwapASelector,
         mockGenericAdapter,
         incomingAssets,
-        incomingAssetAmounts,
+        actualIncomingAssetAmounts,
         outgoingAssets,
         outgoingAssetAmounts,
       ),
