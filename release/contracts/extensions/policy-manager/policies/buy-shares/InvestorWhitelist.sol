@@ -4,10 +4,10 @@ pragma solidity 0.6.8;
 import "../utils/AddressListPolicyMixin.sol";
 import "./utils/BuySharesPreValidatePolicyBase.sol";
 
-/// @title UserWhitelist Contract
+/// @title InvestorWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A whitelist of users who can buy shares in a fund
-contract UserWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin {
+/// @notice A whitelist of investors who can buy shares in a fund
+contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Add the initial policy settings for a fund
@@ -24,7 +24,7 @@ contract UserWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin
     /// @notice Provides a constant string identifier for a policy
     /// @return identifier_ The identifer string
     function identifier() external override pure returns (string memory identifier_) {
-        return "USER_WHITELIST";
+        return "INVESTOR_WHITELIST";
     }
 
     /// @notice Update the policy settings for a fund

@@ -33,4 +33,4 @@ export { AdapterWhitelist } from '../codegen/AdapterWhitelist';
 export { AssetBlacklist } from '../codegen/AssetBlacklist';
 export { AssetWhitelist } from '../codegen/AssetWhitelist';
 export { MaxConcentration } from '../codegen/MaxConcentration';
-export { UserWhitelist } from '../codegen/UserWhitelist';
+export { InvestorWhitelist } from '../codegen/InvestorWhitelist';

@@ -134,7 +134,7 @@ describe('constructor', () => {
         fundDeployer,
         maxConcentration,
         policyManager,
-        userWhitelist,
+        investorWhitelist,
       },
     } = await provider.snapshot(snapshot);
 
@@ -145,7 +145,7 @@ describe('constructor', () => {
       assetBlacklist.address,
       assetWhitelist.address,
       maxConcentration.address,
-      userWhitelist.address,
+      investorWhitelist.address,
     ]);
 
     const getOwnerCall = policyManager.getOwner();

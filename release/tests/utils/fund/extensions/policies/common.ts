@@ -109,13 +109,16 @@ export async function maxConcentrationArgs(maxConcentration: BigNumberish) {
   return encodeArgs(['uint256'], [maxConcentration]);
 }
 
-export async function userWhitelistConfigArgs(users: AddressLike[]) {
-  return encodeArgs(['address[]'], [users]);
+export async function investorWhitelistConfigArgs(investors: AddressLike[]) {
+  return encodeArgs(['address[]'], [investors]);
 }
 
-export async function userWhitelistUpdateArgs(
-  usersToAdd: AddressLike[],
-  usersToRemove: AddressLike[],
+export async function investorWhitelistUpdateArgs(
+  investorsToAdd: AddressLike[],
+  investorsToRemove: AddressLike[],
 ) {
-  return encodeArgs(['address[]', 'address[]'], [usersToAdd, usersToRemove]);
+  return encodeArgs(
+    ['address[]', 'address[]'],
+    [investorsToAdd, investorsToRemove],
+  );
 }

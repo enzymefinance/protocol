@@ -20,7 +20,7 @@ import {
   MaxConcentration,
   PerformanceFee,
   PolicyManager,
-  UserWhitelist,
+  InvestorWhitelist,
   ValueInterpreter,
   VaultLib,
 } from './contracts';
@@ -84,7 +84,7 @@ export interface ReleaseDeploymentOutput {
   assetBlacklist: Promise<AssetBlacklist>;
   assetWhitelist: Promise<AssetWhitelist>;
   maxConcentration: Promise<MaxConcentration>;
-  userWhitelist: Promise<UserWhitelist>;
+  investorWhitelist: Promise<InvestorWhitelist>;
 }
 
 export const deployRelease = describeDeployment<
@@ -240,8 +240,8 @@ export const deployRelease = describeDeployment<
       await deployment.policyManager,
     );
   },
-  async userWhitelist(config, deployment) {
-    return UserWhitelist.deploy(
+  async investorWhitelist(config, deployment) {
+    return InvestorWhitelist.deploy(
       config.deployer,
       await deployment.policyManager,
     );
@@ -263,7 +263,7 @@ export const deployRelease = describeDeployment<
       await deployment.assetBlacklist,
       await deployment.assetWhitelist,
       await deployment.maxConcentration,
-      await deployment.userWhitelist,
+      await deployment.investorWhitelist,
     ];
     const policyManager = await deployment.policyManager;
     await policyManager.registerPolicies(policies);
