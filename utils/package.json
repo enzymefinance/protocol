@@ -40,7 +40,7 @@
     "codegen": "crestproject codegen \"artifacts/*.json\" codegen",
     "compile": "buidler compile",
     "build": "yarn compile && yarn codegen && tsdx build --entry index.ts",
-    "test": "tsdx test",
+    "test": "TS_JEST_DISABLE_VER_CHECKER=true tsdx test",
     "lint": "yarn lint:prettier && yarn lint:solhint",
     "lint:prettier": "prettier --list-different \"*.{sol,ts}\" \"{tests,contracts,utils}/{*,**/*}.{sol,ts}\"",
     "lint:solhint": "solhint --max-warnings 0 \"contracts/{*,**/*}.sol\"",
@@ -48,7 +48,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@crestproject/crestproject": "^0.0.48",
+    "@crestproject/crestproject": "^0.0.50",
     "ethers": "^5.0.14"
   },
   "devDependencies": {
@@ -59,7 +59,7 @@
     "prettier": "^2.1.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.57",
     "rimraf": "^3.0.2",
-    "solhint": "^3.1.0",
+    "solhint": "^3.2.1",
     "tsdx": "^0.14.0",
     "tslib": "^2.0.1",
     "typescript": "^4.0.3"
