@@ -11,6 +11,10 @@ export const callOnIntegrationFragment = utils.FunctionFragment.fromString(
   'callOnIntegration(address,bytes)',
 );
 
+export const addTrackedAssetsFragment = utils.FunctionFragment.fromString(
+  'addTrackedAssets(address,bytes,bytes)',
+);
+
 export const lendFragment = utils.FunctionFragment.fromString(
   'lend(address,bytes,bytes)',
 );
@@ -24,6 +28,8 @@ export const takeOrderFragment = utils.FunctionFragment.fromString(
 );
 
 export const callOnIntegrationSelector = sighash(callOnIntegrationFragment);
+
+export const addTrackedAssetsSelector = sighash(addTrackedAssetsFragment);
 
 export const takeOrderSelector = sighash(takeOrderFragment);
 

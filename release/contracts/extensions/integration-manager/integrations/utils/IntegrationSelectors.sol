@@ -6,6 +6,10 @@ pragma solidity 0.6.8;
 /// @notice Selectors for integration actions
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
 contract IntegrationSelectors {
+    bytes4 public constant ADD_TRACKED_ASSETS_SELECTOR = bytes4(
+        keccak256("addTrackedAssets(address,bytes,bytes)")
+    );
+
     // Trading
     bytes4 public constant TAKE_ORDER_SELECTOR = bytes4(
         keccak256("takeOrder(address,bytes,bytes)")

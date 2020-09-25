@@ -21,6 +21,7 @@ import {
   PerformanceFee,
   PolicyManager,
   InvestorWhitelist,
+  TrackedAssetsAdapter,
   ValueInterpreter,
   VaultLib,
 } from './contracts';
@@ -75,6 +76,7 @@ export interface ReleaseDeploymentOutput {
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
+  trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   // Fees
   managementFee: Promise<ManagementFee>;
   performanceFee: Promise<PerformanceFee>;
@@ -202,6 +204,12 @@ export const deployRelease = describeDeployment<
       config.weth,
     );
   },
+  async trackedAssetsAdapter(config, deployment) {
+    return TrackedAssetsAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+    );
+  },
   // Fees
   async managementFee(config, deployment) {
     return ManagementFee.deploy(config.deployer, await deployment.feeManager);
@@ -252,6 +260,7 @@ export const deployRelease = describeDeployment<
     const adapters = [
       await deployment.chaiAdapter,
       await deployment.kyberAdapter,
+      await deployment.trackedAssetsAdapter,
     ];
     const integrationManager = await deployment.integrationManager;
     await integrationManager.registerAdapters(adapters);
