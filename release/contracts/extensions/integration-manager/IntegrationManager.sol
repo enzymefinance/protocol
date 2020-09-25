@@ -312,11 +312,10 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
         // Calculate and validate incoming asset amounts
         incomingAssetAmounts_ = new uint256[](_incomingAssets.length);
         for (uint256 i = 0; i < _incomingAssets.length; i++) {
-            // Allow balanceDiff to be 0, in case of an airdrop or token migration, for example
             uint256 newBalance = __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]);
             require(
-                newBalance >= _preCallIncomingAssetBalances[i],
-                "__reconcileCoIAssets: incoming asset balance cannot decrease"
+                newBalance > _preCallIncomingAssetBalances[i],
+                "__reconcileCoIAssets: incoming asset balance must increase"
             );
 
             uint256 balanceDiff = newBalance.sub(_preCallIncomingAssetBalances[i]);

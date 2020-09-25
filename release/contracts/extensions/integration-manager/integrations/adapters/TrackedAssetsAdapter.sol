@@ -10,8 +10,8 @@ contract TrackedAssetsAdapter is AdapterBase {
     constructor(address _integrationManager) public AdapterBase(_integrationManager) {}
 
     /// @notice Provides a constant string identifier for an adapter
-    /// @return An identifier string
-    function identifier() external override pure returns (string memory) {
+    /// @return identifier_ The identifer string
+    function identifier() external override pure returns (string memory identifier_) {
         return "TRACKED_ASSETS";
     }
 
@@ -39,6 +39,8 @@ contract TrackedAssetsAdapter is AdapterBase {
         } else {
             revert("parseIncomingAssets: _selector invalid");
         }
+
+        return (spendAssets_, spendAssetAmounts_, incomingAssets_, minIncomingAssetAmounts_);
     }
 
     /// @notice Add multiple assets to the Vault's owned assets
