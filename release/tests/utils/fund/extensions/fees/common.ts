@@ -1,5 +1,5 @@
 import { AddressLike } from '@crestproject/crestproject';
-import { BigNumberish, utils } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 import { encodeArgs, sighash } from '../../../common';
 
 export const feeHooks = {
@@ -25,6 +25,20 @@ export function settleBuySharesArgs(
     ['address', 'uint256', 'uint256'],
     [buyer, investmentAmount, sharesBought],
   );
+}
+
+export function sharesDueWithInflation({
+  rawSharesDue,
+  sharesSupply,
+}: {
+  rawSharesDue: BigNumber;
+  sharesSupply: BigNumber;
+}) {
+  if (rawSharesDue == BigNumber.from(0) || sharesSupply == BigNumber.from(0)) {
+    return 0;
+  }
+
+  return rawSharesDue.mul(sharesSupply).div(sharesSupply.sub(rawSharesDue));
 }
 
 export const settleContinuousFeesFragment = utils.FunctionFragment.fromString(

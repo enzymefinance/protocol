@@ -4,12 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../core/fund/vault/VaultLib.sol";
+import "../../utils/SharesInflationMixin.sol";
 import "./utils/ContinuousFeeBase.sol";
 
 /// @title PerformanceFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Calculates the performance fee for a particular fund
-contract PerformanceFee is ContinuousFeeBase {
+contract PerformanceFee is ContinuousFeeBase, SharesInflationMixin {
     event ActivatedForFund(address indexed comptrollerProxy);
 
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate, uint256 period);
@@ -203,7 +204,7 @@ contract PerformanceFee is ContinuousFeeBase {
         } else {
             // TODO: This is where we can implement a separate formula for deflating on negative shares owed.
             // If we use the same formula, change the names-spacing to indicate signed int math.
-            return __calcSharesDueWithInflation(rawSharesDue, int256(_sharesSupply));
+            return __calcSharesDueWithDeflation(rawSharesDue, int256(_sharesSupply));
         }
     }
 

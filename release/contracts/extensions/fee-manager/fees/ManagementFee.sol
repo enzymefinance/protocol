@@ -4,12 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../core/fund/vault/VaultLib.sol";
+import "../../utils/SharesInflationMixin.sol";
 import "./utils/ContinuousFeeBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Calculates the management fee for a particular fund
-contract ManagementFee is ContinuousFeeBase {
+contract ManagementFee is ContinuousFeeBase, SharesInflationMixin {
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
 
     event Settled(address indexed comptrollerProxy, uint256 sharesQuantity, uint256 prevSettled);
@@ -66,7 +67,7 @@ contract ManagementFee is ContinuousFeeBase {
         )
     {
         uint256 prevSettled = comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled;
-        if (prevSettled == now) {
+        if (prevSettled == block.timestamp) {
             return (IFeeManager.SettlementType.None, address(0), 0);
         }
 
@@ -80,7 +81,7 @@ contract ManagementFee is ContinuousFeeBase {
         // Must settle even when no shares are due, for the case that settlement is being
         // done before the first purchase of shares into a fund
         // (i.e., the only time when shares due would be 0)
-        comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = now;
+        comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
         emit Settled(_comptrollerProxy, sharesDue_, prevSettled);
 
         if (sharesDue_ == 0) {
@@ -104,7 +105,7 @@ contract ManagementFee is ContinuousFeeBase {
 
         return
             __calcSharesDueWithInflation(
-                yearlySharesDueRate.mul(now.sub(_prevSettled)).div(RATE_PERIOD),
+                yearlySharesDueRate.mul(block.timestamp.sub(_prevSettled)).div(RATE_PERIOD),
                 _sharesQuantity
             );
     }
