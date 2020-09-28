@@ -8,9 +8,8 @@ import "./IDispatcher.sol";
 
 /// @title Dispatcher Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice The top-level contract linking multiple releases of Melon infrastructure.
-/// It regulates migrations between fund "FundDeployer" instances (one per release),
-/// and provides access control constants for making changes to infrastructural config.
+/// @notice The top-level contract linking multiple releases of Melon infrastructure,
+/// regulating the deployment of new VaultProxy instances and the migration of funds between releases.
 contract Dispatcher is IDispatcher {
     // TODO: Confirm whether low level calls to non-existent functions succeed or fail (and especially that they fail silently)
 
