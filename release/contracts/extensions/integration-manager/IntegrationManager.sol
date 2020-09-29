@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../core/fund-deployer/utils/FundDeployerOwnable.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
+import "../utils/FundDeployerOwnerMixin.sol";
 import "./IIntegrationAdapter.sol";
 
 /// @title IntegrationManager
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Extension to handle DeFi integration actions for funds
-contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
+contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
@@ -43,7 +43,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnable {
 
     constructor(address _fundDeployer, address _policyManager)
         public
-        FundDeployerOwnable(_fundDeployer)
+        FundDeployerOwnerMixin(_fundDeployer)
     {
         POLICY_MANAGER = _policyManager;
     }

@@ -29,7 +29,6 @@ import {
 export interface ReleaseDeploymentConfig {
   deployer: Signer;
   dispatcher: AddressLike;
-  mtc: AddressLike;
   mgm: AddressLike;
   weth: AddressLike;
   mln: AddressLike;
@@ -118,7 +117,6 @@ export const deployRelease = describeDeployment<
       config.dispatcher,
       await deployment.engine,
       await deployment.vaultLib,
-      config.mtc,
       config.registeredVaultCalls.contracts,
       config.registeredVaultCalls.selectors,
     );
@@ -130,8 +128,8 @@ export const deployRelease = describeDeployment<
   async engine(config, deployment) {
     return Engine.deploy(
       config.deployer,
+      config.dispatcher,
       config.mgm,
-      config.mtc,
       config.mln,
       config.weth,
       await deployment.chainlinkPriceFeed,

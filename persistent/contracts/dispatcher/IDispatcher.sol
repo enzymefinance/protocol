@@ -6,6 +6,8 @@ pragma solidity 0.6.8;
 interface IDispatcher {
     function cancelMigration(address, bool) external;
 
+    function claimOwnership() external;
+
     function deployVaultProxy(
         address,
         address,
@@ -17,7 +19,7 @@ interface IDispatcher {
 
     function getCurrentFundDeployer() external view returns (address);
 
-    function getMGM() external view returns (address);
+    function getFundDeployerForFund(address) external view returns (address);
 
     function getMigrationRequestDetailsForFund(address)
         external
@@ -29,11 +31,15 @@ interface IDispatcher {
             uint256
         );
 
-    function getMTC() external view returns (address);
+    function getNominatedOwner() external view returns (address);
 
-    function getFundDeployerForFund(address) external view returns (address);
+    function getOwner() external view returns (address);
+
+    function removeNominatedOwner() external;
 
     function setCurrentFundDeployer(address) external;
+
+    function setNominatedOwner(address) external;
 
     function signalMigration(
         address,

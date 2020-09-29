@@ -7,8 +7,6 @@ import "../../infrastructure/engine/AmguConsumer.sol";
 import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
 import "../fund/vault/IVault.sol";
-import "./utils/MelonCouncilOwnable.sol";
-import "./utils/MigrationHookHandlerMixin.sol";
 import "./IFundDeployer.sol";
 
 /// @title FundDeployer Contract
@@ -16,12 +14,7 @@ import "./IFundDeployer.sol";
 /// @notice The top-level contract of a Melon Protocol release that
 /// coordinates fund deployment and fund migration. It serves as the top-level contract
 /// for a release, and is thus also deferred to for contract ownership access control.
-contract FundDeployer is
-    IFundDeployer,
-    MigrationHookHandlerMixin,
-    MelonCouncilOwnable,
-    AmguConsumer
-{
+contract FundDeployer is IFundDeployer, AmguConsumer {
     event ComptrollerProxyDeployed(address deployer, address comptrollerProxy);
 
     event NewFundDeployed(
@@ -35,11 +28,14 @@ contract FundDeployer is
         bytes policyManagerConfig
     );
 
+    event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
+
     event VaultCallDeregistered(address indexed contractAddress, bytes4 selector);
 
     event VaultCallRegistered(address indexed contractAddress, bytes4 selector);
 
     // Constants
+    address private immutable CREATOR;
     address private immutable DISPATCHER;
     address private immutable VAULT_LIB;
 
@@ -47,19 +43,25 @@ contract FundDeployer is
     address private comptrollerLib;
 
     // Storage
+    ReleaseStatus private releaseStatus;
     mapping(address => mapping(bytes4 => bool)) private contractToSelectorToIsRegisteredVaultCall;
+
+    modifier onlyOwner() {
+        require(msg.sender == getOwner(), "Only the contract owner can call this function");
+        _;
+    }
 
     constructor(
         address _dispatcher,
         address _engine,
         address _vaultLib,
-        address _mtc,
         address[] memory _vaultCallContracts,
         bytes4[] memory _vaultCallSelectors
-    ) public AmguConsumer(_engine) MelonCouncilOwnable(_mtc) {
+    ) public AmguConsumer(_engine) {
         if (_vaultCallContracts.length > 0) {
             __registerVaultCalls(_vaultCallContracts, _vaultCallSelectors);
         }
+        CREATOR = msg.sender;
         DISPATCHER = _dispatcher;
         VAULT_LIB = _vaultLib;
     }
@@ -75,6 +77,37 @@ contract FundDeployer is
         );
 
         comptrollerLib = _comptrollerLib;
+    }
+
+    /// @notice Sets the status of the protocol to a new state
+    /// @param _nextStatus The next status state to set
+    function setReleaseStatus(ReleaseStatus _nextStatus) external {
+        require(
+            msg.sender == IDispatcher(DISPATCHER).getOwner(),
+            "setReleaseStatus: Only the Dispatcher owner can call this function"
+        );
+        require(
+            _nextStatus != ReleaseStatus.PreLaunch,
+            "setReleaseStatus: Cannot return to PreLaunch status"
+        );
+
+        ReleaseStatus prevStatus = releaseStatus;
+        require(_nextStatus != prevStatus, "setReleaseStatus: _nextStatus is the current status");
+
+        releaseStatus = _nextStatus;
+
+        emit ReleaseStatusSet(prevStatus, _nextStatus);
+    }
+
+    /// @notice Gets the current owner of the contract
+    /// @return owner_ The contract owner address
+    /// @dev Dynamically gets the owner based on the Protocol status
+    function getOwner() public override view returns (address owner_) {
+        if (releaseStatus == ReleaseStatus.PreLaunch) {
+            return CREATOR;
+        }
+
+        return IDispatcher(DISPATCHER).getOwner();
     }
 
     /////////////////////
@@ -121,8 +154,39 @@ contract FundDeployer is
         );
     }
 
-    // TODO: do we want to do something when a migration is signaled, or only when it is executed?
+    function __deployComptrollerProxy() private returns (address comptrollerProxy_) {
+        bytes memory constructData = abi.encodeWithSelector(IComptroller.init.selector, "");
+        comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
+
+        emit ComptrollerProxyDeployed(msg.sender, comptrollerProxy_);
+    }
+
+    ////////////////////
+    // FUND MIGRATION //
+    ////////////////////
+
+    function postCancelMigrationOriginHook(
+        address _vaultProxy,
+        address _nextRelease,
+        address _nextAccessor,
+        address _nextVaultLib,
+        uint256 _signaledTimestamp
+    ) external virtual override {
+        // UNIMPLEMENTED
+    }
+
+    function postCancelMigrationTargetHook(
+        address _vaultProxy,
+        address _prevRelease,
+        address _nextAccessor,
+        address _nextVaultLib,
+        uint256 _signaledTimestamp
+    ) external virtual override {
+        // UNIMPLEMENTED
+    }
+
     /// @dev Must use pre-migration hook to be able to know the ComptrollerProxy (prev accessor)
+    // TODO: need to update hooks to include prev accessor?
     function preMigrateOriginHook(
         address _vaultProxy,
         address,
@@ -144,11 +208,32 @@ contract FundDeployer is
         // TODO: need event?
     }
 
-    function __deployComptrollerProxy() private returns (address comptrollerProxy_) {
-        bytes memory constructData = abi.encodeWithSelector(IComptroller.init.selector, "");
-        comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
+    function postMigrateOriginHook(
+        address _vaultProxy,
+        address _nextRelease,
+        address _nextAccessor,
+        address _nextVaultLib,
+        uint256 _signaledTimestamp
+    ) external virtual override {
+        // UNIMPLEMENTED
+    }
 
-        emit ComptrollerProxyDeployed(msg.sender, comptrollerProxy_);
+    function preSignalMigrationOriginHook(
+        address _vaultProxy,
+        address _nextRelease,
+        address _nextAccessor,
+        address _nextVaultLib
+    ) external virtual override {
+        // UNIMPLEMENTED
+    }
+
+    function postSignalMigrationOriginHook(
+        address _vaultProxy,
+        address _nextRelease,
+        address _nextAccessor,
+        address _nextVaultLib
+    ) external virtual override {
+        // UNIMPLEMENTED
     }
 
     //////////////
@@ -214,8 +299,16 @@ contract FundDeployer is
         return comptrollerLib;
     }
 
+    function getCreator() external view returns (address) {
+        return CREATOR;
+    }
+
     function getDispatcher() external view returns (address) {
         return DISPATCHER;
+    }
+
+    function getReleaseStatus() external view returns (ReleaseStatus status_) {
+        return releaseStatus;
     }
 
     function getVaultLib() external view returns (address) {

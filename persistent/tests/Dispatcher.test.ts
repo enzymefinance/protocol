@@ -1,5 +1,3 @@
-// TODO: All hooks are currently unimplemented and thus failing
-
 import { constants, BigNumber } from 'ethers';
 import {
   BuidlerProvider,
@@ -18,7 +16,19 @@ import {
 } from '../';
 
 async function snapshot(provider: BuidlerProvider) {
-  const { deployment, config } = await defaultTestDeployment(provider);
+  const { accounts, config, deployment } = await defaultTestDeployment(
+    provider,
+  );
+
+  return {
+    accounts,
+    config,
+    deployment,
+  };
+}
+
+async function snapshotWithMocks(provider: BuidlerProvider) {
+  const { accounts, config, deployment } = await snapshot(provider);
 
   const mockVaultLib1 = await MockVaultLib.deploy(config.deployer);
   const mockVaultLib2 = await MockVaultLib.deploy(config.deployer);
@@ -36,29 +46,27 @@ async function snapshot(provider: BuidlerProvider) {
   await mockFundDeployer2.postCancelMigrationTargetHook.returns(undefined);
 
   return {
-    deployment,
+    accounts,
     config,
-    mockVaultLib1,
-    mockVaultLib2,
+    deployment,
     mockFundDeployer1,
     mockFundDeployer2,
+    mockVaultLib1,
+    mockVaultLib2,
   };
 }
 
 async function ensureFundDeployer({
   dispatcher,
-  mtc,
   fundDeployer,
 }: {
   dispatcher: Dispatcher;
-  mtc: string;
   fundDeployer: AddressLike;
 }) {
   const currentDeployer = await dispatcher.getCurrentFundDeployer();
   const nextDeployerAddress = await resolveAddress(fundDeployer);
   if (currentDeployer != nextDeployerAddress) {
-    const mtcDispatcher = dispatcher.connect(provider.getSigner(mtc));
-    const fundDeployerTx = mtcDispatcher.setCurrentFundDeployer(
+    const fundDeployerTx = dispatcher.setCurrentFundDeployer(
       nextDeployerAddress,
     );
 
@@ -72,7 +80,6 @@ async function ensureFundDeployer({
 
 async function deployVault({
   dispatcher,
-  mtc,
   mockFundDeployer,
   vaultLib,
   owner = randomAddress(),
@@ -80,14 +87,13 @@ async function deployVault({
   fundName = 'My Fund',
 }: {
   dispatcher: Dispatcher;
-  mtc: string;
   mockFundDeployer: MockContract<IMigrationHookHandler>;
   vaultLib: AddressLike;
   owner?: AddressLike;
   vaultAccessor?: AddressLike;
   fundName?: string;
 }) {
-  await ensureFundDeployer({ dispatcher, mtc, fundDeployer: mockFundDeployer });
+  await ensureFundDeployer({ dispatcher, fundDeployer: mockFundDeployer });
 
   const event = dispatcher.abi.getEvent('VaultProxyDeployed');
   const forwardTx = mockFundDeployer.forward(
@@ -112,7 +118,6 @@ async function deployVault({
 
 async function signalMigration({
   dispatcher,
-  mtc,
   vaultProxy,
   mockNextFundDeployer,
   nextVaultLib,
@@ -120,7 +125,6 @@ async function signalMigration({
   bypassFailure = false,
 }: {
   dispatcher: Dispatcher;
-  mtc: string;
   vaultProxy: MockVaultLib;
   mockNextFundDeployer: MockContract<IMigrationHookHandler>;
   nextVaultLib: AddressLike;
@@ -129,7 +133,6 @@ async function signalMigration({
 }) {
   await ensureFundDeployer({
     dispatcher,
-    mtc,
     fundDeployer: mockNextFundDeployer,
   });
 
@@ -154,14 +157,203 @@ describe('constructor', () => {
   it('sets initial state', async () => {
     const {
       deployment: { dispatcher },
-      config: { mtc, mgm },
+      config: { deployer },
     } = await provider.snapshot(snapshot);
 
-    const mtcCall = dispatcher.getMTC();
-    await expect(mtcCall).resolves.toBe(mtc);
+    const getOwnerCall = dispatcher.getOwner();
+    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
 
-    const mgmCall = dispatcher.getMGM();
-    await expect(mgmCall).resolves.toBe(mgm);
+    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
+    await expect(getNominatedOwnerCall).resolves.toBe(constants.AddressZero);
+
+    const getCurrentFundDeployerCall = dispatcher.getCurrentFundDeployer();
+    await expect(getCurrentFundDeployerCall).resolves.toBe(
+      constants.AddressZero,
+    );
+  });
+});
+
+describe('setNominatedOwner', () => {
+  it('can only be called by the contract owner', async () => {
+    const {
+      accounts: { 0: randomUser },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    const nominateOwnerTx = dispatcher
+      .connect(randomUser)
+      .setNominatedOwner(randomAddress());
+    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
+      'Only the contract owner can call this function',
+    );
+  });
+
+  it('does not allow an empty next owner address', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    const nominateOwnerTx = dispatcher.setNominatedOwner(constants.AddressZero);
+    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
+      '_nextOwner cannot be empty',
+    );
+  });
+
+  it('does not allow the next owner to be the current owner', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer: currentOwner },
+    } = await provider.snapshot(snapshot);
+
+    const nominateOwnerTx = dispatcher.setNominatedOwner(currentOwner);
+    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
+      '_nextOwner is already the owner',
+    );
+  });
+
+  it('does not allow the next owner to already be nominated', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Nominate the nextOwner a first time
+    const nextOwner = randomAddress();
+    await dispatcher.setNominatedOwner(nextOwner);
+
+    // Attempt to nominate the same nextOwner a second time
+    const nominateOwnerTx = dispatcher.setNominatedOwner(nextOwner);
+    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
+      '_nextOwner is already nominated',
+    );
+  });
+
+  it('correctly handles nominating a new owner', async () => {
+    const {
+      config: { deployer },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Nominate the nextOwner a first time
+    const nextOwnerAddress = randomAddress();
+    const setNominatedOwnerTx = dispatcher.setNominatedOwner(nextOwnerAddress);
+    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+
+    // New owner should have been nominated
+    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
+    await expect(getNominatedOwnerCall).resolves.toBe(nextOwnerAddress);
+
+    // Ownership should not have changed
+    const getOwnerCall = dispatcher.getOwner();
+    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
+
+    // NominatedOwnerSet event properly emitted
+    assertEvent(setNominatedOwnerTx, 'NominatedOwnerSet', {
+      nominatedOwner: nextOwnerAddress,
+    });
+  });
+});
+
+describe('removeNominatedOwner', () => {
+  it('can only be called by the contract owner', async () => {
+    const {
+      accounts: { 0: randomUser },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Set nominated owner
+    const setNominatedOwnerTx = dispatcher.setNominatedOwner(randomAddress());
+    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+
+    // Attempt by a random user to remove nominated owner should fail
+    const removeNominateOwnerTx = dispatcher
+      .connect(randomUser)
+      .removeNominatedOwner();
+    await expect(removeNominateOwnerTx).rejects.toBeRevertedWith(
+      'Only the contract owner can call this function',
+    );
+  });
+
+  it('correctly handles removing the nomination', async () => {
+    const {
+      config: { deployer },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Set nominated owner
+    const nextOwnerAddress = randomAddress();
+    const setNominatedOwnerTx = dispatcher.setNominatedOwner(nextOwnerAddress);
+    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+
+    // Attempt by a random user to remove nominated owner should fail
+    const removeNominateOwnerTx = dispatcher.removeNominatedOwner();
+    await expect(removeNominateOwnerTx).resolves.toBeReceipt();
+
+    // Nomination should have been removed
+    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
+    await expect(getNominatedOwnerCall).resolves.toBe(constants.AddressZero);
+
+    // Ownership should not have changed
+    const getOwnerCall = dispatcher.getOwner();
+    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
+
+    // NominatedOwnerSet event properly emitted
+    assertEvent(removeNominateOwnerTx, 'NominatedOwnerRemoved', {
+      nominatedOwner: nextOwnerAddress,
+    });
+  });
+});
+
+describe('claimOwnership', () => {
+  it('can only be called by the nominatedOwner', async () => {
+    const {
+      accounts: { 0: randomUser },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Set nominated owner
+    const setNominatedOwnerTx = dispatcher.setNominatedOwner(randomAddress());
+    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+
+    // Attempt by a random user to claim ownership should fail
+    const claimOwnershipTx = dispatcher.connect(randomUser).claimOwnership();
+    await expect(claimOwnershipTx).rejects.toBeRevertedWith(
+      'Only the nominatedOwner can call this function',
+    );
+  });
+
+  it('correctly handles transferring ownership', async () => {
+    const {
+      accounts: { 0: nominatedOwner },
+      config: { deployer },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Set nominated owner
+    const nominatedOwnerAddress = await resolveAddress(nominatedOwner);
+    const setNominatedOwnerTx = dispatcher.setNominatedOwner(
+      nominatedOwnerAddress,
+    );
+    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+
+    // Claim ownership
+    const claimOwnershipTx = dispatcher
+      .connect(nominatedOwner)
+      .claimOwnership();
+    await expect(claimOwnershipTx).resolves.toBeReceipt();
+
+    // Owner should now be the nominatedOwner
+    const getOwnerCall = dispatcher.getOwner();
+    await expect(getOwnerCall).resolves.toBe(nominatedOwnerAddress);
+
+    // nominatedOwner should be empty
+    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
+    await expect(getNominatedOwnerCall).resolves.toBe(constants.AddressZero);
+
+    // OwnershipTransferred event properly emitted
+    assertEvent(claimOwnershipTx, 'OwnershipTransferred', {
+      prevOwner: await resolveAddress(deployer),
+      nextOwner: nominatedOwnerAddress,
+    });
   });
 });
 
@@ -171,17 +363,15 @@ describe('deployVaultProxy', () => {
   it('correctly deploys a new VaultProxy', async () => {
     const {
       deployment: { dispatcher },
-      config: { mtc },
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
-    } = await provider.snapshot(snapshot);
+    } = await provider.snapshot(snapshotWithMocks);
 
     const owner = randomAddress();
     const vaultAccessor = randomAddress();
     const fundName = 'Mock Fund';
     const vaultProxy = await deployVault({
       dispatcher,
-      mtc,
       mockFundDeployer,
       vaultLib,
       owner,
@@ -231,12 +421,11 @@ describe('signalMigration', () => {
   it('correctly handles preSignalMigrationOriginHook failure', async () => {
     const {
       deployment: { dispatcher },
-      config: { mtc },
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshot);
+    } = await provider.snapshot(snapshotWithMocks);
 
     // Unset preSignalMigrationOriginHook
     await mockPrevFundDeployer.preSignalMigrationOriginHook.reset();
@@ -244,7 +433,6 @@ describe('signalMigration', () => {
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
       dispatcher,
-      mtc,
       mockFundDeployer: mockPrevFundDeployer,
       vaultLib: prevVaultLib,
     });
@@ -254,7 +442,6 @@ describe('signalMigration', () => {
     const nextVaultAccessor = randomAddress();
     const failingTx = signalMigration({
       dispatcher,
-      mtc,
       mockNextFundDeployer,
       nextVaultLib,
       vaultProxy,
@@ -268,7 +455,6 @@ describe('signalMigration', () => {
     // Bypassing the failure should allow the tx to succeed and fire the failure event
     const signalTx = signalMigration({
       dispatcher,
-      mtc,
       mockNextFundDeployer,
       nextVaultLib,
       vaultProxy,
@@ -292,17 +478,15 @@ describe('signalMigration', () => {
   it('correctly signals a migration', async () => {
     const {
       deployment: { dispatcher },
-      config: { mtc },
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshot);
+    } = await provider.snapshot(snapshotWithMocks);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
       dispatcher,
-      mtc,
       mockFundDeployer: mockPrevFundDeployer,
       vaultLib: prevVaultLib,
     });
@@ -311,7 +495,6 @@ describe('signalMigration', () => {
     const nextVaultAccessor = randomAddress();
     const signalTx = signalMigration({
       dispatcher,
-      mtc,
       mockNextFundDeployer,
       nextVaultLib,
       vaultProxy,
@@ -385,17 +568,16 @@ describe('cancelMigration', () => {
   it('correctly cancels a migration request', async () => {
     const {
       deployment: { dispatcher },
-      config: { deployer, mtc },
+      config: { deployer },
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshot);
+    } = await provider.snapshot(snapshotWithMocks);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
       dispatcher,
-      mtc,
       mockFundDeployer: mockPrevFundDeployer,
       vaultLib: prevVaultLib,
       owner: deployer,
@@ -405,7 +587,6 @@ describe('cancelMigration', () => {
     const nextVaultAccessor = randomAddress();
     const signalTx = signalMigration({
       dispatcher,
-      mtc,
       mockNextFundDeployer,
       nextVaultLib,
       vaultProxy,
@@ -489,17 +670,16 @@ describe('executeMigration', () => {
   it('correctly executes a migration request', async () => {
     const {
       deployment: { dispatcher },
-      config: { deployer, mtc },
+      config: { deployer },
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshot);
+    } = await provider.snapshot(snapshotWithMocks);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
       dispatcher,
-      mtc,
       mockFundDeployer: mockPrevFundDeployer,
       vaultLib: prevVaultLib,
       owner: deployer,
@@ -509,7 +689,6 @@ describe('executeMigration', () => {
     const nextVaultAccessor = randomAddress();
     const signalTx = signalMigration({
       dispatcher,
-      mtc,
       mockNextFundDeployer,
       nextVaultLib,
       vaultProxy,

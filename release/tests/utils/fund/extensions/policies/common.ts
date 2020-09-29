@@ -4,17 +4,17 @@ import { encodeArgs } from '../../../common';
 
 // Policy Manager
 
-export const policyHooks = {
-  None: 0,
-  BuyShares: 1,
-  CallOnIntegration: 2,
-};
+export enum policyHooks {
+  None,
+  BuyShares,
+  CallOnIntegration,
+}
 
-export const policyHookExecutionTimes = {
-  None: 0,
-  Pre: 1,
-  Post: 2,
-};
+export enum policyHookExecutionTimes {
+  None,
+  Pre,
+  Post,
+}
 
 export async function policyManagerConfigArgs(
   policies: AddressLike[],

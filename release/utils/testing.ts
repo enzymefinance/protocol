@@ -7,7 +7,7 @@ import { deployMocks } from './mocks';
 export async function defaultTestDeployment(
   provider: providers.JsonRpcProvider,
 ) {
-  const [deployer, mtc, mgm, ...others] = await provider.listAccounts();
+  const [deployer, mgm, ...others] = await provider.listAccounts();
   const accounts = others
     .slice(0, 10) // Only prepare a maximum of ten accounts.
     .map((address) => provider.getSigner(address));
@@ -15,7 +15,6 @@ export async function defaultTestDeployment(
   const common = {
     deployer: provider.getSigner(deployer),
     mgm,
-    mtc,
   };
 
   const persistent = await deployPersistent(common);
@@ -58,9 +57,7 @@ export async function defaultTestDeployment(
 
   const release = await deployRelease(config);
 
-  await persistent.dispatcher
-    .connect(provider.getSigner(config.mtc))
-    .setCurrentFundDeployer(release.fundDeployer);
+  await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
 
   return {
     config,

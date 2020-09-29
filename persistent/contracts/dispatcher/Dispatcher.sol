@@ -15,7 +15,6 @@ contract Dispatcher is IDispatcher {
 
     // Events
 
-    // TODO: Go through events one-by-one
     event CurrentFundDeployerSet(address prevFundDeployer, address nextFundDeployer);
 
     event MigrationCancelled(
@@ -43,6 +42,12 @@ contract Dispatcher is IDispatcher {
         address nextVaultAccessor,
         address nextVaultLib
     );
+
+    event NominatedOwnerSet(address indexed nominatedOwner);
+
+    event NominatedOwnerRemoved(address indexed nominatedOwner);
+
+    event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
 
     event PostCancelMigrationOriginHookFailed(
         bytes failureReturnData,
@@ -118,22 +123,11 @@ contract Dispatcher is IDispatcher {
         uint256 signalTimestamp;
     }
 
-    // Constants
-    address internal immutable MGM;
-    address internal immutable MTC;
-
-    // FundDeployer
-    address internal currentFundDeployer;
-
-    // VaultProxies
-    // TODO: do we want an ownerToVaultProxies array?
-    mapping(address => address) internal vaultProxyToFundDeployer;
-    mapping(address => MigrationRequest) internal vaultProxyToMigrationRequest;
-
-    modifier onlyMTC() {
-        require(msg.sender == MTC, "Only MTC can call this function");
-        _;
-    }
+    address private currentFundDeployer;
+    address private nominatedOwner;
+    address private owner;
+    mapping(address => address) private vaultProxyToFundDeployer;
+    mapping(address => MigrationRequest) private vaultProxyToMigrationRequest;
 
     modifier onlyCurrentFundDeployer() {
         require(
@@ -143,10 +137,85 @@ contract Dispatcher is IDispatcher {
         _;
     }
 
-    constructor(address _mtc, address _mgm) public {
-        MGM = _mgm;
-        MTC = _mtc;
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the contract owner can call this function");
+        _;
     }
+
+    constructor() public {
+        owner = msg.sender;
+    }
+
+    ////////////////////
+    // ACCESS CONTROL //
+    ////////////////////
+
+    /// @notice Claim ownership of the contract
+    function claimOwnership() external override {
+        address nextOwner = nominatedOwner;
+        require(
+            msg.sender == nextOwner,
+            "acceptOwnership: Only the nominatedOwner can call this function"
+        );
+
+        delete nominatedOwner;
+
+        address prevOwner = owner;
+        owner = nextOwner;
+
+        emit OwnershipTransferred(prevOwner, nextOwner);
+    }
+
+    /// @notice Revoke the nomination of a new contract owner
+    function removeNominatedOwner() external override onlyOwner {
+        address removedNominatedOwner = nominatedOwner;
+        require(
+            removedNominatedOwner != address(0),
+            "revokeOwnershipNomination: there is no nominated owner"
+        );
+
+        delete nominatedOwner;
+
+        emit NominatedOwnerRemoved(removedNominatedOwner);
+    }
+
+    /// @notice Set a new FundDeployer for use within the contract
+    /// @param _nextFundDeployer The address of the FundDeployer contract
+    function setCurrentFundDeployer(address _nextFundDeployer) external override onlyOwner {
+        require(
+            _nextFundDeployer != address(0),
+            "setCurrentFundDeployer: _nextFundDeployer cannot be empty"
+        );
+
+        address prevFundDeployer = currentFundDeployer;
+        require(
+            prevFundDeployer != _nextFundDeployer,
+            "setCurrentFundDeployer: _nextFundDeployer is already currentFundDeployer"
+        );
+
+        currentFundDeployer = _nextFundDeployer;
+
+        emit CurrentFundDeployerSet(prevFundDeployer, _nextFundDeployer);
+    }
+
+    /// @notice Nominate a new contract owner
+    /// @param _nextNominatedOwner The account to nominate
+    function setNominatedOwner(address _nextNominatedOwner) external override onlyOwner {
+        require(_nextNominatedOwner != address(0), "nominateOwner: _nextOwner cannot be empty");
+        require(_nextNominatedOwner != owner, "nominateOwner: _nextOwner is already the owner");
+        require(
+            _nextNominatedOwner != nominatedOwner,
+            "nominateOwner: _nextOwner is already nominated"
+        );
+
+        nominatedOwner = _nextNominatedOwner;
+
+        emit NominatedOwnerSet(_nextNominatedOwner);
+    }
+
+    ////////////////
+    // MIGRATIONS //
+    ////////////////
 
     // TODO: Need convenience functions for hasMigrationRequest(), migrationRequestIsExecutable(), getMigrationRequest(), etc?
 
@@ -375,24 +444,6 @@ contract Dispatcher is IDispatcher {
         );
     }
 
-    // TODO: can check if nextFundDeployer.owner() is MTC
-    function setCurrentFundDeployer(address _nextFundDeployer) external override onlyMTC {
-        require(
-            _nextFundDeployer != address(0),
-            "setCurrentFundDeployer: _nextFundDeployer cannot be empty"
-        );
-
-        address prevFundDeployer = currentFundDeployer;
-        require(
-            prevFundDeployer != _nextFundDeployer,
-            "setCurrentFundDeployer: _nextFundDeployer is already currentFundDeployer"
-        );
-
-        currentFundDeployer = _nextFundDeployer;
-
-        emit CurrentFundDeployerSet(prevFundDeployer, _nextFundDeployer);
-    }
-
     function signalMigration(
         address _vaultProxy,
         address _nextVaultAccessor,
@@ -493,8 +544,8 @@ contract Dispatcher is IDispatcher {
         return currentFundDeployer;
     }
 
-    function getMGM() external override view returns (address) {
-        return MGM;
+    function getFundDeployerForFund(address _vaultProxy) external override view returns (address) {
+        return vaultProxyToFundDeployer[_vaultProxy];
     }
 
     function getMigrationRequestDetailsForFund(address _vaultProxy)
@@ -514,11 +565,11 @@ contract Dispatcher is IDispatcher {
         }
     }
 
-    function getMTC() external override view returns (address) {
-        return MTC;
+    function getNominatedOwner() external override view returns (address) {
+        return nominatedOwner;
     }
 
-    function getFundDeployerForFund(address _vaultProxy) external override view returns (address) {
-        return vaultProxyToFundDeployer[_vaultProxy];
+    function getOwner() external override view returns (address) {
+        return owner;
     }
 }

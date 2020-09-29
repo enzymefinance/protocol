@@ -4,13 +4,14 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../interfaces/IERC20Extended.sol";
+import "../utils/DispatcherOwnerMixin.sol";
 import "../value-interpreter/IValueInterpreter.sol";
 import "./IEngine.sol";
 
 /// @title Engine Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Token sink for MLN
-contract Engine is IEngine {
+contract Engine is IEngine, DispatcherOwnerMixin {
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
 
@@ -24,7 +25,6 @@ contract Engine is IEngine {
     // Immutable vars
     address private immutable MGM;
     address private immutable MLN_TOKEN;
-    address private immutable MTC;
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
     address private immutable WETH_TOKEN;
@@ -39,24 +39,18 @@ contract Engine is IEngine {
     // They should continue to be EngineAdapter instances.
     mapping(address => bool) private acctToIsEtherTaker;
 
-    modifier onlyMTC() {
-        require(msg.sender == MTC, "onlyMTC: Only MTC can call this function");
-        _;
-    }
-
     constructor(
+        address _dispatcher,
         address _MGM,
-        address _MTC,
         address _mlnToken,
         address _wethToken,
         address _primitivePriceFeed,
         address _valueInterpreter,
         uint256 _thawDelay,
         address[] memory _etherTakers
-    ) public {
+    ) public DispatcherOwnerMixin(_dispatcher) {
         MGM = _MGM;
         MLN_TOKEN = _mlnToken;
-        MTC = _MTC;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
         WETH_TOKEN = _wethToken;
@@ -67,7 +61,7 @@ contract Engine is IEngine {
 
     // EXTERNAL FUNCTIONS
 
-    function addEtherTakers(address[] calldata _takers) external onlyMTC {
+    function addEtherTakers(address[] calldata _takers) external onlyDispatcherOwner {
         __addEtherTakers(_takers);
     }
 
@@ -88,7 +82,7 @@ contract Engine is IEngine {
         emit AmguPaidInEther(msg.value);
     }
 
-    function removeEtherTakers(address[] calldata _takers) external onlyMTC {
+    function removeEtherTakers(address[] calldata _takers) external onlyDispatcherOwner {
         for (uint256 i = 0; i < _takers.length; i++) {
             require(
                 acctToIsEtherTaker[_takers[i]],
@@ -214,10 +208,6 @@ contract Engine is IEngine {
 
     function getMGM() external view returns (address) {
         return MGM;
-    }
-
-    function getMTC() external view returns (address) {
-        return MTC;
     }
 
     function getMLNToken() external view returns (address) {

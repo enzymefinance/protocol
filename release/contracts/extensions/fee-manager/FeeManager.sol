@@ -7,16 +7,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../core/fund-deployer/utils/FundDeployerOwnable.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../utils/ExtensionBase.sol";
+import "../utils/FundDeployerOwnerMixin.sol";
 import "./IFee.sol";
 import "./IFeeManager.sol";
 
 /// @title FeeManager Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages fees for funds
-contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnable {
+contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     // TODO: calling `payout` on fees that don't defer shares is wasteful; consider storing locally?
 
     using AddressArrayLib for address[];
@@ -64,7 +64,7 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnable {
     mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => address) private comptrollerProxyToFeesRecipient;
 
-    constructor(address _fundDeployer) public FundDeployerOwnable(_fundDeployer) {}
+    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
 

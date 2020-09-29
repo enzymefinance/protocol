@@ -5,16 +5,16 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../core/fund-deployer/utils/FundDeployerOwnable.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../utils/ExtensionBase.sol";
+import "../utils/FundDeployerOwnerMixin.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
 
 /// @title PolicyManager Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages policies for funds
-contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
+contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin {
     // TODO: add activation and deactivation?
 
     using AddressArrayLib for address[];
@@ -51,7 +51,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnable {
 
     // CONSTRUCTOR
 
-    constructor(address _fundDeployer) public FundDeployerOwnable(_fundDeployer) {}
+    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
 

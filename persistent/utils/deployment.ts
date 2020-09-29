@@ -1,12 +1,9 @@
-import { AddressLike } from '@crestproject/crestproject';
 import { describeDeployment } from '@melonproject/utils';
 import { Signer } from 'ethers';
 import { Dispatcher } from './contracts';
 
 export interface PersistentDeploymentConfig {
   deployer: Signer;
-  mgm: AddressLike;
-  mtc: AddressLike;
 }
 
 export interface PersistentDeploymentOutput {
@@ -18,6 +15,6 @@ export const deployPersistent = describeDeployment<
   PersistentDeploymentOutput
 >({
   dispatcher(config) {
-    return Dispatcher.deploy(config.deployer, config.mtc, config.mgm);
+    return Dispatcher.deploy(config.deployer);
   },
 });

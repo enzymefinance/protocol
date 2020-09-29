@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@melonproject/persistent/contracts/dispatcher/IDispatcher.sol";
+import "../../utils/DispatcherOwnerMixin.sol";
 import "./IDerivativePriceFeed.sol";
 
 /// @title AggregatedDerivativePriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice An aggregation of several mini derivative price feeds per DeFi service
-contract AggregatedDerivativePriceFeed is IDerivativePriceFeed {
+contract AggregatedDerivativePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     event PriceFeedSet(address indexed derivative, address prevPriceFeed, address nextPriceFeed);
-
-    address private immutable DISPATCHER;
 
     mapping(address => address) private derivativeToPriceFeed;
 
@@ -18,12 +16,10 @@ contract AggregatedDerivativePriceFeed is IDerivativePriceFeed {
         address _dispatcher,
         address[] memory _derivatives,
         address[] memory _priceFeeds
-    ) public {
+    ) public DispatcherOwnerMixin(_dispatcher) {
         if (_derivatives.length > 0) {
             __setPriceFeeds(_derivatives, _priceFeeds);
         }
-
-        DISPATCHER = _dispatcher;
     }
 
     // EXTERNAL FUNCTIONS
@@ -49,12 +45,9 @@ contract AggregatedDerivativePriceFeed is IDerivativePriceFeed {
 
     function setPriceFeeds(address[] calldata _derivatives, address[] calldata _priceFeeds)
         external
+        onlyDispatcherOwner
     {
         require(_derivatives.length > 0, "setPriceFeeds: _derivatives cannot be empty");
-        require(
-            msg.sender == IDispatcher(DISPATCHER).getMTC(),
-            "setPriceFeeds: Only MTC can call this function"
-        );
 
         __setPriceFeeds(_derivatives, _priceFeeds);
     }
@@ -88,9 +81,5 @@ contract AggregatedDerivativePriceFeed is IDerivativePriceFeed {
 
     function getPriceFeedForDerivative(address _derivative) external view returns (address) {
         return derivativeToPriceFeed[_derivative];
-    }
-
-    function getDispatcher() external view returns (address) {
-        return DISPATCHER;
     }
 }

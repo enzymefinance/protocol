@@ -1,6 +1,11 @@
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  BuidlerProvider,
+  randomAddress,
+  resolveAddress,
+} from '@crestproject/crestproject';
+import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../';
-import { createNewFund } from '../utils/fund';
+import { createNewFund, releaseStatusTypes } from '../utils';
 
 async function snapshot(provider: BuidlerProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -17,21 +22,31 @@ async function snapshot(provider: BuidlerProvider) {
 describe('constructor', () => {
   it('sets initial state', async () => {
     const {
+      config: { deployer },
       deployment: { dispatcher, engine, fundDeployer, vaultLib },
-      config: { mtc },
     } = await provider.snapshot(snapshot);
 
-    const mtcCall = fundDeployer.getMTC();
-    await expect(mtcCall).resolves.toBe(mtc);
+    const getCreatorCall = fundDeployer.getCreator();
+    await expect(getCreatorCall).resolves.toBe(await resolveAddress(deployer));
 
-    const engineCall = fundDeployer.getEngine();
-    await expect(engineCall).resolves.toBe(engine.address);
+    const getDispatcherCall = fundDeployer.getDispatcher();
+    await expect(getDispatcherCall).resolves.toBe(dispatcher.address);
 
-    const dispatcherCall = fundDeployer.getDispatcher();
-    await expect(dispatcherCall).resolves.toBe(dispatcher.address);
+    const getEngineCall = fundDeployer.getEngine();
+    await expect(getEngineCall).resolves.toBe(engine.address);
 
-    const vaultLibCall = fundDeployer.getVaultLib();
-    await expect(vaultLibCall).resolves.toBe(vaultLib.address);
+    const getOwnerCall = fundDeployer.getOwner();
+    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
+
+    const getReleaseStatusCall = fundDeployer.getReleaseStatus();
+    await expect(getReleaseStatusCall).resolves.toBe(
+      releaseStatusTypes.PreLaunch,
+    );
+
+    const getVaultLibCall = fundDeployer.getVaultLib();
+    await expect(getVaultLibCall).resolves.toBe(vaultLib.address);
+
+    // TODO: add registered vault calls
   });
 });
 
@@ -49,6 +64,39 @@ describe('setComptrollerLib', () => {
       'This value can only be set once',
     );
   });
+});
+
+describe('setReleaseStatus', () => {
+  it.todo('can only be called by the Dispatcher contract owner');
+
+  it.todo('does not allow returning to PreLaunch status');
+
+  it.todo('does not allow the current status');
+
+  it('correctly handles setting the release status', async () => {
+    const {
+      deployment: { fundDeployer },
+    } = await provider.snapshot(snapshot);
+
+    const setReleaseStatusTx = fundDeployer.setReleaseStatus(
+      releaseStatusTypes.Live,
+    );
+    await expect(setReleaseStatusTx).resolves.toBeReceipt();
+
+    // Release Status should be Live
+    const getReleaseStatusCall = fundDeployer.getReleaseStatus();
+    await expect(getReleaseStatusCall).resolves.toBe(releaseStatusTypes.Live);
+
+    // ReleaseStatusSet event is emitted
+    await assertEvent(setReleaseStatusTx, 'ReleaseStatusSet', {
+      prevStatus: releaseStatusTypes.PreLaunch,
+      nextStatus: releaseStatusTypes.Live,
+    });
+  });
+});
+
+describe('getOwner', () => {
+  it.todo('write tests for special ownership conditions of this contract');
 });
 
 describe('createNewFund', () => {

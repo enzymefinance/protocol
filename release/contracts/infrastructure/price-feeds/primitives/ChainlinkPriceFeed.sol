@@ -3,13 +3,14 @@ pragma solidity 0.6.8;
 
 import "@melonproject/persistent/contracts/dispatcher/IDispatcher.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../utils/DispatcherOwnerMixin.sol";
 import "./interfaces/IChainlinkAggregator.sol";
 import "./utils/PrimitivePriceFeedBase.sol";
 
 /// @title ChainlinkPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A price feed that uses Chainlink oracles as price sources
-contract ChainlinkPriceFeed is PrimitivePriceFeedBase {
+contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     // TODO: should we have functions that don't query for timestamp or care about validity to save on gas?
 
     using SafeMath for uint256;
@@ -17,7 +18,6 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase {
     event AggregatorSet(address indexed primitive, address prevAggregator, address nextAggregator);
 
     // All rates are in ETH, we use WETH as the canonical proxy for ETH
-    address private immutable DISPATCHER;
     address private immutable RATE_QUOTE_ASSET;
 
     mapping(address => address) private primitiveToAggregator;
@@ -27,9 +27,8 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase {
         address _rateQuoteAsset,
         address[] memory _primitives,
         address[] memory _aggregators
-    ) public {
+    ) public DispatcherOwnerMixin(_dispatcher) {
         __setAggregators(_primitives, _aggregators);
-        DISPATCHER = _dispatcher;
         RATE_QUOTE_ASSET = _rateQuoteAsset;
     }
 
@@ -93,11 +92,8 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase {
 
     function setAggregators(address[] calldata _primitives, address[] calldata _aggregators)
         external
+        onlyDispatcherOwner
     {
-        require(
-            msg.sender == IDispatcher(DISPATCHER).getMTC(),
-            "setAggregators: Only MTC can call this function"
-        );
         __setAggregators(_primitives, _aggregators);
     }
 
@@ -157,10 +153,6 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase {
         returns (address aggregator_)
     {
         return primitiveToAggregator[_primitive];
-    }
-
-    function getDispatcher() external view returns (address dispatcher_) {
-        return DISPATCHER;
     }
 
     function getRateQuoteAsset() external view returns (address rateQuoteAsset_) {

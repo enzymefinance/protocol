@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "./IMelonCouncilOwnable.sol";
+import "../../core/fund-deployer/IFundDeployer.sol";
 
-/// @title FundDeployerOwnable Contract
+/// @title FundDeployerOwnerMixin Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A base contract that defers ownership to the owner of FundDeployer
-abstract contract FundDeployerOwnable {
+/// @notice A mixin contract that defers ownership to the owner of FundDeployer
+abstract contract FundDeployerOwnerMixin {
     address internal immutable FUND_DEPLOYER;
 
     modifier onlyFundDeployerOwner() {
@@ -22,7 +22,7 @@ abstract contract FundDeployerOwnable {
     }
 
     function getOwner() public view returns (address) {
-        return IMelonCouncilOwnable(FUND_DEPLOYER).getOwner();
+        return IFundDeployer(FUND_DEPLOYER).getOwner();
     }
 
     ///////////////////
