@@ -7,11 +7,13 @@ contract MockChainlinkPriceSource {
     int256 public latestAnswer;
     uint256 public latestTimestamp;
     uint256 public roundId;
+    address public aggregator;
 
     constructor() public {
         latestAnswer = 1 ether;
         latestTimestamp = now;
         roundId = 1;
+        aggregator = address(this);
     }
 
     function setLatestAnswer(int256 _nextAnswer, uint256 _nextTimestamp) external {
@@ -20,5 +22,9 @@ contract MockChainlinkPriceSource {
         roundId = roundId + 1;
 
         emit AnswerUpdated(latestAnswer, roundId, latestTimestamp);
+    }
+
+    function setAggregator(address _nextAggregator) external {
+        aggregator = _nextAggregator;
     }
 }
