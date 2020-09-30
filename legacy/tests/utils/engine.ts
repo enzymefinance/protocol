@@ -1,9 +1,9 @@
 import { BigNumberish, Signer } from 'ethers';
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import * as contracts from '../contracts';
 
 export async function warpEngine(
-  provider: BuidlerProvider,
+  provider: EthereumTestnetProvider,
   engine: contracts.Engine,
 ) {
   const delay = await engine.thawingDelay();

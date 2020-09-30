@@ -1,5 +1,5 @@
 import {
-  BuidlerProvider,
+  EthereumTestnetProvider,
   randomAddress,
   resolveAddress,
 } from '@crestproject/crestproject';
@@ -7,7 +7,7 @@ import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../';
 import { createNewFund, releaseStatusTypes } from '../utils';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );

@@ -1,5 +1,8 @@
 import { utils } from 'ethers';
-import { BuidlerProvider, extractEvent } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  extractEvent,
+} from '@crestproject/crestproject';
 import { defaultTestDeployment } from '../../../';
 import { IPolicy } from '../../../codegen/IPolicy';
 import {
@@ -16,7 +19,7 @@ import {
   validateRulePostCoIArgs,
 } from '../../utils';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );
@@ -28,7 +31,7 @@ async function snapshot(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithMocks(provider: BuidlerProvider) {
+async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await provider.snapshot(snapshot);
 
   // Create mock policies
@@ -83,7 +86,7 @@ async function snapshotWithMocks(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithMocksAndFund(provider: BuidlerProvider) {
+async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config, policies } = await provider.snapshot(
     snapshotWithMocks,
   );

@@ -1,5 +1,5 @@
 import { ethers, utils } from 'ethers';
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { ERC20 } from '../../codegen/ERC20';
 import { IDerivativePriceSource } from '../../codegen/IDerivativePriceSource';
 import { IPriceSource } from '../../codegen/IPriceSource';
@@ -12,7 +12,7 @@ import {
   mockPrimitiveLiveRate,
 } from '../utils/fund/prices';
 
-async function deploy(provider: BuidlerProvider) {
+async function deploy(provider: EthereumTestnetProvider) {
   const [deployer] = await provider.listAccounts();
   const signer = provider.getSigner(deployer);
   const mockAsset1 = await ERC20.mock(signer);

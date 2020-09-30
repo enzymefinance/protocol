@@ -1,5 +1,5 @@
 import { utils } from 'ethers';
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 import {
   engineTakeOrderArgs,
@@ -11,7 +11,7 @@ import {
   thawEngine,
 } from '../utils';
 
-function snapshot(provider: BuidlerProvider) {
+function snapshot(provider: EthereumTestnetProvider) {
   return deployTestEnvironment(provider);
 }
 

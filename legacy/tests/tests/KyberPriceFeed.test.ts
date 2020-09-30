@@ -1,5 +1,5 @@
 import { utils, BigNumber, BigNumberish } from 'ethers';
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 
 let tx;
@@ -8,7 +8,7 @@ function inverseNormalizedRate(rate: BigNumberish, precision: number = 18) {
   return BigNumber.from(10).pow(BigNumber.from(precision).mul(2)).div(rate);
 }
 
-function snapshot(provider: BuidlerProvider) {
+function snapshot(provider: EthereumTestnetProvider) {
   return deployTestEnvironment(provider);
 }
 

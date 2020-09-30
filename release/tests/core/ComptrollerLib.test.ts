@@ -1,5 +1,5 @@
 import {
-  BuidlerProvider,
+  EthereumTestnetProvider,
   randomAddress,
   contract,
   Send,
@@ -25,7 +25,7 @@ const MockExternalContract = contract.fromSignatures<MockExternalContract>`
   function functionB()
 `;
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );
@@ -37,7 +37,7 @@ async function snapshot(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithFund(provider: BuidlerProvider) {
+async function snapshotWithFund(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await provider.snapshot(snapshot);
 
   const [fundOwner, ...remainingAccounts] = accounts;

@@ -877,52 +877,76 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.0.50":
-  version "0.0.50"
-  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.0.50.tgz#6448b47aacf2d611c2e55f44373f27456c52d4d2"
-  integrity sha512-2t402oR5FjJDtG2pP0lrarBT11U0U2VlFZUe6qgb1L8C79QskF+S0Bq5B5gFWZHC2J0GBzfz1Rq/15obfhSVIw==
+"@crestproject/buidler@^0.0.52":
+  version "0.0.52"
+  resolved "https://registry.yarnpkg.com/@crestproject/buidler/-/buidler-0.0.52.tgz#04055ba1a36f1cbc40952c1da00d07ccc1e7c9f0"
+  integrity sha512-A3WsEvMC/prg2RQgFkWyu55XdT3//RyBJLjkL3FBzBtGL/p/YAhTrLFtrxBYCMUnm0o7vN4u0kk2vK41Lq667Q==
+  dependencies:
+    "@crestproject/ethers" "^0.0.52"
+    "@crestproject/evm" "^0.0.52"
+    "@nomiclabs/buidler" "^1.3.8"
+    ethers "^5.0.12"
+
+"@crestproject/codegen@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.0.51.tgz#756bb7db1ef9a504a2ae8d47beb18403723166df"
+  integrity sha512-z7bIeAZdwPD0QatUfcoTW+JWgT/RjpedpzT02w728XvbFXvc/3xZsJAglml9aS4LqUThZ7nOaf8XBRk2rUU3tA==
   dependencies:
     ethers "^5.0.12"
   optionalDependencies:
     prettier "^2.1.1"
 
-"@crestproject/crestproject@^0.0.50":
-  version "0.0.50"
-  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.0.50.tgz#a6ec08d870e935ba17c8f1d974e6a83d1ce5fc78"
-  integrity sha512-xQLUOHd6lWF/fXueAwSegJZ1Fb6O70aD1Jz+mQJ/GRIolSFwuwdKCTKmizUgep+o7itEQMICV1RITUzTzz//Hg==
+"@crestproject/crestproject@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.0.51.tgz#ac47781583b6d10c115d0a07309c788d2144f730"
+  integrity sha512-eUp9ZFps2TfoxvUqwMBc4Ab0o0AwFB0OPLKEWxFbGbkVSDK2Y5BqM0YYMYhpFdFw+LYzs7bhSflYD4M9SgoGDQ==
   dependencies:
-    "@crestproject/codegen" "^0.0.50"
-    "@crestproject/ethers" "^0.0.50"
-    "@crestproject/evm" "^0.0.50"
-    "@crestproject/jest" "^0.0.50"
+    "@crestproject/codegen" "^0.0.51"
+    "@crestproject/ethers" "^0.0.51"
+    "@crestproject/evm" "^0.0.51"
+    "@crestproject/jest" "^0.0.51"
     glob "^7.1.6"
     jest-worker "^26.1.0"
     throat "^5.0.0"
     yargs "^15.4.1"
 
-"@crestproject/ethers@^0.0.50":
-  version "0.0.50"
-  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.50.tgz#ab8f8e515cd7e65b944805bccaba3d263ec567b4"
-  integrity sha512-7agjzxRtg1iiVXrRlU51GYJ7FS3o+dh3bEtvrsGXGWmWAF+9U0r/7+0BAc+o8JF3HdQLDiZYUl4NqgT1cO4y0g==
+"@crestproject/ethers@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.51.tgz#3a8fe1f0e37ce151e037229c635a4c6c5b716066"
+  integrity sha512-hIDIKC75KGdv7AXpsDyw3Kdz7e5Swxwe197UgcV2BtbbaGd6Zr5rMHuuJSRWHZZi+Z/Sh+FIFTgYEG6HMuRg5Q==
   dependencies:
     ethers "^5.0.12"
 
-"@crestproject/evm@^0.0.50":
-  version "0.0.50"
-  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.50.tgz#9edb0c4b76dab903ebf5e10c898ba0f9a230f4d6"
-  integrity sha512-R7LaGXSokJJ9MywZsfGb3dBVcemN84DJLjzPH/hsz3w5OStfJaDueajXMSPn8xZziUJSuSj9tWNQtRTLRiRURw==
+"@crestproject/ethers@^0.0.52":
+  version "0.0.52"
+  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.0.52.tgz#4e58e598c87f3b77ca595dd8a7776d49fd50db1c"
+  integrity sha512-BlSoMxMMDaQHZuLniADTrn6II1HFT7DMLE1lMNVBLw2GvGVT57yvH2Ud1lpLjUOe5EAPNek+Q9sQsD1UAYRDnw==
   dependencies:
-    "@crestproject/ethers" "^0.0.50"
-    "@nomiclabs/buidler" "^1.3.8"
     ethers "^5.0.12"
 
-"@crestproject/jest@^0.0.50":
-  version "0.0.50"
-  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.0.50.tgz#c84ca99f4271074db6652d978b81364ec1445a2a"
-  integrity sha512-olJDvHDKzpljR4CoB3v95F8uOWmOxdlSct3Izpy/Oq+/6VmXuugwfhUSdr6pL9Y9PrUW+iy/I5ECZlWv6e5ayA==
+"@crestproject/evm@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.51.tgz#a115aa6b5575a0e0d5408292c9310de9d21c2197"
+  integrity sha512-F002z5Um4u3nstpUyd3vfGnbzRQzanwDAxb4uUAk5gNWDFb3vxxTSz4SqX2kCgkonUF4NAx+tbPvQVuUnRGHiQ==
   dependencies:
-    "@crestproject/ethers" "^0.0.50"
-    "@crestproject/evm" "^0.0.50"
+    "@crestproject/ethers" "^0.0.51"
+    ethers "^5.0.12"
+
+"@crestproject/evm@^0.0.52":
+  version "0.0.52"
+  resolved "https://registry.yarnpkg.com/@crestproject/evm/-/evm-0.0.52.tgz#5e0c008fd9f05ea41214c090df72cbef8d60a79a"
+  integrity sha512-Usx1caQo6gGw02XqVGIW2d/pMWznIBwJ2InbP4ZkdbAoMjzAHbB1YptErmP/ErtZymbFHpAB2+FuxHSRDCNpXg==
+  dependencies:
+    "@crestproject/ethers" "^0.0.52"
+    ethers "^5.0.12"
+
+"@crestproject/jest@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.0.51.tgz#0b44fcf81912044c9f53f0ed0993bc763e8f2fd5"
+  integrity sha512-3uYOCryQMh+tWbRxqufk8MCHY6RJvfLjbEbDs/Unwu7XQLb/XTC7iX0ru5U4y9+BMSfr40tRnmWSqoXJyuD/+w==
+  dependencies:
+    "@crestproject/ethers" "^0.0.51"
+    "@crestproject/evm" "^0.0.51"
     ethers "^5.0.12"
     ts-jest "^26.1.3"
 

@@ -1,5 +1,8 @@
 import { constants, utils } from 'ethers';
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';
 import { AssetBlacklist, ComptrollerLib } from '../../../../utils/contracts';
@@ -10,7 +13,7 @@ import {
   validateRulePreCoIArgs,
 } from '../../../utils';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );
@@ -22,7 +25,7 @@ async function snapshot(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithStandalonePolicy(provider: BuidlerProvider) {
+async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
   const { accounts, config } = await provider.snapshot(snapshot);
 
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
@@ -48,7 +51,7 @@ async function snapshotWithStandalonePolicy(provider: BuidlerProvider) {
 }
 
 async function snapshotWithConfiguredStandalonePolicy(
-  provider: BuidlerProvider,
+  provider: EthereumTestnetProvider,
 ) {
   const {
     accounts,

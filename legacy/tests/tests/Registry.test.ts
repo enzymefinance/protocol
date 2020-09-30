@@ -1,11 +1,14 @@
 import { utils } from 'ethers';
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 import { IFee } from '../../codegen/IFee';
 
 let tx;
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const deployment = await deployTestEnvironment(provider);
   const {
     config: { deployer },

@@ -1,9 +1,12 @@
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { defaultTestDeployment } from '../../../';
 
 let tx;
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { deployment, config } = await defaultTestDeployment(provider);
 
   return {

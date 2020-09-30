@@ -1,5 +1,8 @@
 import { BigNumberish, Signer, utils, constants } from 'ethers';
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';
 import {
@@ -19,7 +22,7 @@ import {
   callOnIntegrationArgs,
 } from '../../../utils';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );

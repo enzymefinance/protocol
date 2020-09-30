@@ -1,6 +1,6 @@
 import { constants, BigNumber } from 'ethers';
 import {
-  BuidlerProvider,
+  EthereumTestnetProvider,
   randomAddress,
   resolveAddress,
   AddressLike,
@@ -15,7 +15,7 @@ import {
   MockVaultLib,
 } from '../';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, config, deployment } = await defaultTestDeployment(
     provider,
   );
@@ -27,7 +27,7 @@ async function snapshot(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithMocks(provider: BuidlerProvider) {
+async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   const { accounts, config, deployment } = await snapshot(provider);
 
   const mockVaultLib1 = await MockVaultLib.deploy(config.deployer);

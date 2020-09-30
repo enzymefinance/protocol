@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import {
   AddressLike,
-  BuidlerProvider,
+  EthereumTestnetProvider,
   MockContract,
   randomAddress,
 } from '@crestproject/crestproject';
@@ -20,7 +20,7 @@ import {
   validateRulePostCoIArgs,
 } from '../../../utils';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );
@@ -33,7 +33,7 @@ async function snapshot(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithStandalonePolicy(provider: BuidlerProvider) {
+async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
   const {
     accounts,
     config,
@@ -58,7 +58,9 @@ async function snapshotWithStandalonePolicy(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithStandalonePolicyAndMocks(provider: BuidlerProvider) {
+async function snapshotWithStandalonePolicyAndMocks(
+  provider: EthereumTestnetProvider,
+) {
   const {
     accounts,
     config,

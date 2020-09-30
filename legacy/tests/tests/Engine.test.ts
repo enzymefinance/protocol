@@ -1,5 +1,8 @@
 import { BigNumberish, Signer, utils } from 'ethers';
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 import * as contracts from '../contracts';
 import {
@@ -8,11 +11,14 @@ import {
   takeOrderSignature,
 } from '../utils';
 
-function snapshot(provider: BuidlerProvider) {
+function snapshot(provider: EthereumTestnetProvider) {
   return deployTestEnvironment(provider);
 }
 
-async function warpEngine(provider: BuidlerProvider, engine: contracts.Engine) {
+async function warpEngine(
+  provider: EthereumTestnetProvider,
+  engine: contracts.Engine,
+) {
   const delay = await engine.thawingDelay();
   const warp = delay.add(1).toNumber();
   await provider.send('evm_increaseTime', [warp]);

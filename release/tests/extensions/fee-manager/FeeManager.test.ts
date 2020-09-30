@@ -1,6 +1,6 @@
 import { BigNumber, constants, utils } from 'ethers';
 import {
-  BuidlerProvider,
+  EthereumTestnetProvider,
   extractEvent,
   resolveAddress,
 } from '@crestproject/crestproject';
@@ -18,7 +18,7 @@ import {
   settleContinuousFeesSelector,
 } from '../../utils';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
     provider,
   );
@@ -30,7 +30,7 @@ async function snapshot(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithMocks(provider: BuidlerProvider) {
+async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await provider.snapshot(snapshot);
 
   // Create mock fees
@@ -72,7 +72,7 @@ async function snapshotWithMocks(provider: BuidlerProvider) {
   };
 }
 
-async function snapshotWithMocksAndFund(provider: BuidlerProvider) {
+async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config, fees } = await provider.snapshot(
     snapshotWithMocks,
   );

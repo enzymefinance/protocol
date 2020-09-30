@@ -1,11 +1,11 @@
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 import { dummyFee, setupFundWithParams } from '../utils';
 import { IFee } from '../../codegen/IFee';
 
 let tx;
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const deployment = await deployTestEnvironment(provider);
   const {
     system: { fundFactory, registry },

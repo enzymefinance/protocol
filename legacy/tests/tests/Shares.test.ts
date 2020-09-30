@@ -1,10 +1,13 @@
-import { BuidlerProvider, randomAddress } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 import * as contracts from '../contracts';
 
 let tx;
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const deployment = await deployTestEnvironment(provider);
   const hub = await contracts.Hub.mock(deployment.config.deployer);
   await hub.REGISTRY.returns(deployment.system.registry);

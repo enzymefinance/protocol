@@ -1,9 +1,9 @@
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { utils } from 'ethers';
 import { assertEvent } from '../utils/testing';
 import { MockChainlinkPriceSource } from '../utils/contracts';
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const [deployer] = await provider.listAccounts();
   const signer = provider.getSigner(deployer);
   const chainlinkPriceSource = await MockChainlinkPriceSource.deploy(signer);

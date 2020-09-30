@@ -1,5 +1,5 @@
 import { utils } from 'ethers';
-import { BuidlerProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { deployTestEnvironment } from '../deployment';
 import {
   requestShares,
@@ -15,7 +15,7 @@ import {
 
 let tx;
 
-async function snapshot(provider: BuidlerProvider) {
+async function snapshot(provider: EthereumTestnetProvider) {
   const deployment = await deployTestEnvironment(provider);
   const {
     system: { chaiAdapter, sharesRequestor, fundFactory },
