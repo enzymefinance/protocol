@@ -43,6 +43,8 @@ contract Dispatcher is IDispatcher {
         address nextVaultLib
     );
 
+    event MigrationTimelockSet(uint256 prevTimelock, uint256 nextTimelock);
+
     event NominatedOwnerSet(address indexed nominatedOwner);
 
     event NominatedOwnerRemoved(address indexed nominatedOwner);
@@ -126,6 +128,7 @@ contract Dispatcher is IDispatcher {
     address private currentFundDeployer;
     address private nominatedOwner;
     address private owner;
+    uint256 private migrationTimelock;
     mapping(address => address) private vaultProxyToFundDeployer;
     mapping(address => MigrationRequest) private vaultProxyToMigrationRequest;
 
@@ -144,6 +147,7 @@ contract Dispatcher is IDispatcher {
 
     constructor() public {
         owner = msg.sender;
+        migrationTimelock = 2 days;
     }
 
     ////////////////////
@@ -211,6 +215,42 @@ contract Dispatcher is IDispatcher {
         nominatedOwner = _nextNominatedOwner;
 
         emit NominatedOwnerSet(_nextNominatedOwner);
+    }
+
+    ////////////////
+    // DEPLOYMENT //
+    ////////////////
+
+    function deployVaultProxy(
+        address _vaultLib,
+        address _owner,
+        address _vaultAccessor,
+        string calldata _fundName
+    ) external override onlyCurrentFundDeployer returns (address) {
+        // Need to perform validation?
+        // require(_manager != address(0), "deployVaultProxy: _manager cannot be empty");
+
+        bytes memory constructData = abi.encodeWithSelector(
+            IProxiableVault.init.selector,
+            _owner,
+            _vaultAccessor,
+            _fundName
+        );
+        address vaultProxy = address(new VaultProxy(constructData, _vaultLib));
+
+        address fundDeployer = msg.sender;
+        vaultProxyToFundDeployer[vaultProxy] = fundDeployer;
+
+        emit VaultProxyDeployed(
+            fundDeployer,
+            _owner,
+            vaultProxy,
+            _vaultLib,
+            _vaultAccessor,
+            _fundName
+        );
+
+        return vaultProxy;
     }
 
     ////////////////
@@ -309,38 +349,6 @@ contract Dispatcher is IDispatcher {
         );
     }
 
-    function deployVaultProxy(
-        address _vaultLib,
-        address _owner,
-        address _vaultAccessor,
-        string calldata _fundName
-    ) external override onlyCurrentFundDeployer returns (address) {
-        // Need to perform validation?
-        // require(_manager != address(0), "deployVaultProxy: _manager cannot be empty");
-
-        bytes memory constructData = abi.encodeWithSelector(
-            IProxiableVault.init.selector,
-            _owner,
-            _vaultAccessor,
-            _fundName
-        );
-        address vaultProxy = address(new VaultProxy(constructData, _vaultLib));
-
-        address fundDeployer = msg.sender;
-        vaultProxyToFundDeployer[vaultProxy] = fundDeployer;
-
-        emit VaultProxyDeployed(
-            fundDeployer,
-            _owner,
-            vaultProxy,
-            _vaultLib,
-            _vaultAccessor,
-            _fundName
-        );
-
-        return vaultProxy;
-    }
-
     function executeMigration(address _vaultProxy, bool _bypassFailure) external override {
         require(_vaultProxy != address(0), "executeMigration: _vaultProxy cannot be empty");
 
@@ -358,11 +366,17 @@ contract Dispatcher is IDispatcher {
             nextFundDeployer == currentFundDeployer,
             "executeMigration: The target FundDeployer is no longer the current FundDeployer"
         );
+        uint256 signalTimestamp = request.signalTimestamp;
+        // No chance of underflow, so since we are not using a SafeMath library otherwise,
+        // we use the default solidity subtraction operation here.
+        require(
+            block.timestamp - signalTimestamp >= migrationTimelock,
+            "executeMigration: The migration timelock has not been met"
+        );
 
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
         address nextVaultAccessor = request.nextVaultAccessor;
         address nextVaultLib = request.nextVaultLib;
-        uint256 signalTimestamp = request.signalTimestamp;
 
         // Allow to fail silently
         bool success;
@@ -442,6 +456,20 @@ contract Dispatcher is IDispatcher {
             nextVaultLib,
             signalTimestamp
         );
+    }
+
+    /// @notice Set a new migration timelock
+    /// @param _nextTimelock The number of seconds for the new timelock
+    function setMigrationTimelock(uint256 _nextTimelock) external override onlyOwner {
+        uint256 prevTimelock = migrationTimelock;
+        require(
+            _nextTimelock != prevTimelock,
+            "setMigrationTimelock: _nextTimelock is the current timelock"
+        );
+
+        migrationTimelock = _nextTimelock;
+
+        emit MigrationTimelockSet(prevTimelock, _nextTimelock);
     }
 
     function signalMigration(
@@ -563,6 +591,10 @@ contract Dispatcher is IDispatcher {
         if (r.signalTimestamp > 0) {
             return (r.nextFundDeployer, r.nextVaultAccessor, r.nextVaultLib, r.signalTimestamp);
         }
+    }
+
+    function getMigrationTimelock() external override view returns (uint256) {
+        return migrationTimelock;
     }
 
     function getNominatedOwner() external override view returns (address) {

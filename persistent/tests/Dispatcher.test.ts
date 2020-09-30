@@ -663,6 +663,60 @@ describe('executeMigration', () => {
     'cannot be called when the target FundDeployer in the migration request is no longer the current FundDeployer',
   );
 
+  it('cannot be called when the migration timelock has not yet been met', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Change current FundDeployer to mockNextFundDeployer and signal migration
+    const nextVaultAccessor = randomAddress();
+    const signalTx = signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+    await expect(signalTx).resolves.toBeReceipt();
+
+    // Try to migrate immediately, which should fail
+    const executeTx1 = mockNextFundDeployer.forward(
+      dispatcher.executeMigration,
+      vaultProxy,
+      false,
+    );
+    await expect(executeTx1).rejects.toBeRevertedWith(
+      'The migration timelock has not been met',
+    );
+
+    // Warp to 5 secs prior to the timelock expiry, which should also fail
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - 5]);
+
+    // Try to migrate again, which should fail
+    const executeTx2 = mockNextFundDeployer.forward(
+      dispatcher.executeMigration,
+      vaultProxy,
+      false,
+    );
+    await expect(executeTx2).rejects.toBeRevertedWith(
+      'The migration timelock has not been met',
+    );
+  });
+
   it.todo('correctly handles preMigrateOriginHook failure');
 
   it.todo('correctly handles postMigrateOriginHook failure');
@@ -698,14 +752,18 @@ describe('executeMigration', () => {
     await expect(signalTx).resolves.toBeReceipt();
     const signalTimestamp = await transactionTimestamp(signalTx);
 
+    // Warp to exactly the timelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
     // Execute migration
     const executeTx = mockNextFundDeployer.forward(
       dispatcher.executeMigration,
       vaultProxy,
       false,
     );
-
     await expect(executeTx).resolves.toBeReceipt();
+
     await assertEvent(executeTx, 'MigrationExecuted', {
       vaultProxy: vaultProxy.address,
       prevFundDeployer: mockPrevFundDeployer.address,
@@ -759,5 +817,60 @@ describe('executeMigration', () => {
       nextVaultLib,
       signalTimestamp,
     );
+  });
+});
+
+describe('setMigrationTimelock', () => {
+  it('can only be called by the contract owner', async () => {
+    const {
+      accounts: { 0: randomUser },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    const setMigrationTimelockTx = dispatcher
+      .connect(randomUser)
+      .setMigrationTimelock(randomAddress());
+    await expect(setMigrationTimelockTx).rejects.toBeRevertedWith(
+      'Only the contract owner can call this function',
+    );
+  });
+
+  it('does not allow the current migrationTimelock value', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+
+    const setMigrationTimelockTx = dispatcher.setMigrationTimelock(
+      migrationTimelock,
+    );
+    await expect(setMigrationTimelockTx).rejects.toBeRevertedWith(
+      '_nextTimelock is the current timelock',
+    );
+  });
+
+  it('correctly handles setting a new migration timelock', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Set a new timelock
+    const prevTimelock = await dispatcher.getMigrationTimelock();
+    const nextTimelock = prevTimelock.add(1);
+    const setMigrationTimelockTx = dispatcher.setMigrationTimelock(
+      nextTimelock,
+    );
+    await expect(setMigrationTimelockTx).resolves.toBeReceipt();
+
+    // migrationTimelock should have updated to the new value
+    const getMigrationTimelockCall = dispatcher.getMigrationTimelock();
+    await expect(getMigrationTimelockCall).resolves.toEqBigNumber(nextTimelock);
+
+    // MigrationTimelockSet event properly emitted
+    assertEvent(setMigrationTimelockTx, 'MigrationTimelockSet', {
+      prevTimelock,
+      nextTimelock,
+    });
   });
 });

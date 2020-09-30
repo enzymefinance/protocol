@@ -31,6 +31,8 @@ interface IDispatcher {
             uint256
         );
 
+    function getMigrationTimelock() external view returns (uint256);
+
     function getNominatedOwner() external view returns (address);
 
     function getOwner() external view returns (address);
@@ -38,6 +40,8 @@ interface IDispatcher {
     function removeNominatedOwner() external;
 
     function setCurrentFundDeployer(address) external;
+
+    function setMigrationTimelock(uint256) external;
 
     function setNominatedOwner(address) external;
 
