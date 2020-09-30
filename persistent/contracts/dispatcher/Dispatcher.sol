@@ -572,11 +572,16 @@ contract Dispatcher is IDispatcher {
         return currentFundDeployer;
     }
 
-    function getFundDeployerForFund(address _vaultProxy) external override view returns (address) {
+    function getFundDeployerForVaultProxy(address _vaultProxy)
+        external
+        override
+        view
+        returns (address)
+    {
         return vaultProxyToFundDeployer[_vaultProxy];
     }
 
-    function getMigrationRequestDetailsForFund(address _vaultProxy)
+    function getMigrationRequestDetailsForVaultProxy(address _vaultProxy)
         external
         override
         view

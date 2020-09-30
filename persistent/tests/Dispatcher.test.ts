@@ -512,7 +512,7 @@ describe('signalMigration', () => {
       nextVaultLib: nextVaultLib.address,
     });
 
-    const detailsCall = dispatcher.getMigrationRequestDetailsForFund(
+    const detailsCall = dispatcher.getMigrationRequestDetailsForVaultProxy(
       vaultProxy,
     );
 
@@ -608,7 +608,7 @@ describe('cancelMigration', () => {
     });
 
     // Removes MigrationRequest
-    const detailsCall = dispatcher.getMigrationRequestDetailsForFund(
+    const detailsCall = dispatcher.getMigrationRequestDetailsForVaultProxy(
       vaultProxy,
     );
 
@@ -781,7 +781,7 @@ describe('executeMigration', () => {
     await expect(accessorCall).resolves.toBe(nextVaultAccessor);
 
     // Removes MigrationRequest
-    const detailsCall = dispatcher.getMigrationRequestDetailsForFund(
+    const detailsCall = dispatcher.getMigrationRequestDetailsForVaultProxy(
       vaultProxy,
     );
     await expect(detailsCall).resolves.toMatchObject({

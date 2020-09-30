@@ -19,9 +19,9 @@ interface IDispatcher {
 
     function getCurrentFundDeployer() external view returns (address);
 
-    function getFundDeployerForFund(address) external view returns (address);
+    function getFundDeployerForVaultProxy(address) external view returns (address);
 
-    function getMigrationRequestDetailsForFund(address)
+    function getMigrationRequestDetailsForVaultProxy(address)
         external
         view
         returns (

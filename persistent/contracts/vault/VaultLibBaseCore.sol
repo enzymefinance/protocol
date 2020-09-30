@@ -69,7 +69,7 @@ abstract contract VaultLibBaseCore is StandardERC20, IProxiableVault, Proxiable 
 
     // PUBLIC FUNCTIONS
 
-    function canMigrate(address _who) public override view returns (bool) {
+    function canMigrate(address _who) public virtual override view returns (bool) {
         return _who == owner || _who == migrator;
     }
 
