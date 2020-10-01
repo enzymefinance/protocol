@@ -51,6 +51,8 @@ describe('constructor', () => {
 });
 
 describe('setComptrollerLib', () => {
+  it.todo('emits ControllerLibSet event');
+
   it('is set during deployment and can only be set once', async () => {
     const {
       deployment: { fundDeployer, comptrollerLib },
@@ -72,6 +74,8 @@ describe('setReleaseStatus', () => {
   it.todo('does not allow returning to PreLaunch status');
 
   it.todo('does not allow the current status');
+
+  it.todo('can only be called when a comptroller lib is set');
 
   it('correctly handles setting the release status', async () => {
     const {

@@ -15,6 +15,8 @@ import "./IFundDeployer.sol";
 /// coordinates fund deployment and fund migration. It serves as the top-level contract
 /// for a release, and is thus also deferred to for contract ownership access control.
 contract FundDeployer is IFundDeployer, AmguConsumer {
+    event ComptrollerLibSet(address comptrollerLib);
+
     event ComptrollerProxyDeployed(address deployer, address comptrollerProxy);
 
     event NewFundDeployed(
@@ -77,6 +79,8 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         );
 
         comptrollerLib = _comptrollerLib;
+
+        emit ComptrollerLibSet(_comptrollerLib);
     }
 
     /// @notice Sets the status of the protocol to a new state
@@ -89,6 +93,10 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         require(
             _nextStatus != ReleaseStatus.PreLaunch,
             "setReleaseStatus: Cannot return to PreLaunch status"
+        );
+        require(
+            comptrollerLib != address(0),
+            "setReleaseStatus: Can only set the release status when comptrollerLib is set"
         );
 
         ReleaseStatus prevStatus = releaseStatus;
