@@ -21,7 +21,7 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _primitivePriceFeed The primitive price feed to use for the calculations
     /// @param _derivativePriceFeed (optional) The derivative price feed to use for the calculations
     /// @param _baseAsset The asset from which to convert
-    /// @param _baseAsset The amount of the _baseAsset to convert
+    /// @param _amount The amount of the _baseAsset to convert
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
     /// @return isValid_ True if the price source rates are all valid
@@ -48,7 +48,7 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _primitivePriceFeed The primitive price feed to use for the calculations
     /// @param _derivativePriceFeed (optional) The derivative price feed to use for the calculations
     /// @param _baseAsset The asset from which to convert
-    /// @param _baseAsset The amount of the _baseAsset to convert
+    /// @param _amount The amount of the _baseAsset to convert
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
     /// @return isValid_ True if the price source rates are all valid
