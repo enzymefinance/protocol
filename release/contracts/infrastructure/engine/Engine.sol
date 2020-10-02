@@ -86,7 +86,7 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         for (uint256 i = 0; i < _takers.length; i++) {
             require(
                 acctToIsEtherTaker[_takers[i]],
-                "__addEtherTakers: etherTaker has not been added"
+                "__removeEtherTakers: etherTaker has not been added"
             );
             acctToIsEtherTaker[_takers[i]] = false;
 
