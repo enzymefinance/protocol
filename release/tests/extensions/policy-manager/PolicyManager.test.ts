@@ -4,15 +4,13 @@ import {
   extractEvent,
 } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '../../../';
-import { IPolicy } from '../../../codegen/IPolicy';
 import {
   buyShares,
   createNewFund,
   encodeArgs,
+  generateRegisteredMockPolicies,
   mockGenericSwap,
   mockGenericSwapASelector,
-  policyHookExecutionTimes,
-  policyHooks,
   validateRulePreBuySharesArgs,
   validateRulePostBuySharesArgs,
   validateRulePreCoIArgs,
@@ -34,41 +32,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
 async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await provider.snapshot(snapshot);
 
-  // Create mock policies
-  const policies = [
-    await IPolicy.mock(config.deployer),
-    await IPolicy.mock(config.deployer),
-    await IPolicy.mock(config.deployer),
-    await IPolicy.mock(config.deployer),
-  ];
+  const policies = await generateRegisteredMockPolicies({
+    deployer: config.deployer,
+    policyManager: deployment.policyManager,
+  });
 
-  // Initialize mock policy return values
-  await Promise.all<any>([
-    policies.map((policy, i) => {
-      return Promise.all([
-        policy.identifier.returns('MOCK_'.concat((i + 1).toString())),
-        policy.addFundSettings.returns(undefined),
-        policy.validateRule.returns(true),
-        i < 2
-          ? policy.policyHook.returns(policyHooks.BuyShares)
-          : policy.policyHook.returns(policyHooks.CallOnIntegration),
-        i % 2 == 0
-          ? policy.policyHookExecutionTime.returns(policyHookExecutionTimes.Pre)
-          : policy.policyHookExecutionTime.returns(
-              policyHookExecutionTimes.Post,
-            ),
-      ]);
-    }),
-  ]);
-  const [
-    mockPreBuySharesPolicy,
-    mockPostBuySharesPolicy,
-    mockPreCoIPolicy,
-    mockPostCoIPolicy,
-  ] = policies;
-
-  // Register all mock policies and the mock generic adapter
-  await deployment.policyManager.registerPolicies(policies);
+  // Register the mock generic adapter
   await deployment.integrationManager.registerAdapters([
     deployment.mockGenericAdapter,
   ]);
@@ -77,12 +46,7 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
     accounts,
     deployment,
     config,
-    policies: {
-      mockPreBuySharesPolicy,
-      mockPostBuySharesPolicy,
-      mockPreCoIPolicy,
-      mockPostCoIPolicy,
-    },
+    policies,
   };
 }
 

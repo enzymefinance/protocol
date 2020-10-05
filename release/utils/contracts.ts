@@ -1,6 +1,7 @@
 // Core
 export { FundDeployer } from '../codegen/FundDeployer';
 export { ComptrollerLib } from '../codegen/ComptrollerLib';
+export { ComptrollerProxy } from '../codegen/ComptrollerProxy';
 export { VaultLib } from '../codegen/VaultLib';
 
 // Infrastructure

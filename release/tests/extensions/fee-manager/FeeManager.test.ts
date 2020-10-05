@@ -6,14 +6,13 @@ import {
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../';
-import { IFee } from '../../../codegen/IFee';
 import {
   buyShares,
   callOnExtension,
   createNewFund,
   encodeArgs,
-  feeHooks,
   feeSettlementTypes,
+  generateRegisteredMockFees,
   settleBuySharesArgs,
   settleContinuousFeesSelector,
 } from '../../utils';
@@ -33,42 +32,16 @@ async function snapshot(provider: EthereumTestnetProvider) {
 async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await provider.snapshot(snapshot);
 
-  // Create mock fees
-  const fees = [
-    await IFee.mock(config.deployer),
-    await IFee.mock(config.deployer),
-    await IFee.mock(config.deployer),
-  ];
-
-  // Initialize mock fee return values
-  await Promise.all<any>([
-    fees.map((fee, i) => {
-      return Promise.all([
-        fee.identifier.returns('MOCK_'.concat((i + 1).toString())),
-        fee.settle.returns(feeSettlementTypes.None, constants.AddressZero, 0),
-        fee.payout.returns(false),
-        fee.addFundSettings.returns(undefined),
-        fee.activateForFund.returns(undefined),
-        i < 2
-          ? fee.feeHook.returns(feeHooks.Continuous)
-          : fee.feeHook.returns(feeHooks.BuyShares),
-      ]);
-    }),
-  ]);
-  const [mockContinuousFee1, mockContinuousFee2, mockBuySharesFee] = fees;
-
-  // Register all mock fees
-  await deployment.feeManager.registerFees(fees);
+  const fees = await generateRegisteredMockFees({
+    deployer: config.deployer,
+    feeManager: deployment.feeManager,
+  });
 
   return {
     accounts,
     deployment,
     config,
-    fees: {
-      mockContinuousFee1,
-      mockContinuousFee2,
-      mockBuySharesFee,
-    },
+    fees,
   };
 }
 
@@ -199,12 +172,22 @@ describe('setFundConfig', () => {
 });
 
 describe('activateForFund', () => {
-  it('calls each enabled fee to activate', async () => {
+  it('correctly handles activation', async () => {
     const {
+      deployment: { feeManager },
       fees,
-      fund: { comptrollerProxy },
+      fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshotWithMocksAndFund);
 
+    // Sets the fee recipient as the fund owner
+    const getFeesRecipientForFundCall = feeManager.getFeesRecipientForFund(
+      comptrollerProxy,
+    );
+    await expect(getFeesRecipientForFundCall).resolves.toBe(
+      await resolveAddress(fundOwner),
+    );
+
+    // Calls each enabled fee to activate
     for (const fee of Object.values(fees)) {
       await expect(fee.activateForFund.ref).toHaveBeenCalledOnContractWith(
         comptrollerProxy,

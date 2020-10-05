@@ -85,6 +85,8 @@ contract VaultLib is VaultLibBase1, IVault {
     {
         (bool success, bytes memory returnData) = _contract.call(_callData);
         require(success, string(returnData));
+
+        // TODO: need event?
     }
 
     function disallowAssetSpender(address _asset, address _target) external override onlyAccessor {

@@ -1,5 +1,7 @@
 import { AddressLike } from '@crestproject/crestproject';
-import { BigNumberish, BytesLike } from 'ethers';
+import { BigNumberish, BytesLike, Signer, utils } from 'ethers';
+import { IPolicy } from '../../../../../codegen/IPolicy';
+import { PolicyManager } from '../../../../../utils/contracts';
 import { encodeArgs } from '../../../common';
 
 // Policy Manager
@@ -14,6 +16,92 @@ export enum policyHookExecutionTimes {
   None,
   Pre,
   Post,
+}
+
+export async function generatePolicyManagerConfigWithMockFees({
+  deployer,
+  policyManager,
+}: {
+  deployer: Signer;
+  policyManager: PolicyManager;
+}) {
+  const policies = await generateRegisteredMockPolicies({
+    deployer,
+    policyManager,
+  });
+
+  const policiesSettingsData = [
+    utils.randomBytes(10),
+    '0x',
+    '0x',
+    utils.randomBytes(2),
+  ];
+
+  return encodeArgs(
+    ['address[]', 'bytes[]'],
+    [Object.values(policies), policiesSettingsData],
+  );
+}
+
+export async function generateRegisteredMockPolicies({
+  deployer,
+  policyManager,
+}: {
+  deployer: Signer;
+  policyManager: PolicyManager;
+}) {
+  // Create mock policies
+  const mockPreBuySharesPolicy = await IPolicy.mock(deployer);
+  const mockPostBuySharesPolicy = await IPolicy.mock(deployer);
+  const mockPreCoIPolicy = await IPolicy.mock(deployer);
+  const mockPostCoIPolicy = await IPolicy.mock(deployer);
+
+  // Initialize mock policy return values
+  await Promise.all([
+    mockPreBuySharesPolicy.identifier.returns(`MOCK_PRE_BUY_SHARES`),
+    mockPreBuySharesPolicy.addFundSettings.returns(undefined),
+    mockPreBuySharesPolicy.validateRule.returns(true),
+    mockPreBuySharesPolicy.policyHook.returns(policyHooks.BuyShares),
+    mockPreBuySharesPolicy.policyHookExecutionTime.returns(
+      policyHookExecutionTimes.Pre,
+    ),
+    mockPostBuySharesPolicy.identifier.returns(`MOCK_POST_BUY_SHARES`),
+    mockPostBuySharesPolicy.addFundSettings.returns(undefined),
+    mockPostBuySharesPolicy.validateRule.returns(true),
+    mockPostBuySharesPolicy.policyHook.returns(policyHooks.BuyShares),
+    mockPostBuySharesPolicy.policyHookExecutionTime.returns(
+      policyHookExecutionTimes.Post,
+    ),
+    mockPreCoIPolicy.identifier.returns(`MOCK_PRE_CALL_ON_INTEGRATION`),
+    mockPreCoIPolicy.addFundSettings.returns(undefined),
+    mockPreCoIPolicy.validateRule.returns(true),
+    mockPreCoIPolicy.policyHook.returns(policyHooks.CallOnIntegration),
+    mockPreCoIPolicy.policyHookExecutionTime.returns(
+      policyHookExecutionTimes.Pre,
+    ),
+    mockPostCoIPolicy.identifier.returns(`MOCK_POST_CALL_ON_INTEGRATION`),
+    mockPostCoIPolicy.addFundSettings.returns(undefined),
+    mockPostCoIPolicy.validateRule.returns(true),
+    mockPostCoIPolicy.policyHook.returns(policyHooks.CallOnIntegration),
+    mockPostCoIPolicy.policyHookExecutionTime.returns(
+      policyHookExecutionTimes.Post,
+    ),
+  ]);
+
+  // Register all mock policies
+  await policyManager.registerPolicies([
+    mockPreBuySharesPolicy,
+    mockPostBuySharesPolicy,
+    mockPreCoIPolicy,
+    mockPostCoIPolicy,
+  ]);
+
+  return {
+    mockPreBuySharesPolicy,
+    mockPostBuySharesPolicy,
+    mockPreCoIPolicy,
+    mockPostCoIPolicy,
+  };
 }
 
 export async function policyManagerConfigArgs(

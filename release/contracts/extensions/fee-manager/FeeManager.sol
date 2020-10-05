@@ -71,9 +71,17 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     /// @notice Initialize already configured fees for use in the calling fund
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     function activateForFund() external override {
-        address[] memory enabledFees = comptrollerProxyToFees[msg.sender];
+        address comptrollerProxy = msg.sender;
+
+        // Set the fund owner as the fees recipient
+        __setFeesRecipient(
+            comptrollerProxy,
+            IVault(IComptroller(comptrollerProxy).getVaultProxy()).getOwner()
+        );
+
+        address[] memory enabledFees = comptrollerProxyToFees[comptrollerProxy];
         for (uint256 i; i < enabledFees.length; i++) {
-            IFee(enabledFees[i]).activateForFund(msg.sender);
+            IFee(enabledFees[i]).activateForFund(comptrollerProxy);
         }
     }
 
@@ -113,12 +121,6 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
             "enableFees: fees and settingsData array lengths unequal"
         );
         require(fees.isUniqueSet(), "setFundConfig: fees cannot include duplicates");
-
-        // Set the fund owner as the fees recipient
-        __setFeesRecipient(
-            comptrollerProxy,
-            IVault(IComptroller(comptrollerProxy).getVaultProxy()).getOwner()
-        );
 
         // Enable each fee with settings
         for (uint256 i; i < fees.length; i++) {
@@ -273,6 +275,7 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     }
 
     /// @dev Helper to settle and then payout shares outstanding for a each fee of a given FeeHook
+    // TODO: need to assert active fund?
     function __settleFeesForHook(
         address _comptrollerProxy,
         FeeHook _hook,

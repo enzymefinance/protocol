@@ -6,8 +6,6 @@ export async function assertEvent<TResult = any>(
   event: string | utils.EventFragment,
   match?: TResult,
 ) {
-  await expect(tx).resolves.toBeReceipt();
-
   const receipt = await tx;
   const events = extractEvent(receipt, event);
   expect(events.length).toBe(1);

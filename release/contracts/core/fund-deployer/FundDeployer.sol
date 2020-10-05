@@ -17,17 +17,24 @@ import "./IFundDeployer.sol";
 contract FundDeployer is IFundDeployer, AmguConsumer {
     event ComptrollerLibSet(address comptrollerLib);
 
-    event ComptrollerProxyDeployed(address deployer, address comptrollerProxy);
+    event ComptrollerProxyDeployed(
+        address indexed creator,
+        address comptrollerProxy,
+        address indexed denominationAsset,
+        bytes feeManagerConfigData,
+        bytes policyManagerConfigData,
+        bool indexed forMigration
+    );
 
-    event NewFundDeployed(
-        address caller,
+    event NewFundCreated(
+        address indexed creator,
         address comptrollerProxy,
         address vaultProxy,
         address indexed fundOwner,
         string fundName,
         address indexed denominationAsset,
-        bytes feeManagerConfig,
-        bytes policyManagerConfig
+        bytes feeManagerConfigData,
+        bytes policyManagerConfigData
     );
 
     event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
@@ -47,9 +54,26 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     // Storage
     ReleaseStatus private releaseStatus;
     mapping(address => mapping(bytes4 => bool)) private contractToSelectorToIsRegisteredVaultCall;
+    mapping(address => address) private pendingComptrollerProxyToCreator;
+
+    modifier onlyMigrator(address _vaultProxy) {
+        require(
+            IVault(_vaultProxy).canMigrate(msg.sender),
+            "Only a permissioned migrator can call this function"
+        );
+        _;
+    }
 
     modifier onlyOwner() {
         require(msg.sender == getOwner(), "Only the contract owner can call this function");
+        _;
+    }
+
+    modifier onlyPendingComptrollerProxyCreator(address _comptrollerProxy) {
+        require(
+            msg.sender == pendingComptrollerProxyToCreator[_comptrollerProxy],
+            "Only the ComptrollerProxy creator can call this function"
+        );
         _;
     }
 
@@ -68,10 +92,13 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         VAULT_LIB = _vaultLib;
     }
 
-    //////////
-    // CORE //
-    //////////
+    /////////////
+    // GENERAL //
+    /////////////
 
+    /// @notice Sets the comptrollerLib
+    /// @param _comptrollerLib The ComptrollerLib contract address
+    /// @dev Can only be set once
     function setComptrollerLib(address _comptrollerLib) external onlyOwner {
         require(
             comptrollerLib == address(0),
@@ -118,23 +145,67 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         return IDispatcher(DISPATCHER).getOwner();
     }
 
-    /////////////////////
-    // FUND DEPLOYMENT //
-    /////////////////////
+    ///////////////////
+    // FUND CREATION //
+    ///////////////////
 
+    /// @notice Creates fund config, which can be migrated to from a previous release
+    /// @param _denominationAsset The contract address of the denomination asset for the fund
+    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
+    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action.
+    /// @dev This should only ever be used to migrate a fund. While it could technically be used
+    /// to setup a fund before deploying a VaultProxy and activating it, it doesn't charge amgu.
+    /// This is why there is no external function to create a vault and activate.
+    function createMigratedFundConfig(
+        address _denominationAsset,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external returns (address comptrollerProxy_) {
+        require(
+            _denominationAsset != address(0),
+            "createMigratedFundConfig: _denominationAsset cannot be empty"
+        );
+
+        comptrollerProxy_ = __deployComptrollerProxy(
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData,
+            true
+        );
+
+        pendingComptrollerProxyToCreator[comptrollerProxy_] = msg.sender;
+
+        return comptrollerProxy_;
+    }
+
+    /// @notice Creates a new fund, including fund config and a fund vault
+    /// @param _fundOwner The address of the owner for the fund
+    /// @param _fundName The name of the fund
+    /// @param _denominationAsset The contract address of the denomination asset for the fund
+    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
+    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action.
     function createNewFund(
         address _fundOwner,
         string calldata _fundName,
         address _denominationAsset,
-        bytes calldata _feeManagerConfig,
-        bytes calldata _policyManagerConfig
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
     ) external payable amguPayable returns (address comptrollerProxy_, address vaultProxy_) {
         require(_fundOwner != address(0), "createNewFund: _owner cannot be empty");
+        require(
+            _denominationAsset != address(0),
+            "createNewFund: _denominationAsset cannot be empty"
+        );
 
-        // 1. Deploy ComptrollerProxy
-        comptrollerProxy_ = __deployComptrollerProxy();
+        comptrollerProxy_ = __deployComptrollerProxy(
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData,
+            false
+        );
 
-        // 2. Deploy VaultProxy
         vaultProxy_ = IDispatcher(DISPATCHER).deployVaultProxy(
             VAULT_LIB,
             _fundOwner,
@@ -142,59 +213,161 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             _fundName
         );
 
-        // 3. Set config, set vaultProxy, and activate fund
-        IComptroller(comptrollerProxy_).quickSetup(
-            vaultProxy_,
-            _denominationAsset,
-            _feeManagerConfig,
-            _policyManagerConfig
-        );
+        IComptroller(comptrollerProxy_).activate(vaultProxy_, false);
 
-        emit NewFundDeployed(
+        emit NewFundCreated(
             msg.sender,
             comptrollerProxy_,
             vaultProxy_,
             _fundOwner,
             _fundName,
             _denominationAsset,
-            _feeManagerConfig,
-            _policyManagerConfig
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
+
+        return (comptrollerProxy_, vaultProxy_);
+    }
+
+    /// @dev Helper function to deploy a new ComptrollerProxy
+    function __deployComptrollerProxy(
+        address _denominationAsset,
+        bytes memory _feeManagerConfigData,
+        bytes memory _policyManagerConfigData,
+        bool _forMigration
+    ) private returns (address comptrollerProxy_) {
+        bytes memory constructData = abi.encodeWithSelector(
+            IComptroller.init.selector,
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
+        comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
+
+        emit ComptrollerProxyDeployed(
+            msg.sender,
+            comptrollerProxy_,
+            _denominationAsset,
+            _feeManagerConfigData,
+            _policyManagerConfigData,
+            _forMigration
         );
     }
 
-    function __deployComptrollerProxy() private returns (address comptrollerProxy_) {
-        bytes memory constructData = abi.encodeWithSelector(IComptroller.init.selector, "");
-        comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
+    //////////////////
+    // MIGRATION IN //
+    //////////////////
 
-        emit ComptrollerProxyDeployed(msg.sender, comptrollerProxy_);
+    /// @notice Cancels fund migration
+    /// @param _vaultProxy The VaultProxy for which to cancel migration
+    function cancelMigration(address _vaultProxy) external {
+        __cancelMigration(_vaultProxy, false);
     }
 
-    ////////////////////
-    // FUND MIGRATION //
-    ////////////////////
+    /// @notice Cancels fund migration, bypassing any failures.
+    /// Should be used in an emergency only.
+    /// @param _vaultProxy The VaultProxy for which to cancel migration
+    function cancelMigrationEmergency(address _vaultProxy) external {
+        __cancelMigration(_vaultProxy, true);
+    }
 
-    function postCancelMigrationOriginHook(
-        address _vaultProxy,
-        address _nextRelease,
-        address _nextAccessor,
-        address _nextVaultLib,
-        uint256 _signaledTimestamp
-    ) external virtual override {
-        // UNIMPLEMENTED
+    /// @notice Executes fund migration
+    /// @param _vaultProxy The VaultProxy for which to execute the migration
+    function executeMigration(address _vaultProxy) external {
+        __executeMigration(_vaultProxy, false);
+    }
+
+    /// @notice Executes fund migration, bypassing any failures.
+    /// Should be used in an emergency only.
+    /// @param _vaultProxy The VaultProxy for which to execute the migration
+    function executeMigrationEmergency(address _vaultProxy) external {
+        __executeMigration(_vaultProxy, true);
     }
 
     function postCancelMigrationTargetHook(
+        address,
+        address,
+        address,
+        address,
+        uint256
+    ) external virtual override {
+        // UNIMPLEMENTED
+        // TODO: add event if we have cancel migration event
+    }
+
+    /// @notice Signal a fund migration
+    /// @param _vaultProxy The VaultProxy for which to signal the migration
+    /// @param _comptrollerProxy The ComptrollerProxy for which to signal the migration
+    function signalMigration(address _vaultProxy, address _comptrollerProxy) external {
+        __signalMigration(_vaultProxy, _comptrollerProxy, false);
+    }
+
+    /// @notice Signal a fund migration, bypassing any failures.
+    /// Should be used in an emergency only.
+    /// @param _vaultProxy The VaultProxy for which to signal the migration
+    /// @param _comptrollerProxy The ComptrollerProxy for which to signal the migration
+    function signalMigrationEmergency(address _vaultProxy, address _comptrollerProxy) external {
+        __signalMigration(_vaultProxy, _comptrollerProxy, true);
+    }
+
+    /// @dev Helper to cancel a migration
+    function __cancelMigration(address _vaultProxy, bool _bypassFailure)
+        private
+        onlyMigrator(_vaultProxy)
+    {
+        IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassFailure);
+    }
+
+    /// @dev Helper to execute a migration
+    function __executeMigration(address _vaultProxy, bool _bypassFailure)
+        private
+        onlyMigrator(_vaultProxy)
+    {
+        IDispatcher dispatcherContract = IDispatcher(DISPATCHER);
+
+        (, address comptrollerProxy, , ) = dispatcherContract
+            .getMigrationRequestDetailsForVaultProxy(_vaultProxy);
+
+        // TODO: should executeMigration return values like comptrollerProxy?
+        dispatcherContract.executeMigration(_vaultProxy, _bypassFailure);
+
+        IComptroller(comptrollerProxy).activate(_vaultProxy, true);
+
+        delete pendingComptrollerProxyToCreator[comptrollerProxy];
+    }
+
+    /// @dev Helper to signal a migration
+    function __signalMigration(
         address _vaultProxy,
-        address _prevRelease,
-        address _nextAccessor,
-        address _nextVaultLib,
-        uint256 _signaledTimestamp
+        address _comptrollerProxy,
+        bool _bypassFailure
+    ) private onlyPendingComptrollerProxyCreator(_comptrollerProxy) onlyMigrator(_vaultProxy) {
+        IDispatcher(DISPATCHER).signalMigration(
+            _vaultProxy,
+            _comptrollerProxy,
+            VAULT_LIB,
+            _bypassFailure
+        );
+    }
+
+    ///////////////////
+    // MIGRATION OUT //
+    ///////////////////
+
+    function postCancelMigrationOriginHook(
+        address,
+        address,
+        address,
+        address,
+        uint256
     ) external virtual override {
         // UNIMPLEMENTED
     }
 
-    /// @dev Must use pre-migration hook to be able to know the ComptrollerProxy (prev accessor)
-    // TODO: need to update hooks to include prev accessor?
+    /// @notice Runs arbitrary logic immediately prior to executing a migration
+    /// @param _vaultProxy The VaultProxy being migrated
+    /// @dev Must use pre-migration hook to be able to get the ComptrollerProxy (prevAccessor)
+    // TODO: Update hooks to include prev accessor?
     function preMigrateOriginHook(
         address _vaultProxy,
         address,
@@ -207,13 +380,9 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             "postMigrateOriginHook: Only Dispatcher can call this function"
         );
 
-        // Shutdown the fund
+        // Wind down fund and destroy its config
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
-        IComptroller(comptrollerProxy).shutdown();
-
-        // TODO: self-destruct ComptrollerProxy?
-
-        // TODO: need event?
+        IComptroller(comptrollerProxy).destruct();
     }
 
     function postMigrateOriginHook(
@@ -248,6 +417,9 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     // REGISTRY //
     //////////////
 
+    /// @notice De-registers allowed arbitrary vault calls
+    /// @param _contracts The contracts of the calls to de-register
+    /// @param _selectors The selectors of the calls to de-register
     function deregisterVaultCalls(address[] calldata _contracts, bytes4[] calldata _selectors)
         external
         onlyOwner
@@ -270,6 +442,9 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         }
     }
 
+    /// @notice Registers allowed arbitrary vault calls
+    /// @param _contracts The contracts of the calls to register
+    /// @param _selectors The selectors of the calls to register
     function registerVaultCalls(address[] calldata _contracts, bytes4[] calldata _selectors)
         external
         onlyOwner
@@ -279,6 +454,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         __registerVaultCalls(_contracts, _selectors);
     }
 
+    /// @dev Helper to register allowed vault calls
     function __registerVaultCalls(address[] memory _contracts, bytes4[] memory _selectors)
         private
     {
@@ -303,31 +479,55 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     // STATE GETTERS //
     ///////////////////
 
-    function getComptrollerLib() external view returns (address) {
+    /// @notice Gets the `comptrollerLib` variable value
+    /// @return comptrollerLib_ The `comptrollerLib` variable value
+    function getComptrollerLib() external view returns (address comptrollerLib_) {
         return comptrollerLib;
     }
 
-    function getCreator() external view returns (address) {
+    /// @notice Gets the `CREATOR` variable value
+    /// @return creator_ The `CREATOR` variable value
+    function getCreator() external view returns (address creator_) {
         return CREATOR;
     }
 
-    function getDispatcher() external view returns (address) {
+    /// @notice Gets the `DISPATCHER` variable value
+    /// @return dispatcher_ The `DISPATCHER` variable value
+    function getDispatcher() external view returns (address dispatcher_) {
         return DISPATCHER;
     }
 
+    /// @notice Gets the creator of a pending ComptrollerProxy
+    /// @return pendingComptrollerProxyCreator_ The pending ComptrollerProxy creator
+    function getPendingComptrollerProxyCreator(address _comptrollerProxy)
+        external
+        view
+        returns (address pendingComptrollerProxyCreator_)
+    {
+        return pendingComptrollerProxyToCreator[_comptrollerProxy];
+    }
+
+    /// @notice Gets the `releaseStatus` variable value
+    /// @return status_ The `releaseStatus` variable value
     function getReleaseStatus() external view returns (ReleaseStatus status_) {
         return releaseStatus;
     }
 
-    function getVaultLib() external view returns (address) {
+    /// @notice Gets the `VAULT_LIB` variable value
+    /// @return vaultLib_ The `VAULT_LIB` variable value
+    function getVaultLib() external view returns (address vaultLib_) {
         return VAULT_LIB;
     }
 
+    /// @notice Checks if a contract call is registered
+    /// @param _contract The contract of the call to check
+    /// @param _selector The selector of the call to check
+    /// @return isRegistered_ True if the call is registered
     function isRegisteredVaultCall(address _contract, bytes4 _selector)
         external
         override
         view
-        returns (bool)
+        returns (bool isRegistered_)
     {
         return contractToSelectorToIsRegisteredVaultCall[_contract][_selector];
     }

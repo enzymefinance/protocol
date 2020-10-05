@@ -11,10 +11,6 @@ import "./IDispatcher.sol";
 /// @notice The top-level contract linking multiple releases of Melon infrastructure,
 /// regulating the deployment of new VaultProxy instances and the migration of funds between releases.
 contract Dispatcher is IDispatcher {
-    // TODO: Confirm whether low level calls to non-existent functions succeed or fail (and especially that they fail silently)
-
-    // Events
-
     event CurrentFundDeployerSet(address prevFundDeployer, address nextFundDeployer);
 
     event MigrationCancelled(

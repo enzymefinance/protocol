@@ -24,14 +24,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
 
-    event FundConfigSet(
-        address indexed vaultProxy,
-        address indexed denominationAsset,
-        bytes feeManagerConfigData,
-        bytes policyManagerConfigData
-    );
+    event MigratedSharesDuePaid(address payee, uint256 sharesDue);
 
-    event FundStatusUpdated(FundStatus indexed prevStatus, FundStatus indexed nextStatus);
+    event StatusUpdated(FundStatus indexed nextStatus);
 
     event SharesBought(
         address indexed caller,
@@ -76,12 +71,14 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // MODIFIERS //
     ///////////////
 
-    modifier onlyActiveFund() {
-        __assertIsActiveFund();
+    modifier onlyActive() {
+        __assertIsActive();
         _;
     }
 
     modifier callsExtension {
+        require(!callOnExtensionIsActive, "callsExtension: call on extension already active");
+
         callOnExtensionIsActive = true;
         _;
         callOnExtensionIsActive = false;
@@ -97,6 +94,11 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         _;
     }
 
+    modifier onlyOwner() {
+        __assertIsOwner(msg.sender);
+        _;
+    }
+
     /// @dev These permissions will eventually be defined on extensions themselves
     modifier onlyPermissionedRequest(IVault.VaultAction _action) {
         __assertValidCallFromExtension(msg.sender, _action);
@@ -107,7 +109,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // Modifiers are inefficient in terms of reducing contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
-    function __assertIsActiveFund() private view {
+    function __assertIsActive() private view {
         require(status == FundStatus.Active, "This function can only be called on an active fund");
     }
 
@@ -117,6 +119,13 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     function __assertIsDelegateCall() private view {
         require(initialized == true, "Only a delegate call can access this function");
+    }
+
+    function __assertIsOwner(address _who) private view {
+        require(
+            _who == IVault(vaultProxy).getOwner(),
+            "Only the fund owner can call this function"
+        );
     }
 
     function __assertValidCallFromExtension(address _extension, IVault.VaultAction _action)
@@ -144,11 +153,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         }
     }
 
-    //////////
-    // CORE //
-    //////////
-
-    /// @dev Constructor for library
     constructor(
         address _fundDeployer,
         address _valueInterpreter,
@@ -168,14 +172,28 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         VALUE_INTERPRETER = _valueInterpreter;
     }
 
+    /////////////
+    // GENERAL //
+    /////////////
+
+    /// @notice Calls an arbitrary function on an extension
+    /// @param _extension The extension contract to call (e.g., FeeManager)
+    /// @param _selector The selector to call
+    /// @param _callArgs The encoded data for the call
     /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy (for access control).
     /// Uses a reverse-mutex of sorts that only allows permissioned calls to the vault during this stack.
+    /// Does not require a fund to be active, that can be left up to the extensions to handle.
     function callOnExtension(
         address _extension,
         bytes4 _selector,
         bytes calldata _callArgs
     ) external onlyDelegateCall callsExtension {
-        require(__isExtension(_extension), "callOnExtension: _extension is not valid");
+        require(
+            _extension == FEE_MANAGER ||
+                _extension == POLICY_MANAGER ||
+                _extension == INTEGRATION_MANAGER,
+            "callOnExtension: _extension is not valid"
+        );
 
         (bool success, bytes memory returnData) = _extension.call(
             abi.encodeWithSelector(_selector, msg.sender, _callArgs)
@@ -183,30 +201,38 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         require(success, string(returnData));
     }
 
-    function isReceivableAsset(address _asset) external override view returns (bool) {
+    /// @notice Checks whether an asset can be added to the fund
+    /// @param _asset The asset contract address
+    /// @return isReceivable_ True if the asset can be added
+    /// @dev An asset is receivable if a valid price
+    // TODO: Technically, a derivative is only supported if there are primitive values
+    // for all of its recursive underlying assets.
+    function isReceivableAsset(address _asset)
+        external
+        override
+        view
+        returns (bool isReceivable_)
+    {
         return
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
             IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
     }
 
+    /// @notice Makes an arbitrary call from the VaultProxy contract
+    /// @param _contract The contract to call
+    /// @param _selector The selector to call
+    /// @param _callData The call data for the call
     function vaultCallOnContract(
         address _contract,
         bytes4 _selector,
         bytes calldata _callData
-    ) external onlyDelegateCall {
-        IVault vaultContract = IVault(vaultProxy);
-        require(
-            msg.sender == vaultContract.getOwner(),
-            "Only the fund owner can call this function"
-        );
+    ) external onlyDelegateCall onlyActive onlyOwner {
         require(
             IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
             "vaultCallOnContract: not a registered call"
         );
 
-        vaultContract.callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
-
-        // TODO: need event?
+        IVault(vaultProxy).callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
     }
 
     // // TODO: implement with roles
@@ -217,110 +243,30 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     //     return _who == IVault(vaultProxy).getOwner();
     // }
 
-    // TODO: make this specific to whether the fund uses an extension
-    function __isExtension(address _who) private view returns (bool) {
-        return _who == FEE_MANAGER || _who == POLICY_MANAGER || _who == INTEGRATION_MANAGER;
-    }
+    ///////////////
+    // LIFECYCLE //
+    ///////////////
 
-    /////////////////////////////
-    // FUND SETUP AND TEARDOWN //
-    /////////////////////////////
+    // Ordered function calls for stages in a fund lifecycle:
+    // 1. init() - called on deployment of ComptrollerProxy
+    // 2. activate() - called upon linking a VaultProxy to activate the fund
+    // 3a. shutdown() - called by a fund owner to end the fund lifecycle
+    // 3b. destruct() - called by the fund deployer
 
-    function activate() external override onlyFundDeployer {
-        require(vaultProxy != address(0), "activate: Cannot activate without a vaultProxy");
-
-        __activate();
-    }
-
-    /// @dev Pseudo-constructor per proxy
-    function init() external override onlyFundDeployer {
-        require(!initialized, "init: Proxy already initialized");
-
-        initialized = true;
-    }
-
-    function quickSetup(
-        address _vaultProxy,
+    /// @dev Pseudo-constructor per proxy.
+    /// No need to assert anything beyond FundDeployer access.
+    function init(
         address _denominationAsset,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external override onlyFundDeployer {
-        // Set config without updating status
-        __setConfig(
-            _vaultProxy,
-            _denominationAsset,
-            _feeManagerConfigData,
-            _policyManagerConfigData,
-            false
-        );
-
-        __setVaultProxy(_vaultProxy);
-
-        __activate();
-    }
-
-    function setConfig(
-        address _vaultProxy,
-        address _denominationAsset,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
-    ) external override onlyFundDeployer {
-        __setConfig(
-            _vaultProxy,
-            _denominationAsset,
-            _feeManagerConfigData,
-            _policyManagerConfigData,
-            true
-        );
-    }
-
-    function setVaultProxy(address _vaultProxy) external onlyFundDeployer {
-        __setVaultProxy(_vaultProxy);
-    }
-
-    /// @notice Shut down the fund
-    // TODO: need an emergency shutdown to bypass teardown functions on failure?
-    function shutdown() external override onlyDelegateCall onlyActiveFund callsExtension {
-        require(
-            msg.sender == FUND_DEPLOYER || msg.sender == IVault(vaultProxy).getOwner(),
-            "shutdown: Only the fund owner or FundDeployer can call this function"
-        );
-
-        // Distribute final fee settlement and destroy storage
-        IExtension(FEE_MANAGER).deactivateForFund();
-
-        // TODO: destroy unneeded PolicyManager storage?
-
-        __updateStatus(FundStatus.Shutdown);
-    }
-
-    function __activate() private {
-        IExtension(FEE_MANAGER).activateForFund();
-
-        __updateStatus(FundStatus.Active);
-    }
-
-    // TODO: is any validation necessary since we're only calling from a trusted contract?
-    function __setConfig(
-        address _vaultProxy,
-        address _denominationAsset,
-        bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData,
-        bool _updateStatus
-    ) private {
-        // Use vaultProxy as ref to see whether fund config has already been set
-        require(
-            vaultProxy == address(0),
-            "setConfigAndActivate: fund has already been configured"
-        );
-
         // Configure core
         require(
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
             "setConfigAndActivate: Denomination asset must be a supported primitive"
         );
+        initialized = true;
         denominationAsset = _denominationAsset;
-        vaultProxy = _vaultProxy;
 
         // Configure extensions
         if (_feeManagerConfigData.length > 0) {
@@ -329,37 +275,77 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         if (_policyManagerConfigData.length > 0) {
             IExtension(POLICY_MANAGER).setConfigForFund(_policyManagerConfigData);
         }
-
-        emit FundConfigSet(
-            _vaultProxy,
-            _denominationAsset,
-            _feeManagerConfigData,
-            _policyManagerConfigData
-        );
-
-        // Only update fund status if not activating the fund atomically
-        if (_updateStatus) {
-            __updateStatus(FundStatus.Pending);
-        }
     }
 
-    function __setVaultProxy(address _vaultProxy) private {
+    /// @dev No need to assert anything beyond FundDeployer access.
+    function activate(address _vaultProxy, bool _isMigration) external override onlyFundDeployer {
         vaultProxy = _vaultProxy;
 
         emit VaultProxySet(_vaultProxy);
+
+        if (_isMigration) {
+            // Distribute any shares in the VaultProxy to the fund owner.
+            // This is a mechanism to ensure that even in the edge case of a fund being unable
+            // to payout fee shares owed during migration, these shares are not lost.
+            uint256 sharesDue = IERC20(_vaultProxy).balanceOf(_vaultProxy);
+            if (sharesDue > 0) {
+                address vaultOwner = IVault(_vaultProxy).getOwner();
+                IVault(_vaultProxy).burnShares(_vaultProxy, sharesDue);
+                IVault(_vaultProxy).mintShares(vaultOwner, sharesDue);
+
+                emit MigratedSharesDuePaid(vaultOwner, sharesDue);
+            }
+
+            // Policies must assert that they are congruent with migrated vault state
+            // IExtension(POLICY_MANAGER).activateForFund();
+        }
+
+        // FeeManager is currently the only extension that needs to be activated
+        IExtension(FEE_MANAGER).activateForFund();
+
+        __updateStatus(FundStatus.Active);
     }
 
+    /// @notice Shut down the fund
+    function shutdown() external override onlyDelegateCall onlyActive onlyOwner callsExtension {
+        __deactivateExtensions();
+
+        __updateStatus(FundStatus.Shutdown);
+    }
+
+    /// @notice Remove the config for a fund
+    /// @dev No need to assert anything beyond FundDeployer access
+    function destruct() external override onlyFundDeployer {
+        if (status != FundStatus.Shutdown) {
+            __deactivateExtensions();
+        }
+
+        // Delete storage of ComptrollerProxy
+        selfdestruct(payable(IVault(vaultProxy).getOwner()));
+    }
+
+    /// @dev Helper to deactivate a fund's extensions
+    // TODO: consider disambiguating "deactivateForFund" and "destructForFund"
+    function __deactivateExtensions() private {
+        // Distribute final fee settlement and destroy FeeManager storage
+        IExtension(FEE_MANAGER).deactivateForFund();
+
+        // TODO: destroy unneeded PolicyManager storage?
+    }
+
+    /// @dev Helper to update a fund's status
     function __updateStatus(FundStatus _nextStatus) private {
-        FundStatus prevStatus = status;
         status = _nextStatus;
 
-        emit FundStatusUpdated(prevStatus, _nextStatus);
+        emit StatusUpdated(_nextStatus);
     }
 
     //////////////////////////////
     // PERMISSIONED VAULT CALLS //
     //////////////////////////////
 
+    /// @notice Adds a tracked asset to the fund
+    /// @param _asset The asset to add
     function addTrackedAsset(address _asset)
         external
         override
@@ -368,6 +354,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IVault(vaultProxy).addTrackedAsset(_asset);
     }
 
+    /// @notice Grants an allowance to a spender to use a fund's asset
+    /// @param _asset The asset for which to grant an allowance
+    /// @param _target The spender of the allowance
+    /// @param _amount The amount of the allowance
     function approveAssetSpender(
         address _asset,
         address _target,
@@ -376,6 +366,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IVault(vaultProxy).approveAssetSpender(_asset, _target, _amount);
     }
 
+    /// @notice Burns fund shares for a particular account
+    /// @param _target The account for which to burn shares
+    /// @param _amount The amount of shares to burn
     function burnShares(address _target, uint256 _amount)
         external
         override
@@ -384,6 +377,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IVault(vaultProxy).burnShares(_target, _amount);
     }
 
+    /// @notice Mints fund shares to a particular account
+    /// @param _target The account to which to mint shares
+    /// @param _amount The amount of shares to mint
     function mintShares(address _target, uint256 _amount)
         external
         override
@@ -392,6 +388,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IVault(vaultProxy).mintShares(_target, _amount);
     }
 
+    /// @notice Removes a tracked asset from the fund
+    /// @param _asset The asset to remove
     function removeTrackedAsset(address _asset)
         external
         override
@@ -404,7 +402,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // ACCOUNTING //
     ////////////////
 
-    /// @notice Calculate the overall GAV of the fund
+    /// @notice Calculates the gross asset value (GAV) of the fund
     /// @param _useLiveRates True if should use live rates instead of canonical rates
     /// @return gav_ The fund GAV
     /// @dev _useLiveRates is `false` within the core protocol, but plugins will often want to use
@@ -438,7 +436,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
                 );
             }
 
-            // TODO: more helpful revert string by converting/concatenating address?
             // TODO: return validity instead of reverting?
             require(assetGav > 0 && isValid, "calcGav: No valid price available for asset");
 
@@ -449,9 +446,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     }
 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
-    /// @return The amount of the denomination asset per share
+    /// @return grossShareValue_ The amount of the denomination asset per share
     /// @dev Does not account for any fees outstanding
-    function calcGrossShareValue() public onlyDelegateCall returns (uint256) {
+    function calcGrossShareValue() public onlyDelegateCall returns (uint256 grossShareValue_) {
         uint256 sharesSupply = IERC20Extended(vaultProxy).totalSupply();
         if (sharesSupply == 0) {
             return 10**uint256(IERC20Extended(denominationAsset).decimals());
@@ -461,11 +458,17 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     }
 
     /// @notice Calculates the net value of 1 unit of shares in the fund's denomination asset
-    /// @return The amount of the denomination asset per share
+    /// @return netShareValue_ The amount of the denomination asset per share
     /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
     /// that can be used to determine the cost of purchasing shares at any given point in time.
-    function calcNetShareValue() external onlyDelegateCall callsExtension returns (uint256) {
+    function calcNetShareValue()
+        external
+        onlyDelegateCall
+        callsExtension
+        returns (uint256 netShareValue_)
+    {
         IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
+
         return calcGrossShareValue();
     }
 
@@ -474,16 +477,23 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     ///////////////////
 
     /// @notice Buy shares on behalf of a specified user
-    /// @dev Only callable by the SharesRequestor associated with the Registry
-    /// @param _buyer The acct for which to buy shares
+    /// @param _buyer The account for which to buy shares
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
-    /// @return The amount of shares received by the _buyer
+    /// @return sharesReceived_ The actual amount of shares received by the _buyer
     function buyShares(
         address _buyer,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
-    ) external override payable onlyDelegateCall amguPayable callsExtension returns (uint256) {
+    )
+        external
+        override
+        payable
+        onlyDelegateCall
+        amguPayable
+        callsExtension
+        returns (uint256 sharesReceived_)
+    {
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity);
 
         uint256 sharesBought = _investmentAmount
@@ -500,9 +510,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         // Post-buy actions
         __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
 
-        uint256 sharesReceived = IERC20Extended(vaultProxy).balanceOf(_buyer).sub(prevBuyerShares);
+        sharesReceived_ = IERC20Extended(vaultProxy).balanceOf(_buyer).sub(prevBuyerShares);
         require(
-            sharesReceived >= _minSharesQuantity,
+            sharesReceived_ >= _minSharesQuantity,
             "buyShares: minimum shares quantity not met"
         );
 
@@ -515,9 +525,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         // TODO: should denomination asset always remain a tracked asset by default?
         vaultContract.addTrackedAsset(denominationAsset);
 
-        emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived);
+        emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived_);
 
-        return sharesReceived;
+        return sharesReceived_;
     }
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
@@ -525,9 +535,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         __redeemShares(IERC20Extended(vaultProxy).balanceOf(msg.sender), false);
     }
 
-    /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
-    /// @dev _bypassFailure is set to true, the user will lose their claim to any assets for
-    /// which the transfer function fails.
+    /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets,
+    /// bypassing any failures.
+    /// @dev The user will lose their claim to any assets for
+    /// which the transfer function fails. Only use in the case of an emergency.
     function redeemSharesEmergency() external onlyDelegateCall {
         __redeemShares(IERC20Extended(vaultProxy).balanceOf(msg.sender), true);
     }
@@ -539,6 +550,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         __redeemShares(_sharesQuantity, false);
     }
 
+    /// @dev Helper for system actions immediately prior to issuing shares
     function __preBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
@@ -555,6 +567,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         );
     }
 
+    /// @dev Helper for system actions immediately after issuing shares
     function __postBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
@@ -626,19 +639,32 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // STATE GETTERS //
     ///////////////////
 
-    function getDenominationAsset() external view returns (address) {
+    /// @notice Gets the `denominationAsset` variable
+    /// @return denominationAsset_ The `denominationAsset` variable value
+    function getDenominationAsset() external view returns (address denominationAsset_) {
         return denominationAsset;
     }
 
-    function getFundStatus() external view returns (FundStatus) {
+    /// @notice Gets the `status` variable
+    /// @return status_ The `status` variable value
+    function getStatus() external view returns (FundStatus status_) {
         return status;
     }
 
-    function getInitialized() external view returns (bool) {
+    /// @notice Gets the `initialized` variable
+    /// @return initialized_ The `initialized` variable value
+    function getInitialized() external view returns (bool initialized_) {
         return initialized;
     }
 
-    // TODO: do we want individual getters also?
+    /// @notice Gets the routes for the various contracts used by all funds
+    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
+    /// @return feeManager_ The `FEE_MANAGER` variable value
+    /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
+    /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
+    /// @return policyManager_ The `POLICY_MANAGER` variable value
+    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
+    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getRoutes()
         external
         override
@@ -664,7 +690,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         );
     }
 
-    function getVaultProxy() external override view returns (address) {
+    /// @notice Gets the `vaultProxy` variable
+    /// @return vaultProxy_ The `vaultProxy` variable value
+    function getVaultProxy() external override view returns (address vaultProxy_) {
         return vaultProxy;
     }
 }

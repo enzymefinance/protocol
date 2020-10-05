@@ -48,11 +48,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@crestproject/crestproject": "^0.0.51",
+    "@crestproject/crestproject": "^0.0.54",
     "ethers": "^5.0.14"
   },
   "devDependencies": {
-    "@crestproject/buidler": "^0.0.52",
+    "@crestproject/buidler": "^0.0.54",
     "@nomiclabs/buidler": "^1.4.7",
     "@openzeppelin/contracts": "^3.2.0",
     "eslint-plugin-prettier": "3.1.4",

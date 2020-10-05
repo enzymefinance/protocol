@@ -4,8 +4,8 @@ import {
   resolveAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { defaultTestDeployment } from '../../';
-import { createNewFund, releaseStatusTypes } from '../utils';
+import { defaultTestDeployment } from '../../../dist';
+import { releaseStatusTypes } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -22,7 +22,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('constructor', () => {
   it('sets initial state', async () => {
     const {
-      config: { deployer },
+      config: { deployer, registeredVaultCalls },
       deployment: { dispatcher, engine, fundDeployer, vaultLib },
     } = await provider.snapshot(snapshot);
 
@@ -46,7 +46,13 @@ describe('constructor', () => {
     const getVaultLibCall = fundDeployer.getVaultLib();
     await expect(getVaultLibCall).resolves.toBe(vaultLib.address);
 
-    // TODO: add registered vault calls
+    for (const key in registeredVaultCalls.contracts) {
+      const isRegisteredVaultCallCall = fundDeployer.isRegisteredVaultCall(
+        registeredVaultCalls.contracts[key],
+        registeredVaultCalls.selectors[key],
+      );
+      await expect(isRegisteredVaultCallCall).resolves.toBe(true);
+    }
   });
 });
 
@@ -101,63 +107,6 @@ describe('setReleaseStatus', () => {
 
 describe('getOwner', () => {
   it.todo('write tests for special ownership conditions of this contract');
-});
-
-describe('createNewFund', () => {
-  it('does not allow a denomination asset that is not a valid primitive', async () => {
-    const {
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
-
-    const newFundTx = fundDeployer.createNewFund(
-      randomAddress(),
-      'My Fund',
-      randomAddress(),
-      '0x',
-      '0x',
-    );
-
-    await expect(newFundTx).rejects.toBeRevertedWith(
-      'Denomination asset must be a supported primitive',
-    );
-  });
-
-  it('can create a fund without extensions', async () => {
-    const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth },
-      },
-      accounts: { 0: signer },
-    } = await provider.snapshot(snapshot);
-
-    const fundOwner = randomAddress();
-    const fundName = 'My Fund';
-    const denominationAsset = weth;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer,
-      fundDeployer,
-      fundOwner,
-      fundName,
-      denominationAsset,
-    });
-
-    const denominationAssetCall = comptrollerProxy.getDenominationAsset();
-    await expect(denominationAssetCall).resolves.toBe(
-      denominationAsset.address,
-    );
-
-    const initializedCall = comptrollerProxy.getInitialized();
-    await expect(initializedCall).resolves.toBe(true);
-
-    const vaultProxyCall = comptrollerProxy.getVaultProxy();
-    await expect(vaultProxyCall).resolves.toBe(vaultProxy.address);
-  });
-});
-
-describe('postMigrateOriginHook', () => {
-  it.todo('write tests');
 });
 
 describe('deregisterVaultCalls', () => {
