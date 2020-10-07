@@ -5,7 +5,11 @@ import {
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';
-import { AssetWhitelist, ComptrollerLib } from '../../../../utils/contracts';
+import {
+  AssetWhitelist,
+  ComptrollerLib,
+  VaultLib,
+} from '../../../../utils/contracts';
 import {
   assetWhitelistArgs,
   policyHooks,
@@ -35,10 +39,16 @@ async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
   );
 
   const denominationAssetAddress = randomAddress();
+
+  // Mock the ComptrollerProxy and VaultProxy
+  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  await mockVaultProxy.getTrackedAssets.returns([]);
+
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
   await mockComptrollerProxy.getDenominationAsset.returns(
     denominationAssetAddress,
   );
+  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   return {
     accounts: remainingAccounts,
@@ -46,6 +56,7 @@ async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
     denominationAssetAddress,
     EOAPolicyManager,
     mockComptrollerProxy,
+    mockVaultProxy,
     whitelistedAssets: [
       denominationAssetAddress,
       randomAddress(),
@@ -60,9 +71,10 @@ async function snapshotWithConfiguredStandalonePolicy(
   const {
     accounts,
     assetWhitelist,
-    whitelistedAssets,
-    mockComptrollerProxy,
     EOAPolicyManager,
+    mockComptrollerProxy,
+    mockVaultProxy,
+    whitelistedAssets,
   } = await provider.snapshot(snapshotWithStandalonePolicy);
 
   const permissionedAssetWhitelist = assetWhitelist.connect(EOAPolicyManager);
@@ -77,6 +89,7 @@ async function snapshotWithConfiguredStandalonePolicy(
     assetWhitelist: permissionedAssetWhitelist,
     EOAPolicyManager,
     mockComptrollerProxy,
+    mockVaultProxy,
     whitelistedAssets,
   };
 }
@@ -177,6 +190,36 @@ describe('updateFundSettings', () => {
     );
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
       'Updates not allowed for this policy',
+    );
+  });
+});
+
+describe('activateForFund', () => {
+  it('does not allow a non-whitelisted asset in the fund trackedAssets', async () => {
+    const {
+      assetWhitelist,
+      whitelistedAssets,
+      mockComptrollerProxy,
+      mockVaultProxy,
+    } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
+
+    // Activation should pass if trackedAssets are only whitelisted assets
+    await mockVaultProxy.getTrackedAssets.returns(whitelistedAssets);
+    const goodActivateForFundTx = assetWhitelist.activateForFund(
+      mockComptrollerProxy,
+    );
+    await expect(goodActivateForFundTx).resolves.toBeReceipt();
+
+    // Setting a non-whitelisted asset as a trackedAsset should make activation fail
+    await mockVaultProxy.getTrackedAssets.returns([
+      whitelistedAssets[0],
+      randomAddress(),
+    ]);
+    const badActivateForFundTx = assetWhitelist.activateForFund(
+      mockComptrollerProxy,
+    );
+    await expect(badActivateForFundTx).rejects.toBeRevertedWith(
+      'non-whitelisted asset detected',
     );
   });
 });

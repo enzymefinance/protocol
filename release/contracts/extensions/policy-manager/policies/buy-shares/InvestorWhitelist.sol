@@ -55,6 +55,18 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
         }
     }
 
+    /// @notice Checks whether a particular condition passes the rule for a particular fund
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _investor The investor for which to check the rule
+    /// @return isValid_ True if the rule passes
+    function passesRule(address _comptrollerProxy, address _investor)
+        public
+        view
+        returns (bool isValid_)
+    {
+        return isInList(_comptrollerProxy, _investor);
+    }
+
     /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
@@ -65,6 +77,7 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
         returns (bool isValid_)
     {
         (address buyer, , ) = __decodeRuleArgs(_encodedArgs);
-        return isInList(_comptrollerProxy, buyer);
+
+        return passesRule(_comptrollerProxy, buyer);
     }
 }

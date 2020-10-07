@@ -6,4 +6,11 @@ module.exports = {
       require.resolve('@melonproject/utils/buidler.config'),
     ],
   },
+  globals: {
+    'ts-jest': {
+      diagnostics: {
+        warnOnly: true,
+      },
+    },
+  },
 };

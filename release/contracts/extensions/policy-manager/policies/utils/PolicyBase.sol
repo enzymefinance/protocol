@@ -18,6 +18,12 @@ abstract contract PolicyBase is IPolicy {
         POLICY_MANAGER = _policyManager;
     }
 
+    /// @notice Validates and initializes a policy as necessary prior to fund activation
+    /// @dev Disallowed by default
+    function activateForFund(address) external virtual override {
+        // UNIMPLEMENTED
+    }
+
     /// @notice Update the policy settings for a fund
     /// @dev Disallowed by default
     function updateFundSettings(address, bytes calldata) external virtual override {

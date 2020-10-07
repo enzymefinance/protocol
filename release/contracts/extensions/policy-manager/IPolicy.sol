@@ -6,6 +6,8 @@ import "./IPolicyManager.sol";
 /// @title Policy Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IPolicy {
+    function activateForFund(address) external;
+
     function addFundSettings(address, bytes calldata) external;
 
     function identifier() external pure returns (string memory);

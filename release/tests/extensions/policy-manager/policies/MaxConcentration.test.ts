@@ -186,6 +186,16 @@ describe('constructor', () => {
   });
 });
 
+describe('activateForFund', () => {
+  it.todo(
+    'does not allow a misc asset with balance >maxConcentration in the fund trackedAssets',
+  );
+
+  it.todo('allows the denomination asset to have >maxConcentration');
+
+  it.todo('allows a misc asset to have <maxConcentration');
+});
+
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
     const {

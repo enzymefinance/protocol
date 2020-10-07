@@ -4,6 +4,7 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
+import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
 import "./utils/CallOnIntegrationPostValidatePolicyBase.sol";
 
@@ -20,6 +21,19 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     mapping(address => uint256) private comptrollerProxyToMaxConcentration;
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
+
+    /// @notice Validates and initializes a policy as necessary prior to fund activation
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @dev No need to authenticate access, as there are no state transitions
+    function activateForFund(address _comptrollerProxy) external override {
+        require(
+            passesRule(
+                _comptrollerProxy,
+                VaultLib(IComptroller(_comptrollerProxy).getVaultProxy()).getTrackedAssets()
+            ),
+            "activateForFund: max concentration exceeded"
+        );
+    }
 
     /// @notice Add the initial policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
@@ -47,22 +61,16 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
         return "MAX_CONCENTRATION";
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Checks whether a particular condition passes the rule for a particular fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @param _encodedArgs Encoded args with which to validate the rule
+    /// @param _assets The assets with which to check the rule
     /// @return isValid_ True if the rule passes
     /// @dev Uses live rates for gav calcs.
     /// The fund's denomination asset is exempt from the policy limit.
-    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
-        external
-        override
+    function passesRule(address _comptrollerProxy, address[] memory _assets)
+        public
         returns (bool isValid_)
     {
-        (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
-        if (incomingAssets.length == 0) {
-            return true;
-        }
-
         uint256 maxConcentration = comptrollerProxyToMaxConcentration[_comptrollerProxy];
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
         (
@@ -74,19 +82,22 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
             address primitivePriceFeed,
             address valueInterpreter
         ) = comptrollerProxyContract.getRoutes();
+        address vaultProxy = comptrollerProxyContract.getVaultProxy();
+        address denominationAsset = comptrollerProxyContract.getDenominationAsset();
         uint256 totalGav = comptrollerProxyContract.calcGav(true);
 
-        for (uint256 i = 0; i < incomingAssets.length; i++) {
+        for (uint256 i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
             if (
-                !__ruleIsValidForAsset(
-                    comptrollerProxyContract.getVaultProxy(),
+                !__rulePassesForAsset(
+                    vaultProxy,
                     valueInterpreter,
                     primitivePriceFeed,
                     derivativePriceFeed,
-                    comptrollerProxyContract.getDenominationAsset(),
+                    denominationAsset,
                     maxConcentration,
                     totalGav,
-                    incomingAssets[i]
+                    asset
                 )
             ) {
                 return false;
@@ -96,9 +107,26 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
         return true;
     }
 
+    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _encodedArgs Encoded args with which to validate the rule
+    /// @return isValid_ True if the rule passes
+    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
+        external
+        override
+        returns (bool isValid_)
+    {
+        (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
+        if (incomingAssets.length == 0) {
+            return true;
+        }
+
+        return passesRule(_comptrollerProxy, incomingAssets);
+    }
+
     /// @dev Helper to check if the rule holds for a particular asset.
     /// Avoids the stack-too-deep error.
-    function __ruleIsValidForAsset(
+    function __rulePassesForAsset(
         address _vaultProxy,
         address _valueInterpreter,
         address _primitivePriceFeed,

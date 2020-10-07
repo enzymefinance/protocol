@@ -48,14 +48,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@crestproject/crestproject": "^0.0.55",
+    "@crestproject/crestproject": "^0.0.56",
     "@melonproject/persistent": "^2.0.0",
     "@melonproject/utils": "^2.0.0",
     "ethers": "^5.0.14"
   },
   "devDependencies": {
-    "@crestproject/buidler": "^0.0.55",
-    "@crestproject/ganache": "^0.0.55",
+    "@crestproject/buidler": "^0.0.56",
+    "@crestproject/ganache": "^0.0.56",
     "@nomiclabs/buidler": "^1.4.7",
     "@openzeppelin/contracts": "^3.2.0",
     "eslint-plugin-prettier": "3.1.4",

@@ -204,6 +204,10 @@ describe('setConfigForFund', () => {
   });
 });
 
+describe('activateForFund', () => {
+  it.todo('calls each enabled policy to activate');
+});
+
 describe('state getters', () => {
   it.todo('determine tests');
 });

@@ -27,6 +27,18 @@ contract AdapterWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressList
         return "ADAPTER_WHITELIST";
     }
 
+    /// @notice Checks whether a particular condition passes the rule for a particular fund
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _adapter The adapter with which to check the rule
+    /// @return isValid_ True if the rule passes
+    function passesRule(address _comptrollerProxy, address _adapter)
+        public
+        view
+        returns (bool isValid_)
+    {
+        return isInList(_comptrollerProxy, _adapter);
+    }
+
     /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
@@ -37,10 +49,7 @@ contract AdapterWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressList
         returns (bool isValid_)
     {
         (, address adapter, , , , ) = __decodeRuleArgs(_encodedArgs);
-        if (isInList(_comptrollerProxy, adapter)) {
-            return true;
-        }
 
-        return false;
+        return passesRule(_comptrollerProxy, adapter);
     }
 }

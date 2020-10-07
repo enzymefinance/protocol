@@ -5,7 +5,11 @@ import {
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';
-import { AssetBlacklist, ComptrollerLib } from '../../../../utils/contracts';
+import {
+  AssetBlacklist,
+  ComptrollerLib,
+  VaultLib,
+} from '../../../../utils/contracts';
 import {
   assetBlacklistArgs,
   policyHooks,
@@ -35,10 +39,16 @@ async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
   );
 
   const denominationAssetAddress = randomAddress();
+
+  // Mock the ComptrollerProxy and VaultProxy
+  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  await mockVaultProxy.getTrackedAssets.returns([]);
+
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
   await mockComptrollerProxy.getDenominationAsset.returns(
     denominationAssetAddress,
   );
+  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   return {
     accounts: remainingAccounts,
@@ -47,6 +57,7 @@ async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
     denominationAssetAddress,
     EOAPolicyManager,
     mockComptrollerProxy,
+    mockVaultProxy,
   };
 }
 
@@ -57,8 +68,9 @@ async function snapshotWithConfiguredStandalonePolicy(
     accounts,
     assetBlacklist,
     blacklistedAssets,
-    mockComptrollerProxy,
     EOAPolicyManager,
+    mockComptrollerProxy,
+    mockVaultProxy,
   } = await provider.snapshot(snapshotWithStandalonePolicy);
 
   const permissionedAssetBlacklist = assetBlacklist.connect(EOAPolicyManager);
@@ -74,6 +86,7 @@ async function snapshotWithConfiguredStandalonePolicy(
     blacklistedAssets,
     EOAPolicyManager,
     mockComptrollerProxy,
+    mockVaultProxy,
   };
 }
 
@@ -174,6 +187,36 @@ describe('updateFundSettings', () => {
     );
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
       'Updates not allowed for this policy',
+    );
+  });
+});
+
+describe('activateForFund', () => {
+  it('does not allow a blacklisted asset in the fund trackedAssets', async () => {
+    const {
+      assetBlacklist,
+      blacklistedAssets,
+      mockComptrollerProxy,
+      mockVaultProxy,
+    } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
+
+    // Activation should pass if a blacklisted asset is not a trackedAsset
+    await mockVaultProxy.getTrackedAssets.returns([randomAddress()]);
+    const goodActivateForFundTx = assetBlacklist.activateForFund(
+      mockComptrollerProxy,
+    );
+    await expect(goodActivateForFundTx).resolves.toBeReceipt();
+
+    // Setting a blacklistedAsset as a trackedAsset should make activation fail
+    await mockVaultProxy.getTrackedAssets.returns([
+      randomAddress(),
+      blacklistedAssets[0],
+    ]);
+    const badActivateForFundTx = assetBlacklist.activateForFund(
+      mockComptrollerProxy,
+    );
+    await expect(badActivateForFundTx).rejects.toBeRevertedWith(
+      'blacklisted asset detected',
     );
   });
 });

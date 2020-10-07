@@ -60,6 +60,7 @@ export async function generateRegisteredMockPolicies({
   await Promise.all([
     mockPreBuySharesPolicy.identifier.returns(`MOCK_PRE_BUY_SHARES`),
     mockPreBuySharesPolicy.addFundSettings.returns(undefined),
+    mockPreBuySharesPolicy.activateForFund.returns(undefined),
     mockPreBuySharesPolicy.validateRule.returns(true),
     mockPreBuySharesPolicy.policyHook.returns(policyHooks.BuyShares),
     mockPreBuySharesPolicy.policyHookExecutionTime.returns(
@@ -67,6 +68,7 @@ export async function generateRegisteredMockPolicies({
     ),
     mockPostBuySharesPolicy.identifier.returns(`MOCK_POST_BUY_SHARES`),
     mockPostBuySharesPolicy.addFundSettings.returns(undefined),
+    mockPostBuySharesPolicy.activateForFund.returns(undefined),
     mockPostBuySharesPolicy.validateRule.returns(true),
     mockPostBuySharesPolicy.policyHook.returns(policyHooks.BuyShares),
     mockPostBuySharesPolicy.policyHookExecutionTime.returns(
@@ -74,6 +76,7 @@ export async function generateRegisteredMockPolicies({
     ),
     mockPreCoIPolicy.identifier.returns(`MOCK_PRE_CALL_ON_INTEGRATION`),
     mockPreCoIPolicy.addFundSettings.returns(undefined),
+    mockPreCoIPolicy.activateForFund.returns(undefined),
     mockPreCoIPolicy.validateRule.returns(true),
     mockPreCoIPolicy.policyHook.returns(policyHooks.CallOnIntegration),
     mockPreCoIPolicy.policyHookExecutionTime.returns(
@@ -81,6 +84,7 @@ export async function generateRegisteredMockPolicies({
     ),
     mockPostCoIPolicy.identifier.returns(`MOCK_POST_CALL_ON_INTEGRATION`),
     mockPostCoIPolicy.addFundSettings.returns(undefined),
+    mockPostCoIPolicy.activateForFund.returns(undefined),
     mockPostCoIPolicy.validateRule.returns(true),
     mockPostCoIPolicy.policyHook.returns(policyHooks.CallOnIntegration),
     mockPostCoIPolicy.policyHookExecutionTime.returns(

@@ -3,4 +3,11 @@ module.exports = {
   testEnvironmentOptions: {
     buidlerConfigs: [require.resolve('./buidler.config')],
   },
+  globals: {
+    'ts-jest': {
+      diagnostics: {
+        warnOnly: true,
+      },
+    },
+  },
 };

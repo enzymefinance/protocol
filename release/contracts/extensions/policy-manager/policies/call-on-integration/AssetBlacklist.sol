@@ -2,6 +2,7 @@
 pragma solidity 0.6.8;
 
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
+import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/AddressListPolicyMixin.sol";
 import "./utils/CallOnIntegrationPreValidatePolicyBase.sol";
@@ -13,6 +14,19 @@ contract AssetBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPo
     using AddressArrayLib for address[];
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
+
+    /// @notice Validates and initializes a policy as necessary prior to fund activation
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @dev No need to authenticate access, as there are no state transitions
+    function activateForFund(address _comptrollerProxy) external override {
+        require(
+            passesRule(
+                _comptrollerProxy,
+                VaultLib(IComptroller(_comptrollerProxy).getVaultProxy()).getTrackedAssets()
+            ),
+            "activateForFund: blacklisted asset detected"
+        );
+    }
 
     /// @notice Add the initial policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
@@ -37,6 +51,24 @@ contract AssetBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPo
         return "ASSET_BLACKLIST";
     }
 
+    /// @notice Checks whether a particular condition passes the rule for a particular fund
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _assets The assets with which to check the rule
+    /// @return isValid_ True if the rule passes
+    function passesRule(address _comptrollerProxy, address[] memory _assets)
+        public
+        view
+        returns (bool isValid_)
+    {
+        for (uint256 i; i < _assets.length; i++) {
+            if (isInList(_comptrollerProxy, _assets[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
@@ -47,12 +79,7 @@ contract AssetBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPo
         returns (bool isValid_)
     {
         (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
-        for (uint256 i = 0; i < incomingAssets.length; i++) {
-            if (isInList(_comptrollerProxy, incomingAssets[i])) {
-                return false;
-            }
-        }
 
-        return true;
+        return passesRule(_comptrollerProxy, incomingAssets);
     }
 }

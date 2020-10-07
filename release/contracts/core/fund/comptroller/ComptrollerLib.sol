@@ -297,7 +297,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             }
 
             // Policies must assert that they are congruent with migrated vault state
-            // IExtension(POLICY_MANAGER).activateForFund();
+            // There are currently no policies that alter state on activation, so we
+            // only need this call for migrated fund vault validation.
+            IExtension(POLICY_MANAGER).activateForFund();
         }
 
         // FeeManager is currently the only extension that needs to be activated

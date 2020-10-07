@@ -20,8 +20,6 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    // EVENTS
-
     event PolicyDeregistered(address indexed policy, string indexed identifier);
 
     event PolicyDisabledForFund(address indexed comptrollerProxy, address indexed policy);
@@ -34,12 +32,8 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
     event PolicyRegistered(address indexed policy, string indexed identifier);
 
-    // STORAGE
-
     EnumerableSet.AddressSet private registeredPolicies;
     mapping(address => EnumerableSet.AddressSet) private comptrollerProxyToPolicies;
-
-    // MODIFIERS
 
     modifier onlyFundOwner(address _comptrollerProxy) {
         require(
@@ -49,11 +43,18 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         _;
     }
 
-    // CONSTRUCTOR
-
     constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
+
+    /// @notice Validates and initializes policies as necessary prior to fund activation
+    /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
+    function activateForFund() external override {
+        address[] memory enabledPolicies = getEnabledPoliciesForFund(msg.sender);
+        for (uint256 i; i < enabledPolicies.length; i++) {
+            IPolicy(enabledPolicies[i]).activateForFund(msg.sender);
+        }
+    }
 
     function disablePolicyForFund(address _comptrollerProxy, address _policy)
         external

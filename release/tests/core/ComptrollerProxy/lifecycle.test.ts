@@ -226,8 +226,8 @@ describe('activate', () => {
     const {
       comptrollerProxy,
       mockFeeManager,
+      mockPolicyManager,
       mockVaultProxy,
-      mockVaultProxyOwner,
     } = await provider.snapshot(snapshotWithFundContracts);
 
     // Mock shares due balance to trigger migration logic
@@ -252,10 +252,9 @@ describe('activate', () => {
       sharesDue,
     );
 
-    expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(
-      mockVaultProxyOwner,
-      sharesDue,
-    );
+    expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();
+
+    expect(mockPolicyManager.activateForFund).toHaveBeenCalledOnContract();
 
     // Assert events emitted
     await assertEvent(activateTx, 'VaultProxySet', {
