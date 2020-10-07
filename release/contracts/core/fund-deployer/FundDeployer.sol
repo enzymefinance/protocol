@@ -318,7 +318,8 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassFailure);
     }
 
-    /// @dev Helper to execute a migration
+    /// @dev Helper to execute a migration.
+    /// A shutdown fund is not blocked from migration.
     function __executeMigration(address _vaultProxy, bool _bypassFailure)
         private
         onlyMigrator(_vaultProxy)
@@ -337,6 +338,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     }
 
     /// @dev Helper to signal a migration
+    /// A shutdown fund is not blocked from migration.
     function __signalMigration(
         address _vaultProxy,
         address _comptrollerProxy,

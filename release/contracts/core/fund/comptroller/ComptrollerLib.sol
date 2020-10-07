@@ -65,7 +65,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     // This kind of serves as a reverse-mutex,
     // only allowing certain actions when they are the result of a call from this contract
-    bool private callOnExtensionIsActive;
+    bool private permissionedVaultCallAllowed;
 
     ///////////////
     // MODIFIERS //
@@ -76,12 +76,11 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         _;
     }
 
-    modifier callsExtension {
-        require(!callOnExtensionIsActive, "callsExtension: call on extension already active");
-
-        callOnExtensionIsActive = true;
+    modifier allowsPermissionedVaultCall {
+        __assertPermissionedVaultCallNotAllowed();
+        permissionedVaultCallAllowed = true;
         _;
-        callOnExtensionIsActive = false;
+        permissionedVaultCallAllowed = false;
     }
 
     modifier onlyDelegateCall() {
@@ -101,6 +100,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     /// @dev These permissions will eventually be defined on extensions themselves
     modifier onlyPermissionedRequest(IVault.VaultAction _action) {
+        __assertIsActive();
         __assertValidCallFromExtension(msg.sender, _action);
         _;
     }
@@ -108,6 +108,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // MODIFIER HELPERS
     // Modifiers are inefficient in terms of reducing contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
+
+    function __assertPermissionedVaultCallNotAllowed() private view {
+        require(!permissionedVaultCallAllowed, "Permissioned vault call re-entrance detected");
+    }
 
     function __assertIsActive() private view {
         require(status == FundStatus.Active, "This function can only be called on an active fund");
@@ -132,7 +136,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         private
         view
     {
-        require(callOnExtensionIsActive, "Call does not originate from contract");
+        require(permissionedVaultCallAllowed, "Call does not originate from contract");
 
         if (_extension == INTEGRATION_MANAGER) {
             require(
@@ -182,12 +186,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @param _callArgs The encoded data for the call
     /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy (for access control).
     /// Uses a reverse-mutex of sorts that only allows permissioned calls to the vault during this stack.
-    /// Does not require a fund to be active, that can be left up to the extensions to handle.
+    /// Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function callOnExtension(
         address _extension,
         bytes4 _selector,
         bytes calldata _callArgs
-    ) external onlyDelegateCall callsExtension {
+    ) external onlyActive allowsPermissionedVaultCall {
         require(
             _extension == FEE_MANAGER ||
                 _extension == POLICY_MANAGER ||
@@ -222,11 +226,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @param _contract The contract to call
     /// @param _selector The selector to call
     /// @param _callData The call data for the call
+    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function vaultCallOnContract(
         address _contract,
         bytes4 _selector,
         bytes calldata _callData
-    ) external onlyDelegateCall onlyActive onlyOwner {
+    ) external onlyActive onlyOwner {
         require(
             IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
             "vaultCallOnContract: not a registered call"
@@ -277,6 +282,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         }
     }
 
+    /// @notice Activates the fund after running pre-activation logic
+    /// @param _vaultProxy The VaultProxy to attach to the fund
+    /// @param _isMigration True if a migrated fund is being activated
     /// @dev No need to assert anything beyond FundDeployer access.
     function activate(address _vaultProxy, bool _isMigration) external override onlyFundDeployer {
         vaultProxy = _vaultProxy;
@@ -309,7 +317,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     }
 
     /// @notice Shut down the fund
-    function shutdown() external override onlyDelegateCall onlyActive onlyOwner callsExtension {
+    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
+    function shutdown() external override onlyActive onlyOwner {
         __deactivateExtensions();
 
         __updateStatus(FundStatus.Shutdown);
@@ -323,12 +332,13 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         }
 
         // Delete storage of ComptrollerProxy
-        selfdestruct(payable(IVault(vaultProxy).getOwner()));
+        // There should never be ETH in this contract, but if there is,
+        // we can send to the VaultProxy.
+        selfdestruct(payable(vaultProxy));
     }
 
     /// @dev Helper to deactivate a fund's extensions
-    // TODO: consider disambiguating "deactivateForFund" and "destructForFund"
-    function __deactivateExtensions() private {
+    function __deactivateExtensions() private allowsPermissionedVaultCall {
         // Distribute final fee settlement and destroy FeeManager storage
         IExtension(FEE_MANAGER).deactivateForFund();
 
@@ -463,15 +473,17 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @return netShareValue_ The amount of the denomination asset per share
     /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
     /// that can be used to determine the cost of purchasing shares at any given point in time.
-    function calcNetShareValue()
-        external
-        onlyDelegateCall
-        callsExtension
-        returns (uint256 netShareValue_)
-    {
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
+    function calcNetShareValue() external onlyDelegateCall returns (uint256 netShareValue_) {
+        if (status == FundStatus.Active) {
+            __settleContinuousFeesPreCalcNetShareValue();
+        }
 
         return calcGrossShareValue();
+    }
+
+    /// @dev Helper to settle continuous fees
+    function __settleContinuousFeesPreCalcNetShareValue() private allowsPermissionedVaultCall {
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
     }
 
     ///////////////////
@@ -483,6 +495,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
     /// @return sharesReceived_ The actual amount of shares received by the _buyer
+    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function buyShares(
         address _buyer,
         uint256 _investmentAmount,
@@ -491,9 +504,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         external
         override
         payable
-        onlyDelegateCall
+        onlyActive
         amguPayable
-        callsExtension
+        allowsPermissionedVaultCall
         returns (uint256 sharesReceived_)
     {
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity);
@@ -594,14 +607,15 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// which the transfer function fails. This should always be false unless explicitly intended
     /// @param _sharesQuantity The amount of shares to redeem
     /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
-    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private callsExtension {
+    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private {
         address redeemer = msg.sender;
 
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
 
-        // Attempt to settle fees, but don't allow an error to block redemption.
-        // When a fund is shutdown, there will be no more enabled fees.
-        try IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "")  {} catch {}
+        // When a fund is shutdown, there will be no more enabled fees
+        if (status == FundStatus.Active) {
+            __settleContinuousFeesPreRedeemShares();
+        }
 
         // Check the shares quantity against the user's balance after settling fees
         require(
@@ -635,6 +649,11 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         }
 
         emit SharesRedeemed(redeemer, _sharesQuantity, payoutAssets, payoutQuantities);
+    }
+
+    /// @dev Helper to attempt to settle fees, without allowing an error to block redemption.
+    function __settleContinuousFeesPreRedeemShares() private allowsPermissionedVaultCall {
+        try IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "")  {} catch {}
     }
 
     ///////////////////
