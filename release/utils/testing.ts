@@ -1,29 +1,37 @@
-import { providers } from 'ethers';
+import { providers, Signer } from 'ethers';
 import { randomAddress } from '@crestproject/crestproject';
-import { deployPersistent } from '@melonproject/persistent';
-import { deployRelease } from './deployment';
-import { deployMocks } from './mocks';
+import {
+  deployPersistent,
+  PersistentDeploymentConfig,
+  PersistentDeploymentOutput,
+} from '@melonproject/persistent';
+import { deployRelease, ReleaseDeploymentConfig } from './deployment';
+import {
+  deployMocks,
+  MockDeploymentConfig,
+  MockDeploymentOutput,
+} from './mocks';
+import { Deployment, DeploymentHandlers } from '@melonproject/utils';
 
-export async function defaultTestDeployment(
-  provider: providers.JsonRpcProvider,
+interface CommonDeploymentConfig {
+  deployer: Signer;
+  mgm: string;
+}
+
+type PersistentDeployment = Deployment<
+  DeploymentHandlers<PersistentDeploymentConfig, PersistentDeploymentOutput>
+>;
+
+type MockDeployment = Deployment<
+  DeploymentHandlers<MockDeploymentConfig, MockDeploymentOutput>
+>;
+
+export async function configureRelease(
+  common: CommonDeploymentConfig,
+  persistent: PersistentDeployment,
+  mocks: MockDeployment,
 ) {
-  const [deployer, mgm, ...others] = await provider.listAccounts();
-  const accounts = others
-    .slice(0, 10) // Only prepare a maximum of ten accounts.
-    .map((address) => provider.getSigner(address));
-
-  const common = {
-    deployer: provider.getSigner(deployer),
-    mgm,
-  };
-
-  const persistent = await deployPersistent(common);
-  const mocks = await deployMocks({
-    ...common,
-    accounts,
-  });
-
-  const config = {
+  return {
     ...common,
     dispatcher: persistent.dispatcher.address,
     mln: mocks.tokens.mln.address,
@@ -54,8 +62,32 @@ export async function defaultTestDeployment(
       },
     },
   };
+}
 
-  const release = await deployRelease(config);
+export async function defaultTestDeployment(
+  provider: providers.JsonRpcProvider,
+  configure?: (
+    config: ReleaseDeploymentConfig,
+  ) => Promise<ReleaseDeploymentConfig> | ReleaseDeploymentConfig,
+) {
+  const [deployer, mgm, ...others] = await provider.listAccounts();
+  const accounts = others
+    .slice(0, 10) // Only prepare a maximum of ten accounts.
+    .map((address) => provider.getSigner(address));
+
+  const common = {
+    deployer: provider.getSigner(deployer),
+    mgm,
+  };
+
+  const persistent = await deployPersistent(common);
+  const mocks = await deployMocks({
+    ...common,
+    accounts,
+  });
+
+  const config = await configureRelease(common, persistent, mocks);
+  const release = await deployRelease((await configure?.(config)) ?? config);
 
   await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
 
