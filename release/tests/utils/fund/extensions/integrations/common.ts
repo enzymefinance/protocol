@@ -37,11 +37,15 @@ export const redeemSelector = sighash(redeemFragment);
 
 export const lendSelector = sighash(lendFragment);
 
-export async function assetTransferArgs(
-  adapter: IntegrationAdapterInterface,
-  selector: BytesLike,
-  encodedCallArgs: BytesLike,
-) {
+export async function assetTransferArgs({
+  adapter,
+  selector,
+  encodedCallArgs,
+}: {
+  adapter: IntegrationAdapterInterface;
+  selector: BytesLike;
+  encodedCallArgs: BytesLike;
+}) {
   const {
     spendAssets_,
     spendAssetAmounts_,
@@ -54,11 +58,15 @@ export async function assetTransferArgs(
   );
 }
 
-export function callOnIntegrationArgs(
-  adapter: IntegrationAdapterInterface,
-  selector: BytesLike,
-  encodedCallArgs: BytesLike,
-) {
+export function callOnIntegrationArgs({
+  adapter,
+  selector,
+  encodedCallArgs,
+}: {
+  adapter: IntegrationAdapterInterface;
+  selector: BytesLike;
+  encodedCallArgs: BytesLike;
+}) {
   return encodeArgs(
     ['address', 'bytes4', 'bytes'],
     [adapter, selector, encodedCallArgs],

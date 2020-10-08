@@ -12,6 +12,7 @@ import {
   ChaiPriceFeed,
   ComptrollerLib,
   Engine,
+  EngineAdapter,
   FeeManager,
   FundDeployer,
   IntegrationManager,
@@ -38,7 +39,6 @@ export interface ReleaseDeploymentConfig {
   };
   engine: {
     thawDelay: BigNumberish;
-    etherTakers: AddressLike[];
   };
   chainlink: {
     rateQuoteAsset: AddressLike;
@@ -74,6 +74,7 @@ export interface ReleaseDeploymentOutput {
   chaiPriceFeed: Promise<ChaiPriceFeed>;
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
+  engineAdapter: Promise<EngineAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   // Fees
@@ -135,7 +136,6 @@ export const deployRelease = describeDeployment<
       await deployment.chainlinkPriceFeed,
       await deployment.valueInterpreter,
       config.engine.thawDelay,
-      config.engine.etherTakers,
     );
   },
   async valueInterpreter(config) {
@@ -192,6 +192,15 @@ export const deployRelease = describeDeployment<
       await deployment.integrationManager,
       config.integratees.chai,
       config.integratees.makerDao.dai,
+    );
+  },
+  async engineAdapter(config, deployment) {
+    return EngineAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      await deployment.engine,
+      await config.mln,
+      await config.weth,
     );
   },
   async kyberAdapter(config, deployment) {
@@ -257,11 +266,17 @@ export const deployRelease = describeDeployment<
     // Register adapters
     const adapters = [
       await deployment.chaiAdapter,
+      await deployment.engineAdapter,
       await deployment.kyberAdapter,
       await deployment.trackedAssetsAdapter,
     ];
     const integrationManager = await deployment.integrationManager;
     await integrationManager.registerAdapters(adapters);
+
+    // Register ether takers on engine
+    const engineAdapter = await deployment.engineAdapter;
+    const engine = await deployment.engine;
+    await engine.addEtherTakers([engineAdapter]);
 
     // Register fees
     const fees = [

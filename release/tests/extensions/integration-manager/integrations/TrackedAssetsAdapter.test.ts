@@ -1,16 +1,16 @@
-import { utils } from 'ethers';
 import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
+import { utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
 import {
-  assetTransferArgs,
-  createNewFund,
   addTrackedAssets,
   addTrackedAssetsArgs,
   addTrackedAssetsSelector,
+  assetTransferArgs,
+  createNewFund,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -57,7 +57,9 @@ describe('parseAssetsForMethod', () => {
       deployment: { trackedAssetsAdapter },
     } = await provider.snapshot(snapshot);
 
-    const args = await addTrackedAssetsArgs([randomAddress()]);
+    const args = await addTrackedAssetsArgs({
+      incomingAssets: [randomAddress()],
+    });
     const badSelectorParseAssetsCall = trackedAssetsAdapter.parseAssetsForMethod(
       utils.randomBytes(4),
       args,
@@ -79,7 +81,9 @@ describe('parseAssetsForMethod', () => {
     } = await provider.snapshot(snapshot);
 
     const incomingAsset = randomAddress();
-    const args = await addTrackedAssetsArgs([incomingAsset]);
+    const args = await addTrackedAssetsArgs({
+      incomingAssets: [incomingAsset],
+    });
 
     const {
       incomingAssets_,
@@ -112,13 +116,15 @@ describe('addTrackedAssets', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const args = await addTrackedAssetsArgs([randomAddress()]);
+    const args = await addTrackedAssetsArgs({
+      incomingAssets: [randomAddress()],
+    });
 
-    const transferArgs = await assetTransferArgs(
-      trackedAssetsAdapter,
-      addTrackedAssetsSelector,
-      args,
-    );
+    const transferArgs = await assetTransferArgs({
+      adapter: trackedAssetsAdapter,
+      selector: addTrackedAssetsSelector,
+      encodedCallArgs: args,
+    });
 
     const badTx = trackedAssetsAdapter.addTrackedAssets(
       vaultProxy,

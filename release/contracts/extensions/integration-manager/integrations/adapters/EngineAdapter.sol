@@ -85,9 +85,6 @@ contract EngineAdapter is AdapterBase {
     {
         (, uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
 
-        // Validate args
-        require(mlnTokenAmount > 0, "takeOrder: mlnTokenAmount must be >0");
-
         // Execute fill
         IERC20(MLN_TOKEN).approve(ENGINE, mlnTokenAmount);
         uint256 preEthBalance = payable(address(this)).balance;

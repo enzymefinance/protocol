@@ -7,6 +7,7 @@ import { assertEvent } from '@melonproject/utils';
 import { BigNumber, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../';
 import { Engine, ValueInterpreter } from '../../../utils/contracts';
+import { seedAndThawEngine, warpEngine } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -36,7 +37,6 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
     randomAddress(),
     mockValueInterpreter,
     1,
-    [randomAddress()],
   );
 
   return {
@@ -45,23 +45,6 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
     config,
     mocks: { mockEngineWithValueInterpreter, mockValueInterpreter },
   };
-}
-
-async function seedAndThaw(
-  provider: EthereumTestnetProvider,
-  engine: Engine,
-  amount: BigNumber,
-) {
-  await engine.payAmguInEther.value(amount).send();
-  await warpEngine(provider, engine);
-  await engine.thaw();
-}
-
-async function warpEngine(provider: EthereumTestnetProvider, engine: Engine) {
-  const delay = await engine.getThawDelay();
-  const warp = delay.add(1).toNumber();
-  await provider.send('evm_increaseTime', [warp]);
-  await provider.send('evm_mine', []);
 }
 
 describe('constructor', () => {
@@ -80,7 +63,6 @@ describe('constructor', () => {
       randomAddress(),
       randomAddress(),
       1,
-      [randomAddress()],
     );
 
     const block = await provider.getBlock('latest');
@@ -99,7 +81,7 @@ describe('constructor', () => {
       config: {
         mgm,
         deployer,
-        engine: { thawDelay, etherTakers },
+        engine: { thawDelay },
       },
     } = await provider.snapshot(snapshot);
 
@@ -126,11 +108,6 @@ describe('constructor', () => {
 
     const getThawDelayCall = engine.getThawDelay();
     await expect(getThawDelayCall).resolves.toEqBigNumber(thawDelay);
-
-    for (let i = 0; i < etherTakers.length; i++) {
-      const isEtherTakerCall = engine.isEtherTaker(etherTakers[i]);
-      await expect(isEtherTakerCall).resolves.toBeTruthy;
-    }
   });
 });
 
@@ -339,7 +316,7 @@ describe('calcPremiumPercent', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    await seedAndThaw(provider, engine, utils.parseEther('0.99'));
+    await seedAndThawEngine(provider, engine, utils.parseEther('0.99'));
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(0);
@@ -350,7 +327,7 @@ describe('calcPremiumPercent', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    await seedAndThaw(provider, engine, utils.parseEther('1'));
+    await seedAndThawEngine(provider, engine, utils.parseEther('1'));
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(5);
@@ -361,7 +338,7 @@ describe('calcPremiumPercent', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    await seedAndThaw(provider, engine, utils.parseEther('5'));
+    await seedAndThawEngine(provider, engine, utils.parseEther('5'));
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(10);
@@ -372,7 +349,7 @@ describe('calcPremiumPercent', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    await seedAndThaw(provider, engine, utils.parseEther('10'));
+    await seedAndThawEngine(provider, engine, utils.parseEther('10'));
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(15);
@@ -428,7 +405,7 @@ describe('sellAndBurnMln', () => {
     const deployerAddress = await resolveAddress(deployer);
 
     await engine.addEtherTakers([deployer]);
-    await seedAndThaw(provider, engine, ethAmountWithPremium);
+    await seedAndThawEngine(provider, engine, ethAmountWithPremium);
 
     const preMlnBalance = await mln.balanceOf(deployerAddress);
     await mln.approve(engine.address, mlnAmount);
@@ -477,7 +454,7 @@ describe('sellAndBurnMln', () => {
     const mlnAmount = utils.parseEther('1');
     const ethAmountWithPremium = utils.parseEther('1.04');
 
-    await seedAndThaw(provider, engine, ethAmountWithPremium);
+    await seedAndThawEngine(provider, engine, ethAmountWithPremium);
     await engine.addEtherTakers([deployer]);
 
     const failSellBurnTx = engine.sellAndBurnMln(mlnAmount);

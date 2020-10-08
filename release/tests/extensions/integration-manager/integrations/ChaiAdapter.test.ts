@@ -69,7 +69,10 @@ describe('parseAssetsForMethod', () => {
       deployment: { chaiAdapter },
     } = await provider.snapshot(snapshot);
 
-    const args = await chaiLendArgs(1, 1);
+    const args = await chaiLendArgs({
+      outgoingDaiAmount: 1,
+      expectedIncomingChaiAmount: 1,
+    });
     const badSelectorParseAssetsCall = chaiAdapter.parseAssetsForMethod(
       utils.randomBytes(4),
       args,
@@ -101,7 +104,10 @@ describe('parseAssetsForMethod', () => {
     const outgoingAsset = dai;
     const outgoingAmount = utils.parseEther('1');
 
-    const args = await chaiLendArgs(incomingAmount, outgoingAmount);
+    const args = await chaiLendArgs({
+      outgoingDaiAmount: incomingAmount,
+      expectedIncomingChaiAmount: outgoingAmount,
+    });
     const selector = lendSelector;
 
     const {
@@ -140,7 +146,10 @@ describe('parseAssetsForMethod', () => {
     const outgoingAsset = chai;
     const outgoingAmount = utils.parseEther('1');
 
-    const args = await chaiRedeemArgs(incomingAmount, outgoingAmount);
+    const args = await chaiRedeemArgs({
+      outgoingChaiAmount: outgoingAmount,
+      expectedIncomingDaiAmount: incomingAmount,
+    });
     const selector = redeemSelector;
 
     const {
@@ -171,12 +180,15 @@ describe('lend', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const lendArgs = await chaiLendArgs(1, 1);
-    const transferArgs = await assetTransferArgs(
-      chaiAdapter,
-      lendSelector,
-      lendArgs,
-    );
+    const lendArgs = await chaiLendArgs({
+      outgoingDaiAmount: 1,
+      expectedIncomingChaiAmount: 1,
+    });
+    const transferArgs = await assetTransferArgs({
+      adapter: chaiAdapter,
+      selector: lendSelector,
+      encodedCallArgs: lendArgs,
+    });
 
     const badLendTx = chaiAdapter.lend(vaultProxy, lendArgs, transferArgs);
     await expect(badLendTx).rejects.toBeRevertedWith(
@@ -278,15 +290,15 @@ describe('redeem', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const redeemArgs = await chaiRedeemArgs(
-      utils.parseEther('1'),
-      utils.parseEther('1'),
-    );
-    const transferArgs = await assetTransferArgs(
-      chaiAdapter,
-      redeemSelector,
-      redeemArgs,
-    );
+    const redeemArgs = await chaiRedeemArgs({
+      outgoingChaiAmount: utils.parseEther('1'),
+      expectedIncomingDaiAmount: utils.parseEther('1'),
+    });
+    const transferArgs = await assetTransferArgs({
+      adapter: chaiAdapter,
+      selector: redeemSelector,
+      encodedCallArgs: redeemArgs,
+    });
 
     const redeemTx = chaiAdapter.redeem(vaultProxy, redeemArgs, transferArgs);
     await expect(redeemTx).rejects.toBeRevertedWith(

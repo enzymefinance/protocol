@@ -20,13 +20,19 @@ export const mockGenericSwapCSelector = sighash(
   utils.FunctionFragment.fromString('swapC(address,bytes,bytes)'),
 );
 
-export async function mockGenericSwapArgs(
-  spendAssets: AddressLike[],
-  spendAssetAmounts: BigNumberish[],
-  incomingAssets: AddressLike[],
-  minIncomingAssetAmounts: BigNumberish[],
-  incomingAssetAmounts: BigNumberish[],
-) {
+export async function mockGenericSwapArgs({
+  spendAssets,
+  spendAssetAmounts,
+  incomingAssets,
+  minIncomingAssetAmounts,
+  incomingAssetAmounts,
+}: {
+  spendAssets: AddressLike[];
+  spendAssetAmounts: BigNumberish[];
+  incomingAssets: AddressLike[];
+  minIncomingAssetAmounts: BigNumberish[];
+  incomingAssetAmounts: BigNumberish[];
+}) {
   return encodeArgs(
     ['address[]', 'uint256[]', 'address[]', 'uint256[]', 'uint256[]'],
     [
@@ -73,18 +79,18 @@ export async function mockGenericSwap({
     }
   }
 
-  const swapArgs = await mockGenericSwapArgs(
+  const swapArgs = await mockGenericSwapArgs({
     spendAssets,
     spendAssetAmounts,
     incomingAssets,
     minIncomingAssetAmounts,
-    actualIncomingAssetAmounts,
-  );
-  const callArgs = await callOnIntegrationArgs(
-    mockGenericAdapter,
+    incomingAssetAmounts: actualIncomingAssetAmounts,
+  });
+  const callArgs = await callOnIntegrationArgs({
+    adapter: mockGenericAdapter,
     selector,
-    swapArgs,
-  );
+    encodedCallArgs: swapArgs,
+  });
 
   const swapTx = comptrollerProxy
     .connect(fundOwner)

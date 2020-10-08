@@ -1,17 +1,16 @@
-import { providers, Signer } from 'ethers';
-import { randomAddress } from '@crestproject/crestproject';
 import {
   deployPersistent,
   PersistentDeploymentConfig,
   PersistentDeploymentOutput,
 } from '@melonproject/persistent';
+import { Deployment, DeploymentHandlers } from '@melonproject/utils';
+import { providers, Signer } from 'ethers';
 import { deployRelease, ReleaseDeploymentConfig } from './deployment';
 import {
   deployMocks,
   MockDeploymentConfig,
   MockDeploymentOutput,
 } from './mocks';
-import { Deployment, DeploymentHandlers } from '@melonproject/utils';
 
 interface CommonDeploymentConfig {
   deployer: Signer;
@@ -42,7 +41,6 @@ export async function configureRelease(
     },
     engine: {
       thawDelay: 10000000000,
-      etherTakers: [randomAddress()], // What's this?!
     },
     chainlink: {
       rateQuoteAsset: mocks.tokens.weth.address,

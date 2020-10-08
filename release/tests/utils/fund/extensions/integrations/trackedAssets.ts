@@ -1,18 +1,22 @@
-import { Signer } from 'ethers';
 import { AddressLike } from '@crestproject/crestproject';
+import { Signer } from 'ethers';
 import {
-  TrackedAssetsAdapter,
   ComptrollerLib,
   IntegrationManager,
+  TrackedAssetsAdapter,
 } from '../../../../../utils/contracts';
 import { encodeArgs } from '../../../common';
 import {
+  addTrackedAssetsSelector,
   callOnIntegrationArgs,
   callOnIntegrationSelector,
-  addTrackedAssetsSelector,
 } from './common';
 
-export async function addTrackedAssetsArgs(incomingAssets: AddressLike[]) {
+export async function addTrackedAssetsArgs({
+  incomingAssets,
+}: {
+  incomingAssets: AddressLike[];
+}) {
   return encodeArgs(['address[]'], [incomingAssets]);
 }
 
@@ -29,12 +33,12 @@ export async function addTrackedAssets({
   trackedAssetsAdapter: TrackedAssetsAdapter;
   incomingAssets: AddressLike[];
 }) {
-  const args = await addTrackedAssetsArgs(incomingAssets);
-  const callArgs = await callOnIntegrationArgs(
-    trackedAssetsAdapter,
-    addTrackedAssetsSelector,
-    args,
-  );
+  const args = await addTrackedAssetsArgs({ incomingAssets });
+  const callArgs = await callOnIntegrationArgs({
+    adapter: trackedAssetsAdapter,
+    selector: addTrackedAssetsSelector,
+    encodedCallArgs: args,
+  });
 
   const addTrackedAssetsTx = comptrollerProxy
     .connect(fundOwner)

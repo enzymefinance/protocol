@@ -1,12 +1,12 @@
 import { AddressLike } from '@crestproject/crestproject';
 import { BigNumberish, Signer, utils } from 'ethers';
+import { IERC20 } from '../../../../../codegen/IERC20';
 import {
-  KyberAdapter,
   ComptrollerLib,
   IntegrationManager,
+  KyberAdapter,
   VaultLib,
 } from '../../../../../utils/contracts';
-import { IERC20 } from '../../../../../codegen/IERC20';
 import { encodeArgs } from '../../../common';
 import {
   callOnIntegrationArgs,
@@ -14,20 +14,20 @@ import {
   takeOrderSelector,
 } from './common';
 
-export async function kyberTakeOrderArgs(
-  incomingAsset: AddressLike,
-  expectedIncomingAssetAmount: BigNumberish,
-  outgoingAsset: AddressLike,
-  outgoingAssetAmount: BigNumberish,
-) {
+export async function kyberTakeOrderArgs({
+  incomingAsset,
+  minIncomingAssetAmount,
+  outgoingAsset,
+  outgoingAssetAmount,
+}: {
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount: BigNumberish;
+  outgoingAsset: AddressLike;
+  outgoingAssetAmount: BigNumberish;
+}) {
   return encodeArgs(
     ['address', 'uint256', 'address', 'uint256'],
-    [
-      incomingAsset,
-      expectedIncomingAssetAmount,
-      outgoingAsset,
-      outgoingAssetAmount,
-    ],
+    [incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount],
   );
 }
 
@@ -59,17 +59,17 @@ export async function kyberTakeOrder({
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
   }
 
-  const takeOrderArgs = await kyberTakeOrderArgs(
-    incomingAsset,
-    minIncomingAssetAmount,
-    outgoingAsset,
-    outgoingAssetAmount,
-  );
-  const callArgs = await callOnIntegrationArgs(
-    kyberAdapter,
-    takeOrderSelector,
-    takeOrderArgs,
-  );
+  const takeOrderArgs = await kyberTakeOrderArgs({
+    incomingAsset: incomingAsset,
+    minIncomingAssetAmount: minIncomingAssetAmount,
+    outgoingAsset: outgoingAsset,
+    outgoingAssetAmount: outgoingAssetAmount,
+  });
+  const callArgs = await callOnIntegrationArgs({
+    adapter: kyberAdapter,
+    selector: takeOrderSelector,
+    encodedCallArgs: takeOrderArgs,
+  });
 
   const takeOrderTx = comptrollerProxy
     .connect(fundOwner)

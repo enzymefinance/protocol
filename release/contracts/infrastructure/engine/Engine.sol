@@ -46,8 +46,7 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         address _wethToken,
         address _primitivePriceFeed,
         address _valueInterpreter,
-        uint256 _thawDelay,
-        address[] memory _etherTakers
+        uint256 _thawDelay
     ) public DispatcherOwnerMixin(_dispatcher) {
         MGM = _MGM;
         MLN_TOKEN = _mlnToken;
@@ -56,13 +55,20 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         WETH_TOKEN = _wethToken;
         THAW_DELAY = _thawDelay;
         lastThaw = block.timestamp;
-        __addEtherTakers(_etherTakers);
     }
 
     // EXTERNAL FUNCTIONS
 
     function addEtherTakers(address[] calldata _takers) external onlyDispatcherOwner {
-        __addEtherTakers(_takers);
+        for (uint256 i = 0; i < _takers.length; i++) {
+            require(
+                !acctToIsEtherTaker[_takers[i]],
+                "addEtherTakers: etherTaker has already been added"
+            );
+            acctToIsEtherTaker[_takers[i]] = true;
+
+            emit EtherTakerAdded(_takers[i]);
+        }
     }
 
     // TODO: what if invalid price?
@@ -165,20 +171,6 @@ contract Engine is IEngine, DispatcherOwnerMixin {
             return 10;
         } else if (liquidEther >= 10 ether) {
             return 15;
-        }
-    }
-
-    // PRIVATE FUNCTIONS
-
-    function __addEtherTakers(address[] memory _takers) private {
-        for (uint256 i = 0; i < _takers.length; i++) {
-            require(
-                !acctToIsEtherTaker[_takers[i]],
-                "__addEtherTakers: etherTaker has already been added"
-            );
-            acctToIsEtherTaker[_takers[i]] = true;
-
-            emit EtherTakerAdded(_takers[i]);
         }
     }
 

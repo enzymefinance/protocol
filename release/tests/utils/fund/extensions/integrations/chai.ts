@@ -1,11 +1,11 @@
 import { BigNumberish, Signer, utils } from 'ethers';
+import { IERC20 } from '../../../../../codegen/IERC20';
 import {
   ChaiAdapter,
   ComptrollerLib,
   IntegrationManager,
   VaultLib,
 } from '../../../../../utils/contracts';
-import { IERC20 } from '../../../../../codegen/IERC20';
 import { encodeArgs } from '../../../common';
 import {
   callOnIntegrationArgs,
@@ -14,20 +14,26 @@ import {
   redeemSelector,
 } from './common';
 
-export async function chaiLendArgs(
-  outgoingDaiAmount: BigNumberish,
-  expectedIncomingChaiAmount: BigNumberish,
-) {
+export async function chaiLendArgs({
+  outgoingDaiAmount,
+  expectedIncomingChaiAmount,
+}: {
+  outgoingDaiAmount: BigNumberish;
+  expectedIncomingChaiAmount: BigNumberish;
+}) {
   return encodeArgs(
     ['uint256', 'uint256'],
     [outgoingDaiAmount, expectedIncomingChaiAmount],
   );
 }
 
-export async function chaiRedeemArgs(
-  outgoingChaiAmount: BigNumberish,
-  expectedIncomingDaiAmount: BigNumberish,
-) {
+export async function chaiRedeemArgs({
+  outgoingChaiAmount,
+  expectedIncomingDaiAmount,
+}: {
+  outgoingChaiAmount: BigNumberish;
+  expectedIncomingDaiAmount: BigNumberish;
+}) {
   return encodeArgs(
     ['uint256', 'uint256'],
     [outgoingChaiAmount, expectedIncomingDaiAmount],
@@ -60,12 +66,15 @@ export async function chaiLend({
     await dai.transfer(vaultProxy, daiAmount);
   }
 
-  const lendArgs = await chaiLendArgs(daiAmount, minChaiAmount);
-  const callArgs = await callOnIntegrationArgs(
-    chaiAdapter,
-    lendSelector,
-    lendArgs,
-  );
+  const lendArgs = await chaiLendArgs({
+    outgoingDaiAmount: daiAmount,
+    expectedIncomingChaiAmount: minChaiAmount,
+  });
+  const callArgs = await callOnIntegrationArgs({
+    adapter: chaiAdapter,
+    selector: lendSelector,
+    encodedCallArgs: lendArgs,
+  });
 
   const lendTx = comptrollerProxy
     .connect(fundOwner)
@@ -101,12 +110,15 @@ export async function chaiRedeem({
     await chai.transfer(vaultProxy, chaiAmount);
   }
 
-  const redeemArgs = await chaiRedeemArgs(chaiAmount, minDaiAmount);
-  const callArgs = await callOnIntegrationArgs(
-    chaiAdapter,
-    redeemSelector,
-    redeemArgs,
-  );
+  const redeemArgs = await chaiRedeemArgs({
+    outgoingChaiAmount: chaiAmount,
+    expectedIncomingDaiAmount: minDaiAmount,
+  });
+  const callArgs = await callOnIntegrationArgs({
+    adapter: chaiAdapter,
+    selector: redeemSelector,
+    encodedCallArgs: redeemArgs,
+  });
 
   const redeemTx = comptrollerProxy
     .connect(fundOwner)

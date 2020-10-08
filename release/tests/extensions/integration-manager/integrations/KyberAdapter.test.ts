@@ -1,25 +1,25 @@
-import { BigNumberish, Signer, utils, constants } from 'ethers';
 import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
+import { BigNumberish, constants, Signer, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
-import {
-  KyberAdapter,
-  ComptrollerLib,
-  IntegrationManager,
-  VaultLib,
-} from '../../../../utils/contracts';
 import { IERC20 } from '../../../../codegen/IERC20';
 import {
+  ComptrollerLib,
+  IntegrationManager,
+  KyberAdapter,
+  VaultLib,
+} from '../../../../utils/contracts';
+import {
   assetTransferArgs,
+  callOnIntegrationArgs,
+  callOnIntegrationSelector,
   createNewFund,
   kyberTakeOrder,
   kyberTakeOrderArgs,
   takeOrderSelector,
-  callOnIntegrationSelector,
-  callOnIntegrationArgs,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -142,12 +142,13 @@ describe('parseAssetsForMethod', () => {
       deployment: { kyberAdapter },
     } = await provider.snapshot(snapshot);
 
-    const args = await kyberTakeOrderArgs(
-      randomAddress(),
-      1,
-      randomAddress(),
-      1,
-    );
+    const args = await kyberTakeOrderArgs({
+      incomingAsset: randomAddress(),
+      minIncomingAssetAmount: 1,
+      outgoingAsset: randomAddress(),
+      outgoingAssetAmount: 1,
+    });
+
     const badSelectorParseAssetsCall = kyberAdapter.parseAssetsForMethod(
       utils.randomBytes(4),
       args,
@@ -169,16 +170,16 @@ describe('parseAssetsForMethod', () => {
     } = await provider.snapshot(snapshot);
 
     const incomingAsset = randomAddress();
-    const incomingAmount = utils.parseEther('1');
+    const minIncomingAssetAmount = utils.parseEther('1');
     const outgoingAsset = randomAddress();
-    const outgoingAmount = utils.parseEther('1');
+    const outgoingAssetAmount = utils.parseEther('1');
 
-    const takeOrderArgs = await kyberTakeOrderArgs(
+    const takeOrderArgs = await kyberTakeOrderArgs({
       incomingAsset,
-      incomingAmount,
+      minIncomingAssetAmount,
       outgoingAsset,
-      outgoingAmount,
-    );
+      outgoingAssetAmount,
+    });
 
     const {
       incomingAssets_,
@@ -198,8 +199,8 @@ describe('parseAssetsForMethod', () => {
     }).toMatchObject({
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [outgoingAmount],
-      minIncomingAssetAmounts_: [incomingAmount],
+      spendAssetAmounts_: [outgoingAssetAmount],
+      minIncomingAssetAmounts_: [minIncomingAssetAmount],
     });
   });
 });
@@ -211,17 +212,18 @@ describe('takeOrder', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const takeOrderArgs = await kyberTakeOrderArgs(
-      randomAddress(),
-      1,
-      randomAddress(),
-      1,
-    );
-    const transferArgs = await assetTransferArgs(
-      kyberAdapter,
-      takeOrderSelector,
-      takeOrderArgs,
-    );
+    const takeOrderArgs = await kyberTakeOrderArgs({
+      incomingAsset: randomAddress(),
+      minIncomingAssetAmount: 1,
+      outgoingAsset: randomAddress(),
+      outgoingAssetAmount: 1,
+    });
+
+    const transferArgs = await assetTransferArgs({
+      adapter: kyberAdapter,
+      selector: takeOrderSelector,
+      encodedCallArgs: takeOrderArgs,
+    });
 
     const badTakeOrderTx = kyberAdapter.takeOrder(
       vaultProxy,
@@ -237,27 +239,23 @@ describe('takeOrder', () => {
     const {
       deployment: {
         kyberAdapter,
-        tokens: { mln: incomingAsset },
+        tokens: { mln },
         integrationManager,
       },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
-    const minIncomingAssetAmount = utils.parseEther('1');
-    const outgoingAsset = constants.AddressZero;
-    const outgoingAssetAmount = utils.parseEther('1');
-
-    const takeOrderArgs = await kyberTakeOrderArgs(
-      incomingAsset,
-      minIncomingAssetAmount,
-      outgoingAsset,
-      outgoingAssetAmount,
-    );
-    const callArgs = await callOnIntegrationArgs(
-      kyberAdapter,
-      takeOrderSelector,
-      takeOrderArgs,
-    );
+    const takeOrderArgs = await kyberTakeOrderArgs({
+      incomingAsset: mln,
+      minIncomingAssetAmount: utils.parseEther('1'),
+      outgoingAsset: constants.AddressZero,
+      outgoingAssetAmount: utils.parseEther('1'),
+    });
+    const callArgs = await callOnIntegrationArgs({
+      adapter: kyberAdapter,
+      selector: takeOrderSelector,
+      encodedCallArgs: takeOrderArgs,
+    });
 
     const takeOrderTx = comptrollerProxy
       .connect(fundOwner)
@@ -271,27 +269,23 @@ describe('takeOrder', () => {
     const {
       deployment: {
         kyberAdapter,
-        tokens: { mln: outgoingAsset },
+        tokens: { mln },
         integrationManager,
       },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
-    const minIncomingAssetAmount = utils.parseEther('1');
-    const incomingAsset = constants.AddressZero;
-    const outgoingAssetAmount = utils.parseEther('1');
-
-    const takeOrderArgs = await kyberTakeOrderArgs(
-      incomingAsset,
-      minIncomingAssetAmount,
-      outgoingAsset,
-      outgoingAssetAmount,
-    );
-    const callArgs = await callOnIntegrationArgs(
-      kyberAdapter,
-      takeOrderSelector,
-      takeOrderArgs,
-    );
+    const takeOrderArgs = await kyberTakeOrderArgs({
+      incomingAsset: constants.AddressZero,
+      minIncomingAssetAmount: utils.parseEther('1'),
+      outgoingAsset: mln,
+      outgoingAssetAmount: utils.parseEther('1'),
+    });
+    const callArgs = await callOnIntegrationArgs({
+      adapter: kyberAdapter,
+      selector: takeOrderSelector,
+      encodedCallArgs: takeOrderArgs,
+    });
 
     const takeOrderTx = comptrollerProxy
       .connect(fundOwner)
