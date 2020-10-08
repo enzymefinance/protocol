@@ -121,7 +121,7 @@ describe('setOverridePause', () => {
 });
 
 describe('vaultCallOnContract', () => {
-  it.todo('annot be called by a random user');
+  it.todo('cannot be called by a random user');
 
   it.todo('does not allow a call to an unregistered contract');
 

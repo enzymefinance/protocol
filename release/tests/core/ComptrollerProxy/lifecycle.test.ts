@@ -11,11 +11,7 @@ import {
   FundDeployer,
   VaultLib,
 } from '../../../utils/contracts';
-import {
-  createComptrollerProxy,
-  fundStatusTypes,
-  releaseStatusTypes,
-} from '../../utils';
+import { createComptrollerProxy, releaseStatusTypes } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, config, deployment } = await defaultTestDeployment(
@@ -174,9 +170,6 @@ describe('activate', () => {
     const vaultProxyCall = comptrollerProxy.getVaultProxy();
     await expect(vaultProxyCall).resolves.toBe(mockVaultProxy.address);
 
-    const getStatusCall = comptrollerProxy.getStatus();
-    await expect(getStatusCall).resolves.toBe(fundStatusTypes.Active);
-
     // Assert expected calls
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();
 
@@ -186,10 +179,6 @@ describe('activate', () => {
     // Assert events emitted
     await assertEvent(activateTx, 'VaultProxySet', {
       vaultProxy: mockVaultProxy.address,
-    });
-
-    await assertEvent(activateTx, 'StatusUpdated', {
-      nextStatus: fundStatusTypes.Active,
     });
   });
 
@@ -220,9 +209,6 @@ describe('activate', () => {
     const vaultProxyCall = comptrollerProxy.getVaultProxy();
     await expect(vaultProxyCall).resolves.toBe(mockVaultProxy.address);
 
-    const getStatusCall = comptrollerProxy.getStatus();
-    await expect(getStatusCall).resolves.toBe(fundStatusTypes.Active);
-
     // Assert expected calls
     expect(mockVaultProxy.burnShares).toHaveBeenCalledOnContractWith(
       mockVaultProxy.address,
@@ -236,95 +222,6 @@ describe('activate', () => {
     // Assert events emitted
     await assertEvent(activateTx, 'VaultProxySet', {
       vaultProxy: mockVaultProxy.address,
-    });
-
-    await assertEvent(activateTx, 'StatusUpdated', {
-      nextStatus: fundStatusTypes.Active,
-    });
-  });
-});
-
-describe('shutdown', () => {
-  it('cannot be called by a random user', async () => {
-    const {
-      accounts: { 0: randomUser },
-      comptrollerProxy,
-      mockFundDeployer,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    // Activate fund
-    await mockFundDeployer.forward(
-      comptrollerProxy.activate,
-      mockVaultProxy,
-      false,
-    );
-
-    // Attempt to shutdown fund with a random user fails
-    const shutdownTx = comptrollerProxy.connect(randomUser).shutdown();
-    await expect(shutdownTx).rejects.toBeRevertedWith(
-      'Only the fund owner can call this function',
-    );
-  });
-
-  it('does not allow a paused release, unless overridePause is set', async () => {
-    const {
-      comptrollerProxy,
-      mockFundDeployer,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    // Activate fund
-    await mockFundDeployer.forward(
-      comptrollerProxy.activate,
-      mockVaultProxy,
-      false,
-    );
-
-    // // Mock ReleaseStatus.Pause
-    await mockFundDeployer.getReleaseStatus.returns(releaseStatusTypes.Paused);
-
-    // // The call should fail
-    const badShutdownTx = comptrollerProxy.shutdown();
-    await expect(badShutdownTx).rejects.toBeRevertedWith('Fund is paused');
-
-    // Override the pause
-    await comptrollerProxy.setOverridePause(true);
-
-    // // The call should then succeed
-    const goodShutdownTx = comptrollerProxy.shutdown();
-    await expect(goodShutdownTx).resolves.toBeReceipt();
-  });
-
-  it('correctly handles valid call', async () => {
-    const {
-      comptrollerProxy,
-      mockFeeManager,
-      mockFundDeployer,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    // Activate fund
-    await mockFundDeployer.forward(
-      comptrollerProxy.activate,
-      mockVaultProxy,
-      false,
-    );
-
-    // Shutdown fund
-    const shutdownTx = comptrollerProxy.shutdown();
-    await expect(shutdownTx).resolves.toBeReceipt();
-
-    // Assert state has been set
-    const getStatusCall = comptrollerProxy.getStatus();
-    await expect(getStatusCall).resolves.toBe(fundStatusTypes.Shutdown);
-
-    // Assert expected calls
-    expect(mockFeeManager.deactivateForFund).toHaveBeenCalledOnContract();
-
-    // Assert events emitted
-    await assertEvent(shutdownTx, 'StatusUpdated', {
-      nextStatus: fundStatusTypes.Shutdown,
     });
   });
 });
@@ -383,17 +280,17 @@ describe('destruct', () => {
       false,
     );
 
-    // Confirm that getStatus call resolves prior to destruct
-    const preGetStatusCall = comptrollerProxy.getStatus();
-    await expect(preGetStatusCall).resolves.toBeTruthy();
+    // Confirm that a state call resolves prior to destruct
+    const preGetDenominationAssetCall = comptrollerProxy.getDenominationAsset();
+    await expect(preGetDenominationAssetCall).resolves.toBeTruthy();
 
     // Destruct fund
     const destructTx = mockFundDeployer.forward(comptrollerProxy.destruct);
     await expect(destructTx).resolves.toBeReceipt();
 
-    // Assert state has been wiped by assuring getStatus call now reverts
-    const postGetStatusCall = comptrollerProxy.getStatus();
-    await expect(postGetStatusCall).rejects.toBeReverted();
+    // Assert state has been wiped by assuring call now reverts
+    const postGetDenominationAssetCall = comptrollerProxy.getDenominationAsset();
+    await expect(postGetDenominationAssetCall).rejects.toBeReverted();
 
     // Assert expected calls
     expect(mockFeeManager.deactivateForFund).toHaveBeenCalledOnContract();

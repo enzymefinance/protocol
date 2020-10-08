@@ -28,8 +28,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     event OverridePauseSet(bool indexed overridePause);
 
-    event StatusUpdated(FundStatus indexed nextStatus);
-
     event SharesBought(
         address indexed caller,
         address indexed buyer,
@@ -64,10 +62,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     // Storage
     bool private overridePause;
-    FundStatus private status;
-
-    // This kind of serves as a reverse-mutex,
-    // only allowing certain actions when they are the result of a call from this contract
+    // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
     bool private permissionedVaultCallAllowed;
 
     ///////////////
@@ -119,7 +114,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
     function __assertIsActive() private view {
-        require(status == FundStatus.Active, "This function can only be called on an active fund");
+        require(isActive(), "This function can only be called on an active fund");
     }
 
     function __assertIsFundDeployer(address _who) private view {
@@ -265,6 +260,14 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IVault(vaultProxy).callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
     }
 
+    /// @notice Checks whether the fund is active
+    /// @return isActive_ True if the fund is active
+    /// @dev Since vaultProxy is set during activate(),
+    /// we can check that var rather than storing additional state
+    function isActive() public view returns (bool isActive_) {
+        return vaultProxy != address(0);
+    }
+
     // // TODO: implement with roles
     // /// @param _who The acct for which to query management permission
     // // /// @param _extension The extension for which to query management permission
@@ -346,46 +349,28 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
         // FeeManager is currently the only extension that needs to be activated
         IExtension(FEE_MANAGER).activateForFund();
-
-        __updateStatus(FundStatus.Active);
-    }
-
-    /// @notice Shut down the fund
-    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
-    function shutdown() external override onlyActive onlyOwner onlyNotPaused {
-        __deactivateExtensions();
-
-        __updateStatus(FundStatus.Shutdown);
     }
 
     /// @notice Remove the config for a fund
     /// @dev No need to assert anything beyond FundDeployer access.
     /// Calling onlyNotPaused here rather than in the FundDeployer allows
     /// the owner to potentially override the pause and rescue unpaid fees.
-    function destruct() external override onlyFundDeployer onlyNotPaused {
-        if (status != FundStatus.Shutdown) {
-            __deactivateExtensions();
-        }
+    function destruct()
+        external
+        override
+        onlyFundDeployer
+        onlyNotPaused
+        allowsPermissionedVaultCall
+    {
+        // Distribute final fee settlement and destroy FeeManager storage
+        IExtension(FEE_MANAGER).deactivateForFund();
+
+        // TODO: destroy unneeded PolicyManager storage?
 
         // Delete storage of ComptrollerProxy
         // There should never be ETH in this contract, but if there is,
         // we can send to the VaultProxy.
         selfdestruct(payable(vaultProxy));
-    }
-
-    /// @dev Helper to deactivate a fund's extensions
-    function __deactivateExtensions() private allowsPermissionedVaultCall {
-        // Distribute final fee settlement and destroy FeeManager storage
-        IExtension(FEE_MANAGER).deactivateForFund();
-
-        // TODO: destroy unneeded PolicyManager storage?
-    }
-
-    /// @dev Helper to update a fund's status
-    function __updateStatus(FundStatus _nextStatus) private {
-        status = _nextStatus;
-
-        emit StatusUpdated(_nextStatus);
     }
 
     //////////////////////////////
@@ -509,17 +494,15 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @return netShareValue_ The amount of the denomination asset per share
     /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
     /// that can be used to determine the cost of purchasing shares at any given point in time.
-    function calcNetShareValue() external onlyDelegateCall returns (uint256 netShareValue_) {
-        if (status == FundStatus.Active && !__fundIsPaused()) {
-            __settleContinuousFeesPreCalcNetShareValue();
-        }
+    function calcNetShareValue()
+        external
+        onlyDelegateCall
+        allowsPermissionedVaultCall
+        returns (uint256 netShareValue_)
+    {
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
 
         return calcGrossShareValue();
-    }
-
-    /// @dev Helper to settle continuous fees
-    function __settleContinuousFeesPreCalcNetShareValue() private allowsPermissionedVaultCall {
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
     }
 
     ///////////////////
@@ -649,8 +632,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
 
-        // When a fund is shutdown, there will be no more enabled fees
-        if (status == FundStatus.Active && !__fundIsPaused()) {
+        // When a fund is paused, settling fees will be skipped
+        if (!__fundIsPaused()) {
             __settleContinuousFeesPreRedeemShares();
         }
 
@@ -707,12 +690,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @return overridePause_ The `overridePause` variable value
     function getOverridePause() external view returns (bool overridePause_) {
         return overridePause;
-    }
-
-    /// @notice Gets the `status` variable
-    /// @return status_ The `status` variable value
-    function getStatus() external view returns (FundStatus status_) {
-        return status;
     }
 
     /// @notice Gets the routes for the various contracts used by all funds

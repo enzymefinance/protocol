@@ -1,10 +1,15 @@
-import { BigNumber, constants, utils } from 'ethers';
 import {
   EthereumTestnetProvider,
   extractEvent,
+  randomAddress,
   resolveAddress,
 } from '@crestproject/crestproject';
+import {
+  IMigrationHookHandler,
+  MockVaultLib,
+} from '@melonproject/persistent/utils/contracts';
 import { assertEvent } from '@melonproject/utils';
+import { BigNumber, constants, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../';
 import {
   buyShares,
@@ -196,10 +201,12 @@ describe('activateForFund', () => {
   });
 });
 
+// TODO: we could use mocks here to call this function directly if we want
 describe('deactivateForFund', () => {
   it('settles Continuous fees, pays out all shares outstanding, and deletes all fund config', async () => {
     const {
-      deployment: { feeManager },
+      config: { deployer },
+      deployment: { dispatcher, feeManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
       fees: { mockContinuousFee1, mockContinuousFee2 },
     } = await provider.snapshot(snapshotWithMocksAndFund);
@@ -221,8 +228,29 @@ describe('deactivateForFund', () => {
       feeAmount,
     );
 
-    // Shutdown the fund
-    const shutdownTx = comptrollerProxy.shutdown();
+    // Setup a new mock release to migrate the fund
+    const mockNextFundDeployer = await IMigrationHookHandler.mock(deployer);
+    const mockNextVaultLib = await MockVaultLib.deploy(deployer);
+    await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
+
+    // Signal migration and warp to migratable time
+    await mockNextFundDeployer.forward(
+      dispatcher.signalMigration,
+      vaultProxy,
+      randomAddress(),
+      mockNextVaultLib,
+      false,
+    );
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Migrate the vault
+    const migrateTx = mockNextFundDeployer.forward(
+      dispatcher.executeMigration,
+      vaultProxy,
+      false,
+    );
+    await expect(migrateTx).resolves.toBeReceipt();
 
     // Fees should be settled and payout of shares outstanding forced
     const expectedPayoutAmount = BigNumber.from(feeAmount).mul(2);
@@ -246,7 +274,7 @@ describe('deactivateForFund', () => {
     const allSharesOutstandingForcePaidEvent = feeManager.abi.getEvent(
       'AllSharesOutstandingForcePaid',
     );
-    await assertEvent(shutdownTx, allSharesOutstandingForcePaidEvent, {
+    await assertEvent(migrateTx, allSharesOutstandingForcePaidEvent, {
       comptrollerProxy: comptrollerProxy.address,
       payee: await resolveAddress(fundOwner),
       sharesDue: feeAmount,
