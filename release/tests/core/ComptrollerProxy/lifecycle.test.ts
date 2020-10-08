@@ -6,24 +6,27 @@ import { assertEvent } from '@melonproject/utils';
 import { utils } from 'ethers';
 import { defaultTestDeployment } from '../../..';
 import { IExtension } from '../../../codegen/IExtension';
-import { IPrimitivePriceFeed } from '../../../codegen/IPrimitivePriceFeed';
-import { ComptrollerLib, VaultLib } from '../../../utils/contracts';
-import { createComptrollerProxy, fundStatusTypes } from '../../utils';
+import {
+  ComptrollerLib,
+  FundDeployer,
+  VaultLib,
+} from '../../../utils/contracts';
+import {
+  createComptrollerProxy,
+  fundStatusTypes,
+  releaseStatusTypes,
+} from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, config } = await defaultTestDeployment(provider);
-
-  const [fundDeployerSigner, ...remainingAccounts] = accounts;
-
-  const mockPrimitivePriceFeed = await IPrimitivePriceFeed.mock(
-    config.deployer,
+  const { accounts, config, deployment } = await defaultTestDeployment(
+    provider,
   );
-  await mockPrimitivePriceFeed.isSupportedAsset.returns(false);
-  const supportedAssetAddress = randomAddress();
-  await mockPrimitivePriceFeed.isSupportedAsset
-    .given(supportedAssetAddress)
-    .returns(true);
 
+  // Deploy a mock FundDeployer
+  const mockFundDeployer = await FundDeployer.mock(config.deployer);
+  await mockFundDeployer.getReleaseStatus.returns(releaseStatusTypes.Live);
+
+  // Deploy mock extensions
   const mockFeeManager = await IExtension.mock(config.deployer);
   const mockPolicyManager = await IExtension.mock(config.deployer);
 
@@ -36,11 +39,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockPolicyManager.deactivateForFund.returns(undefined),
   ]);
 
+  // Re-deploy a ComptrollerLib that uses the mocks
   const comptrollerLib = await ComptrollerLib.deploy(
     config.deployer,
-    fundDeployerSigner,
+    mockFundDeployer,
     randomAddress(), // ValueInterpreter
-    mockPrimitivePriceFeed,
+    deployment.chainlinkPriceFeed,
     randomAddress(), // DerivativePriceFeed
     mockFeeManager,
     randomAddress(), // IntegrationManager
@@ -48,40 +52,18 @@ async function snapshot(provider: EthereumTestnetProvider) {
     randomAddress(), // Engine
   );
 
-  return {
-    accounts: remainingAccounts,
-    config,
-    comptrollerLib,
-    fundDeployerSigner,
-    mockFeeManager,
-    mockPolicyManager,
-    mockPrimitivePriceFeed,
-    supportedAssetAddress,
-  };
-}
-
-async function snapshotWithFundContracts(provider: EthereumTestnetProvider) {
-  const {
-    accounts,
-    config,
-    comptrollerLib,
-    fundDeployerSigner,
-    mockFeeManager,
-    mockPolicyManager,
-    mockPrimitivePriceFeed,
-    supportedAssetAddress,
-  } = await snapshot(provider);
-
-  // Deploy ComptrollerProxy
+  // Deploy configured ComptrollerProxy
+  const feeManagerConfigData = utils.hexlify(utils.randomBytes(4));
+  const policyManagerConfigData = utils.hexlify(utils.randomBytes(8));
   const { comptrollerProxy } = await createComptrollerProxy({
-    signer: fundDeployerSigner,
+    signer: config.deployer,
     comptrollerLib,
-    denominationAsset: supportedAssetAddress,
-    feeManagerConfigData: utils.hexlify(utils.randomBytes(4)),
-    policyManagerConfigData: utils.hexlify(utils.randomBytes(8)),
+    denominationAsset: deployment.tokens.weth.address,
+    feeManagerConfigData,
+    policyManagerConfigData,
   });
 
-  // Mock VaultProxy
+  // Deploy Mock VaultProxy
   const [mockVaultProxyOwner, ...remainingAccounts] = accounts;
   const mockVaultProxy = await VaultLib.mock(config.deployer);
   await mockVaultProxy.balanceOf.returns(0);
@@ -93,40 +75,29 @@ async function snapshotWithFundContracts(provider: EthereumTestnetProvider) {
     accounts: remainingAccounts,
     config,
     comptrollerLib,
-    comptrollerProxy,
-    fundDeployerSigner,
+    comptrollerProxy: comptrollerProxy.connect(mockVaultProxyOwner),
+    feeManagerConfigData,
     mockFeeManager,
+    mockFundDeployer,
     mockPolicyManager,
-    mockPrimitivePriceFeed,
     mockVaultProxy,
-    mockVaultProxyOwner,
-    supportedAssetAddress,
+    policyManagerConfigData,
+    supportedAsset: deployment.tokens.weth,
   };
 }
 
 describe('init', () => {
-  it('can only be called by FundDeployer', async () => {
+  it('does not allow an unsupported denomination asset', async () => {
     const {
-      accounts: { 0: randomUser },
+      config: { deployer: signer },
       comptrollerLib,
     } = await provider.snapshot(snapshot);
 
-    const initTx = comptrollerLib
-      .connect(randomUser)
-      .init(randomAddress(), '0x', '0x');
-    await expect(initTx).rejects.toBeRevertedWith(
-      'Only the FundDeployer can call this function',
-    );
-  });
-
-  it('does not allow an unsupported denomination asset', async () => {
-    const { comptrollerLib, fundDeployerSigner } = await provider.snapshot(
-      snapshot,
-    );
-
-    const initTx = comptrollerLib
-      .connect(fundDeployerSigner)
-      .init(randomAddress(), '0x', '0x');
+    const initTx = createComptrollerProxy({
+      signer,
+      comptrollerLib,
+      denominationAsset: randomAddress(),
+    });
     await expect(initTx).rejects.toBeRevertedWith(
       'Denomination asset must be a supported primitive',
     );
@@ -134,37 +105,27 @@ describe('init', () => {
 
   it('correctly handles valid call', async () => {
     const {
-      comptrollerLib,
-      fundDeployerSigner,
+      comptrollerProxy,
+      feeManagerConfigData,
       mockFeeManager,
       mockPolicyManager,
-      mockPrimitivePriceFeed,
-      supportedAssetAddress,
+      policyManagerConfigData,
+      supportedAsset: denominationAsset,
     } = await provider.snapshot(snapshot);
 
-    const denominationAsset = supportedAssetAddress;
-    const feeManagerConfigData = utils.hexlify(utils.randomBytes(4));
-    const policyManagerConfigData = utils.hexlify(utils.randomBytes(8));
-
-    const { comptrollerProxy } = await createComptrollerProxy({
-      signer: fundDeployerSigner,
-      comptrollerLib,
-      denominationAsset,
-      feeManagerConfigData,
-      policyManagerConfigData,
-    });
+    // ComptrollerProxy has already been created (and init() called),
+    // so we just need to assert state and expected calls
 
     // Assert state has been set
-    const initializedCall = comptrollerProxy.getInitialized();
-    await expect(initializedCall).resolves.toBe(true);
-
     const getDenominationAssetCall = comptrollerProxy.getDenominationAsset();
-    await expect(getDenominationAssetCall).resolves.toBe(denominationAsset);
+    await expect(getDenominationAssetCall).resolves.toBe(
+      denominationAsset.address,
+    );
+
+    const getOverridePauseCall = comptrollerProxy.getOverridePause();
+    await expect(getOverridePauseCall).resolves.toBe(false);
 
     // Assert expected calls
-    expect(
-      mockPrimitivePriceFeed.isSupportedAsset,
-    ).toHaveBeenCalledOnContractWith(supportedAssetAddress);
     expect(mockFeeManager.setConfigForFund).toHaveBeenCalledOnContractWith(
       feeManagerConfigData,
     );
@@ -172,18 +133,22 @@ describe('init', () => {
       policyManagerConfigData,
     );
   });
+
+  it('can only be called once', async () => {
+    const { comptrollerProxy } = await provider.snapshot(snapshot);
+
+    // ComptrollerProxy has already been created (and init() called)
+
+    const initTx = comptrollerProxy.init(randomAddress(), '0x', '0x');
+    await expect(initTx).rejects.toBeRevertedWith('Already initialized');
+  });
 });
 
 describe('activate', () => {
   it('can only be called by FundDeployer', async () => {
-    const {
-      accounts: { 0: randomUser },
-      comptrollerProxy,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    const { comptrollerProxy } = await provider.snapshot(snapshot);
 
-    const activateTx = comptrollerProxy
-      .connect(randomUser)
-      .activate(randomAddress(), false);
+    const activateTx = comptrollerProxy.activate(randomAddress(), false);
     await expect(activateTx).rejects.toBeRevertedWith(
       'Only the FundDeployer can call this function',
     );
@@ -193,10 +158,16 @@ describe('activate', () => {
     const {
       comptrollerProxy,
       mockFeeManager,
+      mockFundDeployer,
       mockVaultProxy,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    } = await provider.snapshot(snapshot);
 
-    const activateTx = comptrollerProxy.activate(mockVaultProxy, false);
+    // Call activate()
+    const activateTx = mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      false,
+    );
     await expect(activateTx).resolves.toBeReceipt();
 
     // Assert state has been set
@@ -226,17 +197,23 @@ describe('activate', () => {
     const {
       comptrollerProxy,
       mockFeeManager,
+      mockFundDeployer,
       mockPolicyManager,
       mockVaultProxy,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    } = await provider.snapshot(snapshot);
 
-    // Mock shares due balance to trigger migration logic
+    // Mock shares due balance to assert burn/mint calls during activation
     const sharesDue = 100;
     await mockVaultProxy.balanceOf
       .given(mockVaultProxy.address)
       .returns(sharesDue);
 
-    const activateTx = comptrollerProxy.activate(mockVaultProxy, true);
+    // Call activate()
+    const activateTx = mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      true,
+    );
     await expect(activateTx).resolves.toBeReceipt();
 
     // Assert state has been set
@@ -272,11 +249,16 @@ describe('shutdown', () => {
     const {
       accounts: { 0: randomUser },
       comptrollerProxy,
+      mockFundDeployer,
       mockVaultProxy,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    } = await provider.snapshot(snapshot);
 
     // Activate fund
-    await comptrollerProxy.activate(mockVaultProxy, false);
+    await mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      false,
+    );
 
     // Attempt to shutdown fund with a random user fails
     const shutdownTx = comptrollerProxy.connect(randomUser).shutdown();
@@ -285,19 +267,52 @@ describe('shutdown', () => {
     );
   });
 
+  it('does not allow a paused release, unless overridePause is set', async () => {
+    const {
+      comptrollerProxy,
+      mockFundDeployer,
+      mockVaultProxy,
+    } = await provider.snapshot(snapshot);
+
+    // Activate fund
+    await mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      false,
+    );
+
+    // // Mock ReleaseStatus.Pause
+    await mockFundDeployer.getReleaseStatus.returns(releaseStatusTypes.Paused);
+
+    // // The call should fail
+    const badShutdownTx = comptrollerProxy.shutdown();
+    await expect(badShutdownTx).rejects.toBeRevertedWith('Fund is paused');
+
+    // Override the pause
+    await comptrollerProxy.setOverridePause(true);
+
+    // // The call should then succeed
+    const goodShutdownTx = comptrollerProxy.shutdown();
+    await expect(goodShutdownTx).resolves.toBeReceipt();
+  });
+
   it('correctly handles valid call', async () => {
     const {
       comptrollerProxy,
       mockFeeManager,
+      mockFundDeployer,
       mockVaultProxy,
-      mockVaultProxyOwner,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    } = await provider.snapshot(snapshot);
 
     // Activate fund
-    await comptrollerProxy.activate(mockVaultProxy, false);
+    await mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      false,
+    );
 
     // Shutdown fund
-    const shutdownTx = comptrollerProxy.connect(mockVaultProxyOwner).shutdown();
+    const shutdownTx = comptrollerProxy.shutdown();
     await expect(shutdownTx).resolves.toBeReceipt();
 
     // Assert state has been set
@@ -316,34 +331,64 @@ describe('shutdown', () => {
 
 describe('destruct', () => {
   it('can only be called by FundDeployer', async () => {
-    const {
-      accounts: { 0: randomUser },
-      comptrollerProxy,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    const { comptrollerProxy } = await provider.snapshot(snapshot);
 
-    const destructTx = comptrollerProxy.connect(randomUser).destruct();
+    const destructTx = comptrollerProxy.destruct();
     await expect(destructTx).rejects.toBeRevertedWith(
       'Only the FundDeployer can call this function',
     );
   });
 
+  it('does not allow a paused release, unless overridePause is set', async () => {
+    const {
+      comptrollerProxy,
+      mockFundDeployer,
+      mockVaultProxy,
+    } = await provider.snapshot(snapshot);
+
+    // Activate fund
+    await mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      false,
+    );
+
+    // Mock ReleaseStatus.Pause
+    await mockFundDeployer.getReleaseStatus.returns(releaseStatusTypes.Paused);
+
+    // The call should fail
+    const badDestructTx = mockFundDeployer.forward(comptrollerProxy.destruct);
+    await expect(badDestructTx).rejects.toBeRevertedWith('Fund is paused');
+
+    // Override the pause
+    await comptrollerProxy.setOverridePause(true);
+
+    // The call should then succeed
+    const goodDestructTx = mockFundDeployer.forward(comptrollerProxy.destruct);
+    await expect(goodDestructTx).resolves.toBeReceipt();
+  });
+
   it('correctly handles valid call', async () => {
     const {
       comptrollerProxy,
-      fundDeployerSigner,
       mockFeeManager,
+      mockFundDeployer,
       mockVaultProxy,
-    } = await provider.snapshot(snapshotWithFundContracts);
+    } = await provider.snapshot(snapshot);
 
     // Activate fund
-    await comptrollerProxy.activate(mockVaultProxy, false);
+    await mockFundDeployer.forward(
+      comptrollerProxy.activate,
+      mockVaultProxy,
+      false,
+    );
 
     // Confirm that getStatus call resolves prior to destruct
     const preGetStatusCall = comptrollerProxy.getStatus();
     await expect(preGetStatusCall).resolves.toBeTruthy();
 
     // Destruct fund
-    const destructTx = comptrollerProxy.connect(fundDeployerSigner).destruct();
+    const destructTx = mockFundDeployer.forward(comptrollerProxy.destruct);
     await expect(destructTx).resolves.toBeReceipt();
 
     // Assert state has been wiped by assuring getStatus call now reverts

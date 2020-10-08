@@ -1,8 +1,13 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { constants, utils } from 'ethers';
+import { utils } from 'ethers';
 import { defaultTestDeployment } from '../../../';
-import { buyShares, createNewFund, redeemShares } from '../../utils';
+import {
+  buyShares,
+  createNewFund,
+  redeemShares,
+  releaseStatusTypes,
+} from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -15,47 +20,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     config,
   };
 }
-
-describe('constructor', () => {
-  it('sets initial state for library', async () => {
-    const {
-      deployment: {
-        comptrollerLib,
-        engine,
-        aggregatedDerivativePriceFeed,
-        chainlinkPriceFeed,
-        policyManager,
-        feeManager,
-        integrationManager,
-        valueInterpreter,
-      },
-    } = await provider.snapshot(snapshot);
-
-    const routesCall = comptrollerLib.getRoutes();
-    await expect(routesCall).resolves.toMatchObject({
-      derivativePriceFeed_: aggregatedDerivativePriceFeed.address,
-      feeManager_: feeManager.address,
-      integrationManager_: integrationManager.address,
-      policyManager_: policyManager.address,
-      primitivePriceFeed_: chainlinkPriceFeed.address,
-      valueInterpreter_: valueInterpreter.address,
-    });
-
-    const engineCall = comptrollerLib.getEngine();
-    await expect(engineCall).resolves.toBe(engine.address);
-
-    // The following should be default values
-
-    const denominationAssetCall = comptrollerLib.getDenominationAsset();
-    await expect(denominationAssetCall).resolves.toBe(constants.AddressZero);
-
-    const initializedCall = comptrollerLib.getInitialized();
-    await expect(initializedCall).resolves.toBe(false);
-
-    const vaultProxyCall = comptrollerLib.getVaultProxy();
-    await expect(vaultProxyCall).resolves.toBe(constants.AddressZero);
-  });
-});
 
 describe('buyShares', () => {
   it('works for a fund with no extensions', async () => {
@@ -118,6 +82,47 @@ describe('buyShares', () => {
     );
     const isTrackedAssetCall = vaultProxy.isTrackedAsset(denominationAsset);
     await expect(isTrackedAssetCall).resolves.toBe(true);
+  });
+
+  it('does not allow a paused release, unless overridePause is set', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: { 0: signer, 1: buyer, 2: fundOwner },
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer,
+      fundDeployer,
+      fundOwner,
+      denominationAsset,
+    });
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+
+    // The call should fail
+    const badBuySharesTx = buyShares({
+      comptrollerProxy,
+      signer,
+      buyer,
+      denominationAsset,
+    });
+    await expect(badBuySharesTx).rejects.toBeRevertedWith('Fund is paused');
+
+    // Override the pause
+    await comptrollerProxy.connect(fundOwner).setOverridePause(true);
+
+    // The call should then succeed
+    const goodBuySharesTx = buyShares({
+      comptrollerProxy,
+      signer,
+      buyer,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx).resolves.toBeReceipt();
   });
 
   it.todo('test that amgu is sent to the Engine in the above function');

@@ -13,6 +13,7 @@ import {
   createMigratedFundConfig,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockFees,
+  releaseStatusTypes,
 } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -136,6 +137,25 @@ describe('signalMigration', () => {
     );
   });
 
+  it('does not allow the release to be paused', async () => {
+    const {
+      deployment: { fundDeployer },
+      fundOwner,
+      nextComptrollerProxy,
+      vaultProxyAddress,
+    } = await provider.snapshot(snapshot);
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+
+    const signalMigrationTx = fundDeployer
+      .connect(fundOwner)
+      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+    await expect(signalMigrationTx).rejects.toBeRevertedWith(
+      'Release is paused',
+    );
+  });
+
   it('correctly handles valid call', async () => {
     const {
       deployment: { dispatcher, fundDeployer, vaultLib },
@@ -192,6 +212,29 @@ describe('executeMigration', () => {
       .executeMigration(vaultProxyAddress);
     await expect(executeMigrationTx).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
+    );
+  });
+
+  it('does not allow the release to be paused', async () => {
+    const {
+      deployment: { fundDeployer },
+      fundOwner,
+      nextComptrollerProxy,
+      vaultProxyAddress,
+    } = await provider.snapshot(snapshot);
+
+    await fundDeployer
+      .connect(fundOwner)
+      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+
+    const executeMigrationTx = fundDeployer
+      .connect(fundOwner)
+      .executeMigration(vaultProxyAddress);
+    await expect(executeMigrationTx).rejects.toBeRevertedWith(
+      'Release is paused',
     );
   });
 
@@ -265,6 +308,29 @@ describe('cancelMigration', () => {
       .cancelMigration(vaultProxyAddress);
     await expect(cancelMigrationTx).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
+    );
+  });
+
+  it('does not allow the release to be paused', async () => {
+    const {
+      deployment: { fundDeployer },
+      fundOwner,
+      nextComptrollerProxy,
+      vaultProxyAddress,
+    } = await provider.snapshot(snapshot);
+
+    await fundDeployer
+      .connect(fundOwner)
+      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+
+    const cancelMigrationTx = fundDeployer
+      .connect(fundOwner)
+      .cancelMigration(vaultProxyAddress);
+    await expect(cancelMigrationTx).rejects.toBeRevertedWith(
+      'Release is paused',
     );
   });
 

@@ -64,6 +64,11 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         _;
     }
 
+    modifier onlyNotPaused() {
+        require(releaseStatus != ReleaseStatus.Paused, "Release is paused");
+        _;
+    }
+
     modifier onlyOwner() {
         require(msg.sender == getOwner(), "Only the contract owner can call this function");
         _;
@@ -161,7 +166,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         address _denominationAsset,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external returns (address comptrollerProxy_) {
+    ) external onlyNotPaused returns (address comptrollerProxy_) {
         require(
             _denominationAsset != address(0),
             "createMigratedFundConfig: _denominationAsset cannot be empty"
@@ -192,7 +197,13 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         address _denominationAsset,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external payable amguPayable returns (address comptrollerProxy_, address vaultProxy_) {
+    )
+        external
+        payable
+        onlyNotPaused
+        amguPayable
+        returns (address comptrollerProxy_, address vaultProxy_)
+    {
         require(_fundOwner != address(0), "createNewFund: _owner cannot be empty");
         require(
             _denominationAsset != address(0),
@@ -313,6 +324,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @dev Helper to cancel a migration
     function __cancelMigration(address _vaultProxy, bool _bypassFailure)
         private
+        onlyNotPaused
         onlyMigrator(_vaultProxy)
     {
         IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassFailure);
@@ -322,6 +334,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// A shutdown fund is not blocked from migration.
     function __executeMigration(address _vaultProxy, bool _bypassFailure)
         private
+        onlyNotPaused
         onlyMigrator(_vaultProxy)
     {
         IDispatcher dispatcherContract = IDispatcher(DISPATCHER);
@@ -343,7 +356,12 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         address _vaultProxy,
         address _comptrollerProxy,
         bool _bypassFailure
-    ) private onlyPendingComptrollerProxyCreator(_comptrollerProxy) onlyMigrator(_vaultProxy) {
+    )
+        private
+        onlyNotPaused
+        onlyPendingComptrollerProxyCreator(_comptrollerProxy)
+        onlyMigrator(_vaultProxy)
+    {
         IDispatcher(DISPATCHER).signalMigration(
             _vaultProxy,
             _comptrollerProxy,
@@ -370,6 +388,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @param _vaultProxy The VaultProxy being migrated
     /// @dev Must use pre-migration hook to be able to get the ComptrollerProxy (prevAccessor)
     // TODO: Update hooks to include prev accessor?
+    // TODO: Include un-paused only here?
     function preMigrateOriginHook(
         address _vaultProxy,
         address,
@@ -511,7 +530,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
 
     /// @notice Gets the `releaseStatus` variable value
     /// @return status_ The `releaseStatus` variable value
-    function getReleaseStatus() external view returns (ReleaseStatus status_) {
+    function getReleaseStatus() external override view returns (ReleaseStatus status_) {
         return releaseStatus;
     }
 

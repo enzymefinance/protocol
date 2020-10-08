@@ -4,8 +4,9 @@ import {
   Send,
   Contract,
 } from '@crestproject/crestproject';
+import { assertEvent } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../';
-import { createNewFund, sighash } from '../../utils';
+import { createNewFund, releaseStatusTypes, sighash } from '../../utils';
 
 // prettier-ignore
 interface MockExternalContract extends Contract<MockExternalContract> {
@@ -26,16 +27,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     provider,
   );
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
-
-async function snapshotWithFund(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(snapshot);
-
+  // Create a fund
   const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
   const { comptrollerProxy, newFundTx, vaultProxy } = await createNewFund({
@@ -44,6 +36,23 @@ async function snapshotWithFund(provider: EthereumTestnetProvider) {
     fundDeployer: deployment.fundDeployer,
     denominationAsset,
   });
+
+  // Define a mock external contract to call with 2 functions
+  const mockExternalContract = await MockExternalContract.mock(config.deployer);
+  await mockExternalContract.functionA.returns(undefined);
+  await mockExternalContract.functionB.returns(undefined);
+
+  // Register one of the vault calls, but not the other
+  const unregisteredVaultCallSelector = sighash(
+    mockExternalContract.functionB.fragment,
+  );
+  const registeredVaultCallSelector = sighash(
+    mockExternalContract.functionA.fragment,
+  );
+  await deployment.fundDeployer.registerVaultCalls(
+    [mockExternalContract.address],
+    [registeredVaultCallSelector],
+  );
 
   return {
     accounts: remainingAccounts,
@@ -56,43 +65,109 @@ async function snapshotWithFund(provider: EthereumTestnetProvider) {
       newFundTx,
       vaultProxy,
     },
+    mockExternalContract,
+    registeredVaultCallSelector,
+    unregisteredVaultCallSelector,
   };
 }
 
+describe('callOnExtension', () => {
+  it.todo('write tests');
+});
+
+describe('setOverridePause', () => {
+  it('cannot be called by a random user', async () => {
+    const {
+      accounts: { 0: randomUser },
+      fund: { comptrollerProxy },
+    } = await provider.snapshot(snapshot);
+
+    const badSetOverridePauseTx = comptrollerProxy
+      .connect(randomUser)
+      .setOverridePause(true);
+    await expect(badSetOverridePauseTx).rejects.toBeRevertedWith(
+      'Only the fund owner can call this function',
+    );
+  });
+
+  it('does not allow the current value', async () => {
+    const {
+      fund: { comptrollerProxy },
+    } = await provider.snapshot(snapshot);
+
+    const badSetOverridePauseTx = comptrollerProxy.setOverridePause(false);
+    await expect(badSetOverridePauseTx).rejects.toBeRevertedWith(
+      '_overridePause is already the set value',
+    );
+  });
+
+  it('correctly handles valid call', async () => {
+    const {
+      fund: { comptrollerProxy },
+    } = await provider.snapshot(snapshot);
+
+    const setOverridePauseTx = comptrollerProxy.setOverridePause(true);
+    await expect(setOverridePauseTx).resolves.toBeReceipt();
+
+    // Assert state has been set
+    const getOverridePauseCall = comptrollerProxy.getOverridePause();
+    await expect(getOverridePauseCall).resolves.toBe(true);
+
+    // Assert event emitted
+    await assertEvent(setOverridePauseTx, 'OverridePauseSet', {
+      overridePause: true,
+    });
+  });
+});
+
 describe('vaultCallOnContract', () => {
-  it.todo('does not allow a call from a random user');
+  it.todo('annot be called by a random user');
 
   it.todo('does not allow a call to an unregistered contract');
 
-  it('only calls a registered function on an external contract, and not another function on the same contract', async () => {
+  it('does not allow a paused release, unless overridePause is set', async () => {
     const {
-      config: { deployer },
       deployment: { fundDeployer },
       fund: { comptrollerProxy },
-    } = await provider.snapshot(snapshotWithFund);
+      mockExternalContract,
+      registeredVaultCallSelector,
+    } = await provider.snapshot(snapshot);
 
-    // Define a mock external contract to call with 2 functions
-    const mockExternalContract = await MockExternalContract.mock(deployer);
-    await mockExternalContract.functionA.returns(undefined);
-    await mockExternalContract.functionB.returns(undefined);
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
 
-    const unregisteredFunctionSelector = sighash(
-      mockExternalContract.functionB.fragment,
+    // The call should fail
+    const badRegisteredCall = comptrollerProxy.vaultCallOnContract(
+      mockExternalContract,
+      registeredVaultCallSelector,
+      '0x',
     );
-    const registeredFunctionSelector = sighash(
-      mockExternalContract.functionA.fragment,
-    );
+    await expect(badRegisteredCall).rejects.toBeRevertedWith('Fund is paused');
 
-    // Register one of the calls
-    await fundDeployer.registerVaultCalls(
-      [mockExternalContract.address],
-      [registeredFunctionSelector],
+    // Override the pause
+    await comptrollerProxy.setOverridePause(true);
+
+    // The call should then succeed
+    const goodRegisteredCall = comptrollerProxy.vaultCallOnContract(
+      mockExternalContract,
+      registeredVaultCallSelector,
+      '0x',
     );
+    await expect(goodRegisteredCall).resolves.toBeReceipt();
+  });
+
+  it('only calls a registered function on an external contract, and not another function on the same contract', async () => {
+    const {
+      fund: { comptrollerProxy },
+      mockExternalContract,
+      registeredVaultCallSelector,
+      unregisteredVaultCallSelector,
+    } = await provider.snapshot(snapshot);
 
     // The unregistered call should fail
     const unregisteredCall = comptrollerProxy.vaultCallOnContract(
       mockExternalContract,
-      unregisteredFunctionSelector,
+      unregisteredVaultCallSelector,
       '0x',
     );
     await expect(unregisteredCall).rejects.toBeRevertedWith(
@@ -102,7 +177,7 @@ describe('vaultCallOnContract', () => {
     // The registered call should succeed
     const registeredCall = comptrollerProxy.vaultCallOnContract(
       mockExternalContract,
-      registeredFunctionSelector,
+      registeredVaultCallSelector,
       '0x',
     );
     await expect(registeredCall).resolves.toBeReceipt();

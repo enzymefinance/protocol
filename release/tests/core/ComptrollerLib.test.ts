@@ -1,4 +1,7 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  randomAddress,
+} from '@crestproject/crestproject';
 import { constants } from 'ethers';
 import { defaultTestDeployment } from '../../';
 
@@ -47,11 +50,21 @@ describe('constructor', () => {
     const denominationAssetCall = comptrollerLib.getDenominationAsset();
     await expect(denominationAssetCall).resolves.toBe(constants.AddressZero);
 
-    const initializedCall = comptrollerLib.getInitialized();
-    await expect(initializedCall).resolves.toBe(false);
-
     const vaultProxyCall = comptrollerLib.getVaultProxy();
     await expect(vaultProxyCall).resolves.toBe(constants.AddressZero);
+  });
+});
+
+describe('init', () => {
+  it('cannot be called on library', async () => {
+    const {
+      deployment: { comptrollerLib },
+    } = await provider.snapshot(snapshot);
+
+    const initTx = comptrollerLib.init(randomAddress(), '0x', '0x');
+    await expect(initTx).rejects.toBeRevertedWith(
+      'Only a delegate call can access this function',
+    );
   });
 });
 

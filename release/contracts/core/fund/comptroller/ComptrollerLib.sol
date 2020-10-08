@@ -26,6 +26,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     event MigratedSharesDuePaid(address payee, uint256 sharesDue);
 
+    event OverridePauseSet(bool indexed overridePause);
+
     event StatusUpdated(FundStatus indexed nextStatus);
 
     event SharesBought(
@@ -57,10 +59,11 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     // Pseudo-constants (can only be set once)
     address private denominationAsset;
-    bool private initialized;
+    bool private isLib;
     address private vaultProxy;
 
     // Storage
+    bool private overridePause;
     FundStatus private status;
 
     // This kind of serves as a reverse-mutex,
@@ -71,16 +74,16 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // MODIFIERS //
     ///////////////
 
-    modifier onlyActive() {
-        __assertIsActive();
-        _;
-    }
-
     modifier allowsPermissionedVaultCall {
         __assertPermissionedVaultCallNotAllowed();
         permissionedVaultCallAllowed = true;
         _;
         permissionedVaultCallAllowed = false;
+    }
+
+    modifier onlyActive() {
+        __assertIsActive();
+        _;
     }
 
     modifier onlyDelegateCall() {
@@ -93,13 +96,19 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         _;
     }
 
+    modifier onlyNotPaused() {
+        __assertNotPaused();
+        _;
+    }
+
     modifier onlyOwner() {
         __assertIsOwner(msg.sender);
         _;
     }
 
-    /// @dev These permissions will eventually be defined on extensions themselves
+    /// @dev We are overly cautious about protecting VaultProxy state-altering calls
     modifier onlyPermissionedRequest(IVault.VaultAction _action) {
+        __assertNotPaused();
         __assertIsActive();
         __assertValidCallFromExtension(msg.sender, _action);
         _;
@@ -108,10 +117,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // MODIFIER HELPERS
     // Modifiers are inefficient in terms of reducing contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
-
-    function __assertPermissionedVaultCallNotAllowed() private view {
-        require(!permissionedVaultCallAllowed, "Permissioned vault call re-entrance detected");
-    }
 
     function __assertIsActive() private view {
         require(status == FundStatus.Active, "This function can only be called on an active fund");
@@ -122,7 +127,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     }
 
     function __assertIsDelegateCall() private view {
-        require(initialized == true, "Only a delegate call can access this function");
+        require(!isLib, "Only a delegate call can access this function");
     }
 
     function __assertIsOwner(address _who) private view {
@@ -130,6 +135,14 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             _who == IVault(vaultProxy).getOwner(),
             "Only the fund owner can call this function"
         );
+    }
+
+    function __assertNotPaused() private view {
+        require(!__fundIsPaused(), "Fund is paused");
+    }
+
+    function __assertPermissionedVaultCallNotAllowed() private view {
+        require(!permissionedVaultCallAllowed, "Permissioned vault call re-entrance detected");
     }
 
     function __assertValidCallFromExtension(address _extension, IVault.VaultAction _action)
@@ -174,6 +187,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         POLICY_MANAGER = _policyManager;
         VALUE_INTERPRETER = _valueInterpreter;
+        isLib = true;
     }
 
     /////////////
@@ -191,7 +205,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _extension,
         bytes4 _selector,
         bytes calldata _callArgs
-    ) external onlyActive allowsPermissionedVaultCall {
+    ) external onlyNotPaused onlyActive allowsPermissionedVaultCall {
         require(
             _extension == FEE_MANAGER ||
                 _extension == POLICY_MANAGER ||
@@ -222,6 +236,17 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
     }
 
+    function setOverridePause(bool _overridePause) external onlyDelegateCall onlyOwner {
+        require(
+            _overridePause != overridePause,
+            "setOverridePause: _overridePause is already the set value"
+        );
+
+        overridePause = _overridePause;
+
+        emit OverridePauseSet(_overridePause);
+    }
+
     /// @notice Makes an arbitrary call from the VaultProxy contract
     /// @param _contract The contract to call
     /// @param _selector The selector to call
@@ -231,7 +256,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _contract,
         bytes4 _selector,
         bytes calldata _callData
-    ) external onlyActive onlyOwner {
+    ) external onlyNotPaused onlyActive onlyOwner {
         require(
             IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
             "vaultCallOnContract: not a registered call"
@@ -248,6 +273,13 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     //     return _who == IVault(vaultProxy).getOwner();
     // }
 
+    /// @dev Helper to check whether the release is paused and there is no local override
+    function __fundIsPaused() private view returns (bool) {
+        return
+            !overridePause &&
+            IFundDeployer(FUND_DEPLOYER).getReleaseStatus() == IFundDeployer.ReleaseStatus.Paused;
+    }
+
     ///////////////
     // LIFECYCLE //
     ///////////////
@@ -259,18 +291,20 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // 3b. destruct() - called by the fund deployer
 
     /// @dev Pseudo-constructor per proxy.
-    /// No need to assert anything beyond FundDeployer access.
+    /// No need to assert access because this is called atomically on deployment,
+    /// and once it's called, it cannot be called again.
     function init(
         address _denominationAsset,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external override onlyFundDeployer {
+    ) external override onlyDelegateCall {
+        require(denominationAsset == address(0), "init: Already initialized");
+
         // Configure core
         require(
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
             "setConfigAndActivate: Denomination asset must be a supported primitive"
         );
-        initialized = true;
         denominationAsset = _denominationAsset;
 
         // Configure extensions
@@ -318,15 +352,17 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     /// @notice Shut down the fund
     /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
-    function shutdown() external override onlyActive onlyOwner {
+    function shutdown() external override onlyActive onlyOwner onlyNotPaused {
         __deactivateExtensions();
 
         __updateStatus(FundStatus.Shutdown);
     }
 
     /// @notice Remove the config for a fund
-    /// @dev No need to assert anything beyond FundDeployer access
-    function destruct() external override onlyFundDeployer {
+    /// @dev No need to assert anything beyond FundDeployer access.
+    /// Calling onlyNotPaused here rather than in the FundDeployer allows
+    /// the owner to potentially override the pause and rescue unpaid fees.
+    function destruct() external override onlyFundDeployer onlyNotPaused {
         if (status != FundStatus.Shutdown) {
             __deactivateExtensions();
         }
@@ -474,7 +510,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
     /// that can be used to determine the cost of purchasing shares at any given point in time.
     function calcNetShareValue() external onlyDelegateCall returns (uint256 netShareValue_) {
-        if (status == FundStatus.Active) {
+        if (status == FundStatus.Active && !__fundIsPaused()) {
             __settleContinuousFeesPreCalcNetShareValue();
         }
 
@@ -505,6 +541,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         override
         payable
         onlyActive
+        onlyNotPaused
         amguPayable
         allowsPermissionedVaultCall
         returns (uint256 sharesReceived_)
@@ -613,7 +650,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
 
         // When a fund is shutdown, there will be no more enabled fees
-        if (status == FundStatus.Active) {
+        if (status == FundStatus.Active && !__fundIsPaused()) {
             __settleContinuousFeesPreRedeemShares();
         }
 
@@ -666,16 +703,16 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         return denominationAsset;
     }
 
+    /// @notice Gets the `overridePause` variable
+    /// @return overridePause_ The `overridePause` variable value
+    function getOverridePause() external view returns (bool overridePause_) {
+        return overridePause;
+    }
+
     /// @notice Gets the `status` variable
     /// @return status_ The `status` variable value
     function getStatus() external view returns (FundStatus status_) {
         return status;
-    }
-
-    /// @notice Gets the `initialized` variable
-    /// @return initialized_ The `initialized` variable value
-    function getInitialized() external view returns (bool initialized_) {
-        return initialized;
     }
 
     /// @notice Gets the routes for the various contracts used by all funds

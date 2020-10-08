@@ -10,6 +10,7 @@ import {
   createNewFund,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockFees,
+  releaseStatusTypes,
 } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -73,6 +74,27 @@ describe('createNewFund', () => {
     );
   });
 
+  it('does not allow the release to be paused', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+
+    const newFundTx = fundDeployer.createNewFund(
+      randomAddress(),
+      '',
+      denominationAsset,
+      constants.HashZero,
+      constants.HashZero,
+    );
+    await expect(newFundTx).rejects.toBeRevertedWith('Release is paused');
+  });
+
   it('correctly handles valid call', async () => {
     const {
       deployment: {
@@ -131,6 +153,27 @@ describe('createMigratedFundConfig', () => {
 
     await expect(createMigratedFundConfigTx).rejects.toBeRevertedWith(
       '_denominationAsset cannot be empty',
+    );
+  });
+
+  it('does not allow the release to be paused', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+
+    const createMigratedFundConfigTx = fundDeployer.createMigratedFundConfig(
+      denominationAsset,
+      constants.HashZero,
+      constants.HashZero,
+    );
+    await expect(createMigratedFundConfigTx).rejects.toBeRevertedWith(
+      'Release is paused',
     );
   });
 
