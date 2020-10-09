@@ -178,14 +178,21 @@ describe('setConfigForFund', () => {
       policies[3].address,
     ]);
 
-    // Assert addFundSettings was called on each policy with its settingsData
+    // Assert addFundSettings was called on each policy with its settingsData,
+    // only if settingsData was passed
     for (let i = 0; i < policies.length; i++) {
-      await expect(
-        policies[i].addFundSettings.ref,
-      ).toHaveBeenCalledOnContractWith(
-        comptrollerProxy,
-        policiesSettingsData[i],
-      );
+      if (policiesSettingsData[i] === '0x') {
+        expect(
+          policies[i].addFundSettings.ref,
+        ).not.toHaveBeenCalledOnContract();
+      } else {
+        await expect(
+          policies[i].addFundSettings.ref,
+        ).toHaveBeenCalledOnContractWith(
+          comptrollerProxy,
+          policiesSettingsData[i],
+        );
+      }
     }
 
     // Assert PolicyEnabledForFund events
@@ -237,11 +244,21 @@ describe('registerPolicies', () => {
 });
 
 describe('disablePolicyForFund', () => {
+  it.todo('does not allow a random user');
+
   it.todo('does not allow disabled policy');
 
   it.todo('does not allow non-BuyShares policy');
 
-  it.todo('successfully disables a BuyShares policy');
+  it.todo('handles a valid call');
+});
+
+describe('enablePolicyForFund', () => {
+  it.todo('does not allow a random user');
+
+  it.todo('does not allow non-BuyShares policy');
+
+  it.todo('handles a valid call');
 });
 
 describe('validatePolicies', () => {

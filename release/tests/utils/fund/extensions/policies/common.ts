@@ -197,20 +197,19 @@ export async function assetWhitelistArgs(assets: AddressLike[]) {
   return encodeArgs(['address[]'], [assets]);
 }
 
-export async function maxConcentrationArgs(maxConcentration: BigNumberish) {
-  return encodeArgs(['uint256'], [maxConcentration]);
-}
-
-export async function investorWhitelistConfigArgs(investors: AddressLike[]) {
-  return encodeArgs(['address[]'], [investors]);
-}
-
-export async function investorWhitelistUpdateArgs(
-  investorsToAdd: AddressLike[],
-  investorsToRemove: AddressLike[],
-) {
+export async function investorWhitelistArgs({
+  investorsToAdd = [],
+  investorsToRemove = [],
+}: {
+  investorsToAdd?: AddressLike[];
+  investorsToRemove?: AddressLike[];
+}) {
   return encodeArgs(
     ['address[]', 'address[]'],
     [investorsToAdd, investorsToRemove],
   );
+}
+
+export async function maxConcentrationArgs(maxConcentration: BigNumberish) {
+  return encodeArgs(['uint256'], [maxConcentration]);
 }
