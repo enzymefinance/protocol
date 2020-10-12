@@ -13,6 +13,7 @@ import {
   ComptrollerLib,
   Engine,
   EngineAdapter,
+  EntranceRateFee,
   FeeManager,
   FundDeployer,
   IntegrationManager,
@@ -78,6 +79,7 @@ export interface ReleaseDeploymentOutput {
   kyberAdapter: Promise<KyberAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   // Fees
+  entranceRateFee: Promise<EntranceRateFee>;
   managementFee: Promise<ManagementFee>;
   performanceFee: Promise<PerformanceFee>;
   // Policies
@@ -218,6 +220,9 @@ export const deployRelease = describeDeployment<
     );
   },
   // Fees
+  async entranceRateFee(config, deployment) {
+    return EntranceRateFee.deploy(config.deployer, await deployment.feeManager);
+  },
   async managementFee(config, deployment) {
     return ManagementFee.deploy(config.deployer, await deployment.feeManager);
   },
@@ -280,6 +285,7 @@ export const deployRelease = describeDeployment<
 
     // Register fees
     const fees = [
+      await deployment.entranceRateFee,
       await deployment.managementFee,
       await deployment.performanceFee,
     ];

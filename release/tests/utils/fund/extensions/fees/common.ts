@@ -1,4 +1,4 @@
-import { AddressLike } from '@crestproject/crestproject';
+import { AddressLike, randomAddress } from '@crestproject/crestproject';
 import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
 import { IFee } from '../../../../../codegen/IFee';
 import { FeeManager } from '../../../../../utils/contracts';
@@ -102,11 +102,15 @@ export async function generateRegisteredMockFees({
   };
 }
 
-export function settleBuySharesArgs(
-  buyer: AddressLike,
-  investmentAmount: BigNumberish,
-  sharesBought: BigNumberish,
-) {
+export function settleBuySharesArgs({
+  buyer = randomAddress(),
+  investmentAmount = utils.parseEther('1'),
+  sharesBought = utils.parseEther('1'),
+}: {
+  buyer?: AddressLike;
+  investmentAmount?: BigNumberish;
+  sharesBought?: BigNumberish;
+}) {
   return encodeArgs(
     ['address', 'uint256', 'uint256'],
     [buyer, investmentAmount, sharesBought],

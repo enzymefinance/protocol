@@ -27,6 +27,7 @@ export { KyberAdapter } from '../codegen/KyberAdapter';
 export { TrackedAssetsAdapter } from '../codegen/TrackedAssetsAdapter';
 
 // Fees
+export { EntranceRateFee } from '../codegen/EntranceRateFee';
 export { ManagementFee } from '../codegen/ManagementFee';
 export { PerformanceFee } from '../codegen/PerformanceFee';
 

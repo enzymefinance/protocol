@@ -88,11 +88,18 @@ async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { feeManager, fundDeployer, managementFee, performanceFee },
+      deployment: {
+        feeManager,
+        fundDeployer,
+        entranceRateFee,
+        managementFee,
+        performanceFee,
+      },
     } = await provider.snapshot(snapshot);
 
     const getRegisteredFeesCall = feeManager.getRegisteredFees();
     await expect(getRegisteredFeesCall).resolves.toMatchObject([
+      entranceRateFee.address,
       managementFee.address,
       performanceFee.address,
     ]);
@@ -399,7 +406,11 @@ describe('settleFees', () => {
     // Assert called settle and payout on BuyShares fees
     await expect(mockBuySharesFee.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      settleBuySharesArgs(buyer, investmentAmount, investmentAmount),
+      settleBuySharesArgs({
+        buyer,
+        investmentAmount,
+        sharesBought: investmentAmount,
+      }),
     );
     await expect(mockBuySharesFee.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
