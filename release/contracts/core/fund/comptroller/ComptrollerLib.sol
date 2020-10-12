@@ -57,13 +57,17 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     // Pseudo-constants (can only be set once)
     address private denominationAsset;
+    // True only for the one non-proxy
     bool private isLib;
     address private vaultProxy;
 
     // Storage
+    // Allows a fund owner to override a release-level pause
     bool private overridePause;
     // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
     bool private permissionedVaultCallAllowed;
+    // A mutex
+    bool private reentranceLocked;
 
     ///////////////
     // MODIFIERS //
@@ -74,6 +78,16 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         permissionedVaultCallAllowed = true;
         _;
         permissionedVaultCallAllowed = false;
+    }
+
+    /// @dev Especially because the current asset universe is limited to non-reentrant ERC20 tokens,
+    /// this reentrancy guard is not strictly necessary, but implemented out of an abundance of
+    /// caution in the case we decide that we do want to allow such assets.
+    modifier locksReentrance() {
+        __assertNotReentranceLocked();
+        reentranceLocked = true;
+        _;
+        reentranceLocked = false;
     }
 
     modifier onlyActive() {
@@ -134,6 +148,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     function __assertNotPaused() private view {
         require(!__fundIsPaused(), "Fund is paused");
+    }
+
+    function __assertNotReentranceLocked() private view {
+        require(!reentranceLocked, "Re-entrance detected");
     }
 
     function __assertPermissionedVaultCallNotAllowed() private view {
@@ -200,7 +218,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _extension,
         bytes4 _selector,
         bytes calldata _callArgs
-    ) external onlyNotPaused onlyActive allowsPermissionedVaultCall {
+    ) external onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultCall {
         require(
             _extension == FEE_MANAGER ||
                 _extension == POLICY_MANAGER ||
@@ -525,8 +543,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         payable
         onlyActive
         onlyNotPaused
-        amguPayable
+        locksReentrance
         allowsPermissionedVaultCall
+        amguPayable
         returns (uint256 sharesReceived_)
     {
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity);
@@ -627,7 +646,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// which the transfer function fails. This should always be false unless explicitly intended
     /// @param _sharesQuantity The amount of shares to redeem
     /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
-    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private {
+    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private locksReentrance {
         address redeemer = msg.sender;
 
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");

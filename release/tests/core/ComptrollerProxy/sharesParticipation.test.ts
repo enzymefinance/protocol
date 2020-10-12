@@ -22,6 +22,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
 }
 
 describe('buyShares', () => {
+  it.todo('does not allow re-entrance');
+
   it('works for a fund with no extensions', async () => {
     const {
       deployment: {
@@ -130,6 +132,8 @@ describe('buyShares', () => {
 
 describe('__redeemShares', () => {
   it.todo('make test todos');
+
+  it.todo('does not allow re-entrance');
 });
 
 describe('redeemShares', () => {

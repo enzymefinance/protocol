@@ -73,6 +73,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 describe('callOnExtension', () => {
   it.todo('write tests');
+
+  it.todo('does not allow re-entrance');
 });
 
 describe('setOverridePause', () => {
