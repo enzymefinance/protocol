@@ -102,7 +102,6 @@ export const deployRelease = describeDeployment<
       await deployment.fundDeployer,
       await deployment.valueInterpreter,
       await deployment.chainlinkPriceFeed,
-      await deployment.aggregatedDerivativePriceFeed,
       await deployment.feeManager,
       await deployment.integrationManager,
       await deployment.policyManager,
@@ -135,13 +134,16 @@ export const deployRelease = describeDeployment<
       config.mgm,
       config.mln,
       config.weth,
-      await deployment.chainlinkPriceFeed,
       await deployment.valueInterpreter,
       config.engine.thawDelay,
     );
   },
-  async valueInterpreter(config) {
-    return ValueInterpreter.deploy(config.deployer);
+  async valueInterpreter(config, deployment) {
+    return ValueInterpreter.deploy(
+      config.deployer,
+      await deployment.chainlinkPriceFeed,
+      await deployment.aggregatedDerivativePriceFeed,
+    );
   },
   // Extensions
   async feeManager(config, deployment) {
@@ -155,6 +157,7 @@ export const deployRelease = describeDeployment<
       config.deployer,
       await deployment.fundDeployer,
       await deployment.policyManager,
+      await deployment.valueInterpreter,
     );
   },
   async policyManager(config, deployment) {
@@ -258,6 +261,7 @@ export const deployRelease = describeDeployment<
     return MaxConcentration.deploy(
       config.deployer,
       await deployment.policyManager,
+      await deployment.valueInterpreter,
     );
   },
   async investorWhitelist(config, deployment) {

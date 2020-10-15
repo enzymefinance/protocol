@@ -16,58 +16,122 @@ contract ValueInterpreter is IValueInterpreter {
 
     uint256 private constant RATE_PRECISION = 18;
 
-    /// @notice Calculates the value of an amount in an arbitrary asset pair,
+    address private immutable DERIVATIVE_PRICE_FEED;
+    address private immutable PRIMITIVE_PRICE_FEED;
+
+    constructor(address _primitivePriceFeed, address _derivativePriceFeed) public {
+        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
+        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
+    }
+
+    // EXTERNAL FUNCTIONS
+
+    /// @notice Calculates the total value of amounts of arbitrary assets,
     /// using a canonical conversion rate
-    /// @param _primitivePriceFeed The primitive price feed to use for the calculations
-    /// @param _derivativePriceFeed (optional) The derivative price feed to use for the calculations
+    /// @param _baseAssets The assets to convert
+    /// @param _amounts The amounts of the _baseAssets to convert
+    /// @param _quoteAsset The asset to which to convert
+    /// @return value_ The equivalent quantity in the _quoteAsset
+    /// @return isValid_ True if the price source rates are all valid
+    function calcCanonicalAssetsTotalValue(
+        address[] calldata _baseAssets,
+        uint256[] calldata _amounts,
+        address _quoteAsset
+    ) external override returns (uint256 value_, bool isValid_) {
+        require(
+            _baseAssets.length == _amounts.length,
+            "calcCanonicalAssetsTotalValue: arrays unequal lengths"
+        );
+
+        isValid_ = true;
+        for (uint256 i; i < _baseAssets.length; i++) {
+            (uint256 assetValue, bool assetValueIsValid) = calcCanonicalAssetValue(
+                _baseAssets[i],
+                _amounts[i],
+                _quoteAsset
+            );
+            value_ = value_.add(assetValue);
+            if (!assetValueIsValid) {
+                isValid_ = false;
+            }
+        }
+
+        return (value_, isValid_);
+    }
+
+    /// @notice Calculates the total value of amounts of arbitrary assets,
+    /// using live conversion rates
+    /// @param _baseAssets The assets to convert
+    /// @param _amounts The amounts of the _baseAssets to convert
+    /// @param _quoteAsset The asset to which to convert
+    /// @return value_ The equivalent quantity in the _quoteAsset
+    /// @return isValid_ True if the price source rates are all valid
+    function calcLiveAssetsTotalValue(
+        address[] calldata _baseAssets,
+        uint256[] calldata _amounts,
+        address _quoteAsset
+    ) external override returns (uint256 value_, bool isValid_) {
+        require(
+            _baseAssets.length == _amounts.length,
+            "calcLiveAssetsTotalValue: arrays unequal lengths"
+        );
+
+        isValid_ = true;
+        for (uint256 i; i < _baseAssets.length; i++) {
+            (uint256 assetValue, bool assetValueIsValid) = calcLiveAssetValue(
+                _baseAssets[i],
+                _amounts[i],
+                _quoteAsset
+            );
+            value_ = value_.add(assetValue);
+            if (!assetValueIsValid) {
+                isValid_ = false;
+            }
+        }
+
+        return (value_, isValid_);
+    }
+
+    /// @notice Calculates the value of an amount in an arbitrary asset pair,
+    /// using canonical conversion rates
     /// @param _baseAsset The asset from which to convert
     /// @param _amount The amount of the _baseAsset to convert
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
     /// @return isValid_ True if the price source rates are all valid
     function calcCanonicalAssetValue(
-        address _primitivePriceFeed,
-        address _derivativePriceFeed,
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    ) external override returns (uint256 value_, bool isValid_) {
-        return
-            __calcAssetValue(
-                _primitivePriceFeed,
-                _derivativePriceFeed,
-                _baseAsset,
-                _amount,
-                _quoteAsset,
-                false
-            );
+    ) public override returns (uint256 value_, bool isValid_) {
+        return __calcAssetValue(_baseAsset, _amount, _quoteAsset, false);
     }
+
+    // PUBLIC FUNCTIONS
 
     /// @notice Calculates the value of an amount in an arbitrary asset pair,
     /// using a live conversion rate
-    /// @param _primitivePriceFeed The primitive price feed to use for the calculations
-    /// @param _derivativePriceFeed (optional) The derivative price feed to use for the calculations
     /// @param _baseAsset The asset from which to convert
     /// @param _amount The amount of the _baseAsset to convert
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
     /// @return isValid_ True if the price source rates are all valid
     function calcLiveAssetValue(
-        address _primitivePriceFeed,
-        address _derivativePriceFeed,
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    ) external override returns (uint256 value_, bool isValid_) {
+    ) public override returns (uint256 value_, bool isValid_) {
+        return __calcAssetValue(_baseAsset, _amount, _quoteAsset, true);
+    }
+
+    /// @notice Checks whether an asset can be added to the fund
+    /// @param _asset The asset contract address
+    /// @return isReceivable_ True if the asset can be added
+    /// @dev An asset is receivable if a valid price
+    function isSupportedAsset(address _asset) external override view returns (bool isReceivable_) {
         return
-            __calcAssetValue(
-                _primitivePriceFeed,
-                _derivativePriceFeed,
-                _baseAsset,
-                _amount,
-                _quoteAsset,
-                true
-            );
+            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
+            IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
     }
 
     // PRIVATE FUNCTIONS
@@ -75,17 +139,14 @@ contract ValueInterpreter is IValueInterpreter {
     /// @dev Helper to calculate the value of an amount in an arbitrary asset pair,
     /// either using live or canonical conversion rates
     function __calcAssetValue(
-        address _primitivePriceFeed,
-        address _derivativePriceFeed,
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset,
         bool _useLiveRate
     ) private returns (uint256 value_, bool isValid_) {
-        IPrimitivePriceFeed primitivePriceFeedContract = IPrimitivePriceFeed(_primitivePriceFeed);
+        IPrimitivePriceFeed primitivePriceFeedContract = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED);
         // TODO: should any of this revert? Or should we avoid reverts in this contract?
         if (
-            _primitivePriceFeed == address(0) ||
             _baseAsset == address(0) ||
             _quoteAsset == address(0) ||
             _amount == 0 ||
@@ -97,31 +158,12 @@ contract ValueInterpreter is IValueInterpreter {
 
         // Check if registered _asset first
         if (primitivePriceFeedContract.isSupportedAsset(_baseAsset)) {
-            return
-                __calcPrimitiveValue(
-                    _primitivePriceFeed,
-                    _baseAsset,
-                    _amount,
-                    _quoteAsset,
-                    _useLiveRate
-                );
+            return __calcPrimitiveValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 
         // Else use derivative oracle to get value via underlying assets
-        if (
-            // Allow _derivativePriceFeed to be optional
-            _derivativePriceFeed != address(0) &&
-            IDerivativePriceFeed(_derivativePriceFeed).isSupportedAsset(_baseAsset)
-        ) {
-            return
-                __calcDerivativeValue(
-                    _primitivePriceFeed,
-                    _derivativePriceFeed,
-                    _baseAsset,
-                    _amount,
-                    _quoteAsset,
-                    _useLiveRate
-                );
+        if (IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
+            return __calcDerivativeValue(_baseAsset, _amount, _quoteAsset, _useLiveRate);
         }
 
         // If not in Registry as an asset or derivative
@@ -146,19 +188,17 @@ contract ValueInterpreter is IValueInterpreter {
     /// Handles multiple underlying assets (e.g., Uniswap and Balancer pool tokens).
     /// Handles underlying assets that are also derivatives (e.g., a cDAI-ETH LP)
     function __calcDerivativeValue(
-        address _primitivePriceFeed,
-        address _derivativePriceFeed,
         address _derivative,
         uint256 _amount,
         address _quoteAsset,
         bool _useLiveRate
     ) private returns (uint256 value_, bool isValid_) {
         (address[] memory underlyings, uint256[] memory rates) = IDerivativePriceFeed(
-            _derivativePriceFeed
+            DERIVATIVE_PRICE_FEED
         )
             .getRatesToUnderlyings(_derivative);
 
-        // Let validity be negated if any of the underlying value caculations are invalid.
+        // Let validity be negated if any of the underlying value calculations are invalid.
         isValid_ = true;
         for (uint256 i = 0; i < underlyings.length; i++) {
             uint256 underlyingAmount = __calcDenormalizedConversionAmount(
@@ -168,8 +208,6 @@ contract ValueInterpreter is IValueInterpreter {
                 rates[i]
             );
             (uint256 underlyingValue, bool underlyingIsValid) = __calcAssetValue(
-                _primitivePriceFeed,
-                _derivativePriceFeed,
                 underlyings[i],
                 underlyingAmount,
                 _quoteAsset,
@@ -184,13 +222,12 @@ contract ValueInterpreter is IValueInterpreter {
     /// @dev Helper to calculate the value of a primitive (an asset that has a price
     /// in the primary price feed) in an arbitrary asset.
     function __calcPrimitiveValue(
-        address _primitivePriceFeed,
         address _primitive,
         uint256 _amount,
         address _quoteAsset,
         bool _useLiveRate
     ) private view returns (uint256 value_, bool isValid_) {
-        IPrimitivePriceFeed priceFeedContract = IPrimitivePriceFeed(_primitivePriceFeed);
+        IPrimitivePriceFeed priceFeedContract = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED);
 
         uint256 rate;
         if (_useLiveRate) {
@@ -200,5 +237,21 @@ contract ValueInterpreter is IValueInterpreter {
         }
 
         value_ = __calcDenormalizedConversionAmount(_primitive, _amount, _quoteAsset, rate);
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable
+    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
+    function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
+        return DERIVATIVE_PRICE_FEED;
+    }
+
+    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
+    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
+    function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
+        return PRIMITIVE_PRICE_FEED;
     }
 }

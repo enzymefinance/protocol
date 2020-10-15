@@ -25,7 +25,6 @@ contract Engine is IEngine, DispatcherOwnerMixin {
     // Immutable vars
     address private immutable MGM;
     address private immutable MLN_TOKEN;
-    address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
     address private immutable WETH_TOKEN;
     uint256 private immutable THAW_DELAY;
@@ -44,13 +43,11 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         address _MGM,
         address _mlnToken,
         address _wethToken,
-        address _primitivePriceFeed,
         address _valueInterpreter,
         uint256 _thawDelay
     ) public DispatcherOwnerMixin(_dispatcher) {
         MGM = _MGM;
         MLN_TOKEN = _mlnToken;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
         WETH_TOKEN = _wethToken;
         THAW_DELAY = _thawDelay;
@@ -75,8 +72,6 @@ contract Engine is IEngine, DispatcherOwnerMixin {
     function calcEthDueForGasUsed(uint256 _gasUsed) external override returns (uint256 ethDue_) {
         uint256 mlnDue = amguPrice.mul(_gasUsed);
         (ethDue_, ) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
-            PRIMITIVE_PRICE_FEED,
-            address(0),
             MLN_TOKEN,
             mlnDue,
             WETH_TOKEN
@@ -150,13 +145,7 @@ contract Engine is IEngine, DispatcherOwnerMixin {
     // TODO: affirm calculation; any need to multiply premium prior to converting?
     function calcEthOutputForMlnInput(uint256 _mlnAmount) public returns (uint256 ethAmount_) {
         (uint256 rawEthAmount, bool isValidRate) = IValueInterpreter(VALUE_INTERPRETER)
-            .calcCanonicalAssetValue(
-            PRIMITIVE_PRICE_FEED,
-            address(0),
-            MLN_TOKEN,
-            _mlnAmount,
-            WETH_TOKEN
-        );
+            .calcCanonicalAssetValue(MLN_TOKEN, _mlnAmount, WETH_TOKEN);
         require(isValidRate, "calcEthOutputForMlnInput: mln to eth rate is invalid");
 
         ethAmount_ = rawEthAmount.mul(calcPremiumPercent().add(100)).div(100);
@@ -204,10 +193,6 @@ contract Engine is IEngine, DispatcherOwnerMixin {
 
     function getMLNToken() external view returns (address) {
         return MLN_TOKEN;
-    }
-
-    function getPrimitivePriceFeed() external view returns (address) {
-        return PRIMITIVE_PRICE_FEED;
     }
 
     function getThawDelay() external view returns (uint256) {

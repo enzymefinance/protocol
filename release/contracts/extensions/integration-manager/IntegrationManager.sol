@@ -6,8 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
-import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
+import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
@@ -38,14 +37,17 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
     );
 
     address private immutable POLICY_MANAGER;
+    address private immutable VALUE_INTERPRETER;
 
     EnumerableSet.AddressSet private registeredAdapters;
 
-    constructor(address _fundDeployer, address _policyManager)
-        public
-        FundDeployerOwnerMixin(_fundDeployer)
-    {
+    constructor(
+        address _fundDeployer,
+        address _policyManager,
+        address _valueInterpreter
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         POLICY_MANAGER = _policyManager;
+        VALUE_INTERPRETER = _valueInterpreter;
     }
 
     // EXTERNAL FUNCTIONS
@@ -199,7 +201,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
                 "__preProcessCoI: minIncomingAssetAmount must be >0"
             );
             require(
-                IComptroller(msg.sender).isReceivableAsset(incomingAssets_[i]),
+                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(incomingAssets_[i]),
                 "__preProcessCoI: non-receivable asset detected"
             );
 
@@ -422,18 +424,20 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Check if an integration adapter is registered
+    /// @notice Checks if an integration adapter is registered
     /// @param _adapter The adapter to check
-    /// @return True if the adapter is registered
-    function adapterIsRegistered(address _adapter) public view returns (bool) {
+    /// @return isRegistered_ True if the adapter is registered
+    function adapterIsRegistered(address _adapter) public view returns (bool isRegistered_) {
         return registeredAdapters.contains(_adapter);
     }
 
-    function getPolicyManager() external view returns (address) {
+    /// @notice Gets the `POLICY_MANAGER` variable
+    /// @return policyManager_ The `POLICY_MANAGER` variable value
+    function getPolicyManager() external view returns (address policyManager_) {
         return POLICY_MANAGER;
     }
 
-    /// @notice Get all registered integration adapters
+    /// @notice Gets all registered integration adapters
     /// @return registeredAdaptersArray_ A list of all registered integration adapters
     function getRegisteredAdapters()
         external
@@ -444,5 +448,11 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
         for (uint256 i = 0; i < registeredAdaptersArray_.length; i++) {
             registeredAdaptersArray_[i] = registeredAdapters.at(i);
         }
+    }
+
+    /// @notice Gets the `VALUE_INTERPRETER` variable
+    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
+    function getValueInterpreter() external view returns (address valueInterpreter_) {
+        return VALUE_INTERPRETER;
     }
 }

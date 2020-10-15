@@ -41,7 +41,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockFundDeployer,
     randomAddress(), // ValueInterpreter
     deployment.chainlinkPriceFeed,
-    randomAddress(), // DerivativePriceFeed
     mockFeeManager,
     randomAddress(), // IntegrationManager
     mockPolicyManager,

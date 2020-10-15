@@ -33,7 +33,6 @@ interface IComptroller {
             address,
             address,
             address,
-            address,
             address
         );
 
@@ -44,8 +43,6 @@ interface IComptroller {
         bytes calldata,
         bytes calldata
     ) external;
-
-    function isReceivableAsset(address) external view returns (bool);
 
     function mintShares(address, uint256) external;
 

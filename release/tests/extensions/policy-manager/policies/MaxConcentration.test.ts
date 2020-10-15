@@ -25,50 +25,19 @@ async function snapshot(provider: EthereumTestnetProvider) {
     provider,
   );
 
-  return {
-    accounts,
-    deployment,
-    config,
-    maxConcentrationValue: utils.parseEther('.1'), // 10%
-  };
-}
+  const maxConcentrationValue = utils.parseEther('.1'); // 10%
 
-async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts,
-    config,
-    deployment,
-    maxConcentrationValue,
-  } = await provider.snapshot(snapshot);
+  // Mock the ValueInterpreter
+  const mockValueInterpreter = await ValueInterpreter.mock(config.deployer);
+  await mockValueInterpreter.calcLiveAssetValue.returns(0, false);
 
+  // Deploy the standalone MaxConcentration policy
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
   const maxConcentration = await MaxConcentration.deploy(
     config.deployer,
     EOAPolicyManager,
+    mockValueInterpreter,
   );
-
-  return {
-    accounts: remainingAccounts,
-    config,
-    deployment,
-    maxConcentration,
-    maxConcentrationValue,
-    comptrollerProxy: randomAddress(),
-    EOAPolicyManager,
-  };
-}
-
-async function snapshotWithStandalonePolicyAndMocks(
-  provider: EthereumTestnetProvider,
-) {
-  const {
-    accounts,
-    config,
-    deployment,
-    EOAPolicyManager,
-    maxConcentration,
-    maxConcentrationValue,
-  } = await provider.snapshot(snapshotWithStandalonePolicy);
 
   // Define mock fund values and calculate the limit of assetGav based on the maxConcentration
   const denominationAsset = deployment.tokens.weth;
@@ -78,25 +47,18 @@ async function snapshotWithStandalonePolicyAndMocks(
     .div(utils.parseEther('1'));
   expect(assetGavLimit).toEqBigNumber(utils.parseEther('0.1'));
 
-  // Only need an address for several contracts
-  const derivativePriceFeedAddress = randomAddress();
-  const primitivePriceFeedAddress = randomAddress();
+  // Only need an address for some contracts
   const vaultProxyAddress = randomAddress();
-
-  // Mock the ValueInterpreter
-  const mockValueInterpreter = await ValueInterpreter.mock(config.deployer);
-  await mockValueInterpreter.calcLiveAssetValue.returns(0, false);
 
   // Mock the ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
   await mockComptrollerProxy.getVaultProxy.returns(vaultProxyAddress);
   await mockComptrollerProxy.getRoutes.returns(
-    derivativePriceFeedAddress,
     randomAddress(),
     randomAddress(),
     randomAddress(),
     randomAddress(),
-    primitivePriceFeedAddress,
+    randomAddress(),
     mockValueInterpreter,
   );
   await mockComptrollerProxy.calcGav.returns(totalGav);
@@ -111,17 +73,15 @@ async function snapshotWithStandalonePolicyAndMocks(
     .addFundSettings(mockComptrollerProxy, maxConcentrationConfig);
 
   return {
-    accounts,
+    accounts: remainingAccounts,
     assetGavLimit,
     denominationAsset,
     deployment,
-    derivativePriceFeedAddress,
     maxConcentration,
     maxConcentrationValue,
     EOAPolicyManager,
     mockComptrollerProxy,
     mockValueInterpreter,
-    primitivePriceFeedAddress,
     vaultProxyAddress,
   };
 }
@@ -198,17 +158,15 @@ describe('activateForFund', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const {
-      comptrollerProxy,
-      maxConcentration,
-      maxConcentrationValue,
-    } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const { maxConcentration, maxConcentrationValue } = await provider.snapshot(
+      snapshot,
+    );
 
     const maxConcentrationConfig = await maxConcentrationArgs(
       maxConcentrationValue,
     );
     const addFundSettingsTx = maxConcentration.addFundSettings(
-      comptrollerProxy,
+      randomAddress(),
       maxConcentrationConfig,
     );
 
@@ -219,11 +177,12 @@ describe('addFundSettings', () => {
 
   it('sets initial config values for fund and fires events', async () => {
     const {
-      comptrollerProxy,
       maxConcentration,
       maxConcentrationValue,
       EOAPolicyManager,
-    } = await provider.snapshot(snapshotWithStandalonePolicy);
+    } = await provider.snapshot(snapshot);
+
+    const comptrollerProxy = randomAddress();
 
     const maxConcentrationConfig = await maxConcentrationArgs(
       maxConcentrationValue,
@@ -251,12 +210,10 @@ describe('addFundSettings', () => {
 
 describe('updateFundSettings', () => {
   it('cannot be called', async () => {
-    const { comptrollerProxy, maxConcentration } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const { maxConcentration } = await provider.snapshot(snapshot);
 
     const updateFundSettingsTx = maxConcentration.updateFundSettings(
-      comptrollerProxy,
+      randomAddress(),
       '0x',
     );
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
@@ -268,7 +225,7 @@ describe('updateFundSettings', () => {
 describe('validateRule', () => {
   it('returns true if there are no incoming assets', async () => {
     const { maxConcentration, mockComptrollerProxy } = await provider.snapshot(
-      snapshotWithStandalonePolicyAndMocks,
+      snapshot,
     );
 
     // Empty args
@@ -294,13 +251,11 @@ describe('validateRule', () => {
       },
       assetGavLimit: incomingAssetGav,
       denominationAsset,
-      derivativePriceFeedAddress,
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
-      primitivePriceFeedAddress,
       vaultProxyAddress,
-    } = await provider.snapshot(snapshotWithStandalonePolicyAndMocks);
+    } = await provider.snapshot(snapshot);
 
     await mockValuesAndValidateRule({
       mockComptrollerProxy,
@@ -314,8 +269,6 @@ describe('validateRule', () => {
     expect(
       mockValueInterpreter.calcLiveAssetValue,
     ).toHaveBeenCalledOnContractWith(
-      primitivePriceFeedAddress,
-      derivativePriceFeedAddress,
       incomingAsset.address,
       incomingAssetGav,
       denominationAsset,
@@ -332,7 +285,7 @@ describe('validateRule', () => {
       mockComptrollerProxy,
       mockValueInterpreter,
       vaultProxyAddress,
-    } = await provider.snapshot(snapshotWithStandalonePolicyAndMocks);
+    } = await provider.snapshot(snapshot);
 
     const validateRuleCall = mockValuesAndValidateRule({
       mockComptrollerProxy,
@@ -356,7 +309,7 @@ describe('validateRule', () => {
       mockComptrollerProxy,
       mockValueInterpreter,
       vaultProxyAddress,
-    } = await provider.snapshot(snapshotWithStandalonePolicyAndMocks);
+    } = await provider.snapshot(snapshot);
 
     // Increase incoming asset balance to be 1 wei over the limit
     const validateRuleCall = mockValuesAndValidateRule({
@@ -379,7 +332,7 @@ describe('validateRule', () => {
       mockComptrollerProxy,
       mockValueInterpreter,
       vaultProxyAddress,
-    } = await provider.snapshot(snapshotWithStandalonePolicyAndMocks);
+    } = await provider.snapshot(snapshot);
 
     // Increase incoming asset balance to be 1 wei over the limit
     const validateRuleCall = mockValuesAndValidateRule({
@@ -404,7 +357,7 @@ describe('validateRule', () => {
       mockComptrollerProxy,
       mockValueInterpreter,
       vaultProxyAddress,
-    } = await provider.snapshot(snapshotWithStandalonePolicyAndMocks);
+    } = await provider.snapshot(snapshot);
 
     const validateRuleCall = mockValuesAndValidateRule({
       mockComptrollerProxy,

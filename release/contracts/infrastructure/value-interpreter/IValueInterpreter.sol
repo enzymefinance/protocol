@@ -6,17 +6,27 @@ pragma solidity 0.6.8;
 interface IValueInterpreter {
     function calcCanonicalAssetValue(
         address,
-        address,
-        address,
         uint256,
+        address
+    ) external returns (uint256, bool);
+
+    function calcCanonicalAssetsTotalValue(
+        address[] calldata,
+        uint256[] calldata,
         address
     ) external returns (uint256, bool);
 
     function calcLiveAssetValue(
         address,
-        address,
-        address,
         uint256,
         address
     ) external returns (uint256, bool);
+
+    function calcLiveAssetsTotalValue(
+        address[] calldata,
+        uint256[] calldata,
+        address
+    ) external returns (uint256, bool);
+
+    function isSupportedAsset(address) external view returns (bool);
 }

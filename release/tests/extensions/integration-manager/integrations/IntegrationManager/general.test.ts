@@ -34,13 +34,24 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { integrationManager, fundDeployer, policyManager },
+      deployment: {
+        integrationManager,
+        fundDeployer,
+        policyManager,
+        valueInterpreter,
+      },
     } = await provider.snapshot(snapshot);
 
     const getFundDeployerCall = integrationManager.getFundDeployer();
     await expect(getFundDeployerCall).resolves.toBe(fundDeployer.address);
+
     const getPolicyManagerCall = integrationManager.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
+
+    const getValueInterpreterCall = integrationManager.getValueInterpreter();
+    await expect(getValueInterpreterCall).resolves.toBe(
+      valueInterpreter.address,
+    );
   });
 });
 

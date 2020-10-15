@@ -18,9 +18,16 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
 
     uint256 private constant ONE_HUNDRED_PERCENT = 10**18; // 100%
 
+    address private immutable VALUE_INTERPRETER;
+
     mapping(address => uint256) private comptrollerProxyToMaxConcentration;
 
-    constructor(address _policyManager) public PolicyBase(_policyManager) {}
+    constructor(address _policyManager, address _valueInterpreter)
+        public
+        PolicyBase(_policyManager)
+    {
+        VALUE_INTERPRETER = _valueInterpreter;
+    }
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
@@ -73,15 +80,6 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     {
         uint256 maxConcentration = comptrollerProxyToMaxConcentration[_comptrollerProxy];
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        (
-            address derivativePriceFeed,
-            ,
-            ,
-            ,
-            ,
-            address primitivePriceFeed,
-            address valueInterpreter
-        ) = comptrollerProxyContract.getRoutes();
         address vaultProxy = comptrollerProxyContract.getVaultProxy();
         address denominationAsset = comptrollerProxyContract.getDenominationAsset();
         uint256 totalGav = comptrollerProxyContract.calcGav(true);
@@ -91,9 +89,6 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
             if (
                 !__rulePassesForAsset(
                     vaultProxy,
-                    valueInterpreter,
-                    primitivePriceFeed,
-                    derivativePriceFeed,
                     denominationAsset,
                     maxConcentration,
                     totalGav,
@@ -128,9 +123,6 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     /// Avoids the stack-too-deep error.
     function __rulePassesForAsset(
         address _vaultProxy,
-        address _valueInterpreter,
-        address _primitivePriceFeed,
-        address _derivativePriceFeed,
         address _denominationAsset,
         uint256 _maxConcentration,
         uint256 _totalGav,
@@ -139,14 +131,8 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
         if (_incomingAsset == _denominationAsset) return true;
 
         uint256 assetBalance = IERC20(_incomingAsset).balanceOf(_vaultProxy);
-        (uint256 assetGav, bool assetGavIsValid) = ValueInterpreter(_valueInterpreter)
-            .calcLiveAssetValue(
-            _primitivePriceFeed,
-            _derivativePriceFeed,
-            _incomingAsset,
-            assetBalance,
-            _denominationAsset
-        );
+        (uint256 assetGav, bool assetGavIsValid) = ValueInterpreter(VALUE_INTERPRETER)
+            .calcLiveAssetValue(_incomingAsset, assetBalance, _denominationAsset);
 
         if (
             !assetGavIsValid ||
@@ -162,11 +148,20 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     // STATE GETTERS //
     ///////////////////
 
+    /// @notice Gets the maxConcentration for a given fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @return maxConcentration_ The maxConcentration
     function getMaxConcentrationForFund(address _comptrollerProxy)
         external
         view
         returns (uint256 maxConcentration_)
     {
         return comptrollerProxyToMaxConcentration[_comptrollerProxy];
+    }
+
+    /// @notice Gets the `VALUE_INTERPRETER` variable
+    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
+    function getValueInterpreter() external view returns (address valueInterpreter_) {
+        return VALUE_INTERPRETER;
     }
 }

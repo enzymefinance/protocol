@@ -34,7 +34,6 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
     randomAddress(),
     randomAddress(),
     randomAddress(),
-    randomAddress(),
     mockValueInterpreter,
     1,
   );
@@ -61,7 +60,6 @@ describe('constructor', () => {
       randomAddress(),
       randomAddress(),
       randomAddress(),
-      randomAddress(),
       1,
     );
 
@@ -75,7 +73,6 @@ describe('constructor', () => {
       deployment: {
         engine,
         valueInterpreter,
-        chainlinkPriceFeed,
         tokens: { mln, weth },
       },
       config: {
@@ -91,11 +88,6 @@ describe('constructor', () => {
     // The deployer should initially be the dispatcher owner.
     const dispatcherOwner = engine.getOwner();
     await expect(dispatcherOwner).resolves.toBe(await resolveAddress(deployer));
-
-    const getPrimitivePriceFeed = engine.getPrimitivePriceFeed();
-    await expect(getPrimitivePriceFeed).resolves.toBe(
-      chainlinkPriceFeed.address,
-    );
 
     const getValueInterpreter = engine.getValueInterpreter();
     await expect(getValueInterpreter).resolves.toBe(valueInterpreter.address);

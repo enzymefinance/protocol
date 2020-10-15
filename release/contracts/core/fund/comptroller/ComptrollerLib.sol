@@ -7,7 +7,6 @@ import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
 import "../../../infrastructure/engine/AmguConsumer.sol";
-import "../../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../interfaces/IERC20Extended.sol";
@@ -48,7 +47,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // Constants - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable FUND_DEPLOYER;
-    address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable FEE_MANAGER;
     address private immutable INTEGRATION_MANAGER;
     address private immutable POLICY_MANAGER;
@@ -187,18 +185,16 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _fundDeployer,
         address _valueInterpreter,
         address _primitivePriceFeed,
-        address _derivativePriceFeed,
         address _feeManager,
         address _integrationManager,
         address _policyManager,
         address _engine
     ) public AmguConsumer(_engine) {
-        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         INTEGRATION_MANAGER = _integrationManager;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         POLICY_MANAGER = _policyManager;
+        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
         isLib = true;
     }
@@ -230,23 +226,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             abi.encodeWithSelector(_selector, msg.sender, _callArgs)
         );
         require(success, string(returnData));
-    }
-
-    /// @notice Checks whether an asset can be added to the fund
-    /// @param _asset The asset contract address
-    /// @return isReceivable_ True if the asset can be added
-    /// @dev An asset is receivable if a valid price
-    // TODO: Technically, a derivative is only supported if there are primitive values
-    // for all of its recursive underlying assets.
-    function isReceivableAsset(address _asset)
-        external
-        override
-        view
-        returns (bool isReceivable_)
-    {
-        return
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
-            IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
     }
 
     function setOverridePause(bool _overridePause) external onlyDelegateCall onlyOwner {
@@ -322,9 +301,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         require(denominationAsset == address(0), "init: Already initialized");
 
         // Configure core
+
         require(
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
-            "setConfigAndActivate: Denomination asset must be a supported primitive"
+            "init: Denomination asset must be a supported primitive"
         );
         denominationAsset = _denominationAsset;
 
@@ -463,35 +443,26 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     function calcGav(bool _useLiveRates) public onlyDelegateCall returns (uint256 gav_) {
         IVault vaultContract = IVault(vaultProxy);
         address[] memory assets = vaultContract.getTrackedAssets();
+        // TODO: can get the balances here directly instead of calling the vault
         uint256[] memory balances = vaultContract.getAssetBalances(assets);
 
-        for (uint256 i; i < assets.length; i++) {
-            uint256 assetGav;
-            bool isValid;
-            if (_useLiveRates) {
-                // TODO: make more efficient by ValueInterpreter returning multiple values
-                (assetGav, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcLiveAssetValue(
-                    PRIMITIVE_PRICE_FEED,
-                    DERIVATIVE_PRICE_FEED,
-                    assets[i],
-                    balances[i],
-                    denominationAsset
-                );
-            } else {
-                (assetGav, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
-                    PRIMITIVE_PRICE_FEED,
-                    DERIVATIVE_PRICE_FEED,
-                    assets[i],
-                    balances[i],
-                    denominationAsset
-                );
-            }
-
-            // TODO: return validity instead of reverting?
-            require(assetGav > 0 && isValid, "calcGav: No valid price available for asset");
-
-            gav_ = gav_.add(assetGav);
+        bool isValid;
+        if (_useLiveRates) {
+            (gav_, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcLiveAssetsTotalValue(
+                assets,
+                balances,
+                denominationAsset
+            );
+        } else {
+            (gav_, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
+                assets,
+                balances,
+                denominationAsset
+            );
         }
+
+        // TODO: return validity instead of reverting?
+        require(isValid, "calcGav: gav is invalid");
 
         return gav_;
     }
@@ -724,7 +695,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     }
 
     /// @notice Gets the routes for the various contracts used by all funds
-    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
     /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
@@ -736,7 +706,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         override
         view
         returns (
-            address derivativePriceFeed_,
             address feeManager_,
             address fundDeployer_,
             address integrationManager_,
@@ -746,7 +715,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         )
     {
         return (
-            DERIVATIVE_PRICE_FEED,
             FEE_MANAGER,
             FUND_DEPLOYER,
             INTEGRATION_MANAGER,

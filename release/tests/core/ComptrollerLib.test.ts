@@ -23,7 +23,6 @@ describe('constructor', () => {
       deployment: {
         comptrollerLib,
         engine,
-        aggregatedDerivativePriceFeed,
         chainlinkPriceFeed,
         policyManager,
         feeManager,
@@ -34,7 +33,6 @@ describe('constructor', () => {
 
     const routesCall = comptrollerLib.getRoutes();
     await expect(routesCall).resolves.toMatchObject({
-      derivativePriceFeed_: aggregatedDerivativePriceFeed.address,
       feeManager_: feeManager.address,
       integrationManager_: integrationManager.address,
       policyManager_: policyManager.address,
