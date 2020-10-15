@@ -35,7 +35,11 @@ contract TrackedAssetsAdapter is AdapterBase {
     {
         if (_selector == ADD_TRACKED_ASSETS_SELECTOR) {
             incomingAssets_ = __decodeCallArgs(_encodedCallArgs);
+
             minIncomingAssetAmounts_ = new uint256[](incomingAssets_.length);
+            for (uint256 i; i < minIncomingAssetAmounts_.length; i++) {
+                minIncomingAssetAmounts_[i] = 1;
+            }
         } else {
             revert("parseIncomingAssets: _selector invalid");
         }

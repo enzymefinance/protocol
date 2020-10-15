@@ -195,6 +195,10 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
                 "__preProcessCoI: empty incoming asset address detected"
             );
             require(
+                minIncomingAssetAmounts_[i] > 0,
+                "__preProcessCoI: minIncomingAssetAmount must be >0"
+            );
+            require(
                 IComptroller(msg.sender).isReceivableAsset(incomingAssets_[i]),
                 "__preProcessCoI: non-receivable asset detected"
             );
@@ -313,11 +317,6 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
         incomingAssetAmounts_ = new uint256[](_incomingAssets.length);
         for (uint256 i = 0; i < _incomingAssets.length; i++) {
             uint256 newBalance = __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]);
-            require(
-                newBalance > _preCallIncomingAssetBalances[i],
-                "__reconcileCoIAssets: incoming asset balance must increase"
-            );
-
             uint256 balanceDiff = newBalance.sub(_preCallIncomingAssetBalances[i]);
             require(
                 balanceDiff >= _minIncomingAssetAmounts[i],
@@ -431,7 +430,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
     }
 
     function getPolicyManager() external view returns (address) {
-        POLICY_MANAGER;
+        return POLICY_MANAGER;
     }
 
     /// @notice Get all registered integration adapters

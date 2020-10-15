@@ -3,7 +3,7 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { BigNumberish, constants, Signer, utils } from 'ethers';
+import { BigNumberish, Signer, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
 import { IERC20 } from '../../../../codegen/IERC20';
 import {
@@ -14,8 +14,6 @@ import {
 } from '../../../../utils/contracts';
 import {
   assetTransferArgs,
-  callOnIntegrationArgs,
-  callOnIntegrationSelector,
   createNewFund,
   kyberTakeOrder,
   kyberTakeOrderArgs,
@@ -234,66 +232,6 @@ describe('takeOrder', () => {
       'Only the IntegrationManager can call this function',
     );
   });
-  // TODO: Move to integration adapter tests
-  it('does not allow empty outgoing asset address', async () => {
-    const {
-      deployment: {
-        kyberAdapter,
-        tokens: { mln },
-        integrationManager,
-      },
-      fund: { comptrollerProxy, fundOwner },
-    } = await provider.snapshot(snapshot);
-
-    const takeOrderArgs = await kyberTakeOrderArgs({
-      incomingAsset: mln,
-      minIncomingAssetAmount: utils.parseEther('1'),
-      outgoingAsset: constants.AddressZero,
-      outgoingAssetAmount: utils.parseEther('1'),
-    });
-    const callArgs = await callOnIntegrationArgs({
-      adapter: kyberAdapter,
-      selector: takeOrderSelector,
-      encodedCallArgs: takeOrderArgs,
-    });
-
-    const takeOrderTx = comptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
-    await expect(takeOrderTx).rejects.toBeRevertedWith(
-      'empty spendAsset detected',
-    );
-  });
-  // TODO: Move to integration adapter tests
-  it('does not allow empty incoming asset address', async () => {
-    const {
-      deployment: {
-        kyberAdapter,
-        tokens: { mln },
-        integrationManager,
-      },
-      fund: { comptrollerProxy, fundOwner },
-    } = await provider.snapshot(snapshot);
-
-    const takeOrderArgs = await kyberTakeOrderArgs({
-      incomingAsset: constants.AddressZero,
-      minIncomingAssetAmount: utils.parseEther('1'),
-      outgoingAsset: mln,
-      outgoingAssetAmount: utils.parseEther('1'),
-    });
-    const callArgs = await callOnIntegrationArgs({
-      adapter: kyberAdapter,
-      selector: takeOrderSelector,
-      encodedCallArgs: takeOrderArgs,
-    });
-
-    const takeOrderTx = comptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
-    await expect(takeOrderTx).rejects.toBeRevertedWith(
-      'empty incoming asset address',
-    );
-  });
 
   it('does not allow incoming and outgoing assets to be the same', async () => {
     const {
@@ -348,31 +286,6 @@ describe('takeOrder', () => {
     await expect(badTakeOrderTx).rejects.toBeRevertedWith(
       'minIncomingAssetAmount must be >0',
     );
-  });
-  // TODO: Move to integration adapter tests
-  it('does not allow empty outgoing asset amount', async () => {
-    const {
-      deployment: {
-        kyberAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-    const badTakeOrderTx = kyberTakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      kyberAdapter,
-      outgoingAsset: outgoingAsset,
-      outgoingAssetAmount: 0,
-      minIncomingAssetAmount: utils.parseEther('1'),
-      incomingAsset,
-      seedFund: true,
-    });
-
-    await expect(badTakeOrderTx).rejects.toBeReverted();
   });
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {

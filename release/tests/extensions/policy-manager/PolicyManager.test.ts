@@ -37,11 +37,6 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
     policyManager: deployment.policyManager,
   });
 
-  // Register the mock generic adapter
-  await deployment.integrationManager.registerAdapters([
-    deployment.mockGenericAdapter,
-  ]);
-
   return {
     accounts,
     deployment,

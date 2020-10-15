@@ -99,7 +99,6 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             incomingAsset != outgoingAsset,
             "takeOrder: incomingAsset and outgoingAsset asset cannot be the same"
         );
-        require(minIncomingAssetAmount > 0, "takeOrder: minIncomingAssetAmount must be >0");
         require(outgoingAssetAmount > 0, "takeOrder: outgoingAssetAmount must be >0");
 
         // Execute fill

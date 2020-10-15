@@ -37,15 +37,12 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         );
 
         // Spend assets
-        uint256[] memory spentAssetPreCallAmounts = new uint256[](spendAssets.length);
         for (uint256 i = 0; i < spendAssets.length; i++) {
             // Sanity checks
             require(
                 spendAssetAmounts[i] > 0,
                 "fundAssetsTransferHandler: spend asset amount must be >0"
             );
-
-            spentAssetPreCallAmounts[i] = IERC20(spendAssets[i]).balanceOf(address(this));
 
             // Custody asset
             IERC20(spendAssets[i]).safeTransferFrom(
@@ -55,36 +52,20 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
             );
         }
 
-        // Get incoming asset balances before call
-        uint256[] memory incomingAssetPreCallAmounts = new uint256[](incomingAssets.length);
-        for (uint256 i = 0; i < incomingAssets.length; i++) {
-            incomingAssetPreCallAmounts[i] = IERC20(incomingAssets[i]).balanceOf(address(this));
-        }
-
         // Execute call
         _;
 
         // Transfer incoming assets back to fund
         for (uint256 i = 0; i < incomingAssets.length; i++) {
             uint256 postCallAmount = IERC20(incomingAssets[i]).balanceOf(address(this));
-            // Allow incoming asset balance diff to be 0 or negative in case adapters
-            // can send assets directly to the Vault
-            if (postCallAmount <= incomingAssetPreCallAmounts[i]) continue;
-
-            IERC20(incomingAssets[i]).safeTransfer(
-                _vaultProxy,
-                postCallAmount.sub(incomingAssetPreCallAmounts[i])
-            );
+            IERC20(incomingAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
         }
 
-        // If excess spend assets, send back to fund
+        // Send remaining spendAssets balances back to the fund
         for (uint256 i = 0; i < spendAssets.length; i++) {
             uint256 postCallAmount = IERC20(spendAssets[i]).balanceOf(address(this));
-            if (postCallAmount > spentAssetPreCallAmounts[i]) {
-                IERC20(spendAssets[i]).safeTransfer(
-                    _vaultProxy,
-                    postCallAmount.sub(spentAssetPreCallAmounts[i])
-                );
+            if (postCallAmount > 0) {
+                IERC20(spendAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
             }
         }
     }

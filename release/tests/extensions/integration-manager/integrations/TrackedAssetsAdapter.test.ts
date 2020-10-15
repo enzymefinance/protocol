@@ -3,7 +3,7 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
 import {
   addTrackedAssets,
@@ -104,7 +104,7 @@ describe('parseAssetsForMethod', () => {
       incomingAssets_: [incomingAsset],
       spendAssets_: [],
       spendAssetAmounts_: [],
-      minIncomingAssetAmounts_: [utils.parseEther('0')],
+      minIncomingAssetAmounts_: [BigNumber.from(1)],
     });
   });
 });
