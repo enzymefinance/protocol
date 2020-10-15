@@ -17,3 +17,12 @@ export async function assertEvent<TResult = any>(
 
   return ((args as unknown) as typeof match)!;
 }
+
+export async function assertNoEvent(
+  tx: ContractReceipt<any> | Promise<ContractReceipt<any>>,
+  event: string | utils.EventFragment,
+) {
+  const receipt = await tx;
+  const events = extractEvent(receipt, event);
+  expect(events.length).toBe(0);
+}

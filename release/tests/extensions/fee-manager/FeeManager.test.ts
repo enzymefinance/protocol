@@ -18,8 +18,10 @@ import {
   encodeArgs,
   feeSettlementTypes,
   generateRegisteredMockFees,
-  settleBuySharesArgs,
+  settlePreBuySharesArgs,
+  settlePostBuySharesArgs,
   settleContinuousFeesSelector,
+  feeHooks,
 } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -124,10 +126,10 @@ describe('setFundConfig', () => {
         fundDeployer,
         tokens: { weth },
       },
-      fees: { mockContinuousFee1, mockContinuousFee2, mockBuySharesFee },
+      fees: { mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee },
     } = await provider.snapshot(snapshotWithMocks);
 
-    const fees = [mockContinuousFee1, mockContinuousFee2, mockBuySharesFee];
+    const fees = [mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee];
     const feesSettingsData = [
       utils.randomBytes(10),
       utils.randomBytes(2),
@@ -372,10 +374,10 @@ describe('settleFees', () => {
     });
   });
 
-  it('correctly handles a BuyShares FeeHook', async () => {
+  it('correctly handles a PreBuyShares FeeHook', async () => {
     const {
       accounts: { 0: buyer },
-      fees: { mockContinuousFee1, mockContinuousFee2, mockBuySharesFee },
+      fees: { mockContinuousFee1, mockContinuousFee2 },
       fund: { comptrollerProxy, denominationAsset },
     } = await provider.snapshot(snapshotWithMocksAndFund);
 
@@ -389,32 +391,60 @@ describe('settleFees', () => {
     });
 
     // Assert called settle and payout on Continuous fees (called before BuyShares fee hook)
+    const preBuySharesArgs = settlePreBuySharesArgs({
+      buyer,
+      investmentAmount,
+      minSharesQuantity: investmentAmount,
+    });
     await expect(mockContinuousFee1.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      '0x',
+      feeHooks.PreBuyShares,
+      preBuySharesArgs,
     );
     await expect(mockContinuousFee1.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
     );
     await expect(mockContinuousFee2.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      '0x',
+      feeHooks.PreBuyShares,
+      preBuySharesArgs,
     );
     await expect(mockContinuousFee2.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
     );
-    // Assert called settle and payout on BuyShares fees
-    await expect(mockBuySharesFee.settle.ref).toHaveBeenCalledOnContractWith(
+  });
+
+  it('correctly handles a PostBuyShares FeeHook', async () => {
+    const {
+      accounts: { 0: buyer },
+      fees: { mockPostBuySharesFee },
+      fund: { comptrollerProxy, denominationAsset },
+    } = await provider.snapshot(snapshotWithMocksAndFund);
+
+    const investmentAmount = utils.parseEther('2');
+    await buyShares({
       comptrollerProxy,
-      settleBuySharesArgs({
+      signer: buyer,
+      buyer,
+      denominationAsset,
+      investmentAmount,
+    });
+
+    // Assert called settle and payout on BuyShares fees
+    await expect(
+      mockPostBuySharesFee.settle.ref,
+    ).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      feeHooks.PostBuyShares,
+      settlePostBuySharesArgs({
         buyer,
         investmentAmount,
         sharesBought: investmentAmount,
       }),
     );
-    await expect(mockBuySharesFee.payout.ref).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-    );
+    await expect(
+      mockPostBuySharesFee.payout.ref,
+    ).toHaveBeenCalledOnContractWith(comptrollerProxy);
   });
 
   it('correctly settles a direct fee payment (BuyShares fee hook)', async () => {
@@ -422,13 +452,13 @@ describe('settleFees', () => {
       accounts: { 0: buyer },
       deployment: { feeManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
-      fees: { mockBuySharesFee },
+      fees: { mockPostBuySharesFee },
     } = await provider.snapshot(snapshotWithMocksAndFund);
 
     const investmentAmount = utils.parseEther('2');
     const feeAmount = utils.parseEther('0.5');
     const settlementType = feeSettlementTypes.Direct;
-    await mockBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
+    await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
 
     const buySharesTx = await buyShares({
       comptrollerProxy,
@@ -448,13 +478,13 @@ describe('settleFees', () => {
       BigNumber.from(investmentAmount).sub(feeAmount),
     );
 
-    // Assert correct FeeSettledForFund emission for mockBuySharesFee
+    // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
     const events = extractEvent(buySharesTx, feeSettledForFundEvent);
     expect(events.length).toBe(3);
     let eventExists = false;
     for (const event of events) {
-      if (event.args.fee == mockBuySharesFee.address) {
+      if (event.args.fee == mockPostBuySharesFee.address) {
         expect(event.args).toMatchObject({
           comptrollerProxy: comptrollerProxy.address,
           settlementType,
@@ -695,7 +725,7 @@ describe('settleContinuousFees', () => {
       accounts: { 0: randomUser },
       deployment: { feeManager },
       fund: { comptrollerProxy },
-      fees: { mockContinuousFee1, mockContinuousFee2, mockBuySharesFee },
+      fees: { mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee },
     } = await provider.snapshot(snapshotWithMocksAndFund);
 
     const settleContinuousFeesTx = callOnExtension({
@@ -709,6 +739,7 @@ describe('settleContinuousFees', () => {
     // Assert called settle and payout on Continuous fees
     await expect(mockContinuousFee1.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      feeHooks.Continuous,
       '0x',
     );
     await expect(mockContinuousFee1.payout.ref).toHaveBeenCalledOnContractWith(
@@ -716,6 +747,7 @@ describe('settleContinuousFees', () => {
     );
     await expect(mockContinuousFee2.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      feeHooks.Continuous,
       '0x',
     );
     await expect(mockContinuousFee2.payout.ref).toHaveBeenCalledOnContractWith(
@@ -723,7 +755,11 @@ describe('settleContinuousFees', () => {
     );
 
     // Assert BuyShares fees were not called
-    await expect(mockBuySharesFee.settle.ref).not.toHaveBeenCalledOnContract();
-    await expect(mockBuySharesFee.payout.ref).not.toHaveBeenCalledOnContract();
+    expect(mockPostBuySharesFee.settle.ref).not.toHaveBeenCalledOnContract();
+    expect(mockPostBuySharesFee.payout.ref).not.toHaveBeenCalledOnContract();
   });
 });
+
+it.todo('test with 2 fees that have shares outstanding balances');
+
+it.todo('add shares outstanding balance checks to settlement tests');

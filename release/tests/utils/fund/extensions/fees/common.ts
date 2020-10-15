@@ -6,8 +6,10 @@ import { encodeArgs, sighash } from '../../../common';
 
 export enum feeHooks {
   None,
-  BuyShares,
   Continuous,
+  PreBuyShares,
+  PostBuyShares,
+  PreRedeemShares,
 }
 
 export enum feeSettlementTypes {
@@ -52,7 +54,7 @@ export async function generateRegisteredMockFees({
   // Create mock fees
   const mockContinuousFee1 = await IFee.mock(deployer);
   const mockContinuousFee2 = await IFee.mock(deployer);
-  const mockBuySharesFee = await IFee.mock(deployer);
+  const mockPostBuySharesFee = await IFee.mock(deployer);
 
   // Initialize mock fee return values
   await Promise.all([
@@ -65,7 +67,10 @@ export async function generateRegisteredMockFees({
     mockContinuousFee1.payout.returns(false),
     mockContinuousFee1.addFundSettings.returns(undefined),
     mockContinuousFee1.activateForFund.returns(undefined),
-    mockContinuousFee1.feeHook.returns(feeHooks.Continuous),
+    mockContinuousFee1.settlesOnHook.returns(true),
+    mockContinuousFee1.settlesOnHook
+      .given(feeHooks.PostBuyShares)
+      .returns(false),
     mockContinuousFee2.identifier.returns(`MOCK_CONTINUOUS_2`),
     mockContinuousFee2.settle.returns(
       feeSettlementTypes.None,
@@ -75,34 +80,55 @@ export async function generateRegisteredMockFees({
     mockContinuousFee2.payout.returns(false),
     mockContinuousFee2.addFundSettings.returns(undefined),
     mockContinuousFee2.activateForFund.returns(undefined),
-    mockContinuousFee2.feeHook.returns(feeHooks.Continuous),
-    mockBuySharesFee.identifier.returns(`MOCK_BUY_SHARES`),
-    mockBuySharesFee.settle.returns(
+    mockContinuousFee2.settlesOnHook.returns(true),
+    mockContinuousFee2.settlesOnHook
+      .given(feeHooks.PostBuyShares)
+      .returns(false),
+    mockPostBuySharesFee.identifier.returns(`MOCK_POST_BUY_SHARES`),
+    mockPostBuySharesFee.settle.returns(
       feeSettlementTypes.None,
       constants.AddressZero,
       0,
     ),
-    mockBuySharesFee.payout.returns(false),
-    mockBuySharesFee.addFundSettings.returns(undefined),
-    mockBuySharesFee.activateForFund.returns(undefined),
-    mockBuySharesFee.feeHook.returns(feeHooks.BuyShares),
+    mockPostBuySharesFee.payout.returns(false),
+    mockPostBuySharesFee.addFundSettings.returns(undefined),
+    mockPostBuySharesFee.activateForFund.returns(undefined),
+    mockPostBuySharesFee.settlesOnHook.returns(false),
+    mockPostBuySharesFee.settlesOnHook
+      .given(feeHooks.PostBuyShares)
+      .returns(true),
   ]);
 
   // Register all mock fees
   await feeManager.registerFees([
     mockContinuousFee1,
     mockContinuousFee2,
-    mockBuySharesFee,
+    mockPostBuySharesFee,
   ]);
 
   return {
     mockContinuousFee1,
     mockContinuousFee2,
-    mockBuySharesFee,
+    mockPostBuySharesFee,
   };
 }
 
-export function settleBuySharesArgs({
+export function settlePreBuySharesArgs({
+  buyer = randomAddress(),
+  investmentAmount = utils.parseEther('1'),
+  minSharesQuantity = utils.parseEther('1'),
+}: {
+  buyer?: AddressLike;
+  investmentAmount?: BigNumberish;
+  minSharesQuantity?: BigNumberish;
+}) {
+  return encodeArgs(
+    ['address', 'uint256', 'uint256'],
+    [buyer, investmentAmount, minSharesQuantity],
+  );
+}
+
+export function settlePostBuySharesArgs({
   buyer = randomAddress(),
   investmentAmount = utils.parseEther('1'),
   sharesBought = utils.parseEther('1'),

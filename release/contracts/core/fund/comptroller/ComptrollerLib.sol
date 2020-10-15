@@ -610,15 +610,30 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
     ) private {
-        // Calculate full shares quantity for investment amount after updating continuous fees
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
+        bytes memory callData = abi.encode(_buyer, _investmentAmount, _minSharesQuantity);
+
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PreBuyShares, callData);
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.BuyShares,
             IPolicyManager.PolicyHookExecutionTime.Pre,
-            abi.encode(_buyer, _investmentAmount, _minSharesQuantity)
+            callData
         );
+    }
+
+    /// @dev Helper for system actions immediately prior to redeeming shares.
+    /// Policy validation is not currently allowed on redemption, to ensure continuous redeemability.
+    function __preRedeemSharesHook(address _redeemer, uint256 _sharesQuantity)
+        private
+        allowsPermissionedVaultCall
+    {
+        try
+            IFeeManager(FEE_MANAGER).settleFees(
+                IFeeManager.FeeHook.PreRedeemShares,
+                abi.encode(_redeemer, _sharesQuantity)
+            )
+         {} catch {}
     }
 
     /// @dev Helper for system actions immediately after issuing shares
@@ -627,16 +642,15 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         uint256 _investmentAmount,
         uint256 _sharesBought
     ) private {
-        IFeeManager(FEE_MANAGER).settleFees(
-            IFeeManager.FeeHook.BuyShares,
-            abi.encode(_buyer, _investmentAmount, _sharesBought)
-        );
+        bytes memory callData = abi.encode(_buyer, _investmentAmount, _sharesBought);
+
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PostBuyShares, callData);
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.BuyShares,
             IPolicyManager.PolicyHookExecutionTime.Post,
-            abi.encode(_buyer, _investmentAmount, _sharesBought)
+            callData
         );
     }
 
@@ -653,10 +667,13 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
-            __settleContinuousFeesPreRedeemShares();
+            // Note that if "direct" fees are charged here (i.e., not inflationary),
+            // then those fee shares will be burned from the user's balance rather
+            // than reallocated from the sharesQuantity being redeemed.
+            __preRedeemSharesHook(redeemer, _sharesQuantity);
         }
 
-        // Check the shares quantity against the user's balance after settling fees
+        // Check the shares quantity against the user's balance after settling fees.
         require(
             _sharesQuantity <= IERC20Extended(vaultProxy).balanceOf(redeemer),
             "__redeemShares: _sharesQuantity exceeds sender balance"
@@ -688,11 +705,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         }
 
         emit SharesRedeemed(redeemer, _sharesQuantity, payoutAssets, payoutQuantities);
-    }
-
-    /// @dev Helper to attempt to settle fees, without allowing an error to block redemption.
-    function __settleContinuousFeesPreRedeemShares() private allowsPermissionedVaultCall {
-        try IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "")  {} catch {}
     }
 
     ///////////////////

@@ -61,6 +61,8 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     );
 
     EnumerableSet.AddressSet private registeredFees;
+    mapping(address => mapping(address => uint256))
+        private comptrollerProxyToFeeToSharesOutstanding;
     mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => address) private comptrollerProxyToFeesRecipient;
 
@@ -92,7 +94,7 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
         address comptrollerProxy = msg.sender;
 
         // Settle continuous fees one last time
-        __settleFeesForHook(comptrollerProxy, IFeeManager.FeeHook.Continuous, "", false);
+        __settleFeesForHook(comptrollerProxy, IFeeManager.FeeHook.Continuous, "");
 
         // Force payout of remaining shares outstanding
         __forcePayoutAllSharesOutstanding(comptrollerProxy);
@@ -141,7 +143,7 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     /// @dev Anyone can call this function, but must do so via the ComptrollerProxy.
     /// Useful in case there is little activity and a manager wants to cull fees.
     function settleContinuousFees(address, bytes calldata) external {
-        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "", true);
+        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
     }
 
     /// @notice Settles all fees for a particular FeeHook, paying out shares wherever possible.
@@ -149,7 +151,7 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     /// @param _settlementData The encoded settlement parameters specific to the FeeHook
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     function settleFees(FeeHook _hook, bytes calldata _settlementData) external override {
-        __settleFeesForHook(msg.sender, _hook, _settlementData, true);
+        __settleFeesForHook(msg.sender, _hook, _settlementData);
     }
 
     // PRIVATE FUNCTIONS
@@ -164,25 +166,41 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     }
 
     /// @dev Helper to destroy local storage to get gas refund and prevent further calls to fee manager.
-    // TODO: destroy storage on fees to get gas refund
     function __deleteFundStorage(address _comptrollerProxy) private {
         delete comptrollerProxyToFees[_comptrollerProxy];
         delete comptrollerProxyToFeesRecipient[_comptrollerProxy];
     }
 
+    /// @dev Helper to force the payout of shares outstanding across all fees
     function __forcePayoutAllSharesOutstanding(address _comptrollerProxy) private {
-        address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
-        uint256 sharesOutstanding = IERC20(vaultProxy).balanceOf(vaultProxy);
-        if (sharesOutstanding == 0) {
+        uint256 totalSharesOutstanding;
+        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
+        for (uint256 i; i < fees.length; i++) {
+
+                uint256 feeSharesOutstanding
+             = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]];
+            if (feeSharesOutstanding > 0) {
+                comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]] = 0;
+                totalSharesOutstanding = totalSharesOutstanding.add(feeSharesOutstanding);
+            }
+        }
+
+        if (totalSharesOutstanding == 0) {
             return;
         }
 
+        // TODO: need to protect against sharesOutstanding > actual balanceOf?
+
         // Distribute all shares outstanding to the fees recipient
         address payee = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        __burnShares(_comptrollerProxy, vaultProxy, sharesOutstanding);
-        __mintShares(_comptrollerProxy, payee, sharesOutstanding);
+        __burnShares(
+            _comptrollerProxy,
+            IComptroller(_comptrollerProxy).getVaultProxy(),
+            totalSharesOutstanding
+        );
+        __mintShares(_comptrollerProxy, payee, totalSharesOutstanding);
 
-        emit AllSharesOutstandingForcePaid(_comptrollerProxy, payee, sharesOutstanding);
+        emit AllSharesOutstandingForcePaid(_comptrollerProxy, payee, totalSharesOutstanding);
     }
 
     /// @dev Helper to mint shares by calling back to the ComptrollerProxy
@@ -196,28 +214,32 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
 
     /// @dev Helper to pay the shares outstanding for a given fee.
     /// Should be called after settlement has occurred.
-    /// Assumes the payee to be the fund manager and the shares outstanding to be
-    /// the entire balance of the Vault. This will change in upcoming releases, but
-    /// we don't need to accommodate multiple fees or extensions with shares outstanding for now.
     function __payoutSharesOutstandingForFee(address _comptrollerProxy, address _fee) private {
         if (!IFee(_fee).payout(_comptrollerProxy)) {
             return;
         }
 
-        address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
-        uint256 sharesOutstanding = IERC20(vaultProxy).balanceOf(vaultProxy);
+
+            uint256 sharesOutstanding
+         = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
         if (sharesOutstanding == 0) {
             return;
         }
 
-        // Distribute shares from VaultProxy to the fees recipient
+        // Delete shares outstanding and distribute from VaultProxy to the fees recipient
+        comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = 0;
         address payee = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        __burnShares(_comptrollerProxy, vaultProxy, sharesOutstanding);
+        __burnShares(
+            _comptrollerProxy,
+            IComptroller(_comptrollerProxy).getVaultProxy(),
+            sharesOutstanding
+        );
         __mintShares(_comptrollerProxy, payee, sharesOutstanding);
 
         emit SharesOutstandingPaidForFee(_comptrollerProxy, _fee, payee, sharesOutstanding);
     }
 
+    /// @dev Helper to set the fees recipient for a fund
     // TODO: expose an external setter for this?
     function __setFeesRecipient(address _comptrollerProxy, address _nextFeesRecipient) private {
         address prevRecipient = comptrollerProxyToFeesRecipient[_comptrollerProxy];
@@ -234,10 +256,12 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     function __settleFee(
         address _comptrollerProxy,
         address _fee,
+        FeeHook _hook,
         bytes memory _settlementData
     ) private {
         (SettlementType settlementType, address payer, uint256 sharesDue) = IFee(_fee).settle(
             _comptrollerProxy,
+            _hook,
             _settlementData
         );
 
@@ -255,18 +279,27 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
                 sharesDue
             );
         } else if (settlementType == SettlementType.MintSharesOutstanding) {
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee]
+                .add(sharesDue);
             __mintShares(
                 _comptrollerProxy,
                 IComptroller(_comptrollerProxy).getVaultProxy(),
                 sharesDue
             );
         } else if (settlementType == SettlementType.BurnSharesOutstanding) {
-            address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
-            uint256 sharesOutstandingBalance = IERC20(vaultProxy).balanceOf(vaultProxy);
+
+                uint256 sharesOutstandingBalance
+             = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
             if (sharesOutstandingBalance < sharesDue) {
                 sharesDue = sharesOutstandingBalance;
             }
-            __burnShares(_comptrollerProxy, vaultProxy, sharesDue);
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = sharesOutstandingBalance
+                .sub(sharesDue);
+            __burnShares(
+                _comptrollerProxy,
+                IComptroller(_comptrollerProxy).getVaultProxy(),
+                sharesDue
+            );
         }
         // TODO: revert if the type doesn't match an option?
         // TODO: should it be FeeManager's responsibility to not mint shares if shares supply is 0?
@@ -275,23 +308,20 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
     }
 
     /// @dev Helper to settle and then payout shares outstanding for a each fee of a given FeeHook
-    // TODO: need to assert active fund?
     function __settleFeesForHook(
         address _comptrollerProxy,
         FeeHook _hook,
-        bytes memory _settlementData,
-        bool _attemptPayout
+        bytes memory _settlementData
     ) private {
         address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
         for (uint256 i; i < fees.length; i++) {
-            if (IFee(fees[i]).feeHook() != _hook) {
+            if (!IFee(fees[i]).settlesOnHook(_hook)) {
                 continue;
             }
-            __settleFee(_comptrollerProxy, fees[i], _settlementData);
 
-            if (_attemptPayout) {
-                __payoutSharesOutstandingForFee(_comptrollerProxy, fees[i]);
-            }
+            __settleFee(_comptrollerProxy, fees[i], _hook, _settlementData);
+
+            __payoutSharesOutstandingForFee(_comptrollerProxy, fees[i]);
         }
     }
 
@@ -340,6 +370,18 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
         returns (address[] memory enabledFees_)
     {
         return comptrollerProxyToFees[_comptrollerProxy];
+    }
+
+    /// @notice Get the amount of shares outstanding for a particular fee for a fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _fee The fee
+    /// @return sharesOutstanding_ The amount of shares outstanding
+    function getFeeSharesOutstandingForFund(address _comptrollerProxy, address _fee)
+        external
+        view
+        returns (uint256 sharesOutstanding_)
+    {
+        return comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
     }
 
     /// @notice Get all registered fees

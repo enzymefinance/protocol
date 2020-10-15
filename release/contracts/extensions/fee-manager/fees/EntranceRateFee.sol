@@ -2,12 +2,12 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./utils/BuySharesFeeBase.sol";
+import "./utils/FeeBase.sol";
 
 /// @title EntranceRateFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Calculates a fee based on a rate to be charged to an investor upon entering a fund
-contract EntranceRateFee is BuySharesFeeBase {
+contract EntranceRateFee is FeeBase {
     using SafeMath for uint256;
 
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
@@ -18,7 +18,7 @@ contract EntranceRateFee is BuySharesFeeBase {
 
     mapping(address => uint256) private comptrollerProxyToRate;
 
-    constructor(address _feeManager) public BuySharesFeeBase(_feeManager) {}
+    constructor(address _feeManager) public FeeBase(_feeManager) {}
 
     // EXTERNAL FUNCTIONS
 
@@ -50,7 +50,11 @@ contract EntranceRateFee is BuySharesFeeBase {
     /// @return settlementType_ The type of settlement
     /// @return payer_ The payer of shares due
     /// @return sharesDue_ The amount of shares due
-    function settle(address _comptrollerProxy, bytes calldata _settlementData)
+    function settle(
+        address _comptrollerProxy,
+        IFeeManager.FeeHook,
+        bytes calldata _settlementData
+    )
         external
         override
         onlyFeeManager
@@ -61,7 +65,7 @@ contract EntranceRateFee is BuySharesFeeBase {
         )
     {
         uint256 sharesBought;
-        (payer_, , sharesBought) = __decodeSettlementData(_settlementData);
+        (payer_, , sharesBought) = __decodePostBuySharesSettlementData(_settlementData);
 
         uint256 rate = comptrollerProxyToRate[_comptrollerProxy];
         sharesDue_ = sharesBought.mul(rate).div(RATE_DIVISOR);
@@ -73,6 +77,17 @@ contract EntranceRateFee is BuySharesFeeBase {
         emit Settled(_comptrollerProxy, payer_, sharesDue_);
 
         return (IFeeManager.SettlementType.Direct, payer_, sharesDue_);
+    }
+
+    /// @notice Checks whether the fee is settled on a given hook
+    /// @return settlesOnHook_ True if the fee is settled on the hook
+    function settlesOnHook(IFeeManager.FeeHook _hook)
+        external
+        override
+        pure
+        returns (bool settlesOnHook_)
+    {
+        return _hook == IFeeManager.FeeHook.PostBuyShares;
     }
 
     ///////////////////

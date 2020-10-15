@@ -5,7 +5,8 @@ pragma experimental ABIEncoderV2;
 /// @title FeeManager Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IFeeManager {
-    enum FeeHook {None, BuyShares, Continuous}
+    // No fees for the current release are implemented post-redeemShares
+    enum FeeHook {None, Continuous, PreBuyShares, PostBuyShares, PreRedeemShares}
     enum SettlementType {None, Direct, Mint, MintSharesOutstanding, BurnSharesOutstanding}
 
     function settleFees(FeeHook, bytes calldata) external;

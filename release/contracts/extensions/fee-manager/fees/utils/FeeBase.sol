@@ -27,6 +27,41 @@ abstract contract FeeBase is IFee {
         return false;
     }
 
+    /// @notice Helper to parse settlement arguments from encoded data
+    function __decodePreBuySharesSettlementData(bytes memory _settlementData)
+        internal
+        pure
+        returns (
+            address buyer_,
+            uint256 investmentAmount_,
+            uint256 minSharesQuantity_
+        )
+    {
+        return abi.decode(_settlementData, (address, uint256, uint256));
+    }
+
+    /// @notice Helper to parse settlement arguments from encoded data
+    function __decodePreRedeemSharesSettlementData(bytes memory _settlementData)
+        internal
+        pure
+        returns (address redeemer_, uint256 sharesQuantity_)
+    {
+        return abi.decode(_settlementData, (address, uint256));
+    }
+
+    /// @notice Helper to parse settlement arguments from encoded data
+    function __decodePostBuySharesSettlementData(bytes memory _settlementData)
+        internal
+        pure
+        returns (
+            address buyer_,
+            uint256 investmentAmount_,
+            uint256 sharesBought_
+        )
+    {
+        return abi.decode(_settlementData, (address, uint256, uint256));
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////

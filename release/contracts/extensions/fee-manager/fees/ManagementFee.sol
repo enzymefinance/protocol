@@ -5,12 +5,12 @@ pragma experimental ABIEncoderV2;
 import "../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../core/fund/vault/VaultLib.sol";
 import "../../utils/SharesInflationMixin.sol";
-import "./utils/ContinuousFeeBase.sol";
+import "./utils/FeeBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Calculates the management fee for a particular fund
-contract ManagementFee is ContinuousFeeBase, SharesInflationMixin {
+contract ManagementFee is FeeBase, SharesInflationMixin {
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
 
     event Settled(address indexed comptrollerProxy, uint256 sharesQuantity, uint256 prevSettled);
@@ -25,7 +25,7 @@ contract ManagementFee is ContinuousFeeBase, SharesInflationMixin {
 
     mapping(address => FeeInfo) private comptrollerProxyToFeeInfo;
 
-    constructor(address _feeManager) public ContinuousFeeBase(_feeManager) {}
+    constructor(address _feeManager) public FeeBase(_feeManager) {}
 
     // EXTERNAL FUNCTIONS
 
@@ -56,7 +56,11 @@ contract ManagementFee is ContinuousFeeBase, SharesInflationMixin {
     /// @return settlementType_ The type of settlement
     /// @return (unused) The payer of shares due
     /// @return sharesDue_ The amount of shares due
-    function settle(address _comptrollerProxy, bytes calldata)
+    function settle(
+        address _comptrollerProxy,
+        IFeeManager.FeeHook,
+        bytes calldata
+    )
         external
         override
         onlyFeeManager
@@ -89,6 +93,20 @@ contract ManagementFee is ContinuousFeeBase, SharesInflationMixin {
         }
 
         return (IFeeManager.SettlementType.Mint, address(0), sharesDue_);
+    }
+
+    /// @notice Checks whether the fee is settled on a given hook
+    /// @return settlesOnHook_ True if the fee is settled on the hook
+    function settlesOnHook(IFeeManager.FeeHook _hook)
+        external
+        override
+        pure
+        returns (bool settlesOnHook_)
+    {
+        return
+            _hook == IFeeManager.FeeHook.Continuous ||
+            _hook == IFeeManager.FeeHook.PreBuyShares ||
+            _hook == IFeeManager.FeeHook.PreRedeemShares;
     }
 
     // PRIVATE FUNCTIONS

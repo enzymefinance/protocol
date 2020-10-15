@@ -11,7 +11,7 @@ import {
   feeSettlementTypes,
   entranceRateFeeConfigArgs,
   entranceRateFeeSharesDue,
-  settleBuySharesArgs,
+  settlePostBuySharesArgs,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -56,8 +56,27 @@ describe('constructor', () => {
     const getFeeManagerCall = entranceRateFee.getFeeManager();
     await expect(getFeeManagerCall).resolves.toBe(feeManager.address);
 
-    const feeHookCall = entranceRateFee.feeHook();
-    await expect(feeHookCall).resolves.toBe(feeHooks.BuyShares);
+    // Implements used hooks
+    const settlesOnHookPostBuySharesCall = entranceRateFee.settlesOnHook(
+      feeHooks.PostBuyShares,
+    );
+    await expect(settlesOnHookPostBuySharesCall).resolves.toBe(true);
+
+    // Does not implement unused hooks
+    const settlesOnHookContinuousCall = entranceRateFee.settlesOnHook(
+      feeHooks.Continuous,
+    );
+    await expect(settlesOnHookContinuousCall).resolves.toBe(false);
+
+    const settlesOnHookPreBuySharesCall = entranceRateFee.settlesOnHook(
+      feeHooks.PreBuyShares,
+    );
+    await expect(settlesOnHookPreBuySharesCall).resolves.toBe(false);
+
+    const settlesOnHookPreRedeemSharesCall = entranceRateFee.settlesOnHook(
+      feeHooks.PreRedeemShares,
+    );
+    await expect(settlesOnHookPreRedeemSharesCall).resolves.toBe(false);
   });
 });
 
@@ -135,9 +154,10 @@ describe('settle', () => {
       standaloneEntranceRateFee,
     } = await provider.snapshot(snapshot);
 
-    const settlementData = await settleBuySharesArgs({});
+    const settlementData = await settlePostBuySharesArgs({});
     const settleTx = standaloneEntranceRateFee.settle(
       configuredComptrollerProxyAddress,
+      feeHooks.PostBuyShares,
       settlementData,
     );
 
@@ -157,7 +177,7 @@ describe('settle', () => {
     // Create settlementData
     const buyer = randomAddress();
     const sharesBought = utils.parseEther('2');
-    const settlementData = await settleBuySharesArgs({
+    const settlementData = await settlePostBuySharesArgs({
       buyer,
       sharesBought,
     });
@@ -171,7 +191,11 @@ describe('settle', () => {
     // Check the return values via a call() to settle()
     const settleCall = standaloneEntranceRateFee
       .connect(EOAFeeManager)
-      .settle.args(configuredComptrollerProxyAddress, settlementData)
+      .settle.args(
+        configuredComptrollerProxyAddress,
+        feeHooks.PostBuyShares,
+        settlementData,
+      )
       .call();
     await expect(settleCall).resolves.toMatchObject({
       0: feeSettlementTypes.Direct,
@@ -182,7 +206,11 @@ describe('settle', () => {
     // Send the tx to actually settle()
     const settleTx = standaloneEntranceRateFee
       .connect(EOAFeeManager)
-      .settle(configuredComptrollerProxyAddress, settlementData);
+      .settle(
+        configuredComptrollerProxyAddress,
+        feeHooks.PostBuyShares,
+        settlementData,
+      );
     await expect(settleTx).resolves.toBeReceipt();
 
     // Assert the event was emitted

@@ -1,5 +1,16 @@
 import { resolveArguments } from '@crestproject/crestproject';
-import { utils } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
+
+export function bigNumberMax(values: BigNumberish[]) {
+  let max = BigNumber.from(0);
+  for (const value of values) {
+    const bnValue = BigNumber.from(value);
+    if (bnValue.gt(max)) {
+      max = bnValue;
+    }
+  }
+  return max;
+}
 
 export const stringToBytes = (value: string, numBytes: number = 32) => {
   const string = Buffer.from(value, 'utf8').toString('hex');

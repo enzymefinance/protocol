@@ -10,17 +10,21 @@ interface IFee {
 
     function addFundSettings(address, bytes calldata) external;
 
-    function feeHook() external view returns (IFeeManager.FeeHook);
-
     function identifier() external pure returns (string memory);
 
     function payout(address) external returns (bool);
 
-    function settle(address, bytes calldata)
+    function settle(
+        address,
+        IFeeManager.FeeHook,
+        bytes calldata
+    )
         external
         returns (
             IFeeManager.SettlementType,
             address,
             uint256
         );
+
+    function settlesOnHook(IFeeManager.FeeHook) external pure returns (bool);
 }
