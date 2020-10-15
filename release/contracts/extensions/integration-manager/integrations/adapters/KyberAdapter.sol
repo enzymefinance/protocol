@@ -2,9 +2,9 @@
 pragma solidity 0.6.8;
 
 import "../../../../interfaces/IERC20Extended.sol";
+import "../../../../interfaces/IKyberNetworkProxy.sol";
 import "../../../../interfaces/IWETH.sol";
 import "../../../../utils/MathHelpers.sol";
-import "../interfaces/IKyberNetworkProxy.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title KyberAdapter Contract

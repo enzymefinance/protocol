@@ -3,8 +3,8 @@ pragma solidity 0.6.8;
 
 import "@melonproject/persistent/contracts/dispatcher/IDispatcher.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../interfaces/IChainlinkAggregator.sol";
 import "../../utils/DispatcherOwnerMixin.sol";
-import "./interfaces/IChainlinkAggregator.sol";
 import "./utils/PrimitivePriceFeedBase.sol";
 
 /// @title ChainlinkPriceFeed Contract

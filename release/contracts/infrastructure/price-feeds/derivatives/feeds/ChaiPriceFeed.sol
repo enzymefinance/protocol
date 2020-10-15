@@ -2,8 +2,8 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../../interfaces/IMakerDaoPot.sol";
 import "../IDerivativePriceFeed.sol";
-import "./interfaces/IMakerDaoPot.sol";
 
 /// @title ChaiPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
