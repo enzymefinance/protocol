@@ -3,8 +3,8 @@ import {
   extractEvent,
 } from '@crestproject/crestproject';
 import { utils, constants } from 'ethers';
-import { defaultTestDeployment } from '../../../../..';
-import { createNewFund } from '../../../../utils';
+import { defaultTestDeployment } from '../../../..';
+import { createNewFund } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(

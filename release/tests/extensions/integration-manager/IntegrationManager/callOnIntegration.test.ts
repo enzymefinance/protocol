@@ -4,8 +4,8 @@ import {
 } from '@crestproject/crestproject';
 import { assertEvent, mocks } from '@melonproject/utils';
 import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
-import { defaultTestDeployment } from '../../../../..';
-import { IERC20 } from '../../../../../codegen/IERC20';
+import { defaultTestDeployment } from '../../../..';
+import { IERC20 } from '../../../../codegen/IERC20';
 import {
   callOnIntegrationSelector,
   callOnIntegrationArgs,
@@ -17,12 +17,12 @@ import {
   policyHooks,
   validateRulePostCoIArgs,
   validateRulePreCoIArgs,
-} from '../../../../utils';
+} from '../../../utils';
 import {
   ComptrollerLib,
   IntegrationManager,
   VaultLib,
-} from '../../../../../utils/contracts';
+} from '../../../../utils/contracts';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -99,6 +99,7 @@ async function seedFundByTrading({
     incomingAssetAmounts: [incomingAssetAmount],
     outgoingAssets: [],
     outgoingAssetAmounts: [],
+    selector: mockGenericSwapASelector,
     vaultProxy: vaultProxy.address,
   });
 
@@ -462,6 +463,7 @@ describe('valid calls', () => {
       incomingAssetAmounts,
       outgoingAssets: spendAssets.map((token) => token.address),
       outgoingAssetAmounts: spendAssetAmounts,
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -558,6 +560,7 @@ describe('valid calls', () => {
       incomingAssetAmounts: [expectedIncomingAssetAmount],
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -647,6 +650,7 @@ describe('valid calls', () => {
       incomingAssetAmounts,
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -734,6 +738,7 @@ describe('valid calls', () => {
       incomingAssetAmounts,
       outgoingAssets: [],
       outgoingAssetAmounts: [],
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -818,6 +823,7 @@ describe('valid calls', () => {
       incomingAssetAmounts: [expectedSpendAssetBalance],
       outgoingAssets: [],
       outgoingAssetAmounts: [],
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -895,14 +901,21 @@ describe('valid calls', () => {
       'CallOnIntegrationExecuted',
     );
 
+    // Actual incoming asset info, accounting for token balance on adapter
+    const actualIncomingAssets = spendAssets;
+    const actualIncomingAssetAmounts = [
+      spendAssetAmountOnAdapter.sub(spendAssetAmounts[0]),
+    ];
+
     await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
-      incomingAssets,
-      incomingAssetAmounts,
+      incomingAssets: actualIncomingAssets.map((token) => token.address),
+      incomingAssetAmounts: actualIncomingAssetAmounts,
       outgoingAssets: [],
       outgoingAssetAmounts: [],
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -927,8 +940,8 @@ describe('valid calls', () => {
       validateRulePostCoIArgs(
         mockGenericSwapASelector,
         mockGenericAdapter,
-        incomingAssets,
-        incomingAssetAmounts,
+        actualIncomingAssets,
+        actualIncomingAssetAmounts,
         [],
         [],
       ),
@@ -977,6 +990,7 @@ describe('valid calls', () => {
       incomingAssetAmounts,
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -1061,6 +1075,7 @@ describe('valid calls', () => {
       incomingAssetAmounts,
       outgoingAssets: spendAssets.map((token) => token.address),
       outgoingAssetAmounts: spendAssetAmounts,
+      selector: mockGenericSwapASelector,
       vaultProxy: vaultProxy.address,
     });
 
@@ -1109,4 +1124,6 @@ describe('valid calls', () => {
       incomingAssets.map((token) => token.address),
     );
   });
+
+  it.todo('add integrationData to the event return values in all tests');
 });
