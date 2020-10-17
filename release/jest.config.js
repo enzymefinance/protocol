@@ -1,3 +1,5 @@
+const { whales } = require('./utils/network/config.json');
+
 module.exports = {
   globals: {
     'ts-jest': {
@@ -6,6 +8,7 @@ module.exports = {
       },
     },
   },
+  
   projects: [
     {
       displayName: 'ganache',
@@ -18,9 +21,7 @@ module.exports = {
           fork: 'https://mainnet.infura.io/v3/ffe0be31d7d34594b3decc6c7778e9ad',
           // NOTE: You can unlock arbitrary accounts to gather their tokens into our
           // test accounts and then trade with them for instance.
-          unlocked_accounts: [
-            '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d', // MLN whale
-          ],
+          unlocked_accounts: Object.values(whales),
           // NOTE: Currently we can only test on the latest block because we do not have
           // a paid account on infura. This is bad because we want our tests to run within
           // a predictable environment so we should definitely set the fork block number.

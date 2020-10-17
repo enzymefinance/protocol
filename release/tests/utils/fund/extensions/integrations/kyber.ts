@@ -1,5 +1,6 @@
 import { AddressLike } from '@crestproject/crestproject';
-import { BigNumberish, Signer, utils } from 'ethers';
+import { contract, Call, Contract } from '@crestproject/ethers';
+import { BigNumber, BigNumberish, Signer, utils } from 'ethers';
 import { IERC20 } from '../../../../../codegen/IERC20';
 import {
   ComptrollerLib,
@@ -13,6 +14,15 @@ import {
   callOnIntegrationSelector,
   takeOrderSelector,
 } from './common';
+
+// prettier-ignore
+export interface IKyberNetworkProxy extends Contract<IKyberNetworkProxy> {
+  getExpectedRate: Call<(src: AddressLike, dest: AddressLike, srcQty: BigNumberish) => { expectedRate: BigNumber, worstRate: BigNumber }, IKyberNetworkProxy>
+}
+
+export const IKyberNetworkProxy = contract.fromSignatures<IKyberNetworkProxy>`
+  function getExpectedRate(address src, address dest, uint256 srcQty) view returns (uint256 expectedRate, uint256 worstRate)
+`;
 
 export async function kyberTakeOrderArgs({
   incomingAsset,

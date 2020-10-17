@@ -1,95 +1,35 @@
-import { randomAddress } from '@crestproject/crestproject';
-import {
-  deployPersistent,
-  PersistentDeploymentConfig,
-  PersistentDeploymentOutput,
-} from '@melonproject/persistent';
-import { Deployment, DeploymentHandlers } from '@melonproject/utils';
-import { providers, Signer } from 'ethers';
-import { deployRelease, ReleaseDeploymentConfig } from './deployment';
-import {
-  deployMocks,
-  MockDeploymentConfig,
-  MockDeploymentOutput,
-} from './mocks';
+import { deployPersistent } from '@melonproject/persistent';
+import { providers } from 'ethers';
+import { deployRelease } from './deployment';
+import { configureForkRelease } from './fork';
+import { configureMockRelease, deployMocks } from './mocks';
 
-interface CommonDeploymentConfig {
-  deployer: Signer;
-  mgm: string;
-}
-
-type PersistentDeployment = Deployment<
-  DeploymentHandlers<PersistentDeploymentConfig, PersistentDeploymentOutput>
->;
-
-type MockDeployment = Deployment<
-  DeploymentHandlers<MockDeploymentConfig, MockDeploymentOutput>
->;
-
-export async function configureRelease(
-  common: CommonDeploymentConfig,
-  persistent: PersistentDeployment,
-  mocks: MockDeployment,
+async function getSigners(
+  provider: providers.JsonRpcProvider,
+  limit: number = 10,
 ) {
-  return {
-    ...common,
-    dispatcher: persistent.dispatcher.address,
-    mln: mocks.tokens.mln.address,
-    weth: mocks.tokens.weth.address,
-    registeredVaultCalls: {
-      contracts: [],
-      selectors: [],
-    },
-    engine: {
-      thawDelay: 10000000000,
-    },
-    chainlink: {
-      rateQuoteAsset: mocks.tokens.weth.address,
-      aggregators: Object.values(mocks.chainlinkPriceSources).map(
-        (aggregator) => aggregator.address,
-      ),
-      primitives: Object.keys(mocks.chainlinkPriceSources).map(
-        (symbol) => (mocks.tokens as any)[symbol].address,
-      ),
-    },
-    integratees: {
-      chai: mocks.chaiIntegratee.address,
-      kyber: mocks.kyberIntegratee.address,
-      makerDao: {
-        dai: mocks.tokens.dai.address,
-        pot: mocks.chaiPriceSource.address,
-      },
-      uniswapV2: {
-        factory: randomAddress(),
-      },
-    },
-  };
+  const addresses = await provider.listAccounts();
+  return addresses
+    .slice(0, limit) // Only prepare a maximum of ten accounts.
+    .map((address) => provider.getSigner(address));
 }
 
 export async function defaultTestDeployment(
   provider: providers.JsonRpcProvider,
-  configure?: (
-    config: ReleaseDeploymentConfig,
-  ) => Promise<ReleaseDeploymentConfig> | ReleaseDeploymentConfig,
 ) {
-  const [deployer, mgm, ...others] = await provider.listAccounts();
-  const accounts = others
-    .slice(0, 10) // Only prepare a maximum of ten accounts.
-    .map((address) => provider.getSigner(address));
+  const [deployer, mgm, ...accounts] = await getSigners(provider);
 
-  const common = {
-    deployer: provider.getSigner(deployer),
+  const persistent = await deployPersistent({ deployer });
+  const mocks = await deployMocks({ deployer, accounts });
+  const config = await configureMockRelease({
+    dispatcher: persistent.dispatcher,
+    deployer,
     mgm,
-  };
-
-  const persistent = await deployPersistent(common);
-  const mocks = await deployMocks({
-    ...common,
+    mocks,
     accounts,
   });
 
-  const config = await configureRelease(common, persistent, mocks);
-  const release = await deployRelease((await configure?.(config)) ?? config);
+  const release = await deployRelease(config);
 
   await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
@@ -99,6 +39,34 @@ export async function defaultTestDeployment(
     accounts,
     deployment: {
       ...mocks,
+      ...persistent,
+      ...release,
+    },
+  };
+}
+
+export async function defaultForkDeployment(
+  provider: providers.JsonRpcProvider,
+) {
+  const [deployer, mgm, ...accounts] = await getSigners(provider, 5);
+
+  const persistent = await deployPersistent({ deployer });
+  const config = await configureForkRelease({
+    provider,
+    dispatcher: persistent.dispatcher,
+    deployer,
+    mgm,
+    accounts,
+  });
+
+  const release = await deployRelease(config);
+
+  await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
+
+  return {
+    config,
+    accounts,
+    deployment: {
       ...persistent,
       ...release,
     },

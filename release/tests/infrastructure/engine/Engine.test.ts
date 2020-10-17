@@ -81,9 +81,8 @@ describe('constructor', () => {
         engine: { thawDelay },
       },
     } = await provider.snapshot(snapshot);
-
     const getMGM = engine.getMGM();
-    await expect(getMGM).resolves.toBe(mgm);
+    await expect(getMGM).resolves.toBe(await resolveAddress(mgm));
 
     // The deployer should initially be the dispatcher owner.
     const dispatcherOwner = engine.getOwner();
@@ -125,7 +124,7 @@ describe('setAmguPrice', () => {
     const priceToBeSet = 1;
 
     const setAmguPriceTx = engine
-      .connect(provider.getSigner(mgm))
+      .connect(provider.getSigner(await resolveAddress(mgm)))
       .setAmguPrice(priceToBeSet);
 
     const postAmguGetPriceCall = engine.getAmguPrice();
