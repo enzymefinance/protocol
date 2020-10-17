@@ -1,6 +1,7 @@
 import { AddressLike } from '@crestproject/crestproject';
 import { describeDeployment } from '@melonproject/utils';
 import { BigNumberish, BytesLike, Signer } from 'ethers';
+import { BuySharesPriceFeedTolerance } from '../codegen/BuySharesPriceFeedTolerance';
 import {
   AdapterBlacklist,
   AdapterWhitelist,
@@ -52,6 +53,9 @@ export interface ReleaseDeploymentConfig {
     makerDao: {
       dai: AddressLike;
       pot: AddressLike;
+    };
+    uniswapV2: {
+      factory: AddressLike;
     };
   };
 }
@@ -255,6 +259,15 @@ export const deployRelease = describeDeployment<
     return AssetWhitelist.deploy(
       config.deployer,
       await deployment.policyManager,
+    );
+  },
+  async buySharesPriceFeedTolerance(config, deployment) {
+    return BuySharesPriceFeedTolerance.deploy(
+      config.deployer,
+      await deployment.policyManager,
+      config.integratees.uniswapV2.factory,
+      await deployment.valueInterpreter,
+      config.weth,
     );
   },
   async maxConcentration(config, deployment) {

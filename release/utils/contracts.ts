@@ -36,5 +36,6 @@ export { AdapterBlacklist } from '../codegen/AdapterBlacklist';
 export { AdapterWhitelist } from '../codegen/AdapterWhitelist';
 export { AssetBlacklist } from '../codegen/AssetBlacklist';
 export { AssetWhitelist } from '../codegen/AssetWhitelist';
+export { BuySharesPriceFeedTolerance } from '../codegen/BuySharesPriceFeedTolerance';
 export { MaxConcentration } from '../codegen/MaxConcentration';
 export { InvestorWhitelist } from '../codegen/InvestorWhitelist';

@@ -1,3 +1,4 @@
+import { randomAddress } from '@crestproject/crestproject';
 import {
   deployPersistent,
   PersistentDeploymentConfig,
@@ -57,6 +58,9 @@ export async function configureRelease(
       makerDao: {
         dai: mocks.tokens.dai.address,
         pot: mocks.chaiPriceSource.address,
+      },
+      uniswapV2: {
+        factory: randomAddress(),
       },
     },
   };
