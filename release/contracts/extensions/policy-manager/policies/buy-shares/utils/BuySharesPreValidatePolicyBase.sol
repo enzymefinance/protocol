@@ -31,9 +31,10 @@ abstract contract BuySharesPreValidatePolicyBase is PolicyBase {
         returns (
             address buyer_,
             uint256 investmentAmount_,
-            uint256 minSharesQuantity_
+            uint256 minSharesQuantity_,
+            uint256 gav_
         )
     {
-        return abi.decode(_encodedArgs, (address, uint256, uint256));
+        return abi.decode(_encodedArgs, (address, uint256, uint256, uint256));
     }
 }

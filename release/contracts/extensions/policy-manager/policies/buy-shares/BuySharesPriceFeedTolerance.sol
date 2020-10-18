@@ -57,7 +57,7 @@ contract BuySharesPriceFeedTolerance is BuySharesPreValidatePolicyBase {
     /// @notice Checks whether a particular condition passes the rule for a particular fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @return isValid_ True if the rule passes
-    function passesRule(address _comptrollerProxy) public returns (bool isValid_) {
+    function passesRule(address _comptrollerProxy, uint256 _gav) public returns (bool isValid_) {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
         VaultLib vaultProxyContract = VaultLib(comptrollerProxyContract.getVaultProxy());
 
@@ -68,15 +68,14 @@ contract BuySharesPriceFeedTolerance is BuySharesPreValidatePolicyBase {
         }
 
         // If denomination asset is not weth, convert gav to weth
-        uint256 gav = comptrollerProxyContract.calcGav(false); // TODO: we could refactor to pass in gav
         address denominationAsset = comptrollerProxyContract.getDenominationAsset();
         uint256 wethGav;
         if (denominationAsset == WETH_TOKEN) {
-            wethGav = gav;
+            wethGav = _gav;
         } else {
             bool wethGavIsValid;
             (wethGav, wethGavIsValid) = ValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(denominationAsset, gav, WETH_TOKEN);
+                .calcCanonicalAssetValue(denominationAsset, _gav, WETH_TOKEN);
 
             if (!wethGavIsValid) {
                 return false;
@@ -154,12 +153,13 @@ contract BuySharesPriceFeedTolerance is BuySharesPreValidatePolicyBase {
     /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @return isValid_ True if the rule passes
-    function validateRule(address _comptrollerProxy, bytes calldata)
+    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
         external
         override
         returns (bool isValid_)
     {
-        return passesRule(_comptrollerProxy);
+        (, , , uint256 gav) = __decodeRuleArgs(_encodedArgs);
+        return passesRule(_comptrollerProxy, gav);
     }
 
     // PRIVATE FUNCTIONS

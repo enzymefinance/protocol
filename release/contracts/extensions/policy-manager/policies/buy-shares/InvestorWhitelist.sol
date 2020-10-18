@@ -59,7 +59,7 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
         override
         returns (bool isValid_)
     {
-        (address buyer, , ) = __decodeRuleArgs(_encodedArgs);
+        (address buyer, , , ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, buyer);
     }

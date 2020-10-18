@@ -117,14 +117,16 @@ export function settlePreBuySharesArgs({
   buyer = randomAddress(),
   investmentAmount = utils.parseEther('1'),
   minSharesQuantity = utils.parseEther('1'),
+  gav = 0,
 }: {
   buyer?: AddressLike;
   investmentAmount?: BigNumberish;
   minSharesQuantity?: BigNumberish;
+  gav?: BigNumberish;
 }) {
   return encodeArgs(
-    ['address', 'uint256', 'uint256'],
-    [buyer, investmentAmount, minSharesQuantity],
+    ['address', 'uint256', 'uint256', 'uint256'],
+    [buyer, investmentAmount, minSharesQuantity, gav],
   );
 }
 

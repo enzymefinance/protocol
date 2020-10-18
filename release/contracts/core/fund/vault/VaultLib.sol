@@ -93,9 +93,9 @@ contract VaultLib is VaultLibBase1, IVault {
         IERC20(_asset).approve(_target, 0);
     }
 
+    // TODO: remove this, it's more harmful than helpful b/c it encourages not looking up balances directly
     function getAssetBalances(address[] calldata _assets)
         external
-        override
         view
         returns (uint256[] memory)
     {

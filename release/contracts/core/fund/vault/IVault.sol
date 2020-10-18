@@ -32,8 +32,6 @@ interface IVault is IProxiableVault {
 
     function getAccessor() external view returns (address);
 
-    function getAssetBalances(address[] calldata) external view returns (uint256[] memory);
-
     function getOwner() external view returns (address);
 
     function getTrackedAssets() external view returns (address[] memory);

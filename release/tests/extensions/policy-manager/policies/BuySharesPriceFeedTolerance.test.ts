@@ -18,6 +18,7 @@ import {
   buySharesPriceFeedToleranceArgs,
   policyHooks,
   policyHookExecutionTimes,
+  validateRulePreBuySharesArgs,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -68,7 +69,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
   // Mock the ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
-  await mockComptrollerProxy.calcGav.returns(0);
   await mockComptrollerProxy.getDenominationAsset.returns(mockWeth);
 
   // Add policy settings for ComptrollerProxy
@@ -238,9 +238,11 @@ describe('validateRule', () => {
       standaloneBuySharesPriceFeedTolerance: policy,
     } = await provider.snapshot(snapshot);
 
+    const ruleArgs = await validateRulePreBuySharesArgs({ gav: 0 });
+
     // Policy should pass at the exact threshold
     const validateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(validateRuleCall).resolves.toBe(true);
   });
@@ -262,9 +264,9 @@ describe('validateRule', () => {
     ]);
 
     // Set gav to 2 assets x 1e18 for simple calcs
-    await mockComptrollerProxy.calcGav
-      .given(false)
-      .returns(utils.parseEther('2'));
+    const ruleArgs = await validateRulePreBuySharesArgs({
+      gav: utils.parseEther('2'),
+    });
 
     // Increase amount of weth in Uniswap pool to raise rate to threshold
     const thresholdAmount = utils.parseEther('1.2');
@@ -276,7 +278,7 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -289,7 +291,7 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });
@@ -312,11 +314,13 @@ describe('validateRule', () => {
 
     // Set gav to 1e18 for simple calcs
     const thresholdAmount = utils.parseEther('1');
-    await mockComptrollerProxy.calcGav.given(false).returns(thresholdAmount);
+    const ruleArgs = await validateRulePreBuySharesArgs({
+      gav: thresholdAmount,
+    });
 
     // Policy should pass at the exact threshold as rates are equal
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -329,7 +333,7 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });
@@ -348,13 +352,13 @@ describe('validateRule', () => {
     await mockVaultProxy.getTrackedAssets.returns([mockAsset.address]);
 
     // Set gav to 1e18 for simple calcs
-    await mockComptrollerProxy.calcGav
-      .given(false)
-      .returns(utils.parseEther('1'));
+    const ruleArgs = await validateRulePreBuySharesArgs({
+      gav: utils.parseEther('1'),
+    });
 
     // Policy should pass at well below threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -365,7 +369,7 @@ describe('validateRule', () => {
 
     // Policy should fail without a Uniswap pool for mockAsset
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });
@@ -390,7 +394,8 @@ describe('validateRule', () => {
     // Create an easy gav conversion that yields a wethGav of 1e18
     const gav = utils.parseEther('2');
     const wethGav = utils.parseEther('1');
-    await mockComptrollerProxy.calcGav.given(false).returns(gav);
+    const ruleArgs = await validateRulePreBuySharesArgs({ gav });
+
     // Return an invalid wethGav rate at first
     await mockValueInterpreter.calcCanonicalAssetValue
       .given(mockAsset, gav, mockWeth)
@@ -406,7 +411,7 @@ describe('validateRule', () => {
 
     // Policy should fail while rate is invalid
     const badValidateRuleCall1 = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(badValidateRuleCall1).resolves.toBe(false);
 
@@ -417,7 +422,7 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -430,7 +435,7 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall2 = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(badValidateRuleCall2).resolves.toBe(false);
   });
@@ -450,9 +455,9 @@ describe('validateRule', () => {
     await mockVaultProxy.getTrackedAssets.returns([mockAsset.address]);
 
     // Set gav to 1e18 for simple calcs
-    await mockComptrollerProxy.calcGav
-      .given(false)
-      .returns(utils.parseEther('1'));
+    const ruleArgs = await validateRulePreBuySharesArgs({
+      gav: utils.parseEther('1'),
+    });
 
     // Swap Uniswap pair token positions
     await mockUniswapV2Pair.token0.returns(mockWeth);
@@ -467,7 +472,7 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -480,7 +485,7 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, constants.HashZero)
+      .args(mockComptrollerProxy, ruleArgs)
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });

@@ -267,7 +267,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         uint256 nextNetSharesSupply;
         uint256 nextGav;
         if (_hook == IFeeManager.FeeHook.PreBuyShares) {
-            (, uint256 gavIncrease, ) = __decodePreBuySharesSettlementData(_settlementData);
+            (, uint256 gavIncrease, , ) = __decodePreBuySharesSettlementData(_settlementData);
             nextGav = _gav.add(gavIncrease);
 
             uint256 sharesIncrease = gavIncrease
@@ -312,7 +312,12 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     {
         // Use the shares supply net shares outstanding for performance calcs
         uint256 netSharesSupply = _totalSharesSupply.sub(_sharesOutstanding);
-        uint256 gav = _comptrollerProxyContract.calcGav(false);
+        uint256 gav;
+        if (_hook == IFeeManager.FeeHook.PreBuyShares) {
+            (, , , gav) = __decodePreBuySharesSettlementData(_settlementData);
+        } else {
+            gav = _comptrollerProxyContract.calcGav(false);
+        }
         uint256 sharePriceWithoutPerformance = gav.mul(SHARE_UNIT).div(netSharesSupply);
 
         // If gross share price has not changed, can exit early

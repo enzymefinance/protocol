@@ -279,12 +279,15 @@ describe('validatePolicies', () => {
     });
 
     // Assert validateRule called on correct policies
+    const preRuleArgs = await validateRulePreBuySharesArgs({
+      buyer,
+      investmentAmount,
+      minSharesQuantity: investmentAmount,
+      gav: 0, // No investments have been made yet, so gav is 0
+    });
     expect(
       mockPreBuySharesPolicy.validateRule.ref,
-    ).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      validateRulePreBuySharesArgs(buyer, investmentAmount, investmentAmount),
-    );
+    ).toHaveBeenCalledOnContractWith(comptrollerProxy, preRuleArgs);
     expect(
       mockPostBuySharesPolicy.validateRule.ref,
     ).toHaveBeenCalledOnContractWith(

@@ -1,4 +1,4 @@
-import { AddressLike } from '@crestproject/crestproject';
+import { AddressLike, randomAddress } from '@crestproject/crestproject';
 import { BigNumberish, BytesLike, Signer, utils } from 'ethers';
 import { IPolicy } from '../../../../../codegen/IPolicy';
 import { PolicyManager } from '../../../../../utils/contracts';
@@ -115,14 +115,20 @@ export async function policyManagerConfigArgs(
   return encodeArgs(['address[]', 'bytes[]'], [policies, settingsData]);
 }
 
-export function validateRulePreBuySharesArgs(
-  buyer: AddressLike,
-  investmentAmount: BigNumberish,
-  minSharesQuantity: BigNumberish,
-) {
+export async function validateRulePreBuySharesArgs({
+  buyer = randomAddress(),
+  investmentAmount = utils.parseEther('1'),
+  minSharesQuantity = utils.parseEther('1'),
+  gav = 0,
+}: {
+  buyer?: AddressLike;
+  investmentAmount?: BigNumberish;
+  minSharesQuantity?: BigNumberish;
+  gav?: BigNumberish;
+}) {
   return encodeArgs(
-    ['address', 'uint256', 'uint256'],
-    [buyer, investmentAmount, minSharesQuantity],
+    ['address', 'uint256', 'uint256', 'uint256'],
+    [buyer, investmentAmount, minSharesQuantity, gav],
   );
 }
 

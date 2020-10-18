@@ -441,10 +441,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @dev Does not alter local state,
     /// but not a view because calls to price feeds can potentially update 3rd party state
     function calcGav(bool _useLiveRates) public onlyDelegateCall returns (uint256 gav_) {
-        IVault vaultContract = IVault(vaultProxy);
-        address[] memory assets = vaultContract.getTrackedAssets();
-        // TODO: can get the balances here directly instead of calling the vault
-        uint256[] memory balances = vaultContract.getAssetBalances(assets);
+        IVault vaultProxyContract = IVault(vaultProxy);
+        address[] memory assets = vaultProxyContract.getTrackedAssets();
+        uint256[] memory balances = new uint256[](assets.length);
+        for (uint256 i; i < assets.length; i++) {
+            balances[i] = __getVaultAssetBalance(address(vaultProxyContract), assets[i]);
+        }
 
         bool isValid;
         if (_useLiveRates) {
@@ -471,12 +473,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @return grossShareValue_ The amount of the denomination asset per share
     /// @dev Does not account for any fees outstanding
     function calcGrossShareValue() public onlyDelegateCall returns (uint256 grossShareValue_) {
-        uint256 sharesSupply = IERC20Extended(vaultProxy).totalSupply();
-        if (sharesSupply == 0) {
-            return 10**uint256(IERC20Extended(denominationAsset).decimals());
-        }
-
-        return calcGav(false).mul(SHARES_UNIT).div(sharesSupply);
+        return
+            __calcGrossShareValue(
+                calcGav(false),
+                IERC20Extended(vaultProxy).totalSupply(),
+                10**uint256(IERC20Extended(denominationAsset).decimals())
+            );
     }
 
     /// @notice Calculates the net value of 1 unit of shares in the fund's denomination asset
@@ -492,6 +494,28 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
 
         return calcGrossShareValue();
+    }
+
+    /// @dev Helper for calculating the gross share value
+    function __calcGrossShareValue(
+        uint256 _gav,
+        uint256 _sharesSupply,
+        uint256 _denominationAssetUnit
+    ) private pure returns (uint256 grossShareValue_) {
+        if (_sharesSupply == 0) {
+            return _denominationAssetUnit;
+        }
+
+        return _gav.mul(SHARES_UNIT).div(_sharesSupply);
+    }
+
+    /// @dev Helper to get the balance of an asset in a fund's VaultProxy
+    function __getVaultAssetBalance(address _vaultProxy, address _asset)
+        private
+        view
+        returns (uint256 balance_)
+    {
+        return IERC20Extended(_asset).balanceOf(_vaultProxy);
     }
 
     ///////////////////
@@ -519,36 +543,45 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         amguPayable
         returns (uint256 sharesReceived_)
     {
-        __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity);
+        uint256 preBuySharesGav = calcGav(false);
 
-        uint256 sharesBought = _investmentAmount
-            .mul(10**uint256(IERC20Extended(denominationAsset).decimals()))
-            .div(calcGrossShareValue());
+        __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
 
-        // This is inefficient to mint, and then allow the feeManager to burn/mint to settle the fee,
-        // but we need the FeeManager to handle minting/burning of shares if we want to move
-        // to a modular system.
-        uint256 prevBuyerShares = IERC20Extended(vaultProxy).balanceOf(_buyer);
-        IVault vaultContract = IVault(vaultProxy);
-        vaultContract.mintShares(_buyer, sharesBought);
+        IVault vaultProxyContract = IVault(vaultProxy);
+        IERC20Extended sharesContract = IERC20Extended(address(vaultProxyContract));
+        IERC20Extended denominationAssetContract = IERC20Extended(denominationAsset);
+
+        // Calculate the amount of shares to buy with the investment amount
+        uint256 denominationAssetUnit = 10**uint256(denominationAssetContract.decimals());
+        uint256 sharesBought = _investmentAmount.mul(denominationAssetUnit).div(
+            __calcGrossShareValue(
+                preBuySharesGav,
+                sharesContract.totalSupply(),
+                denominationAssetUnit
+            )
+        );
+
+        // Mint shares to the buyer
+        uint256 prevBuyerShares = sharesContract.balanceOf(_buyer);
+        vaultProxyContract.mintShares(_buyer, sharesBought);
 
         // Post-buy actions
+        // TODO: could add additional params like gav and totalSupply here too
         __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
 
-        sharesReceived_ = IERC20Extended(vaultProxy).balanceOf(_buyer).sub(prevBuyerShares);
+        sharesReceived_ = sharesContract.balanceOf(_buyer).sub(prevBuyerShares);
         require(
             sharesReceived_ >= _minSharesQuantity,
             "buyShares: minimum shares quantity not met"
         );
 
         // Transfer investment asset
-        IERC20Extended(denominationAsset).safeTransferFrom(
+        denominationAssetContract.safeTransferFrom(
             msg.sender,
-            vaultProxy,
+            address(vaultProxyContract),
             _investmentAmount
         );
-        // TODO: should denomination asset always remain a tracked asset by default?
-        vaultContract.addTrackedAsset(denominationAsset);
+        vaultProxyContract.addTrackedAsset(address(denominationAssetContract));
 
         emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived_);
 
@@ -579,9 +612,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     function __preBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
-        uint256 _minSharesQuantity
+        uint256 _minSharesQuantity,
+        uint256 _gav
     ) private {
-        bytes memory callData = abi.encode(_buyer, _investmentAmount, _minSharesQuantity);
+        bytes memory callData = abi.encode(_buyer, _investmentAmount, _minSharesQuantity, _gav);
 
         IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PreBuyShares, callData);
 
@@ -632,9 +666,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @param _sharesQuantity The amount of shares to redeem
     /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
     function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private locksReentrance {
-        address redeemer = msg.sender;
-
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
+
+        address redeemer = msg.sender;
 
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
@@ -644,30 +678,39 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             __preRedeemSharesHook(redeemer, _sharesQuantity);
         }
 
+        // Interfaces currently only contain their own functions that are used elsewhere
+        // within the core protocol. If we change this paradigm, we can combine these vars.
+        IVault vaultProxyContract = IVault(vaultProxy);
+        IERC20Extended sharesContract = IERC20Extended(address(vaultProxyContract));
+
         // Check the shares quantity against the user's balance after settling fees.
         require(
-            _sharesQuantity <= IERC20Extended(vaultProxy).balanceOf(redeemer),
+            _sharesQuantity <= sharesContract.balanceOf(redeemer),
             "__redeemShares: _sharesQuantity exceeds sender balance"
         );
 
-        IVault vaultContract = IVault(vaultProxy);
-        address[] memory payoutAssets = vaultContract.getTrackedAssets();
+        address[] memory payoutAssets = vaultProxyContract.getTrackedAssets();
         require(payoutAssets.length > 0, "__redeemShares: fund has no tracked assets");
 
-        // Destroy the shares
-        uint256 sharesSupply = IERC20Extended(vaultProxy).totalSupply();
-        IVault(vaultProxy).burnShares(redeemer, _sharesQuantity);
+        // Destroy the shares.
+        // Must get the shares supply before doing so.
+        uint256 sharesSupply = sharesContract.totalSupply();
+        vaultProxyContract.burnShares(redeemer, _sharesQuantity);
 
         // Calculate and transfer payout assets to redeemer
-        uint256[] memory assetBalances = vaultContract.getAssetBalances(payoutAssets);
         uint256[] memory payoutQuantities = new uint256[](payoutAssets.length);
         for (uint256 i; i < payoutAssets.length; i++) {
             // Redeemer's ownership percentage of asset holdings
-            payoutQuantities[i] = assetBalances[i].mul(_sharesQuantity).div(sharesSupply);
+            payoutQuantities[i] = __getVaultAssetBalance(
+                address(vaultProxyContract),
+                payoutAssets[i]
+            )
+                .mul(_sharesQuantity)
+                .div(sharesSupply);
 
             // Transfer payout asset to redeemer
             try
-                vaultContract.withdrawAssetTo(payoutAssets[i], redeemer, payoutQuantities[i])
+                vaultProxyContract.withdrawAssetTo(payoutAssets[i], redeemer, payoutQuantities[i])
              {} catch {
                 if (!_bypassFailure) {
                     revert("__redeemShares: Token transfer failed");

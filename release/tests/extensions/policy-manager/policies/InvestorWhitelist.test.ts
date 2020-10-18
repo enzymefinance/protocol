@@ -266,11 +266,9 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the buyer arg matters for this policy
-    const preBuySharesArgs = await validateRulePreBuySharesArgs(
-      whitelistedInvestors[0], // good buyer
-      0,
-      0,
-    );
+    const preBuySharesArgs = await validateRulePreBuySharesArgs({
+      buyer: whitelistedInvestors[0], // good buyer
+    });
     const validateRuleCall = investorWhitelist.validateRule
       .args(comptrollerProxy, preBuySharesArgs)
       .call();
@@ -283,11 +281,9 @@ describe('validateRule', () => {
     );
 
     // Only the buyer arg matters for this policy
-    const preBuySharesArgs = await validateRulePreBuySharesArgs(
-      randomAddress(), // bad buyer
-      0,
-      0,
-    );
+    const preBuySharesArgs = await validateRulePreBuySharesArgs({
+      buyer: randomAddress(), // bad buyer
+    });
     const validateRuleCall = investorWhitelist.validateRule
       .args(comptrollerProxy, preBuySharesArgs)
       .call();
