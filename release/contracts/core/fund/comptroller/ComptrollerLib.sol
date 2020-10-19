@@ -265,14 +265,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         return vaultProxy != address(0);
     }
 
-    // // TODO: implement with roles
-    // /// @param _who The acct for which to query management permission
-    // // /// @param _extension The extension for which to query management permission
-    // /// @return True if _who can manage protected functions of _extension
-    // function canManageExtension(address _who, address) public view returns (bool) {
-    //     return _who == IVault(vaultProxy).getOwner();
-    // }
-
     /// @dev Helper to check whether the release is paused and there is no local override
     function __fundIsPaused() private view returns (bool) {
         return
@@ -345,8 +337,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             IExtension(POLICY_MANAGER).activateForFund();
         }
 
-        // FeeManager is currently the only extension that needs to be activated
+        // Activate remaining extensions
         IExtension(FEE_MANAGER).activateForFund();
+        IExtension(INTEGRATION_MANAGER).activateForFund();
     }
 
     /// @notice Remove the config for a fund
@@ -360,9 +353,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         onlyNotPaused
         allowsPermissionedVaultCall
     {
-        // Distribute final fee settlement and destroy FeeManager storage
+        // Deactivate the extensions
         IExtension(FEE_MANAGER).deactivateForFund();
-
+        IExtension(INTEGRATION_MANAGER).deactivateForFund();
         // TODO: destroy unneeded PolicyManager storage?
 
         // Delete storage of ComptrollerProxy

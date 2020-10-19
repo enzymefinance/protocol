@@ -24,12 +24,15 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Deploy mock extensions
   const mockFeeManager = await IExtension.mock(config.deployer);
+  const mockIntegrationManager = await IExtension.mock(config.deployer);
   const mockPolicyManager = await IExtension.mock(config.deployer);
 
   await Promise.all([
     mockFeeManager.setConfigForFund.returns(undefined),
     mockFeeManager.activateForFund.returns(undefined),
     mockFeeManager.deactivateForFund.returns(undefined),
+    mockIntegrationManager.activateForFund.returns(undefined),
+    mockIntegrationManager.deactivateForFund.returns(undefined),
     mockPolicyManager.setConfigForFund.returns(undefined),
     mockPolicyManager.activateForFund.returns(undefined),
     mockPolicyManager.deactivateForFund.returns(undefined),
@@ -42,7 +45,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     randomAddress(), // ValueInterpreter
     deployment.chainlinkPriceFeed,
     mockFeeManager,
-    randomAddress(), // IntegrationManager
+    mockIntegrationManager,
     mockPolicyManager,
     randomAddress(), // Engine
   );
@@ -74,6 +77,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     feeManagerConfigData,
     mockFeeManager,
     mockFundDeployer,
+    mockIntegrationManager,
     mockPolicyManager,
     mockVaultProxy,
     policyManagerConfigData,
@@ -154,6 +158,7 @@ describe('activate', () => {
       comptrollerProxy,
       mockFeeManager,
       mockFundDeployer,
+      mockIntegrationManager,
       mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -171,6 +176,7 @@ describe('activate', () => {
 
     // Assert expected calls
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();
+    expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContract();
 
     // Should not have called the path for activation of migrated funds
     expect(mockVaultProxy.balanceOf).not.toHaveBeenCalledOnContract();
@@ -186,6 +192,7 @@ describe('activate', () => {
       comptrollerProxy,
       mockFeeManager,
       mockFundDeployer,
+      mockIntegrationManager,
       mockPolicyManager,
       mockVaultProxy,
     } = await provider.snapshot(snapshot);
@@ -213,9 +220,8 @@ describe('activate', () => {
       mockVaultProxy.address,
       sharesDue,
     );
-
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();
-
+    expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContract();
     expect(mockPolicyManager.activateForFund).toHaveBeenCalledOnContract();
 
     // Assert events emitted
@@ -269,6 +275,7 @@ describe('destruct', () => {
       comptrollerProxy,
       mockFeeManager,
       mockFundDeployer,
+      mockIntegrationManager,
       mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -293,5 +300,8 @@ describe('destruct', () => {
 
     // Assert expected calls
     expect(mockFeeManager.deactivateForFund).toHaveBeenCalledOnContract();
+    expect(
+      mockIntegrationManager.deactivateForFund,
+    ).toHaveBeenCalledOnContract();
   });
 });

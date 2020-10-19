@@ -112,9 +112,64 @@ async function seedFundByTrading({
 }
 
 describe('callOnIntegration', () => {
-  it.todo('does not allow an unauthorized caller');
+  it('does not allow a non-activated fund', async () => {
+    const {
+      deployment: { integrationManager },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow a non-accessor of the specified vaultProxy');
+    const badCoiTx = integrationManager.callOnIntegration(
+      randomAddress(),
+      constants.AddressZero,
+    );
+    await expect(badCoiTx).rejects.toBeRevertedWith('Fund is not active');
+  });
+
+  it('only allows authorized users', async () => {
+    const {
+      accounts: { 0: newAuthUser },
+      deployment: { mockGenericAdapter, integrationManager },
+      fund: { comptrollerProxy, fundOwner },
+    } = await provider.snapshot(snapshot);
+
+    const swapArgs = await mockGenericSwapArgs({
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [],
+      minIncomingAssetAmounts: [],
+      incomingAssetAmounts: [],
+    });
+    const callArgs = await callOnIntegrationArgs({
+      adapter: mockGenericAdapter,
+      selector: mockGenericSwapASelector,
+      encodedCallArgs: swapArgs,
+    });
+
+    // Call should be allowed by the fund owner
+    const goodSwapTx1 = comptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    await expect(goodSwapTx1).resolves.toBeReceipt();
+
+    // Call not allowed by the yet-to-be authorized user
+    const swapTx = comptrollerProxy
+      .connect(newAuthUser)
+      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    await expect(swapTx).rejects.toBeRevertedWith(
+      'Only authorized users can call this function',
+    );
+
+    // Set the new auth user
+    const addAuthUserForFundTx = integrationManager
+      .connect(fundOwner)
+      .addAuthUserForFund(comptrollerProxy, newAuthUser);
+    await expect(addAuthUserForFundTx).resolves.toBeReceipt();
+
+    // Call should be allowed for the authorized user
+    const goodSwapTx2 = comptrollerProxy
+      .connect(newAuthUser)
+      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    await expect(goodSwapTx2).resolves.toBeReceipt();
+  });
 
   it('does not allow an unregistered adapter', async () => {
     const {

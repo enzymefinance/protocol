@@ -38,9 +38,15 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
         uint256[] outgoingAssetAmounts
     );
 
+    event AuthUserAddedForFund(address indexed comptrollerProxy, address indexed account);
+
+    event AuthUserRemovedForFund(address indexed comptrollerProxy, address indexed account);
+
     address private immutable POLICY_MANAGER;
     address private immutable VALUE_INTERPRETER;
 
+    mapping(address => mapping(address => bool)) private comptrollerProxyToAcctToIsAuthUser;
+    mapping(address => address) private comptrollerProxyToVaultProxy;
     EnumerableSet.AddressSet private registeredAdapters;
 
     constructor(
@@ -52,7 +58,109 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
         VALUE_INTERPRETER = _valueInterpreter;
     }
 
-    // EXTERNAL FUNCTIONS
+    /////////////
+    // GENERAL //
+    /////////////
+
+    /// @notice Activates the extension by storing the VaultProxy and the fund owner
+    /// @dev Indirectly validates that the caller is a valid (or at least an innocuous)
+    /// ComptrollerProxy, in that it specifies getVaultProxy(),
+    /// and that the vaultProxy specifies it as its accessor().
+    /// Will revert without reason if the expected interfaces do not exist.
+    function activateForFund() external override {
+        require(
+            comptrollerProxyToVaultProxy[msg.sender] == address(0),
+            "activateForFund: Fund has been activated"
+        );
+
+        address vaultProxy = IComptroller(msg.sender).getVaultProxy();
+        require(vaultProxy != address(0), "activateForFund: vaultProxy has not been set");
+
+        IVault vaultProxyContract = IVault(vaultProxy);
+        require(
+            msg.sender == vaultProxyContract.getAccessor(),
+            "activateForFund: sender is not the VaultProxy accessor"
+        );
+
+        // Set the validated vaultProxy in local storage
+        comptrollerProxyToVaultProxy[msg.sender] = vaultProxy;
+    }
+
+    /// @notice Adds an authorized user for the given fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _who The authorized user to add
+    function addAuthUserForFund(address _comptrollerProxy, address _who) external {
+        __validateSetAuthUser(_comptrollerProxy, _who, true);
+
+        comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who] = true;
+
+        emit AuthUserAddedForFund(_comptrollerProxy, _who);
+    }
+
+    /// @notice Deactivate the extension by destroying storage
+    function deactivateForFund() external override {
+        delete comptrollerProxyToVaultProxy[msg.sender];
+    }
+
+    /// @notice Removes an authorized user for the given fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _who The authorized user to remove
+    function removeAuthUserForFund(address _comptrollerProxy, address _who) external {
+        __validateSetAuthUser(_comptrollerProxy, _who, false);
+
+        comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who] = false;
+
+        emit AuthUserRemovedForFund(_comptrollerProxy, _who);
+    }
+
+    /// @notice Checks whether an account is an authorized user for a given fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _who The account to check
+    /// @return isAuthUser_ True if the account is an authorized user (including the owner)
+    function isAuthUserForFund(address _comptrollerProxy, address _who)
+        public
+        view
+        returns (bool isAuthUser_)
+    {
+        return
+            comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who] ||
+            _who == IVault(comptrollerProxyToVaultProxy[_comptrollerProxy]).getOwner();
+    }
+
+    /// @dev Helper to validate calls to update comptrollerProxyToAcctToIsAuthUser
+    function __validateSetAuthUser(
+        address _comptrollerProxy,
+        address _who,
+        bool _nextIsAuthUser
+    ) private view {
+        require(
+            comptrollerProxyToVaultProxy[_comptrollerProxy] != address(0),
+            "__validateSetAuthUser: Fund has not been activated"
+        );
+
+        address fundOwner = IVault(comptrollerProxyToVaultProxy[_comptrollerProxy]).getOwner();
+        require(
+            msg.sender == fundOwner,
+            "__validateSetAuthUser: Only the fund owner can call this function"
+        );
+        require(_who != fundOwner, "__validateSetAuthUser: Cannot set for the fund owner");
+
+        if (_nextIsAuthUser) {
+            require(
+                !comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who],
+                "__validateSetAuthUser: Account is already an authorized user"
+            );
+        } else {
+            require(
+                comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who],
+                "__validateSetAuthUser: Account is not an authorized user"
+            );
+        }
+    }
+
+    /////////////////////////
+    // CALL ON INTEGRATION //
+    /////////////////////////
 
     /// @notice Universal method for calling third party contract functions through adapters
     /// @param _caller The account who called this function via `IntegrationManager.callOnExtension`
@@ -61,19 +169,15 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
     /// - _selector Method selector of the adapter method to execute
     /// - _integrationData Encoded arguments specific to the adapter
     /// @dev Refer to specific adapter to see how to encode its arguments.
-    /// This function assumes the msg.sender to be a valid ComptrollerProxy, but there is no need
-    /// to validate that because its specified vaultProxy must have the msg.sender as its accessor.
     function callOnIntegration(address _caller, bytes calldata _callArgs) external {
-        address vaultProxy = IComptroller(msg.sender).getVaultProxy();
+        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
+        // activateForFund(), this function does not require further validation of the
+        // sending ComptrollerProxy
+        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
+        require(vaultProxy != address(0), "callOnIntegration: Fund is not active");
         require(
-            IVault(vaultProxy).getAccessor() == msg.sender,
-            "callOnIntegration: sender is not the designated accessor of its vaultProxy"
-        );
-
-        // TODO: allow others to call through state var, or possibly implement roles
-        require(
-            _caller == IVault(vaultProxy).getOwner(),
-            "callOnIntegration: Only an authorized account can call this function"
+            isAuthUserForFund(msg.sender, _caller),
+            "callOnIntegration: Only authorized users can call this function"
         );
 
         (
@@ -132,7 +236,18 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
         );
     }
 
-    // PRIVATE FUNCTIONS
+    /// @dev Helper to decode CoI args
+    function __decodeCallOnIntegrationArgs(bytes memory _callArgs)
+        private
+        pure
+        returns (
+            address adapter_,
+            bytes4 selector_,
+            bytes memory integrationData_
+        )
+    {
+        return abi.decode(_callArgs, (address, bytes4, bytes));
+    }
 
     /// @dev Helper to emit the CallOnIntegrationExecuted event.
     /// Avoids stack-too-deep error.
@@ -509,18 +624,6 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
         );
     }
 
-    function __decodeCallOnIntegrationArgs(bytes memory _callArgs)
-        private
-        pure
-        returns (
-            address adapter_,
-            bytes4 selector_,
-            bytes memory integrationData_
-        )
-    {
-        return abi.decode(_callArgs, (address, bytes4, bytes));
-    }
-
     ///////////////////////////
     // INTEGRATIONS REGISTRY //
     ///////////////////////////
@@ -595,5 +698,16 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getValueInterpreter() external view returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
+    }
+
+    /// @notice Gets the vaultProxy variable for the given fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @return vaultProxy_ The vaultProxy value
+    function getVaultProxyForFund(address _comptrollerProxy)
+        external
+        view
+        returns (address vaultProxy_)
+    {
+        return comptrollerProxyToVaultProxy[_comptrollerProxy];
     }
 }
