@@ -54,6 +54,7 @@
     "ethers": "^5.0.14"
   },
   "devDependencies": {
+    "@0x/order-utils": "^10.3.0",
     "@crestproject/buidler": "^0.0.56",
     "@crestproject/ganache": "^0.0.56",
     "@nomiclabs/buidler": "^1.4.7",
