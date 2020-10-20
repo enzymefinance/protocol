@@ -22,19 +22,23 @@ describe('constructor', () => {
     const {
       deployment: {
         comptrollerLib,
-        engine,
         chainlinkPriceFeed,
-        policyManager,
+        engine,
         feeManager,
+        fundDeployer,
         integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
         valueInterpreter,
       },
     } = await provider.snapshot(snapshot);
 
-    const routesCall = comptrollerLib.getRoutes();
+    const routesCall = comptrollerLib.getLibRoutes();
     await expect(routesCall).resolves.toMatchObject({
       feeManager_: feeManager.address,
+      fundDeployer_: fundDeployer.address,
       integrationManager_: integrationManager.address,
+      permissionedVaultActionLib_: permissionedVaultActionLib.address,
       policyManager_: policyManager.address,
       primitivePriceFeed_: chainlinkPriceFeed.address,
       valueInterpreter_: valueInterpreter.address,
@@ -65,5 +69,5 @@ describe('init', () => {
 });
 
 it.todo(
-  'test that no functions can be called directly (only can be delegatecalled',
+  'test that no functions can be called directly (only can be delegatecalled)',
 );

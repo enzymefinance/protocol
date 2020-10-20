@@ -11,12 +11,17 @@ import "../../utils/AddressArrayLib.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/FundDeployerOwnerMixin.sol";
+import "../utils/PermissionedVaultActionMixin.sol";
 import "./IIntegrationAdapter.sol";
 
 /// @title IntegrationManager
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Extension to handle DeFi integration actions for funds
-contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
+contract IntegrationManager is
+    ExtensionBase,
+    FundDeployerOwnerMixin,
+    PermissionedVaultActionMixin
+{
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
@@ -422,11 +427,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
             // because all adapters finish their actions atomically.
             // Note that spendAssets_ is already asserted to a unique set.
             // TODO: Could send directly to the adapter rather than requiring a transfer in each adapter
-            IComptroller(msg.sender).approveAssetSpender(
-                spendAssets_[i],
-                adapter,
-                spendAssetAmounts_[i]
-            );
+            __approveAssetSpender(msg.sender, spendAssets_[i], adapter, spendAssetAmounts_[i]);
         }
     }
 
@@ -520,7 +521,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
             );
 
             // Even if the asset's previous balance was >0, it might not have been tracked
-            IComptroller(msg.sender).addTrackedAsset(_expectedIncomingAssets[i]);
+            __addTrackedAsset(msg.sender, _expectedIncomingAssets[i]);
 
             incomingAssets_[i] = _expectedIncomingAssets[i];
             incomingAssetAmounts_[i] = balanceDiff;
@@ -598,7 +599,7 @@ contract IntegrationManager is ExtensionBase, FundDeployerOwnerMixin {
 
             if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
                 if (postCallSpendAssetBalances[i] == 0) {
-                    IComptroller(msg.sender).removeTrackedAsset(_spendAssets[i]);
+                    __removeTrackedAsset(msg.sender, _spendAssets[i]);
                     outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i];
                 } else {
                     outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i].sub(

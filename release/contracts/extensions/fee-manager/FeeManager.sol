@@ -10,13 +10,19 @@ import "../../core/fund/vault/IVault.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/FundDeployerOwnerMixin.sol";
+import "../utils/PermissionedVaultActionMixin.sol";
 import "./IFee.sol";
 import "./IFeeManager.sol";
 
 /// @title FeeManager Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Manages fees for funds
-contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
+contract FeeManager is
+    IFeeManager,
+    ExtensionBase,
+    FundDeployerOwnerMixin,
+    PermissionedVaultActionMixin
+{
     // TODO: calling `payout` on fees that don't defer shares is wasteful; consider storing locally?
 
     using AddressArrayLib for address[];
@@ -156,15 +162,6 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to burn shares by calling back to the ComptrollerProxy
-    function __burnShares(
-        address _comptrollerProxy,
-        address _target,
-        uint256 _amount
-    ) private {
-        IComptroller(_comptrollerProxy).burnShares(_target, _amount);
-    }
-
     /// @dev Helper to destroy local storage to get gas refund and prevent further calls to fee manager.
     function __deleteFundStorage(address _comptrollerProxy) private {
         delete comptrollerProxyToFees[_comptrollerProxy];
@@ -201,15 +198,6 @@ contract FeeManager is IFeeManager, ExtensionBase, FundDeployerOwnerMixin {
         __mintShares(_comptrollerProxy, payee, totalSharesOutstanding);
 
         emit AllSharesOutstandingForcePaid(_comptrollerProxy, payee, totalSharesOutstanding);
-    }
-
-    /// @dev Helper to mint shares by calling back to the ComptrollerProxy
-    function __mintShares(
-        address _comptrollerProxy,
-        address _target,
-        uint256 _amount
-    ) private {
-        IComptroller(_comptrollerProxy).mintShares(_target, _amount);
     }
 
     /// @dev Helper to pay the shares outstanding for a given fee.

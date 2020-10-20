@@ -47,6 +47,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockFeeManager,
     mockIntegrationManager,
     mockPolicyManager,
+    randomAddress(), // PermissionedVaultActionLib
     randomAddress(), // Engine
   );
 

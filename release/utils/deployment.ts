@@ -23,6 +23,7 @@ import {
   ManagementFee,
   MaxConcentration,
   PerformanceFee,
+  PermissionedVaultActionLib,
   PolicyManager,
   TrackedAssetsAdapter,
   ValueInterpreter,
@@ -64,6 +65,7 @@ export interface ReleaseDeploymentOutput {
   // Core
   comptrollerLib: Promise<ComptrollerLib>;
   fundDeployer: Promise<FundDeployer>;
+  permissionedVaultActionLib: Promise<PermissionedVaultActionLib>;
   vaultLib: Promise<VaultLib>;
   // Shared Infrastructure
   engine: Promise<Engine>;
@@ -109,6 +111,7 @@ export const deployRelease = describeDeployment<
       await deployment.feeManager,
       await deployment.integrationManager,
       await deployment.policyManager,
+      await deployment.permissionedVaultActionLib,
       await deployment.engine,
     );
 
@@ -125,6 +128,13 @@ export const deployRelease = describeDeployment<
       await deployment.vaultLib,
       config.registeredVaultCalls.contracts,
       config.registeredVaultCalls.selectors,
+    );
+  },
+  async permissionedVaultActionLib(config, deployment) {
+    return PermissionedVaultActionLib.deploy(
+      config.deployer,
+      await deployment.feeManager,
+      await deployment.integrationManager,
     );
   },
   async vaultLib(config) {

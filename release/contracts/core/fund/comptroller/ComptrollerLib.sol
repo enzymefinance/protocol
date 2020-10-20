@@ -13,14 +13,16 @@ import "../../../interfaces/IERC20Extended.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
+import "./ComptrollerStorage.sol";
 import "./IComptroller.sol";
+import "./IPermissionedVaultActionLib.sol";
 
 /// @title ComptrollerLib Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice The core logic library shared by all funds
 /// @dev All state-changing functions should be marked as onlyDelegateCall,
 /// unless called directly by the FundDeployer
-contract ComptrollerLib is IComptroller, AmguConsumer {
+contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
@@ -57,34 +59,20 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
     address private immutable INTEGRATION_MANAGER;
+    address private immutable PERMISSIONED_VAULT_ACTION_LIB;
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
-
-    // Pseudo-constants (can only be set once)
-    address private denominationAsset;
-    // True only for the one non-proxy
-    bool private isLib;
-    address private vaultProxy;
-
-    // Storage
-    // Allows a fund owner to override a release-level pause
-    bool private overridePause;
-    // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
-    bool private permissionedVaultCallAllowed;
-    // A mutex
-    bool private reentranceLocked;
-    mapping(address => uint256) private acctToLastSharesAction;
 
     ///////////////
     // MODIFIERS //
     ///////////////
 
-    modifier allowsPermissionedVaultCall {
-        __assertPermissionedVaultCallNotAllowed();
-        permissionedVaultCallAllowed = true;
+    modifier allowsPermissionedVaultAction {
+        __assertPermissionedVaultActionNotAllowed();
+        permissionedVaultActionAllowed = true;
         _;
-        permissionedVaultCallAllowed = false;
+        permissionedVaultActionAllowed = false;
     }
 
     /// @dev Especially because the current asset universe is limited to non-reentrant ERC20 tokens,
@@ -128,20 +116,16 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         _;
     }
 
-    /// @dev We are overly cautious about protecting VaultProxy state-altering calls
-    modifier onlyPermissionedRequest(IVault.VaultAction _action) {
-        __assertNotPaused();
-        __assertIsActive();
-        __assertValidCallFromExtension(msg.sender, _action);
-        _;
-    }
-
-    // MODIFIER HELPERS
+    // ASSERTION HELPERS
     // Modifiers are inefficient in terms of reducing contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
     function __assertIsActive() private view {
         require(isActive(), "Fund not active");
+    }
+
+    function __assertLowLevelCall(bool _success, bytes memory _returnData) private pure {
+        require(_success, string(_returnData));
     }
 
     function __assertIsFundDeployer(address _who) private view {
@@ -168,35 +152,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         require(acctToLastSharesAction[_account] < block.timestamp, "Atomic shares action");
     }
 
-    function __assertPermissionedVaultCallNotAllowed() private view {
-        require(!permissionedVaultCallAllowed, "Vault call re-entrance");
-    }
-
-    function __assertValidCallFromExtension(address _extension, IVault.VaultAction _action)
-        private
-        view
-    {
-        require(permissionedVaultCallAllowed, "Vault call not allowed");
-
-        bool isValidAction;
-        if (_extension == INTEGRATION_MANAGER) {
-            if (
-                _action == IVault.VaultAction.ApproveAssetSpender ||
-                _action == IVault.VaultAction.WithdrawAssetTo ||
-                _action == IVault.VaultAction.AddTrackedAsset ||
-                _action == IVault.VaultAction.RemoveTrackedAsset
-            ) {
-                isValidAction = true;
-            }
-        } else if (_extension == FEE_MANAGER) {
-            if (
-                _action == IVault.VaultAction.BurnShares ||
-                _action == IVault.VaultAction.MintShares
-            ) {
-                isValidAction = true;
-            }
-        }
-        require(isValidAction, "Not a valid call from extension");
+    function __assertPermissionedVaultActionNotAllowed() private view {
+        require(!permissionedVaultActionAllowed, "Vault action re-entrance");
     }
 
     constructor(
@@ -206,11 +163,13 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _feeManager,
         address _integrationManager,
         address _policyManager,
+        address _permissionedVaultActionLib,
         address _engine
     ) public AmguConsumer(_engine) {
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         INTEGRATION_MANAGER = _integrationManager;
+        PERMISSIONED_VAULT_ACTION_LIB = _permissionedVaultActionLib;
         POLICY_MANAGER = _policyManager;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
@@ -232,7 +191,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         address _extension,
         bytes4 _selector,
         bytes calldata _callArgs
-    ) external onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultCall {
+    ) external onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultAction {
         require(
             _extension == FEE_MANAGER ||
                 _extension == POLICY_MANAGER ||
@@ -243,7 +202,26 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         (bool success, bytes memory returnData) = _extension.call(
             abi.encodeWithSelector(_selector, msg.sender, _callArgs)
         );
-        require(success, string(returnData));
+        __assertLowLevelCall(success, returnData);
+    }
+
+    /// @notice Makes an permissioned, state-changing call on the VaultProxy contract
+    /// @param _action The enum representing the VaultAction to perform on the VaultProxy
+    /// @param _actionData The call data for the action to perform
+    function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData)
+        external
+        override
+        onlyActive
+        onlyNotPaused
+    {
+        (bool success, bytes memory returnData) = PERMISSIONED_VAULT_ACTION_LIB.delegatecall(
+            abi.encodeWithSelector(
+                IPermissionedVaultActionLib.dispatchAction.selector,
+                _action,
+                _actionData
+            )
+        );
+        __assertLowLevelCall(success, returnData);
     }
 
     /// @notice Set or unset the release pause override for a fund
@@ -367,7 +345,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         override
         onlyFundDeployer
         onlyNotPaused
-        allowsPermissionedVaultCall
+        allowsPermissionedVaultAction
     {
         // Deactivate the extensions
         IExtension(FEE_MANAGER).deactivateForFund();
@@ -378,64 +356,6 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         // There should never be ETH in this contract, but if there is,
         // we can send to the VaultProxy.
         selfdestruct(payable(vaultProxy));
-    }
-
-    //////////////////////////////
-    // PERMISSIONED VAULT CALLS //
-    //////////////////////////////
-
-    /// @notice Adds a tracked asset to the fund
-    /// @param _asset The asset to add
-    function addTrackedAsset(address _asset)
-        external
-        override
-        onlyPermissionedRequest(IVault.VaultAction.AddTrackedAsset)
-    {
-        IVault(vaultProxy).addTrackedAsset(_asset);
-    }
-
-    /// @notice Grants an allowance to a spender to use a fund's asset
-    /// @param _asset The asset for which to grant an allowance
-    /// @param _target The spender of the allowance
-    /// @param _amount The amount of the allowance
-    function approveAssetSpender(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) external override onlyPermissionedRequest(IVault.VaultAction.ApproveAssetSpender) {
-        IVault(vaultProxy).approveAssetSpender(_asset, _target, _amount);
-    }
-
-    /// @notice Burns fund shares for a particular account
-    /// @param _target The account for which to burn shares
-    /// @param _amount The amount of shares to burn
-    function burnShares(address _target, uint256 _amount)
-        external
-        override
-        onlyPermissionedRequest(IVault.VaultAction.BurnShares)
-    {
-        IVault(vaultProxy).burnShares(_target, _amount);
-    }
-
-    /// @notice Mints fund shares to a particular account
-    /// @param _target The account to which to mint shares
-    /// @param _amount The amount of shares to mint
-    function mintShares(address _target, uint256 _amount)
-        external
-        override
-        onlyPermissionedRequest(IVault.VaultAction.MintShares)
-    {
-        IVault(vaultProxy).mintShares(_target, _amount);
-    }
-
-    /// @notice Removes a tracked asset from the fund
-    /// @param _asset The asset to remove
-    function removeTrackedAsset(address _asset)
-        external
-        override
-        onlyPermissionedRequest(IVault.VaultAction.RemoveTrackedAsset)
-    {
-        IVault(vaultProxy).removeTrackedAsset(_asset);
     }
 
     ////////////////
@@ -497,7 +417,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     function calcNetShareValue()
         external
         onlyDelegateCall
-        allowsPermissionedVaultCall
+        allowsPermissionedVaultAction
         returns (uint256 netShareValue_)
     {
         IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
@@ -544,12 +464,11 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     )
         external
         payable
-        override
         onlyActive
         onlyNotPaused
         locksAtomicSharesAction(_buyer)
         locksReentrance
-        allowsPermissionedVaultCall
+        allowsPermissionedVaultAction
         amguPayable
         returns (uint256 sharesReceived_)
     {
@@ -697,7 +616,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// Policy validation is not currently allowed on redemption, to ensure continuous redeemability.
     function __preRedeemSharesHook(address _redeemer, uint256 _sharesQuantity)
         private
-        allowsPermissionedVaultCall
+        allowsPermissionedVaultAction
     {
         try
             IFeeManager(FEE_MANAGER).settleFees(
@@ -820,17 +739,18 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
     /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
+    /// @return permissionedVaultActionLib_ The `PERMISSIONED_VAULT_ACTION_LIB` variable value
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getRoutes()
+    function getLibRoutes()
         external
         view
-        override
         returns (
             address feeManager_,
             address fundDeployer_,
             address integrationManager_,
+            address permissionedVaultActionLib_,
             address policyManager_,
             address primitivePriceFeed_,
             address valueInterpreter_
@@ -840,6 +760,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             FEE_MANAGER,
             FUND_DEPLOYER,
             INTEGRATION_MANAGER,
+            PERMISSIONED_VAULT_ACTION_LIB,
             POLICY_MANAGER,
             PRIMITIVE_PRICE_FEED,
             VALUE_INTERPRETER

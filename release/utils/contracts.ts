@@ -2,6 +2,7 @@
 export { FundDeployer } from '../codegen/FundDeployer';
 export { ComptrollerLib } from '../codegen/ComptrollerLib';
 export { ComptrollerProxy } from '../codegen/ComptrollerProxy';
+export { PermissionedVaultActionLib } from '../codegen/PermissionedVaultActionLib';
 export { VaultLib } from '../codegen/VaultLib';
 
 // Infrastructure
