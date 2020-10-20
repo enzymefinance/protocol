@@ -1,10 +1,14 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import {
+  EthereumTestnetProvider,
+  resolveAddress,
+} from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { utils } from 'ethers';
 import { defaultTestDeployment } from '../../../';
 import {
   buyShares,
   createNewFund,
+  getAssetBalances,
   redeemShares,
   releaseStatusTypes,
 } from '../../utils';
@@ -130,13 +134,13 @@ describe('buyShares', () => {
   it.todo('test that amgu is sent to the Engine in the above function');
 });
 
-describe('__redeemShares', () => {
-  it.todo('make test todos');
-
-  it.todo('does not allow re-entrance');
-});
-
 describe('redeemShares', () => {
+  it.todo('cannot be re-entered');
+
+  it.todo('handles the preRedeemSharesHook (can merge with standard test)');
+
+  it.todo('handles a preRedeemSharesHook failure');
+
   it('allows sender to redeem all their shares', async () => {
     const {
       deployment: {
@@ -181,10 +185,194 @@ describe('redeemShares', () => {
   });
 });
 
-describe('redeemSharesEmergency', () => {
-  it.todo('make test todos');
-});
+describe('redeemSharesDetailed', () => {
+  it.todo('does not allow a _sharesQuantity of 0');
 
-describe('redeemSharesQuantity', () => {
-  it.todo('make test todos');
+  it.todo('does not allow duplicate _additionalAssets');
+
+  it.todo('does not allow duplicate _assetsToSkip');
+
+  it.todo('does not allow a _sharesQuantity greater than the redeemer balance');
+
+  it.todo('does not allow a redemption if there are no payoutAssets');
+
+  it('handles a valid call (one additional asset)', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset, mln: untrackedAsset },
+      },
+      accounts: { 0: fundManager, 1: investor },
+    } = await provider.snapshot(snapshot);
+
+    // Create a new fund, and invested in equally by the fund manager and an investor
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: fundManager,
+        buyer: fundManager,
+        investmentAmount,
+      },
+    });
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount,
+    });
+
+    // Send untracked asset directly to fund
+    const untrackedAssetBalance = utils.parseEther('2');
+    await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
+
+    // Assert the asset is not tracked
+    const isTrackedAssetCall = vaultProxy.isTrackedAsset(untrackedAsset);
+    await expect(isTrackedAssetCall).resolves.toBe(false);
+
+    // Define the redemption params and the expected payout assets
+    const redeemQuantity = investmentAmount.div(2);
+    const additionalAssets = [untrackedAsset];
+    const expectedPayoutAssets = [denominationAsset, untrackedAsset];
+    const expectedPayoutAmounts = [
+      investmentAmount.div(2),
+      untrackedAssetBalance.div(4),
+    ];
+
+    // Record the investor's pre-redemption balances
+    const preExpectedPayoutAssetBalances = await getAssetBalances({
+      account: investor,
+      assets: expectedPayoutAssets,
+    });
+
+    // Redeem half of investor's shares
+    const redeemSharesTx = redeemShares({
+      comptrollerProxy,
+      signer: investor,
+      quantity: redeemQuantity,
+      additionalAssets,
+    });
+    await expect(redeemSharesTx).resolves.toBeReceipt();
+
+    const postExpectedPayoutAssetBalances = await getAssetBalances({
+      account: investor,
+      assets: expectedPayoutAssets,
+    });
+
+    // Assert the redeemer has redeemed the correct shares quantity and received the expected assets and balances
+    const investorSharesBalanceCall = vaultProxy.balanceOf(investor);
+    await expect(investorSharesBalanceCall).resolves.toEqBigNumber(
+      investmentAmount.sub(redeemQuantity),
+    );
+
+    for (const key in expectedPayoutAssets) {
+      const expectedBalance = preExpectedPayoutAssetBalances[key].add(
+        expectedPayoutAmounts[key],
+      );
+      expect(postExpectedPayoutAssetBalances[key]).toEqBigNumber(
+        expectedBalance,
+      );
+    }
+
+    // Assert the event
+    await assertEvent(redeemSharesTx, 'SharesRedeemed', {
+      redeemer: await resolveAddress(investor),
+      sharesQuantity: redeemQuantity,
+      receivedAssets: expectedPayoutAssets.map((token) => token.address),
+      receivedAssetQuantities: expectedPayoutAmounts,
+    });
+  });
+
+  it('handles a valid call (one additional asset and one asset to ignore)', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset, mln: untrackedAsset },
+      },
+      accounts: { 0: fundManager, 1: investor },
+    } = await provider.snapshot(snapshot);
+
+    // Create a new fund, and invested in equally by the fund manager and an investor
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: fundManager,
+        buyer: fundManager,
+        investmentAmount,
+      },
+    });
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount,
+    });
+
+    // Send untracked asset directly to fund
+    const untrackedAssetBalance = utils.parseEther('2');
+    await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
+
+    // Assert the asset is not tracked
+    const isTrackedAssetCall = vaultProxy.isTrackedAsset(untrackedAsset);
+    await expect(isTrackedAssetCall).resolves.toBe(false);
+
+    // Define the redemption params and the expected payout assets
+    const redeemQuantity = investmentAmount.div(2);
+    const additionalAssets = [untrackedAsset];
+    const assetsToSkip = [denominationAsset];
+    const expectedPayoutAssets = [untrackedAsset];
+    const expectedPayoutAmounts = [untrackedAssetBalance.div(4)];
+
+    // Record the investor's pre-redemption balances
+    const [
+      preExpectedPayoutAssetBalance,
+      preAssetToSkipBalance,
+    ] = await getAssetBalances({
+      account: investor,
+      assets: [untrackedAsset, denominationAsset],
+    });
+
+    // Redeem half of investor's shares
+    const redeemSharesTx = redeemShares({
+      comptrollerProxy,
+      signer: investor,
+      quantity: redeemQuantity,
+      additionalAssets,
+      assetsToSkip,
+    });
+    await expect(redeemSharesTx).resolves.toBeReceipt();
+
+    const [
+      postExpectedPayoutAssetBalance,
+      postAssetToSkipBalance,
+    ] = await getAssetBalances({
+      account: investor,
+      assets: [untrackedAsset, denominationAsset],
+    });
+
+    // Assert the redeemer has redeemed the correct shares quantity and received the expected assets and balances
+    const investorSharesBalanceCall = vaultProxy.balanceOf(investor);
+    await expect(investorSharesBalanceCall).resolves.toEqBigNumber(
+      investmentAmount.sub(redeemQuantity),
+    );
+    expect(postExpectedPayoutAssetBalance).toEqBigNumber(
+      preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]),
+    );
+    expect(postAssetToSkipBalance).toEqBigNumber(preAssetToSkipBalance);
+
+    // Assert the event
+    await assertEvent(redeemSharesTx, 'SharesRedeemed', {
+      redeemer: await resolveAddress(investor),
+      sharesQuantity: redeemQuantity,
+      receivedAssets: expectedPayoutAssets.map((token) => token.address),
+      receivedAssetQuantities: expectedPayoutAmounts,
+    });
+  });
 });

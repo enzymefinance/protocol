@@ -10,6 +10,7 @@ import "../../../infrastructure/engine/AmguConsumer.sol";
 import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../interfaces/IERC20Extended.sol";
+import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
 import "./IComptroller.sol";
@@ -20,12 +21,19 @@ import "./IComptroller.sol";
 /// @dev All state-changing functions should be marked as onlyDelegateCall,
 /// unless called directly by the FundDeployer
 contract ComptrollerLib is IComptroller, AmguConsumer {
+    using AddressArrayLib for address[];
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
 
     event MigratedSharesDuePaid(address payee, uint256 sharesDue);
 
     event OverridePauseSet(bool indexed overridePause);
+
+    event PreRedeemSharesHookFailed(
+        bytes failureReturnData,
+        address redeemer,
+        uint256 sharesQuantity
+    );
 
     event SharesBought(
         address indexed caller,
@@ -162,23 +170,25 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     {
         require(permissionedVaultCallAllowed, "Call does not originate from contract");
 
+        bool isValidAction;
         if (_extension == INTEGRATION_MANAGER) {
-            require(
+            if (
                 _action == IVault.VaultAction.ApproveAssetSpender ||
-                    _action == IVault.VaultAction.WithdrawAssetTo ||
-                    _action == IVault.VaultAction.AddTrackedAsset ||
-                    _action == IVault.VaultAction.RemoveTrackedAsset,
-                "Not a valid action for IntegrationManager"
-            );
+                _action == IVault.VaultAction.WithdrawAssetTo ||
+                _action == IVault.VaultAction.AddTrackedAsset ||
+                _action == IVault.VaultAction.RemoveTrackedAsset
+            ) {
+                isValidAction = true;
+            }
         } else if (_extension == FEE_MANAGER) {
-            require(
+            if (
                 _action == IVault.VaultAction.BurnShares ||
-                    _action == IVault.VaultAction.MintShares,
-                "Not a valid action for FeeManager"
-            );
-        } else {
-            revert("Not a valid call from extension");
+                _action == IVault.VaultAction.MintShares
+            ) {
+                isValidAction = true;
+            }
         }
+        require(isValidAction, "Not a valid call from extension");
     }
 
     constructor(
@@ -279,8 +289,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // Ordered function calls for stages in a fund lifecycle:
     // 1. init() - called on deployment of ComptrollerProxy
     // 2. activate() - called upon linking a VaultProxy to activate the fund
-    // 3a. shutdown() - called by a fund owner to end the fund lifecycle
-    // 3b. destruct() - called by the fund deployer
+    // 3. destruct() - called upon migrating to another release
 
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
@@ -583,22 +592,60 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
     function redeemShares() external onlyDelegateCall {
-        __redeemShares(IERC20Extended(vaultProxy).balanceOf(msg.sender), false);
+        __redeemShares(
+            IERC20Extended(vaultProxy).balanceOf(msg.sender),
+            new address[](0),
+            new address[](0)
+        );
     }
 
-    /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets,
-    /// bypassing any failures.
-    /// @dev The user will lose their claim to any assets for
-    /// which the transfer function fails. Only use in the case of an emergency.
-    function redeemSharesEmergency() external onlyDelegateCall {
-        __redeemShares(IERC20Extended(vaultProxy).balanceOf(msg.sender), true);
+    function redeemSharesDetailed(
+        uint256 _sharesQuantity,
+        address[] calldata _additionalAssets,
+        address[] calldata _assetsToSkip
+    ) external onlyDelegateCall {
+        __redeemShares(_sharesQuantity, _additionalAssets, _assetsToSkip);
     }
 
-    /// @notice Redeem a specified quantity of the sender's shares
-    /// for a proportionate slice of the fund's assets
-    /// @param _sharesQuantity Number of shares
-    function redeemSharesQuantity(uint256 _sharesQuantity) external onlyDelegateCall {
-        __redeemShares(_sharesQuantity, false);
+    /// @dev Helper to parse an array of payout assets during redemption, taking into account
+    /// additional assets and assets to skip. _assetsToSkip ignores _additionalAssets.
+    /// All input arrays are assumed to be unique.
+    function __parseRedemptionPayoutAssets(
+        address[] memory _trackedAssets,
+        address[] memory _additionalAssets,
+        address[] memory _assetsToSkip
+    ) private pure returns (address[] memory payoutAssets_) {
+        address[] memory trackedAssetsToPayout = _trackedAssets.removeItems(_assetsToSkip);
+        if (_additionalAssets.length == 0) {
+            return trackedAssetsToPayout;
+        }
+
+        // Add additional assets. Duplicates of trackedAssets are ignored.
+        bool[] memory indexesToAdd = new bool[](_additionalAssets.length);
+        uint256 additionalItemsCount;
+        for (uint256 i; i < _additionalAssets.length; i++) {
+            if (!trackedAssetsToPayout.contains(_additionalAssets[i])) {
+                indexesToAdd[i] = true;
+                additionalItemsCount++;
+            }
+        }
+        if (additionalItemsCount == 0) {
+            return trackedAssetsToPayout;
+        }
+
+        payoutAssets_ = new address[](trackedAssetsToPayout.length.add(additionalItemsCount));
+        for (uint256 i; i < trackedAssetsToPayout.length; i++) {
+            payoutAssets_[i] = trackedAssetsToPayout[i];
+        }
+        uint256 payoutAssetsIndex = trackedAssetsToPayout.length;
+        for (uint256 i; i < _additionalAssets.length; i++) {
+            if (indexesToAdd[i]) {
+                payoutAssets_[payoutAssetsIndex] = _additionalAssets[i];
+                payoutAssetsIndex++;
+            }
+        }
+
+        return payoutAssets_;
     }
 
     /// @dev Helper for system actions immediately prior to issuing shares
@@ -631,7 +678,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
                 IFeeManager.FeeHook.PreRedeemShares,
                 abi.encode(_redeemer, _sharesQuantity)
             )
-         {} catch {}
+         {} catch (bytes memory reason) {
+            emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesQuantity);
+        }
     }
 
     /// @dev Helper for system actions immediately after issuing shares
@@ -654,12 +703,22 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     /// @notice Redeem a specified quantity of the sender's shares
     /// for a proportionate slice of the fund's assets
-    /// @dev If _bypassFailure is set to true, the user will lose their claim to any assets for
-    /// which the transfer function fails. This should always be false unless explicitly intended
     /// @param _sharesQuantity The amount of shares to redeem
-    /// @param _bypassFailure True if token transfer failures should be ignored and forfeited
-    function __redeemShares(uint256 _sharesQuantity, bool _bypassFailure) private locksReentrance {
+    function __redeemShares(
+        uint256 _sharesQuantity,
+        address[] memory _additionalAssets,
+        address[] memory _assetsToSkip
+    )
+        private
+        locksReentrance
+        returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
+    {
         require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
+        require(
+            _additionalAssets.isUniqueSet(),
+            "__redeemShares: _additionalAssets contains duplicates"
+        );
+        require(_assetsToSkip.isUniqueSet(), "__redeemShares: _assetsToSkip contains duplicates");
 
         address redeemer = msg.sender;
 
@@ -682,36 +741,37 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             "__redeemShares: _sharesQuantity exceeds sender balance"
         );
 
-        address[] memory payoutAssets = vaultProxyContract.getTrackedAssets();
-        require(payoutAssets.length > 0, "__redeemShares: fund has no tracked assets");
+        // Parse the payout assets given optional params to add or skip assets
+        payoutAssets_ = __parseRedemptionPayoutAssets(
+            vaultProxyContract.getTrackedAssets(),
+            _additionalAssets,
+            _assetsToSkip
+        );
+        require(payoutAssets_.length > 0, "__redeemShares: No assets to payout");
 
         // Destroy the shares.
         // Must get the shares supply before doing so.
         uint256 sharesSupply = sharesContract.totalSupply();
         vaultProxyContract.burnShares(redeemer, _sharesQuantity);
 
-        // Calculate and transfer payout assets to redeemer
-        uint256[] memory payoutQuantities = new uint256[](payoutAssets.length);
-        for (uint256 i; i < payoutAssets.length; i++) {
-            // Redeemer's ownership percentage of asset holdings
-            payoutQuantities[i] = __getVaultAssetBalance(
+        // Calculate and transfer payout asset amounts due to redeemer
+        payoutAmounts_ = new uint256[](payoutAssets_.length);
+        for (uint256 i; i < payoutAssets_.length; i++) {
+            // Calculate the redeemer's slice of asset holdings
+            payoutAmounts_[i] = __getVaultAssetBalance(
                 address(vaultProxyContract),
-                payoutAssets[i]
+                payoutAssets_[i]
             )
                 .mul(_sharesQuantity)
                 .div(sharesSupply);
 
             // Transfer payout asset to redeemer
-            try
-                vaultProxyContract.withdrawAssetTo(payoutAssets[i], redeemer, payoutQuantities[i])
-             {} catch {
-                if (!_bypassFailure) {
-                    revert("__redeemShares: Token transfer failed");
-                }
-            }
+            vaultProxyContract.withdrawAssetTo(payoutAssets_[i], redeemer, payoutAmounts_[i]);
         }
 
-        emit SharesRedeemed(redeemer, _sharesQuantity, payoutAssets, payoutQuantities);
+        emit SharesRedeemed(redeemer, _sharesQuantity, payoutAssets_, payoutAmounts_);
+
+        return (payoutAssets_, payoutAmounts_);
     }
 
     ///////////////////

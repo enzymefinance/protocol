@@ -8,7 +8,9 @@ library AddressArrayLib {
     /// @dev Helper to verify if an array contains a particular value
     function contains(address[] memory _self, address _target) internal pure returns (bool) {
         for (uint256 i = 0; i < _self.length; i++) {
-            if (_target == _self[i]) return true;
+            if (_target == _self[i]) {
+                return true;
+            }
         }
         return false;
     }
@@ -16,15 +18,55 @@ library AddressArrayLib {
     /// @dev Helper to verify if array is a set of unique values.
     /// Does not assert length > 0.
     function isUniqueSet(address[] memory _self) internal pure returns (bool) {
-        uint256 arrayLength = _self.length;
-        if (arrayLength <= 1) return true;
+        if (_self.length <= 1) {
+            return true;
+        }
 
+        uint256 arrayLength = _self.length;
         for (uint256 i = 0; i < arrayLength; i++) {
             for (uint256 j = i + 1; j < arrayLength; j++) {
-                if (_self[i] == _self[j]) return false;
+                if (_self[i] == _self[j]) {
+                    return false;
+                }
             }
         }
 
         return true;
+    }
+
+    /// @dev Helper to remove items from an array. Removes all matching occurrences of each item.
+    /// Does not assert uniqueness of either array.
+    function removeItems(address[] memory _self, address[] memory _itemsToRemove)
+        internal
+        pure
+        returns (address[] memory nextArray_)
+    {
+        if (_itemsToRemove.length == 0) {
+            return _self;
+        }
+
+        bool[] memory indexesToRemove = new bool[](_self.length);
+        uint256 remainingItemsCount = _self.length;
+        for (uint256 i; i < _self.length; i++) {
+            if (contains(_itemsToRemove, _self[i])) {
+                indexesToRemove[i] = true;
+                remainingItemsCount--;
+            }
+        }
+
+        if (remainingItemsCount == _self.length) {
+            nextArray_ = _self;
+        } else if (remainingItemsCount > 0) {
+            nextArray_ = new address[](remainingItemsCount);
+            uint256 nextArrayIndex;
+            for (uint256 i; i < _self.length; i++) {
+                if (!indexesToRemove[i]) {
+                    nextArray_[nextArrayIndex] = _self[i];
+                    nextArrayIndex++;
+                }
+            }
+        }
+
+        return nextArray_;
     }
 }

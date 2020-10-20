@@ -21,7 +21,8 @@ export interface RedeemSharesParams {
   comptrollerProxy: ComptrollerLib;
   signer: Signer;
   quantity?: BigNumberish;
-  bypassFailure?: boolean;
+  additionalAssets?: AddressLike[];
+  assetsToSkip?: AddressLike[];
 }
 
 export async function buyShares({
@@ -47,17 +48,17 @@ export async function redeemShares({
   comptrollerProxy,
   signer,
   quantity,
-  bypassFailure = false,
+  additionalAssets = [],
+  assetsToSkip = [],
 }: RedeemSharesParams) {
   if (quantity == undefined) {
-    if (bypassFailure) {
-      return comptrollerProxy.connect(signer).redeemSharesEmergency();
+    if (additionalAssets.length > 0 || assetsToSkip.length > 0) {
+      throw 'Must specify shares quantity if specifying additional assets or assets to skip';
     }
     return comptrollerProxy.connect(signer).redeemShares();
   } else {
-    if (bypassFailure) {
-      throw 'Cannot pass both bypassFailure and specify a quantity to redeemShares';
-    }
-    return comptrollerProxy.connect(signer).redeemSharesQuantity(quantity);
+    return comptrollerProxy
+      .connect(signer)
+      .redeemSharesDetailed(quantity, additionalAssets, assetsToSkip);
   }
 }
