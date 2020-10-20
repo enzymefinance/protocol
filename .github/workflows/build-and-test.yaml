@@ -24,6 +24,8 @@ jobs:
         run: yarn build
       - name: Run test suite
         run: yarn test
+        env:
+          MAINNET_ARCHIVE_NODE: ${{ secrets.MAINNET_ARCHIVE_NODE }}
       - name: Check types
         run: yarn typecheck
       - name: Check linting
