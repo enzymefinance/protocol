@@ -376,3 +376,5 @@ describe('redeemSharesDetailed', () => {
     });
   });
 });
+
+it.todo('tests for disallowing atomic shares actions');

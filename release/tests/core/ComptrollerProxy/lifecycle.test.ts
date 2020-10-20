@@ -97,9 +97,7 @@ describe('init', () => {
       comptrollerLib,
       denominationAsset: randomAddress(),
     });
-    await expect(initTx).rejects.toBeRevertedWith(
-      'Denomination asset must be a supported primitive',
-    );
+    await expect(initTx).rejects.toBeRevertedWith('Bad denomination asset');
   });
 
   it('correctly handles valid call', async () => {
@@ -149,7 +147,7 @@ describe('activate', () => {
 
     const activateTx = comptrollerProxy.activate(randomAddress(), false);
     await expect(activateTx).rejects.toBeRevertedWith(
-      'Only the FundDeployer can call this function',
+      'Only FundDeployer callable',
     );
   });
 
@@ -237,7 +235,7 @@ describe('destruct', () => {
 
     const destructTx = comptrollerProxy.destruct();
     await expect(destructTx).rejects.toBeRevertedWith(
-      'Only the FundDeployer can call this function',
+      'Only FundDeployer callable',
     );
   });
 

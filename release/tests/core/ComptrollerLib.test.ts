@@ -60,9 +60,7 @@ describe('init', () => {
     } = await provider.snapshot(snapshot);
 
     const initTx = comptrollerLib.init(randomAddress(), '0x', '0x');
-    await expect(initTx).rejects.toBeRevertedWith(
-      'Only a delegate call can access this function',
-    );
+    await expect(initTx).rejects.toBeRevertedWith('Only delegate callable');
   });
 });
 

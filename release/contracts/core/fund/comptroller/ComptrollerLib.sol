@@ -74,6 +74,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     bool private permissionedVaultCallAllowed;
     // A mutex
     bool private reentranceLocked;
+    mapping(address => uint256) private acctToLastSharesAction;
 
     ///////////////
     // MODIFIERS //
@@ -94,6 +95,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         reentranceLocked = true;
         _;
         reentranceLocked = false;
+    }
+
+    modifier locksAtomicSharesAction(address _account) {
+        __assertNotAtomicSharesAction(_account);
+        _;
+        acctToLastSharesAction[_account] = block.timestamp;
     }
 
     modifier onlyActive() {
@@ -134,22 +141,19 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
     function __assertIsActive() private view {
-        require(isActive(), "This function can only be called on an active fund");
+        require(isActive(), "Fund not active");
     }
 
     function __assertIsFundDeployer(address _who) private view {
-        require(_who == FUND_DEPLOYER, "Only the FundDeployer can call this function");
+        require(_who == FUND_DEPLOYER, "Only FundDeployer callable");
     }
 
     function __assertIsDelegateCall() private view {
-        require(!isLib, "Only a delegate call can access this function");
+        require(!isLib, "Only delegate callable");
     }
 
     function __assertIsOwner(address _who) private view {
-        require(
-            _who == IVault(vaultProxy).getOwner(),
-            "Only the fund owner can call this function"
-        );
+        require(_who == IVault(vaultProxy).getOwner(), "Only fund owner callable");
     }
 
     function __assertNotPaused() private view {
@@ -157,18 +161,22 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     }
 
     function __assertNotReentranceLocked() private view {
-        require(!reentranceLocked, "Re-entrance detected");
+        require(!reentranceLocked, "Re-entrance");
+    }
+
+    function __assertNotAtomicSharesAction(address _account) private view {
+        require(acctToLastSharesAction[_account] < block.timestamp, "Atomic shares action");
     }
 
     function __assertPermissionedVaultCallNotAllowed() private view {
-        require(!permissionedVaultCallAllowed, "Permissioned vault call re-entrance detected");
+        require(!permissionedVaultCallAllowed, "Vault call re-entrance");
     }
 
     function __assertValidCallFromExtension(address _extension, IVault.VaultAction _action)
         private
         view
     {
-        require(permissionedVaultCallAllowed, "Call does not originate from contract");
+        require(permissionedVaultCallAllowed, "Vault call not allowed");
 
         bool isValidAction;
         if (_extension == INTEGRATION_MANAGER) {
@@ -229,7 +237,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             _extension == FEE_MANAGER ||
                 _extension == POLICY_MANAGER ||
                 _extension == INTEGRATION_MANAGER,
-            "callOnExtension: _extension is not valid"
+            "callOnExtension: _extension invalid"
         );
 
         (bool success, bytes memory returnData) = _extension.call(
@@ -238,15 +246,15 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         require(success, string(returnData));
     }
 
-    function setOverridePause(bool _overridePause) external onlyDelegateCall onlyOwner {
-        require(
-            _overridePause != overridePause,
-            "setOverridePause: _overridePause is already the set value"
-        );
+    /// @notice Set or unset the release pause override for a fund
+    /// @param _overridePause True if the pause should be overrode
+    /// @dev Does not use onlyDelegateCall, as onlyOwner will only be valid in delegate calls.
+    function setOverridePause(bool _overridePause) external onlyOwner {
+        if (!overridePause == _overridePause) {
+            overridePause = _overridePause;
 
-        overridePause = _overridePause;
-
-        emit OverridePauseSet(_overridePause);
+            emit OverridePauseSet(_overridePause);
+        }
     }
 
     /// @notice Makes an arbitrary call from the VaultProxy contract
@@ -261,7 +269,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     ) external onlyNotPaused onlyActive onlyOwner {
         require(
             IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
-            "vaultCallOnContract: not a registered call"
+            "vaultCallOnContract: Unregistered"
         );
 
         IVault(vaultProxy).callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
@@ -302,10 +310,9 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         require(denominationAsset == address(0), "init: Already initialized");
 
         // Configure core
-
         require(
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
-            "init: Denomination asset must be a supported primitive"
+            "init: Bad denomination asset"
         );
         denominationAsset = _denominationAsset;
 
@@ -540,6 +547,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         override
         onlyActive
         onlyNotPaused
+        locksAtomicSharesAction(_buyer)
         locksReentrance
         allowsPermissionedVaultCall
         amguPayable
@@ -554,13 +562,11 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         IERC20Extended denominationAssetContract = IERC20Extended(denominationAsset);
 
         // Calculate the amount of shares to buy with the investment amount
-        uint256 denominationAssetUnit = 10**uint256(denominationAssetContract.decimals());
-        uint256 sharesBought = _investmentAmount.mul(denominationAssetUnit).div(
-            __calcGrossShareValue(
-                preBuySharesGav,
-                sharesContract.totalSupply(),
-                denominationAssetUnit
-            )
+        uint256 sharesBought = __calcBuyableSharesQuantity(
+            sharesContract,
+            denominationAssetContract,
+            _investmentAmount,
+            preBuySharesGav
         );
 
         // Mint shares to the buyer
@@ -572,10 +578,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
 
         sharesReceived_ = sharesContract.balanceOf(_buyer).sub(prevBuyerShares);
-        require(
-            sharesReceived_ >= _minSharesQuantity,
-            "buyShares: minimum shares quantity not met"
-        );
+        require(sharesReceived_ >= _minSharesQuantity, "buyShares: < _minSharesQuantity");
 
         // Transfer investment asset
         denominationAssetContract.safeTransferFrom(
@@ -593,18 +596,41 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
     function redeemShares() external onlyDelegateCall {
         __redeemShares(
+            msg.sender,
             IERC20Extended(vaultProxy).balanceOf(msg.sender),
             new address[](0),
             new address[](0)
         );
     }
 
+    /// @notice Redeem a specified quantity of the sender's shares for a proportionate slice of
+    /// the fund's assets, optionally specifying additional assets and assets to skip.
+    /// @param _sharesQuantity The quantity of shares to redeem
+    /// @param _additionalAssets Additional (non-tracked) assets to claim
+    /// @param _assetsToSkip Tracked assets to forfeit
+    /// @dev Any claim to passed _assetsToSkip will be forfeited entirely. This should generally
+    /// only be exercised if a bad asset is causing redemption to fail.
     function redeemSharesDetailed(
         uint256 _sharesQuantity,
         address[] calldata _additionalAssets,
         address[] calldata _assetsToSkip
     ) external onlyDelegateCall {
-        __redeemShares(_sharesQuantity, _additionalAssets, _assetsToSkip);
+        __redeemShares(msg.sender, _sharesQuantity, _additionalAssets, _assetsToSkip);
+    }
+
+    /// @dev Helper to calculate the quantity of shares buyable for a given investment amount.
+    /// Avoids the stack-too-deep error.
+    function __calcBuyableSharesQuantity(
+        IERC20Extended _sharesContract,
+        IERC20Extended _denominationAssetContract,
+        uint256 _investmentAmount,
+        uint256 _gav
+    ) private view returns (uint256 sharesQuantity_) {
+        uint256 denominationAssetUnit = 10**uint256(_denominationAssetContract.decimals());
+        return
+            _investmentAmount.mul(denominationAssetUnit).div(
+                __calcGrossShareValue(_gav, _sharesContract.totalSupply(), denominationAssetUnit)
+            );
     }
 
     /// @dev Helper to parse an array of payout assets during redemption, taking into account
@@ -705,29 +731,29 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// for a proportionate slice of the fund's assets
     /// @param _sharesQuantity The amount of shares to redeem
     function __redeemShares(
+        address _redeemer,
         uint256 _sharesQuantity,
         address[] memory _additionalAssets,
         address[] memory _assetsToSkip
     )
         private
+        locksAtomicSharesAction(_redeemer)
         locksReentrance
         returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
     {
-        require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be > 0");
+        require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be >0");
         require(
             _additionalAssets.isUniqueSet(),
             "__redeemShares: _additionalAssets contains duplicates"
         );
         require(_assetsToSkip.isUniqueSet(), "__redeemShares: _assetsToSkip contains duplicates");
 
-        address redeemer = msg.sender;
-
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
             // Note that if "direct" fees are charged here (i.e., not inflationary),
             // then those fee shares will be burned from the user's balance rather
             // than reallocated from the sharesQuantity being redeemed.
-            __preRedeemSharesHook(redeemer, _sharesQuantity);
+            __preRedeemSharesHook(_redeemer, _sharesQuantity);
         }
 
         // Interfaces currently only contain their own functions that are used elsewhere
@@ -737,8 +763,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
         // Check the shares quantity against the user's balance after settling fees.
         require(
-            _sharesQuantity <= sharesContract.balanceOf(redeemer),
-            "__redeemShares: _sharesQuantity exceeds sender balance"
+            _sharesQuantity <= sharesContract.balanceOf(_redeemer),
+            "__redeemShares: Low balance"
         );
 
         // Parse the payout assets given optional params to add or skip assets
@@ -747,12 +773,12 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
             _additionalAssets,
             _assetsToSkip
         );
-        require(payoutAssets_.length > 0, "__redeemShares: No assets to payout");
+        require(payoutAssets_.length > 0, "__redeemShares: No payout assets");
 
         // Destroy the shares.
         // Must get the shares supply before doing so.
         uint256 sharesSupply = sharesContract.totalSupply();
-        vaultProxyContract.burnShares(redeemer, _sharesQuantity);
+        vaultProxyContract.burnShares(_redeemer, _sharesQuantity);
 
         // Calculate and transfer payout asset amounts due to redeemer
         payoutAmounts_ = new uint256[](payoutAssets_.length);
@@ -766,10 +792,10 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
                 .div(sharesSupply);
 
             // Transfer payout asset to redeemer
-            vaultProxyContract.withdrawAssetTo(payoutAssets_[i], redeemer, payoutAmounts_[i]);
+            vaultProxyContract.withdrawAssetTo(payoutAssets_[i], _redeemer, payoutAmounts_[i]);
         }
 
-        emit SharesRedeemed(redeemer, _sharesQuantity, payoutAssets_, payoutAmounts_);
+        emit SharesRedeemed(_redeemer, _sharesQuantity, payoutAssets_, payoutAmounts_);
 
         return (payoutAssets_, payoutAmounts_);
     }

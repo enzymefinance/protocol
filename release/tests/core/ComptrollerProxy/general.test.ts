@@ -88,18 +88,7 @@ describe('setOverridePause', () => {
       .connect(randomUser)
       .setOverridePause(true);
     await expect(badSetOverridePauseTx).rejects.toBeRevertedWith(
-      'Only the fund owner can call this function',
-    );
-  });
-
-  it('does not allow the current value', async () => {
-    const {
-      fund: { comptrollerProxy },
-    } = await provider.snapshot(snapshot);
-
-    const badSetOverridePauseTx = comptrollerProxy.setOverridePause(false);
-    await expect(badSetOverridePauseTx).rejects.toBeRevertedWith(
-      '_overridePause is already the set value',
+      'Only fund owner callable',
     );
   });
 
@@ -172,9 +161,7 @@ describe('vaultCallOnContract', () => {
       unregisteredVaultCallSelector,
       '0x',
     );
-    await expect(unregisteredCall).rejects.toBeRevertedWith(
-      'not a registered call',
-    );
+    await expect(unregisteredCall).rejects.toBeRevertedWith('Unregistered');
 
     // The registered call should succeed
     const registeredCall = comptrollerProxy.vaultCallOnContract(
