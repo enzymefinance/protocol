@@ -33,8 +33,8 @@ abstract contract RateProviderBase is EthConstantMixin {
 
     function __getRate(address _baseAsset, address _quoteAsset)
         internal
-        virtual
         view
+        virtual
         returns (uint256)
     {
         return assetToAssetRate[_baseAsset][_quoteAsset];

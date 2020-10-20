@@ -128,7 +128,7 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _asset The asset contract address
     /// @return isReceivable_ True if the asset can be added
     /// @dev An asset is receivable if a valid price
-    function isSupportedAsset(address _asset) external override view returns (bool isReceivable_) {
+    function isSupportedAsset(address _asset) external view override returns (bool isReceivable_) {
         return
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
             IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);

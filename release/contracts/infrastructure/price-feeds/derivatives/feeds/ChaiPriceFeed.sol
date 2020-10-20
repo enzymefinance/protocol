@@ -42,7 +42,7 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
         rates_[0] = __calcChaiRate();
     }
 
-    function isSupportedAsset(address _asset) external override view returns (bool) {
+    function isSupportedAsset(address _asset) external view override returns (bool) {
         return _asset == CHAI;
     }
 

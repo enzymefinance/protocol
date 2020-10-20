@@ -14,7 +14,6 @@ const e2e = {
   displayName: 'e2e',
   preset: '@crestproject/ganache',
   testMatch: ['**/?(*.)+(e2e).[jt]s?(x)'],
-  testTimeout: 120000,
   testEnvironmentOptions: {
     ganacheProviderOptions: {
       gasLimit: 0x989680,
@@ -39,6 +38,7 @@ const unit = {
 };
 
 module.exports = {
+  testTimeout: 120000,
   globals: {
     'ts-jest': {
       diagnostics: {

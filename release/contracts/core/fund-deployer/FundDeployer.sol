@@ -142,7 +142,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @notice Gets the current owner of the contract
     /// @return owner_ The contract owner address
     /// @dev Dynamically gets the owner based on the Protocol status
-    function getOwner() public override view returns (address owner_) {
+    function getOwner() public view override returns (address owner_) {
         if (releaseStatus == ReleaseStatus.PreLaunch) {
             return CREATOR;
         }
@@ -530,7 +530,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
 
     /// @notice Gets the `releaseStatus` variable value
     /// @return status_ The `releaseStatus` variable value
-    function getReleaseStatus() external override view returns (ReleaseStatus status_) {
+    function getReleaseStatus() external view override returns (ReleaseStatus status_) {
         return releaseStatus;
     }
 
@@ -546,8 +546,8 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @return isRegistered_ True if the call is registered
     function isRegisteredVaultCall(address _contract, bytes4 _selector)
         external
-        override
         view
+        override
         returns (bool isRegistered_)
     {
         return contractToSelectorToIsRegisteredVaultCall[_contract][_selector];

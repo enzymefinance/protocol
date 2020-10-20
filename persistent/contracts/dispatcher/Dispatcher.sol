@@ -564,14 +564,14 @@ contract Dispatcher is IDispatcher {
     // STATE GETTERS //
     ///////////////////
 
-    function getCurrentFundDeployer() external override view returns (address) {
+    function getCurrentFundDeployer() external view override returns (address) {
         return currentFundDeployer;
     }
 
     function getFundDeployerForVaultProxy(address _vaultProxy)
         external
-        override
         view
+        override
         returns (address)
     {
         return vaultProxyToFundDeployer[_vaultProxy];
@@ -579,8 +579,8 @@ contract Dispatcher is IDispatcher {
 
     function getMigrationRequestDetailsForVaultProxy(address _vaultProxy)
         external
-        override
         view
+        override
         returns (
             address nextFundDeployer_,
             address nextVaultAccessor_,
@@ -594,15 +594,15 @@ contract Dispatcher is IDispatcher {
         }
     }
 
-    function getMigrationTimelock() external override view returns (uint256) {
+    function getMigrationTimelock() external view override returns (uint256) {
         return migrationTimelock;
     }
 
-    function getNominatedOwner() external override view returns (address) {
+    function getNominatedOwner() external view override returns (address) {
         return nominatedOwner;
     }
 
-    function getOwner() external override view returns (address) {
+    function getOwner() external view override returns (address) {
         return owner;
     }
 }

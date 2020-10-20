@@ -39,7 +39,7 @@ contract AggregatedDerivativePriceFeed is IDerivativePriceFeed, DispatcherOwnerM
     }
 
     /// @dev This should be as low-cost and simple as possible
-    function isSupportedAsset(address _asset) external override view returns (bool isSupported_) {
+    function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
         return derivativeToPriceFeed[_asset] != address(0);
     }
 

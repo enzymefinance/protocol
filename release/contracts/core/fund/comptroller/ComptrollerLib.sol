@@ -527,8 +527,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
         uint256 _minSharesQuantity
     )
         external
-        override
         payable
+        override
         onlyActive
         onlyNotPaused
         locksReentrance
@@ -739,8 +739,8 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getRoutes()
         external
-        override
         view
+        override
         returns (
             address feeManager_,
             address fundDeployer_,
@@ -762,7 +762,7 @@ contract ComptrollerLib is IComptroller, AmguConsumer {
 
     /// @notice Gets the `vaultProxy` variable
     /// @return vaultProxy_ The `vaultProxy` variable value
-    function getVaultProxy() external override view returns (address vaultProxy_) {
+    function getVaultProxy() external view override returns (address vaultProxy_) {
         return vaultProxy;
     }
 }

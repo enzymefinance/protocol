@@ -28,7 +28,7 @@ contract VaultLib is VaultLibBase1, IVault {
 
     // CORE LOGIC
 
-    function getAccessor() external override view returns (address) {
+    function getAccessor() external view override returns (address) {
         return accessor;
     }
 
@@ -40,7 +40,7 @@ contract VaultLib is VaultLibBase1, IVault {
         return migrator;
     }
 
-    function getOwner() external override view returns (address) {
+    function getOwner() external view override returns (address) {
         return owner;
     }
 
@@ -106,7 +106,7 @@ contract VaultLib is VaultLibBase1, IVault {
         return balances;
     }
 
-    function getTrackedAssets() external override view returns (address[] memory) {
+    function getTrackedAssets() external view override returns (address[] memory) {
         return trackedAssets;
     }
 
@@ -128,7 +128,7 @@ contract VaultLib is VaultLibBase1, IVault {
         emit AssetWithdrawn(_asset, _target, _amount);
     }
 
-    function isTrackedAsset(address _asset) public override view returns (bool) {
+    function isTrackedAsset(address _asset) public view override returns (bool) {
         return assetToIsTracked[_asset];
     }
 

@@ -37,8 +37,8 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     /// @dev Returns a normalized rate
     function getCanonicalRate(address _baseAsset, address _quoteAsset)
         public
-        override
         view
+        override
         returns (
             uint256 rate_,
             bool isValid_,
@@ -78,15 +78,15 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
 
     function getLiveRate(address _baseAsset, address _quoteAsset)
         external
-        override
         view
+        override
         returns (uint256 rate_, bool isValid_)
     {
         (rate_, isValid_, ) = getCanonicalRate(_baseAsset, _quoteAsset);
     }
 
     /// @dev This should be as low-cost and simple as possible
-    function isSupportedAsset(address _asset) external override view returns (bool isSupported_) {
+    function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
         return _asset == RATE_QUOTE_ASSET || primitiveToAggregator[_asset] != address(0);
     }
 

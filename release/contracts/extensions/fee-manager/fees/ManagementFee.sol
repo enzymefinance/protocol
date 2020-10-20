@@ -47,7 +47,7 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
 
     /// @notice Provides a constant string identifier for a fee
     /// @return identifier_ The identifier string
-    function identifier() external override pure returns (string memory identifier_) {
+    function identifier() external pure override returns (string memory identifier_) {
         return "MANAGEMENT";
     }
 
@@ -99,8 +99,8 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
     /// @return settlesOnHook_ True if the fee is settled on the hook
     function settlesOnHook(IFeeManager.FeeHook _hook)
         external
-        override
         pure
+        override
         returns (bool settlesOnHook_)
     {
         return

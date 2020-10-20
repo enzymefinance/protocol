@@ -78,7 +78,7 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         );
     }
 
-    function payAmguInEther() external override payable {
+    function payAmguInEther() external payable override {
         frozenEther = frozenEther.add(msg.value);
         emit AmguPaidInEther(msg.value);
     }
@@ -171,7 +171,7 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         return acctToIsEtherTaker[_who];
     }
 
-    function getAmguPrice() external override view returns (uint256) {
+    function getAmguPrice() external view override returns (uint256) {
         return amguPrice;
     }
 

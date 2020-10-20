@@ -52,19 +52,19 @@ contract StandardERC20 is IERC20 {
 
     function allowance(address _owner, address _spender)
         public
+        view
         virtual
         override
-        view
         returns (uint256)
     {
         return allowancesInternal[_owner][_spender];
     }
 
-    function name() public virtual view returns (string memory) {
+    function name() public view virtual returns (string memory) {
         return nameInternal;
     }
 
-    function symbol() public virtual view returns (string memory) {
+    function symbol() public view virtual returns (string memory) {
         return symbolInternal;
     }
 
@@ -72,11 +72,11 @@ contract StandardERC20 is IERC20 {
         return decimalsInternal;
     }
 
-    function totalSupply() public virtual override view returns (uint256) {
+    function totalSupply() public view virtual override returns (uint256) {
         return totalSupplyInternal;
     }
 
-    function balanceOf(address _account) public virtual override view returns (uint256) {
+    function balanceOf(address _account) public view virtual override returns (uint256) {
         return balancesInternal[_account];
     }
 

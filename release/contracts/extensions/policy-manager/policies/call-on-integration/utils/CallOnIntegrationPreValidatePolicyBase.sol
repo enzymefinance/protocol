@@ -9,7 +9,7 @@ import "../../utils/PolicyBase.sol";
 abstract contract CallOnIntegrationPreValidatePolicyBase is PolicyBase {
     /// @notice Get the PolicyHook for a policy
     /// @return The PolicyHook
-    function policyHook() external override view returns (IPolicyManager.PolicyHook) {
+    function policyHook() external view override returns (IPolicyManager.PolicyHook) {
         return IPolicyManager.PolicyHook.CallOnIntegration;
     }
 
@@ -17,8 +17,8 @@ abstract contract CallOnIntegrationPreValidatePolicyBase is PolicyBase {
     /// @return The PolicyHookExecutionTime
     function policyHookExecutionTime()
         external
-        override
         view
+        override
         returns (IPolicyManager.PolicyHookExecutionTime)
     {
         return IPolicyManager.PolicyHookExecutionTime.Pre;

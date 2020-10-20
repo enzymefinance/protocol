@@ -22,8 +22,8 @@ abstract contract MockIntegrateeBase is NormalizedRateProviderBase, SwapperBase 
 
     function __getRate(address _baseAsset, address _quoteAsset)
         internal
-        override
         view
+        override
         returns (uint256)
     {
         // 1. Return constant if base asset is quote asset

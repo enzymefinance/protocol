@@ -11,7 +11,7 @@ contract TrackedAssetsAdapter is AdapterBase {
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return identifier_ The identifer string
-    function identifier() external override pure returns (string memory identifier_) {
+    function identifier() external pure override returns (string memory identifier_) {
         return "TRACKED_ASSETS";
     }
 
@@ -24,8 +24,8 @@ contract TrackedAssetsAdapter is AdapterBase {
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
-        override
         view
+        override
         returns (
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,

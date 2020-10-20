@@ -23,7 +23,7 @@ contract AdapterBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressList
 
     /// @notice Provides a constant string identifier for a policy
     /// @return identifier_ The identifer string
-    function identifier() external override pure returns (string memory identifier_) {
+    function identifier() external pure override returns (string memory identifier_) {
         return "ADAPTER_BLACKLIST";
     }
 
