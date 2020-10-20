@@ -8,12 +8,13 @@ module.exports = {
       },
     },
   },
-  
+
   projects: [
     {
       displayName: 'ganache',
       preset: '@crestproject/ganache',
       testMatch: ['**/?(*.)+(e2e).[jt]s?(x)'],
+      testTimeout: 120000,
       testEnvironmentOptions: {
         ganacheProviderOptions: {
           gasLimit: 0x989680,

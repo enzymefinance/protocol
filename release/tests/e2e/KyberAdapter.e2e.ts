@@ -13,9 +13,6 @@ import {
 import { defaultForkDeployment } from '../../utils/testing';
 import { createNewFund, IKyberNetworkProxy, kyberTakeOrder } from '../utils';
 
-// Avoid timeouts
-jest.setTimeout(120000);
-
 async function assertKyberTakeOrder({
   comptrollerProxy,
   vaultProxy,
