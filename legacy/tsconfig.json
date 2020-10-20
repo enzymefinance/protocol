@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.json",
-  "include": ["index.ts", "codegen", "artifacts"],
-  "exclude": ["@types/mocha"],
-  "compilerOptions": {
-    "outDir": "./package" /* Redirect output structure to the directory. */,
-    "rootDir": "./" /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
-  }
-}
