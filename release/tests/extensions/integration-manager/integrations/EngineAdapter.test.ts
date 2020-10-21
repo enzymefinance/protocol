@@ -7,6 +7,7 @@ import {
   createNewFund,
   engineAdapterTakeOrder,
   engineAdapterTakeOrderArgs,
+  getAssetBalances,
   seedAndThawEngine,
   takeOrderSelector,
 } from '../../../utils';
@@ -198,10 +199,10 @@ describe('takeOrder', () => {
     // Seed vault with enough MLN for the transaction
     await mln.transfer(vaultProxy, mlnAmount);
 
-    const [
-      preTxWethBalance,
-      preTxMlnBalance,
-    ] = await vaultProxy.getAssetBalances([weth, mln]);
+    const [preTxWethBalance, preTxMlnBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [weth, mln],
+    });
 
     const takeOrderTx = engineAdapterTakeOrder({
       comptrollerProxy,
@@ -212,10 +213,10 @@ describe('takeOrder', () => {
       mln,
     });
 
-    const [
-      postTxWethBalance,
-      postTxMlnBalance,
-    ] = await vaultProxy.getAssetBalances([weth, mln]);
+    const [postTxWethBalance, postTxMlnBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [weth, mln],
+    });
 
     expect(postTxWethBalance).toEqBigNumber(preTxWethBalance.add(expectedWeth));
     expect(postTxMlnBalance).toEqBigNumber(preTxMlnBalance.sub(mlnAmount));

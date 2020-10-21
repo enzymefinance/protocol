@@ -89,23 +89,6 @@ contract VaultLib is VaultLibBase1, IVault {
         // TODO: need event?
     }
 
-    function disallowAssetSpender(address _asset, address _target) external override onlyAccessor {
-        IERC20(_asset).approve(_target, 0);
-    }
-
-    // TODO: remove this, it's more harmful than helpful b/c it encourages not looking up balances directly
-    function getAssetBalances(address[] calldata _assets)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        uint256[] memory balances = new uint256[](_assets.length);
-        for (uint256 i = 0; i < _assets.length; i++) {
-            balances[i] = __getAssetBalance(_assets[i]);
-        }
-        return balances;
-    }
-
     function getTrackedAssets() external view override returns (address[] memory) {
         return trackedAssets;
     }
@@ -164,6 +147,14 @@ contract VaultLib is VaultLibBase1, IVault {
 
     function mintShares(address _target, uint256 _amount) external override onlyAccessor {
         __mint(_target, _amount);
+    }
+
+    function transferShares(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) external override onlyAccessor {
+        __transfer(_from, _to, _amount);
     }
 
     // ERC20 overrides

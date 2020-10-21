@@ -15,6 +15,7 @@ import {
 import {
   assetTransferArgs,
   createNewFund,
+  getAssetBalances,
   kyberTakeOrder,
   kyberTakeOrderArgs,
   takeOrderSelector,
@@ -71,7 +72,10 @@ async function assertKyberTakeOrder({
   const [
     preTxIncomingAssetBalance,
     preTxOutgoingAssetBalance,
-  ] = await vaultProxy.getAssetBalances([incomingAsset, outgoingAsset]);
+  ] = await getAssetBalances({
+    account: vaultProxy,
+    assets: [incomingAsset, outgoingAsset],
+  });
 
   const takeOrderTx = kyberTakeOrder({
     comptrollerProxy,
@@ -89,7 +93,10 @@ async function assertKyberTakeOrder({
   const [
     postTxIncomingAssetBalance,
     postTxOutgoingAssetBalance,
-  ] = await vaultProxy.getAssetBalances([incomingAsset, outgoingAsset]);
+  ] = await getAssetBalances({
+    account: vaultProxy,
+    assets: [incomingAsset, outgoingAsset],
+  });
 
   // TODO: if we use rates other than 1:1, need to look up the actual rate
   const expectedIncomingAssetAmount = outgoingAssetAmount;

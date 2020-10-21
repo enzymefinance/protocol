@@ -1,6 +1,7 @@
 import {
   EthereumTestnetProvider,
   randomAddress,
+  resolveAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { utils } from 'ethers';
@@ -67,8 +68,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const mockVaultProxy = await VaultLib.mock(config.deployer);
   await mockVaultProxy.balanceOf.returns(0);
   await mockVaultProxy.getOwner.returns(mockVaultProxyOwner);
-  await mockVaultProxy.burnShares.returns(undefined);
-  await mockVaultProxy.mintShares.returns(undefined);
+  await mockVaultProxy.transferShares.returns(undefined);
 
   return {
     accounts: remainingAccounts,
@@ -81,6 +81,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockIntegrationManager,
     mockPolicyManager,
     mockVaultProxy,
+    mockVaultProxyOwner,
     policyManagerConfigData,
     supportedAsset: deployment.tokens.weth,
   };
@@ -194,6 +195,7 @@ describe('activate', () => {
       mockIntegrationManager,
       mockPolicyManager,
       mockVaultProxy,
+      mockVaultProxyOwner,
     } = await provider.snapshot(snapshot);
 
     // Mock shares due balance to assert burn/mint calls during activation
@@ -215,8 +217,9 @@ describe('activate', () => {
     await expect(vaultProxyCall).resolves.toBe(mockVaultProxy.address);
 
     // Assert expected calls
-    expect(mockVaultProxy.burnShares).toHaveBeenCalledOnContractWith(
+    expect(mockVaultProxy.transferShares).toHaveBeenCalledOnContractWith(
       mockVaultProxy.address,
+      await resolveAddress(mockVaultProxyOwner),
       sharesDue,
     );
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();

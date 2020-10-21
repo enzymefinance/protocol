@@ -11,7 +11,12 @@ import {
   VaultLib,
 } from '../../utils/contracts';
 import { defaultForkDeployment } from '../../utils/testing';
-import { createNewFund, IKyberNetworkProxy, kyberTakeOrder } from '../utils';
+import {
+  createNewFund,
+  getAssetBalances,
+  IKyberNetworkProxy,
+  kyberTakeOrder,
+} from '../utils';
 
 async function assertKyberTakeOrder({
   comptrollerProxy,
@@ -41,7 +46,10 @@ async function assertKyberTakeOrder({
   const [
     preTxIncomingAssetBalance,
     preTxOutgoingAssetBalance,
-  ] = await vaultProxy.getAssetBalances([incomingAsset, outgoingAsset]);
+  ] = await getAssetBalances({
+    account: vaultProxy,
+    assets: [incomingAsset, outgoingAsset],
+  });
 
   const takeOrderTx = kyberTakeOrder({
     comptrollerProxy,
@@ -60,7 +68,10 @@ async function assertKyberTakeOrder({
   const [
     postTxIncomingAssetBalance,
     postTxOutgoingAssetBalance,
-  ] = await vaultProxy.getAssetBalances([incomingAsset, outgoingAsset]);
+  ] = await getAssetBalances({
+    account: vaultProxy,
+    assets: [incomingAsset, outgoingAsset],
+  });
 
   const incomingAssetAmount = postTxIncomingAssetBalance.sub(
     preTxIncomingAssetBalance,

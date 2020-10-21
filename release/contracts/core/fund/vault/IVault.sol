@@ -10,6 +10,7 @@ interface IVault is IProxiableVault {
         None,
         BurnShares,
         MintShares,
+        TransferShares,
         ApproveAssetSpender,
         WithdrawAssetTo,
         AddTrackedAsset,
@@ -28,8 +29,6 @@ interface IVault is IProxiableVault {
 
     function callOnContract(address, bytes calldata) external;
 
-    function disallowAssetSpender(address, address) external;
-
     function getAccessor() external view returns (address);
 
     function getOwner() external view returns (address);
@@ -41,6 +40,12 @@ interface IVault is IProxiableVault {
     function mintShares(address, uint256) external;
 
     function removeTrackedAsset(address) external;
+
+    function transferShares(
+        address,
+        address,
+        uint256
+    ) external;
 
     function withdrawAssetTo(
         address,

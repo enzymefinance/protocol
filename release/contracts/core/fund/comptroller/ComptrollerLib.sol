@@ -27,7 +27,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
 
-    event MigratedSharesDuePaid(address payee, uint256 sharesDue);
+    event MigratedSharesDuePaid(uint256 sharesDue);
 
     event OverridePauseSet(bool indexed overridePause);
 
@@ -318,11 +318,13 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
             // to payout fee shares owed during migration, these shares are not lost.
             uint256 sharesDue = IERC20(_vaultProxy).balanceOf(_vaultProxy);
             if (sharesDue > 0) {
-                address vaultOwner = IVault(_vaultProxy).getOwner();
-                IVault(_vaultProxy).burnShares(_vaultProxy, sharesDue);
-                IVault(_vaultProxy).mintShares(vaultOwner, sharesDue);
+                IVault(_vaultProxy).transferShares(
+                    _vaultProxy,
+                    IVault(_vaultProxy).getOwner(),
+                    sharesDue
+                );
 
-                emit MigratedSharesDuePaid(vaultOwner, sharesDue);
+                emit MigratedSharesDuePaid(sharesDue);
             }
 
             // Policies must assert that they are congruent with migrated vault state

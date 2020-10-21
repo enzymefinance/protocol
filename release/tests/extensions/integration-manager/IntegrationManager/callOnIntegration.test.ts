@@ -10,6 +10,7 @@ import {
   callOnIntegrationSelector,
   callOnIntegrationArgs,
   createNewFund,
+  getAssetBalances,
   mockGenericSwap,
   mockGenericSwapArgs,
   mockGenericSwapASelector,
@@ -66,7 +67,10 @@ async function seedFundByTrading({
   incomingAsset: IERC20;
   incomingAssetAmount: BigNumberish;
 }) {
-  const preTxAssetBalancesCall = vaultProxy.getAssetBalances([incomingAsset]);
+  const preTxAssetBalancesCall = getAssetBalances({
+    account: vaultProxy,
+    assets: [incomingAsset],
+  });
   await expect(preTxAssetBalancesCall).resolves.toEqual([
     utils.parseEther('0'),
   ]);
@@ -103,7 +107,10 @@ async function seedFundByTrading({
     vaultProxy: vaultProxy.address,
   });
 
-  const postTxAssetBalancesCall = vaultProxy.getAssetBalances([incomingAsset]);
+  const postTxAssetBalancesCall = getAssetBalances({
+    account: vaultProxy,
+    assets: [incomingAsset],
+  });
   await expect(postTxAssetBalancesCall).resolves.toEqual([incomingAssetAmount]);
   const postTxGetTrackedAssetsCall = vaultProxy.getTrackedAssets();
   await expect(postTxGetTrackedAssetsCall).resolves.toEqual([
@@ -550,14 +557,18 @@ describe('valid calls', () => {
       ),
     );
 
-    const spendAssetBalancesCall = vaultProxy.getAssetBalances(spendAssets);
+    const spendAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: spendAssets,
+    });
     await expect(spendAssetBalancesCall).resolves.toEqual(
       Array(2).fill(utils.parseEther('0')),
     );
 
-    const incomingAssetBalancesCall = vaultProxy.getAssetBalances(
-      incomingAssets,
-    );
+    const incomingAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: incomingAssets,
+    });
     await expect(incomingAssetBalancesCall).resolves.toEqual(
       incomingAssetAmounts,
     );
@@ -647,9 +658,10 @@ describe('valid calls', () => {
       ),
     );
 
-    const incomingAssetBalancesCall = vaultProxy.getAssetBalances(
-      incomingAssets,
-    );
+    const incomingAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: incomingAssets,
+    });
     await expect(incomingAssetBalancesCall).resolves.toEqual([
       expectedIncomingAssetAmount,
     ]);
@@ -737,9 +749,10 @@ describe('valid calls', () => {
       ),
     );
 
-    const incomingAssetBalancesCall = vaultProxy.getAssetBalances(
-      incomingAssets,
-    );
+    const incomingAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: incomingAssets,
+    });
     await expect(incomingAssetBalancesCall).resolves.toEqual(
       incomingAssetAmounts,
     );
@@ -825,7 +838,10 @@ describe('valid calls', () => {
       ),
     );
 
-    const spendAssetBalancesCall = vaultProxy.getAssetBalances(spendAssets);
+    const spendAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: spendAssets,
+    });
     await expect(spendAssetBalancesCall).resolves.toEqual(incomingAssetAmounts);
   });
 
@@ -910,9 +926,10 @@ describe('valid calls', () => {
       ),
     );
 
-    const incomingAssetBalancesCall = vaultProxy.getAssetBalances(
-      incomingAssets,
-    );
+    const incomingAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: incomingAssets,
+    });
     await expect(incomingAssetBalancesCall).resolves.toEqual([
       expectedSpendAssetBalance,
     ]);
@@ -1002,7 +1019,10 @@ describe('valid calls', () => {
       ),
     );
 
-    const spendAssetBalancesCall = vaultProxy.getAssetBalances(spendAssets);
+    const spendAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: spendAssets,
+    });
     await expect(spendAssetBalancesCall).resolves.toEqual([
       spendAssetAmountOnAdapter,
     ]);
@@ -1162,14 +1182,18 @@ describe('valid calls', () => {
       ),
     );
 
-    const spendAssetBalancesCall = vaultProxy.getAssetBalances(spendAssets);
+    const spendAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: spendAssets,
+    });
     await expect(spendAssetBalancesCall).resolves.toEqual([
       utils.parseEther('0'),
     ]);
 
-    const incomingAssetBalancesCall = vaultProxy.getAssetBalances(
-      incomingAssets,
-    );
+    const incomingAssetBalancesCall = getAssetBalances({
+      account: vaultProxy,
+      assets: incomingAssets,
+    });
     await expect(incomingAssetBalancesCall).resolves.toEqual(
       incomingAssetAmounts,
     );

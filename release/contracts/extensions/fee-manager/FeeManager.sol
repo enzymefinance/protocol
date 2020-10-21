@@ -190,12 +190,12 @@ contract FeeManager is
 
         // Distribute all shares outstanding to the fees recipient
         address payee = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        __burnShares(
+        __transferShares(
             _comptrollerProxy,
             IComptroller(_comptrollerProxy).getVaultProxy(),
+            payee,
             totalSharesOutstanding
         );
-        __mintShares(_comptrollerProxy, payee, totalSharesOutstanding);
 
         emit AllSharesOutstandingForcePaid(_comptrollerProxy, payee, totalSharesOutstanding);
     }
@@ -217,12 +217,12 @@ contract FeeManager is
         // Delete shares outstanding and distribute from VaultProxy to the fees recipient
         comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = 0;
         address payee = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        __burnShares(
+        __transferShares(
             _comptrollerProxy,
             IComptroller(_comptrollerProxy).getVaultProxy(),
+            payee,
             sharesOutstanding
         );
-        __mintShares(_comptrollerProxy, payee, sharesOutstanding);
 
         emit SharesOutstandingPaidForFee(_comptrollerProxy, _fee, payee, sharesOutstanding);
     }
@@ -254,9 +254,9 @@ contract FeeManager is
         );
 
         if (settlementType == SettlementType.Direct) {
-            __burnShares(_comptrollerProxy, payer, sharesDue);
-            __mintShares(
+            __transferShares(
                 _comptrollerProxy,
+                payer,
                 comptrollerProxyToFeesRecipient[_comptrollerProxy],
                 sharesDue
             );

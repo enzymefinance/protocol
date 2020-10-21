@@ -27,7 +27,8 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
         } else if (msg.sender == FEE_MANAGER) {
             require(
                 _action == IVault.VaultAction.BurnShares ||
-                    _action == IVault.VaultAction.MintShares,
+                    _action == IVault.VaultAction.MintShares ||
+                    _action == IVault.VaultAction.TransferShares,
                 "onlyPermissionedAction: Not valid for FeeManager"
             );
         } else {
@@ -60,6 +61,8 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
             __mintShares(_actionData);
         } else if (_action == IVault.VaultAction.RemoveTrackedAsset) {
             __removeTrackedAsset(_actionData);
+        } else if (_action == IVault.VaultAction.TransferShares) {
+            __transferShares(_actionData);
         }
     }
 
@@ -99,5 +102,16 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
     function __removeTrackedAsset(bytes memory _actionData) private {
         address asset = abi.decode(_actionData, (address));
         IVault(vaultProxy).removeTrackedAsset(asset);
+    }
+
+    /// @notice Transfers fund shares from one account to another
+    // /// @param _target The account to which to mint shares
+    // /// @param _amount The amount of shares to mint
+    function __transferShares(bytes memory _actionData) private {
+        (address from, address to, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+        IVault(vaultProxy).transferShares(from, to, amount);
     }
 }

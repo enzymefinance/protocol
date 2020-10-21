@@ -9,6 +9,7 @@ import {
   chaiRedeem,
   chaiRedeemArgs,
   createNewFund,
+  getAssetBalances,
   lendSelector,
   redeemSelector,
 } from '../../../utils';
@@ -212,10 +213,10 @@ describe('lend', () => {
     // Seed fund vault with enough DAI for tx
     await dai.transfer(vaultProxy, daiAmount);
 
-    const [
-      preTxChaiBalance,
-      preTxDaiBalance,
-    ] = await vaultProxy.getAssetBalances([chai, dai]);
+    const [preTxChaiBalance, preTxDaiBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [chai, dai],
+    });
 
     const lendTx = chaiLend({
       comptrollerProxy,
@@ -228,10 +229,10 @@ describe('lend', () => {
       minChaiAmount,
     });
 
-    const [
-      postTxChaiBalance,
-      postTxDaiBalance,
-    ] = await vaultProxy.getAssetBalances([chai, dai]);
+    const [postTxChaiBalance, postTxDaiBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [chai, dai],
+    });
 
     const expectedChaiAmount = daiAmount;
     expect(postTxChaiBalance).toEqBigNumber(
@@ -322,10 +323,10 @@ describe('redeem', () => {
     // Seed fund vault with enough CHAI for tx
     await chai.transfer(vaultProxy, chaiAmount);
 
-    const [
-      preTxChaiBalance,
-      preTxDaiBalance,
-    ] = await vaultProxy.getAssetBalances([chai, dai]);
+    const [preTxChaiBalance, preTxDaiBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [chai, dai],
+    });
 
     const redeemTx = chaiRedeem({
       comptrollerProxy,
@@ -338,10 +339,10 @@ describe('redeem', () => {
       minDaiAmount,
     });
 
-    const [
-      postTxChaiBalance,
-      postTxDaiBalance,
-    ] = await vaultProxy.getAssetBalances([chai, dai]);
+    const [postTxChaiBalance, postTxDaiBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [chai, dai],
+    });
 
     const expectedDaiAmount = chaiAmount;
     expect(postTxChaiBalance).toEqBigNumber(preTxChaiBalance.sub(chaiAmount));

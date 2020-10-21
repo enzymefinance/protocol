@@ -74,4 +74,21 @@ contract PermissionedVaultActionMixin {
             abi.encode(_asset)
         );
     }
+
+    /// @notice Transfers fund shares from one account to another
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _from The account from which to transfer shares
+    /// @param _to The account to which to transfer shares
+    /// @param _amount The amount of shares to transfer
+    function __transferShares(
+        address _comptrollerProxy,
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal {
+        IComptroller(_comptrollerProxy).permissionedVaultAction(
+            IVault.VaultAction.TransferShares,
+            abi.encode(_from, _to, _amount)
+        );
+    }
 }
