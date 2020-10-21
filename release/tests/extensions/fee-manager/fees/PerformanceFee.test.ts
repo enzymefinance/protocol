@@ -1,9 +1,9 @@
-import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 import {
   EthereumTestnetProvider,
   MockContract,
 } from '@crestproject/crestproject';
 import { assertEvent, assertNoEvent } from '@melonproject/utils';
+import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
 import { IERC20Extended } from '../../../../codegen/IERC20Extended';
 import {
@@ -419,13 +419,17 @@ describe('payout', () => {
       period: feeInfoPrePayout.period,
       activated: feeInfoPrePayout.activated,
       lastPaid: BigNumber.from(payoutTimestamp), // updated
-      highWaterMark: feeInfoPrePayout.lastSharePrice,
+      highWaterMark: feeInfoPrePayout.highWaterMark,
       lastSharePrice: feeInfoPrePayout.lastSharePrice,
       aggregateValueDue: feeInfoPrePayout.aggregateValueDue,
     });
 
-    // Assert event was not fired
-    await assertNoEvent(payoutTx, 'PaidOut');
+    // Assert event
+    await assertEvent(payoutTx, 'PaidOut', {
+      comptrollerProxy: mockComptrollerProxy.address,
+      prevHighWaterMark: feeInfoPrePayout.highWaterMark,
+      nextHighWaterMark: feeInfoPrePayout.highWaterMark,
+    });
   });
 
   it('correctly handles a valid call (HWM has increased)', async () => {

@@ -116,16 +116,16 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         feeInfo.lastPaid = block.timestamp;
 
         uint256 prevHighWaterMark = feeInfo.highWaterMark;
-        uint256 nextHighWaterMark = feeInfo.lastSharePrice;
+        uint256 nextHighWaterMark = __calcUint256Max(feeInfo.lastSharePrice, prevHighWaterMark);
+
+        emit PaidOut(_comptrollerProxy, prevHighWaterMark, nextHighWaterMark);
 
         // Return early if HWM did not increase
-        if (nextHighWaterMark <= prevHighWaterMark) {
+        if (nextHighWaterMark == prevHighWaterMark) {
             return false;
         }
 
         feeInfo.highWaterMark = nextHighWaterMark;
-
-        emit PaidOut(_comptrollerProxy, prevHighWaterMark, nextHighWaterMark);
 
         return true;
     }
