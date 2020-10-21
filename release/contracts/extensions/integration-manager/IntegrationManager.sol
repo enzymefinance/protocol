@@ -30,6 +30,10 @@ contract IntegrationManager is
 
     event AdapterRegistered(address indexed adapter, string indexed identifier);
 
+    event AuthUserAddedForFund(address indexed comptrollerProxy, address indexed account);
+
+    event AuthUserRemovedForFund(address indexed comptrollerProxy, address indexed account);
+
     event CallOnIntegrationExecuted(
         address indexed comptrollerProxy,
         address vaultProxy,
@@ -43,24 +47,26 @@ contract IntegrationManager is
         uint256[] outgoingAssetAmounts
     );
 
-    event AuthUserAddedForFund(address indexed comptrollerProxy, address indexed account);
-
-    event AuthUserRemovedForFund(address indexed comptrollerProxy, address indexed account);
+    event TrackedAssetsLimitSet(uint256 nextTrackedAssetsLimit);
 
     address private immutable POLICY_MANAGER;
     address private immutable VALUE_INTERPRETER;
 
+    uint256 private trackedAssetsLimit;
+    EnumerableSet.AddressSet private registeredAdapters;
+
     mapping(address => mapping(address => bool)) private comptrollerProxyToAcctToIsAuthUser;
     mapping(address => address) private comptrollerProxyToVaultProxy;
-    EnumerableSet.AddressSet private registeredAdapters;
 
     constructor(
         address _fundDeployer,
         address _policyManager,
-        address _valueInterpreter
+        address _valueInterpreter,
+        uint256 _trackedAssetsLimit
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         POLICY_MANAGER = _policyManager;
         VALUE_INTERPRETER = _valueInterpreter;
+        trackedAssetsLimit = _trackedAssetsLimit;
     }
 
     /////////////
@@ -186,33 +192,82 @@ contract IntegrationManager is
         );
 
         (
-            address[] memory expectedIncomingAssets,
-            uint256[] memory preCallIncomingAssetBalances,
-            uint256[] memory minIncomingAssetAmounts,
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            uint256[] memory preCallSpendAssetBalances
-        ) = __preProcessCoI(vaultProxy, _callArgs);
+            address adapter,
+            bytes4 selector,
+            bytes memory integrationData
+        ) = __decodeCallOnIntegrationArgs(_callArgs);
 
-        __preCoIHook(
-            _callArgs,
-            expectedIncomingAssets,
-            minIncomingAssetAmounts,
-            spendAssets,
-            spendAssetAmounts
-        );
-
-        __executeCoI(
-            vaultProxy,
-            _callArgs,
-            abi.encode(spendAssets, spendAssetAmounts, expectedIncomingAssets)
-        );
+        require(adapterIsRegistered(adapter), "callOnIntegration: adapter is not registered");
 
         (
             address[] memory incomingAssets,
             uint256[] memory incomingAssetAmounts,
             address[] memory outgoingAssets,
             uint256[] memory outgoingAssetAmounts
+        ) = __callOnIntegrationInner(vaultProxy, adapter, selector, integrationData);
+
+        __emitCoIEvent(
+            vaultProxy,
+            _caller,
+            adapter,
+            selector,
+            integrationData,
+            incomingAssets,
+            incomingAssetAmounts,
+            outgoingAssets,
+            outgoingAssetAmounts
+        );
+    }
+
+    /// @dev Helper to execute the bulk of logic of callOnIntegration.
+    /// Avoids the stack-too-deep-error.
+    function __callOnIntegrationInner(
+        address vaultProxy,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData
+    )
+        private
+        returns (
+            address[] memory incomingAssets_,
+            uint256[] memory incomingAssetAmounts_,
+            address[] memory outgoingAssets_,
+            uint256[] memory outgoingAssetAmounts_
+        )
+    {
+        (
+            address[] memory expectedIncomingAssets,
+            uint256[] memory preCallIncomingAssetBalances,
+            uint256[] memory minIncomingAssetAmounts,
+            address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts,
+            uint256[] memory preCallSpendAssetBalances
+        ) = __preProcessCoI(vaultProxy, _adapter, _selector, _integrationData);
+
+        __preCoIHook(
+            _adapter,
+            _selector,
+            expectedIncomingAssets,
+            minIncomingAssetAmounts,
+            spendAssets,
+            spendAssetAmounts
+        );
+
+        uint256 preTxTrackedAssetsCount = IVault(vaultProxy).getTrackedAssets().length;
+
+        __executeCoI(
+            vaultProxy,
+            _adapter,
+            _selector,
+            _integrationData,
+            abi.encode(spendAssets, spendAssetAmounts, expectedIncomingAssets)
+        );
+
+        (
+            incomingAssets_,
+            incomingAssetAmounts_,
+            outgoingAssets_,
+            outgoingAssetAmounts_
         ) = __postProcessCoI(
             vaultProxy,
             expectedIncomingAssets,
@@ -222,23 +277,18 @@ contract IntegrationManager is
             preCallSpendAssetBalances
         );
 
+        __validateTrackedAssetsLimit(vaultProxy, preTxTrackedAssetsCount);
+
         __postCoIHook(
-            _callArgs,
-            incomingAssets,
-            incomingAssetAmounts,
-            outgoingAssets,
-            outgoingAssetAmounts
+            _adapter,
+            _selector,
+            incomingAssets_,
+            incomingAssetAmounts_,
+            outgoingAssets_,
+            outgoingAssetAmounts_
         );
 
-        __emitCoIEvent(
-            vaultProxy,
-            _caller,
-            _callArgs,
-            incomingAssets,
-            incomingAssetAmounts,
-            outgoingAssets,
-            outgoingAssetAmounts
-        );
+        return (incomingAssets_, incomingAssetAmounts_, outgoingAssets_, outgoingAssetAmounts_);
     }
 
     /// @dev Helper to decode CoI args
@@ -259,25 +309,21 @@ contract IntegrationManager is
     function __emitCoIEvent(
         address _vaultProxy,
         address _caller,
-        bytes memory _callArgs,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData,
         address[] memory _incomingAssets,
         uint256[] memory _incomingAssetAmounts,
         address[] memory _outgoingAssets,
         uint256[] memory _outgoingAssetAmounts
     ) private {
-        (
-            address adapter,
-            bytes4 selector,
-            bytes memory integrationData
-        ) = __decodeCallOnIntegrationArgs(_callArgs);
-
         emit CallOnIntegrationExecuted(
             msg.sender,
             _vaultProxy,
             _caller,
-            adapter,
-            selector,
-            integrationData,
+            _adapter,
+            _selector,
+            _integrationData,
             _incomingAssets,
             _incomingAssetAmounts,
             _outgoingAssets,
@@ -289,20 +335,16 @@ contract IntegrationManager is
     /// @dev Avoids stack-too-deep error
     function __executeCoI(
         address _vaultProxy,
-        bytes memory _callArgs,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData,
         bytes memory _encodedAssetTransferArgs
     ) private {
-        (
-            address adapter,
-            bytes4 selector,
-            bytes memory integrationData
-        ) = __decodeCallOnIntegrationArgs(_callArgs);
-
-        (bool success, bytes memory returnData) = adapter.call(
+        (bool success, bytes memory returnData) = _adapter.call(
             abi.encodeWithSelector(
-                selector,
+                _selector,
                 _vaultProxy,
-                integrationData,
+                _integrationData,
                 _encodedAssetTransferArgs
             )
         );
@@ -319,22 +361,21 @@ contract IntegrationManager is
     }
 
     function __preCoIHook(
-        bytes memory _callArgs,
+        address _adapter,
+        bytes4 _selector,
         address[] memory _expectedIncomingAssets,
         uint256[] memory _minIncomingAssetAmounts,
         address[] memory _spendAssets,
         uint256[] memory _spendAssetAmounts
     ) private {
-        (address adapter, bytes4 selector, ) = __decodeCallOnIntegrationArgs(_callArgs);
-
         // Pre-validate against fund policies
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
             IPolicyManager.PolicyHook.CallOnIntegration,
             IPolicyManager.PolicyHookExecutionTime.Pre,
             abi.encode(
-                selector,
-                adapter,
+                _selector,
+                _adapter,
                 _expectedIncomingAssets,
                 _minIncomingAssetAmounts,
                 _spendAssets,
@@ -344,7 +385,12 @@ contract IntegrationManager is
     }
 
     /// @dev Helper for the actions to take prior to _executeCoI() in callOnIntegration()
-    function __preProcessCoI(address _vaultProxy, bytes memory _callArgs)
+    function __preProcessCoI(
+        address _vaultProxy,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData
+    )
         private
         returns (
             address[] memory expectedIncomingAssets_,
@@ -355,14 +401,6 @@ contract IntegrationManager is
             uint256[] memory preCallSpendAssetBalances_
         )
     {
-        (
-            address adapter,
-            bytes4 selector,
-            bytes memory integrationData
-        ) = __decodeCallOnIntegrationArgs(_callArgs);
-
-        require(adapterIsRegistered(adapter), "__preProcessCoI: adapter is not registered");
-
         // Note that expected incoming and spend assets are allowed to overlap
         // (e.g., a fee for the incomingAsset charged in a spend asset)
         (
@@ -370,7 +408,7 @@ contract IntegrationManager is
             spendAssetAmounts_,
             expectedIncomingAssets_,
             minIncomingAssetAmounts_
-        ) = IIntegrationAdapter(adapter).parseAssetsForMethod(selector, integrationData);
+        ) = IIntegrationAdapter(_adapter).parseAssetsForMethod(_selector, _integrationData);
         require(
             spendAssets_.length == spendAssetAmounts_.length,
             "__preProcessCoI: spend assets arrays unequal"
@@ -427,27 +465,26 @@ contract IntegrationManager is
             // because all adapters finish their actions atomically.
             // Note that spendAssets_ is already asserted to a unique set.
             // TODO: Could send directly to the adapter rather than requiring a transfer in each adapter
-            __approveAssetSpender(msg.sender, spendAssets_[i], adapter, spendAssetAmounts_[i]);
+            __approveAssetSpender(msg.sender, spendAssets_[i], _adapter, spendAssetAmounts_[i]);
         }
     }
 
     function __postCoIHook(
-        bytes memory _callArgs,
+        address _adapter,
+        bytes4 _selector,
         address[] memory _incomingAssets,
         uint256[] memory _incomingAssetAmounts,
         address[] memory _outgoingAssets,
         uint256[] memory _outgoingAssetAmounts
     ) private {
-        (address adapter, bytes4 selector, ) = __decodeCallOnIntegrationArgs(_callArgs);
-
         // Post-validate CoI against fund policies
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
             IPolicyManager.PolicyHook.CallOnIntegration,
             IPolicyManager.PolicyHookExecutionTime.Post,
             abi.encode(
-                selector,
-                adapter,
+                _selector,
+                _adapter,
                 _incomingAssets,
                 _incomingAssetAmounts,
                 _outgoingAssets,
@@ -625,6 +662,26 @@ contract IntegrationManager is
         );
     }
 
+    /// @dev Helper to validate the global trackedAssetsLimit for all funds.
+    /// A fund must either be below the tracked assets limit,
+    /// or their tracked assets count must not have increased.
+    /// We could also perform some more complicated logic to see which assets were
+    /// added and removed in the tx and allow cases where only the denomination asset
+    /// was added, but in practice that would be a corner case that is not too limiting.
+    /// It should be noted that a fund can exceed the trackedAssetsLimit if their
+    /// denomination asset is not tracked and buyShares is called.
+    function __validateTrackedAssetsLimit(address _vaultProxy, uint256 _preTxTrackedAssetsCount)
+        private
+        view
+    {
+        uint256 postTxTrackedAssetsCount = IVault(_vaultProxy).getTrackedAssets().length;
+        require(
+            postTxTrackedAssetsCount <= trackedAssetsLimit ||
+                postTxTrackedAssetsCount <= _preTxTrackedAssetsCount,
+            "__validateTrackedAssetsLimit: Limit exceeded"
+        );
+    }
+
     ///////////////////////////
     // INTEGRATIONS REGISTRY //
     ///////////////////////////
@@ -665,6 +722,19 @@ contract IntegrationManager is
         }
     }
 
+    /// @notice Set the tracked asset limit for a fund
+    /// @param _nextTrackedAssetsLimit The max number of assets to which to limit any fund
+    /// @dev This is defined and set in IntegrationManager, because it is currently the only point
+    /// at which new assets can become tracked.
+    function setTrackedAssetsLimit(uint256 _nextTrackedAssetsLimit)
+        external
+        onlyFundDeployerOwner
+    {
+        trackedAssetsLimit = _nextTrackedAssetsLimit;
+
+        emit TrackedAssetsLimitSet(_nextTrackedAssetsLimit);
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -693,6 +763,12 @@ contract IntegrationManager is
         for (uint256 i = 0; i < registeredAdaptersArray_.length; i++) {
             registeredAdaptersArray_[i] = registeredAdapters.at(i);
         }
+    }
+
+    /// @notice Gets the `trackedAssetsLimit` variable
+    /// @return trackedAssetsLimit_ The `trackedAssetsLimit` variable value
+    function getTrackedAssetsLimit() external view returns (uint256 trackedAssetsLimit_) {
+        return trackedAssetsLimit;
     }
 
     /// @notice Gets the `VALUE_INTERPRETER` variable

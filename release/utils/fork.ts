@@ -104,6 +104,9 @@ export async function configureForkRelease({
         (key) => (mainnet.tokens as any)[key],
       ),
     },
+    integrationManager: {
+      trackedAssetsLimit: 20, // TODO
+    },
     integratees: {
       chai: mainnet.chai,
       kyber: mainnet.kyber,

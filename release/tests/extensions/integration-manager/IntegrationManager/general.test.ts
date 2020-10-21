@@ -4,7 +4,7 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { utils, constants } from 'ethers';
+import { utils, constants, BigNumber } from 'ethers';
 import { defaultTestDeployment } from '../../../..';
 import { ComptrollerLib, VaultLib } from '../../../../utils/contracts';
 import { createNewFund } from '../../../utils';
@@ -45,6 +45,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
+      config: {
+        integrationManager: { trackedAssetsLimit },
+      },
       deployment: {
         integrationManager,
         fundDeployer,
@@ -58,6 +61,11 @@ describe('constructor', () => {
 
     const getPolicyManagerCall = integrationManager.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
+
+    const getTrackedAssetsLimitCall = integrationManager.getTrackedAssetsLimit();
+    await expect(getTrackedAssetsLimitCall).resolves.toEqBigNumber(
+      trackedAssetsLimit,
+    );
 
     const getValueInterpreterCall = integrationManager.getValueInterpreter();
     await expect(getValueInterpreterCall).resolves.toBe(
@@ -497,6 +505,45 @@ describe('adapter registry', () => {
       await expect(getRegisteredAdaptersCall).resolves.toEqual(
         expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]),
       );
+    });
+  });
+});
+
+describe('setTrackedAssetsLimit', () => {
+  it('can only be called by fundDeployerOwner', async () => {
+    const {
+      accounts: { 0: randomUser },
+      deployment: { integrationManager },
+    } = await provider.snapshot(snapshot);
+
+    const setTrackedAssetsLimitTx = integrationManager
+      .connect(randomUser)
+      .setTrackedAssetsLimit(1);
+    await expect(setTrackedAssetsLimitTx).rejects.toBeRevertedWith(
+      'Only the FundDeployer owner can call this function',
+    );
+  });
+
+  it('correctly handles a valid call', async () => {
+    const {
+      deployment: { integrationManager },
+    } = await provider.snapshot(snapshot);
+
+    const nextTrackedAssetsLimit = 1;
+    const setTrackedAssetsLimitTx = integrationManager.setTrackedAssetsLimit(
+      nextTrackedAssetsLimit,
+    );
+    await expect(setTrackedAssetsLimitTx).resolves.toBeReceipt();
+
+    // Assert state has updated
+    const getTrackedAssetsLimitCall = integrationManager.getTrackedAssetsLimit();
+    await expect(getTrackedAssetsLimitCall).resolves.toEqBigNumber(
+      nextTrackedAssetsLimit,
+    );
+
+    // Assert event
+    await assertEvent(setTrackedAssetsLimitTx, 'TrackedAssetsLimitSet', {
+      nextTrackedAssetsLimit: BigNumber.from(nextTrackedAssetsLimit),
     });
   });
 });

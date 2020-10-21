@@ -171,6 +171,9 @@ export async function configureMockRelease({
         (symbol) => (mocks.tokens as any)[symbol].address,
       ),
     },
+    integrationManager: {
+      trackedAssetsLimit: 20, // TODO
+    },
     integratees: {
       chai: mocks.chaiIntegratee.address,
       kyber: mocks.kyberIntegratee.address,

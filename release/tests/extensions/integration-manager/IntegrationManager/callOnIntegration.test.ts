@@ -31,11 +31,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   );
 
   const [fundOwner, ...remainingAccounts] = accounts;
+  const denominationAsset = deployment.tokens.weth;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset,
   });
 
   return {
@@ -44,6 +45,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     config,
     fund: {
       comptrollerProxy,
+      denominationAsset,
       fundOwner,
       vaultProxy,
     },
@@ -479,6 +481,8 @@ describe('callOnIntegration', () => {
       'spend asset amount must be >0',
     );
   });
+
+  it.todo('does not allow a fund to exceed the trackedAssetsLimit');
 });
 
 describe('valid calls', () => {
@@ -1202,6 +1206,161 @@ describe('valid calls', () => {
     await expect(postTxGetTrackedAssetsCall).resolves.toEqual(
       incomingAssets.map((token) => token.address),
     );
+  });
+
+  it('handles a fund that is at the exact trackedAssetsLimit', async () => {
+    const {
+      deployment: {
+        integrationManager,
+        mockGenericAdapter,
+        tokens: { mln },
+      },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    // Seed the fund with its denomination asset. There should only be 1 tracked asset in the fund.
+    const initialAssetAmount = utils.parseEther('1');
+    await mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [denominationAsset],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [initialAssetAmount],
+    });
+    const nextTrackedAssetsLimit = 1;
+    const trackedAssetsLength = (await vaultProxy.getTrackedAssets()).length;
+    expect(trackedAssetsLength).toBe(nextTrackedAssetsLimit);
+
+    // Reduce the trackedAssetLimit to the number of assets in the fund (1 asset)
+    await integrationManager.setTrackedAssetsLimit(nextTrackedAssetsLimit);
+
+    // Adding a new asset while not reducing the asset count should fail
+    const badSwapTx = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [mln],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [utils.parseEther('1')],
+    });
+    await expect(badSwapTx).rejects.toBeRevertedWith('Limit exceeded');
+
+    // Adding more of a tracked asset should succeed
+    const additionalAssetAmount = utils.parseEther('1');
+    const goodSwapTx1 = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [denominationAsset],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [additionalAssetAmount],
+    });
+    await expect(goodSwapTx1).resolves.toBeReceipt();
+
+    // Adding a new asset while reducing the asset count by 1 should succeed
+    const goodSwapTx2 = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [denominationAsset],
+      spendAssetAmounts: [initialAssetAmount.add(additionalAssetAmount)],
+      incomingAssets: [mln],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [utils.parseEther('1')],
+    });
+    await expect(goodSwapTx2).resolves.toBeReceipt();
+  });
+
+  it('handles a fund that exceeds the trackedAssetsLimit', async () => {
+    const {
+      deployment: {
+        integrationManager,
+        mockGenericAdapter,
+        tokens: { mln },
+      },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    // Seed the fund with its denomination asset. There should only be 1 tracked asset in the fund.
+    const initialAssetAmount = utils.parseEther('1');
+    await mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [denominationAsset],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [initialAssetAmount],
+    });
+    const trackedAssetsLength = (await vaultProxy.getTrackedAssets()).length;
+    expect(trackedAssetsLength).toBe(1);
+
+    // Reduce the trackedAssetLimit to 0. The fund now exceeds the limit by 1.
+    await integrationManager.setTrackedAssetsLimit(0);
+
+    // Adding a new asset while not reducing the asset count should fail
+    const badSwapTx = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [mln],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [utils.parseEther('1')],
+    });
+    await expect(badSwapTx).rejects.toBeRevertedWith('Limit exceeded');
+
+    // Adding more of a tracked asset should succeed
+    const additionalAssetAmount = utils.parseEther('1');
+    const goodSwapTx1 = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [],
+      spendAssetAmounts: [],
+      incomingAssets: [denominationAsset],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [additionalAssetAmount],
+    });
+    await expect(goodSwapTx1).resolves.toBeReceipt();
+
+    // Adding a new asset while reducing the asset count by 1 should succeed
+    const goodSwapTx2 = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [denominationAsset],
+      spendAssetAmounts: [initialAssetAmount.add(additionalAssetAmount)],
+      incomingAssets: [mln],
+      minIncomingAssetAmounts: [BigNumber.from(1)],
+      actualIncomingAssetAmounts: [utils.parseEther('1')],
+    });
+    await expect(goodSwapTx2).resolves.toBeReceipt();
   });
 
   it.todo('add integrationData to the event return values in all tests');

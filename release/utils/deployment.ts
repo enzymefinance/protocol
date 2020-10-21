@@ -43,6 +43,9 @@ export interface ReleaseDeploymentConfig {
   engine: {
     thawDelay: BigNumberish;
   };
+  integrationManager: {
+    trackedAssetsLimit: BigNumberish;
+  };
   chainlink: {
     rateQuoteAsset: AddressLike;
     primitives: AddressLike[];
@@ -172,6 +175,7 @@ export const deployRelease = describeDeployment<
       await deployment.fundDeployer,
       await deployment.policyManager,
       await deployment.valueInterpreter,
+      config.integrationManager.trackedAssetsLimit,
     );
   },
   async policyManager(config, deployment) {

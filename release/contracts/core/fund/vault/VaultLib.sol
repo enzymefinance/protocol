@@ -55,10 +55,6 @@ contract VaultLib is VaultLibBase1, IVault {
 
     // VAULT LOGIC
 
-    // uint8 public constant MAX_TRACKED_ASSETS = 20; // TODO: Keep this?
-
-    // TODO: add increase/decrease approvals?
-
     // TODO: Should this function should not have an opinion about the actual asset balance?
     /// @dev Allows addition of already tracked assets to fail silently.
     function addTrackedAsset(address _asset) external override onlyAccessor {
