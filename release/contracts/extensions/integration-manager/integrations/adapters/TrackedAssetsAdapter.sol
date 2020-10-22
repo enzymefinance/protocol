@@ -18,6 +18,8 @@ contract TrackedAssetsAdapter is AdapterBase {
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
+    /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
@@ -27,6 +29,7 @@ contract TrackedAssetsAdapter is AdapterBase {
         view
         override
         returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_,
@@ -44,7 +47,13 @@ contract TrackedAssetsAdapter is AdapterBase {
             revert("parseIncomingAssets: _selector invalid");
         }
 
-        return (spendAssets_, spendAssetAmounts_, incomingAssets_, minIncomingAssetAmounts_);
+        return (
+            spendAssetsHandleType_,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
     }
 
     /// @notice Add multiple assets to the Vault's owned assets

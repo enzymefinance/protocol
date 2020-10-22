@@ -28,19 +28,8 @@ abstract contract CallOnIntegrationPreValidatePolicyBase is PolicyBase {
     function __decodeRuleArgs(bytes memory _encodedRuleArgs)
         internal
         pure
-        returns (
-            bytes4 selector_,
-            address adapter_,
-            address[] memory incomingAssets_,
-            uint256[] memory minIncomingAssetAmounts_,
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_
-        )
+        returns (address adapter_, bytes4 selector_)
     {
-        return
-            abi.decode(
-                _encodedRuleArgs,
-                (bytes4, address, address[], uint256[], address[], uint256[])
-            );
+        return abi.decode(_encodedRuleArgs, (address, bytes4));
     }
 }

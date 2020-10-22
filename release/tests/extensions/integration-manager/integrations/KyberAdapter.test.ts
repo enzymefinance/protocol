@@ -18,6 +18,7 @@ import {
   getAssetBalances,
   kyberTakeOrder,
   kyberTakeOrderArgs,
+  spendAssetsHandleTypes,
   takeOrderSelector,
 } from '../../../utils';
 
@@ -187,6 +188,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     const {
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
@@ -197,11 +199,13 @@ describe('parseAssetsForMethod', () => {
     );
 
     expect({
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
+      spendAssetsHandleType_: spendAssetsHandleTypes.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [outgoingAssetAmount],

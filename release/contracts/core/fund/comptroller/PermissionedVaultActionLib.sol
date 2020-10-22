@@ -21,7 +21,8 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
             require(
                 _action == IVault.VaultAction.ApproveAssetSpender ||
                     _action == IVault.VaultAction.AddTrackedAsset ||
-                    _action == IVault.VaultAction.RemoveTrackedAsset,
+                    _action == IVault.VaultAction.RemoveTrackedAsset ||
+                    _action == IVault.VaultAction.WithdrawAssetTo,
                 "onlyPermissionedAction: Not valid for IntegrationManager"
             );
         } else if (msg.sender == FEE_MANAGER) {
@@ -63,6 +64,8 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
             __removeTrackedAsset(_actionData);
         } else if (_action == IVault.VaultAction.TransferShares) {
             __transferShares(_actionData);
+        } else if (_action == IVault.VaultAction.WithdrawAssetTo) {
+            __withdrawAssetTo(_actionData);
         }
     }
 
@@ -113,5 +116,15 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
             (address, address, uint256)
         );
         IVault(vaultProxy).transferShares(from, to, amount);
+    }
+
+    /// @notice Transfers an asset from the VaultProxy to another account
+    /// @param _actionData The encoded data for the action
+    function __withdrawAssetTo(bytes memory _actionData) private {
+        (address asset, address target, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+        IVault(vaultProxy).withdrawAssetTo(asset, target, amount);
     }
 }

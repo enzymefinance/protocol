@@ -348,14 +348,7 @@ describe('validatePolicies', () => {
     // Assert validateRule called on correct policies
     expect(mockPreCoIPolicy.validateRule.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     // Outgoing assets are the spend assets that are not also incoming assets
@@ -365,8 +358,8 @@ describe('validatePolicies', () => {
     expect(mockPostCoIPolicy.validateRule.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         actualIncomingAssetAmounts,
         outgoingAssets,

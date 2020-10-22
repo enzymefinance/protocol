@@ -478,7 +478,7 @@ describe('callOnIntegration', () => {
     });
 
     await expect(badSwapTx).rejects.toBeRevertedWith(
-      'spend asset amount must be >0',
+      'empty spendAssetAmount detected',
     );
   });
 
@@ -537,14 +537,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -552,8 +545,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts,
         spendAssets,
@@ -638,14 +631,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -653,8 +639,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         [expectedIncomingAssetAmount],
         spendAssets,
@@ -729,14 +715,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -744,8 +723,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts,
         spendAssets,
@@ -818,14 +797,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -833,8 +805,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts,
         [],
@@ -906,14 +878,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -921,8 +886,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         [expectedSpendAssetBalance],
         [],
@@ -999,14 +964,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -1014,8 +972,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         actualIncomingAssets,
         actualIncomingAssetAmounts,
         [],
@@ -1077,14 +1035,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -1092,8 +1043,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts,
         spendAssets,
@@ -1162,14 +1113,7 @@ describe('valid calls', () => {
       comptrollerProxy,
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Pre,
-      validateRulePreCoIArgs(
-        mockGenericSwapASelector,
-        mockGenericAdapter,
-        incomingAssets,
-        minIncomingAssetAmounts,
-        spendAssets,
-        spendAssetAmounts,
-      ),
+      validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
@@ -1177,8 +1121,8 @@ describe('valid calls', () => {
       policyHooks.CallOnIntegration,
       policyHookExecutionTimes.Post,
       validateRulePostCoIArgs(
-        mockGenericSwapASelector,
         mockGenericAdapter,
+        mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts,
         spendAssets,
@@ -1364,4 +1308,6 @@ describe('valid calls', () => {
   });
 
   it.todo('add integrationData to the event return values in all tests');
+
+  it.todo('test SpendAssetsHandleType options');
 });

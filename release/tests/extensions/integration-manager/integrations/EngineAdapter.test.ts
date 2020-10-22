@@ -9,6 +9,7 @@ import {
   engineAdapterTakeOrderArgs,
   getAssetBalances,
   seedAndThawEngine,
+  spendAssetsHandleTypes,
   takeOrderSelector,
 } from '../../../utils';
 import { updateChainlinkAggregator } from '../../../utils/chainlink';
@@ -105,6 +106,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     const {
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
@@ -112,11 +114,13 @@ describe('parseAssetsForMethod', () => {
     } = await engineAdapter.parseAssetsForMethod(takeOrderSelector, args);
 
     expect({
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
+      spendAssetsHandleType_: spendAssetsHandleTypes.Transfer,
       incomingAssets_: [incomingAsset.address],
       spendAssets_: [outgoingAsset.address],
       spendAssetAmounts_: [outgoingAmount],
@@ -153,31 +157,6 @@ describe('takeOrder', () => {
     );
   });
 
-  it('does not allow empty MLN amount', async () => {
-    const {
-      deployment: {
-        engineAdapter,
-        tokens: { mln },
-        integrationManager,
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    const badTakeOrderTx = engineAdapterTakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      engineAdapter,
-      mln,
-      mlnAmount: 0,
-    });
-
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
-      'spend asset amount must be >0',
-    );
-  });
-
   it('correctly handles valid call', async () => {
     const {
       deployment: {
@@ -192,7 +171,7 @@ describe('takeOrder', () => {
 
     const mlnAmount = utils.parseEther('1');
 
-    // Expected WETH Given an initial rate 1:1 and 5% fremium fee
+    // Expected WETH Given an initial rate 1:1 and 5% premium fee
     const expectedWeth = utils.parseEther('1.05');
 
     // Seeds the engine with the amount of ETH needed

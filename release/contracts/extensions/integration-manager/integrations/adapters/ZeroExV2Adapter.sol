@@ -36,6 +36,8 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
+    /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
@@ -45,6 +47,7 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
         view
         override
         returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_,
@@ -56,6 +59,9 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
                 bytes memory encodedZeroExOrderArgs,
                 uint256 takerAssetFillAmount
             ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+
+            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
+
             IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
             address makerAsset = __getAssetAddress(order.makerAssetData);
             address takerFeeAsset = __getAssetAddress(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA());

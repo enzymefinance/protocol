@@ -167,12 +167,8 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = await validateRulePreCoIArgs(
-      utils.randomBytes(4),
       whitelistedAdapters[0], // good adapter
-      [],
-      [],
-      [],
-      [],
+      utils.randomBytes(4),
     );
     const validateRuleCall = adapterWhitelist.validateRule
       .args(comptrollerProxy, preCoIArgs)
@@ -187,12 +183,8 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = await validateRulePreCoIArgs(
-      utils.randomBytes(4),
       randomAddress(), // bad adapter
-      [],
-      [],
-      [],
-      [],
+      utils.randomBytes(4),
     );
     const validateRuleCall = adapterWhitelist.validateRule
       .args(comptrollerProxy, preCoIArgs)

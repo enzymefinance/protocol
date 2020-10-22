@@ -48,7 +48,7 @@ contract AdapterBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressList
         override
         returns (bool isValid_)
     {
-        (, address adapter, , , , ) = __decodeRuleArgs(_encodedArgs);
+        (address adapter, ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, adapter);
     }

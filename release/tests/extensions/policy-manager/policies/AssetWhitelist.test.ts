@@ -14,7 +14,7 @@ import {
   assetWhitelistArgs,
   policyHooks,
   policyHookExecutionTimes,
-  validateRulePreCoIArgs,
+  validateRulePostCoIArgs,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -108,7 +108,7 @@ describe('constructor', () => {
 
     const policyHookExecutionTimeCall = assetWhitelist.policyHookExecutionTime();
     await expect(policyHookExecutionTimeCall).resolves.toBe(
-      policyHookExecutionTimes.Pre,
+      policyHookExecutionTimes.Post,
     );
   });
 });
@@ -233,9 +233,9 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the incoming assets arg matters for this policy
-    const preCoIArgs = await validateRulePreCoIArgs(
-      utils.randomBytes(4),
+    const preCoIArgs = await validateRulePostCoIArgs(
       constants.AddressZero,
+      utils.randomBytes(4),
       [whitelistedAssets[0]], // good incoming asset
       [],
       [],
@@ -253,9 +253,9 @@ describe('validateRule', () => {
     );
 
     // Only the incoming assets arg matters for this policy
-    const preCoIArgs = await validateRulePreCoIArgs(
-      utils.randomBytes(4),
+    const preCoIArgs = await validateRulePostCoIArgs(
       constants.AddressZero,
+      utils.randomBytes(4),
       [randomAddress()], // bad incoming asset
       [],
       [],

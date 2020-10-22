@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 
 import "@melonproject/release/contracts/interfaces/IERC20Extended.sol";
 import "@melonproject/release/contracts/extensions/integration-manager/integrations/utils/AdapterBase.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title IMockGenericIntegratee Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -21,12 +22,16 @@ interface IMockGenericIntegratee {
 /// 1. Provides three identical swapping functions
 /// 2. Directly parses values to swap from provided call data
 /// 3. Directly parses values needed by the integration manager from provided call data
-contract MockGenericAdapter is AdapterBase {
+contract MockGenericAdapter is AdapterBase, Ownable {
     address public immutable INTEGRATEE;
+
+    IIntegrationManager.SpendAssetsHandleType public spendAssetsHandleType;
 
     // No need to specify the IntegrationManager
     constructor(address _integratee) public AdapterBase(address(0)) {
         INTEGRATEE = _integratee;
+        // Start spendAssetsHandleType as Transfer, because that's what most of our adapters use
+        spendAssetsHandleType = IIntegrationManager.SpendAssetsHandleType.Transfer;
     }
 
     function identifier() external pure override returns (string memory) {
@@ -38,6 +43,7 @@ contract MockGenericAdapter is AdapterBase {
         view
         override
         returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_,
@@ -51,6 +57,8 @@ contract MockGenericAdapter is AdapterBase {
             minIncomingAssetAmounts_,
 
         ) = __decodeCallArgs(_callArgs);
+
+        spendAssetsHandleType_ = spendAssetsHandleType;
     }
 
     function swapA(
@@ -75,6 +83,12 @@ contract MockGenericAdapter is AdapterBase {
         bytes calldata _assetTransferArgs
     ) external fundAssetsTransferHandler(_vaultProxy, _assetTransferArgs) {
         __decodeCallArgsAndSwap(_callArgs);
+    }
+
+    function setSpendAssetsHandleType(
+        IIntegrationManager.SpendAssetsHandleType _nextSpendAssetsHandleType
+    ) external onlyOwner {
+        spendAssetsHandleType = _nextSpendAssetsHandleType;
     }
 
     function __decodeCallArgs(bytes memory _callArgs)

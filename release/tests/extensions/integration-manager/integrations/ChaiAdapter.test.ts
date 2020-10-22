@@ -12,6 +12,7 @@ import {
   getAssetBalances,
   lendSelector,
   redeemSelector,
+  spendAssetsHandleTypes,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -112,6 +113,7 @@ describe('parseAssetsForMethod', () => {
     const selector = lendSelector;
 
     const {
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
@@ -119,11 +121,13 @@ describe('parseAssetsForMethod', () => {
     } = await chaiAdapter.parseAssetsForMethod(selector, args);
 
     expect({
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
+      spendAssetsHandleType_: spendAssetsHandleTypes.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [outgoingAmount],
@@ -154,6 +158,7 @@ describe('parseAssetsForMethod', () => {
     const selector = redeemSelector;
 
     const {
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
@@ -161,11 +166,13 @@ describe('parseAssetsForMethod', () => {
     } = await chaiAdapter.parseAssetsForMethod(selector, args);
 
     expect({
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
+      spendAssetsHandleType_: spendAssetsHandleTypes.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [outgoingAmount],

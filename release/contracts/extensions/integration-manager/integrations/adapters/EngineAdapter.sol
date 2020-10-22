@@ -38,6 +38,8 @@ contract EngineAdapter is AdapterBase {
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
+    /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
@@ -47,6 +49,7 @@ contract EngineAdapter is AdapterBase {
         view
         override
         returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_,
@@ -55,6 +58,8 @@ contract EngineAdapter is AdapterBase {
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
             (uint256 minWethAmount, uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
+
+            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = MLN_TOKEN;
@@ -68,6 +73,14 @@ contract EngineAdapter is AdapterBase {
         } else {
             revert("parseIncomingAssets: _selector invalid");
         }
+
+        return (
+            spendAssetsHandleType_,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
     }
 
     /// @notice Trades assets on Kyber

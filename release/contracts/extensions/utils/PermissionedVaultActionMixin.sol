@@ -91,4 +91,21 @@ contract PermissionedVaultActionMixin {
             abi.encode(_from, _to, _amount)
         );
     }
+
+    /// @notice Transfers an asset from the VaultProxy to another account
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _asset The asset to transfer
+    /// @param _target The account to which to transfer the asset
+    /// @param _amount The amount of asset to transfer
+    function __withdrawAssetTo(
+        address _comptrollerProxy,
+        address _asset,
+        address _target,
+        uint256 _amount
+    ) internal {
+        IComptroller(_comptrollerProxy).permissionedVaultAction(
+            IVault.VaultAction.WithdrawAssetTo,
+            abi.encode(_asset, _target, _amount)
+        );
+    }
 }

@@ -25,10 +25,14 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         bytes memory _encodedAssetTransferArgs
     ) {
         (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = abi.decode(_encodedAssetTransferArgs, (address[], uint256[], address[]));
+        ) = abi.decode(
+            _encodedAssetTransferArgs,
+            (IIntegrationManager.SpendAssetsHandleType, address[], uint256[], address[])
+        );
 
         // Sanity check
         require(
@@ -36,20 +40,16 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
             "fundAssetsTransferHandler: spend assets arrays unequal"
         );
 
-        // Spend assets
-        for (uint256 i = 0; i < spendAssets.length; i++) {
-            // Sanity checks
-            require(
-                spendAssetAmounts[i] > 0,
-                "fundAssetsTransferHandler: spend asset amount must be >0"
-            );
-
-            // Custody asset
-            IERC20(spendAssets[i]).safeTransferFrom(
-                _vaultProxy,
-                address(this),
-                spendAssetAmounts[i]
-            );
+        // Take custody of spend assets (if necessary)
+        if (spendAssetsHandleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
+            for (uint256 i = 0; i < spendAssets.length; i++) {
+                // Custody asset
+                IERC20(spendAssets[i]).safeTransferFrom(
+                    _vaultProxy,
+                    address(this),
+                    spendAssetAmounts[i]
+                );
+            }
         }
 
         // Execute call

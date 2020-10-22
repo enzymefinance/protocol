@@ -5,12 +5,12 @@ import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/CallOnIntegrationPreValidatePolicyBase.sol";
+import "./utils/CallOnIntegrationPostValidatePolicyBase.sol";
 
 /// @title AssetWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A whitelist of assets that cannot be added to a fund's vault
-contract AssetWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressListPolicyMixin {
+contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListPolicyMixin {
     using AddressArrayLib for address[];
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}

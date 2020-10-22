@@ -106,8 +106,8 @@ async function mockValuesAndValidateRule({
 
   // Only the incoming assets arg matters for this policy
   const postCoIArgs = await validateRulePostCoIArgs(
-    utils.randomBytes(4),
     constants.AddressZero,
+    utils.randomBytes(4),
     [incomingAsset],
     [],
     [],
@@ -222,8 +222,8 @@ describe('validateRule', () => {
 
     // Empty args
     const postCoIArgs = await validateRulePostCoIArgs(
-      utils.randomBytes(4),
       constants.AddressZero,
+      utils.randomBytes(4),
       [],
       [],
       [],

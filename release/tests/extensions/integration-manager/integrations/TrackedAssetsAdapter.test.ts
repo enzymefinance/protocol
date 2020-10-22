@@ -11,6 +11,7 @@ import {
   addTrackedAssetsSelector,
   assetTransferArgs,
   createNewFund,
+  spendAssetsHandleTypes,
 } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -86,6 +87,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     const {
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
@@ -96,11 +98,13 @@ describe('parseAssetsForMethod', () => {
     );
 
     expect({
+      spendAssetsHandleType_,
       incomingAssets_,
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
+      spendAssetsHandleType_: spendAssetsHandleTypes.None,
       incomingAssets_: [incomingAsset],
       spendAssets_: [],
       spendAssetAmounts_: [],
