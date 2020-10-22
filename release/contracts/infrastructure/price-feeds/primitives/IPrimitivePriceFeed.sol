@@ -5,14 +5,7 @@ pragma solidity 0.6.8;
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @dev IMPORTANT: all rates must be "normalized" to 18 decimals
 interface IPrimitivePriceFeed {
-    function getCanonicalRate(address, address)
-        external
-        view
-        returns (
-            uint256,
-            bool,
-            uint256
-        );
+    function getCanonicalRate(address, address) external view returns (uint256, bool);
 
     function getLiveRate(address, address) external view returns (uint256, bool);
 

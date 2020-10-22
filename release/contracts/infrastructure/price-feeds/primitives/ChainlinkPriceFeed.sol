@@ -58,32 +58,27 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     /// @param _quoteAsset The quote asset
     /// @return rate_ The conversion rate
     /// @return isValid_ True if the rate is deemed valid
-    /// @return timestamp_ The oldest timestamp of the last price update for the two assets
     function getCanonicalRate(address _baseAsset, address _quoteAsset)
         public
         view
         override
-        returns (
-            uint256 rate_,
-            bool isValid_,
-            uint256 timestamp_
-        )
+        returns (uint256 rate_, bool isValid_)
     {
         if (_baseAsset == _quoteAsset) {
-            return (10**FEED_PRECISION, true, now);
+            return (10**FEED_PRECISION, true);
         }
 
         // Get the latest rate data for each asset and return early if there is an invalid rate
         (int256 baseAssetRate, uint256 baseAssetRateTimestamp) = __getLatestRateData(_baseAsset);
         if (baseAssetRate <= 0) {
-            return (0, false, 0);
+            return (0, false);
         }
 
         (int256 quoteAssetRate, uint256 quoteAssetRateTimestamp) = __getLatestRateData(
             _quoteAsset
         );
         if (quoteAssetRate <= 0) {
-            return (0, false, 0);
+            return (0, false);
         }
 
         rate_ = __calcConversionRate(
@@ -93,7 +88,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
             uint256(quoteAssetRate)
         );
         if (rate_ == 0) {
-            return (0, false, 0);
+            return (0, false);
         }
 
         // Check the timestamps to confirm rate validity.
@@ -109,7 +104,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
             isValid_ = true;
         }
 
-        return (rate_, isValid_, oldestTimestamp);
+        return (rate_, isValid_);
     }
 
     /// @notice Gets the live conversion rate for a pair of assets
@@ -124,7 +119,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         override
         returns (uint256 rate_, bool isValid_)
     {
-        (rate_, isValid_, ) = getCanonicalRate(_baseAsset, _quoteAsset);
+        return getCanonicalRate(_baseAsset, _quoteAsset);
     }
 
     /// @notice Checks whether an asset is a supported primitive of the price feed

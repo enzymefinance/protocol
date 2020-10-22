@@ -233,7 +233,7 @@ contract ValueInterpreter is IValueInterpreter {
         if (_useLiveRate) {
             (rate, isValid_) = priceFeedContract.getLiveRate(_primitive, _quoteAsset);
         } else {
-            (rate, isValid_, ) = priceFeedContract.getCanonicalRate(_primitive, _quoteAsset);
+            (rate, isValid_) = priceFeedContract.getCanonicalRate(_primitive, _quoteAsset);
         }
 
         value_ = __calcDenormalizedConversionAmount(_primitive, _amount, _quoteAsset, rate);
