@@ -135,6 +135,19 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         }
     }
 
+    /// @dev Helper for adapters to approve their integratees with the max amount of an asset.
+    /// Since everything is done atomically, and only the balances to-be-used are sent to adapters,
+    /// there is no need to approve exact amounts on every call.
+    function __approveMaxAsNeeded(
+        address _asset,
+        address _target,
+        uint256 _neededAmount
+    ) internal {
+        if (IERC20(_asset).allowance(address(this), _target) < _neededAmount) {
+            IERC20(_asset).approve(_target, type(uint256).max);
+        }
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////

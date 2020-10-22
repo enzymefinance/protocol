@@ -169,18 +169,16 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         uint256 _outgoingAssetAmount,
         uint256 _minExpectedRate
     ) private {
-        IERC20(_outgoingAsset).approve(EXCHANGE, _outgoingAssetAmount);
+        __approveMaxAsNeeded(_outgoingAsset, EXCHANGE, _outgoingAssetAmount);
 
-        uint256 preEthBalance = payable(address(this)).balance;
         IKyberNetworkProxy(EXCHANGE).swapTokenToEther(
             _outgoingAsset,
             _outgoingAssetAmount,
             _minExpectedRate
         );
-        uint256 ethFilledAmount = payable(address(this)).balance.sub(preEthBalance);
 
         // Convert ETH to WETH
-        IWETH(payable(WETH_TOKEN)).deposit{value: ethFilledAmount}();
+        IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
     }
 
     /// @dev Executes a swap of ERC20 to ERC20
@@ -190,7 +188,8 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         uint256 _outgoingAssetAmount,
         uint256 _minExpectedRate
     ) private {
-        IERC20(_outgoingAsset).approve(EXCHANGE, _outgoingAssetAmount);
+        __approveMaxAsNeeded(_outgoingAsset, EXCHANGE, _outgoingAssetAmount);
+
         IKyberNetworkProxy(EXCHANGE).swapTokenToToken(
             _outgoingAsset,
             _outgoingAssetAmount,

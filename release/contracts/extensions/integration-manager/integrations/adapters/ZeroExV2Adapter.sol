@@ -3,8 +3,6 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../../../interfaces/IZeroExV2.sol";
 import "../../../../utils/MathHelpers.sol";
 import "../utils/AdapterBase.sol";
@@ -14,7 +12,6 @@ import "../utils/AdapterBase.sol";
 /// @notice Adapter to 0xV2 Exchange Contract
 contract ZeroExV2Adapter is AdapterBase, MathHelpers {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
 
     address private immutable EXCHANGE;
 
@@ -129,14 +126,15 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
         );
 
         // Approve spend assets
-        IERC20(__getAssetAddress(order.takerAssetData)).safeIncreaseAllowance(
+        __approveMaxAsNeeded(
+            __getAssetAddress(order.takerAssetData),
             __getAssetProxy(order.takerAssetData),
             takerAssetFillAmount
         );
         if (order.takerFee > 0) {
             bytes memory zrxData = IZeroExV2(EXCHANGE).ZRX_ASSET_DATA();
-            // Approve spend assets
-            IERC20(__getAssetAddress(zrxData)).safeIncreaseAllowance(
+            __approveMaxAsNeeded(
+                __getAssetAddress(zrxData),
                 __getAssetProxy(zrxData),
                 __calcRelativeQuantity(
                     order.takerAssetAmount,

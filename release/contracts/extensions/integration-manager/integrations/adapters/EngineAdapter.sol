@@ -98,14 +98,13 @@ contract EngineAdapter is AdapterBase {
     {
         (, uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
 
+        __approveMaxAsNeeded(MLN_TOKEN, ENGINE, mlnTokenAmount);
+
         // Execute fill
-        IERC20(MLN_TOKEN).approve(ENGINE, mlnTokenAmount);
-        uint256 preEthBalance = payable(address(this)).balance;
         IEngine(ENGINE).sellAndBurnMln(mlnTokenAmount);
-        uint256 ethFilledAmount = payable(address(this)).balance.sub(preEthBalance);
 
         // Return ETH to WETH
-        IWETH(payable(WETH_TOKEN)).deposit{value: ethFilledAmount}();
+        IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
     }
 
     // PRIVATE FUNCTIONS

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../interfaces/IChai.sol";
 import "../utils/AdapterBase.sol";
 
@@ -9,8 +8,6 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for Chai <https://github.com/dapphub/chai>
 contract ChaiAdapter is AdapterBase {
-    using SafeERC20 for IERC20;
-
     address private immutable CHAI;
     address private immutable DAI;
 
