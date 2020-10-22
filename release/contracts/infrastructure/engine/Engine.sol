@@ -167,6 +167,10 @@ contract Engine is IEngine, DispatcherOwnerMixin {
     // STATE GETTERS //
     ///////////////////
 
+    // TODO: add natspec
+
+    // TODO: lowercase WETH and MLN (to be consistent with other files)
+
     function isEtherTaker(address _who) external view returns (bool) {
         return acctToIsEtherTaker[_who];
     }

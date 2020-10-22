@@ -6,7 +6,11 @@ import { MockChainlinkPriceSource } from '../utils/contracts';
 async function snapshot(provider: EthereumTestnetProvider) {
   const [deployer] = await provider.listAccounts();
   const signer = provider.getSigner(deployer);
-  const chainlinkPriceSource = await MockChainlinkPriceSource.deploy(signer);
+  const chainlinkPriceSource = await MockChainlinkPriceSource.deploy(
+    signer,
+    18,
+  );
+
   return chainlinkPriceSource;
 }
 

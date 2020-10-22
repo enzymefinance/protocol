@@ -4,7 +4,7 @@ import {
   resolveAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { defaultTestDeployment } from '../../../dist';
+import { defaultTestDeployment } from '../../..';
 import { releaseStatusTypes } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {

@@ -1,4 +1,4 @@
-const { whales } = require('./utils/network/config.json');
+const { whales } = require('./mainnet.json');
 
 if (!process.env.MAINNET_ARCHIVE_NODE) {
   console.warn('=====================================================');
@@ -13,6 +13,7 @@ if (!process.env.MAINNET_ARCHIVE_NODE) {
 const e2e = {
   displayName: 'e2e',
   preset: '@crestproject/ganache',
+  rootDir: 'tests',
   testMatch: ['**/?(*.)+(e2e).[jt]s?(x)'],
   testEnvironmentOptions: {
     ganacheProviderOptions: {
@@ -28,6 +29,7 @@ const e2e = {
 const unit = {
   displayName: 'unit',
   preset: '@crestproject/buidler',
+  rootDir: 'tests',
   testEnvironmentOptions: {
     buidlerConfigs: [
       require.resolve('./buidler.config'),

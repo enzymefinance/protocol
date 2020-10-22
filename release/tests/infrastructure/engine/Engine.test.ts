@@ -8,6 +8,7 @@ import { BigNumber, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../';
 import { Engine, ValueInterpreter } from '../../../utils/contracts';
 import { seedAndThawEngine, warpEngine } from '../../utils';
+import { updateChainlinkAggregator } from '../../utils/chainlink';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -169,10 +170,11 @@ describe('thaw', () => {
 
   it('cannot be called when frozenEther is 0', async () => {
     const {
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     await warpEngine(provider, engine);
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
 
     const thawTx = engine.thaw();
     await expect(thawTx).rejects.toBeRevertedWith('No frozen ether to thaw');
@@ -180,12 +182,13 @@ describe('thaw', () => {
 
   it('frozenEther is added to liquidEther', async () => {
     const {
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
     await engine.payAmguInEther.value(amount).send();
     await warpEngine(provider, engine);
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
 
     const preLiquidEther = await engine.getLiquidEther();
     const thawTx = engine.thaw();
@@ -304,10 +307,11 @@ describe('etherTakers', () => {
 describe('calcPremiumPercent', () => {
   it('returns 0 if liquidEther is under 1 ether', async () => {
     const {
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     await seedAndThawEngine(provider, engine, utils.parseEther('0.99'));
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(0);
@@ -315,10 +319,11 @@ describe('calcPremiumPercent', () => {
 
   it('returns 5 if liquidEther is 1 ether', async () => {
     const {
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     await seedAndThawEngine(provider, engine, utils.parseEther('1'));
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(5);
@@ -326,10 +331,11 @@ describe('calcPremiumPercent', () => {
 
   it('returns 10 if liquidEther is 5 ether', async () => {
     const {
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     await seedAndThawEngine(provider, engine, utils.parseEther('5'));
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(10);
@@ -337,10 +343,11 @@ describe('calcPremiumPercent', () => {
 
   it('returns 15 if liquidEther is >= 10 ether', async () => {
     const {
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     await seedAndThawEngine(provider, engine, utils.parseEther('10'));
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
     const premiumPercentCall = engine.calcPremiumPercent();
 
     await expect(premiumPercentCall).resolves.toEqBigNumber(15);
@@ -387,6 +394,7 @@ describe('sellAndBurnMln', () => {
       config: { deployer },
       deployment: {
         engine,
+        chainlinkAggregators,
         tokens: { mln },
       },
     } = await provider.snapshot(snapshot);
@@ -397,6 +405,7 @@ describe('sellAndBurnMln', () => {
 
     await engine.addEtherTakers([deployer]);
     await seedAndThawEngine(provider, engine, ethAmountWithPremium);
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
 
     const preMlnBalance = await mln.balanceOf(deployerAddress);
     await mln.approve(engine.address, mlnAmount);
@@ -439,13 +448,14 @@ describe('sellAndBurnMln', () => {
   it('reverts if mlnAmount value is greater than available liquidEther', async () => {
     const {
       config: { deployer },
-      deployment: { engine },
+      deployment: { engine, chainlinkAggregators },
     } = await provider.snapshot(snapshot);
 
     const mlnAmount = utils.parseEther('1');
     const ethAmountWithPremium = utils.parseEther('1.04');
 
     await seedAndThawEngine(provider, engine, ethAmountWithPremium);
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
     await engine.addEtherTakers([deployer]);
 
     const failSellBurnTx = engine.sellAndBurnMln(mlnAmount);

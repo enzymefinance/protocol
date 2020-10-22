@@ -47,9 +47,11 @@ export interface ReleaseDeploymentConfig {
     trackedAssetsLimit: BigNumberish;
   };
   chainlink: {
-    rateQuoteAsset: AddressLike;
+    ethUsdAggregator: AddressLike;
+    staleRateThreshold: BigNumberish;
     primitives: AddressLike[];
     aggregators: AddressLike[];
+    rateAssets: BigNumberish[];
   };
   integratees: {
     chai: AddressLike;
@@ -186,9 +188,12 @@ export const deployRelease = describeDeployment<
     return ChainlinkPriceFeed.deploy(
       config.deployer,
       config.dispatcher,
-      config.chainlink.rateQuoteAsset,
+      config.weth,
+      config.chainlink.ethUsdAggregator,
+      config.chainlink.staleRateThreshold,
       config.chainlink.primitives,
       config.chainlink.aggregators,
+      config.chainlink.rateAssets,
     );
   },
   // Derivative price feeds
@@ -306,6 +311,7 @@ export const deployRelease = describeDeployment<
       await deployment.kyberAdapter,
       await deployment.trackedAssetsAdapter,
     ];
+
     const integrationManager = await deployment.integrationManager;
     await integrationManager.registerAdapters(adapters);
 
@@ -320,6 +326,7 @@ export const deployRelease = describeDeployment<
       await deployment.managementFee,
       await deployment.performanceFee,
     ];
+
     const feeManager = await deployment.feeManager;
     await feeManager.registerFees(fees);
 
@@ -332,6 +339,7 @@ export const deployRelease = describeDeployment<
       await deployment.maxConcentration,
       await deployment.investorWhitelist,
     ];
+
     const policyManager = await deployment.policyManager;
     await policyManager.registerPolicies(policies);
   },

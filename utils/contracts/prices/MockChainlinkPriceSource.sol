@@ -4,13 +4,16 @@ pragma solidity 0.6.8;
 contract MockChainlinkPriceSource {
     event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
 
+    uint256 public DECIMALS;
+
     int256 public latestAnswer;
     uint256 public latestTimestamp;
     uint256 public roundId;
     address public aggregator;
 
-    constructor() public {
-        latestAnswer = 1 ether;
+    constructor(uint256 _decimals) public {
+        DECIMALS = _decimals;
+        latestAnswer = int256(10**_decimals);
         latestTimestamp = now;
         roundId = 1;
         aggregator = address(this);

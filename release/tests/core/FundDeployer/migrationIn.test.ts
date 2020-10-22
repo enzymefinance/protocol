@@ -8,7 +8,7 @@ import {
   MockVaultLib,
 } from '@melonproject/persistent/utils/contracts';
 import { constants } from 'ethers';
-import { defaultTestDeployment } from '../../../dist';
+import { defaultTestDeployment } from '../../..';
 import {
   createMigratedFundConfig,
   generateFeeManagerConfigWithMockFees,

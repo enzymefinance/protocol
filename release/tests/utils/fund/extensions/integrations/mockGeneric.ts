@@ -1,5 +1,5 @@
 import { AddressLike } from '@crestproject/crestproject';
-import { MockGenericAdapter } from '@melonproject/utils/dist/utils/contracts';
+import { mocks } from '@melonproject/utils';
 import { BigNumberish, BytesLike, Signer, utils } from 'ethers';
 import { IERC20 } from '../../../../../codegen/IERC20';
 import {
@@ -63,7 +63,7 @@ export async function mockGenericSwap({
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: Signer;
-  mockGenericAdapter: MockGenericAdapter;
+  mockGenericAdapter: mocks.MockGenericAdapter;
   selector?: BytesLike;
   spendAssets?: IERC20[];
   spendAssetAmounts?: BigNumberish[];

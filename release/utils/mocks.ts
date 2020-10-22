@@ -26,18 +26,20 @@ export interface MockDeploymentOutput {
     knc: mocks.MockToken;
     zrx: mocks.MockToken;
     dai: mocks.MockToken;
+    ren: mocks.MockToken;
   }>;
   kyberIntegratee: Promise<mocks.MockKyberIntegratee>;
   chaiIntegratee: Promise<mocks.MockChaiIntegratee>;
   mockGenericAdapter: Promise<mocks.MockGenericAdapter>;
   mockGenericIntegratee: Promise<mocks.MockGenericIntegratee>;
-  chainlinkPriceSources: Promise<{
-    weth: mocks.MockChainlinkPriceSource;
+  chainlinkEthUsdAggregator: Promise<mocks.MockChainlinkPriceSource>;
+  chainlinkAggregators: Promise<{
     mln: mocks.MockChainlinkPriceSource;
     rep: mocks.MockChainlinkPriceSource;
     knc: mocks.MockChainlinkPriceSource;
     zrx: mocks.MockChainlinkPriceSource;
     dai: mocks.MockChainlinkPriceSource;
+    ren: mocks.MockChainlinkPriceSource;
   }>;
   chaiPriceSource: Promise<mocks.MockChaiPriceSource>;
 }
@@ -52,32 +54,36 @@ export const deployMocks = describeDeployment<
 >({
   // Assets
   async tokens(config) {
-    const [weth, mln, rep, knc, zrx, dai] = await Promise.all([
+    const [weth, mln, rep, knc, zrx, dai, ren] = await Promise.all([
       mocks.WETH.deploy(config.deployer),
       mocks.MockToken.deploy(config.deployer, 'mln', 'MLN', 18),
       mocks.MockToken.deploy(config.deployer, 'rep', 'REP', 18),
       mocks.MockToken.deploy(config.deployer, 'knc', 'KNC', 18),
       mocks.MockToken.deploy(config.deployer, 'zrx', 'ZRX', 18),
       mocks.MockToken.deploy(config.deployer, 'dai', 'DAI', 18),
+      mocks.MockToken.deploy(config.deployer, 'ren', 'REN', 18),
     ]);
 
-    return { weth, mln, rep, knc, zrx, dai };
+    return { weth, mln, rep, knc, zrx, dai, ren };
   },
   // Price feed sources
   async chaiPriceSource(config) {
     return mocks.MockChaiPriceSource.deploy(config.deployer);
   },
-  async chainlinkPriceSources(config) {
-    const [weth, mln, rep, knc, zrx, dai] = await Promise.all([
-      mocks.MockChainlinkPriceSource.deploy(config.deployer),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer),
+  async chainlinkAggregators(config) {
+    const [mln, rep, knc, zrx, dai, ren] = await Promise.all([
+      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
+      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
+      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
+      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
+      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
+      mocks.MockChainlinkPriceSource.deploy(config.deployer, 8),
     ]);
 
-    return { weth, mln, rep, knc, zrx, dai };
+    return { mln, rep, knc, zrx, dai, ren };
+  },
+  async chainlinkEthUsdAggregator(config) {
+    return mocks.MockChainlinkPriceSource.deploy(config.deployer, 8);
   },
   // Adapter integratees
   async chaiIntegratee(config, deployment) {
@@ -118,36 +124,64 @@ export async function configureMockRelease({
   ];
 
   const tokens = [
-    mocks.tokens.dai as mocks.MockToken,
-    mocks.tokens.knc as mocks.MockToken,
     mocks.tokens.mln as mocks.MockToken,
     mocks.tokens.rep as mocks.MockToken,
+    mocks.tokens.knc as mocks.MockToken,
     mocks.tokens.zrx as mocks.MockToken,
+    mocks.tokens.dai as mocks.MockToken,
+    mocks.tokens.ren as mocks.MockToken,
     mocks.chaiIntegratee,
   ];
-  accounts = (accounts ?? []).concat(deployer);
 
-  // Make all accounts rich in WETH and tokens
+  const chainlinkPrimitives = [
+    mocks.tokens.mln as mocks.MockToken,
+    mocks.tokens.rep as mocks.MockToken,
+    mocks.tokens.knc as mocks.MockToken,
+    mocks.tokens.zrx as mocks.MockToken,
+    mocks.tokens.dai as mocks.MockToken,
+    mocks.tokens.ren as mocks.MockToken,
+  ];
+
+  const chainlinkAggregators = [
+    mocks.chainlinkAggregators.mln,
+    mocks.chainlinkAggregators.rep,
+    mocks.chainlinkAggregators.knc,
+    mocks.chainlinkAggregators.zrx,
+    mocks.chainlinkAggregators.dai,
+    mocks.chainlinkAggregators.ren,
+  ];
+
+  const chainlinkRateAssets = [
+    0, // MLN/ETH
+    0, // REP/ETH
+    0, // KNC/ETH
+    0, // ZRX/ETH
+    0, // DAI/ETH
+    1, // REN/USD
+  ];
+
+  // Make all accounts rich in WETH and tokens.
   await Promise.all<any>([
-    ...accounts.map((receiver) => {
-      return makeTokenRich(Object.values(tokens), receiver);
-    }),
-    ...accounts.map((account) => {
-      makeWethRich(mocks.tokens.weth, deployer);
-      return makeWethRich(mocks.tokens.weth, account);
+    makeWethRich(mocks.tokens.weth, deployer, utils.parseEther('1000')),
+    makeTokenRich(Object.values(tokens), deployer),
+    ...accounts.map(async (account) => {
+      await Promise.all([
+        makeTokenRich(Object.values(tokens), account),
+        makeWethRich(mocks.tokens.weth, account),
+      ]);
     }),
   ]);
 
   // Make integratees rich in WETH, ETH, and tokens.
-  await Promise.all<any>([
-    integratees.map((receiver) => {
-      return Promise.all([
-        mocks.tokens.weth.transfer(receiver, utils.parseEther('100')),
-        makeEthRich(deployer, receiver),
-        makeTokenRich(tokens, receiver),
+  await Promise.all(
+    integratees.map(async (integratee) => {
+      await Promise.all([
+        mocks.tokens.weth.transfer(integratee, utils.parseEther('100')),
+        makeEthRich(deployer, integratee),
+        makeTokenRich(tokens, integratee),
       ]);
     }),
-  ]);
+  );
 
   return {
     deployer,
@@ -163,13 +197,11 @@ export async function configureMockRelease({
       thawDelay: 10000000000,
     },
     chainlink: {
-      rateQuoteAsset: mocks.tokens.weth.address,
-      aggregators: Object.values(mocks.chainlinkPriceSources).map(
-        (aggregator) => aggregator.address,
-      ),
-      primitives: Object.keys(mocks.chainlinkPriceSources).map(
-        (symbol) => (mocks.tokens as any)[symbol].address,
-      ),
+      ethUsdAggregator: mocks.chainlinkEthUsdAggregator,
+      staleRateThreshold: 259200, // 72 hours
+      aggregators: chainlinkAggregators,
+      primitives: chainlinkPrimitives,
+      rateAssets: chainlinkRateAssets,
     },
     integrationManager: {
       trackedAssetsLimit: 20, // TODO
@@ -188,25 +220,33 @@ export async function configureMockRelease({
   };
 }
 
-export async function makeEthRich(sender: Signer, receiver: AddressLike) {
+export async function makeEthRich(
+  sender: Signer,
+  receiver: AddressLike,
+  amount = utils.parseEther('100'),
+) {
   return sender.sendTransaction({
     to: await resolveAddress(receiver),
-    value: utils.parseEther('100'),
+    value: amount,
   });
 }
 
-export async function makeWethRich(weth: mocks.WETH, account: Signer) {
+export async function makeWethRich(
+  weth: mocks.WETH,
+  account: Signer,
+  amount = utils.parseEther('100'),
+) {
   const connected = weth.connect(account);
-  const amount = utils.parseEther('100');
   return connected.deposit.value(amount).send();
 }
 
 export function makeTokenRich(
   tokens: mocks.MockToken[],
   receiver: AddressLike,
+  amount = utils.parseEther('100'),
 ) {
   const promises = tokens.map((token) => {
-    return token.mintFor(receiver, utils.parseEther('100'));
+    return token.mintFor(receiver, amount);
   });
 
   return Promise.all(promises);

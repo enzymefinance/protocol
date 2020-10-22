@@ -11,6 +11,7 @@ import {
   seedAndThawEngine,
   takeOrderSelector,
 } from '../../../utils';
+import { updateChainlinkAggregator } from '../../../utils/chainlink';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -184,6 +185,7 @@ describe('takeOrder', () => {
         engineAdapter,
         tokens: { weth, mln },
         integrationManager,
+        chainlinkAggregators,
       },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -195,6 +197,7 @@ describe('takeOrder', () => {
 
     // Seeds the engine with the amount of ETH needed
     await seedAndThawEngine(provider, engine, expectedWeth);
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
 
     // Seed vault with enough MLN for the transaction
     await mln.transfer(vaultProxy, mlnAmount);
@@ -204,7 +207,7 @@ describe('takeOrder', () => {
       assets: [weth, mln],
     });
 
-    const takeOrderTx = engineAdapterTakeOrder({
+    const takeOrderTx = await engineAdapterTakeOrder({
       comptrollerProxy,
       vaultProxy,
       integrationManager,

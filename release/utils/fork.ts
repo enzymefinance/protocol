@@ -7,16 +7,22 @@ import { Dispatcher } from '@melonproject/persistent';
 import { constants, providers, Signer, utils } from 'ethers';
 import { StandardERC20 } from '../codegen/StandardERC20';
 import { ReleaseDeploymentConfig } from './deployment';
-import { mainnet } from './network/mainnet';
+import mainnet from '../mainnet.json';
+
+type MainnetConfig = typeof mainnet;
+
+type MainnetWhales = {
+  [TKey in keyof MainnetConfig['whales']]: Signer;
+};
+
+type MainnetTokens = {
+  [TKey in keyof MainnetConfig['tokens']]: StandardERC20;
+};
 
 export interface ForkReleaseDeploymentConfig extends ReleaseDeploymentConfig {
-  mainnet: typeof mainnet;
-  tokens: {
-    [TKey in keyof typeof mainnet.tokens]: StandardERC20;
-  };
-  whales: {
-    [TKey in keyof typeof mainnet.whales]: Signer;
-  };
+  mainnet: MainnetConfig;
+  tokens: MainnetTokens;
+  whales: MainnetWhales;
 }
 
 export async function configureForkRelease({
@@ -32,50 +38,44 @@ export async function configureForkRelease({
   dispatcher: Dispatcher;
   accounts: Signer[];
 }): Promise<ForkReleaseDeploymentConfig> {
-  const whales = Object.keys(mainnet.whales).reduce(
-    (carry, current) => ({
-      ...carry,
-      [current]: provider.getSigner((mainnet.whales as any)[current]),
-    }),
-    {},
-  ) as {
-    [TKey in keyof typeof mainnet.whales]: Signer;
-  };
+  const whales = Object.entries(mainnet.whales).reduce(
+    (carry: MainnetWhales, [key, address]) => {
+      const signer = provider.getSigner(address);
+      return { ...carry, [key]: signer };
+    },
+    {} as MainnetWhales,
+  );
 
-  const tokens = Object.keys(mainnet.tokens).reduce(
-    (carry, current) => ({
-      ...carry,
-      [current]: new StandardERC20(
-        (mainnet.tokens as any)[current],
-        provider,
-      ).connect(accounts[0]),
-    }),
-    {},
-  ) as {
-    [TKey in keyof typeof mainnet.tokens]: StandardERC20;
-  };
+  const tokens = Object.entries(mainnet.tokens).reduce(
+    (carry: MainnetTokens, [key, address]) => {
+      const whale = whales[key as keyof MainnetTokens];
+      const token = new StandardERC20(address, whale);
+      return { ...carry, [key]: token };
+    },
+    {} as MainnetTokens,
+  );
 
-  const poorAccounts = Object.entries(whales)
-    .filter(([key]) => key !== 'eth')
-    .map(([, whale]) => whale)
-    .concat(accounts);
+  const chainlinkConfig = Object.values(mainnet.chainlinkAggregators);
+  const chainlinkRateAssets = chainlinkConfig.map(([, b]) => b as number);
+  const chainlinkAggregators = chainlinkConfig.map(([a]) => a as string);
+  const chainlinkPrimitives = Object.keys(mainnet.chainlinkAggregators).map(
+    (key) => mainnet.tokens[key as keyof typeof mainnet.chainlinkAggregators],
+  );
 
+  // Transfer some ether to all whales.
   await Promise.all(
-    poorAccounts.map((account) => {
-      return makeEthRich(whales.eth, account);
+    Object.values(whales).map(async (whale) => {
+      await makeEthRich(deployer, whale);
     }),
   );
 
-  const tokenWhales = Object.entries(whales).filter(([symbol]) => {
-    return tokens.hasOwnProperty(symbol);
-  });
-
+  // Distribute tokens (from the each whale) to all accounts.
   await Promise.all(
-    accounts.map((signer) => {
-      return Promise.all(
-        tokenWhales.map(([symbol, whale]) => {
-          const token = tokens[symbol as keyof typeof tokens];
-          return makeTokenRich(token, whale, signer);
+    accounts.map(async (account) => {
+      await Promise.all(
+        Object.entries(whales).map(async ([symbol, whale]) => {
+          const token = tokens[symbol as keyof MainnetTokens];
+          await makeTokenRich(token, whale, account);
         }),
       );
     }),
@@ -98,11 +98,11 @@ export async function configureForkRelease({
       thawDelay: 10000000000,
     },
     chainlink: {
-      rateQuoteAsset: mainnet.tokens.weth,
-      aggregators: Object.values(mainnet.chainlinkPriceSources),
-      primitives: Object.keys(mainnet.chainlinkPriceSources).map(
-        (key) => (mainnet.tokens as any)[key],
-      ),
+      ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
+      staleRateThreshold: 259200, // 72 hours
+      aggregators: chainlinkAggregators,
+      primitives: chainlinkPrimitives,
+      rateAssets: chainlinkRateAssets,
     },
     integrationManager: {
       trackedAssetsLimit: 20, // TODO
@@ -137,5 +137,6 @@ export async function makeTokenRich(
   const amount = constants.One.mul(10)
     .pow(await token.decimals())
     .mul(100);
+
   await token.connect(sender).transfer(receiver, amount);
 }

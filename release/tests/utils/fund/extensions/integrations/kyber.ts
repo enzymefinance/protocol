@@ -75,6 +75,7 @@ export async function kyberTakeOrder({
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount: outgoingAssetAmount,
   });
+
   const callArgs = await callOnIntegrationArgs({
     adapter: kyberAdapter,
     selector: takeOrderSelector,
@@ -84,6 +85,7 @@ export async function kyberTakeOrder({
   const takeOrderTx = comptrollerProxy
     .connect(fundOwner)
     .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+
   await expect(takeOrderTx).resolves.toBeReceipt();
 
   return takeOrderTx;

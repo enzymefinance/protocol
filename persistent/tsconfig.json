@@ -1,5 +1,4 @@
 {
-  "include": ["*.ts", "codegen", "artifacts", "tests", "utils"],
   "compilerOptions": {
     "module": "esnext",
     "lib": ["dom", "esnext"],
@@ -19,5 +18,13 @@
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "esModuleInterop": true
-  }
+  },
+  "include": [
+    "types.d.ts",
+    "index.ts",
+    "codegen",
+    "artifacts",
+    "utils",
+    "tests"
+  ]
 }

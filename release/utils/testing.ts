@@ -30,7 +30,6 @@ export async function defaultTestDeployment(
   });
 
   const release = await deployRelease(config);
-
   await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
 
