@@ -105,7 +105,8 @@ contract ChaiAdapter is AdapterBase {
         require(daiAmount > 0, "lend: daiAmount must be >0");
 
         // Execute Lend on Chai
-        IERC20(DAI).safeIncreaseAllowance(CHAI, daiAmount);
+        __approveMaxAsNeeded(DAI, CHAI, daiAmount);
+
         // Chai.join allows specifying the destination of Chai tokens directly
         IChai(CHAI).join(_vaultProxy, daiAmount);
     }
