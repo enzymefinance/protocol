@@ -2,10 +2,9 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { assertEvent } from '@melonproject/utils';
+import { assertEvent, StandardToken } from '@melonproject/utils';
 import { constants, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
-import { IERC20 } from '../../../../codegen/IERC20';
 import { IUniswapV2Factory } from '../../../../codegen/IUniswapV2Factory';
 import { IUniswapV2Pair } from '../../../../codegen/IUniswapV2Pair';
 import {
@@ -27,9 +26,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
   );
 
   // Mock tokens, with 1e18 balances everywhere
-  const mockWeth = await IERC20.mock(config.deployer);
+  const mockWeth = await StandardToken.mock(config.deployer);
   await mockWeth.balanceOf.returns(utils.parseEther('1'));
-  const mockAsset = await IERC20.mock(config.deployer);
+  const mockAsset = await StandardToken.mock(config.deployer);
   await mockAsset.balanceOf.returns(utils.parseEther('1'));
 
   // Mock the UniswapV2Pair, with 1e18 reserve balances

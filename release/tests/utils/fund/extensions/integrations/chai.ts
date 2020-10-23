@@ -1,5 +1,5 @@
+import { StandardToken } from '@melonproject/utils';
 import { BigNumberish, Signer, utils } from 'ethers';
-import { IERC20 } from '../../../../../codegen/IERC20';
 import {
   ChaiAdapter,
   ComptrollerLib,
@@ -56,7 +56,7 @@ export async function chaiLend({
   integrationManager: IntegrationManager;
   fundOwner: Signer;
   chaiAdapter: ChaiAdapter;
-  dai: IERC20;
+  dai: StandardToken;
   daiAmount?: BigNumberish;
   minChaiAmount?: BigNumberish;
   seedFund?: boolean;
@@ -100,7 +100,7 @@ export async function chaiRedeem({
   integrationManager: IntegrationManager;
   fundOwner: Signer;
   chaiAdapter: ChaiAdapter;
-  chai: IERC20;
+  chai: StandardToken;
   chaiAmount?: BigNumberish;
   minDaiAmount?: BigNumberish;
   seedFund?: boolean;

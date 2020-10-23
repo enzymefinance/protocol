@@ -5,7 +5,7 @@ import {
 } from '@crestproject/crestproject';
 import { Dispatcher } from '@melonproject/persistent';
 import { constants, providers, Signer, utils } from 'ethers';
-import { StandardERC20 } from '../codegen/StandardERC20';
+import { IERC20Extended } from '../codegen/IERC20Extended';
 import { ReleaseDeploymentConfig } from './deployment';
 import mainnet from '../mainnet.json';
 
@@ -16,7 +16,7 @@ type MainnetWhales = {
 };
 
 type MainnetTokens = {
-  [TKey in keyof MainnetConfig['tokens']]: StandardERC20;
+  [TKey in keyof MainnetConfig['tokens']]: IERC20Extended;
 };
 
 export interface ForkReleaseDeploymentConfig extends ReleaseDeploymentConfig {
@@ -49,7 +49,7 @@ export async function configureForkRelease({
   const tokens = Object.entries(mainnet.tokens).reduce(
     (carry: MainnetTokens, [key, address]) => {
       const whale = whales[key as keyof MainnetTokens];
-      const token = new StandardERC20(address, whale);
+      const token = new IERC20Extended(address, whale);
       return { ...carry, [key]: token };
     },
     {} as MainnetTokens,
@@ -129,7 +129,7 @@ export async function makeEthRich(sender: Signer, receiver: AddressLike) {
 }
 
 export async function makeTokenRich(
-  token: StandardERC20,
+  token: IERC20Extended,
   sender: Signer,
   receiver: AddressLike,
 ) {

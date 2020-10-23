@@ -1,6 +1,6 @@
 import { AddressLike, resolveArguments } from '@crestproject/crestproject';
+import { StandardToken } from '@melonproject/utils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
-import { IERC20 } from '../../codegen/IERC20';
 
 export function bigNumberMax(values: BigNumberish[]) {
   let max = BigNumber.from(0);
@@ -28,7 +28,7 @@ export async function getAssetBalances({
   assets,
 }: {
   account: AddressLike;
-  assets: IERC20[];
+  assets: StandardToken[];
 }) {
   return Promise.all<any>(assets.map((asset) => asset.balanceOf(account)));
 }

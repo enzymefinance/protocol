@@ -2,10 +2,9 @@ import {
   EthereumTestnetProvider,
   MockContract,
 } from '@crestproject/crestproject';
-import { assertEvent, assertNoEvent } from '@melonproject/utils';
+import { assertEvent, assertNoEvent, StandardToken } from '@melonproject/utils';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
-import { IERC20Extended } from '../../../../codegen/IERC20Extended';
 import {
   ComptrollerLib,
   FeeManager,
@@ -35,7 +34,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   );
 
   // Mock a denomination asset
-  const mockDenominationAsset = await IERC20Extended.mock(config.deployer);
+  const mockDenominationAsset = await StandardToken.mock(config.deployer);
   await mockDenominationAsset.decimals.returns(18);
 
   // Mock a VaultProxy

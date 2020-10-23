@@ -5,9 +5,8 @@ import {
   MockContract,
   randomAddress,
 } from '@crestproject/crestproject';
-import { assertEvent } from '@melonproject/utils';
+import { assertEvent, StandardToken } from '@melonproject/utils';
 import { defaultTestDeployment } from '../../../../';
-import { IERC20 } from '../../../../codegen/IERC20';
 import {
   ComptrollerLib,
   MaxConcentration,
@@ -91,7 +90,7 @@ async function mockValuesAndValidateRule({
   vaultProxyAddress: AddressLike;
   mockValueInterpreter: MockContract<ValueInterpreter>;
   maxConcentration: MaxConcentration;
-  incomingAsset: IERC20;
+  incomingAsset: StandardToken;
   incomingAssetGav: BigNumberish;
   assetValueIsValid?: boolean;
 }) {

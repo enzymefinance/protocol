@@ -1,7 +1,7 @@
 import { AddressLike } from '@crestproject/crestproject';
 import { contract, Call, Contract } from '@crestproject/ethers';
+import { StandardToken } from '@melonproject/utils';
 import { BigNumber, BigNumberish, Signer, utils } from 'ethers';
-import { IERC20 } from '../../../../../codegen/IERC20';
 import {
   ComptrollerLib,
   IntegrationManager,
@@ -58,9 +58,9 @@ export async function kyberTakeOrder({
   integrationManager: IntegrationManager;
   fundOwner: Signer;
   kyberAdapter: KyberAdapter;
-  outgoingAsset: IERC20;
+  outgoingAsset: StandardToken;
   outgoingAssetAmount?: BigNumberish;
-  incomingAsset: IERC20;
+  incomingAsset: StandardToken;
   minIncomingAssetAmount?: BigNumberish;
   seedFund?: boolean;
 }) {

@@ -2,10 +2,9 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { assertEvent } from '@melonproject/utils';
+import { assertEvent, StandardToken } from '@melonproject/utils';
 import { BigNumberish, Signer, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../../';
-import { IERC20 } from '../../../../codegen/IERC20';
 import {
   ComptrollerLib,
   IntegrationManager,
@@ -63,9 +62,9 @@ async function assertKyberTakeOrder({
   integrationManager: IntegrationManager;
   fundOwner: Signer;
   kyberAdapter: KyberAdapter;
-  outgoingAsset: IERC20;
+  outgoingAsset: StandardToken;
   outgoingAssetAmount?: BigNumberish;
-  incomingAsset: IERC20;
+  incomingAsset: StandardToken;
   minIncomingAssetAmount?: BigNumberish;
 }) {
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);

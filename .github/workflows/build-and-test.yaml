@@ -11,25 +11,49 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - name: Set up node
         uses: actions/setup-node@v1
         with:
           node-version: 12
           registry-url: https://npm.fury.io/melonproject/
           scope: '@melonproject'
+
+      - name: Retrieve cache
+        uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
       - name: Install dependencies
-        # TODO: Consider caching this step
         run: yarn install --frozen-lockfile
-      - name: Build contracts
-        run: yarn build
+
+        # TODO: Remove this again once it's fixed in hardhat
+      - name: Skip telemetry consent
+        run: |
+          mkdir -p ~/.config/hardhat-nodejs
+          echo { \"consent\": false } >> ~/.config/hardhat-nodejs/telemetry-consent.json
+
+      - name: Compile contracts
+        run: yarn compile
+
+      - name: Generate contract artifacts
+        run: yarn codegen
+
+      - name: Package libraries
+        run: yarn package
+
       - name: Run test suite
         run: yarn test
         env:
           MAINNET_ARCHIVE_NODE: ${{ secrets.MAINNET_ARCHIVE_NODE }}
+
       - name: Check types
         run: yarn typecheck
+
       - name: Check linting
         run: yarn lint
+
       - name: Authenticate with registry
         if: github.ref == 'refs/heads/develop'
         run: |
@@ -38,6 +62,7 @@ jobs:
           echo //npm.fury.io/melonproject/:always-auth=true >> .npmrc
         env:
           GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
+
       - name: Publish development packages
         if: github.ref == 'refs/heads/develop'
         run: yarn lerna publish --yes --force-publish --no-git-tag-version --no-push --canary --preid dev --registry https://npm.fury.io/melonproject/

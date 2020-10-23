@@ -5,10 +5,17 @@ import {
 } from '@crestproject/crestproject';
 import { Dispatcher } from '@melonproject/persistent';
 import {
+  describeDeployment,
   Deployment,
   DeploymentHandlers,
-  describeDeployment,
-  mocks,
+  MockToken,
+  MockChainlinkPriceSource,
+  MockChaiIntegratee,
+  MockKyberIntegratee,
+  MockGenericAdapter,
+  MockGenericIntegratee,
+  WETH,
+  MockChaiPriceSource,
 } from '@melonproject/utils';
 import { Signer, utils } from 'ethers';
 import { ReleaseDeploymentConfig } from './deployment';
@@ -20,28 +27,28 @@ export interface MockDeploymentConfig {
 
 export interface MockDeploymentOutput {
   tokens: Promise<{
-    weth: mocks.WETH;
-    mln: mocks.MockToken;
-    rep: mocks.MockToken;
-    knc: mocks.MockToken;
-    zrx: mocks.MockToken;
-    dai: mocks.MockToken;
-    ren: mocks.MockToken;
+    weth: WETH;
+    mln: MockToken;
+    rep: MockToken;
+    knc: MockToken;
+    zrx: MockToken;
+    dai: MockToken;
+    ren: MockToken;
   }>;
-  kyberIntegratee: Promise<mocks.MockKyberIntegratee>;
-  chaiIntegratee: Promise<mocks.MockChaiIntegratee>;
-  mockGenericAdapter: Promise<mocks.MockGenericAdapter>;
-  mockGenericIntegratee: Promise<mocks.MockGenericIntegratee>;
-  chainlinkEthUsdAggregator: Promise<mocks.MockChainlinkPriceSource>;
+  kyberIntegratee: Promise<MockKyberIntegratee>;
+  chaiIntegratee: Promise<MockChaiIntegratee>;
+  mockGenericAdapter: Promise<MockGenericAdapter>;
+  mockGenericIntegratee: Promise<MockGenericIntegratee>;
+  chainlinkEthUsdAggregator: Promise<MockChainlinkPriceSource>;
   chainlinkAggregators: Promise<{
-    mln: mocks.MockChainlinkPriceSource;
-    rep: mocks.MockChainlinkPriceSource;
-    knc: mocks.MockChainlinkPriceSource;
-    zrx: mocks.MockChainlinkPriceSource;
-    dai: mocks.MockChainlinkPriceSource;
-    ren: mocks.MockChainlinkPriceSource;
+    mln: MockChainlinkPriceSource;
+    rep: MockChainlinkPriceSource;
+    knc: MockChainlinkPriceSource;
+    zrx: MockChainlinkPriceSource;
+    dai: MockChainlinkPriceSource;
+    ren: MockChainlinkPriceSource;
   }>;
-  chaiPriceSource: Promise<mocks.MockChaiPriceSource>;
+  chaiPriceSource: Promise<MockChaiPriceSource>;
 }
 
 export type MockDeployment = Deployment<
@@ -55,52 +62,52 @@ export const deployMocks = describeDeployment<
   // Assets
   async tokens(config) {
     const [weth, mln, rep, knc, zrx, dai, ren] = await Promise.all([
-      mocks.WETH.deploy(config.deployer),
-      mocks.MockToken.deploy(config.deployer, 'mln', 'MLN', 18),
-      mocks.MockToken.deploy(config.deployer, 'rep', 'REP', 18),
-      mocks.MockToken.deploy(config.deployer, 'knc', 'KNC', 18),
-      mocks.MockToken.deploy(config.deployer, 'zrx', 'ZRX', 18),
-      mocks.MockToken.deploy(config.deployer, 'dai', 'DAI', 18),
-      mocks.MockToken.deploy(config.deployer, 'ren', 'REN', 18),
+      WETH.deploy(config.deployer),
+      MockToken.deploy(config.deployer, 'mln', 'MLN', 18),
+      MockToken.deploy(config.deployer, 'rep', 'REP', 18),
+      MockToken.deploy(config.deployer, 'knc', 'KNC', 18),
+      MockToken.deploy(config.deployer, 'zrx', 'ZRX', 18),
+      MockToken.deploy(config.deployer, 'dai', 'DAI', 18),
+      MockToken.deploy(config.deployer, 'ren', 'REN', 18),
     ]);
 
     return { weth, mln, rep, knc, zrx, dai, ren };
   },
   // Price feed sources
   async chaiPriceSource(config) {
-    return mocks.MockChaiPriceSource.deploy(config.deployer);
+    return MockChaiPriceSource.deploy(config.deployer);
   },
   async chainlinkAggregators(config) {
     const [mln, rep, knc, zrx, dai, ren] = await Promise.all([
-      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer, 18),
-      mocks.MockChainlinkPriceSource.deploy(config.deployer, 8),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 8),
     ]);
 
     return { mln, rep, knc, zrx, dai, ren };
   },
   async chainlinkEthUsdAggregator(config) {
-    return mocks.MockChainlinkPriceSource.deploy(config.deployer, 8);
+    return MockChainlinkPriceSource.deploy(config.deployer, 8);
   },
   // Adapter integratees
   async chaiIntegratee(config, deployment) {
     const tokens = await deployment.tokens;
-    return mocks.MockChaiIntegratee.deploy(config.deployer, tokens.dai);
+    return MockChaiIntegratee.deploy(config.deployer, tokens.dai);
   },
   async kyberIntegratee(config) {
-    return mocks.MockKyberIntegratee.deploy(config.deployer, []);
+    return MockKyberIntegratee.deploy(config.deployer, []);
   },
   async mockGenericAdapter(config, deployment) {
-    return mocks.MockGenericAdapter.deploy(
+    return MockGenericAdapter.deploy(
       config.deployer,
       await deployment.mockGenericIntegratee,
     );
   },
   async mockGenericIntegratee(config) {
-    return mocks.MockGenericIntegratee.deploy(config.deployer);
+    return MockGenericIntegratee.deploy(config.deployer);
   },
 });
 
@@ -124,22 +131,22 @@ export async function configureMockRelease({
   ];
 
   const tokens = [
-    mocks.tokens.mln as mocks.MockToken,
-    mocks.tokens.rep as mocks.MockToken,
-    mocks.tokens.knc as mocks.MockToken,
-    mocks.tokens.zrx as mocks.MockToken,
-    mocks.tokens.dai as mocks.MockToken,
-    mocks.tokens.ren as mocks.MockToken,
+    mocks.tokens.mln as MockToken,
+    mocks.tokens.rep as MockToken,
+    mocks.tokens.knc as MockToken,
+    mocks.tokens.zrx as MockToken,
+    mocks.tokens.dai as MockToken,
+    mocks.tokens.ren as MockToken,
     mocks.chaiIntegratee,
   ];
 
   const chainlinkPrimitives = [
-    mocks.tokens.mln as mocks.MockToken,
-    mocks.tokens.rep as mocks.MockToken,
-    mocks.tokens.knc as mocks.MockToken,
-    mocks.tokens.zrx as mocks.MockToken,
-    mocks.tokens.dai as mocks.MockToken,
-    mocks.tokens.ren as mocks.MockToken,
+    mocks.tokens.mln as MockToken,
+    mocks.tokens.rep as MockToken,
+    mocks.tokens.knc as MockToken,
+    mocks.tokens.zrx as MockToken,
+    mocks.tokens.dai as MockToken,
+    mocks.tokens.ren as MockToken,
   ];
 
   const chainlinkAggregators = [
@@ -232,7 +239,7 @@ export async function makeEthRich(
 }
 
 export async function makeWethRich(
-  weth: mocks.WETH,
+  weth: WETH,
   account: Signer,
   amount = utils.parseEther('100'),
 ) {
@@ -241,7 +248,7 @@ export async function makeWethRich(
 }
 
 export function makeTokenRich(
-  tokens: mocks.MockToken[],
+  tokens: MockToken[],
   receiver: AddressLike,
   amount = utils.parseEther('100'),
 ) {

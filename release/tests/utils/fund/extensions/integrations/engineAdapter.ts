@@ -1,5 +1,5 @@
+import { StandardToken } from '@melonproject/utils';
 import { BigNumberish, Signer, utils } from 'ethers';
-import { IERC20 } from '../../../../../codegen/IERC20';
 import {
   ComptrollerLib,
   EngineAdapter,
@@ -39,7 +39,7 @@ export async function engineAdapterTakeOrder({
   integrationManager: IntegrationManager;
   fundOwner: Signer;
   engineAdapter: EngineAdapter;
-  mln: IERC20;
+  mln: StandardToken;
   mlnAmount?: BigNumberish;
   minWethAmount?: BigNumberish;
   seedFund?: boolean;

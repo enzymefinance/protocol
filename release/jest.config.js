@@ -28,15 +28,8 @@ const e2e = {
 
 const unit = {
   displayName: 'unit',
-  preset: '@crestproject/buidler',
+  preset: '@crestproject/hardhat',
   rootDir: 'tests',
-  testEnvironmentOptions: {
-    buidlerConfigs: [
-      require.resolve('./buidler.config'),
-      require.resolve('@melonproject/persistent/buidler.config'),
-      require.resolve('@melonproject/utils/buidler.config'),
-    ],
-  },
 };
 
 module.exports = {

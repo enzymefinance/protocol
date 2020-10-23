@@ -2,10 +2,13 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { assertEvent, mocks } from '@melonproject/utils';
+import {
+  assertEvent,
+  MockGenericAdapter,
+  StandardToken,
+} from '@melonproject/utils';
 import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../..';
-import { IERC20 } from '../../../../codegen/IERC20';
 import {
   callOnIntegrationSelector,
   callOnIntegrationArgs,
@@ -65,8 +68,8 @@ async function seedFundByTrading({
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: Signer;
-  mockGenericAdapter: mocks.MockGenericAdapter;
-  incomingAsset: IERC20;
+  mockGenericAdapter: MockGenericAdapter;
+  incomingAsset: StandardToken;
   incomingAssetAmount: BigNumberish;
 }) {
   const preTxAssetBalancesCall = getAssetBalances({
@@ -346,7 +349,10 @@ describe('callOnIntegration', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const nonReceivalbleToken = await new IERC20(randomAddress(), provider);
+    const nonReceivalbleToken = await new StandardToken(
+      randomAddress(),
+      provider,
+    );
 
     const badSwapTx = mockGenericSwap({
       comptrollerProxy,

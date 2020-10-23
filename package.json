@@ -7,12 +7,15 @@
   ],
   "scripts": {
     "postinstall": "lerna bootstrap && lerna link",
-    "build": "lerna run build",
-    "test": "lerna run test",
-    "format": "lerna run format",
-    "lint": "lerna run lint",
-    "typecheck": "lerna run typecheck",
-    "clean": "lerna run clean"
+    "compile": "lerna run compile --stream",
+    "codegen": "lerna run codegen --stream",
+    "package": "lerna run package --stream",
+    "build": "lerna run build --stream",
+    "test": "lerna run test --stream",
+    "format": "lerna run format --stream",
+    "lint": "lerna run lint --stream",
+    "typecheck": "lerna run typecheck --stream",
+    "clean": "lerna run clean --stream"
   },
   "devDependencies": {
     "lerna": "^3.22.1"
