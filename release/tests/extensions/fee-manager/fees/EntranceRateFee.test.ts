@@ -141,7 +141,7 @@ describe('payout', () => {
     } = await provider.snapshot(snapshot);
 
     const payoutCall = standaloneEntranceRateFee.payout
-      .args(configuredComptrollerProxyAddress)
+      .args(configuredComptrollerProxyAddress, randomAddress())
       .call();
     await expect(payoutCall).resolves.toBe(false);
   });
@@ -157,6 +157,7 @@ describe('settle', () => {
     const settlementData = await settlePostBuySharesArgs({});
     const settleTx = standaloneEntranceRateFee.settle(
       configuredComptrollerProxyAddress,
+      randomAddress(),
       feeHooks.PostBuyShares,
       settlementData,
     );
@@ -193,6 +194,7 @@ describe('settle', () => {
       .connect(EOAFeeManager)
       .settle.args(
         configuredComptrollerProxyAddress,
+        randomAddress(),
         feeHooks.PostBuyShares,
         settlementData,
       )
@@ -208,6 +210,7 @@ describe('settle', () => {
       .connect(EOAFeeManager)
       .settle(
         configuredComptrollerProxyAddress,
+        randomAddress(),
         feeHooks.PostBuyShares,
         settlementData,
       );

@@ -12,9 +12,15 @@ if (!process.env.MAINNET_ARCHIVE_NODE) {
 
 const e2e = {
   displayName: 'e2e',
+  globals: {
+    'ts-jest': {
+      diagnostics: {
+        warnOnly: true,
+      },
+    },
+  },
   preset: '@crestproject/ganache',
   rootDir: 'tests',
-  testMatch: ['**/?(*.)+(e2e).[jt]s?(x)'],
   testEnvironmentOptions: {
     ganacheProviderOptions: {
       gasLimit: 0x989680,
@@ -24,16 +30,11 @@ const e2e = {
       fork: process.env.MAINNET_ARCHIVE_NODE,
     },
   },
+  testMatch: ['**/?(*.)+(e2e).[jt]s?(x)'],
 };
 
 const unit = {
   displayName: 'unit',
-  preset: '@crestproject/hardhat',
-  rootDir: 'tests',
-};
-
-module.exports = {
-  testTimeout: 120000,
   globals: {
     'ts-jest': {
       diagnostics: {
@@ -41,6 +42,11 @@ module.exports = {
       },
     },
   },
+  preset: '@crestproject/hardhat',
+  rootDir: 'tests',
+};
 
+module.exports = {
+  testTimeout: 120000,
   projects: process.env.MAINNET_ARCHIVE_NODE ? [unit, e2e] : [unit],
 };

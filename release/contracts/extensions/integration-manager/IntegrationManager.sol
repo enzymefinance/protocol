@@ -58,7 +58,6 @@ contract IntegrationManager is
     EnumerableSet.AddressSet private registeredAdapters;
 
     mapping(address => mapping(address => bool)) private comptrollerProxyToAcctToIsAuthUser;
-    mapping(address => address) private comptrollerProxyToVaultProxy;
 
     constructor(
         address _fundDeployer,
@@ -76,27 +75,8 @@ contract IntegrationManager is
     /////////////
 
     /// @notice Activates the extension by storing the VaultProxy and the fund owner
-    /// @dev Indirectly validates that the caller is a valid (or at least an innocuous)
-    /// ComptrollerProxy, in that it specifies getVaultProxy(),
-    /// and that the vaultProxy specifies it as its accessor().
-    /// Will revert without reason if the expected interfaces do not exist.
     function activateForFund() external override {
-        require(
-            comptrollerProxyToVaultProxy[msg.sender] == address(0),
-            "activateForFund: Fund has been activated"
-        );
-
-        address vaultProxy = IComptroller(msg.sender).getVaultProxy();
-        require(vaultProxy != address(0), "activateForFund: vaultProxy has not been set");
-
-        IVault vaultProxyContract = IVault(vaultProxy);
-        require(
-            msg.sender == vaultProxyContract.getAccessor(),
-            "activateForFund: sender is not the VaultProxy accessor"
-        );
-
-        // Set the validated vaultProxy in local storage
-        comptrollerProxyToVaultProxy[msg.sender] = vaultProxy;
+        __setValidatedVaultProxy(msg.sender);
     }
 
     /// @notice Adds an authorized user for the given fund
@@ -768,16 +748,5 @@ contract IntegrationManager is
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getValueInterpreter() external view returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
-    }
-
-    /// @notice Gets the vaultProxy variable for the given fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @return vaultProxy_ The vaultProxy value
-    function getVaultProxyForFund(address _comptrollerProxy)
-        external
-        view
-        returns (address vaultProxy_)
-    {
-        return comptrollerProxyToVaultProxy[_comptrollerProxy];
     }
 }

@@ -52,6 +52,7 @@ contract EntranceRateFee is FeeBase {
     /// @return sharesDue_ The amount of shares due
     function settle(
         address _comptrollerProxy,
+        address,
         IFeeManager.FeeHook,
         bytes calldata _settlementData
     )

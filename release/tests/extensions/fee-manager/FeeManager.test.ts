@@ -29,41 +29,23 @@ async function snapshot(provider: EthereumTestnetProvider) {
     provider,
   );
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
-
-async function snapshotWithMocks(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(snapshot);
-
   const fees = await generateRegisteredMockFees({
     deployer: config.deployer,
     feeManager: deployment.feeManager,
   });
 
-  return {
-    accounts,
-    deployment,
-    config,
-    fees,
-  };
-}
-
-async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config, fees } = await provider.snapshot(
-    snapshotWithMocks,
-  );
-
-  const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(2), '0x'];
+  const feesSettingsData = [
+    utils.randomBytes(10),
+    utils.randomBytes(2),
+    constants.HashZero,
+  ];
   const feeManagerConfig = await encodeArgs(
     ['address[]', 'bytes[]'],
     [Object.values(fees), feesSettingsData],
   );
   const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
+
   const { comptrollerProxy, newFundTx, vaultProxy } = await createNewFund({
     signer: fundOwner,
     fundOwner,
@@ -97,6 +79,7 @@ describe('constructor', () => {
         managementFee,
         performanceFee,
       },
+      fees,
     } = await provider.snapshot(snapshot);
 
     const getRegisteredFeesCall = feeManager.getRegisteredFees();
@@ -104,6 +87,7 @@ describe('constructor', () => {
       entranceRateFee.address,
       managementFee.address,
       performanceFee.address,
+      ...Object.values(fees).map((fee) => fee.address),
     ]);
 
     const getOwnerCall = feeManager.getOwner();
@@ -127,19 +111,19 @@ describe('setFundConfig', () => {
         tokens: { weth },
       },
       fees: { mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee },
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     const fees = [mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee];
     const feesSettingsData = [
       utils.randomBytes(10),
       utils.randomBytes(2),
-      '0x',
+      constants.HashZero,
     ];
     const feeManagerConfig = await encodeArgs(
       ['address[]', 'bytes[]'],
       [fees, feesSettingsData],
     );
-    const { comptrollerProxy, newFundTx, vaultProxy } = await createNewFund({
+    const { comptrollerProxy, newFundTx } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer,
@@ -156,12 +140,6 @@ describe('setFundConfig', () => {
       fees[1].address,
       fees[2].address,
     ]);
-    const getFeesRecipientForFundCall = feeManager.getFeesRecipientForFund(
-      comptrollerProxy,
-    );
-    await expect(getFeesRecipientForFundCall).resolves.toBe(
-      await vaultProxy.getOwner(),
-    );
 
     // Assert addFundSettings was called on each fee with its settingsData
     for (let i = 0; i < fees.length; i++) {
@@ -190,16 +168,14 @@ describe('activateForFund', () => {
     const {
       deployment: { feeManager },
       fees,
-      fund: { comptrollerProxy, fundOwner },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+      fund: { comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
-    // Sets the fee recipient as the fund owner
-    const getFeesRecipientForFundCall = feeManager.getFeesRecipientForFund(
+    // Stores the ComptrollerProxy-VaultProxy pairing
+    const getVaultProxyForFundCall = feeManager.getVaultProxyForFund(
       comptrollerProxy,
     );
-    await expect(getFeesRecipientForFundCall).resolves.toBe(
-      await resolveAddress(fundOwner),
-    );
+    await expect(getVaultProxyForFundCall).resolves.toBe(vaultProxy.address);
 
     // Calls each enabled fee to activate
     for (const fee of Object.values(fees)) {
@@ -214,11 +190,21 @@ describe('activateForFund', () => {
 describe('deactivateForFund', () => {
   it('settles Continuous fees, pays out all shares outstanding, and deletes all fund config', async () => {
     const {
+      accounts: { 0: buyer },
       config: { deployer },
       deployment: { dispatcher, feeManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
       fees: { mockContinuousFee1, mockContinuousFee2 },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
+
+    // Seed fund with initial fund shares,
+    // to give a non-zero totalSupply (so that minting new shares is allowed)
+    await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+    });
 
     // All fee settlement amounts are the same
     const feeAmount = utils.parseEther('0.5');
@@ -253,6 +239,9 @@ describe('deactivateForFund', () => {
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
+
     // Migrate the vault
     const migrateTx = mockNextFundDeployer.forward(
       dispatcher.executeMigration,
@@ -261,29 +250,30 @@ describe('deactivateForFund', () => {
     );
     await expect(migrateTx).resolves.toBeReceipt();
 
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
+
     // Fees should be settled and payout of shares outstanding forced
     const expectedPayoutAmount = BigNumber.from(feeAmount).mul(2);
-
-    const fundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    expect(fundOwnerSharesCall).toEqBigNumber(expectedPayoutAmount);
-
-    const sharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
-    expect(sharesOutstandingCall).toEqBigNumber(0);
+    expect(postFundOwnerSharesCall).toEqBigNumber(
+      preFundOwnerSharesCall.add(expectedPayoutAmount),
+    );
+    expect(postSharesOutstandingCall).toEqBigNumber(preSharesOutstandingCall);
 
     // Fund config should be deleted
     const enabledFeesCall = feeManager.getEnabledFeesForFund(comptrollerProxy);
     expect(enabledFeesCall).resolves.toMatchObject([]);
 
-    const feesRecipientCall = feeManager.getFeesRecipientForFund(
+    const getVaultProxyForFundCall = feeManager.getVaultProxyForFund(
       comptrollerProxy,
     );
-    expect(feesRecipientCall).resolves.toBe(constants.AddressZero);
+    await expect(getVaultProxyForFundCall).resolves.toBe(constants.AddressZero);
 
     // Proper events are fired
-    const allSharesOutstandingForcePaidEvent = feeManager.abi.getEvent(
-      'AllSharesOutstandingForcePaid',
+    const allSharesOutstandingForcePaidForFundEvent = feeManager.abi.getEvent(
+      'AllSharesOutstandingForcePaidForFund',
     );
-    await assertEvent(migrateTx, allSharesOutstandingForcePaidEvent, {
+    await assertEvent(migrateTx, allSharesOutstandingForcePaidForFundEvent, {
       comptrollerProxy: comptrollerProxy.address,
       payee: await resolveAddress(fundOwner),
       sharesDue: feeAmount,
@@ -322,12 +312,31 @@ describe('settleFees', () => {
     'finishes silently when no fees of the specified FeeHook are enabled',
   );
 
+  it.todo('correctly handles a fee that returns a SettlementType of None');
+
+  it.todo(
+    'does not allow minting new shares (Mint or MintOutstanding) if totalSupply is 0',
+  );
+
   it('pays out shares outstanding if they available to pay', async () => {
     const {
+      accounts: { 0: buyer },
       deployment: { feeManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
       fees: { mockContinuousFee1 },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
+
+    // Seed fund with initial fund shares,
+    // to give a non-zero totalSupply (so that minting new shares is allowed)
+    await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+    });
+
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
 
     // Mint shares outstanding with no payout
     const feeAmount = utils.parseEther('0.5');
@@ -352,19 +361,21 @@ describe('settleFees', () => {
     });
     await expect(settleContinuousFeesTx).resolves.toBeReceipt();
 
-    const fundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    const sharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
-
-    const expectedPayoutAmount = BigNumber.from(feeAmount).mul(2);
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
 
     // The feeAmount x 2 (two equal settlements) should be allocated to the fund owner
-    expect(fundOwnerSharesCall).toEqBigNumber(expectedPayoutAmount);
-    // No shares should remain in the VaultProxy
-    expect(sharesOutstandingCall).toEqBigNumber(0);
+    const expectedPayoutAmount = BigNumber.from(feeAmount).mul(2);
+    expect(postFundOwnerSharesCall).toEqBigNumber(
+      preFundOwnerSharesCall.add(expectedPayoutAmount),
+    );
 
-    // Assert correct SharesOutstandingPaidForFee emission for mockContinuousFee1
+    // There should be no change in shares in the VaultProxy
+    expect(postSharesOutstandingCall).toEqBigNumber(preSharesOutstandingCall);
+
+    // Assert correct SharesOutstandingPaidForFund emission for mockContinuousFee1
     const feeSettledForFundEvent = feeManager.abi.getEvent(
-      'SharesOutstandingPaidForFee',
+      'SharesOutstandingPaidForFund',
     );
     await assertEvent(settleContinuousFeesTx, feeSettledForFundEvent, {
       comptrollerProxy: comptrollerProxy.address,
@@ -378,8 +389,8 @@ describe('settleFees', () => {
     const {
       accounts: { 0: buyer },
       fees: { mockContinuousFee1, mockContinuousFee2 },
-      fund: { comptrollerProxy, denominationAsset },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+      fund: { comptrollerProxy, denominationAsset, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
     const investmentAmount = utils.parseEther('2');
     await buyShares({
@@ -398,19 +409,23 @@ describe('settleFees', () => {
     });
     await expect(mockContinuousFee1.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
       feeHooks.PreBuyShares,
       preBuySharesArgs,
     );
     await expect(mockContinuousFee1.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
     );
     await expect(mockContinuousFee2.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
       feeHooks.PreBuyShares,
       preBuySharesArgs,
     );
     await expect(mockContinuousFee2.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
     );
   });
 
@@ -418,8 +433,8 @@ describe('settleFees', () => {
     const {
       accounts: { 0: buyer },
       fees: { mockPostBuySharesFee },
-      fund: { comptrollerProxy, denominationAsset },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+      fund: { comptrollerProxy, denominationAsset, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
     const investmentAmount = utils.parseEther('2');
     await buyShares({
@@ -435,6 +450,7 @@ describe('settleFees', () => {
       mockPostBuySharesFee.settle.ref,
     ).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
       feeHooks.PostBuyShares,
       settlePostBuySharesArgs({
         buyer,
@@ -444,7 +460,7 @@ describe('settleFees', () => {
     );
     await expect(
       mockPostBuySharesFee.payout.ref,
-    ).toHaveBeenCalledOnContractWith(comptrollerProxy);
+    ).toHaveBeenCalledOnContractWith(comptrollerProxy, vaultProxy);
   });
 
   it('correctly settles a direct fee payment (BuyShares fee hook)', async () => {
@@ -453,13 +469,18 @@ describe('settleFees', () => {
       deployment: { feeManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
       fees: { mockPostBuySharesFee },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
 
+    // Define fee settlement
     const investmentAmount = utils.parseEther('2');
     const feeAmount = utils.parseEther('0.5');
     const settlementType = feeSettlementTypes.Direct;
     await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
 
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preBuyerSharesCall = await vaultProxy.balanceOf(buyer);
+
+    // Buy shares with active fee
     const buySharesTx = await buyShares({
       comptrollerProxy,
       signer: buyer,
@@ -469,41 +490,49 @@ describe('settleFees', () => {
       minSharesAmount: BigNumber.from(investmentAmount).sub(feeAmount),
     });
 
-    // The feeAmount should be deducted from the buyer's shares and allocated to the fund owner
-    const fundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    expect(fundOwnerSharesCall).toEqBigNumber(feeAmount);
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postBuyerSharesCall = await vaultProxy.balanceOf(buyer);
 
-    const buyerSharesCall = await vaultProxy.balanceOf(buyer);
-    expect(buyerSharesCall).toEqBigNumber(
-      BigNumber.from(investmentAmount).sub(feeAmount),
+    // The feeAmount should be allocated to the fund owner
+    expect(postFundOwnerSharesCall).toEqBigNumber(
+      preFundOwnerSharesCall.add(feeAmount),
+    );
+
+    // The feeAmount should be deducted from the buyer's shares
+    expect(postBuyerSharesCall).toEqBigNumber(
+      preBuyerSharesCall.add(investmentAmount).sub(feeAmount),
     );
 
     // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
-    const events = extractEvent(buySharesTx, feeSettledForFundEvent);
-    expect(events.length).toBe(3);
-    let eventExists = false;
-    for (const event of events) {
-      if (event.args.fee == mockPostBuySharesFee.address) {
-        expect(event.args).toMatchObject({
-          comptrollerProxy: comptrollerProxy.address,
-          settlementType,
-          sharesDue: feeAmount,
-        });
-        eventExists = true;
-      }
-    }
-    expect(eventExists).toBeTruthy();
+    await assertEvent(buySharesTx, feeSettledForFundEvent, {
+      comptrollerProxy: comptrollerProxy.address,
+      fee: mockPostBuySharesFee.address,
+      settlementType,
+      payer: await resolveAddress(buyer),
+      payee: await resolveAddress(fundOwner),
+      sharesDue: feeAmount,
+    });
   });
 
   it('correctly settles an inflationary fee paid immediately (settleContinuousFees)', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
       fees: { mockContinuousFee1 },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
 
+    // Seed fund with initial fund shares,
+    // to give a non-zero totalSupply (so that minting new shares is allowed)
+    await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+    });
+
+    // Define fee settlement
     const feeAmount = utils.parseEther('0.5');
     const settlementType = feeSettlementTypes.Mint;
     await mockContinuousFee1.settle.returns(
@@ -512,6 +541,10 @@ describe('settleFees', () => {
       feeAmount,
     );
 
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preSharesTotalSupplyCall = await vaultProxy.totalSupply();
+
+    // Settle continuous fees with active fee
     const settleContinuousFeesTx = await callOnExtension({
       signer: randomUser,
       comptrollerProxy,
@@ -519,40 +552,49 @@ describe('settleFees', () => {
       selector: settleContinuousFeesSelector,
     });
 
-    // The feeAmount should be allocated to the fund owner
-    const fundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    expect(fundOwnerSharesCall).toEqBigNumber(feeAmount);
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postSharesTotalSupplyCall = await vaultProxy.totalSupply();
 
-    // The shares totalSupply should be inflated
-    const sharesTotalSupplyCall = await vaultProxy.totalSupply();
-    expect(sharesTotalSupplyCall).toEqBigNumber(feeAmount);
+    // The feeAmount should be allocated to the fund owner
+    expect(postFundOwnerSharesCall).toEqBigNumber(
+      preFundOwnerSharesCall.add(feeAmount),
+    );
+
+    // The shares totalSupply should be inflated by the feeAmount
+    expect(postSharesTotalSupplyCall).toEqBigNumber(
+      preSharesTotalSupplyCall.add(feeAmount),
+    );
 
     // Assert correct FeeSettledForFund emission for mockContinuousFee1
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
-    const events = extractEvent(settleContinuousFeesTx, feeSettledForFundEvent);
-    expect(events.length).toBe(2);
-    let eventExists = false;
-    for (const event of events) {
-      if (event.args.fee == mockContinuousFee1.address) {
-        expect(event.args).toMatchObject({
-          comptrollerProxy: comptrollerProxy.address,
-          settlementType,
-          sharesDue: feeAmount,
-        });
-        eventExists = true;
-      }
-    }
-    expect(eventExists).toBeTruthy();
+    await assertEvent(settleContinuousFeesTx, feeSettledForFundEvent, {
+      comptrollerProxy: comptrollerProxy.address,
+      fee: mockContinuousFee1.address,
+      settlementType,
+      payer: constants.AddressZero,
+      payee: await resolveAddress(fundOwner),
+      sharesDue: feeAmount,
+    });
   });
 
   it('correctly mints shares outstanding and fires an event (settleContinuousFees)', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
       fees: { mockContinuousFee1 },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
 
+    // Seed fund with initial fund shares,
+    // to give a non-zero totalSupply (so that minting new shares is allowed)
+    await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+    });
+
+    // Define fee settlement
     const feeAmount = utils.parseEther('0.5');
     const settlementType = feeSettlementTypes.MintSharesOutstanding;
     await mockContinuousFee1.settle.returns(
@@ -561,6 +603,11 @@ describe('settleFees', () => {
       feeAmount,
     );
 
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preSharesTotalSupplyCall = await vaultProxy.totalSupply();
+    const preVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
+
+    // Settle continuous fees with active fee
     const settleContinuousFeesTx = await callOnExtension({
       signer: randomUser,
       comptrollerProxy,
@@ -568,41 +615,55 @@ describe('settleFees', () => {
       selector: settleContinuousFeesSelector,
     });
 
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postSharesTotalSupplyCall = await vaultProxy.totalSupply();
+    const postVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
+
     // The feeAmount should be allocated to the vaultProxy
-    const vaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
-    expect(vaultProxySharesCall).toEqBigNumber(feeAmount);
+    expect(postVaultProxySharesCall).toEqBigNumber(
+      preVaultProxySharesCall.add(feeAmount),
+    );
+
     // The shares totalSupply should be inflated
-    const sharesTotalSupplyCall = await vaultProxy.totalSupply();
-    expect(sharesTotalSupplyCall).toEqBigNumber(feeAmount);
+    expect(postSharesTotalSupplyCall).toEqBigNumber(
+      preSharesTotalSupplyCall.add(feeAmount),
+    );
+
     // The fund owner should not have an increase in shares
-    const fundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    expect(fundOwnerSharesCall).toEqBigNumber(0);
+    expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall);
 
     // Assert correct FeeSettledForFund emission for mockContinuousFee1
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
-    const events = extractEvent(settleContinuousFeesTx, feeSettledForFundEvent);
-    expect(events.length).toBe(2);
-    let eventExists = false;
-    for (const event of events) {
-      if (event.args.fee == mockContinuousFee1.address) {
-        expect(event.args).toMatchObject({
-          comptrollerProxy: comptrollerProxy.address,
-          settlementType,
-          sharesDue: feeAmount,
-        });
-        eventExists = true;
-      }
-    }
-    expect(eventExists).toBeTruthy();
+    await assertEvent(settleContinuousFeesTx, feeSettledForFundEvent, {
+      comptrollerProxy: comptrollerProxy.address,
+      fee: mockContinuousFee1.address,
+      settlementType,
+      payer: constants.AddressZero,
+      payee: vaultProxy.address,
+      sharesDue: feeAmount,
+    });
   });
 
   it('correctly burns shares outstanding and fires an event', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
       fees: { mockContinuousFee1 },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
+
+    // Seed fund with initial fund shares,
+    // to give a non-zero totalSupply (so that minting new shares is allowed)
+    await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+    });
+
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preSharesTotalSupplyCall = await vaultProxy.totalSupply();
+    const preVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
 
     // First mint shares outstanding
     const mintFeeAmount = utils.parseEther('1');
@@ -626,7 +687,6 @@ describe('settleFees', () => {
       constants.AddressZero,
       burnFeeAmount,
     );
-
     const settleContinuousFeesTx = await callOnExtension({
       signer: randomUser,
       comptrollerProxy,
@@ -634,51 +694,58 @@ describe('settleFees', () => {
       selector: settleContinuousFeesSelector,
     });
 
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postSharesTotalSupplyCall = await vaultProxy.totalSupply();
+    const postVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
+
     const expectedRemainingSharesOutstanding = BigNumber.from(
       mintFeeAmount,
     ).sub(burnFeeAmount);
 
     // The remaining fee amount should be allocated to the vaultProxy
-    const vaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
-    expect(vaultProxySharesCall).toEqBigNumber(
-      expectedRemainingSharesOutstanding,
+    expect(postVaultProxySharesCall).toEqBigNumber(
+      preVaultProxySharesCall.add(expectedRemainingSharesOutstanding),
     );
 
     // The shares totalSupply should be inflated (minted shares minus burned shares)
-    const sharesTotalSupplyCall = await vaultProxy.totalSupply();
-    expect(sharesTotalSupplyCall).toEqBigNumber(
-      expectedRemainingSharesOutstanding,
+    expect(postSharesTotalSupplyCall).toEqBigNumber(
+      preSharesTotalSupplyCall.add(expectedRemainingSharesOutstanding),
     );
 
-    // The fund owner should not have any shares
-    const fundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    expect(fundOwnerSharesCall).toEqBigNumber(0);
+    // The fund owner should not have any new shares
+    expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall);
 
     // Assert correct FeeSettledForFund emission for mockContinuousFee1
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
-    const events = extractEvent(settleContinuousFeesTx, feeSettledForFundEvent);
-    expect(events.length).toBe(2);
-    let eventExists = false;
-    for (const event of events) {
-      if (event.args.fee == mockContinuousFee1.address) {
-        expect(event.args).toMatchObject({
-          comptrollerProxy: comptrollerProxy.address,
-          settlementType,
-          sharesDue: burnFeeAmount,
-        });
-        eventExists = true;
-      }
-    }
-    expect(eventExists).toBeTruthy();
+    await assertEvent(settleContinuousFeesTx, feeSettledForFundEvent, {
+      comptrollerProxy: comptrollerProxy.address,
+      fee: mockContinuousFee1.address,
+      settlementType,
+      payer: vaultProxy.address,
+      payee: constants.AddressZero,
+      sharesDue: burnFeeAmount,
+    });
   });
 
   it('correctly handles request to burn more shares outstanding than available', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
-      fund: { comptrollerProxy, vaultProxy },
+      fund: { comptrollerProxy, denominationAsset, vaultProxy },
       fees: { mockContinuousFee1 },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
+
+    // Seed fund with initial fund shares,
+    // to give a non-zero totalSupply (so that minting new shares is allowed)
+    await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+    });
+
+    const preSharesTotalSupplyCall = await vaultProxy.totalSupply();
+    const preVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
 
     // First mint shares outstanding
     const initialSharesOutstandingBal = utils.parseEther('1');
@@ -710,12 +777,14 @@ describe('settleFees', () => {
       selector: settleContinuousFeesSelector,
     });
 
-    // The VaultProxy should have 0 shares
-    const vaultProxySharesCall = vaultProxy.balanceOf(vaultProxy);
-    await expect(vaultProxySharesCall).resolves.toEqBigNumber(0);
-    // The shares totalSupply should be 0
-    const sharesTotalSupplyCall = vaultProxy.totalSupply();
-    await expect(sharesTotalSupplyCall).resolves.toEqBigNumber(0);
+    const postSharesTotalSupplyCall = await vaultProxy.totalSupply();
+    const postVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
+
+    // The VaultProxy should have its original balance of shares
+    expect(postVaultProxySharesCall).toEqBigNumber(preVaultProxySharesCall);
+
+    // The shares totalSupply should be the original amount
+    expect(postSharesTotalSupplyCall).toEqBigNumber(preSharesTotalSupplyCall);
   });
 });
 
@@ -724,9 +793,9 @@ describe('settleContinuousFees', () => {
     const {
       accounts: { 0: randomUser },
       deployment: { feeManager },
-      fund: { comptrollerProxy },
       fees: { mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+      fund: { comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
     const settleContinuousFeesTx = callOnExtension({
       signer: randomUser,
@@ -739,22 +808,26 @@ describe('settleContinuousFees', () => {
     // Assert called settle and payout on Continuous fees
     await expect(mockContinuousFee1.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
       feeHooks.Continuous,
       '0x',
     );
     await expect(mockContinuousFee1.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
     );
     await expect(mockContinuousFee2.settle.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
       feeHooks.Continuous,
       '0x',
     );
     await expect(mockContinuousFee2.payout.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
     );
 
-    // Assert BuyShares fees were not called
+    // Assert BuyShares fees not called
     expect(mockPostBuySharesFee.settle.ref).not.toHaveBeenCalledOnContract();
     expect(mockPostBuySharesFee.payout.ref).not.toHaveBeenCalledOnContract();
   });

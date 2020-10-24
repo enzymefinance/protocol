@@ -1,5 +1,5 @@
 import { AddressLike, randomAddress } from '@crestproject/crestproject';
-import { BigNumberish, BytesLike, Signer, utils } from 'ethers';
+import { BigNumberish, BytesLike, constants, Signer, utils } from 'ethers';
 import { IPolicy } from '../../../../../codegen/IPolicy';
 import { PolicyManager } from '../../../../../utils/contracts';
 import { encodeArgs } from '../../../common';
@@ -32,8 +32,8 @@ export async function generatePolicyManagerConfigWithMockFees({
 
   const policiesSettingsData = [
     utils.randomBytes(10),
-    '0x',
-    '0x',
+    constants.HashZero,
+    constants.HashZero,
     utils.randomBytes(2),
   ];
 

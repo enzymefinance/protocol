@@ -53,11 +53,13 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
 
     /// @notice Settle the fee and reconcile shares due
     /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @param _vaultProxy The VaultProxy of the calling fund
     /// @return settlementType_ The type of settlement
     /// @return (unused) The payer of shares due
     /// @return sharesDue_ The amount of shares due
     function settle(
         address _comptrollerProxy,
+        address _vaultProxy,
         IFeeManager.FeeHook,
         bytes calldata
     )
@@ -75,8 +77,7 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
             return (IFeeManager.SettlementType.None, address(0), 0);
         }
 
-        address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
-        uint256 sharesSupply = VaultLib(vaultProxy).totalSupply();
+        uint256 sharesSupply = VaultLib(_vaultProxy).totalSupply();
 
         if (sharesSupply > 0) {
             sharesDue_ = __calcSettlementSharesDue(_comptrollerProxy, sharesSupply, prevSettled);

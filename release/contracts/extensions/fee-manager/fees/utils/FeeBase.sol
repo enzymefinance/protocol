@@ -23,7 +23,7 @@ abstract contract FeeBase is IFee {
     }
 
     /// @dev Returns empty by default, can be overridden by fee
-    function payout(address) external virtual override returns (bool) {
+    function payout(address, address) external virtual override returns (bool) {
         return false;
     }
 

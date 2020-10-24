@@ -23,8 +23,6 @@ contract FeeManager is
     FundDeployerOwnerMixin,
     PermissionedVaultActionMixin
 {
-    // TODO: calling `payout` on fees that don't defer shares is wasteful; consider storing locally?
-
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
@@ -39,74 +37,66 @@ contract FeeManager is
 
     event FeeRegistered(address indexed fee, string indexed identifier);
 
-    // TODO: need payer and payee?
     event FeeSettledForFund(
         address indexed comptrollerProxy,
         address indexed fee,
-        SettlementType settlementType,
+        SettlementType indexed settlementType,
+        address payer,
+        address payee,
         uint256 sharesDue
     );
 
-    event AllSharesOutstandingForcePaid(
+    event AllSharesOutstandingForcePaidForFund(
         address indexed comptrollerProxy,
         address payee,
         uint256 sharesDue
     );
 
-    event SharesOutstandingPaidForFee(
+    event SharesOutstandingPaidForFund(
         address indexed comptrollerProxy,
         address indexed fee,
         address payee,
         uint256 sharesDue
     );
 
-    event FeesRecipientSet(
+    event FeesRecipientSetForFund(
         address indexed comptrollerProxy,
         address prevFeesRecipient,
         address nextFeesRecipient
     );
 
     EnumerableSet.AddressSet private registeredFees;
+    mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => mapping(address => uint256))
         private comptrollerProxyToFeeToSharesOutstanding;
-    mapping(address => address[]) private comptrollerProxyToFees;
-    mapping(address => address) private comptrollerProxyToFeesRecipient;
 
     constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Initialize already configured fees for use in the calling fund
+    /// @notice Activate already-configured fees for use in the calling fund
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     function activateForFund() external override {
-        address comptrollerProxy = msg.sender;
+        __setValidatedVaultProxy(msg.sender);
 
-        // Set the fund owner as the fees recipient
-        __setFeesRecipient(
-            comptrollerProxy,
-            IVault(IComptroller(comptrollerProxy).getVaultProxy()).getOwner()
-        );
-
-        address[] memory enabledFees = comptrollerProxyToFees[comptrollerProxy];
+        address[] memory enabledFees = comptrollerProxyToFees[msg.sender];
         for (uint256 i; i < enabledFees.length; i++) {
-            IFee(enabledFees[i]).activateForFund(comptrollerProxy);
+            IFee(enabledFees[i]).activateForFund(msg.sender);
         }
     }
 
-    /// @notice Deactivate fees for a fund that is shutdown
+    /// @notice Deactivate fees for a fund
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     /// If we add a SellShares fee hook, this will need to be refactored to not delete those fees.
     function deactivateForFund() external override {
-        address comptrollerProxy = msg.sender;
-
         // Settle continuous fees one last time
-        __settleFeesForHook(comptrollerProxy, IFeeManager.FeeHook.Continuous, "");
+        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
 
         // Force payout of remaining shares outstanding
-        __forcePayoutAllSharesOutstanding(comptrollerProxy);
+        __forcePayoutAllSharesOutstanding(msg.sender);
 
         // Clean up storage
-        __deleteFundStorage(comptrollerProxy);
+        __deleteFundStorage(msg.sender);
     }
 
     /// @notice Enable and configure fees for use in the calling fund
@@ -116,36 +106,34 @@ contract FeeManager is
     /// The recommended order is for static fees (e.g., a management fee) to be applied before
     /// dynamic fees (e.g., a performance fee).
     function setConfigForFund(bytes calldata _configData) external override {
-        address comptrollerProxy = msg.sender;
-
         (address[] memory fees, bytes[] memory settingsData) = abi.decode(
             _configData,
             (address[], bytes[])
         );
 
-        // Sanity check
+        // Sanity checks
         require(
             fees.length == settingsData.length,
-            "enableFees: fees and settingsData array lengths unequal"
+            "setConfigForFund: fees and settingsData array lengths unequal"
         );
-        require(fees.isUniqueSet(), "setFundConfig: fees cannot include duplicates");
+        require(fees.isUniqueSet(), "setConfigForFund: fees cannot include duplicates");
 
         // Enable each fee with settings
         for (uint256 i; i < fees.length; i++) {
-            require(isRegisteredFee(fees[i]), "setFundConfig: Fee is not registered");
+            require(isRegisteredFee(fees[i]), "setConfigForFund: Fee is not registered");
 
             // Set fund config on fee
-            IFee(fees[i]).addFundSettings(comptrollerProxy, settingsData[i]);
+            IFee(fees[i]).addFundSettings(msg.sender, settingsData[i]);
 
-            // Add fee
-            comptrollerProxyToFees[comptrollerProxy].push(fees[i]);
+            // Enable fee for fund
+            comptrollerProxyToFees[msg.sender].push(fees[i]);
 
-            emit FeeEnabledForFund(comptrollerProxy, fees[i], settingsData[i]);
+            emit FeeEnabledForFund(msg.sender, fees[i], settingsData[i]);
         }
     }
 
     /// @notice Settles all "continuous" fees (e.g., ManagementFee and PerformanceFee),
-    /// paying out shares wherever possible.
+    /// paying out shares whenever possible.
     /// @dev Anyone can call this function, but must do so via the ComptrollerProxy.
     /// Useful in case there is little activity and a manager wants to cull fees.
     function settleContinuousFees(address, bytes calldata) external {
@@ -162,48 +150,51 @@ contract FeeManager is
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to destroy local storage to get gas refund and prevent further calls to fee manager.
+    /// @dev Helper to destroy local storage to get gas refund,
+    /// and to prevent further calls to fee manager
     function __deleteFundStorage(address _comptrollerProxy) private {
         delete comptrollerProxyToFees[_comptrollerProxy];
-        delete comptrollerProxyToFeesRecipient[_comptrollerProxy];
+        delete comptrollerProxyToVaultProxy[_comptrollerProxy];
     }
 
-    /// @dev Helper to force the payout of shares outstanding across all fees
+    /// @dev Helper to force the payout of shares outstanding across all fees.
+    /// For the current release, all shares in the VaultProxy are assumed to be
+    /// shares outstanding from fees. If not, then they were sent there by mistake
+    /// and are otherwise unrecoverable. We can therefore take the VaultProxy's
+    /// shares balance as the totalSharesOutstanding to payout to the fund owner.
     function __forcePayoutAllSharesOutstanding(address _comptrollerProxy) private {
-        uint256 totalSharesOutstanding;
-        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
-        for (uint256 i; i < fees.length; i++) {
+        address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
 
-                uint256 feeSharesOutstanding
-             = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]];
-            if (feeSharesOutstanding > 0) {
-                comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]] = 0;
-                totalSharesOutstanding = totalSharesOutstanding.add(feeSharesOutstanding);
-            }
-        }
-
+        uint256 totalSharesOutstanding = IERC20(vaultProxy).balanceOf(vaultProxy);
         if (totalSharesOutstanding == 0) {
             return;
         }
 
-        // TODO: need to protect against sharesOutstanding > actual balanceOf?
+        // Destroy any shares outstanding storage
+        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
+        for (uint256 i; i < fees.length; i++) {
+            delete comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]];
+        }
 
         // Distribute all shares outstanding to the fees recipient
-        address payee = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        __transferShares(
+        address payee = IVault(vaultProxy).getOwner();
+        __transferShares(_comptrollerProxy, vaultProxy, payee, totalSharesOutstanding);
+
+        emit AllSharesOutstandingForcePaidForFund(
             _comptrollerProxy,
-            IComptroller(_comptrollerProxy).getVaultProxy(),
             payee,
             totalSharesOutstanding
         );
-
-        emit AllSharesOutstandingForcePaid(_comptrollerProxy, payee, totalSharesOutstanding);
     }
 
-    /// @dev Helper to pay the shares outstanding for a given fee.
+    /// @dev Helper to payout the shares outstanding for a given fee.
     /// Should be called after settlement has occurred.
-    function __payoutSharesOutstandingForFee(address _comptrollerProxy, address _fee) private {
-        if (!IFee(_fee).payout(_comptrollerProxy)) {
+    function __payoutSharesOutstandingForFee(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        address _fee
+    ) private {
+        if (!IFee(_fee).payout(_comptrollerProxy, _vaultProxy)) {
             return;
         }
 
@@ -216,64 +207,47 @@ contract FeeManager is
 
         // Delete shares outstanding and distribute from VaultProxy to the fees recipient
         comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = 0;
-        address payee = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        __transferShares(
-            _comptrollerProxy,
-            IComptroller(_comptrollerProxy).getVaultProxy(),
-            payee,
-            sharesOutstanding
-        );
+        address payee = IVault(_vaultProxy).getOwner();
+        __transferShares(_comptrollerProxy, _vaultProxy, payee, sharesOutstanding);
 
-        emit SharesOutstandingPaidForFee(_comptrollerProxy, _fee, payee, sharesOutstanding);
-    }
-
-    /// @dev Helper to set the fees recipient for a fund
-    // TODO: expose an external setter for this?
-    function __setFeesRecipient(address _comptrollerProxy, address _nextFeesRecipient) private {
-        address prevRecipient = comptrollerProxyToFeesRecipient[_comptrollerProxy];
-        require(
-            prevRecipient != _nextFeesRecipient,
-            "__setFeesRecipient: _nextFeesRecipient is already the current value"
-        );
-        comptrollerProxyToFeesRecipient[_comptrollerProxy] = _nextFeesRecipient;
-
-        emit FeesRecipientSet(_comptrollerProxy, prevRecipient, _nextFeesRecipient);
+        emit SharesOutstandingPaidForFund(_comptrollerProxy, _fee, payee, sharesOutstanding);
     }
 
     /// @dev Helper to settle a fee
     function __settleFee(
         address _comptrollerProxy,
+        address _vaultProxy,
         address _fee,
         FeeHook _hook,
         bytes memory _settlementData
     ) private {
         (SettlementType settlementType, address payer, uint256 sharesDue) = IFee(_fee).settle(
             _comptrollerProxy,
+            _vaultProxy,
             _hook,
             _settlementData
         );
+        if (settlementType == SettlementType.None) {
+            return;
+        }
 
+        address payee;
         if (settlementType == SettlementType.Direct) {
-            __transferShares(
-                _comptrollerProxy,
-                payer,
-                comptrollerProxyToFeesRecipient[_comptrollerProxy],
-                sharesDue
-            );
+            payee = IVault(_vaultProxy).getOwner();
+            __transferShares(_comptrollerProxy, payer, payee, sharesDue);
         } else if (settlementType == SettlementType.Mint) {
-            __mintShares(
-                _comptrollerProxy,
-                comptrollerProxyToFeesRecipient[_comptrollerProxy],
-                sharesDue
-            );
+            __validateNonZeroSharesSupply(_vaultProxy);
+
+            payee = IVault(_vaultProxy).getOwner();
+            __mintShares(_comptrollerProxy, payee, sharesDue);
         } else if (settlementType == SettlementType.MintSharesOutstanding) {
+            __validateNonZeroSharesSupply(_vaultProxy);
+
             comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee]
                 .add(sharesDue);
-            __mintShares(
-                _comptrollerProxy,
-                IComptroller(_comptrollerProxy).getVaultProxy(),
-                sharesDue
-            );
+
+            payee = _vaultProxy;
+            __mintShares(_comptrollerProxy, payee, sharesDue);
         } else if (settlementType == SettlementType.BurnSharesOutstanding) {
 
                 uint256 sharesOutstandingBalance
@@ -281,18 +255,17 @@ contract FeeManager is
             if (sharesOutstandingBalance < sharesDue) {
                 sharesDue = sharesOutstandingBalance;
             }
+
             comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = sharesOutstandingBalance
                 .sub(sharesDue);
-            __burnShares(
-                _comptrollerProxy,
-                IComptroller(_comptrollerProxy).getVaultProxy(),
-                sharesDue
-            );
-        }
-        // TODO: revert if the type doesn't match an option?
-        // TODO: should it be FeeManager's responsibility to not mint shares if shares supply is 0?
 
-        emit FeeSettledForFund(_comptrollerProxy, _fee, settlementType, sharesDue);
+            payer = _vaultProxy;
+            __burnShares(_comptrollerProxy, payer, sharesDue);
+        } else {
+            revert("__settleFee: Invalid SettlementType");
+        }
+
+        emit FeeSettledForFund(_comptrollerProxy, _fee, settlementType, payer, payee, sharesDue);
     }
 
     /// @dev Helper to settle and then payout shares outstanding for a each fee of a given FeeHook
@@ -301,16 +274,25 @@ contract FeeManager is
         FeeHook _hook,
         bytes memory _settlementData
     ) private {
+        address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
         address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
         for (uint256 i; i < fees.length; i++) {
             if (!IFee(fees[i]).settlesOnHook(_hook)) {
                 continue;
             }
 
-            __settleFee(_comptrollerProxy, fees[i], _hook, _settlementData);
+            __settleFee(_comptrollerProxy, vaultProxy, fees[i], _hook, _settlementData);
 
-            __payoutSharesOutstandingForFee(_comptrollerProxy, fees[i]);
+            __payoutSharesOutstandingForFee(_comptrollerProxy, vaultProxy, fees[i]);
         }
+    }
+
+    /// @dev Helper to validate that the total supply of shares for a fund is not 0
+    function __validateNonZeroSharesSupply(address _vaultProxy) private view {
+        require(
+            IERC20(_vaultProxy).totalSupply() > 0,
+            "__validateNonZeroSharesSupply: Shares supply is 0"
+        );
     }
 
     ///////////////////
@@ -370,12 +352,6 @@ contract FeeManager is
         returns (uint256 sharesOutstanding_)
     {
         return comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
-    }
-
-    /// @notice Get all registered fees
-    /// @return registeredFees_ A list of all registered fee addresses
-    function getFeesRecipientForFund(address _comptrollerProxy) external view returns (address) {
-        return comptrollerProxyToFeesRecipient[_comptrollerProxy];
     }
 
     /// @notice Get all registered fees

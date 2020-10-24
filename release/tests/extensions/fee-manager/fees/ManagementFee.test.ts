@@ -144,11 +144,12 @@ describe('payout', () => {
   it('returns false', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
 
     const payoutCall = standaloneManagementFee.payout
-      .args(mockComptrollerProxy)
+      .args(mockComptrollerProxy, mockVaultProxy)
       .call();
     await expect(payoutCall).resolves.toBe(false);
   });
@@ -158,11 +159,13 @@ describe('settle', () => {
   it('can only be called by the FeeManager', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
 
     const settleTx = standaloneManagementFee.settle(
       mockComptrollerProxy,
+      mockVaultProxy,
       feeHooks.Continuous,
       '0x',
     );
@@ -175,15 +178,21 @@ describe('settle', () => {
   it('correctly handles shares supply of 0', async () => {
     const {
       EOAFeeManager,
-      mockComptrollerProxy,
       managementFeeRate,
+      mockComptrollerProxy,
+      mockVaultProxy,
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
 
     // Check the return value via a call
     const settleCall = standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle.args(mockComptrollerProxy, feeHooks.Continuous, '0x')
+      .settle.args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        feeHooks.Continuous,
+        '0x',
+      )
       .call();
     await expect(settleCall).resolves.toMatchObject({
       0: feeSettlementTypes.None,
@@ -194,7 +203,7 @@ describe('settle', () => {
     // Send the tx to actually settle
     const settleTx = standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, feeHooks.Continuous, '0x');
+      .settle(mockComptrollerProxy, mockVaultProxy, feeHooks.Continuous, '0x');
     await expect(settleTx).resolves.toBeReceipt();
     const settlementTimestamp = (await provider.getBlock('latest')).timestamp;
 
@@ -218,8 +227,8 @@ describe('settle', () => {
   it('correctly handles shares supply >0', async () => {
     const {
       EOAFeeManager,
-      mockComptrollerProxy,
       managementFeeRate,
+      mockComptrollerProxy,
       mockVaultProxy,
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
@@ -227,7 +236,7 @@ describe('settle', () => {
     // Settle while shares supply is 0 to set lastSettled
     await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, feeHooks.Continuous, '0x');
+      .settle(mockComptrollerProxy, mockVaultProxy, feeHooks.Continuous, '0x');
     const settlementTimestamp1 = (await provider.getBlock('latest')).timestamp;
 
     // Update shares supply on mock
@@ -250,7 +259,12 @@ describe('settle', () => {
     // Check the return values via a call() to settle()
     const settleCall = standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle.args(mockComptrollerProxy, feeHooks.Continuous, '0x')
+      .settle.args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        feeHooks.Continuous,
+        '0x',
+      )
       .call();
 
     await expect(settleCall).resolves.toMatchObject({
@@ -262,7 +276,7 @@ describe('settle', () => {
     // Send the tx to actually settle()
     const settleTx = standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, feeHooks.Continuous, '0x');
+      .settle(mockComptrollerProxy, mockVaultProxy, feeHooks.Continuous, '0x');
     await expect(settleTx).resolves.toBeReceipt();
     const settlementTimestamp2 = (await provider.getBlock('latest')).timestamp;
 

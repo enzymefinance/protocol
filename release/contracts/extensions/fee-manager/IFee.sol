@@ -12,9 +12,10 @@ interface IFee {
 
     function identifier() external pure returns (string memory);
 
-    function payout(address) external returns (bool);
+    function payout(address, address) external returns (bool);
 
     function settle(
+        address,
         address,
         IFeeManager.FeeHook,
         bytes calldata

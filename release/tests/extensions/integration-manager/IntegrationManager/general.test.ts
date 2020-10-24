@@ -91,9 +91,7 @@ describe('activateForFund', () => {
     const badActivateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
     );
-    await expect(badActivateTx).rejects.toBeRevertedWith(
-      'Fund has been activated',
-    );
+    await expect(badActivateTx).rejects.toBeRevertedWith('Already set');
   });
 
   it('does not allow a missing vaultProxy', async () => {
@@ -107,9 +105,7 @@ describe('activateForFund', () => {
     const badActivateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
     );
-    await expect(badActivateTx).rejects.toBeRevertedWith(
-      'vaultProxy has not been set',
-    );
+    await expect(badActivateTx).rejects.toBeRevertedWith('Missing vaultProxy');
   });
 
   it('does not allow a vaultProxy for which the sender is not the accessor', async () => {
@@ -125,7 +121,7 @@ describe('activateForFund', () => {
       integrationManager.activateForFund,
     );
     await expect(badActivateTx).rejects.toBeRevertedWith(
-      'sender is not the VaultProxy accessor',
+      'Not the VaultProxy accessor',
     );
   });
 

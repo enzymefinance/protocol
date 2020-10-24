@@ -161,7 +161,7 @@ async function assertAdjustedPerformance({
 
   // settle.call() to assert return values and get the sharesOutstanding
   const settleCall = performanceFee.settle
-    .args(mockComptrollerProxy, feeHook, settlementData)
+    .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData)
     .from(mockFeeManager.address)
     .call();
   await expect(settleCall).resolves.toMatchObject({
@@ -174,6 +174,7 @@ async function assertAdjustedPerformance({
   const settleTx = mockFeeManager.forward(
     performanceFee.settle,
     mockComptrollerProxy,
+    mockVaultProxy,
     feeHook,
     settlementData,
   );
@@ -361,10 +362,14 @@ describe('payout', () => {
   it('can only be called by the FeeManager', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
-    const activateTx = standalonePerformanceFee.payout(mockComptrollerProxy);
+    const activateTx = standalonePerformanceFee.payout(
+      mockComptrollerProxy,
+      mockVaultProxy,
+    );
     await expect(activateTx).rejects.toBeRevertedWith(
       'Only the FeeManger can make this call',
     );
@@ -396,7 +401,7 @@ describe('payout', () => {
 
     // call() function to assert return value
     const payoutCall = performanceFee.payout
-      .args(mockComptrollerProxy)
+      .args(mockComptrollerProxy, mockVaultProxy)
       .from(mockFeeManager.address)
       .call();
     await expect(payoutCall).resolves.toBe(false);
@@ -405,6 +410,7 @@ describe('payout', () => {
     const payoutTx = mockFeeManager.forward(
       performanceFee.payout,
       mockComptrollerProxy,
+      mockVaultProxy,
     );
     await expect(payoutTx).resolves.toBeReceipt();
     const payoutTimestamp = (await provider.getBlock('latest')).timestamp;
@@ -468,7 +474,7 @@ describe('payout', () => {
 
     // call() function to assert return value
     const payoutCall = performanceFee.payout
-      .args(mockComptrollerProxy)
+      .args(mockComptrollerProxy, mockVaultProxy)
       .from(mockFeeManager.address)
       .call();
     await expect(payoutCall).resolves.toBe(true);
@@ -477,6 +483,7 @@ describe('payout', () => {
     const payoutTx = mockFeeManager.forward(
       performanceFee.payout,
       mockComptrollerProxy,
+      mockVaultProxy,
     );
     await expect(payoutTx).resolves.toBeReceipt();
     const payoutTimestamp = (await provider.getBlock('latest')).timestamp;
@@ -585,11 +592,15 @@ describe('payoutAllowed', () => {
 
     // Payout once to reset the fee period
     const initialPayoutCall = performanceFee.payout
-      .args(mockComptrollerProxy)
+      .args(mockComptrollerProxy, mockVaultProxy)
       .from(mockFeeManager.address)
       .call();
     await expect(initialPayoutCall).resolves.toBe(true);
-    await mockFeeManager.forward(performanceFee.payout, mockComptrollerProxy);
+    await mockFeeManager.forward(
+      performanceFee.payout,
+      mockComptrollerProxy,
+      mockVaultProxy,
+    );
 
     // Warp to the end of the 2nd period (performanceFeePeriod - offset1) - another offset2
     const offset2 = 100;
@@ -620,11 +631,13 @@ describe('settle', () => {
   it('can only be called by the FeeManager', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
     const settleTx = standalonePerformanceFee.settle(
       mockComptrollerProxy,
+      mockVaultProxy,
       feeHooks.Continuous,
       '0x',
     );
@@ -654,7 +667,7 @@ describe('settle', () => {
 
     // settle.call() to assert return values and get the sharesOutstanding
     const settleCall = performanceFee.settle
-      .args(mockComptrollerProxy, feeHook, settlementData)
+      .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData)
       .from(mockFeeManager.address)
       .call();
     await expect(settleCall).resolves.toMatchObject({
@@ -667,6 +680,7 @@ describe('settle', () => {
     const settleTx = mockFeeManager.forward(
       performanceFee.settle,
       mockComptrollerProxy,
+      mockVaultProxy,
       feeHook,
       settlementData,
     );

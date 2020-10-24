@@ -92,7 +92,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
         __enablePolicyForFund(_comptrollerProxy, _policy, _settingsData);
 
-        // The current BuyShares policy does not do anything on activation,
+        // The current BuyShares policies do not do anything on activation,
         // but best to keep this here for future policies.
         __activatePolicyForFund(_comptrollerProxy, _policy);
     }

@@ -102,7 +102,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @notice Update fee state for fund, if payout is allowed
     /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
     /// @return isPayable_ True if shares outstanding can be paid out
-    function payout(address _comptrollerProxy)
+    function payout(address _comptrollerProxy, address)
         external
         override
         onlyFeeManager
@@ -132,6 +132,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     /// @notice Settle the fee and reconcile shares due
     /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _hook The FeeHook being executed
     /// @param _settlementData Encoded args to use in calculating the settlement
     /// @return settlementType_ The type of settlement
@@ -139,6 +140,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @return sharesDue_ The amount of shares due
     function settle(
         address _comptrollerProxy,
+        address _vaultProxy,
         IFeeManager.FeeHook _hook,
         bytes calldata _settlementData
     )
@@ -153,6 +155,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     {
         int256 settlementSharesDue = __settleAndUpdatePerformance(
             _comptrollerProxy,
+            _vaultProxy,
             _hook,
             _settlementData
         );
@@ -385,12 +388,13 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @dev Helper to settle the fee and update performance state
     function __settleAndUpdatePerformance(
         address _comptrollerProxy,
+        address _vaultProxy,
         IFeeManager.FeeHook _hook,
         bytes memory _settlementData
     ) private returns (int256 sharesDue_) {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
 
-        uint256 totalSharesSupply = ERC20(comptrollerProxyContract.getVaultProxy()).totalSupply();
+        uint256 totalSharesSupply = ERC20(_vaultProxy).totalSupply();
         if (totalSharesSupply == 0) {
             return 0;
         }
