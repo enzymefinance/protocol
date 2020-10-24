@@ -56,10 +56,16 @@ contract BuySharesPriceFeedTolerance is BuySharesPreValidatePolicyBase {
 
     /// @notice Checks whether a particular condition passes the rule for a particular fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _vaultProxy The fund's VaultProxy address
+    /// @param _gav The fund's GAV
     /// @return isValid_ True if the rule passes
-    function passesRule(address _comptrollerProxy, uint256 _gav) public returns (bool isValid_) {
+    function passesRule(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        uint256 _gav
+    ) public returns (bool isValid_) {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        VaultLib vaultProxyContract = VaultLib(comptrollerProxyContract.getVaultProxy());
+        VaultLib vaultProxyContract = VaultLib(_vaultProxy);
 
         // Return early if there are no tracked assets in the fund
         address[] memory trackedAssets = vaultProxyContract.getTrackedAssets();
@@ -142,24 +148,26 @@ contract BuySharesPriceFeedTolerance is BuySharesPreValidatePolicyBase {
     /// @notice Update the policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
-    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
-        external
-        override
-        onlyPolicyManager
-    {
+    function updateFundSettings(
+        address _comptrollerProxy,
+        address,
+        bytes calldata _encodedSettings
+    ) external override onlyPolicyManager {
         __setTolerance(_comptrollerProxy, _encodedSettings);
     }
 
     /// @notice Apply the rule with specified parameters, in the context of a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _vaultProxy The fund's VaultProxy address
     /// @return isValid_ True if the rule passes
-    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
-        external
-        override
-        returns (bool isValid_)
-    {
+    function validateRule(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        IPolicyManager.PolicyHook,
+        bytes calldata _encodedArgs
+    ) external override returns (bool isValid_) {
         (, , , uint256 gav) = __decodeRuleArgs(_encodedArgs);
-        return passesRule(_comptrollerProxy, gav);
+        return passesRule(_comptrollerProxy, _vaultProxy, gav);
     }
 
     // PRIVATE FUNCTIONS

@@ -7,7 +7,6 @@ import { defaultTestDeployment } from '../../../../';
 import { InvestorWhitelist } from '../../../../utils/contracts';
 import {
   policyHooks,
-  policyHookExecutionTimes,
   investorWhitelistArgs,
   validateRulePreBuySharesArgs,
 } from '../../../utils';
@@ -83,13 +82,10 @@ describe('constructor', () => {
     const getPolicyManagerCall = investorWhitelist.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
 
-    const policyHookCall = investorWhitelist.policyHook();
-    await expect(policyHookCall).resolves.toBe(policyHooks.BuyShares);
-
-    const policyHookExecutionTimeCall = investorWhitelist.policyHookExecutionTime();
-    await expect(policyHookExecutionTimeCall).resolves.toBe(
-      policyHookExecutionTimes.Pre,
-    );
+    const implementedHooksCall = investorWhitelist.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
+      policyHooks.PreBuyShares,
+    ]);
   });
 });
 
@@ -154,6 +150,7 @@ describe('updateFundSettings', () => {
     });
     const updateFundSettingsTx = investorWhitelist.updateFundSettings(
       comptrollerProxy,
+      randomAddress(),
       investorWhitelistConfig,
     );
 
@@ -176,7 +173,11 @@ describe('updateFundSettings', () => {
     });
     const updateFundSettingsTx = investorWhitelist
       .connect(EOAPolicyManager)
-      .updateFundSettings(comptrollerProxy, investorWhitelistConfig);
+      .updateFundSettings(
+        comptrollerProxy,
+        randomAddress(),
+        investorWhitelistConfig,
+      );
     await expect(updateFundSettingsTx).resolves.toBeReceipt();
 
     // List should include both previous whitelisted investors and new investors
@@ -208,7 +209,11 @@ describe('updateFundSettings', () => {
     });
     const updateFundSettingsTx = investorWhitelist
       .connect(EOAPolicyManager)
-      .updateFundSettings(comptrollerProxy, investorWhitelistConfig);
+      .updateFundSettings(
+        comptrollerProxy,
+        randomAddress(),
+        investorWhitelistConfig,
+      );
     await expect(updateFundSettingsTx).resolves.toBeReceipt();
 
     // List should remove investor from previously whitelisted investors
@@ -245,7 +250,11 @@ describe('updateFundSettings', () => {
     });
     const updateFundSettingsTx = investorWhitelist
       .connect(EOAPolicyManager)
-      .updateFundSettings(comptrollerProxy, investorWhitelistConfig);
+      .updateFundSettings(
+        comptrollerProxy,
+        randomAddress(),
+        investorWhitelistConfig,
+      );
     await expect(updateFundSettingsTx).resolves.toBeReceipt();
 
     // Final list should have removed one investor and added one investor
@@ -270,7 +279,12 @@ describe('validateRule', () => {
       buyer: whitelistedInvestors[0], // good buyer
     });
     const validateRuleCall = investorWhitelist.validateRule
-      .args(comptrollerProxy, preBuySharesArgs)
+      .args(
+        comptrollerProxy,
+        randomAddress(),
+        policyHooks.PreBuyShares,
+        preBuySharesArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeTruthy();
   });
@@ -285,7 +299,12 @@ describe('validateRule', () => {
       buyer: randomAddress(), // bad buyer
     });
     const validateRuleCall = investorWhitelist.validateRule
-      .args(comptrollerProxy, preBuySharesArgs)
+      .args(
+        comptrollerProxy,
+        randomAddress(),
+        policyHooks.PreBuyShares,
+        preBuySharesArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeFalsy();
   });

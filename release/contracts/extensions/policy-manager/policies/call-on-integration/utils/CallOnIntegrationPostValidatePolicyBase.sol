@@ -7,21 +7,18 @@ import "../../utils/PolicyBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A mixin contract for policies implemented during post-validation of callOnIntegration
 abstract contract CallOnIntegrationPostValidatePolicyBase is PolicyBase {
-    /// @notice Get the PolicyHook for a policy
-    /// @return The PolicyHook
-    function policyHook() external view override returns (IPolicyManager.PolicyHook) {
-        return IPolicyManager.PolicyHook.CallOnIntegration;
-    }
-
-    /// @notice Get the PolicyHookExecutionTime for a policy
-    /// @return The PolicyHookExecutionTime
-    function policyHookExecutionTime()
+    /// @notice Gets the implemented PolicyHooks for a policy
+    /// @return implementedHooks_ The implemented PolicyHooks
+    function implementedHooks()
         external
         view
         override
-        returns (IPolicyManager.PolicyHookExecutionTime)
+        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
     {
-        return IPolicyManager.PolicyHookExecutionTime.Post;
+        implementedHooks_ = new IPolicyManager.PolicyHook[](1);
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PostCallOnIntegration;
+
+        return implementedHooks_;
     }
 
     /// @notice Helper to decode rule arguments

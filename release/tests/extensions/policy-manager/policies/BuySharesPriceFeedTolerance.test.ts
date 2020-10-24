@@ -16,7 +16,6 @@ import {
 import {
   buySharesPriceFeedToleranceArgs,
   policyHooks,
-  policyHookExecutionTimes,
   validateRulePreBuySharesArgs,
 } from '../../../utils';
 
@@ -109,13 +108,10 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const policyHookCall = buySharesPriceFeedTolerance.policyHook();
-    await expect(policyHookCall).resolves.toBe(policyHooks.BuyShares);
-
-    const policyHookExecutionTimeCall = buySharesPriceFeedTolerance.policyHookExecutionTime();
-    await expect(policyHookExecutionTimeCall).resolves.toBe(
-      policyHookExecutionTimes.Pre,
-    );
+    const implementedHooksCall = buySharesPriceFeedTolerance.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
+      policyHooks.PreBuyShares,
+    ]);
 
     const getPolicyManagerCall = buySharesPriceFeedTolerance.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
@@ -187,6 +183,7 @@ describe('updateFundSettings', () => {
     const {
       accounts: { 0: randomUser },
       mockComptrollerProxy,
+      mockVaultProxy,
       standaloneBuySharesPriceFeedTolerance: policy,
     } = await provider.snapshot(snapshot);
 
@@ -195,7 +192,7 @@ describe('updateFundSettings', () => {
     );
     const updateFundSettingsTx = policy
       .connect(randomUser)
-      .updateFundSettings(mockComptrollerProxy, policyConfig);
+      .updateFundSettings(mockComptrollerProxy, mockVaultProxy, policyConfig);
 
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
       'Only the PolicyManager can make this call',
@@ -205,6 +202,7 @@ describe('updateFundSettings', () => {
   it('correctly handles a valid call', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standaloneBuySharesPriceFeedTolerance: policy,
     } = await provider.snapshot(snapshot);
 
@@ -212,6 +210,7 @@ describe('updateFundSettings', () => {
     const policyConfig = await buySharesPriceFeedToleranceArgs(nextTolerance);
     const updateFundSettingsTx = policy.updateFundSettings(
       mockComptrollerProxy,
+      mockVaultProxy,
       policyConfig,
     );
     await expect(updateFundSettingsTx).resolves.toBeReceipt();
@@ -234,6 +233,7 @@ describe('validateRule', () => {
   it('returns true if there are no tracked assets (i.e., first buy shares tx)', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standaloneBuySharesPriceFeedTolerance: policy,
     } = await provider.snapshot(snapshot);
 
@@ -241,7 +241,12 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const validateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBe(true);
   });
@@ -277,7 +282,12 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -290,7 +300,12 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });
@@ -306,7 +321,11 @@ describe('validateRule', () => {
 
     // Update mockComptrollerProxy to a threshold of 0
     const policyConfig = await buySharesPriceFeedToleranceArgs(0);
-    await policy.updateFundSettings(mockComptrollerProxy, policyConfig);
+    await policy.updateFundSettings(
+      mockComptrollerProxy,
+      mockVaultProxy,
+      policyConfig,
+    );
 
     // 1 tracked asset, non-denomination
     await mockVaultProxy.getTrackedAssets.returns([mockAsset.address]);
@@ -319,7 +338,12 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold as rates are equal
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -332,7 +356,12 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });
@@ -357,7 +386,12 @@ describe('validateRule', () => {
 
     // Policy should pass at well below threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -368,7 +402,12 @@ describe('validateRule', () => {
 
     // Policy should fail without a Uniswap pool for mockAsset
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });
@@ -410,7 +449,12 @@ describe('validateRule', () => {
 
     // Policy should fail while rate is invalid
     const badValidateRuleCall1 = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(badValidateRuleCall1).resolves.toBe(false);
 
@@ -421,7 +465,12 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -434,7 +483,12 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall2 = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(badValidateRuleCall2).resolves.toBe(false);
   });
@@ -471,7 +525,12 @@ describe('validateRule', () => {
 
     // Policy should pass at the exact threshold
     const goodValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(goodValidateRuleCall).resolves.toBe(true);
 
@@ -484,7 +543,12 @@ describe('validateRule', () => {
 
     // Policy should fail above the threshold
     const badValidateRuleCall = policy.validateRule
-      .args(mockComptrollerProxy, ruleArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PreBuyShares,
+        ruleArgs,
+      )
       .call();
     await expect(badValidateRuleCall).resolves.toBe(false);
   });

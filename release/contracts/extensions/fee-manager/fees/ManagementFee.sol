@@ -51,6 +51,22 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         return "MANAGEMENT";
     }
 
+    /// @notice Gets the implemented FeeHooks for a fee
+    /// @return implementedHooks_ The implemented FeeHooks
+    function implementedHooks()
+        external
+        view
+        override
+        returns (IFeeManager.FeeHook[] memory implementedHooks_)
+    {
+        implementedHooks_ = new IFeeManager.FeeHook[](3);
+        implementedHooks_[0] = IFeeManager.FeeHook.Continuous;
+        implementedHooks_[1] = IFeeManager.FeeHook.PreBuyShares;
+        implementedHooks_[2] = IFeeManager.FeeHook.PreRedeemShares;
+
+        return implementedHooks_;
+    }
+
     /// @notice Settle the fee and reconcile shares due
     /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
     /// @param _vaultProxy The VaultProxy of the calling fund
@@ -94,20 +110,6 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         }
 
         return (IFeeManager.SettlementType.Mint, address(0), sharesDue_);
-    }
-
-    /// @notice Checks whether the fee is settled on a given hook
-    /// @return settlesOnHook_ True if the fee is settled on the hook
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        pure
-        override
-        returns (bool settlesOnHook_)
-    {
-        return
-            _hook == IFeeManager.FeeHook.Continuous ||
-            _hook == IFeeManager.FeeHook.PreBuyShares ||
-            _hook == IFeeManager.FeeHook.PreRedeemShares;
     }
 
     // PRIVATE FUNCTIONS

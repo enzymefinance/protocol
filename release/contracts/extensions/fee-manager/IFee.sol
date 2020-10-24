@@ -6,11 +6,13 @@ import "./IFeeManager.sol";
 /// @title Fee Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IFee {
-    function activateForFund(address) external;
+    function activateForFund(address, address) external;
 
     function addFundSettings(address, bytes calldata) external;
 
     function identifier() external pure returns (string memory);
+
+    function implementedHooks() external view returns (IFeeManager.FeeHook[] memory);
 
     function payout(address, address) external returns (bool);
 
@@ -26,6 +28,4 @@ interface IFee {
             address,
             uint256
         );
-
-    function settlesOnHook(IFeeManager.FeeHook) external pure returns (bool);
 }

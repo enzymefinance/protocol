@@ -30,11 +30,11 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
     /// @notice Update the policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
-    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
-        external
-        override
-        onlyPolicyManager
-    {
+    function updateFundSettings(
+        address _comptrollerProxy,
+        address,
+        bytes calldata _encodedSettings
+    ) external override onlyPolicyManager {
         __updateList(_comptrollerProxy, _encodedSettings);
     }
 
@@ -54,11 +54,12 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
-    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
-        external
-        override
-        returns (bool isValid_)
-    {
+    function validateRule(
+        address _comptrollerProxy,
+        address,
+        IPolicyManager.PolicyHook,
+        bytes calldata _encodedArgs
+    ) external override returns (bool isValid_) {
         (address buyer, , , ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, buyer);

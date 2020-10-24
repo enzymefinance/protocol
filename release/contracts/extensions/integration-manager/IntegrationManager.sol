@@ -75,7 +75,7 @@ contract IntegrationManager is
     /////////////
 
     /// @notice Activates the extension by storing the VaultProxy and the fund owner
-    function activateForFund() external override {
+    function activateForFund(bool) external override {
         __setValidatedVaultProxy(msg.sender);
     }
 
@@ -341,8 +341,7 @@ contract IntegrationManager is
         // Pre-validate against fund policies
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
-            IPolicyManager.PolicyHook.CallOnIntegration,
-            IPolicyManager.PolicyHookExecutionTime.Pre,
+            IPolicyManager.PolicyHook.PreCallOnIntegration,
             abi.encode(_adapter, _selector)
         );
     }
@@ -453,8 +452,7 @@ contract IntegrationManager is
         // Post-validate CoI against fund policies
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
-            IPolicyManager.PolicyHook.CallOnIntegration,
-            IPolicyManager.PolicyHookExecutionTime.Post,
+            IPolicyManager.PolicyHook.PostCallOnIntegration,
             abi.encode(
                 _adapter,
                 _selector,

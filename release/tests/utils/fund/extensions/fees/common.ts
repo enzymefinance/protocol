@@ -5,7 +5,6 @@ import { FeeManager } from '../../../../../utils/contracts';
 import { encodeArgs, sighash } from '../../../common';
 
 export enum feeHooks {
-  None,
   Continuous,
   PreBuyShares,
   PostBuyShares,
@@ -58,6 +57,7 @@ export async function generateRegisteredMockFees({
 
   // Initialize mock fee return values
   await Promise.all([
+    // Continuous fee 1
     mockContinuousFee1.identifier.returns(`MOCK_CONTINUOUS_1`),
     mockContinuousFee1.settle.returns(
       feeSettlementTypes.None,
@@ -67,10 +67,12 @@ export async function generateRegisteredMockFees({
     mockContinuousFee1.payout.returns(false),
     mockContinuousFee1.addFundSettings.returns(undefined),
     mockContinuousFee1.activateForFund.returns(undefined),
-    mockContinuousFee1.settlesOnHook.returns(true),
-    mockContinuousFee1.settlesOnHook
-      .given(feeHooks.PostBuyShares)
-      .returns(false),
+    mockContinuousFee1.implementedHooks.returns([
+      feeHooks.Continuous,
+      feeHooks.PreBuyShares,
+      feeHooks.PreRedeemShares,
+    ]),
+    // Continuous fee 2
     mockContinuousFee2.identifier.returns(`MOCK_CONTINUOUS_2`),
     mockContinuousFee2.settle.returns(
       feeSettlementTypes.None,
@@ -80,10 +82,12 @@ export async function generateRegisteredMockFees({
     mockContinuousFee2.payout.returns(false),
     mockContinuousFee2.addFundSettings.returns(undefined),
     mockContinuousFee2.activateForFund.returns(undefined),
-    mockContinuousFee2.settlesOnHook.returns(true),
-    mockContinuousFee2.settlesOnHook
-      .given(feeHooks.PostBuyShares)
-      .returns(false),
+    mockContinuousFee2.implementedHooks.returns([
+      feeHooks.Continuous,
+      feeHooks.PreBuyShares,
+      feeHooks.PreRedeemShares,
+    ]),
+    // PostBuyShares fee
     mockPostBuySharesFee.identifier.returns(`MOCK_POST_BUY_SHARES`),
     mockPostBuySharesFee.settle.returns(
       feeSettlementTypes.None,
@@ -93,10 +97,7 @@ export async function generateRegisteredMockFees({
     mockPostBuySharesFee.payout.returns(false),
     mockPostBuySharesFee.addFundSettings.returns(undefined),
     mockPostBuySharesFee.activateForFund.returns(undefined),
-    mockPostBuySharesFee.settlesOnHook.returns(false),
-    mockPostBuySharesFee.settlesOnHook
-      .given(feeHooks.PostBuyShares)
-      .returns(true),
+    mockPostBuySharesFee.implementedHooks.returns([feeHooks.PostBuyShares]),
   ]);
 
   // Register all mock fees

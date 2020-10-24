@@ -5,13 +5,11 @@ pragma experimental ABIEncoderV2;
 /// @title PolicyManager Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IPolicyManager {
-    enum PolicyHook {None, BuyShares, CallOnIntegration}
-    enum PolicyHookExecutionTime {None, Pre, Post}
+    enum PolicyHook {PreBuyShares, PostBuyShares, PreCallOnIntegration, PostCallOnIntegration}
 
     function validatePolicies(
         address,
         PolicyHook,
-        PolicyHookExecutionTime,
         bytes calldata
     ) external;
 }

@@ -11,7 +11,7 @@ import { defaultTestDeployment } from '../../..';
 import {
   createNewFund,
   generateFeeManagerConfigWithMockFees,
-  generatePolicyManagerConfigWithMockFees,
+  generatePolicyManagerConfigWithMockPolicies,
 } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -24,10 +24,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
     deployer: config.deployer,
     feeManager: deployment.feeManager,
   });
-  const policyManagerConfig = await generatePolicyManagerConfigWithMockFees({
-    deployer: config.deployer,
-    policyManager: deployment.policyManager,
-  });
+  const policyManagerConfig = await generatePolicyManagerConfigWithMockPolicies(
+    {
+      deployer: config.deployer,
+      policyManager: deployment.policyManager,
+    },
+  );
 
   // Create initial fund on prevFundDeployer
   const [fundOwner, ...remainingAccounts] = accounts;

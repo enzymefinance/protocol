@@ -13,7 +13,6 @@ import {
 import {
   assetBlacklistArgs,
   policyHooks,
-  policyHookExecutionTimes,
   validateRulePostCoIArgs,
 } from '../../../utils';
 
@@ -99,13 +98,10 @@ describe('constructor', () => {
     const getPolicyManagerCall = assetBlacklist.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
 
-    const policyHookCall = assetBlacklist.policyHook();
-    await expect(policyHookCall).resolves.toBe(policyHooks.CallOnIntegration);
-
-    const policyHookExecutionTimeCall = assetBlacklist.policyHookExecutionTime();
-    await expect(policyHookExecutionTimeCall).resolves.toBe(
-      policyHookExecutionTimes.Post,
-    );
+    const implementedHooksCall = assetBlacklist.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
+      policyHooks.PostCallOnIntegration,
+    ]);
   });
 });
 
@@ -183,6 +179,7 @@ describe('updateFundSettings', () => {
 
     const updateFundSettingsTx = assetBlacklist.updateFundSettings(
       randomAddress(),
+      randomAddress(),
       '0x',
     );
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
@@ -204,6 +201,7 @@ describe('activateForFund', () => {
     await mockVaultProxy.getTrackedAssets.returns([randomAddress()]);
     const goodActivateForFundTx = assetBlacklist.activateForFund(
       mockComptrollerProxy,
+      mockVaultProxy,
     );
     await expect(goodActivateForFundTx).resolves.toBeReceipt();
 
@@ -214,6 +212,7 @@ describe('activateForFund', () => {
     ]);
     const badActivateForFundTx = assetBlacklist.activateForFund(
       mockComptrollerProxy,
+      mockVaultProxy,
     );
     await expect(badActivateForFundTx).rejects.toBeRevertedWith(
       'blacklisted asset detected',
@@ -227,10 +226,11 @@ describe('validateRule', () => {
       assetBlacklist,
       blacklistedAssets,
       mockComptrollerProxy,
+      mockVaultProxy,
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the incoming assets arg matters for this policy
-    const preCoIArgs = await validateRulePostCoIArgs(
+    const postCoIArgs = await validateRulePostCoIArgs(
       constants.AddressZero,
       utils.randomBytes(4),
       [blacklistedAssets[0]], // bad incoming asset
@@ -239,18 +239,25 @@ describe('validateRule', () => {
       [],
     );
     const validateRuleCall = assetBlacklist.validateRule
-      .args(mockComptrollerProxy, preCoIArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PostCallOnIntegration,
+        postCoIArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeFalsy();
   });
 
   it('returns true if an asset is not in the blacklist', async () => {
-    const { assetBlacklist, mockComptrollerProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const {
+      assetBlacklist,
+      mockComptrollerProxy,
+      mockVaultProxy,
+    } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the incoming assets arg matters for this policy
-    const preCoIArgs = await validateRulePostCoIArgs(
+    const postCoIArgs = await validateRulePostCoIArgs(
       constants.AddressZero,
       utils.randomBytes(4),
       [randomAddress()], // good incoming asset
@@ -259,7 +266,12 @@ describe('validateRule', () => {
       [],
     );
     const validateRuleCall = assetBlacklist.validateRule
-      .args(mockComptrollerProxy, preCoIArgs)
+      .args(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        policyHooks.PostCallOnIntegration,
+        postCoIArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeTruthy();
   });

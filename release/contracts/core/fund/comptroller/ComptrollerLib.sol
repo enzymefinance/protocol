@@ -326,16 +326,12 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
 
                 emit MigratedSharesDuePaid(sharesDue);
             }
-
-            // Policies must assert that they are congruent with migrated vault state
-            // There are currently no policies that alter state on activation, so we
-            // only need this call for migrated fund vault validation.
-            IExtension(POLICY_MANAGER).activateForFund();
         }
 
-        // Activate remaining extensions
-        IExtension(FEE_MANAGER).activateForFund();
-        IExtension(INTEGRATION_MANAGER).activateForFund();
+        // Activate extensions
+        IExtension(FEE_MANAGER).activateForFund(_isMigration);
+        IExtension(INTEGRATION_MANAGER).activateForFund(_isMigration);
+        IExtension(POLICY_MANAGER).activateForFund(_isMigration);
     }
 
     /// @notice Remove the config for a fund
@@ -352,7 +348,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         // Deactivate the extensions
         IExtension(FEE_MANAGER).deactivateForFund();
         IExtension(INTEGRATION_MANAGER).deactivateForFund();
-        // TODO: destroy unneeded PolicyManager storage?
+        IExtension(POLICY_MANAGER).deactivateForFund();
 
         // Delete storage of ComptrollerProxy
         // There should never be ETH in this contract, but if there is,
@@ -608,8 +604,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
-            IPolicyManager.PolicyHook.BuyShares,
-            IPolicyManager.PolicyHookExecutionTime.Pre,
+            IPolicyManager.PolicyHook.PreBuyShares,
             callData
         );
     }
@@ -642,8 +637,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
-            IPolicyManager.PolicyHook.BuyShares,
-            IPolicyManager.PolicyHookExecutionTime.Post,
+            IPolicyManager.PolicyHook.PostBuyShares,
             callData
         );
     }

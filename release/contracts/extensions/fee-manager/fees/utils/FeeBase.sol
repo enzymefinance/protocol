@@ -18,7 +18,7 @@ abstract contract FeeBase is IFee {
         FEE_MANAGER = _feeManager;
     }
 
-    function activateForFund(address) external virtual override {
+    function activateForFund(address, address) external virtual override {
         // UNIMPLEMENTED
     }
 

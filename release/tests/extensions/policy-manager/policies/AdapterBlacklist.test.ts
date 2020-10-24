@@ -9,7 +9,6 @@ import { AdapterBlacklist } from '../../../../utils/contracts';
 import {
   adapterBlacklistArgs,
   policyHooks,
-  policyHookExecutionTimes,
   validateRulePreCoIArgs,
 } from '../../../utils';
 
@@ -83,13 +82,10 @@ describe('constructor', () => {
     const getPolicyManagerCall = adapterBlacklist.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
 
-    const policyHookCall = adapterBlacklist.policyHook();
-    await expect(policyHookCall).resolves.toBe(policyHooks.CallOnIntegration);
-
-    const policyHookExecutionTimeCall = adapterBlacklist.policyHookExecutionTime();
-    await expect(policyHookExecutionTimeCall).resolves.toBe(
-      policyHookExecutionTimes.Pre,
-    );
+    const implementedHooksCall = adapterBlacklist.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
+      policyHooks.PreCallOnIntegration,
+    ]);
   });
 });
 
@@ -149,6 +145,7 @@ describe('updateFundSettings', () => {
 
     const updateFundSettingsTx = adapterBlacklist.updateFundSettings(
       randomAddress(),
+      randomAddress(),
       '0x',
     );
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
@@ -171,7 +168,12 @@ describe('validateRule', () => {
       utils.randomBytes(4),
     );
     const validateRuleCall = adapterBlacklist.validateRule
-      .args(comptrollerProxy, preCoIArgs)
+      .args(
+        comptrollerProxy,
+        randomAddress(),
+        policyHooks.PreCallOnIntegration,
+        preCoIArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeFalsy();
   });
@@ -187,7 +189,12 @@ describe('validateRule', () => {
       utils.randomBytes(4),
     );
     const validateRuleCall = adapterBlacklist.validateRule
-      .args(comptrollerProxy, preCoIArgs)
+      .args(
+        comptrollerProxy,
+        randomAddress(),
+        policyHooks.PreCallOnIntegration,
+        preCoIArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeTruthy();
   });

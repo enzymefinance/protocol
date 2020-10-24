@@ -44,6 +44,20 @@ contract EntranceRateFee is FeeBase {
         return "ENTRANCE_RATE";
     }
 
+    /// @notice Gets the implemented FeeHooks for a fee
+    /// @return implementedHooks_ The implemented FeeHooks
+    function implementedHooks()
+        external
+        view
+        override
+        returns (IFeeManager.FeeHook[] memory implementedHooks_)
+    {
+        implementedHooks_ = new IFeeManager.FeeHook[](1);
+        implementedHooks_[0] = IFeeManager.FeeHook.PostBuyShares;
+
+        return implementedHooks_;
+    }
+
     /// @notice Settles the fee
     /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
     /// @param _settlementData Encoded args to use in calculating the settlement
@@ -78,17 +92,6 @@ contract EntranceRateFee is FeeBase {
         emit Settled(_comptrollerProxy, payer_, sharesDue_);
 
         return (IFeeManager.SettlementType.Direct, payer_, sharesDue_);
-    }
-
-    /// @notice Checks whether the fee is settled on a given hook
-    /// @return settlesOnHook_ True if the fee is settled on the hook
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        pure
-        override
-        returns (bool settlesOnHook_)
-    {
-        return _hook == IFeeManager.FeeHook.PostBuyShares;
     }
 
     ///////////////////

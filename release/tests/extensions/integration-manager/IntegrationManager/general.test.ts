@@ -84,12 +84,14 @@ describe('activateForFund', () => {
     // Should pass the first time
     const goodActivateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
+      false,
     );
     await expect(goodActivateTx).resolves.toBeReceipt();
 
     // Should fail a second time
     const badActivateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
+      false,
     );
     await expect(badActivateTx).rejects.toBeRevertedWith('Already set');
   });
@@ -104,6 +106,7 @@ describe('activateForFund', () => {
 
     const badActivateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
+      false,
     );
     await expect(badActivateTx).rejects.toBeRevertedWith('Missing vaultProxy');
   });
@@ -119,6 +122,7 @@ describe('activateForFund', () => {
 
     const badActivateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
+      false,
     );
     await expect(badActivateTx).rejects.toBeRevertedWith(
       'Not the VaultProxy accessor',
@@ -156,6 +160,7 @@ describe('deactivateForFund', () => {
     // Activate the fund
     const activateTx = mockComptrollerProxy.forward(
       integrationManager.activateForFund,
+      false,
     );
     await expect(activateTx).resolves.toBeReceipt();
 

@@ -7,21 +7,18 @@ import "../../utils/PolicyBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A mixin contract for policies implemented while buying shares
 abstract contract BuySharesPreValidatePolicyBase is PolicyBase {
-    /// @notice Get the PolicyHook for a policy
-    /// @return The PolicyHook
-    function policyHook() external view override returns (IPolicyManager.PolicyHook) {
-        return IPolicyManager.PolicyHook.BuyShares;
-    }
-
-    /// @notice Get the PolicyHookExecutionTime for a policy
-    /// @return The PolicyHookExecutionTime
-    function policyHookExecutionTime()
+    /// @notice Gets the implemented PolicyHooks for a policy
+    /// @return implementedHooks_ The implemented PolicyHooks
+    function implementedHooks()
         external
         view
         override
-        returns (IPolicyManager.PolicyHookExecutionTime)
+        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
     {
-        return IPolicyManager.PolicyHookExecutionTime.Pre;
+        implementedHooks_ = new IPolicyManager.PolicyHook[](1);
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PreBuyShares;
+
+        return implementedHooks_;
     }
 
     /// @notice Helper to decode rule arguments

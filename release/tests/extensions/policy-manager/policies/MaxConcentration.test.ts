@@ -14,7 +14,6 @@ import {
 } from '../../../../utils/contracts';
 import {
   policyHooks,
-  policyHookExecutionTimes,
   maxConcentrationArgs,
   validateRulePostCoIArgs,
 } from '../../../utils';
@@ -114,7 +113,12 @@ async function mockValuesAndValidateRule({
   );
 
   return maxConcentration.validateRule
-    .args(mockComptrollerProxy, postCoIArgs)
+    .args(
+      mockComptrollerProxy,
+      await mockComptrollerProxy.getVaultProxy(),
+      policyHooks.PostCallOnIntegration,
+      postCoIArgs,
+    )
     .call();
 }
 
@@ -127,13 +131,10 @@ describe('constructor', () => {
     const getPolicyManagerCall = maxConcentration.getPolicyManager();
     await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
 
-    const policyHookCall = maxConcentration.policyHook();
-    await expect(policyHookCall).resolves.toBe(policyHooks.CallOnIntegration);
-
-    const policyHookExecutionTimeCall = maxConcentration.policyHookExecutionTime();
-    await expect(policyHookExecutionTimeCall).resolves.toBe(
-      policyHookExecutionTimes.Post,
-    );
+    const implementedHooksCall = maxConcentration.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
+      policyHooks.PostCallOnIntegration,
+    ]);
   });
 });
 
@@ -205,6 +206,7 @@ describe('updateFundSettings', () => {
 
     const updateFundSettingsTx = maxConcentration.updateFundSettings(
       randomAddress(),
+      randomAddress(),
       '0x',
     );
     await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
@@ -230,7 +232,12 @@ describe('validateRule', () => {
     );
 
     const validateRuleCall = maxConcentration.validateRule
-      .args(mockComptrollerProxy, postCoIArgs)
+      .args(
+        mockComptrollerProxy,
+        await mockComptrollerProxy.getVaultProxy(),
+        policyHooks.PostCallOnIntegration,
+        postCoIArgs,
+      )
       .call();
     await expect(validateRuleCall).resolves.toBeTruthy();
   });

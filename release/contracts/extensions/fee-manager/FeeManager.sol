@@ -35,7 +35,11 @@ contract FeeManager is
         bytes settingsData
     );
 
-    event FeeRegistered(address indexed fee, string indexed identifier);
+    event FeeRegistered(
+        address indexed fee,
+        string indexed identifier,
+        FeeHook[] implementedHooks
+    );
 
     event FeeSettledForFund(
         address indexed comptrollerProxy,
@@ -66,6 +70,7 @@ contract FeeManager is
     );
 
     EnumerableSet.AddressSet private registeredFees;
+    mapping(address => mapping(FeeHook => bool)) private feeToHookToIsImplemented;
     mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => mapping(address => uint256))
         private comptrollerProxyToFeeToSharesOutstanding;
@@ -76,12 +81,12 @@ contract FeeManager is
 
     /// @notice Activate already-configured fees for use in the calling fund
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
-    function activateForFund() external override {
-        __setValidatedVaultProxy(msg.sender);
+    function activateForFund(bool) external override {
+        address vaultProxy = __setValidatedVaultProxy(msg.sender);
 
         address[] memory enabledFees = comptrollerProxyToFees[msg.sender];
         for (uint256 i; i < enabledFees.length; i++) {
-            IFee(enabledFees[i]).activateForFund(msg.sender);
+            IFee(enabledFees[i]).activateForFund(msg.sender, vaultProxy);
         }
     }
 
@@ -277,7 +282,7 @@ contract FeeManager is
         address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
         address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
         for (uint256 i; i < fees.length; i++) {
-            if (!IFee(fees[i]).settlesOnHook(_hook)) {
+            if (!feeImplementsHook(fees[i], _hook)) {
                 continue;
             }
 
@@ -323,7 +328,16 @@ contract FeeManager is
 
             registeredFees.add(_fees[i]);
 
-            emit FeeRegistered(_fees[i], IFee(_fees[i]).identifier());
+            // Store the hooks that a fee implements for later use.
+            // Fronts the gas for calls to check if a hook is implemented, and guarantees
+            // that the implementsHooks return value does not change post-registration.
+            IFee feeContract = IFee(_fees[i]);
+            FeeHook[] memory implementedHooks = feeContract.implementedHooks();
+            for (uint256 j; j < implementedHooks.length; j++) {
+                feeToHookToIsImplemented[_fees[i]][implementedHooks[j]] = true;
+            }
+
+            emit FeeRegistered(_fees[i], feeContract.identifier(), implementedHooks);
         }
     }
 
@@ -361,6 +375,18 @@ contract FeeManager is
         for (uint256 i; i < registeredFees_.length; i++) {
             registeredFees_[i] = registeredFees.at(i);
         }
+    }
+
+    /// @notice Checks if a fee implements a particular hook
+    /// @param _policy The address of the fee to check
+    /// @param _hook The FeeHook to check
+    /// @return implementsHook_ True if the fee implements the hook
+    function feeImplementsHook(address _policy, FeeHook _hook)
+        public
+        view
+        returns (bool implementsHook_)
+    {
+        return feeToHookToIsImplemented[_policy][_hook];
     }
 
     /// @notice Check whether a fee is registered

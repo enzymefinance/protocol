@@ -17,7 +17,6 @@ import {
   mockGenericSwap,
   mockGenericSwapArgs,
   mockGenericSwapASelector,
-  policyHookExecutionTimes,
   policyHooks,
   validateRulePostCoIArgs,
   validateRulePreCoIArgs,
@@ -541,15 +540,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -635,15 +632,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -719,15 +714,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -801,15 +794,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -882,15 +873,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -968,15 +957,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -1039,15 +1026,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -1117,15 +1102,13 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Pre,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
     expect(policyManager.validatePolicies.ref).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      policyHooks.CallOnIntegration,
-      policyHookExecutionTimes.Post,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,

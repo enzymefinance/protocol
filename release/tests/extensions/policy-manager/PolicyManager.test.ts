@@ -4,6 +4,7 @@ import {
   extractEvent,
 } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '../../../';
+import { IPolicy } from '../../../codegen/IPolicy';
 import {
   buyShares,
   createNewFund,
@@ -15,6 +16,7 @@ import {
   validateRulePostBuySharesArgs,
   validateRulePreCoIArgs,
   validateRulePostCoIArgs,
+  policyHooks,
 } from '../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -22,35 +24,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
     provider,
   );
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
-
-async function snapshotWithMocks(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(snapshot);
-
   const policies = await generateRegisteredMockPolicies({
     deployer: config.deployer,
     policyManager: deployment.policyManager,
   });
 
-  return {
-    accounts,
-    deployment,
-    config,
-    policies,
-  };
-}
-
-async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config, policies } = await provider.snapshot(
-    snapshotWithMocks,
-  );
-
-  const policySettingsData = [
+  const policiesSettingsData = [
     utils.randomBytes(10),
     '0x',
     utils.randomBytes(2),
@@ -58,7 +37,7 @@ async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
   ];
   const policyManagerConfig = await encodeArgs(
     ['address[]', 'bytes[]'],
-    [Object.values(policies), policySettingsData],
+    [Object.values(policies), policiesSettingsData],
   );
   const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
@@ -82,6 +61,7 @@ async function snapshotWithMocksAndFund(provider: EthereumTestnetProvider) {
       vaultProxy,
     },
     policies,
+    policiesSettingsData,
   };
 }
 
@@ -98,6 +78,7 @@ describe('constructor', () => {
         policyManager,
         investorWhitelist,
       },
+      policies,
     } = await provider.snapshot(snapshot);
 
     const getRegisteredPoliciesCall = policyManager.getRegisteredPolicies();
@@ -108,11 +89,14 @@ describe('constructor', () => {
       assetWhitelist.address,
       maxConcentration.address,
       investorWhitelist.address,
+      ...Object.values(policies).map((policy) => policy.address),
     ]);
 
     const getOwnerCall = policyManager.getOwner();
     await expect(getOwnerCall).resolves.toBe(await fundDeployer.getOwner());
   });
+
+  it.todo('check registered policyHooks per policy');
 });
 
 describe('setConfigForFund', () => {
@@ -124,68 +108,35 @@ describe('setConfigForFund', () => {
 
   it('successfully configures PolicyManager state and fires events', async () => {
     const {
-      accounts: { 0: fundOwner },
-      deployment: {
-        fundDeployer,
-        policyManager,
-        tokens: { weth },
-      },
-      policies: {
-        mockPreBuySharesPolicy,
-        mockPostBuySharesPolicy,
-        mockPreCoIPolicy,
-        mockPostCoIPolicy,
-      },
-    } = await provider.snapshot(snapshotWithMocks);
+      deployment: { policyManager },
+      fund: { comptrollerProxy, newFundTx },
+      policies,
+      policiesSettingsData,
+    } = await provider.snapshot(snapshot);
 
-    const policies = [
-      mockPreBuySharesPolicy,
-      mockPostBuySharesPolicy,
-      mockPreCoIPolicy,
-      mockPostCoIPolicy,
-    ];
-    const policiesSettingsData = [
-      utils.randomBytes(10),
-      '0x',
-      '0x',
-      utils.randomBytes(2),
-    ];
-    const policyManagerConfig = await encodeArgs(
-      ['address[]', 'bytes[]'],
-      [policies, policiesSettingsData],
-    );
-    const { comptrollerProxy, newFundTx } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: weth,
-      policyManagerConfig,
-    });
+    const orderedPolicies = Object.values(policies);
 
     // Assert state for fund
     const getEnabledPoliciesForFundCall = policyManager.getEnabledPoliciesForFund(
       comptrollerProxy,
     );
-    await expect(getEnabledPoliciesForFundCall).resolves.toMatchObject([
-      policies[0].address,
-      policies[1].address,
-      policies[2].address,
-      policies[3].address,
-    ]);
+    await expect(getEnabledPoliciesForFundCall).resolves.toMatchObject(
+      orderedPolicies.map((policy) => policy.address),
+    );
 
     // Assert addFundSettings was called on each policy with its settingsData,
     // only if settingsData was passed
-    for (let i = 0; i < policies.length; i++) {
-      if (policiesSettingsData[i] === '0x') {
+    for (const key in orderedPolicies) {
+      if (policiesSettingsData[key] === '0x') {
         expect(
-          policies[i].addFundSettings.ref,
+          orderedPolicies[key].addFundSettings.ref,
         ).not.toHaveBeenCalledOnContract();
       } else {
         await expect(
-          policies[i].addFundSettings.ref,
+          orderedPolicies[key].addFundSettings.ref,
         ).toHaveBeenCalledOnContractWith(
           comptrollerProxy,
-          policiesSettingsData[i],
+          policiesSettingsData[key],
         );
       }
     }
@@ -195,11 +146,11 @@ describe('setConfigForFund', () => {
       'PolicyEnabledForFund',
     );
     const events = extractEvent(await newFundTx, policyEnabledForFundEvent);
-    expect(events.length).toBe(policies.length);
-    for (let i = 0; i < policies.length; i++) {
+    expect(events.length).toBe(orderedPolicies.length);
+    for (let i = 0; i < orderedPolicies.length; i++) {
       expect(events[i].args).toMatchObject({
         comptrollerProxy: comptrollerProxy.address,
-        policy: policies[i].address,
+        policy: orderedPolicies[i].address,
         settingsData: utils.hexlify(policiesSettingsData[i]),
       });
     }
@@ -207,7 +158,7 @@ describe('setConfigForFund', () => {
 });
 
 describe('activateForFund', () => {
-  it.todo('calls each enabled policy to activate');
+  it.todo('calls each enabled policy to activate (migrated fund only)');
 });
 
 describe('state getters', () => {
@@ -233,9 +184,60 @@ describe('registerPolicies', () => {
 
   it.todo('does not allow an already registered policy');
 
-  it.todo(
-    'successfully registers multiple policies and fires one event per policy',
-  );
+  it('correctly handles a valid call (multiple implemented hooks)', async () => {
+    const {
+      config: { deployer },
+      deployment: { policyManager },
+    } = await provider.snapshot(snapshot);
+
+    // Setup a mock policy that implements multiple hooks
+    const identifier = `MOCK_POLICY`;
+    const hooks = [policyHooks.PreBuyShares, policyHooks.PreCallOnIntegration];
+    const notIncludedHooks = [
+      policyHooks.PostBuyShares,
+      policyHooks.PostCallOnIntegration,
+    ];
+    const mockPolicy = await IPolicy.mock(deployer);
+    await mockPolicy.identifier.returns(identifier);
+    await mockPolicy.implementedHooks.returns(hooks);
+
+    // Register the policies
+    const registerPoliciesTx = policyManager.registerPolicies([mockPolicy]);
+    await expect(registerPoliciesTx).resolves.toBeReceipt();
+
+    // Policies should be registered
+    const getRegisteredPoliciesCall = policyManager.getRegisteredPolicies();
+    await expect(getRegisteredPoliciesCall).resolves.toEqual(
+      expect.arrayContaining([mockPolicy.address]),
+    );
+
+    // Policy hooks should be stored
+    for (const hook of hooks) {
+      const goodPolicyImplementsHookCall = policyManager.policyImplementsHook(
+        mockPolicy,
+        hook,
+      );
+      await expect(goodPolicyImplementsHookCall).resolves.toBe(true);
+    }
+    for (const hook of notIncludedHooks) {
+      const badPolicyImplementsHookCall = policyManager.policyImplementsHook(
+        mockPolicy,
+        hook,
+      );
+      await expect(badPolicyImplementsHookCall).resolves.toBe(false);
+    }
+
+    // Assert event
+    const events = extractEvent(await registerPoliciesTx, 'PolicyRegistered');
+    expect(events.length).toBe(1);
+    expect(events[0].args).toMatchObject({
+      0: mockPolicy.address,
+      1: expect.objectContaining({
+        hash: utils.id(identifier),
+      }),
+      2: hooks,
+    });
+  });
 });
 
 describe('disablePolicyForFund', () => {
@@ -260,14 +262,14 @@ describe('validatePolicies', () => {
   it('correctly handles a BuyShares PolicyHook', async () => {
     const {
       accounts: { 0: buyer },
-      fund: { comptrollerProxy, denominationAsset },
+      fund: { comptrollerProxy, denominationAsset, vaultProxy },
       policies: {
         mockPreBuySharesPolicy,
         mockPostBuySharesPolicy,
         mockPreCoIPolicy,
         mockPostCoIPolicy,
       },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
 
     const investmentAmount = utils.parseEther('2');
     await buyShares({
@@ -285,13 +287,21 @@ describe('validatePolicies', () => {
       minSharesQuantity: investmentAmount,
       gav: 0, // No investments have been made yet, so gav is 0
     });
-    expect(
+
+    await expect(
       mockPreBuySharesPolicy.validateRule.ref,
-    ).toHaveBeenCalledOnContractWith(comptrollerProxy, preRuleArgs);
-    expect(
+    ).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      vaultProxy,
+      policyHooks.PreBuyShares,
+      preRuleArgs,
+    );
+    await expect(
       mockPostBuySharesPolicy.validateRule.ref,
     ).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
+      policyHooks.PostBuyShares,
       validateRulePostBuySharesArgs(buyer, investmentAmount, investmentAmount),
     );
 
@@ -314,7 +324,7 @@ describe('validatePolicies', () => {
         mockPreCoIPolicy,
         mockPostCoIPolicy,
       },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
 
     // Define complex spend and incoming asset values to ensure correct data passed to PolicyManager
     const spendAssets = [weth, dai];
@@ -346,8 +356,12 @@ describe('validatePolicies', () => {
     });
 
     // Assert validateRule called on correct policies
-    expect(mockPreCoIPolicy.validateRule.ref).toHaveBeenCalledOnContractWith(
+    await expect(
+      mockPreCoIPolicy.validateRule.ref,
+    ).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
+      policyHooks.PreCallOnIntegration,
       validateRulePreCoIArgs(mockGenericAdapter, mockGenericSwapASelector),
     );
 
@@ -355,8 +369,12 @@ describe('validatePolicies', () => {
     const outgoingAssets = [weth];
     const outgoingAssetAmounts = [utils.parseEther('1')];
 
-    expect(mockPostCoIPolicy.validateRule.ref).toHaveBeenCalledOnContractWith(
+    await expect(
+      mockPostCoIPolicy.validateRule.ref,
+    ).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
+      vaultProxy,
+      policyHooks.PostCallOnIntegration,
       validateRulePostCoIArgs(
         mockGenericAdapter,
         mockGenericSwapASelector,
@@ -381,7 +399,7 @@ describe('validatePolicies', () => {
       deployment: { integrationManager, mockGenericAdapter },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
       policies: { mockPreCoIPolicy },
-    } = await provider.snapshot(snapshotWithMocksAndFund);
+    } = await provider.snapshot(snapshot);
 
     // Set policy to return validateRule as false
     await mockPreCoIPolicy.validateRule.returns(false);

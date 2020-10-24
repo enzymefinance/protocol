@@ -43,11 +43,12 @@ contract AdapterWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressList
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
-    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
-        external
-        override
-        returns (bool isValid_)
-    {
+    function validateRule(
+        address _comptrollerProxy,
+        address,
+        IPolicyManager.PolicyHook,
+        bytes calldata _encodedArgs
+    ) external override returns (bool isValid_) {
         (address adapter, ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, adapter);

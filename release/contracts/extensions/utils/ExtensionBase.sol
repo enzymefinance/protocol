@@ -10,7 +10,7 @@ import "../IExtension.sol";
 abstract contract ExtensionBase is IExtension {
     mapping(address => address) internal comptrollerProxyToVaultProxy;
 
-    function activateForFund() external virtual override {
+    function activateForFund(bool) external virtual override {
         // UNIMPLEMENTED
     }
 
@@ -55,7 +55,7 @@ abstract contract ExtensionBase is IExtension {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return vaultProxy_ The VaultProxy of the fund
     function getVaultProxyForFund(address _comptrollerProxy)
-        external
+        public
         view
         returns (address vaultProxy_)
     {

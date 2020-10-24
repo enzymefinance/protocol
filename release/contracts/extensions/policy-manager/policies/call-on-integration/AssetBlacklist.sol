@@ -17,13 +17,15 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _vaultProxy The fund's VaultProxy address
     /// @dev No need to authenticate access, as there are no state transitions
-    function activateForFund(address _comptrollerProxy) external override {
+    function activateForFund(address _comptrollerProxy, address _vaultProxy)
+        external
+        override
+        onlyPolicyManager
+    {
         require(
-            passesRule(
-                _comptrollerProxy,
-                VaultLib(IComptroller(_comptrollerProxy).getVaultProxy()).getTrackedAssets()
-            ),
+            passesRule(_comptrollerProxy, VaultLib(_vaultProxy).getTrackedAssets()),
             "activateForFund: blacklisted asset detected"
         );
     }
@@ -73,11 +75,12 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
-    function validateRule(address _comptrollerProxy, bytes calldata _encodedArgs)
-        external
-        override
-        returns (bool isValid_)
-    {
+    function validateRule(
+        address _comptrollerProxy,
+        address,
+        IPolicyManager.PolicyHook,
+        bytes calldata _encodedArgs
+    ) external override returns (bool isValid_) {
         (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, incomingAssets);

@@ -12,7 +12,7 @@ import { defaultTestDeployment } from '../../..';
 import {
   createMigratedFundConfig,
   generateFeeManagerConfigWithMockFees,
-  generatePolicyManagerConfigWithMockFees,
+  generatePolicyManagerConfigWithMockPolicies,
   releaseStatusTypes,
 } from '../../utils';
 
@@ -58,7 +58,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     deployer: config.deployer,
     feeManager: deployment.feeManager,
   });
-  const policyManagerConfigData = await generatePolicyManagerConfigWithMockFees(
+  const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies(
     {
       deployer: config.deployer,
       policyManager: deployment.policyManager,

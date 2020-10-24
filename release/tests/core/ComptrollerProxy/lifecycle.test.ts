@@ -125,12 +125,12 @@ describe('init', () => {
     await expect(getOverridePauseCall).resolves.toBe(false);
 
     // Assert expected calls
-    expect(mockFeeManager.setConfigForFund).toHaveBeenCalledOnContractWith(
-      feeManagerConfigData,
-    );
-    expect(mockPolicyManager.setConfigForFund).toHaveBeenCalledOnContractWith(
-      policyManagerConfigData,
-    );
+    await expect(
+      mockFeeManager.setConfigForFund,
+    ).toHaveBeenCalledOnContractWith(feeManagerConfigData);
+    await expect(
+      mockPolicyManager.setConfigForFund,
+    ).toHaveBeenCalledOnContractWith(policyManagerConfigData);
   });
 
   it('can only be called once', async () => {
@@ -159,6 +159,7 @@ describe('activate', () => {
       mockFeeManager,
       mockFundDeployer,
       mockIntegrationManager,
+      mockPolicyManager,
       mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -175,8 +176,15 @@ describe('activate', () => {
     await expect(vaultProxyCall).resolves.toBe(mockVaultProxy.address);
 
     // Assert expected calls
-    expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();
-    expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContract();
+    await expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(
+      false,
+    );
+    await expect(
+      mockIntegrationManager.activateForFund,
+    ).toHaveBeenCalledOnContractWith(false);
+    await expect(
+      mockPolicyManager.activateForFund,
+    ).toHaveBeenCalledOnContractWith(false);
 
     // Should not have called the path for activation of migrated funds
     expect(mockVaultProxy.balanceOf).not.toHaveBeenCalledOnContract();
@@ -217,14 +225,20 @@ describe('activate', () => {
     await expect(vaultProxyCall).resolves.toBe(mockVaultProxy.address);
 
     // Assert expected calls
-    expect(mockVaultProxy.transferShares).toHaveBeenCalledOnContractWith(
+    await expect(mockVaultProxy.transferShares).toHaveBeenCalledOnContractWith(
       mockVaultProxy.address,
       await resolveAddress(mockVaultProxyOwner),
       sharesDue,
     );
-    expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContract();
-    expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContract();
-    expect(mockPolicyManager.activateForFund).toHaveBeenCalledOnContract();
+    await expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(
+      true,
+    );
+    await expect(
+      mockIntegrationManager.activateForFund,
+    ).toHaveBeenCalledOnContractWith(true);
+    await expect(
+      mockPolicyManager.activateForFund,
+    ).toHaveBeenCalledOnContractWith(true);
 
     // Assert events emitted
     await assertEvent(activateTx, 'VaultProxySet', {

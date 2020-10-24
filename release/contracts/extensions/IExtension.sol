@@ -4,7 +4,7 @@ pragma solidity 0.6.8;
 /// @title IExtension Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IExtension {
-    function activateForFund() external;
+    function activateForFund(bool) external;
 
     function deactivateForFund() external;
 

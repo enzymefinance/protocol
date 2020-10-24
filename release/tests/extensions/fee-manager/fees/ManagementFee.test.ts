@@ -62,27 +62,13 @@ describe('constructor', () => {
     const getFeeManagerCall = managementFee.getFeeManager();
     await expect(getFeeManagerCall).resolves.toBe(feeManager.address);
 
-    // Implements used hooks
-    const settlesOnHookContinuousCall = managementFee.settlesOnHook(
+    // Implements expected hooks
+    const implementedHooksCall = managementFee.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
       feeHooks.Continuous,
-    );
-    await expect(settlesOnHookContinuousCall).resolves.toBe(true);
-
-    const settlesOnHookPreBuySharesCall = managementFee.settlesOnHook(
       feeHooks.PreBuyShares,
-    );
-    await expect(settlesOnHookPreBuySharesCall).resolves.toBe(true);
-
-    const settlesOnHookPreRedeemSharesCall = managementFee.settlesOnHook(
       feeHooks.PreRedeemShares,
-    );
-    await expect(settlesOnHookPreRedeemSharesCall).resolves.toBe(true);
-
-    // Does not implement unused hooks
-    const settlesOnHookPostBuySharesCall = managementFee.settlesOnHook(
-      feeHooks.PostBuyShares,
-    );
-    await expect(settlesOnHookPostBuySharesCall).resolves.toBe(false);
+    ]);
   });
 });
 

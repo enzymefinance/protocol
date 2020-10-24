@@ -99,6 +99,7 @@ async function activateWithInitialValues({
   const activateTx = mockFeeManager.forward(
     performanceFee.activateForFund,
     mockComptrollerProxy,
+    mockVaultProxy,
   );
   await expect(activateTx).resolves.toBeReceipt();
 
@@ -210,27 +211,13 @@ describe('constructor', () => {
     const getFeeManagerCall = performanceFee.getFeeManager();
     await expect(getFeeManagerCall).resolves.toBe(feeManager.address);
 
-    // Implements used hooks
-    const settlesOnHookContinuousCall = performanceFee.settlesOnHook(
+    // Implements expected hooks
+    const implementedHooksCall = performanceFee.implementedHooks();
+    await expect(implementedHooksCall).resolves.toMatchObject([
       feeHooks.Continuous,
-    );
-    await expect(settlesOnHookContinuousCall).resolves.toBe(true);
-
-    const settlesOnHookPreBuySharesCall = performanceFee.settlesOnHook(
       feeHooks.PreBuyShares,
-    );
-    await expect(settlesOnHookPreBuySharesCall).resolves.toBe(true);
-
-    const settlesOnHookPreRedeemSharesCall = performanceFee.settlesOnHook(
       feeHooks.PreRedeemShares,
-    );
-    await expect(settlesOnHookPreRedeemSharesCall).resolves.toBe(true);
-
-    // Does not implement unused hooks
-    const settlesOnHookPostBuySharesCall = performanceFee.settlesOnHook(
-      feeHooks.PostBuyShares,
-    );
-    await expect(settlesOnHookPostBuySharesCall).resolves.toBe(false);
+    ]);
   });
 });
 
@@ -304,11 +291,13 @@ describe('activateForFund', () => {
   it('can only be called by the FeeManager', async () => {
     const {
       mockComptrollerProxy,
+      mockVaultProxy,
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
     const activateTx = standalonePerformanceFee.activateForFund(
       mockComptrollerProxy,
+      mockVaultProxy,
     );
     await expect(activateTx).rejects.toBeRevertedWith(
       'Only the FeeManger can make this call',
@@ -319,6 +308,7 @@ describe('activateForFund', () => {
     const {
       mockComptrollerProxy,
       mockFeeManager,
+      mockVaultProxy,
       performanceFeePeriod,
       performanceFeeRate,
       standalonePerformanceFee,
@@ -332,6 +322,7 @@ describe('activateForFund', () => {
     const activateTx = mockFeeManager.forward(
       standalonePerformanceFee.activateForFund,
       mockComptrollerProxy,
+      mockVaultProxy,
     );
     await expect(activateTx).resolves.toBeReceipt();
     const activationTimestamp = (await provider.getBlock('latest')).timestamp;

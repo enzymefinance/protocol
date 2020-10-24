@@ -7,18 +7,13 @@ import { encodeArgs } from '../../../common';
 // Policy Manager
 
 export enum policyHooks {
-  None,
-  BuyShares,
-  CallOnIntegration,
+  PreBuyShares,
+  PostBuyShares,
+  PreCallOnIntegration,
+  PostCallOnIntegration,
 }
 
-export enum policyHookExecutionTimes {
-  None,
-  Pre,
-  Post,
-}
-
-export async function generatePolicyManagerConfigWithMockFees({
+export async function generatePolicyManagerConfigWithMockPolicies({
   deployer,
   policyManager,
 }: {
@@ -58,38 +53,36 @@ export async function generateRegisteredMockPolicies({
 
   // Initialize mock policy return values
   await Promise.all([
+    // PreBuyShares
     mockPreBuySharesPolicy.identifier.returns(`MOCK_PRE_BUY_SHARES`),
     mockPreBuySharesPolicy.addFundSettings.returns(undefined),
     mockPreBuySharesPolicy.activateForFund.returns(undefined),
     mockPreBuySharesPolicy.validateRule.returns(true),
-    mockPreBuySharesPolicy.policyHook.returns(policyHooks.BuyShares),
-    mockPreBuySharesPolicy.policyHookExecutionTime.returns(
-      policyHookExecutionTimes.Pre,
-    ),
+    mockPreBuySharesPolicy.implementedHooks.returns([policyHooks.PreBuyShares]),
+    // PostBuyShares
     mockPostBuySharesPolicy.identifier.returns(`MOCK_POST_BUY_SHARES`),
     mockPostBuySharesPolicy.addFundSettings.returns(undefined),
     mockPostBuySharesPolicy.activateForFund.returns(undefined),
     mockPostBuySharesPolicy.validateRule.returns(true),
-    mockPostBuySharesPolicy.policyHook.returns(policyHooks.BuyShares),
-    mockPostBuySharesPolicy.policyHookExecutionTime.returns(
-      policyHookExecutionTimes.Post,
-    ),
+    mockPostBuySharesPolicy.implementedHooks.returns([
+      policyHooks.PostBuyShares,
+    ]),
+    // PreCallOnIntegration
     mockPreCoIPolicy.identifier.returns(`MOCK_PRE_CALL_ON_INTEGRATION`),
     mockPreCoIPolicy.addFundSettings.returns(undefined),
     mockPreCoIPolicy.activateForFund.returns(undefined),
     mockPreCoIPolicy.validateRule.returns(true),
-    mockPreCoIPolicy.policyHook.returns(policyHooks.CallOnIntegration),
-    mockPreCoIPolicy.policyHookExecutionTime.returns(
-      policyHookExecutionTimes.Pre,
-    ),
+    mockPreCoIPolicy.implementedHooks.returns([
+      policyHooks.PreCallOnIntegration,
+    ]),
+    // PostCallOnIntegration
     mockPostCoIPolicy.identifier.returns(`MOCK_POST_CALL_ON_INTEGRATION`),
     mockPostCoIPolicy.addFundSettings.returns(undefined),
     mockPostCoIPolicy.activateForFund.returns(undefined),
     mockPostCoIPolicy.validateRule.returns(true),
-    mockPostCoIPolicy.policyHook.returns(policyHooks.CallOnIntegration),
-    mockPostCoIPolicy.policyHookExecutionTime.returns(
-      policyHookExecutionTimes.Post,
-    ),
+    mockPostCoIPolicy.implementedHooks.returns([
+      policyHooks.PostCallOnIntegration,
+    ]),
   ]);
 
   // Register all mock policies

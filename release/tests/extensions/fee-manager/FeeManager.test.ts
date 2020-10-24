@@ -11,6 +11,7 @@ import {
 import { assertEvent } from '@melonproject/utils';
 import { BigNumber, constants, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../';
+import { IFee } from '../../../codegen/IFee';
 import {
   buyShares,
   callOnExtension,
@@ -181,6 +182,7 @@ describe('activateForFund', () => {
     for (const fee of Object.values(fees)) {
       await expect(fee.activateForFund.ref).toHaveBeenCalledOnContractWith(
         comptrollerProxy,
+        vaultProxy,
       );
     }
   });
@@ -304,7 +306,57 @@ describe('registerFees', () => {
 
   it.todo('does not allow an already registered fee');
 
-  it.todo('successfully registers multiple fees and fires one event per fee');
+  it('correctly handles a valid call (multiple implemented hooks)', async () => {
+    const {
+      config: { deployer },
+      deployment: { feeManager },
+    } = await provider.snapshot(snapshot);
+
+    // Setup a mock fee that implements multiple hooks
+    const identifier = `MOCK_FEE`;
+    const hooks = [feeHooks.PreBuyShares, feeHooks.PreRedeemShares];
+    const notIncludedHooks = [feeHooks.PostBuyShares, feeHooks.Continuous];
+    const mockFee = await IFee.mock(deployer);
+    await mockFee.identifier.returns(identifier);
+    await mockFee.implementedHooks.returns(hooks);
+
+    // Register the fees
+    const registerFeesTx = feeManager.registerFees([mockFee]);
+    await expect(registerFeesTx).resolves.toBeReceipt();
+
+    // Fees should be registered
+    const getRegisteredFeesCall = feeManager.getRegisteredFees();
+    await expect(getRegisteredFeesCall).resolves.toEqual(
+      expect.arrayContaining([mockFee.address]),
+    );
+
+    // Fee hooks should be stored
+    for (const hook of hooks) {
+      const goodFeeImplementsHookCall = feeManager.feeImplementsHook(
+        mockFee,
+        hook,
+      );
+      await expect(goodFeeImplementsHookCall).resolves.toBe(true);
+    }
+    for (const hook of notIncludedHooks) {
+      const badFeeImplementsHookCall = feeManager.feeImplementsHook(
+        mockFee,
+        hook,
+      );
+      await expect(badFeeImplementsHookCall).resolves.toBe(false);
+    }
+
+    // Assert event
+    const events = extractEvent(await registerFeesTx, 'FeeRegistered');
+    expect(events.length).toBe(1);
+    expect(events[0].args).toMatchObject({
+      0: mockFee.address,
+      1: expect.objectContaining({
+        hash: utils.id(identifier),
+      }),
+      2: hooks,
+    });
+  });
 });
 
 describe('settleFees', () => {

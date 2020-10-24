@@ -3,7 +3,6 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/FundDeployerOwnerMixin.sol";
@@ -26,15 +25,29 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         bytes settingsData
     );
 
-    event PolicyRegistered(address indexed policy, string indexed identifier);
+    event PolicyRegistered(
+        address indexed policy,
+        string indexed identifier,
+        PolicyHook[] implementedHooks
+    );
 
     EnumerableSet.AddressSet private registeredPolicies;
+    mapping(address => mapping(PolicyHook => bool)) private policyToHookToIsImplemented;
     mapping(address => EnumerableSet.AddressSet) private comptrollerProxyToPolicies;
 
-    modifier onlyFundOwner(address _comptrollerProxy) {
+    modifier onlyBuySharesHooks(address _policy) {
         require(
-            msg.sender == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
-            "Only the fund owner can call this function"
+            !policyImplementsHook(_policy, PolicyHook.PreCallOnIntegration) &&
+                !policyImplementsHook(_policy, PolicyHook.PostCallOnIntegration),
+            "onlyBuySharesHooks: Disallowed hook"
+        );
+        _;
+    }
+
+    modifier onlyEnabledPolicyForFund(address _comptrollerProxy, address _policy) {
+        require(
+            policyIsEnabledForFund(_comptrollerProxy, _policy),
+            "onlyEnabledPolicyForFund: Policy not enabled"
         );
         _;
     }
@@ -44,11 +57,27 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     // EXTERNAL FUNCTIONS
 
     /// @notice Validates and initializes policies as necessary prior to fund activation
+    /// @param _isMigratedFund True if the fund is migrating to this release
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
-    function activateForFund() external override {
-        address[] memory enabledPolicies = getEnabledPoliciesForFund(msg.sender);
-        for (uint256 i; i < enabledPolicies.length; i++) {
-            __activatePolicyForFund(msg.sender, enabledPolicies[i]);
+    function activateForFund(bool _isMigratedFund) external override {
+        address vaultProxy = __setValidatedVaultProxy(msg.sender);
+
+        // Policies must assert that they are congruent with migrated vault state
+        if (_isMigratedFund) {
+            address[] memory enabledPolicies = getEnabledPoliciesForFund(msg.sender);
+            for (uint256 i; i < enabledPolicies.length; i++) {
+                __activatePolicyForFund(msg.sender, vaultProxy, enabledPolicies[i]);
+            }
+        }
+    }
+
+    /// @notice Deactivates the extension for a fund by destroying storage
+    function deactivateForFund() external override {
+        delete comptrollerProxyToVaultProxy[msg.sender];
+        for (uint256 i; i < comptrollerProxyToPolicies[msg.sender].length(); i++) {
+            comptrollerProxyToPolicies[msg.sender].remove(
+                comptrollerProxyToPolicies[msg.sender].at(i)
+            );
         }
     }
 
@@ -57,16 +86,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     /// @param _policy The Policy contract to disable
     function disablePolicyForFund(address _comptrollerProxy, address _policy)
         external
-        onlyFundOwner(_comptrollerProxy)
+        onlyBuySharesHooks(_policy)
+        onlyEnabledPolicyForFund(_comptrollerProxy, _policy)
     {
-        require(
-            policyIsEnabledForFund(_comptrollerProxy, _policy),
-            "disablePolicyForFund: policy not enabled"
-        );
-        require(
-            IPolicy(_policy).policyHook() == PolicyHook.BuyShares,
-            "disablePolicyForFund: only BuyShares policies can be disabled"
-        );
+        __validateIsFundOwner(getVaultProxyForFund(_comptrollerProxy), msg.sender);
 
         comptrollerProxyToPolicies[_comptrollerProxy].remove(_policy);
 
@@ -84,17 +107,13 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         address _comptrollerProxy,
         address _policy,
         bytes calldata _settingsData
-    ) external onlyFundOwner(_comptrollerProxy) {
-        require(
-            IPolicy(_policy).policyHook() == PolicyHook.BuyShares,
-            "enablePolicyForFund: only BuyShares policies can be enabled after fund creation"
-        );
+    ) external onlyBuySharesHooks(_policy) {
+        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
+        __validateIsFundOwner(vaultProxy, msg.sender);
 
         __enablePolicyForFund(_comptrollerProxy, _policy, _settingsData);
 
-        // The current BuyShares policies do not do anything on activation,
-        // but best to keep this here for future policies.
-        __activatePolicyForFund(_comptrollerProxy, _policy);
+        __activatePolicyForFund(_comptrollerProxy, vaultProxy, _policy);
     }
 
     /// @notice Enable policies for use in a fund
@@ -113,7 +132,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         );
 
         // Enable each policy with settings
-        for (uint256 i = 0; i < policies.length; i++) {
+        for (uint256 i; i < policies.length; i++) {
             __enablePolicyForFund(msg.sender, policies[i], settingsData[i]);
         }
     }
@@ -126,34 +145,55 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         address _comptrollerProxy,
         address _policy,
         bytes calldata _settingsData
-    ) external onlyFundOwner(_comptrollerProxy) {
-        require(
-            policyIsEnabledForFund(_comptrollerProxy, _policy),
-            "updatePolicySettingsForFund: policy not enabled"
-        );
+    ) external onlyBuySharesHooks(_policy) onlyEnabledPolicyForFund(_comptrollerProxy, _policy) {
+        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
+        __validateIsFundOwner(vaultProxy, msg.sender);
 
-        IPolicy(_policy).updateFundSettings(_comptrollerProxy, _settingsData);
+        IPolicy(_policy).updateFundSettings(_comptrollerProxy, vaultProxy, _settingsData);
     }
 
     /// @notice Validates all policies that apply to a given hook and execution time for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _hook The PolicyHook with which to filter policies
-    /// @param _executionTime The PolicyHookExecutionTime with which to filter policies
+    /// @param _hook The PolicyHook for which to validate policies
     /// @param _validationData The encoded data with which to validate the filtered policies
     function validatePolicies(
         address _comptrollerProxy,
         PolicyHook _hook,
-        PolicyHookExecutionTime _executionTime,
         bytes calldata _validationData
     ) external override {
-        __validatePolicies(_comptrollerProxy, _hook, _executionTime, _validationData);
+        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
+        address[] memory policies = getEnabledPoliciesForFund(_comptrollerProxy);
+        for (uint256 i; i < policies.length; i++) {
+            if (!policyImplementsHook(policies[i], _hook)) {
+                continue;
+            }
+
+            require(
+                IPolicy(policies[i]).validateRule(
+                    _comptrollerProxy,
+                    vaultProxy,
+                    _hook,
+                    _validationData
+                ),
+                string(
+                    abi.encodePacked(
+                        "Rule evaluated to false: ",
+                        IPolicy(policies[i]).identifier()
+                    )
+                )
+            );
+        }
     }
 
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to activate a policy for a fund
-    function __activatePolicyForFund(address _comptrollerProxy, address _policy) private {
-        IPolicy(_policy).activateForFund(_comptrollerProxy);
+    function __activatePolicyForFund(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        address _policy
+    ) private {
+        IPolicy(_policy).activateForFund(_comptrollerProxy, _vaultProxy);
     }
 
     /// @dev Helper to set config and enable policies for a fund
@@ -179,30 +219,13 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         emit PolicyEnabledForFund(_comptrollerProxy, _policy, _settingsData);
     }
 
-    /// @notice Helper to validate policies
-    function __validatePolicies(
-        address _comptrollerProxy,
-        PolicyHook _hook,
-        PolicyHookExecutionTime _executionTime,
-        bytes memory _validationData
-    ) private {
-        address[] memory policies = getEnabledPoliciesForFund(_comptrollerProxy);
-        for (uint256 i = 0; i < policies.length; i++) {
-            if (
-                IPolicy(policies[i]).policyHook() == _hook &&
-                IPolicy(policies[i]).policyHookExecutionTime() == _executionTime
-            ) {
-                require(
-                    IPolicy(policies[i]).validateRule(_comptrollerProxy, _validationData),
-                    string(
-                        abi.encodePacked(
-                            "Rule evaluated to false: ",
-                            IPolicy(policies[i]).identifier()
-                        )
-                    )
-                );
-            }
-        }
+    /// @dev Helper to validate fund owner.
+    /// Preferred to a modifier because allows gas savings if re-using _vaultProxy.
+    function __validateIsFundOwner(address _vaultProxy, address _who) private view {
+        require(
+            _who == IVault(_vaultProxy).getOwner(),
+            "Only the fund owner can call this function"
+        );
     }
 
     ///////////////////////
@@ -239,7 +262,16 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
             registeredPolicies.add(_policies[i]);
 
-            emit PolicyRegistered(_policies[i], IPolicy(_policies[i]).identifier());
+            // Store the hooks that a policy implements for later use.
+            // Fronts the gas for calls to check if a hook is implemented, and guarantees
+            // that the implementsHooks return value does not change post-registration.
+            IPolicy policyContract = IPolicy(_policies[i]);
+            PolicyHook[] memory implementedHooks = policyContract.implementedHooks();
+            for (uint256 j; j < implementedHooks.length; j++) {
+                policyToHookToIsImplemented[_policies[i]][implementedHooks[j]] = true;
+            }
+
+            emit PolicyRegistered(_policies[i], policyContract.identifier(), implementedHooks);
         }
     }
 
@@ -255,7 +287,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         returns (address[] memory registeredPoliciesArray_)
     {
         registeredPoliciesArray_ = new address[](registeredPolicies.length());
-        for (uint256 i = 0; i < registeredPoliciesArray_.length; i++) {
+        for (uint256 i; i < registeredPoliciesArray_.length; i++) {
             registeredPoliciesArray_[i] = registeredPolicies.at(i);
         }
     }
@@ -269,9 +301,21 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         returns (address[] memory enabledPolicies_)
     {
         enabledPolicies_ = new address[](comptrollerProxyToPolicies[_comptrollerProxy].length());
-        for (uint256 i = 0; i < enabledPolicies_.length; i++) {
+        for (uint256 i; i < enabledPolicies_.length; i++) {
             enabledPolicies_[i] = comptrollerProxyToPolicies[_comptrollerProxy].at(i);
         }
+    }
+
+    /// @notice Checks if a policy implements a particular hook
+    /// @param _policy The address of the policy to check
+    /// @param _hook The PolicyHook to check
+    /// @return implementsHook_ True if the policy implements the hook
+    function policyImplementsHook(address _policy, PolicyHook _hook)
+        public
+        view
+        returns (bool implementsHook_)
+    {
+        return policyToHookToIsImplemented[_policy][_hook];
     }
 
     /// @notice Check is a policy is enabled for the fund
