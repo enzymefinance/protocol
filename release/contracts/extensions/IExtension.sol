@@ -8,5 +8,11 @@ interface IExtension {
 
     function deactivateForFund() external;
 
+    function receiveCallFromComptroller(
+        address,
+        uint256,
+        bytes calldata
+    ) external;
+
     function setConfigForFund(bytes calldata) external;
 }

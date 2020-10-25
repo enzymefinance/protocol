@@ -18,6 +18,14 @@ abstract contract ExtensionBase is IExtension {
         // UNIMPLEMENTED
     }
 
+    function receiveCallFromComptroller(
+        address,
+        uint256,
+        bytes calldata
+    ) external virtual override {
+        revert("receiveCallFromComptroller: Unimplemented for Extension");
+    }
+
     function setConfigForFund(bytes calldata) external virtual override {
         // UNIMPLEMENTED
     }

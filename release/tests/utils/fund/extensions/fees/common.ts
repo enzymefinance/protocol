@@ -11,6 +11,10 @@ export enum feeHooks {
   PreRedeemShares,
 }
 
+export enum feeManagerActionIds {
+  SettleContinuousFees,
+}
+
 export enum feeSettlementTypes {
   None,
   Direct,

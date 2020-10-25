@@ -9,7 +9,7 @@ import {
 import { encodeArgs } from '../../../common';
 import {
   callOnIntegrationArgs,
-  callOnIntegrationSelector,
+  integrationManagerActionIds,
   takeOrderSelector,
 } from './common';
 
@@ -62,7 +62,11 @@ export async function engineAdapterTakeOrder({
 
   const takeOrderTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    .callOnExtension(
+      integrationManager,
+      integrationManagerActionIds.CallOnIntegration,
+      callArgs,
+    );
   await expect(takeOrderTx).resolves.toBeReceipt();
 
   return takeOrderTx;

@@ -247,10 +247,10 @@ describe('lend', () => {
     );
     expect(postTxDaiBalance).toEqBigNumber(preTxDaiBalance.sub(daiAmount));
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
-    await assertEvent(lendTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(lendTx, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy: comptrollerProxy.address,
       vaultProxy: vaultProxy.address,
       caller: await fundOwner.getAddress(),
@@ -357,10 +357,10 @@ describe('redeem', () => {
       preTxDaiBalance.add(expectedDaiAmount),
     );
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
-    await assertEvent(redeemTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(redeemTx, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy: comptrollerProxy.address,
       vaultProxy: vaultProxy.address,
       caller: await fundOwner.getAddress(),

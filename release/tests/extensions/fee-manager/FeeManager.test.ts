@@ -17,11 +17,11 @@ import {
   callOnExtension,
   createNewFund,
   encodeArgs,
+  feeManagerActionIds,
   feeSettlementTypes,
   generateRegisteredMockFees,
   settlePreBuySharesArgs,
   settlePostBuySharesArgs,
-  settleContinuousFeesSelector,
   feeHooks,
 } from '../../utils';
 
@@ -401,7 +401,7 @@ describe('settleFees', () => {
     await callOnExtension({
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     // Payout fees after 2nd fee settlement
@@ -409,7 +409,7 @@ describe('settleFees', () => {
     const settleContinuousFeesTx = callOnExtension({
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
     await expect(settleContinuousFeesTx).resolves.toBeReceipt();
 
@@ -601,7 +601,7 @@ describe('settleFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -664,7 +664,7 @@ describe('settleFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -728,7 +728,7 @@ describe('settleFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     // Then burn shares outstanding
@@ -743,7 +743,7 @@ describe('settleFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -810,7 +810,7 @@ describe('settleFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     // Then attempt to burn more shares outstanding than available
@@ -826,7 +826,7 @@ describe('settleFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
 
     const postSharesTotalSupplyCall = await vaultProxy.totalSupply();
@@ -853,7 +853,7 @@ describe('settleContinuousFees', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      selector: settleContinuousFeesSelector,
+      actionId: feeManagerActionIds.SettleContinuousFees,
     });
     await expect(settleContinuousFeesTx).resolves.toBeReceipt();
 

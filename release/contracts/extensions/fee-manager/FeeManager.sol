@@ -80,7 +80,6 @@ contract FeeManager is
     // EXTERNAL FUNCTIONS
 
     /// @notice Activate already-configured fees for use in the calling fund
-    /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     function activateForFund(bool) external override {
         address vaultProxy = __setValidatedVaultProxy(msg.sender);
 
@@ -91,8 +90,8 @@ contract FeeManager is
     }
 
     /// @notice Deactivate fees for a fund
-    /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     /// If we add a SellShares fee hook, this will need to be refactored to not delete those fees.
+    /// @dev msg.sender is validated during __settleFeesForHook()
     function deactivateForFund() external override {
         // Settle continuous fees one last time
         __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
@@ -102,6 +101,21 @@ contract FeeManager is
 
         // Clean up storage
         __deleteFundStorage(msg.sender);
+    }
+
+    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
+    /// @param _actionId An ID representing the desired action
+    function receiveCallFromComptroller(
+        address,
+        uint256 _actionId,
+        bytes calldata
+    ) external override {
+        // Dispatch the action
+        if (_actionId == 0) {
+            __settleContinuousFees();
+        } else {
+            revert("receiveCallFromComptroller: Invalid _actionId");
+        }
     }
 
     /// @notice Enable and configure fees for use in the calling fund
@@ -137,18 +151,10 @@ contract FeeManager is
         }
     }
 
-    /// @notice Settles all "continuous" fees (e.g., ManagementFee and PerformanceFee),
-    /// paying out shares whenever possible.
-    /// @dev Anyone can call this function, but must do so via the ComptrollerProxy.
-    /// Useful in case there is little activity and a manager wants to cull fees.
-    function settleContinuousFees(address, bytes calldata) external {
-        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
-    }
-
     /// @notice Settles all fees for a particular FeeHook, paying out shares wherever possible.
     /// @param _hook The FeeHook for which to settle fees
     /// @param _settlementData The encoded settlement parameters specific to the FeeHook
-    /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
+    /// @dev msg.sender is validated during __settleFeesForHook()
     function settleFees(FeeHook _hook, bytes calldata _settlementData) external override {
         __settleFeesForHook(msg.sender, _hook, _settlementData);
     }
@@ -218,6 +224,15 @@ contract FeeManager is
         emit SharesOutstandingPaidForFund(_comptrollerProxy, _fee, payee, sharesOutstanding);
     }
 
+    /// @dev Settles all "continuous" fees (e.g., ManagementFee and PerformanceFee),
+    /// paying out shares whenever possible.
+    /// Anyone can call this function, but must do so via the ComptrollerProxy.
+    /// Useful in case there is little activity and a manager wants to cull fees.
+    /// @dev msg.sender is validated during __settleFeesForHook()
+    function __settleContinuousFees() private {
+        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
+    }
+
     /// @dev Helper to settle a fee
     function __settleFee(
         address _comptrollerProxy,
@@ -279,7 +294,14 @@ contract FeeManager is
         FeeHook _hook,
         bytes memory _settlementData
     ) private {
+        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
+        // activateForFund(), this function does not require further validation of the
+        // sending ComptrollerProxy.
+        // This check isn't strictly necessary, but it doesn't hurt,
+        // and helps to preserve data integrity.
         address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
+        require(vaultProxy != address(0), "__settleFeesForHook: Fund is not active");
+
         address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
         for (uint256 i; i < fees.length; i++) {
             if (!feeImplementsHook(fees[i], _hook)) {
@@ -375,6 +397,8 @@ contract FeeManager is
         for (uint256 i; i < registeredFees_.length; i++) {
             registeredFees_[i] = registeredFees.at(i);
         }
+
+        return registeredFees_;
     }
 
     /// @notice Checks if a fee implements a particular hook

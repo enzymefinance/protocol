@@ -124,10 +124,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         require(isActive(), "Fund not active");
     }
 
-    function __assertLowLevelCall(bool _success, bytes memory _returnData) private pure {
-        require(_success, string(_returnData));
-    }
-
     function __assertIsFundDeployer(address _who) private view {
         require(_who == FUND_DEPLOYER, "Only FundDeployer callable");
     }
@@ -182,14 +178,15 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
 
     /// @notice Calls an arbitrary function on an extension
     /// @param _extension The extension contract to call (e.g., FeeManager)
-    /// @param _selector The selector to call
+    /// @param _actionId An ID representing the action to take on the extension (see extension)
     /// @param _callArgs The encoded data for the call
-    /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy (for access control).
-    /// Uses a reverse-mutex of sorts that only allows permissioned calls to the vault during this stack.
+    /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
+    /// (for access control). Uses a mutex of sorts that only allows permissioned calls
+    /// to the vault during this stack.
     /// Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function callOnExtension(
         address _extension,
-        bytes4 _selector,
+        uint256 _actionId,
         bytes calldata _callArgs
     ) external onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultAction {
         require(
@@ -199,10 +196,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
             "callOnExtension: _extension invalid"
         );
 
-        (bool success, bytes memory returnData) = _extension.call(
-            abi.encodeWithSelector(_selector, msg.sender, _callArgs)
-        );
-        __assertLowLevelCall(success, returnData);
+        IExtension(_extension).receiveCallFromComptroller(msg.sender, _actionId, _callArgs);
     }
 
     /// @notice Makes an permissioned, state-changing call on the VaultProxy contract
@@ -221,7 +215,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
                 _actionData
             )
         );
-        __assertLowLevelCall(success, returnData);
+        require(success, string(returnData));
     }
 
     /// @notice Set or unset the release pause override for a fund

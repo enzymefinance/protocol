@@ -1,17 +1,17 @@
 import { AddressLike } from '@crestproject/crestproject';
-import { BytesLike, Signer } from 'ethers';
+import { BigNumberish, BytesLike, Signer } from 'ethers';
 import { ComptrollerLib } from '../../../../utils/contracts';
 
 export async function callOnExtension({
   comptrollerProxy,
   extension,
-  selector,
+  actionId,
   callArgs = '0x',
   signer,
 }: {
   comptrollerProxy: ComptrollerLib;
   extension: AddressLike;
-  selector: BytesLike;
+  actionId: BigNumberish;
   callArgs?: BytesLike;
   signer?: Signer;
 }) {
@@ -20,11 +20,11 @@ export async function callOnExtension({
   if (signer) {
     callOnExtensionTx = comptrollerProxy
       .connect(signer)
-      .callOnExtension(extension, selector, callArgs);
+      .callOnExtension(extension, actionId, callArgs);
   } else {
     callOnExtensionTx = comptrollerProxy.callOnExtension(
       extension,
-      selector,
+      actionId,
       callArgs,
     );
   }

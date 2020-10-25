@@ -7,7 +7,7 @@ import {
   VaultLib,
 } from '../../../../../utils/contracts';
 import { encodeArgs, sighash } from '../../../common';
-import { callOnIntegrationArgs, callOnIntegrationSelector } from './common';
+import { callOnIntegrationArgs, integrationManagerActionIds } from './common';
 
 export const mockGenericSwapASelector = sighash(
   utils.FunctionFragment.fromString('swapA(address,bytes,bytes)'),
@@ -93,7 +93,11 @@ export async function mockGenericSwap({
 
   const swapTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    .callOnExtension(
+      integrationManager,
+      integrationManagerActionIds.CallOnIntegration,
+      callArgs,
+    );
   await expect(swapTx).resolves.toBeReceipt();
 
   return swapTx;

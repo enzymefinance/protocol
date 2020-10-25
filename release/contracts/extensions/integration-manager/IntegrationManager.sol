@@ -4,7 +4,6 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../utils/AddressArrayLib.sol";
@@ -36,7 +35,7 @@ contract IntegrationManager is
 
     event AuthUserRemovedForFund(address indexed comptrollerProxy, address indexed account);
 
-    event CallOnIntegrationExecuted(
+    event CallOnIntegrationExecutedForFund(
         address indexed comptrollerProxy,
         address vaultProxy,
         address caller,
@@ -74,14 +73,14 @@ contract IntegrationManager is
     // GENERAL //
     /////////////
 
-    /// @notice Activates the extension by storing the VaultProxy and the fund owner
+    /// @notice Activates the extension by storing the VaultProxy
     function activateForFund(bool) external override {
         __setValidatedVaultProxy(msg.sender);
     }
 
-    /// @notice Adds an authorized user for the given fund
+    /// @notice Authorizes a user to act on behalf of a fund via the IntegrationManager
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _who The authorized user to add
+    /// @param _who The user to authorize
     function addAuthUserForFund(address _comptrollerProxy, address _who) external {
         __validateSetAuthUser(_comptrollerProxy, _who, true);
 
@@ -95,7 +94,34 @@ contract IntegrationManager is
         delete comptrollerProxyToVaultProxy[msg.sender];
     }
 
-    /// @notice Removes an authorized user for the given fund
+    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
+    /// @param _caller The user who called for this action
+    /// @param _actionId An ID representing the desired action
+    /// @param _callArgs The encoded args for the action
+    function receiveCallFromComptroller(
+        address _caller,
+        uint256 _actionId,
+        bytes calldata _callArgs
+    ) external override {
+        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
+        // activateForFund(), this function does not require further validation of the
+        // sending ComptrollerProxy
+        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
+        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
+        require(
+            isAuthUserForFund(msg.sender, _caller),
+            "receiveCallFromComptroller: Not an authorized user"
+        );
+
+        // Dispatch the action
+        if (_actionId == 0) {
+            __callOnIntegration(_caller, vaultProxy, _callArgs);
+        } else {
+            revert("receiveCallFromComptroller: Invalid _actionId");
+        }
+    }
+
+    /// @notice Removes an authorized user from the IntegrationManager for the given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _who The authorized user to remove
     function removeAuthUserForFund(address _comptrollerProxy, address _who) external {
@@ -106,10 +132,10 @@ contract IntegrationManager is
         emit AuthUserRemovedForFund(_comptrollerProxy, _who);
     }
 
-    /// @notice Checks whether an account is an authorized user for a given fund
+    /// @notice Checks whether an account is an authorized IntegrationManager user for a given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _who The account to check
-    /// @return isAuthUser_ True if the account is an authorized user (including the owner)
+    /// @return isAuthUser_ True if the account is an authorized user or the fund owner
     function isAuthUserForFund(address _comptrollerProxy, address _who)
         public
         view
@@ -156,23 +182,19 @@ contract IntegrationManager is
     /////////////////////////
 
     /// @notice Universal method for calling third party contract functions through adapters
-    /// @param _caller The account who called this function via `IntegrationManager.callOnExtension`
-    /// @param _callArgs The encoded args for this function, passed from `IntegrationManager.callOnExtension`
+    /// @param _caller The caller of this function via the ComptrollerProxy
+    /// @param _vaultProxy The VaultProxy of the fund
+    /// @param _callArgs The encoded args for this function
     /// - _adapter Adapter of the integration on which to execute a call
     /// - _selector Method selector of the adapter method to execute
     /// - _integrationData Encoded arguments specific to the adapter
-    /// @dev Refer to specific adapter to see how to encode its arguments.
-    function callOnIntegration(address _caller, bytes calldata _callArgs) external {
-        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
-        // activateForFund(), this function does not require further validation of the
-        // sending ComptrollerProxy
-        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
-        require(vaultProxy != address(0), "callOnIntegration: Fund is not active");
-        require(
-            isAuthUserForFund(msg.sender, _caller),
-            "callOnIntegration: Only authorized users can call this function"
-        );
-
+    /// @dev msg.sender is the ComptrollerProxy.
+    /// Refer to specific adapter to see how to encode its arguments.
+    function __callOnIntegration(
+        address _caller,
+        address _vaultProxy,
+        bytes memory _callArgs
+    ) private {
         (
             address adapter,
             bytes4 selector,
@@ -187,7 +209,7 @@ contract IntegrationManager is
             uint256[] memory incomingAssetAmounts,
             address[] memory outgoingAssets,
             uint256[] memory outgoingAssetAmounts
-        ) = __callOnIntegrationInner(vaultProxy, _callArgs);
+        ) = __callOnIntegrationInner(_vaultProxy, _callArgs);
 
         __postCoIHook(
             adapter,
@@ -199,7 +221,7 @@ contract IntegrationManager is
         );
 
         __emitCoIEvent(
-            vaultProxy,
+            _vaultProxy,
             _caller,
             adapter,
             selector,
@@ -290,7 +312,7 @@ contract IntegrationManager is
         address[] memory _outgoingAssets,
         uint256[] memory _outgoingAssetAmounts
     ) private {
-        emit CallOnIntegrationExecuted(
+        emit CallOnIntegrationExecutedForFund(
             msg.sender,
             _vaultProxy,
             _caller,
@@ -337,8 +359,8 @@ contract IntegrationManager is
         return IERC20(_asset).balanceOf(_vaultProxy);
     }
 
+    /// @dev Helper for the actions to take on external contracts prior to executing CoI
     function __preCoIHook(address _adapter, bytes4 _selector) private {
-        // Pre-validate against fund policies
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
             IPolicyManager.PolicyHook.PreCallOnIntegration,
@@ -346,7 +368,7 @@ contract IntegrationManager is
         );
     }
 
-    /// @dev Helper for the actions to take prior to _executeCoI() in callOnIntegration()
+    /// @dev Helper for the internal actions to take prior to executing CoI
     function __preProcessCoI(address _vaultProxy, bytes memory _callArgs)
         private
         returns (
@@ -441,6 +463,7 @@ contract IntegrationManager is
         }
     }
 
+    /// @dev Helper for the actions to take on external contracts after executing CoI
     function __postCoIHook(
         address _adapter,
         bytes4 _selector,
@@ -449,7 +472,6 @@ contract IntegrationManager is
         address[] memory _outgoingAssets,
         uint256[] memory _outgoingAssetAmounts
     ) private {
-        // Post-validate CoI against fund policies
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
             IPolicyManager.PolicyHook.PostCallOnIntegration,
@@ -464,7 +486,7 @@ contract IntegrationManager is
         );
     }
 
-    /// @dev Helper to reconcile and format incoming and outgoing assets post-CoI
+    /// @dev Helper to reconcile and format incoming and outgoing assets after executing CoI
     function __postProcessCoI(
         address _vaultProxy,
         address[] memory _expectedIncomingAssets,
@@ -635,7 +657,7 @@ contract IntegrationManager is
 
     /// @dev Helper to validate the global trackedAssetsLimit for all funds.
     /// A fund must either be below the tracked assets limit,
-    /// or their tracked assets count must not have increased.
+    /// or their tracked assets count must not have increased during the CoI.
     /// We could also perform some more complicated logic to see which assets were
     /// added and removed in the tx and allow cases where only the denomination asset
     /// was added, but in practice that would be a corner case that is not too limiting.
@@ -734,6 +756,8 @@ contract IntegrationManager is
         for (uint256 i = 0; i < registeredAdaptersArray_.length; i++) {
             registeredAdaptersArray_[i] = registeredAdapters.at(i);
         }
+
+        return registeredAdaptersArray_;
     }
 
     /// @notice Gets the `trackedAssetsLimit` variable

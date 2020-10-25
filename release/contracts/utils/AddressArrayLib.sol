@@ -7,7 +7,7 @@ pragma solidity 0.6.8;
 library AddressArrayLib {
     /// @dev Helper to verify if an array contains a particular value
     function contains(address[] memory _self, address _target) internal pure returns (bool) {
-        for (uint256 i = 0; i < _self.length; i++) {
+        for (uint256 i; i < _self.length; i++) {
             if (_target == _self[i]) {
                 return true;
             }
@@ -23,7 +23,7 @@ library AddressArrayLib {
         }
 
         uint256 arrayLength = _self.length;
-        for (uint256 i = 0; i < arrayLength; i++) {
+        for (uint256 i; i < arrayLength; i++) {
             for (uint256 j = i + 1; j < arrayLength; j++) {
                 if (_self[i] == _self[j]) {
                     return false;

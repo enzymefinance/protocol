@@ -10,10 +10,10 @@ import {
 import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
 import { defaultTestDeployment } from '../../../..';
 import {
-  callOnIntegrationSelector,
   callOnIntegrationArgs,
   createNewFund,
   getAssetBalances,
+  integrationManagerActionIds,
   mockGenericSwap,
   mockGenericSwapArgs,
   mockGenericSwapASelector,
@@ -95,11 +95,11 @@ async function seedFundByTrading({
     seedFund: true,
   });
 
-  const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-    'CallOnIntegrationExecuted',
+  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+    'CallOnIntegrationExecutedForFund',
   );
 
-  await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+  await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
     adapter: mockGenericAdapter.address,
     comptrollerProxy: comptrollerProxy.address,
     caller: await fundOwner.getAddress(),
@@ -123,18 +123,6 @@ async function seedFundByTrading({
 }
 
 describe('callOnIntegration', () => {
-  it('does not allow a non-activated fund', async () => {
-    const {
-      deployment: { integrationManager },
-    } = await provider.snapshot(snapshot);
-
-    const badCoiTx = integrationManager.callOnIntegration(
-      randomAddress(),
-      constants.AddressZero,
-    );
-    await expect(badCoiTx).rejects.toBeRevertedWith('Fund is not active');
-  });
-
   it('only allows authorized users', async () => {
     const {
       accounts: { 0: newAuthUser },
@@ -158,16 +146,22 @@ describe('callOnIntegration', () => {
     // Call should be allowed by the fund owner
     const goodSwapTx1 = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(goodSwapTx1).resolves.toBeReceipt();
 
     // Call not allowed by the yet-to-be authorized user
     const swapTx = comptrollerProxy
       .connect(newAuthUser)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
-    await expect(swapTx).rejects.toBeRevertedWith(
-      'Only authorized users can call this function',
-    );
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
+    await expect(swapTx).rejects.toBeRevertedWith('Not an authorized user');
 
     // Set the new auth user
     const addAuthUserForFundTx = integrationManager
@@ -178,7 +172,11 @@ describe('callOnIntegration', () => {
     // Call should be allowed for the authorized user
     const goodSwapTx2 = comptrollerProxy
       .connect(newAuthUser)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(goodSwapTx2).resolves.toBeReceipt();
   });
 
@@ -239,7 +237,11 @@ describe('callOnIntegration', () => {
 
     const swapTx = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(swapTx).rejects.toBeRevertedWith(
       'spend assets arrays unequal',
     );
@@ -270,7 +272,11 @@ describe('callOnIntegration', () => {
 
     const swapTx = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(swapTx).rejects.toBeRevertedWith(
       'incoming assets arrays unequal',
     );
@@ -301,7 +307,11 @@ describe('callOnIntegration', () => {
 
     const swapTx = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(swapTx).rejects.toBeRevertedWith(
       'duplicate spend asset detected',
     );
@@ -332,7 +342,11 @@ describe('callOnIntegration', () => {
 
     const swapTx = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(swapTx).rejects.toBeRevertedWith(
       'duplicate incoming asset detected',
     );
@@ -424,7 +438,11 @@ describe('callOnIntegration', () => {
 
     const swapTx = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(swapTx).rejects.toBeRevertedWith('empty spendAsset detected');
   });
 
@@ -454,7 +472,11 @@ describe('callOnIntegration', () => {
 
     const swapTx = comptrollerProxy
       .connect(fundOwner)
-      .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+      .callOnExtension(
+        integrationManager,
+        integrationManagerActionIds.CallOnIntegration,
+        callArgs,
+      );
     await expect(swapTx).rejects.toBeRevertedWith(
       'empty incoming asset address',
     );
@@ -522,11 +544,11 @@ describe('valid calls', () => {
       seedFund: true,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -614,11 +636,11 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -696,11 +718,11 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -776,11 +798,11 @@ describe('valid calls', () => {
       seedFund: true,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -855,11 +877,11 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -933,8 +955,8 @@ describe('valid calls', () => {
       seedFund: true,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
     // Actual incoming asset info, accounting for token balance on adapter
@@ -943,7 +965,7 @@ describe('valid calls', () => {
       spendAssetAmountOnAdapter.sub(spendAssetAmounts[0]),
     ];
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -1008,11 +1030,11 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),
@@ -1084,11 +1106,11 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(swapTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(swapTx, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter.address,
       comptrollerProxy: comptrollerProxy.address,
       caller: await fundOwner.getAddress(),

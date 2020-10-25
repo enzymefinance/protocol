@@ -2,6 +2,10 @@ import { Call, Contract } from '@crestproject/crestproject';
 import { BigNumber, BytesLike, utils } from 'ethers';
 import { encodeArgs, sighash } from '../../../common';
 
+export enum integrationManagerActionIds {
+  CallOnIntegration,
+}
+
 export enum spendAssetsHandleTypes {
   None,
   Approve,

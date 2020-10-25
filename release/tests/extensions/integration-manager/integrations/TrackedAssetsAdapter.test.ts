@@ -165,19 +165,23 @@ describe('addTrackedAssets', () => {
       incomingAssets,
     });
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
-    await assertEvent(addTrackedAssetsTx, callOnIntegrationExecutedEvent, {
-      comptrollerProxy: comptrollerProxy.address,
-      vaultProxy: vaultProxy.address,
-      caller: await fundOwner.getAddress(),
-      adapter: trackedAssetsAdapter.address,
-      incomingAssets: [mln.address, weth.address],
-      incomingAssetAmounts: [mlnAmount, wethAmount],
-      outgoingAssets: [],
-      outgoingAssetAmounts: [],
-    });
+    await assertEvent(
+      addTrackedAssetsTx,
+      CallOnIntegrationExecutedForFundEvent,
+      {
+        comptrollerProxy: comptrollerProxy.address,
+        vaultProxy: vaultProxy.address,
+        caller: await fundOwner.getAddress(),
+        adapter: trackedAssetsAdapter.address,
+        incomingAssets: [mln.address, weth.address],
+        incomingAssetAmounts: [mlnAmount, wethAmount],
+        outgoingAssets: [],
+        outgoingAssetAmounts: [],
+      },
+    );
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
     await expect(

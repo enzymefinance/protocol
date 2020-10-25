@@ -203,11 +203,11 @@ describe('takeOrder', () => {
     expect(postTxWethBalance).toEqBigNumber(preTxWethBalance.add(expectedWeth));
     expect(postTxMlnBalance).toEqBigNumber(preTxMlnBalance.sub(mlnAmount));
 
-    const callOnIntegrationExecutedEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecuted',
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
     );
 
-    await assertEvent(takeOrderTx, callOnIntegrationExecutedEvent, {
+    await assertEvent(takeOrderTx, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy: comptrollerProxy.address,
       vaultProxy: vaultProxy.address,
       caller: await fundOwner.getAddress(),

@@ -9,7 +9,7 @@ import { encodeArgs } from '../../../common';
 import {
   addTrackedAssetsSelector,
   callOnIntegrationArgs,
-  callOnIntegrationSelector,
+  integrationManagerActionIds,
 } from './common';
 
 export async function addTrackedAssetsArgs({
@@ -42,7 +42,11 @@ export async function addTrackedAssets({
 
   const addTrackedAssetsTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    .callOnExtension(
+      integrationManager,
+      integrationManagerActionIds.CallOnIntegration,
+      callArgs,
+    );
   await expect(addTrackedAssetsTx).resolves.toBeReceipt();
 
   return addTrackedAssetsTx;

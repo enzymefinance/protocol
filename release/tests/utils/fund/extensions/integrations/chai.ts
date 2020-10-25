@@ -9,7 +9,7 @@ import {
 import { encodeArgs } from '../../../common';
 import {
   callOnIntegrationArgs,
-  callOnIntegrationSelector,
+  integrationManagerActionIds,
   lendSelector,
   redeemSelector,
 } from './common';
@@ -78,7 +78,11 @@ export async function chaiLend({
 
   const lendTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    .callOnExtension(
+      integrationManager,
+      integrationManagerActionIds.CallOnIntegration,
+      callArgs,
+    );
   await expect(lendTx).resolves.toBeReceipt();
 
   return lendTx;
@@ -122,7 +126,11 @@ export async function chaiRedeem({
 
   const redeemTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(integrationManager, callOnIntegrationSelector, callArgs);
+    .callOnExtension(
+      integrationManager,
+      integrationManagerActionIds.CallOnIntegration,
+      callArgs,
+    );
   await expect(redeemTx).resolves.toBeReceipt();
 
   return redeemTx;
