@@ -8,6 +8,14 @@ import "../vault/IVault.sol";
 interface IComptroller {
     function activate(address, bool) external;
 
+    function calcGrossShareValue() external returns (uint256);
+
+    function callOnExtension(
+        address,
+        uint256,
+        bytes calldata
+    ) external;
+
     function destruct() external;
 
     function getVaultProxy() external view returns (address);

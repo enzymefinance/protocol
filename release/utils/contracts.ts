@@ -40,3 +40,6 @@ export { AssetWhitelist } from '../codegen/AssetWhitelist';
 export { BuySharesPriceFeedTolerance } from '../codegen/BuySharesPriceFeedTolerance';
 export { MaxConcentration } from '../codegen/MaxConcentration';
 export { InvestorWhitelist } from '../codegen/InvestorWhitelist';
+
+// Peripheral
+export { FundCalculator } from '../codegen/FundCalculator';

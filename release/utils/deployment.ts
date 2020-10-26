@@ -16,6 +16,7 @@ import {
   EngineAdapter,
   EntranceRateFee,
   FeeManager,
+  FundCalculator,
   FundDeployer,
   IntegrationManager,
   InvestorWhitelist,
@@ -100,6 +101,8 @@ export interface ReleaseDeploymentOutput {
   assetWhitelist: Promise<AssetWhitelist>;
   maxConcentration: Promise<MaxConcentration>;
   investorWhitelist: Promise<InvestorWhitelist>;
+  // Peripheral
+  fundCalculator: Promise<FundCalculator>;
 }
 
 export const deployRelease = describeDeployment<
@@ -301,6 +304,10 @@ export const deployRelease = describeDeployment<
       config.deployer,
       await deployment.policyManager,
     );
+  },
+  // Peripheral
+  async fundCalculator(config, deployment) {
+    return FundCalculator.deploy(config.deployer, await deployment.feeManager);
   },
   // Post-deployment config
   async postDeployment(_config, deployment) {

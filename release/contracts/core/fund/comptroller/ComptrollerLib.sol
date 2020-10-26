@@ -191,7 +191,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         address _extension,
         uint256 _actionId,
         bytes calldata _callArgs
-    ) external onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultAction {
+    ) external override onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultAction {
         require(
             _extension == FEE_MANAGER ||
                 _extension == POLICY_MANAGER ||
@@ -404,28 +404,18 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
     /// @return grossShareValue_ The amount of the denomination asset per share
     /// @dev Does not account for any fees outstanding
-    function calcGrossShareValue() public onlyDelegateCall returns (uint256 grossShareValue_) {
+    function calcGrossShareValue()
+        external
+        override
+        onlyDelegateCall
+        returns (uint256 grossShareValue_)
+    {
         return
             __calcGrossShareValue(
                 calcGav(false),
                 IERC20Extended(vaultProxy).totalSupply(),
                 10**uint256(IERC20Extended(denominationAsset).decimals())
             );
-    }
-
-    /// @notice Calculates the net value of 1 unit of shares in the fund's denomination asset
-    /// @return netShareValue_ The amount of the denomination asset per share
-    /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
-    /// that can be used to determine the cost of purchasing shares at any given point in time.
-    function calcNetShareValue()
-        external
-        onlyDelegateCall
-        allowsPermissionedVaultAction
-        returns (uint256 netShareValue_)
-    {
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.Continuous, "");
-
-        return calcGrossShareValue();
     }
 
     /// @dev Helper for calculating the gross share value
