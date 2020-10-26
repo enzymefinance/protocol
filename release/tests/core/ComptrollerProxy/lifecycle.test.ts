@@ -53,12 +53,14 @@ async function snapshot(provider: EthereumTestnetProvider) {
   );
 
   // Deploy configured ComptrollerProxy
+  const sharesActionTimelock = 1234;
   const feeManagerConfigData = utils.hexlify(utils.randomBytes(4));
   const policyManagerConfigData = utils.hexlify(utils.randomBytes(8));
   const { comptrollerProxy } = await createComptrollerProxy({
     signer: config.deployer,
     comptrollerLib,
     denominationAsset: deployment.tokens.weth.address,
+    sharesActionTimelock,
     feeManagerConfigData,
     policyManagerConfigData,
   });
@@ -83,6 +85,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockVaultProxy,
     mockVaultProxyOwner,
     policyManagerConfigData,
+    sharesActionTimelock,
     supportedAsset: deployment.tokens.weth,
   };
 }
@@ -109,6 +112,7 @@ describe('init', () => {
       mockFeeManager,
       mockPolicyManager,
       policyManagerConfigData,
+      sharesActionTimelock,
       supportedAsset: denominationAsset,
     } = await provider.snapshot(snapshot);
 
@@ -124,6 +128,11 @@ describe('init', () => {
     const getOverridePauseCall = comptrollerProxy.getOverridePause();
     await expect(getOverridePauseCall).resolves.toBe(false);
 
+    const getSharesActionTimelockCall = comptrollerProxy.getSharesActionTimelock();
+    await expect(getSharesActionTimelockCall).resolves.toEqBigNumber(
+      sharesActionTimelock,
+    );
+
     // Assert expected calls
     await expect(
       mockFeeManager.setConfigForFund,
@@ -138,7 +147,7 @@ describe('init', () => {
 
     // ComptrollerProxy has already been created (and init() called)
 
-    const initTx = comptrollerProxy.init(randomAddress(), '0x', '0x');
+    const initTx = comptrollerProxy.init(randomAddress(), 0, '0x', '0x');
     await expect(initTx).rejects.toBeRevertedWith('Already initialized');
   });
 });

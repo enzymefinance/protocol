@@ -377,4 +377,119 @@ describe('redeemSharesDetailed', () => {
   });
 });
 
-it.todo('tests for disallowing atomic shares actions');
+describe('sharesActionTimelock', () => {
+  it('does not affect buying or redeeming shares if set to 0', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: { 0: fundManager, 1: investor, 2: buySharesCaller },
+    } = await provider.snapshot(snapshot);
+
+    // Create a new fund, without a timelock
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+    });
+    const getSharesActionTimelockCall = comptrollerProxy.getSharesActionTimelock();
+    await expect(getSharesActionTimelockCall).resolves.toEqBigNumber(0);
+
+    // Buy shares to start the timelock (though the timelock is 0)
+    const goodBuySharesTx1 = buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyer: investor,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx1).resolves.toBeReceipt();
+
+    // Immediately buying shares again should succeed
+    const goodBuySharesTx2 = buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyer: investor,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx2).resolves.toBeReceipt();
+
+    // Immediately redeeming shares should succeed
+    const goodRedeemSharesTx = redeemShares({
+      comptrollerProxy,
+      signer: investor,
+    });
+    await expect(goodRedeemSharesTx).resolves.toBeReceipt();
+  });
+
+  it('is respected when buying or redeeming shares', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: { 0: fundManager, 1: investor, 2: buySharesCaller },
+    } = await provider.snapshot(snapshot);
+
+    const failureMessage = 'Shares action timelocked';
+
+    // Create a new fund, with a timelock
+    const sharesActionTimelock = 100;
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      sharesActionTimelock,
+    });
+
+    // Buy shares to start the timelock
+    const goodBuySharesTx1 = buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyer: investor,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx1).resolves.toBeReceipt();
+
+    // Buying or redeeming shares for the same user should both fail since the timelock has started
+    const badBuySharesTx = buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyer: investor,
+      denominationAsset,
+    });
+    await expect(badBuySharesTx).rejects.toBeRevertedWith(failureMessage);
+    const badRedeemSharesTx = redeemShares({
+      comptrollerProxy,
+      signer: investor,
+    });
+    await expect(badRedeemSharesTx).rejects.toBeRevertedWith(failureMessage);
+
+    // Buying shares for another party succeeds
+    const goodBuySharesTx2 = buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyer: buySharesCaller,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx2).resolves.toBeReceipt();
+
+    // Warping forward to past the timelock should allow another buy
+    await provider.send('evm_increaseTime', [sharesActionTimelock]);
+    const goodBuySharesTx3 = buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyer: investor,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx3).resolves.toBeReceipt();
+
+    // Warping forward to the timelock should allow a redemption
+    await provider.send('evm_increaseTime', [sharesActionTimelock]);
+    const goodRedeemSharesTx = redeemShares({
+      comptrollerProxy,
+      signer: investor,
+    });
+    await expect(goodRedeemSharesTx).resolves.toBeReceipt();
+  });
+});

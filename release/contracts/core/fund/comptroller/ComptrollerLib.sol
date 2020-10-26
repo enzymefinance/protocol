@@ -85,8 +85,8 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         reentranceLocked = false;
     }
 
-    modifier locksAtomicSharesAction(address _account) {
-        __assertNotAtomicSharesAction(_account);
+    modifier timelockedSharesAction(address _account) {
+        __assertSharesActionNotTimelocked(_account);
         _;
         acctToLastSharesAction[_account] = block.timestamp;
     }
@@ -144,12 +144,15 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         require(!reentranceLocked, "Re-entrance");
     }
 
-    function __assertNotAtomicSharesAction(address _account) private view {
-        require(acctToLastSharesAction[_account] < block.timestamp, "Atomic shares action");
-    }
-
     function __assertPermissionedVaultActionNotAllowed() private view {
         require(!permissionedVaultActionAllowed, "Vault action re-entrance");
+    }
+
+    function __assertSharesActionNotTimelocked(address _account) private view {
+        require(
+            block.timestamp.sub(acctToLastSharesAction[_account]) >= sharesActionTimelock,
+            "Shares action timelocked"
+        );
     }
 
     constructor(
@@ -271,11 +274,18 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     // 2. activate() - called upon linking a VaultProxy to activate the fund
     // 3. destruct() - called upon migrating to another release
 
+    /// @notice Initializes a fund with config for its core and extensions
+    /// @param _denominationAsset The asset in which the fund's value should be denominated
+    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
+    /// (buying or selling shares) by the same user
+    /// @param _feeManagerConfigData Encoded config for fees to enable
+    /// @param _policyManagerConfigData Encoded config for policies to enable
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
     function init(
         address _denominationAsset,
+        uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external override onlyDelegateCall {
@@ -287,6 +297,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
             "init: Bad denomination asset"
         );
         denominationAsset = _denominationAsset;
+        sharesActionTimelock = _sharesActionTimelock;
 
         // Configure extensions
         if (_feeManagerConfigData.length > 0) {
@@ -458,7 +469,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         payable
         onlyActive
         onlyNotPaused
-        locksAtomicSharesAction(_buyer)
+        timelockedSharesAction(_buyer)
         locksReentrance
         allowsPermissionedVaultAction
         amguPayable
@@ -646,7 +657,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         address[] memory _assetsToSkip
     )
         private
-        locksAtomicSharesAction(_redeemer)
+        timelockedSharesAction(_redeemer)
         locksReentrance
         returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
     {
@@ -719,12 +730,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         return denominationAsset;
     }
 
-    /// @notice Gets the `overridePause` variable
-    /// @return overridePause_ The `overridePause` variable value
-    function getOverridePause() external view returns (bool overridePause_) {
-        return overridePause;
-    }
-
     /// @notice Gets the routes for the various contracts used by all funds
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
@@ -755,6 +760,18 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
             PRIMITIVE_PRICE_FEED,
             VALUE_INTERPRETER
         );
+    }
+
+    /// @notice Gets the `overridePause` variable
+    /// @return overridePause_ The `overridePause` variable value
+    function getOverridePause() external view returns (bool overridePause_) {
+        return overridePause;
+    }
+
+    /// @notice Gets the `sharesActionTimelock` variable
+    /// @return sharesActionTimelock_ The `sharesActionTimelock` variable value
+    function getSharesActionTimelock() external view returns (uint256 sharesActionTimelock_) {
+        return sharesActionTimelock;
     }
 
     /// @notice Gets the `vaultProxy` variable

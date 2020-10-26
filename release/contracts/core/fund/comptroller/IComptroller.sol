@@ -14,6 +14,7 @@ interface IComptroller {
 
     function init(
         address,
+        uint256,
         bytes calldata,
         bytes calldata
     ) external;

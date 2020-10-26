@@ -49,6 +49,7 @@ describe('createNewFund', () => {
       constants.AddressZero,
       '',
       randomAddress(),
+      0,
       constants.HashZero,
       constants.HashZero,
     );
@@ -65,6 +66,7 @@ describe('createNewFund', () => {
       randomAddress(),
       '',
       constants.AddressZero,
+      0,
       constants.HashZero,
       constants.HashZero,
     );
@@ -89,6 +91,7 @@ describe('createNewFund', () => {
       randomAddress(),
       '',
       denominationAsset,
+      0,
       constants.HashZero,
       constants.HashZero,
     );
@@ -147,6 +150,7 @@ describe('createMigratedFundConfig', () => {
 
     const createMigratedFundConfigTx = fundDeployer.createMigratedFundConfig(
       constants.AddressZero,
+      0,
       constants.HashZero,
       constants.HashZero,
     );
@@ -169,6 +173,7 @@ describe('createMigratedFundConfig', () => {
 
     const createMigratedFundConfigTx = fundDeployer.createMigratedFundConfig(
       denominationAsset,
+      0,
       constants.HashZero,
       constants.HashZero,
     );

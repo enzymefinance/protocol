@@ -21,6 +21,7 @@ contract ComptrollerStorage {
     bool internal permissionedVaultActionAllowed;
     // A mutex to protect against reentrancy
     bool internal reentranceLocked;
-    // A per-account timestamp to block atomic shares actions (e.g., buy and redeem shares)
+    // A timelock between any "shares actions" (i.e., buy and redeem shares), per-account
+    uint256 internal sharesActionTimelock;
     mapping(address => uint256) internal acctToLastSharesAction;
 }
