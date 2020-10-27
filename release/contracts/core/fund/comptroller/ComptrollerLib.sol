@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
@@ -14,6 +15,7 @@ import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
 import "./libs/IFundLifecycleLib.sol";
 import "./libs/IPermissionedVaultActionLib.sol";
+import "./utils/ComptrollerEvents.sol";
 import "./utils/ComptrollerStorage.sol";
 import "./IComptroller.sol";
 
@@ -22,33 +24,11 @@ import "./IComptroller.sol";
 /// @notice The core logic library shared by all funds
 /// @dev All state-changing functions should be marked as onlyDelegateCall,
 /// unless called directly by the FundDeployer
-contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
+contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, AmguConsumer {
     using AddressArrayLib for address[];
+    using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
-
-    event OverridePauseSet(bool indexed overridePause);
-
-    event PreRedeemSharesHookFailed(
-        bytes failureReturnData,
-        address redeemer,
-        uint256 sharesQuantity
-    );
-
-    event SharesBought(
-        address indexed caller,
-        address indexed buyer,
-        uint256 investmentAmount,
-        uint256 sharesBought,
-        uint256 sharesReceived
-    );
-
-    event SharesRedeemed(
-        address indexed redeemer,
-        uint256 sharesQuantity,
-        address[] receivedAssets,
-        uint256[] receivedAssetQuantities
-    );
 
     // Constants - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
@@ -111,8 +91,10 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     // Modifiers are inefficient in terms of reducing contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
+    /// @dev Since vaultProxy is set during activate(),
+    /// we can check that var rather than storing additional state
     function __assertIsActive() private view {
-        require(isActive(), "Fund not active");
+        require(vaultProxy != address(0), "Fund not active");
     }
 
     function __assertIsDelegateCall() private view {
@@ -241,14 +223,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         IVault(vaultProxy).callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
     }
 
-    /// @notice Checks whether the fund is active
-    /// @return isActive_ True if the fund is active
-    /// @dev Since vaultProxy is set during activate(),
-    /// we can check that var rather than storing additional state
-    function isActive() public view returns (bool isActive_) {
-        return vaultProxy != address(0);
-    }
-
     /// @dev Helper to check whether the release is paused and there is no local override
     function __fundIsPaused() private view returns (bool) {
         return
@@ -265,6 +239,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     function init(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
+        address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external override {
@@ -273,6 +248,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
                 IFundLifecycleLib.init.selector,
                 _denominationAsset,
                 _sharesActionTimelock,
+                _allowedBuySharesCallers,
                 _feeManagerConfigData,
                 _policyManagerConfigData
             )
@@ -379,6 +355,14 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     // PARTICIPATION //
     ///////////////////
 
+    // BUY SHARES
+
+    /// @notice Add accounts that are allowed to call the `buyShares` function
+    /// @param _callersToAdd The accounts to add
+    function addAllowedBuySharesCallers(address[] calldata _callersToAdd) external onlyOwner {
+        __addAllowedBuySharesCallers(_callersToAdd);
+    }
+
     /// @notice Buy shares on behalf of a specified user
     /// @param _buyer The account for which to buy shares
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
@@ -400,6 +384,11 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         amguPayable
         returns (uint256 sharesReceived_)
     {
+        require(
+            allowedBuySharesCallers.length() == 0 || allowedBuySharesCallers.contains(msg.sender),
+            "buyShares: Unauthorized caller"
+        );
+
         uint256 preBuySharesGav = calcGav(false);
 
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
@@ -440,6 +429,97 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         return sharesReceived_;
     }
 
+    /// @notice Remove approval of accounts that can call the `buyShares` function
+    /// @param _callersToRemove The accounts for which to remove approval
+    function removeAllowedBuySharesCallers(address[] calldata _callersToRemove)
+        external
+        onlyOwner
+    {
+        require(
+            _callersToRemove.length > 0,
+            "__removeAllowedBuySharesCallers: Empty _callersToRemove"
+        );
+
+        for (uint256 i; i < _callersToRemove.length; i++) {
+            require(
+                isAllowedBuySharesCaller(_callersToRemove[i]),
+                "__removeAllowedBuySharesCallers: Caller already disallowed"
+            );
+
+            allowedBuySharesCallers.remove(_callersToRemove[i]);
+
+            emit AllowedBuySharesCallerRemoved(_callersToRemove[i]);
+        }
+    }
+
+    /// @dev Helper to add allowed callers of the `buyShares` function
+    function __addAllowedBuySharesCallers(address[] memory _callersToAdd) private {
+        require(_callersToAdd.length > 0, "__addAllowedBuySharesCallers: Empty _callersToAdd");
+
+        for (uint256 i; i < _callersToAdd.length; i++) {
+            require(
+                !isAllowedBuySharesCaller(_callersToAdd[i]),
+                "__addAllowedBuySharesCallers: Caller already allowed"
+            );
+
+            allowedBuySharesCallers.add(_callersToAdd[i]);
+
+            emit AllowedBuySharesCallerAdded(_callersToAdd[i]);
+        }
+    }
+
+    /// @dev Helper to calculate the quantity of shares buyable for a given investment amount.
+    /// Avoids the stack-too-deep error.
+    function __calcBuyableSharesQuantity(
+        IERC20Extended _sharesContract,
+        IERC20Extended _denominationAssetContract,
+        uint256 _investmentAmount,
+        uint256 _gav
+    ) private view returns (uint256 sharesQuantity_) {
+        uint256 denominationAssetUnit = 10**uint256(_denominationAssetContract.decimals());
+        return
+            _investmentAmount.mul(denominationAssetUnit).div(
+                __calcGrossShareValue(_gav, _sharesContract.totalSupply(), denominationAssetUnit)
+            );
+    }
+
+    /// @dev Helper for system actions immediately prior to issuing shares
+    function __preBuySharesHook(
+        address _buyer,
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity,
+        uint256 _gav
+    ) private {
+        bytes memory callData = abi.encode(_buyer, _investmentAmount, _minSharesQuantity, _gav);
+
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PreBuyShares, callData);
+
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            address(this),
+            IPolicyManager.PolicyHook.PreBuyShares,
+            callData
+        );
+    }
+
+    /// @dev Helper for system actions immediately after issuing shares
+    function __postBuySharesHook(
+        address _buyer,
+        uint256 _investmentAmount,
+        uint256 _sharesBought
+    ) private {
+        bytes memory callData = abi.encode(_buyer, _investmentAmount, _sharesBought);
+
+        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PostBuyShares, callData);
+
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            address(this),
+            IPolicyManager.PolicyHook.PostBuyShares,
+            callData
+        );
+    }
+
+    // REDEEM SHARES
+
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
     function redeemShares() external onlyDelegateCall {
         __redeemShares(
@@ -463,21 +543,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         address[] calldata _assetsToSkip
     ) external onlyDelegateCall {
         __redeemShares(msg.sender, _sharesQuantity, _additionalAssets, _assetsToSkip);
-    }
-
-    /// @dev Helper to calculate the quantity of shares buyable for a given investment amount.
-    /// Avoids the stack-too-deep error.
-    function __calcBuyableSharesQuantity(
-        IERC20Extended _sharesContract,
-        IERC20Extended _denominationAssetContract,
-        uint256 _investmentAmount,
-        uint256 _gav
-    ) private view returns (uint256 sharesQuantity_) {
-        uint256 denominationAssetUnit = 10**uint256(_denominationAssetContract.decimals());
-        return
-            _investmentAmount.mul(denominationAssetUnit).div(
-                __calcGrossShareValue(_gav, _sharesContract.totalSupply(), denominationAssetUnit)
-            );
     }
 
     /// @dev Helper to parse an array of payout assets during redemption, taking into account
@@ -521,24 +586,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         return payoutAssets_;
     }
 
-    /// @dev Helper for system actions immediately prior to issuing shares
-    function __preBuySharesHook(
-        address _buyer,
-        uint256 _investmentAmount,
-        uint256 _minSharesQuantity,
-        uint256 _gav
-    ) private {
-        bytes memory callData = abi.encode(_buyer, _investmentAmount, _minSharesQuantity, _gav);
-
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PreBuyShares, callData);
-
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
-            address(this),
-            IPolicyManager.PolicyHook.PreBuyShares,
-            callData
-        );
-    }
-
     /// @dev Helper for system actions immediately prior to redeeming shares.
     /// Policy validation is not currently allowed on redemption, to ensure continuous redeemability.
     function __preRedeemSharesHook(address _redeemer, uint256 _sharesQuantity)
@@ -553,23 +600,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
          {} catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesQuantity);
         }
-    }
-
-    /// @dev Helper for system actions immediately after issuing shares
-    function __postBuySharesHook(
-        address _buyer,
-        uint256 _investmentAmount,
-        uint256 _sharesBought
-    ) private {
-        bytes memory callData = abi.encode(_buyer, _investmentAmount, _sharesBought);
-
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PostBuyShares, callData);
-
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
-            address(this),
-            IPolicyManager.PolicyHook.PostBuyShares,
-            callData
-        );
     }
 
     /// @notice Redeem a specified quantity of the sender's shares
@@ -649,6 +679,21 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     // STATE GETTERS //
     ///////////////////
 
+    /// @notice Gets a list of addresses from the `allowedBuySharesCallers` variable
+    /// @return allowedCallers_ The list of addresses from the `allowedBuySharesCallers` variable
+    function getAllowedBuySharesCallers()
+        external
+        view
+        returns (address[] memory allowedCallers_)
+    {
+        allowedCallers_ = new address[](allowedBuySharesCallers.length());
+        for (uint256 i; i < allowedCallers_.length; i++) {
+            allowedCallers_[i] = allowedBuySharesCallers.at(i);
+        }
+
+        return allowedCallers_;
+    }
+
     /// @notice Gets the `denominationAsset` variable
     /// @return denominationAsset_ The `denominationAsset` variable value
     function getDenominationAsset() external view returns (address denominationAsset_) {
@@ -703,5 +748,12 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     /// @return vaultProxy_ The `vaultProxy` variable value
     function getVaultProxy() external view override returns (address vaultProxy_) {
         return vaultProxy;
+    }
+
+    /// @notice Checks if an account is a member of the `allowedBuySharesCallers` variable
+    /// @param _who The account to check
+    /// @return isAllowedCaller_ True if the account is in the `allowedBuySharesCallers` variable
+    function isAllowedBuySharesCaller(address _who) public view returns (bool isAllowedCaller_) {
+        return allowedBuySharesCallers.contains(_who);
     }
 }

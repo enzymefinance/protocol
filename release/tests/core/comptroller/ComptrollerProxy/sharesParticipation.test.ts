@@ -1,5 +1,7 @@
 import {
   EthereumTestnetProvider,
+  extractEvent,
+  randomAddress,
   resolveAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
@@ -18,10 +20,25 @@ async function snapshot(provider: EthereumTestnetProvider) {
     provider,
   );
 
+  const [fundOwner, ...remainingAccounts] = accounts;
+  const denominationAsset = deployment.tokens.weth;
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner,
+    fundOwner,
+    fundDeployer: deployment.fundDeployer,
+    denominationAsset,
+  });
+
   return {
-    accounts,
-    deployment,
+    accounts: remainingAccounts,
     config,
+    deployment,
+    fund: {
+      comptrollerProxy,
+      denominationAsset,
+      fundOwner,
+      vaultProxy,
+    },
   };
 }
 
@@ -131,7 +148,169 @@ describe('buyShares', () => {
     await expect(goodBuySharesTx).resolves.toBeReceipt();
   });
 
+  it('does not allow a random user if allowedBuySharesCallers is set', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: { 0: fundOwner, 1: buyer, 2: randomUser, 3: allowedCaller },
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      allowedBuySharesCallers: [allowedCaller],
+    });
+
+    // A buyShares tx should fail from a random user
+    const badBuySharesTx = buyShares({
+      comptrollerProxy,
+      signer: randomUser,
+      buyer,
+      denominationAsset,
+    });
+    await expect(badBuySharesTx).rejects.toBeRevertedWith(
+      'Unauthorized caller',
+    );
+
+    // A buyShares tx should succeed from the allowedCaller
+    const goodBuySharesTx = buyShares({
+      comptrollerProxy,
+      signer: allowedCaller,
+      buyer,
+      denominationAsset,
+    });
+    await expect(goodBuySharesTx).resolves.toBeReceipt();
+  });
+
   it.todo('test that amgu is sent to the Engine in the above function');
+});
+
+describe('allowedBuySharesCallers', () => {
+  describe('addAllowedBuySharesCallers', () => {
+    it('cannot be called by a random user', async () => {
+      const {
+        accounts: { 0: randomUser },
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
+
+      const badAddAllowedBuySharesCallersTx = comptrollerProxy
+        .connect(randomUser)
+        .addAllowedBuySharesCallers([randomAddress()]);
+      await expect(badAddAllowedBuySharesCallersTx).rejects.toBeRevertedWith(
+        'Only fund owner callable',
+      );
+    });
+
+    it('correctly handles valid call', async () => {
+      const {
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
+
+      const callersToAdd = [randomAddress(), randomAddress()];
+
+      // Add the allowed callers
+      const addAllowedBuySharesCallersTx = comptrollerProxy.addAllowedBuySharesCallers(
+        callersToAdd,
+      );
+      await expect(addAllowedBuySharesCallersTx).resolves.toBeReceipt();
+
+      // Assert state has been set
+      const getAllowedBuySharesCallersCall = comptrollerProxy.getAllowedBuySharesCallers();
+      await expect(getAllowedBuySharesCallersCall).resolves.toMatchObject(
+        callersToAdd,
+      );
+
+      for (const added of callersToAdd) {
+        const isAllowedBuySharesCallerCall = comptrollerProxy.isAllowedBuySharesCaller(
+          added,
+        );
+        await expect(isAllowedBuySharesCallerCall).resolves.toBe(true);
+      }
+
+      // Assert events emitted
+      const events = extractEvent(
+        await addAllowedBuySharesCallersTx,
+        'AllowedBuySharesCallerAdded',
+      );
+      expect(events.length).toBe(2);
+      expect(events[0].args).toMatchObject({
+        caller: callersToAdd[0],
+      });
+      expect(events[1].args).toMatchObject({
+        caller: callersToAdd[1],
+      });
+    });
+  });
+
+  describe('removeAllowedBuySharesCallers', () => {
+    it('cannot be called by a random user', async () => {
+      const {
+        accounts: { 0: randomUser },
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
+
+      const badAddAllowedBuySharesCallersTx = comptrollerProxy
+        .connect(randomUser)
+        .removeAllowedBuySharesCallers([randomAddress(), randomAddress()]);
+      await expect(badAddAllowedBuySharesCallersTx).rejects.toBeRevertedWith(
+        'Only fund owner callable',
+      );
+    });
+
+    it('correctly handles valid call', async () => {
+      const {
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
+
+      const callersToRemove = [randomAddress(), randomAddress()];
+      const callerToRemain = randomAddress();
+
+      // Add allowed callers, including callers to-be-removed
+      const addAllowedBuySharesCallersTx = comptrollerProxy.addAllowedBuySharesCallers(
+        [...callersToRemove, callerToRemain],
+      );
+      await expect(addAllowedBuySharesCallersTx).resolves.toBeReceipt();
+
+      // Remove callers
+      const removeAllowedBuySharesCallersTx = comptrollerProxy.removeAllowedBuySharesCallers(
+        callersToRemove,
+      );
+      await expect(removeAllowedBuySharesCallersTx).resolves.toBeReceipt();
+
+      // Assert state has been set
+      const getAllowedBuySharesCallersCall = comptrollerProxy.getAllowedBuySharesCallers();
+      await expect(getAllowedBuySharesCallersCall).resolves.toMatchObject([
+        callerToRemain,
+      ]);
+
+      for (const removed of callersToRemove) {
+        const isAllowedBuySharesCallerCall = comptrollerProxy.isAllowedBuySharesCaller(
+          removed,
+        );
+        await expect(isAllowedBuySharesCallerCall).resolves.toBe(false);
+      }
+      const isAllowedBuySharesCallerCall = comptrollerProxy.isAllowedBuySharesCaller(
+        callerToRemain,
+      );
+      await expect(isAllowedBuySharesCallerCall).resolves.toBe(true);
+
+      // Assert events emitted
+      const events = extractEvent(
+        await removeAllowedBuySharesCallersTx,
+        'AllowedBuySharesCallerRemoved',
+      );
+      expect(events.length).toBe(2);
+      expect(events[0].args).toMatchObject({
+        caller: callersToRemove[0],
+      });
+      expect(events[1].args).toMatchObject({
+        caller: callersToRemove[1],
+      });
+    });
+  });
 });
 
 describe('redeemShares', () => {

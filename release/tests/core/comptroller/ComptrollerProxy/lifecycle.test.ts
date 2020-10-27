@@ -157,7 +157,7 @@ describe('init', () => {
 
     // ComptrollerProxy has already been created (and init() called)
 
-    const initTx = comptrollerProxy.init(randomAddress(), 0, '0x', '0x');
+    const initTx = comptrollerProxy.init(randomAddress(), 0, [], '0x', '0x');
     await expect(initTx).rejects.toBeRevertedWith('Already initialized');
   });
 });

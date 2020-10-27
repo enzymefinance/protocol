@@ -22,6 +22,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         address comptrollerProxy,
         address indexed denominationAsset,
         uint256 sharesActionTimelock,
+        address[] allowedBuySharesCallers,
         bytes feeManagerConfigData,
         bytes policyManagerConfigData,
         bool indexed forMigration
@@ -35,6 +36,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         string fundName,
         address indexed denominationAsset,
         uint256 sharesActionTimelock,
+        address[] allowedBuySharesCallers,
         bytes feeManagerConfigData,
         bytes policyManagerConfigData
     );
@@ -169,6 +171,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     function createMigratedFundConfig(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
+        address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external onlyNotPaused returns (address comptrollerProxy_) {
@@ -180,6 +183,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
+            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData,
             true
@@ -204,6 +208,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         string calldata _fundName,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
+        address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     )
@@ -213,15 +218,38 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         onlyNotPaused
         returns (address comptrollerProxy_, address vaultProxy_)
     {
-        require(_fundOwner != address(0), "createNewFund: _owner cannot be empty");
+        return
+            __createNewFund(
+                _fundOwner,
+                _fundName,
+                _denominationAsset,
+                _sharesActionTimelock,
+                _allowedBuySharesCallers,
+                _feeManagerConfigData,
+                _policyManagerConfigData
+            );
+    }
+
+    /// @dev Helper to avoid the stack-too-deep error during createNewFund
+    function __createNewFund(
+        address _fundOwner,
+        string memory _fundName,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        address[] memory _allowedBuySharesCallers,
+        bytes memory _feeManagerConfigData,
+        bytes memory _policyManagerConfigData
+    ) private returns (address comptrollerProxy_, address vaultProxy_) {
+        require(_fundOwner != address(0), "__createNewFund: _owner cannot be empty");
         require(
             _denominationAsset != address(0),
-            "createNewFund: _denominationAsset cannot be empty"
+            "__createNewFund: _denominationAsset cannot be empty"
         );
 
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
+            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData,
             false
@@ -236,7 +264,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
 
         IComptroller(comptrollerProxy_).activate(vaultProxy_, false);
 
-        __emitNewFundCreated(
+        emit NewFundCreated(
             msg.sender,
             comptrollerProxy_,
             vaultProxy_,
@@ -244,6 +272,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             _fundName,
             _denominationAsset,
             _sharesActionTimelock,
+            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData
         );
@@ -255,6 +284,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     function __deployComptrollerProxy(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
+        address[] memory _allowedBuySharesCallers,
         bytes memory _feeManagerConfigData,
         bytes memory _policyManagerConfigData,
         bool _forMigration
@@ -263,6 +293,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             IComptroller.init.selector,
             _denominationAsset,
             _sharesActionTimelock,
+            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData
         );
@@ -273,35 +304,10 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             comptrollerProxy_,
             _denominationAsset,
             _sharesActionTimelock,
+            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData,
             _forMigration
-        );
-    }
-
-    /// @dev Helper to emit the NewFundCreated event.
-    /// Avoids the stack-too-deep error.
-    function __emitNewFundCreated(
-        address _creator,
-        address _comptrollerProxy,
-        address _vaultProxy,
-        address _fundOwner,
-        string memory _fundName,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData
-    ) private {
-        emit NewFundCreated(
-            _creator,
-            _comptrollerProxy,
-            _vaultProxy,
-            _fundOwner,
-            _fundName,
-            _denominationAsset,
-            _sharesActionTimelock,
-            _feeManagerConfigData,
-            _policyManagerConfigData
         );
     }
 

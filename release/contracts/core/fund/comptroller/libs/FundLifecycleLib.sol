@@ -6,6 +6,7 @@ import "../../../../extensions/IExtension.sol";
 import "../../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../fund-deployer/IFundDeployer.sol";
 import "../../vault/IVault.sol";
+import "../utils/ComptrollerEvents.sol";
 import "../utils/ComptrollerStorage.sol";
 import "./IFundLifecycleLib.sol";
 
@@ -16,10 +17,8 @@ import "./IFundLifecycleLib.sol";
 /// 1. init() - called on deployment of ComptrollerProxy
 /// 2. activate() - called upon linking a VaultProxy to activate the fund
 /// 3. destruct() - called upon migrating to another release
-contract FundLifecycleLib is ComptrollerStorage, IFundLifecycleLib {
-    event MigratedSharesDuePaid(uint256 sharesDue);
-
-    event VaultProxySet(address vaultProxy);
+contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerEvents {
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     address private immutable FEE_MANAGER;
     address private immutable FUND_DEPLOYER;
@@ -76,6 +75,7 @@ contract FundLifecycleLib is ComptrollerStorage, IFundLifecycleLib {
     function init(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
+        address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external override {
@@ -89,6 +89,16 @@ contract FundLifecycleLib is ComptrollerStorage, IFundLifecycleLib {
         );
         denominationAsset = _denominationAsset;
         sharesActionTimelock = _sharesActionTimelock;
+        for (uint256 i; i < _allowedBuySharesCallers.length; i++) {
+            require(
+                i == 0 || !allowedBuySharesCallers.contains(_allowedBuySharesCallers[i]),
+                "init: buy shares caller already allowed"
+            );
+
+            allowedBuySharesCallers.add(_allowedBuySharesCallers[i]);
+
+            emit AllowedBuySharesCallerAdded(_allowedBuySharesCallers[i]);
+        }
 
         // Configure extensions
         if (_feeManagerConfigData.length > 0) {

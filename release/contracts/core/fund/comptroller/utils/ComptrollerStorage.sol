@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+
 /// @title ComptrollerStorage Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Contract containing all the storage vars (not constants)
 /// used in the Comptroller contracts
-contract ComptrollerStorage {
+abstract contract ComptrollerStorage {
     // Pseudo-constants (can only be set once)
 
     address internal denominationAsset;
@@ -15,6 +17,8 @@ contract ComptrollerStorage {
 
     // Storage
 
+    // (Optionally) Allows limiting allowed callers of `buyShares()`
+    EnumerableSet.AddressSet internal allowedBuySharesCallers;
     // Allows a fund owner to override a release-level pause
     bool internal overridePause;
     // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
