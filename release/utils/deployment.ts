@@ -18,6 +18,7 @@ import {
   FeeManager,
   FundCalculator,
   FundDeployer,
+  FundLifecycleLib,
   IntegrationManager,
   InvestorWhitelist,
   KyberAdapter,
@@ -76,6 +77,7 @@ export interface ReleaseDeploymentOutput {
   // Core
   comptrollerLib: Promise<ComptrollerLib>;
   fundDeployer: Promise<FundDeployer>;
+  fundLifecycleLib: Promise<FundLifecycleLib>;
   permissionedVaultActionLib: Promise<PermissionedVaultActionLib>;
   vaultLib: Promise<VaultLib>;
   // Shared Infrastructure
@@ -121,10 +123,10 @@ export const deployRelease = describeDeployment<
       config.deployer,
       await deployment.fundDeployer,
       await deployment.valueInterpreter,
-      await deployment.chainlinkPriceFeed,
       await deployment.feeManager,
       await deployment.integrationManager,
       await deployment.policyManager,
+      await deployment.fundLifecycleLib,
       await deployment.permissionedVaultActionLib,
       await deployment.engine,
     );
@@ -142,6 +144,16 @@ export const deployRelease = describeDeployment<
       await deployment.vaultLib,
       config.registeredVaultCalls.contracts,
       config.registeredVaultCalls.selectors,
+    );
+  },
+  async fundLifecycleLib(config, deployment) {
+    return FundLifecycleLib.deploy(
+      config.deployer,
+      await deployment.fundDeployer,
+      await deployment.chainlinkPriceFeed,
+      await deployment.feeManager,
+      await deployment.integrationManager,
+      await deployment.policyManager,
     );
   },
   async permissionedVaultActionLib(config, deployment) {

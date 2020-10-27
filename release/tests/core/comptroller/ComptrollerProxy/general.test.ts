@@ -5,8 +5,8 @@ import {
   Contract,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { defaultTestDeployment } from '../../../';
-import { createNewFund, releaseStatusTypes, sighash } from '../../utils';
+import { defaultTestDeployment } from '../../../../';
+import { createNewFund, releaseStatusTypes, sighash } from '../../../utils';
 
 // prettier-ignore
 interface MockExternalContract extends Contract<MockExternalContract> {

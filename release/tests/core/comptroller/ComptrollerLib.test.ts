@@ -1,9 +1,6 @@
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { constants } from 'ethers';
-import { defaultTestDeployment } from '../../';
+import { defaultTestDeployment } from '../../../';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -22,10 +19,10 @@ describe('constructor', () => {
     const {
       deployment: {
         comptrollerLib,
-        chainlinkPriceFeed,
         engine,
         feeManager,
         fundDeployer,
+        fundLifecycleLib,
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
@@ -37,10 +34,10 @@ describe('constructor', () => {
     await expect(routesCall).resolves.toMatchObject({
       feeManager_: feeManager.address,
       fundDeployer_: fundDeployer.address,
+      fundLifecycleLib_: fundLifecycleLib.address,
       integrationManager_: integrationManager.address,
       permissionedVaultActionLib_: permissionedVaultActionLib.address,
       policyManager_: policyManager.address,
-      primitivePriceFeed_: chainlinkPriceFeed.address,
       valueInterpreter_: valueInterpreter.address,
     });
 
@@ -54,17 +51,6 @@ describe('constructor', () => {
 
     const vaultProxyCall = comptrollerLib.getVaultProxy();
     await expect(vaultProxyCall).resolves.toBe(constants.AddressZero);
-  });
-});
-
-describe('init', () => {
-  it('cannot be called on library', async () => {
-    const {
-      deployment: { comptrollerLib },
-    } = await provider.snapshot(snapshot);
-
-    const initTx = comptrollerLib.init(randomAddress(), 0, '0x', '0x');
-    await expect(initTx).rejects.toBeRevertedWith('Only delegate callable');
   });
 });
 

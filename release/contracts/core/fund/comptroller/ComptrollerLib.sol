@@ -7,15 +7,15 @@ import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
 import "../../../infrastructure/engine/AmguConsumer.sol";
-import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../interfaces/IERC20Extended.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
-import "./ComptrollerStorage.sol";
+import "./libs/IFundLifecycleLib.sol";
+import "./libs/IPermissionedVaultActionLib.sol";
+import "./utils/ComptrollerStorage.sol";
 import "./IComptroller.sol";
-import "./IPermissionedVaultActionLib.sol";
 
 /// @title ComptrollerLib Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -26,8 +26,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
     using SafeERC20 for IERC20Extended;
-
-    event MigratedSharesDuePaid(uint256 sharesDue);
 
     event OverridePauseSet(bool indexed overridePause);
 
@@ -52,16 +50,14 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         uint256[] receivedAssetQuantities
     );
 
-    event VaultProxySet(address vaultProxy);
-
     // Constants - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
+    address private immutable FUND_LIFECYCLE_LIB;
     address private immutable INTEGRATION_MANAGER;
     address private immutable PERMISSIONED_VAULT_ACTION_LIB;
     address private immutable POLICY_MANAGER;
-    address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
 
     ///////////////
@@ -101,11 +97,6 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         _;
     }
 
-    modifier onlyFundDeployer() {
-        __assertIsFundDeployer(msg.sender);
-        _;
-    }
-
     modifier onlyNotPaused() {
         __assertNotPaused();
         _;
@@ -124,16 +115,16 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         require(isActive(), "Fund not active");
     }
 
-    function __assertIsFundDeployer(address _who) private view {
-        require(_who == FUND_DEPLOYER, "Only FundDeployer callable");
-    }
-
     function __assertIsDelegateCall() private view {
         require(!isLib, "Only delegate callable");
     }
 
     function __assertIsOwner(address _who) private view {
         require(_who == IVault(vaultProxy).getOwner(), "Only fund owner callable");
+    }
+
+    function __assertLowLevelCall(bool _success, bytes memory _returnData) private pure {
+        require(_success, string(_returnData));
     }
 
     function __assertNotPaused() private view {
@@ -158,19 +149,19 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     constructor(
         address _fundDeployer,
         address _valueInterpreter,
-        address _primitivePriceFeed,
         address _feeManager,
         address _integrationManager,
         address _policyManager,
+        address _fundLifecycleLib,
         address _permissionedVaultActionLib,
         address _engine
     ) public AmguConsumer(_engine) {
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
+        FUND_LIFECYCLE_LIB = _fundLifecycleLib;
         INTEGRATION_MANAGER = _integrationManager;
         PERMISSIONED_VAULT_ACTION_LIB = _permissionedVaultActionLib;
         POLICY_MANAGER = _policyManager;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
         isLib = true;
     }
@@ -218,7 +209,7 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
                 _actionData
             )
         );
-        require(success, string(returnData));
+        __assertLowLevelCall(success, returnData);
     }
 
     /// @notice Set or unset the release pause override for a fund
@@ -261,104 +252,48 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     /// @dev Helper to check whether the release is paused and there is no local override
     function __fundIsPaused() private view returns (bool) {
         return
-            !overridePause &&
-            IFundDeployer(FUND_DEPLOYER).getReleaseStatus() == IFundDeployer.ReleaseStatus.Paused;
+            IFundDeployer(FUND_DEPLOYER).getReleaseStatus() ==
+            IFundDeployer.ReleaseStatus.Paused &&
+            !overridePause;
     }
 
     ///////////////
     // LIFECYCLE //
     ///////////////
 
-    // Ordered function calls for stages in a fund lifecycle:
-    // 1. init() - called on deployment of ComptrollerProxy
-    // 2. activate() - called upon linking a VaultProxy to activate the fund
-    // 3. destruct() - called upon migrating to another release
-
-    /// @notice Initializes a fund with config for its core and extensions
-    /// @param _denominationAsset The asset in which the fund's value should be denominated
-    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
-    /// (buying or selling shares) by the same user
-    /// @param _feeManagerConfigData Encoded config for fees to enable
-    /// @param _policyManagerConfigData Encoded config for policies to enable
-    /// @dev Pseudo-constructor per proxy.
-    /// No need to assert access because this is called atomically on deployment,
-    /// and once it's called, it cannot be called again.
+    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
     function init(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external override onlyDelegateCall {
-        require(denominationAsset == address(0), "init: Already initialized");
-
-        // Configure core
-        require(
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
-            "init: Bad denomination asset"
+    ) external override {
+        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
+            abi.encodeWithSelector(
+                IFundLifecycleLib.init.selector,
+                _denominationAsset,
+                _sharesActionTimelock,
+                _feeManagerConfigData,
+                _policyManagerConfigData
+            )
         );
-        denominationAsset = _denominationAsset;
-        sharesActionTimelock = _sharesActionTimelock;
-
-        // Configure extensions
-        if (_feeManagerConfigData.length > 0) {
-            IExtension(FEE_MANAGER).setConfigForFund(_feeManagerConfigData);
-        }
-        if (_policyManagerConfigData.length > 0) {
-            IExtension(POLICY_MANAGER).setConfigForFund(_policyManagerConfigData);
-        }
+        __assertLowLevelCall(success, returnData);
     }
 
-    /// @notice Activates the fund after running pre-activation logic
-    /// @param _vaultProxy The VaultProxy to attach to the fund
-    /// @param _isMigration True if a migrated fund is being activated
-    /// @dev No need to assert anything beyond FundDeployer access.
-    function activate(address _vaultProxy, bool _isMigration) external override onlyFundDeployer {
-        vaultProxy = _vaultProxy;
-
-        emit VaultProxySet(_vaultProxy);
-
-        if (_isMigration) {
-            // Distribute any shares in the VaultProxy to the fund owner.
-            // This is a mechanism to ensure that even in the edge case of a fund being unable
-            // to payout fee shares owed during migration, these shares are not lost.
-            uint256 sharesDue = IERC20(_vaultProxy).balanceOf(_vaultProxy);
-            if (sharesDue > 0) {
-                IVault(_vaultProxy).transferShares(
-                    _vaultProxy,
-                    IVault(_vaultProxy).getOwner(),
-                    sharesDue
-                );
-
-                emit MigratedSharesDuePaid(sharesDue);
-            }
-        }
-
-        // Activate extensions
-        IExtension(FEE_MANAGER).activateForFund(_isMigration);
-        IExtension(INTEGRATION_MANAGER).activateForFund(_isMigration);
-        IExtension(POLICY_MANAGER).activateForFund(_isMigration);
+    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
+    function activate(address _vaultProxy, bool _isMigration) external override {
+        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
+            abi.encodeWithSelector(IFundLifecycleLib.activate.selector, _vaultProxy, _isMigration)
+        );
+        __assertLowLevelCall(success, returnData);
     }
 
-    /// @notice Remove the config for a fund
-    /// @dev No need to assert anything beyond FundDeployer access.
-    /// Calling onlyNotPaused here rather than in the FundDeployer allows
-    /// the owner to potentially override the pause and rescue unpaid fees.
-    function destruct()
-        external
-        override
-        onlyFundDeployer
-        onlyNotPaused
-        allowsPermissionedVaultAction
-    {
-        // Deactivate the extensions
-        IExtension(FEE_MANAGER).deactivateForFund();
-        IExtension(INTEGRATION_MANAGER).deactivateForFund();
-        IExtension(POLICY_MANAGER).deactivateForFund();
-
-        // Delete storage of ComptrollerProxy
-        // There should never be ETH in this contract, but if there is,
-        // we can send to the VaultProxy.
-        selfdestruct(payable(vaultProxy));
+    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
+    function destruct() external override {
+        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
+            abi.encodeWithSelector(IFundLifecycleLib.destruct.selector)
+        );
+        __assertLowLevelCall(success, returnData);
     }
 
     ////////////////
@@ -723,10 +658,10 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
     /// @notice Gets the routes for the various contracts used by all funds
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
+    /// @return fundLifecycleLib_ The `FUND_LIFECYCLE_LIB` variable value
     /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
     /// @return permissionedVaultActionLib_ The `PERMISSIONED_VAULT_ACTION_LIB` variable value
     /// @return policyManager_ The `POLICY_MANAGER` variable value
-    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getLibRoutes()
         external
@@ -734,20 +669,20 @@ contract ComptrollerLib is ComptrollerStorage, IComptroller, AmguConsumer {
         returns (
             address feeManager_,
             address fundDeployer_,
+            address fundLifecycleLib_,
             address integrationManager_,
             address permissionedVaultActionLib_,
             address policyManager_,
-            address primitivePriceFeed_,
             address valueInterpreter_
         )
     {
         return (
             FEE_MANAGER,
             FUND_DEPLOYER,
+            FUND_LIFECYCLE_LIB,
             INTEGRATION_MANAGER,
             PERMISSIONED_VAULT_ACTION_LIB,
             POLICY_MANAGER,
-            PRIMITIVE_PRICE_FEED,
             VALUE_INTERPRETER
         );
     }

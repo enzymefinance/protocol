@@ -4,15 +4,16 @@ import {
   resolveAddress,
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
-import { utils } from 'ethers';
-import { defaultTestDeployment } from '../../..';
-import { IExtension } from '../../../codegen/IExtension';
+import { BigNumber, utils } from 'ethers';
+import { defaultTestDeployment } from '../../../../';
+import { IExtension } from '../../../../codegen/IExtension';
 import {
   ComptrollerLib,
   FundDeployer,
+  FundLifecycleLib,
   VaultLib,
-} from '../../../utils/contracts';
-import { createComptrollerProxy, releaseStatusTypes } from '../../utils';
+} from '../../../../utils/contracts';
+import { createComptrollerProxy, releaseStatusTypes } from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, config, deployment } = await defaultTestDeployment(
@@ -40,14 +41,22 @@ async function snapshot(provider: EthereumTestnetProvider) {
   ]);
 
   // Re-deploy a ComptrollerLib that uses the mocks
-  const comptrollerLib = await ComptrollerLib.deploy(
+  const fundLifecycleLib = await FundLifecycleLib.deploy(
     config.deployer,
     mockFundDeployer,
-    randomAddress(), // ValueInterpreter
     deployment.chainlinkPriceFeed,
     mockFeeManager,
     mockIntegrationManager,
     mockPolicyManager,
+  );
+  const comptrollerLib = await ComptrollerLib.deploy(
+    config.deployer,
+    mockFundDeployer,
+    randomAddress(), // ValueInterpreter
+    mockFeeManager,
+    mockIntegrationManager,
+    mockPolicyManager,
+    fundLifecycleLib, // FundLifecycleLib
     randomAddress(), // PermissionedVaultActionLib
     randomAddress(), // Engine
   );
@@ -78,6 +87,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     comptrollerLib,
     comptrollerProxy: comptrollerProxy.connect(mockVaultProxyOwner),
     feeManagerConfigData,
+    fundLifecycleLib,
     mockFeeManager,
     mockFundDeployer,
     mockIntegrationManager,
@@ -165,6 +175,7 @@ describe('activate', () => {
   it('correctly handles valid call (new fund)', async () => {
     const {
       comptrollerProxy,
+      fundLifecycleLib,
       mockFeeManager,
       mockFundDeployer,
       mockIntegrationManager,
@@ -199,7 +210,8 @@ describe('activate', () => {
     expect(mockVaultProxy.balanceOf).not.toHaveBeenCalledOnContract();
 
     // Assert events emitted
-    await assertEvent(activateTx, 'VaultProxySet', {
+    const VaultProxySetEvent = fundLifecycleLib.abi.getEvent('VaultProxySet');
+    await assertEvent(activateTx, VaultProxySetEvent, {
       vaultProxy: mockVaultProxy.address,
     });
   });
@@ -207,6 +219,7 @@ describe('activate', () => {
   it('correctly handles valid call (migrated fund)', async () => {
     const {
       comptrollerProxy,
+      fundLifecycleLib,
       mockFeeManager,
       mockFundDeployer,
       mockIntegrationManager,
@@ -250,8 +263,15 @@ describe('activate', () => {
     ).toHaveBeenCalledOnContractWith(true);
 
     // Assert events emitted
-    await assertEvent(activateTx, 'VaultProxySet', {
+    const VaultProxySetEvent = fundLifecycleLib.abi.getEvent('VaultProxySet');
+    await assertEvent(activateTx, VaultProxySetEvent, {
       vaultProxy: mockVaultProxy.address,
+    });
+    const MigratedSharesDuePaidEvent = fundLifecycleLib.abi.getEvent(
+      'MigratedSharesDuePaid',
+    );
+    await assertEvent(activateTx, MigratedSharesDuePaidEvent, {
+      sharesDue: BigNumber.from(sharesDue),
     });
   });
 });

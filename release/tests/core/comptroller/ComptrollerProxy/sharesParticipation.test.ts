@@ -4,14 +4,14 @@ import {
 } from '@crestproject/crestproject';
 import { assertEvent } from '@melonproject/utils';
 import { utils } from 'ethers';
-import { defaultTestDeployment } from '../../../';
+import { defaultTestDeployment } from '../../../../';
 import {
   buyShares,
   createNewFund,
   getAssetBalances,
   redeemShares,
   releaseStatusTypes,
-} from '../../utils';
+} from '../../../utils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
