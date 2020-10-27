@@ -29,5 +29,9 @@
     "usdc": "0x18F77cf74D91f946dD65CC235B8100DCec741280",
     "weth": "0xe08A8b19e5722a201EaF20A6BC595eF655397bd5",
     "zrx": "0x206376e8940e42538781cd94ef024df3c1e0fd43"
+  },
+  "zeroExV2": {
+    "exchange": "0x080bf510fcbf18b91105470639e9561022937712",
+    "erc20Proxy": "0x95e6f48254609a6ee006f7d493c8e5fb97094cef"
   }
 }

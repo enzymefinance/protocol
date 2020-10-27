@@ -29,6 +29,7 @@ import {
   TrackedAssetsAdapter,
   ValueInterpreter,
   VaultLib,
+  ZeroExV2Adapter,
 } from './contracts';
 
 export interface ReleaseDeploymentConfig {
@@ -64,6 +65,10 @@ export interface ReleaseDeploymentConfig {
     uniswapV2: {
       factory: AddressLike;
     };
+    zeroExV2: {
+      exchange: AddressLike;
+      erc20Proxy: AddressLike;
+    };
   };
 }
 
@@ -90,6 +95,7 @@ export interface ReleaseDeploymentOutput {
   engineAdapter: Promise<EngineAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
+  zeroExV2Adapter: Promise<ZeroExV2Adapter>;
   // Fees
   entranceRateFee: Promise<EntranceRateFee>;
   managementFee: Promise<ManagementFee>;
@@ -248,6 +254,14 @@ export const deployRelease = describeDeployment<
       await deployment.integrationManager,
     );
   },
+  async zeroExV2Adapter(config, deployment) {
+    return ZeroExV2Adapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      config.integratees.zeroExV2.exchange,
+      await deployment.fundDeployer,
+    );
+  },
   // Fees
   async entranceRateFee(config, deployment) {
     return EntranceRateFee.deploy(config.deployer, await deployment.feeManager);
@@ -317,6 +331,7 @@ export const deployRelease = describeDeployment<
       await deployment.engineAdapter,
       await deployment.kyberAdapter,
       await deployment.trackedAssetsAdapter,
+      await deployment.zeroExV2Adapter,
     ];
 
     const integrationManager = await deployment.integrationManager;

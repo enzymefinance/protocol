@@ -65,7 +65,7 @@
   },
   "peerDependencies": {
     "@crestproject/crestproject": "^0.0.60",
-    "ethers": "^5.0.18"
+    "ethers": "^5.0.19"
   },
   "resolutions": {
     "@typescript-eslint/parser": "^4.1.0",

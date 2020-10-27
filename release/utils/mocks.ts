@@ -14,11 +14,13 @@ import {
   MockKyberIntegratee,
   MockGenericAdapter,
   MockGenericIntegratee,
+  MockZeroExV2Integratee,
   WETH,
   MockChaiPriceSource,
 } from '@melonproject/utils';
 import { Signer, utils } from 'ethers';
 import { ReleaseDeploymentConfig } from './deployment';
+import { encodeZeroExV2AssetData } from './integrations/zeroExV2';
 
 export interface MockDeploymentConfig {
   deployer: Signer;
@@ -108,6 +110,11 @@ export const deployMocks = describeDeployment<
   },
   async mockGenericIntegratee(config) {
     return MockGenericIntegratee.deploy(config.deployer);
+  },
+  async zeroExV2Integratee(config, deployment) {
+    const tokens = await deployment.tokens;
+    const assetData = encodeZeroExV2AssetData(tokens.zrx.address);
+    return MockZeroExV2Integratee.deploy(config.deployer, assetData);
   },
 });
 
@@ -222,6 +229,11 @@ export async function configureMockRelease({
       },
       uniswapV2: {
         factory: randomAddress(), // TODO
+      },
+      zeroExV2: {
+        // TODO
+        exchange: mocks.zeroExV2Integratee.address,
+        erc20Proxy: randomAddress(),
       },
     },
   };

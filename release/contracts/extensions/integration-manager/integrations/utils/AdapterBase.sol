@@ -93,44 +93,30 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         pure
         returns (address[] memory aggregatedAssets_, uint256[] memory aggregatedAssetAmounts_)
     {
-        // Get count of unique assets with non-zero values
-        uint256 aggregatedAssetsCount;
-        for (uint256 i = 0; i < _assets.length; i++) {
-            // Ignore assets with a 0 address, 0 amount
-            if (_assets[i] == address(0) || _amounts[i] == 0) continue;
-
-            // Ignore assets that have already been added
-            bool assetAdded;
-            for (uint256 j = 0; j < i; j++) {
-                // Prev asset in array must have non-zero amount
-                if (_assets[i] == _assets[j] && _amounts[j] > 0) {
-                    assetAdded = true;
+        uint256 numOfUniqueAssets = _assets.length;
+        for (uint256 i = 1; i < _assets.length; i++) {
+            if (_assets[i] == address(0) || _amounts[i] == 0) {
+                _assets[i] = address(0);
+                numOfUniqueAssets--;
+                continue;
+            }
+            for (uint256 j = i; j > 0; j--) {
+                if (_assets[i] != address(0) && _assets[i] == _assets[j - 1]) {
+                    _amounts[i] = _amounts[i].add(_amounts[j - 1]);
+                    _assets[j - 1] = address(0);
+                    numOfUniqueAssets--;
                     break;
                 }
             }
-            if (!assetAdded) aggregatedAssetsCount++;
         }
-        aggregatedAssets_ = new address[](aggregatedAssetsCount);
-        aggregatedAssetAmounts_ = new uint256[](aggregatedAssetsCount);
-        if (aggregatedAssetsCount == 0) return (aggregatedAssets_, aggregatedAssetAmounts_);
+        aggregatedAssets_ = new address[](numOfUniqueAssets);
+        aggregatedAssetAmounts_ = new uint256[](numOfUniqueAssets);
 
-        uint256 aggregatedAssetIndex;
-        for (uint256 i = 0; i < _assets.length; i++) {
-            if (_assets[i] == address(0) || _amounts[i] == 0) continue;
-
-            bool assetAdded;
-            for (uint256 j = 0; j < aggregatedAssets_.length; j++) {
-                if (aggregatedAssets_[j] == address(0)) break; // If address(0), no more array items
-                if (_assets[i] == aggregatedAssets_[j]) {
-                    aggregatedAssetAmounts_[j] = aggregatedAssetAmounts_[j].add(_amounts[i]);
-                    assetAdded = true;
-                    break;
-                }
-            }
-            if (!assetAdded) {
-                aggregatedAssets_[aggregatedAssetIndex] = _assets[i];
-                aggregatedAssetAmounts_[aggregatedAssetIndex] = _amounts[i];
-                aggregatedAssetIndex++;
+        for (uint256 i = _assets.length; i > 0; i--) {
+            if (_assets[i - 1] != address(0)) {
+                aggregatedAssets_[numOfUniqueAssets - 1] = _assets[i - 1];
+                aggregatedAssetAmounts_[numOfUniqueAssets - 1] = _amounts[i - 1];
+                numOfUniqueAssets--;
             }
         }
     }

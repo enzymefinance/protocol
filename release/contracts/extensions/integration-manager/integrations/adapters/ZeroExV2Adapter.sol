@@ -5,28 +5,33 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../interfaces/IZeroExV2.sol";
 import "../../../../utils/MathHelpers.sol";
+import "../../../../utils/AddressArrayLib.sol";
+import "../../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter to 0xV2 Exchange Contract
-contract ZeroExV2Adapter is AdapterBase, MathHelpers {
+contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
+    using AddressArrayLib for address[];
     using SafeMath for uint256;
 
     address private immutable EXCHANGE;
+    mapping(address => bool) private makerToIsAllowed;
 
-    constructor(address _integrationManager, address _exchange)
-        public
-        AdapterBase(_integrationManager)
-    {
+    constructor(
+        address _integrationManager,
+        address _exchange,
+        address _fundDeployer
+    ) public AdapterBase(_integrationManager) FundDeployerOwnerMixin(_fundDeployer) {
         EXCHANGE = _exchange;
     }
 
     // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
-    /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    /// @return identifier_ The identifer string
+    function identifier() external pure override returns (string memory identifier_) {
         return "ZERO_EX_V2";
     }
 
@@ -98,6 +103,14 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
         } else {
             revert("parseIncomingAssets: _selector invalid");
         }
+
+        return (
+            spendAssetsHandleType_,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
     }
 
     /// @notice Take order on 0x Protocol
@@ -154,7 +167,7 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
     /// @notice Parses user inputs into a ZeroExV2.Order format
     function __constructOrderStruct(bytes memory _encodedOrderArgs)
         private
-        pure
+        view
         returns (IZeroExV2.Order memory order)
     {
         (
@@ -163,6 +176,11 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
             bytes[2] memory orderData,
 
         ) = __decodeZeroExOrderArgs(_encodedOrderArgs);
+
+        require(
+            makerToIsAllowed[orderAddresses[0]],
+            "__constructOrderStruct: maker is not allowed"
+        );
 
         order = IZeroExV2.Order({
             makerAddress: orderAddresses[0],
@@ -245,6 +263,28 @@ contract ZeroExV2Adapter is AdapterBase, MathHelpers {
         )
     {
         return abi.decode(_encodedZeroExOrderArgs, (address[4], uint256[6], bytes[2], bytes));
+    }
+
+    /// @notice Updates makers are allowed to trade on 0x
+    /// @param _makers Makers' addresses
+    /// @param _alloweds Makers' permission to trade on 0x
+    function updateAllowedMakers(address[] calldata _makers, bool[] calldata _alloweds)
+        external
+        onlyFundDeployerOwner
+    {
+        require(
+            _makers.length == _alloweds.length,
+            "updateAllowedMakers: _makers and _alloweds arrays unequal"
+        );
+        require(_makers.isUniqueSet(), "updateAllowedMakers: duplicate maker detected");
+
+        for (uint256 i; i < _makers.length; i++) {
+            makerToIsAllowed[_makers[i]] = _alloweds[i];
+        }
+    }
+
+    function isAllowedMaker(address _who) external view returns (bool) {
+        return makerToIsAllowed[_who];
     }
 
     ///////////////////

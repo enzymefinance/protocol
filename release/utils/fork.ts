@@ -48,8 +48,7 @@ export async function configureForkRelease({
 
   const tokens = Object.entries(mainnet.tokens).reduce(
     (carry: MainnetTokens, [key, address]) => {
-      const whale = whales[key as keyof MainnetTokens];
-      const token = new IERC20Extended(address, whale);
+      const token = new IERC20Extended(address, deployer);
       return { ...carry, [key]: token };
     },
     {} as MainnetTokens,
@@ -71,7 +70,7 @@ export async function configureForkRelease({
 
   // Distribute tokens (from the each whale) to all accounts.
   await Promise.all(
-    accounts.map(async (account) => {
+    [...accounts, deployer, mgm].map(async (account) => {
       await Promise.all(
         Object.entries(whales).map(async ([symbol, whale]) => {
           const token = tokens[symbol as keyof MainnetTokens];
@@ -116,6 +115,10 @@ export async function configureForkRelease({
       },
       uniswapV2: {
         factory: randomAddress(), // TODO
+      },
+      zeroExV2: {
+        exchange: mainnet.zeroExV2.exchange,
+        erc20Proxy: mainnet.zeroExV2.erc20Proxy,
       },
     },
   };
