@@ -29,4 +29,15 @@ contract MockKyberIntegratee is SimpleMockIntegrateeBase {
     ) external returns (uint256) {
         return __getRateAndSwapAssets(msg.sender, _srcToken, _srcAmount, _destToken);
     }
+
+    function getExpectedRate(
+        address _srcToken,
+        address _destToken,
+        uint256
+    ) external view returns (uint256 expectedRate, uint256 worstRate) {
+        expectedRate = __getRate(_srcToken, _destToken);
+        worstRate = expectedRate.mul(97).div(100);
+
+        return (expectedRate, worstRate);
+    }
 }
