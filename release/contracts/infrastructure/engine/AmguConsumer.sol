@@ -4,9 +4,10 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./IEngine.sol";
 
-/// @title AmguConsumer Base Contract
+/// @title AmguConsumer Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Inherit this to pay AMGU on a function call
+/// @notice Provides a modifier that charges a fee based on asset management gas (amgu)
+/// to the function sender
 abstract contract AmguConsumer {
     using SafeMath for uint256;
 
@@ -24,7 +25,8 @@ abstract contract AmguConsumer {
         IEngine engineContract = IEngine(ENGINE);
 
         // Calculate amount due in eth via the Engine
-        uint256 ethDue = engineContract.calcEthDueForGasUsed(gasUsed);
+        (uint256 ethDue, bool rateIsValid) = engineContract.calcEthDueForGasUsed(gasUsed);
+        require(rateIsValid, "amguPayable: Invalid conversion rate");
 
         // Pay ETH due to the Engine
         if (ethDue > 0) {

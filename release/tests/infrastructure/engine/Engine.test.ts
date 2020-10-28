@@ -15,35 +15,15 @@ async function snapshot(provider: EthereumTestnetProvider) {
     provider,
   );
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
-
-async function snapshotWithMocks(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(snapshot);
-
   // Create a mock value interpreter that returns (0, false) by default
   const mockValueInterpreter = await ValueInterpreter.mock(config.deployer);
   await mockValueInterpreter.calcCanonicalAssetValue.returns(0, false);
 
-  const mockEngineWithValueInterpreter = await Engine.deploy(
-    config.deployer,
-    config.dispatcher,
-    randomAddress(),
-    randomAddress(),
-    randomAddress(),
-    mockValueInterpreter,
-    1,
-  );
-
   return {
     accounts,
     deployment,
     config,
-    mocks: { mockEngineWithValueInterpreter, mockValueInterpreter },
+    mocks: { mockValueInterpreter },
   };
 }
 
@@ -92,11 +72,11 @@ describe('constructor', () => {
     const getValueInterpreter = engine.getValueInterpreter();
     await expect(getValueInterpreter).resolves.toBe(valueInterpreter.address);
 
-    const getMLNToken = engine.getMLNToken();
-    await expect(getMLNToken).resolves.toBe(mln.address);
+    const getMlnToken = engine.getMlnToken();
+    await expect(getMlnToken).resolves.toBe(mln.address);
 
-    const getWETHToken = engine.getWETHToken();
-    await expect(getWETHToken).resolves.toBe(weth.address);
+    const getWethToken = engine.getWethToken();
+    await expect(getWethToken).resolves.toBe(weth.address);
 
     const getThawDelayCall = engine.getThawDelay();
     await expect(getThawDelayCall).resolves.toEqBigNumber(thawDelay);
@@ -177,7 +157,7 @@ describe('thaw', () => {
     await updateChainlinkAggregator(chainlinkAggregators.mln);
 
     const thawTx = engine.thaw();
-    await expect(thawTx).rejects.toBeRevertedWith('No frozen ether to thaw');
+    await expect(thawTx).rejects.toBeRevertedWith('No frozen ETH to thaw');
   });
 
   it('frozenEther is added to liquidEther', async () => {
@@ -235,7 +215,7 @@ describe('etherTakers', () => {
 
       const secondAddEtherTakerTx = engine.addEtherTakers([newEtherTaker]);
       await expect(secondAddEtherTakerTx).rejects.toBeRevertedWith(
-        'etherTaker has already been added',
+        'Account has already been added',
       );
     });
 
@@ -282,7 +262,7 @@ describe('etherTakers', () => {
       const removeEtherTakerTx = engine.removeEtherTakers([newEtherTaker]);
 
       await expect(removeEtherTakerTx).rejects.toBeRevertedWith(
-        'etherTaker has not been added',
+        'Account is not an etherTaker',
       );
     });
 
@@ -355,36 +335,27 @@ describe('calcPremiumPercent', () => {
 });
 
 describe('calcEthOutputForMlnInput', () => {
-  it('reverts if MLN/ETH received from ValueInterpreter is not valid rate', async () => {
+  it('returns the expected value', async () => {
     const {
-      mocks: { mockEngineWithValueInterpreter, mockValueInterpreter },
-    } = await snapshotWithMocks(provider);
+      deployment: { engine },
+      mocks: { mockValueInterpreter },
+    } = await snapshot(provider);
 
-    await mockValueInterpreter.calcCanonicalAssetValue.returns(0, false);
-
-    const calcEthOutput = mockEngineWithValueInterpreter.calcEthOutputForMlnInput(
-      1,
-    );
-    await expect(calcEthOutput).rejects.toBeRevertedWith(
-      'mln to eth rate is invalid',
-    );
-  });
-
-  it('returns the expected value if the rate received is valid', async () => {
-    const {
-      mocks: { mockEngineWithValueInterpreter, mockValueInterpreter },
-    } = await snapshotWithMocks(provider);
+    // Update the valueInterpreter used by the Engine to a mock and set expected return values
+    await engine.setValueInterpreter(mockValueInterpreter);
     const expectedOutput = BigNumber.from('1');
-
     await mockValueInterpreter.calcCanonicalAssetValue.returns(
       expectedOutput,
       true,
     );
 
-    const calcEthOutput = mockEngineWithValueInterpreter.calcEthOutputForMlnInput
+    const calcEthOutput = engine.calcEthOutputForMlnInput
       .args(expectedOutput)
       .call();
-    await expect(calcEthOutput).resolves.toEqBigNumber(expectedOutput);
+    await expect(calcEthOutput).resolves.toMatchObject({
+      ethAmount_: expectedOutput,
+      isValidRate_: true,
+    });
   });
 });
 
@@ -428,8 +399,9 @@ describe('sellAndBurnMln', () => {
     const postMlnBalance = await mln.balanceOf(deployerAddress);
     await expect(postMlnBalance).toEqBigNumber(preMlnBalance.sub(mlnAmount));
 
-    await assertEvent(sellAndBurnMlnTx, 'MlnTokensBurned', {
-      amount: mlnAmount,
+    await assertEvent(sellAndBurnMlnTx, 'MlnSoldAndBurned', {
+      mlnAmount: mlnAmount,
+      ethAmount: ethAmountWithPremium,
     });
   });
 
@@ -440,9 +412,28 @@ describe('sellAndBurnMln', () => {
 
     const failSellBurnTx = engine.sellAndBurnMln(utils.parseEther('1'));
 
-    await expect(failSellBurnTx).rejects.toBeRevertedWith(
-      'only an authorized ether taker can call this function',
+    await expect(failSellBurnTx).rejects.toBeRevertedWith('Unauthorized');
+  });
+
+  it('reverts if MLN/ETH received from ValueInterpreter is not valid rate', async () => {
+    const {
+      config: { deployer },
+      deployment: { engine },
+      mocks: { mockValueInterpreter },
+    } = await snapshot(provider);
+
+    await engine.addEtherTakers([deployer]);
+
+    // Update the valueInterpreter used by the Engine to a mock and set expected return values
+    await engine.setValueInterpreter(mockValueInterpreter);
+    await mockValueInterpreter.calcCanonicalAssetValue.returns(
+      utils.parseEther('1'),
+      false,
     );
+
+    // Returning an invalid rate should cause the tx to fail
+    const failSellBurnTx = engine.sellAndBurnMln(utils.parseEther('1'));
+    await expect(failSellBurnTx).rejects.toBeRevertedWith('Invalid rate');
   });
 
   it('reverts if mlnAmount value is greater than available liquidEther', async () => {
@@ -468,20 +459,30 @@ describe('sellAndBurnMln', () => {
   it('reverts if the ETH amount to be sent to the user is zero', async () => {
     const {
       config: { deployer },
-      mocks: { mockEngineWithValueInterpreter, mockValueInterpreter },
-    } = await provider.snapshot(snapshotWithMocks);
+      deployment: { engine },
+      mocks: { mockValueInterpreter },
+    } = await provider.snapshot(snapshot);
+
+    // Update the valueInterpreter used by the Engine to a mock and set expected return values
+    await engine.setValueInterpreter(mockValueInterpreter);
+    await mockValueInterpreter.calcCanonicalAssetValue.returns(0, true);
 
     const mlnAmount = utils.parseEther('1');
     const deployerAddress = await resolveAddress(deployer);
 
-    await mockValueInterpreter.calcCanonicalAssetValue.returns(0, true);
-    await mockEngineWithValueInterpreter.addEtherTakers([deployerAddress]);
-    const failSellBurnTx = mockEngineWithValueInterpreter.sellAndBurnMln(
-      mlnAmount,
-    );
+    await engine.addEtherTakers([deployerAddress]);
+    const failSellBurnTx = engine.sellAndBurnMln(mlnAmount);
 
     await expect(failSellBurnTx).rejects.toBeRevertedWith(
-      'No ether to pay out',
+      'MLN quantity too low',
     );
   });
+});
+
+describe('setValueInterpreter', () => {
+  it.todo('Does not allow a random caller');
+
+  it.todo('Does not allow an already-set value');
+
+  it.todo('Correctly handles a valid call');
 });
