@@ -1,0 +1,48 @@
+{
+  "name": "@melonproject/protocol",
+  "version": "2.0.0",
+  "description": "Technology Regulated and Operated Investment Funds",
+  "author": "Melon Council DAO <team@meloncouncil.io>",
+  "license": "GPL-3.0",
+  "homepage": "https://melonprotocol.com",
+  "main": "dist/protocol.cjs.js",
+  "module": "dist/protocol.esm.js",
+  "browser": {
+    "./dist/protocol.cjs.js": "./dist/protocol.browser.cjs.js",
+    "./dist/protocol.esm.js": "./dist/protocol.browser.esm.js"
+  },
+  "typings": "dist/protocol.cjs.d.ts",
+  "files": [
+    "dist",
+    "artifacts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/melonproject/protocol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/melonproject/protocol/issues"
+  },
+  "keywords": [
+    "Defi",
+    "Ethereum",
+    "Melon",
+    "Smart Contracts",
+    "Solidity"
+  ],
+  "scripts": {
+    "codegen": "crestproject codegen \"artifacts/contracts/**/!(*.dbg).json\" src/codegen"
+  },
+  "devDependencies": {
+    "@crestproject/crestproject": "^0.0.64",
+    "@openzeppelin/contracts": "^3.2.0",
+    "ethers": "^5.0.19"
+  },
+  "peerDependencies": {
+    "@crestproject/crestproject": "^0.0.64",
+    "ethers": "^5.0.19"
+  }
+}

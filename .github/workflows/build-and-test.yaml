@@ -27,21 +27,11 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+        env:
+          MELON_GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
 
-        # TODO: Remove this again once it's fixed in hardhat
-      - name: Skip telemetry consent
-        run: |
-          mkdir -p ~/.config/hardhat-nodejs
-          echo { \"consent\": false } >> ~/.config/hardhat-nodejs/telemetry-consent.json
-
-      - name: Compile contracts
-        run: yarn compile
-
-      - name: Generate contract artifacts
-        run: yarn codegen
-
-      - name: Package libraries
-        run: yarn package
+      - name: Build
+        run: yarn build
 
       - name: Run test suite
         run: yarn test
@@ -65,4 +55,9 @@ jobs:
 
       - name: Publish development packages
         if: github.ref == 'refs/heads/develop'
-        run: yarn lerna publish --yes --force-publish --no-git-tag-version --no-push --canary --preid dev --registry https://npm.fury.io/melonproject/
+        run: |
+          yarn manypkg exec -- yarn version --non-interactive --no-git-tag-version --new-version=2.0.0-dev.$(git rev-list HEAD --count)+${GITHUB_SHA::8}
+          yarn manypkg fix
+          yarn manypkg exac -- yarn publish --non-interactive --tag=dev --registry https://npm.fury.io/melonproject/
+        env:
+          GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}

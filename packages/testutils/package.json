@@ -1,0 +1,49 @@
+{
+  "name": "@melonproject/testutils",
+  "version": "2.0.0",
+  "description": "Technology Regulated and Operated Investment Funds",
+  "author": "Melon Council DAO <team@meloncouncil.io>",
+  "license": "GPL-3.0",
+  "homepage": "https://melonprotocol.com",
+  "main": "dist/testutils.cjs.js",
+  "module": "dist/testutils.esm.js",
+  "browser": {
+    "./dist/testutils.cjs.js": "./dist/testutils.browser.cjs.js",
+    "./dist/testutils.esm.js": "./dist/testutils.browser.esm.js"
+  },
+  "typings": "dist/testutils.cjs.d.ts",
+  "files": [
+    "dist",
+    "mainnet.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/melonproject/protocol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/melonproject/protocol/issues"
+  },
+  "keywords": [
+    "Defi",
+    "Ethereum",
+    "Melon",
+    "Smart Contracts",
+    "Solidity"
+  ],
+  "dependencies": {
+    "@melonproject/protocol": "^2.0.0"
+  },
+  "devDependencies": {
+    "@crestproject/crestproject": "^0.0.64",
+    "ethers": "^5.0.19",
+    "ethers-eip712": "^0.2.0"
+  },
+  "peerDependencies": {
+    "@crestproject/crestproject": "^0.0.64",
+    "ethers": "^5.0.19",
+    "ethers-eip712": "^0.2.0"
+  }
+}

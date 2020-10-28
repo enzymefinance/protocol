@@ -1,6 +1,0 @@
-{
-  "packages": ["persistent", "release", "utils"],
-  "version": "independent",
-  "npmClient": "yarn",
-  "useWorkspaces": true
-}

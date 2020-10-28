@@ -3,12 +3,13 @@
 
 # ignore all dotfiles except the whitelisted ones
 .*
+!.changeset
 !.github
 !.gitignore
 !.gitattributes
 !.prettierignore
 !.prettierrc
-!.travis.yml
+!.babelrc
 !.solhint.json
 !.solhintignore
 
