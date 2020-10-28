@@ -11,7 +11,6 @@
     "./dist/testutils.cjs.js": "./dist/testutils.browser.cjs.js",
     "./dist/testutils.esm.js": "./dist/testutils.browser.esm.js"
   },
-  "typings": "dist/testutils.cjs.d.ts",
   "files": [
     "dist",
     "mainnet.json"

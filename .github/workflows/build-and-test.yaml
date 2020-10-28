@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12
+          always-auth: true
           registry-url: https://npm.fury.io/melonproject/
           scope: '@melonproject'
 
@@ -27,8 +28,6 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-        env:
-          MELON_GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
 
       - name: Build
         run: yarn build
@@ -44,20 +43,11 @@ jobs:
       - name: Check linting
         run: yarn lint
 
-      - name: Authenticate with registry
-        if: github.ref == 'refs/heads/develop'
-        run: |
-          echo @melonproject:registry=https://npm.fury.io/melonproject/ >> .npmrc
-          echo //npm.fury.io/melonproject/:_authToken=${GEMFURY_TOKEN} >> .npmrc
-          echo //npm.fury.io/melonproject/:always-auth=true >> .npmrc
-        env:
-          GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
-
       - name: Publish development packages
         if: github.ref == 'refs/heads/develop'
         run: |
           yarn manypkg exec -- yarn version --non-interactive --no-git-tag-version --new-version=2.0.0-dev.$(git rev-list HEAD --count)+${GITHUB_SHA::8}
-          yarn manypkg fix
-          yarn manypkg exac -- yarn publish --non-interactive --tag=dev --registry https://npm.fury.io/melonproject/
+          yarn manypkg fix && yarn preconstruct build
+          yarn manypkg exec -- yarn publish --non-interactive --tag=dev --registry https://npm.fury.io/melonproject/
         env:
-          GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GEMFURY_TOKEN }}

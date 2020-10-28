@@ -11,7 +11,6 @@
     "./dist/protocol.cjs.js": "./dist/protocol.browser.cjs.js",
     "./dist/protocol.esm.js": "./dist/protocol.browser.esm.js"
   },
-  "typings": "dist/protocol.cjs.d.ts",
   "files": [
     "dist",
     "artifacts"
