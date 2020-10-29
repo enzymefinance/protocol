@@ -7,7 +7,7 @@ pragma experimental ABIEncoderV2;
 interface IFeeManager {
     // No fees for the current release are implemented post-redeemShares
     enum FeeHook {Continuous, PreBuyShares, PostBuyShares, PreRedeemShares}
-    enum SettlementType {None, Direct, Mint, MintSharesOutstanding, BurnSharesOutstanding}
+    enum SettlementType {None, Direct, Mint, Burn, MintSharesOutstanding, BurnSharesOutstanding}
 
     function settleFees(FeeHook, bytes calldata) external;
 }

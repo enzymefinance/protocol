@@ -18,6 +18,7 @@ export enum feeSettlementTypes {
   None,
   Direct,
   Mint,
+  Burn,
   MintSharesOutstanding,
   BurnSharesOutstanding,
 }

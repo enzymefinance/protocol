@@ -260,6 +260,8 @@ contract FeeManager is
 
             payee = IVault(_vaultProxy).getOwner();
             __mintShares(_comptrollerProxy, payee, sharesDue);
+        } else if (settlementType == SettlementType.Burn) {
+            __burnShares(_comptrollerProxy, payer, sharesDue);
         } else if (settlementType == SettlementType.MintSharesOutstanding) {
             __validateNonZeroSharesSupply(_vaultProxy);
 

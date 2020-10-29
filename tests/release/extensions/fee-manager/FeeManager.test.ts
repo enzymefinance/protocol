@@ -515,7 +515,7 @@ describe('settleFees', () => {
     ).toHaveBeenCalledOnContractWith(comptrollerProxy, vaultProxy);
   });
 
-  it('correctly settles a direct fee payment (BuyShares fee hook)', async () => {
+  it('correctly handles `Direct` settlement type (BuyShares fee hook)', async () => {
     const {
       accounts: { 0: buyer },
       deployment: { feeManager },
@@ -567,7 +567,67 @@ describe('settleFees', () => {
     });
   });
 
-  it('correctly settles an inflationary fee paid immediately (settleContinuousFees)', async () => {
+  it('correctly handles `Burn` settlement type (BuyShares fee hook)', async () => {
+    const {
+      accounts: { 0: buyer },
+      deployment: { feeManager },
+      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
+      fees: { mockPostBuySharesFee },
+    } = await provider.snapshot(snapshot);
+
+    // Define fee settlement
+    const investmentAmount = utils.parseEther('2');
+    const feeAmount = utils.parseEther('0.5');
+    const settlementType = feeSettlementTypes.Burn;
+    await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
+
+    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const preBuyerSharesCall = await vaultProxy.balanceOf(buyer);
+    const preSharesSupplyCall = await vaultProxy.totalSupply();
+
+    // Buy shares with active fee
+    const expectedSharesReceived = BigNumber.from(investmentAmount).sub(
+      feeAmount,
+    );
+    const buySharesTx = await buyShares({
+      comptrollerProxy,
+      signer: buyer,
+      buyer,
+      denominationAsset,
+      investmentAmount,
+      minSharesAmount: expectedSharesReceived,
+    });
+
+    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
+    const postBuyerSharesCall = await vaultProxy.balanceOf(buyer);
+    const postSharesSupplyCall = await vaultProxy.totalSupply();
+
+    // The fund owner's shares should not have changed
+    expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall);
+
+    // The feeAmount should be deducted from the buyer's shares
+    expect(postBuyerSharesCall).toEqBigNumber(
+      preBuyerSharesCall.add(expectedSharesReceived),
+    );
+
+    // The totalSupply should have increased by the shares received
+    expect(postSharesSupplyCall).toEqBigNumber(
+      preSharesSupplyCall.add(expectedSharesReceived),
+    );
+
+    // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
+    const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+    await assertEvent(buySharesTx, feeSettledForFundEvent, {
+      comptrollerProxy: comptrollerProxy.address,
+      fee: mockPostBuySharesFee.address,
+      settlementType,
+      payer: await resolveAddress(buyer),
+      payee: constants.AddressZero,
+      sharesDue: feeAmount,
+    });
+  });
+
+  it('correctly handles `Mint` settlement type (settleContinuousFees)', async () => {
     const {
       accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
@@ -629,7 +689,7 @@ describe('settleFees', () => {
     });
   });
 
-  it('correctly mints shares outstanding and fires an event (settleContinuousFees)', async () => {
+  it('correctly handles `MintSharesOutstanding` settlement type (settleContinuousFees)', async () => {
     const {
       accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
@@ -696,7 +756,7 @@ describe('settleFees', () => {
     });
   });
 
-  it('correctly burns shares outstanding and fires an event', async () => {
+  it('correctly handles `BurnSharesOutstanding` settlement type', async () => {
     const {
       accounts: { 0: randomUser, 1: buyer },
       deployment: { feeManager },
