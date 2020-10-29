@@ -12,5 +12,7 @@ export function entranceRateFeeSharesDue({
   rate: BigNumberish;
   sharesBought: BigNumberish;
 }) {
-  return BigNumber.from(sharesBought).mul(rate).div(utils.parseEther('1'));
+  return BigNumber.from(sharesBought)
+    .mul(rate)
+    .div(utils.parseEther('1').add(rate));
 }

@@ -83,7 +83,7 @@ contract EntranceRateFee is FeeBase {
         (payer_, , sharesBought) = __decodePostBuySharesSettlementData(_settlementData);
 
         uint256 rate = comptrollerProxyToRate[_comptrollerProxy];
-        sharesDue_ = sharesBought.mul(rate).div(RATE_DIVISOR);
+        sharesDue_ = sharesBought.mul(rate).div(RATE_DIVISOR.add(rate));
 
         if (sharesDue_ == 0) {
             return (IFeeManager.SettlementType.None, address(0), 0);
