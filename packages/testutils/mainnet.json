@@ -5,12 +5,24 @@
   "chainlinkAggregators": {
     "dai": ["0x773616E4d11A78F511299002da57A0a94577F1f4", 0],
     "knc": ["0x656c0544eF4C98A6a98491833A89204Abb045d6b", 0],
-    "zrx": ["0x2Da4983a622a8498bb1a21FaE9D8F6C664939962", 0],
     "rep": ["0xD4CE430C3b67b3E2F7026D86E7128588629e2455", 0],
-    "ren": ["0x0f59666EDE214281e956cb3b2D0d69415AfF4A01", 1]
+    "ren": ["0x0f59666EDE214281e956cb3b2D0d69415AfF4A01", 1],
+    "zrx": ["0x2Da4983a622a8498bb1a21FaE9D8F6C664939962", 0]
+  },
+  "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
+  "derivatives": { 
+    "compound": {
+      "ccomp": "0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4",
+      "cdai": "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
+      "ceth": "0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5",
+      "crep": "0x158079ee67fce2f58472a96584a73c7ab9ac95c1",
+      "cusdc": "0x39aa39c021dfbae8fac545936693ac917d5e7563",
+      "czrx": "0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407"
+    }
   },
   "kyber": "0x9AAb3f75489902f3a48495025729a0AF77d4b11e",
   "tokens": {
+    "comp": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
     "dai": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
     "knc": "0xdd974D5C2e2928deA5F71b9825b8b646686BD200",
     "mln": "0xec67005c4E498Ec7f55E092bd1d35cbC47C91892",
@@ -21,6 +33,7 @@
     "zrx": "0xE41d2489571d322189246DaFA5ebDe1F4699F498"
   },
   "whales": {
+    "comp": "0xC89b6f0146642688bb254bF93C28fcCF1E182C81",
     "dai": "0x16B34Ce9A6a6F7FC2DD25Ba59bf7308E7B38E186",
     "knc": "0x986C98AF08AdBB82A8De7c7E88c6e8e4C74105ae",
     "mln": "0xd8f8a53945bcfbbc19da162aa405e662ef71c40d",

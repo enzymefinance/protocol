@@ -1,12 +1,12 @@
-import { constants, providers, Signer, utils } from 'ethers';
 import {
   AddressLike,
   randomAddress,
   resolveAddress,
 } from '@crestproject/crestproject';
 import { Dispatcher, StandardToken } from '@melonproject/protocol';
-import { ReleaseDeploymentConfig } from './deployment';
+import { constants, providers, Signer, utils } from 'ethers';
 import mainnet from '../../mainnet.json';
+import { ReleaseDeploymentConfig } from './deployment';
 
 type MainnetConfig = typeof mainnet;
 
@@ -105,6 +105,7 @@ export async function configureForkRelease({
     integrationManager: {
       trackedAssetsLimit: 20, // TODO
     },
+    derivatives: mainnet.derivatives,
     integratees: {
       chai: mainnet.chai,
       kyber: mainnet.kyber,

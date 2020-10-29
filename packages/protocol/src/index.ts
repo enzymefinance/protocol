@@ -39,11 +39,13 @@ export { ChainlinkPriceFeed } from './codegen/ChainlinkPriceFeed';
 // Derivative price feeds
 export { AggregatedDerivativePriceFeed } from './codegen/AggregatedDerivativePriceFeed';
 export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
+export { CompoundPriceFeed } from './codegen/CompoundPriceFeed';
 
 // Integratee interfaces
 export { IUniswapV2Factory } from './codegen/IUniswapV2Factory';
 export { IUniswapV2Pair } from './codegen/IUniswapV2Pair';
 export { IKyberNetworkProxy } from './codegen/IKyberNetworkProxy';
+export { ICERC20 } from './codegen/ICERC20';
 
 // Integration adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';
@@ -51,6 +53,7 @@ export { EngineAdapter } from './codegen/EngineAdapter';
 export { KyberAdapter } from './codegen/KyberAdapter';
 export { TrackedAssetsAdapter } from './codegen/TrackedAssetsAdapter';
 export { ZeroExV2Adapter } from './codegen/ZeroExV2Adapter';
+export { CompoundAdapter } from './codegen/CompoundAdapter';
 
 // Fees
 export { IFee } from './codegen/IFee';

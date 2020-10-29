@@ -1,15 +1,16 @@
-import { BigNumberish, BytesLike, Signer } from 'ethers';
 import { AddressLike } from '@crestproject/crestproject';
 import {
-  BuySharesPriceFeedTolerance,
   AdapterBlacklist,
   AdapterWhitelist,
   AggregatedDerivativePriceFeed,
   AssetBlacklist,
   AssetWhitelist,
+  BuySharesPriceFeedTolerance,
   ChaiAdapter,
   ChainlinkPriceFeed,
   ChaiPriceFeed,
+  CompoundAdapter,
+  CompoundPriceFeed,
   ComptrollerLib,
   Engine,
   EngineAdapter,
@@ -31,6 +32,7 @@ import {
   VaultLib,
   ZeroExV2Adapter,
 } from '@melonproject/protocol';
+import { BigNumberish, BytesLike, Signer } from 'ethers';
 import { describeDeployment } from '../utils';
 
 export interface ReleaseDeploymentConfig {
@@ -55,6 +57,16 @@ export interface ReleaseDeploymentConfig {
     primitives: AddressLike[];
     aggregators: AddressLike[];
     rateAssets: BigNumberish[];
+  };
+  derivatives: {
+    compound: {
+      ccomp: AddressLike;
+      cdai: AddressLike;
+      ceth: AddressLike;
+      crep: AddressLike;
+      cusdc: AddressLike;
+      czrx: AddressLike;
+    };
   };
   integratees: {
     chai: AddressLike;
@@ -92,8 +104,10 @@ export interface ReleaseDeploymentOutput {
   // Derivative price feeds
   aggregatedDerivativePriceFeed: Promise<AggregatedDerivativePriceFeed>;
   chaiPriceFeed: Promise<ChaiPriceFeed>;
+  compoundPriceFeed: Promise<CompoundPriceFeed>;
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
+  compoundAdapter: Promise<CompoundAdapter>;
   engineAdapter: Promise<EngineAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
@@ -219,11 +233,18 @@ export const deployRelease = describeDeployment<
   },
   // Derivative price feeds
   async aggregatedDerivativePriceFeed(config, deployment) {
+    const cTokens = Object.values(config.derivatives.compound);
+    const compoundPriceFeeds: Array<AddressLike> = new Array(
+      cTokens.length,
+    ).fill(await deployment.compoundPriceFeed);
+
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
       config.dispatcher,
-      [config.integratees.chai],
-      [await deployment.chaiPriceFeed],
+      [config.integratees.chai].concat(cTokens),
+      [(await deployment.chaiPriceFeed) as AddressLike].concat(
+        compoundPriceFeeds,
+      ),
     );
   },
   async chaiPriceFeed(config) {
@@ -234,6 +255,13 @@ export const deployRelease = describeDeployment<
       config.integratees.makerDao.pot,
     );
   },
+  async compoundPriceFeed(config) {
+    return CompoundPriceFeed.deploy(
+      config.deployer,
+      config.weth,
+      config.derivatives.compound.ceth,
+    );
+  },
   // Adapters
   async chaiAdapter(config, deployment) {
     return ChaiAdapter.deploy(
@@ -241,6 +269,13 @@ export const deployRelease = describeDeployment<
       await deployment.integrationManager,
       config.integratees.chai,
       config.integratees.makerDao.dai,
+    );
+  },
+  async compoundAdapter(config, deployment) {
+    return CompoundAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      config.weth,
     );
   },
   async engineAdapter(config, deployment) {
@@ -340,6 +375,7 @@ export const deployRelease = describeDeployment<
     // Register adapters
     const adapters = [
       await deployment.chaiAdapter,
+      await deployment.compoundAdapter,
       await deployment.engineAdapter,
       await deployment.kyberAdapter,
       await deployment.trackedAssetsAdapter,

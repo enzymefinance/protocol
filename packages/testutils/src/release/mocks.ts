@@ -197,6 +197,16 @@ export async function configureMockRelease({
 
   return {
     deployer,
+    derivatives: {
+      compound: {
+        ccomp: randomAddress(),
+        cdai: randomAddress(),
+        ceth: randomAddress(),
+        crep: randomAddress(),
+        cusdc: randomAddress(),
+        czrx: randomAddress(),
+      },
+    },
     mgm,
     dispatcher: dispatcher.address,
     mln: mocks.tokens.mln.address,
