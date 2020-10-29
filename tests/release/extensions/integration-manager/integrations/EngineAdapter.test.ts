@@ -1,10 +1,9 @@
-import { utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
-  defaultTestDeployment,
   assertEvent,
   assetTransferArgs,
   createNewFund,
+  defaultTestDeployment,
   engineAdapterTakeOrder,
   engineAdapterTakeOrderArgs,
   getAssetBalances,
@@ -13,6 +12,7 @@ import {
   takeOrderSelector,
   updateChainlinkAggregator,
 } from '@melonproject/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(

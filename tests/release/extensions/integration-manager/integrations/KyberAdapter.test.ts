@@ -2,25 +2,25 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { BigNumberish, Signer, utils } from 'ethers';
 import {
-  StandardToken,
   ComptrollerLib,
   IntegrationManager,
   KyberAdapter,
+  StandardToken,
   VaultLib,
 } from '@melonproject/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   assetTransferArgs,
   createNewFund,
+  defaultTestDeployment,
   getAssetBalances,
   kyberTakeOrder,
   kyberTakeOrderArgs,
   spendAssetsHandleTypes,
   takeOrderSelector,
 } from '@melonproject/testutils';
+import { BigNumberish, Signer, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(

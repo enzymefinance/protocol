@@ -1,4 +1,3 @@
-import { Signer, utils } from 'ethers';
 import {
   AddressLike,
   randomAddress,
@@ -6,17 +5,18 @@ import {
 } from '@crestproject/crestproject';
 import {
   Dispatcher,
-  MockToken,
-  MockChainlinkPriceSource,
   MockChaiIntegratee,
-  MockKyberIntegratee,
+  MockChainlinkPriceSource,
+  MockChaiPriceSource,
   MockGenericAdapter,
   MockGenericIntegratee,
+  MockKyberIntegratee,
+  MockToken,
   MockZeroExV2Integratee,
   WETH,
-  MockChaiPriceSource,
 } from '@melonproject/protocol';
-import { describeDeployment, Deployment, DeploymentHandlers } from '../utils';
+import { Signer, utils } from 'ethers';
+import { Deployment, DeploymentHandlers, describeDeployment } from '../utils';
 import { ReleaseDeploymentConfig } from './deployment';
 import { encodeZeroExV2AssetData } from './integrations/zeroExV2';
 
@@ -206,7 +206,7 @@ export async function configureMockRelease({
       selectors: [],
     },
     engine: {
-      thawDelay: 10000000000,
+      thawDelay: 3600, // 1 hour
     },
     chainlink: {
       ethUsdAggregator: mocks.chainlinkEthUsdAggregator,

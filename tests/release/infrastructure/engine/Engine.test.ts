@@ -1,4 +1,3 @@
-import { BigNumber, utils } from 'ethers';
 import {
   EthereumTestnetProvider,
   randomAddress,
@@ -6,12 +5,13 @@ import {
 } from '@crestproject/crestproject';
 import { Engine, ValueInterpreter } from '@melonproject/protocol';
 import {
-  seedAndThawEngine,
-  warpEngine,
   assertEvent,
-  updateChainlinkAggregator,
   defaultTestDeployment,
+  seedAndThawEngine,
+  updateChainlinkAggregator,
+  warpEngine,
 } from '@melonproject/testutils';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
