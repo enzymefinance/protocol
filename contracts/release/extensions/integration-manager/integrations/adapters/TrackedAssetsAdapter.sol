@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "../../../../core/fund/vault/VaultLib.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title TrackedAssetsAdapter Contract
@@ -57,11 +58,26 @@ contract TrackedAssetsAdapter is AdapterBase {
     }
 
     /// @notice Add multiple assets to the Vault's owned assets
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
     function addTrackedAssets(
-        address,
-        bytes calldata,
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
         bytes calldata
-    ) external onlyIntegrationManager {}
+    ) external view onlyIntegrationManager {
+        address[] memory incomingAssets = __decodeCallArgs(_encodedCallArgs);
+
+        for (uint256 i; i < incomingAssets.length; i++) {
+            require(
+                !VaultLib(_vaultProxy).isTrackedAsset(incomingAssets[i]),
+                "addTrackedAssets: Already tracked"
+            );
+            require(
+                ERC20(incomingAssets[i]).balanceOf(_vaultProxy) > 0,
+                "addTrackedAssets: Zero balance"
+            );
+        }
+    }
 
     // PRIVATE FUNCTIONS
 
@@ -69,7 +85,7 @@ contract TrackedAssetsAdapter is AdapterBase {
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
-        returns (address[] memory incomingAsset_)
+        returns (address[] memory incomingAssets_)
     {
         return abi.decode(_encodedCallArgs, (address[]));
     }

@@ -140,6 +140,66 @@ describe('addTrackedAssets', () => {
     );
   });
 
+  it('does not allow an already-tracked asset', async () => {
+    const {
+      deployment: {
+        trackedAssetsAdapter,
+        integrationManager,
+        tokens: { mln },
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    // Seed fund with untracked MLN
+    const incomingAssets = [mln];
+    await mln.transfer(vaultProxy, utils.parseEther('1'));
+
+    // Adding MLN as a tracked asset should succeed
+    const goodTrackedAssetsTx = addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets,
+    });
+    await expect(goodTrackedAssetsTx).resolves.toBeReceipt();
+
+    // Attempting to add MLN once already tracked should fail
+    const badTrackedAssetsTx = addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets,
+    });
+    await expect(badTrackedAssetsTx).rejects.toBeRevertedWith(
+      'Already tracked',
+    );
+  });
+
+  it('does not allow an asset with no balance in the vault', async () => {
+    const {
+      deployment: {
+        trackedAssetsAdapter,
+        integrationManager,
+        tokens: { mln },
+      },
+      fund: { comptrollerProxy, fundOwner },
+    } = await provider.snapshot(snapshot);
+
+    // Does NOT seed fund with MLN
+
+    // Attempting to add MLN should fail without any MLN balance in the vault
+    const badTrackedAssetsTx = addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets: [mln],
+    });
+    await expect(badTrackedAssetsTx).rejects.toBeRevertedWith('Zero balance');
+  });
+
   it('addTrackedAssets successfully', async () => {
     const {
       deployment: {
