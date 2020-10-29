@@ -2,8 +2,8 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../interfaces/IERC20Extended.sol";
 import "../utils/DispatcherOwnerMixin.sol";
 import "../value-interpreter/IValueInterpreter.sol";
 import "./IEngine.sol";
@@ -14,7 +14,7 @@ import "./IEngine.sol";
 /// at a discount in exchange for MLN (which it burns).
 contract Engine is IEngine, DispatcherOwnerMixin {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20Extended;
+    using SafeERC20 for ERC20Burnable;
 
     event AmguPriceSet(uint256 prevAmguPrice, uint256 nextAmguPrice);
 
@@ -131,7 +131,7 @@ contract Engine is IEngine, DispatcherOwnerMixin {
         liquidEther = prevLiquidEther.sub(ethToSend);
 
         // Burn MLN and send ETH
-        IERC20Extended mlnTokenContract = IERC20Extended(MLN_TOKEN);
+        ERC20Burnable mlnTokenContract = ERC20Burnable(MLN_TOKEN);
         mlnTokenContract.safeTransferFrom(msg.sender, address(this), _mlnAmount);
         mlnTokenContract.burn(_mlnAmount);
         msg.sender.transfer(ethToSend);

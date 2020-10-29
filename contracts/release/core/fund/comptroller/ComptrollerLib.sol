@@ -2,6 +2,7 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../../extensions/IExtension.sol";
@@ -9,7 +10,6 @@ import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
 import "../../../infrastructure/engine/AmguConsumer.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import "../../../interfaces/IERC20Extended.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
@@ -28,7 +28,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
-    using SafeERC20 for IERC20Extended;
+    using SafeERC20 for ERC20;
 
     // Constants - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
@@ -324,8 +324,8 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         return
             __calcGrossShareValue(
                 calcGav(false),
-                IERC20Extended(vaultProxy).totalSupply(),
-                10**uint256(IERC20Extended(denominationAsset).decimals())
+                ERC20(vaultProxy).totalSupply(),
+                10**uint256(ERC20(denominationAsset).decimals())
             );
     }
 
@@ -348,7 +348,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         view
         returns (uint256 balance_)
     {
-        return IERC20Extended(_asset).balanceOf(_vaultProxy);
+        return ERC20(_asset).balanceOf(_vaultProxy);
     }
 
     ///////////////////
@@ -394,8 +394,8 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
 
         IVault vaultProxyContract = IVault(vaultProxy);
-        IERC20Extended sharesContract = IERC20Extended(address(vaultProxyContract));
-        IERC20Extended denominationAssetContract = IERC20Extended(denominationAsset);
+        ERC20 sharesContract = ERC20(address(vaultProxyContract));
+        ERC20 denominationAssetContract = ERC20(denominationAsset);
 
         // Calculate the amount of shares to buy with the investment amount
         uint256 sharesBought = __calcBuyableSharesQuantity(
@@ -471,8 +471,8 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     /// @dev Helper to calculate the quantity of shares buyable for a given investment amount.
     /// Avoids the stack-too-deep error.
     function __calcBuyableSharesQuantity(
-        IERC20Extended _sharesContract,
-        IERC20Extended _denominationAssetContract,
+        ERC20 _sharesContract,
+        ERC20 _denominationAssetContract,
         uint256 _investmentAmount,
         uint256 _gav
     ) private view returns (uint256 sharesQuantity_) {
@@ -524,7 +524,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     function redeemShares() external onlyDelegateCall {
         __redeemShares(
             msg.sender,
-            IERC20Extended(vaultProxy).balanceOf(msg.sender),
+            ERC20(vaultProxy).balanceOf(msg.sender),
             new address[](0),
             new address[](0)
         );
@@ -634,7 +634,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         // Interfaces currently only contain their own functions that are used elsewhere
         // within the core protocol. If we change this paradigm, we can combine these vars.
         IVault vaultProxyContract = IVault(vaultProxy);
-        IERC20Extended sharesContract = IERC20Extended(address(vaultProxyContract));
+        ERC20 sharesContract = ERC20(address(vaultProxyContract));
 
         // Check the shares quantity against the user's balance after settling fees.
         require(

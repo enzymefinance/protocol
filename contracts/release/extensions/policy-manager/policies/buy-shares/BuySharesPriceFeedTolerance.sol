@@ -2,6 +2,7 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
@@ -119,7 +120,7 @@ contract BuySharesPriceFeedTolerance is BuySharesPreValidatePolicyBase {
         view
         returns (uint256 wethValue_, bool isValid_)
     {
-        IERC20 assetContract = IERC20(_asset);
+        ERC20 assetContract = ERC20(_asset);
         uint256 vaultAssetBalance = assetContract.balanceOf(address(_vaultProxyContract));
 
         // If the asset is WETH, return early

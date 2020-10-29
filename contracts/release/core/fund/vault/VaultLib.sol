@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/vault/VaultLibBase1.sol";
 import "./IVault.sol";
@@ -19,7 +19,7 @@ import "./IVault.sol";
 /// in the same way as the current logic contract.
 contract VaultLib is VaultLibBase1, IVault {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
     modifier onlyAccessor() {
         require(msg.sender == accessor, "Only the designated accessor can make this call");
@@ -71,7 +71,7 @@ contract VaultLib is VaultLibBase1, IVault {
         address _target,
         uint256 _amount
     ) external override onlyAccessor {
-        IERC20(_asset).approve(_target, _amount);
+        ERC20(_asset).approve(_target, _amount);
     }
 
     function callOnContract(address _contract, bytes calldata _callData)
@@ -105,7 +105,7 @@ contract VaultLib is VaultLibBase1, IVault {
             __removeTrackedAsset(_asset);
         }
         // TODO: any need to assert that the _target receives the tokens?
-        IERC20(_asset).safeTransfer(_target, _amount);
+        ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
     }
@@ -115,7 +115,7 @@ contract VaultLib is VaultLibBase1, IVault {
     }
 
     function __getAssetBalance(address _asset) private view returns (uint256) {
-        return IERC20(_asset).balanceOf(address(this));
+        return ERC20(_asset).balanceOf(address(this));
     }
 
     /// @dev Allows removal of non-tracked asset to fail silently.

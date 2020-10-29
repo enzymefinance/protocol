@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../release/interfaces/IERC20Extended.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./EthConstantMixin.sol";
 
 abstract contract RateProviderBase is EthConstantMixin {
@@ -25,7 +25,7 @@ abstract contract RateProviderBase is EthConstantMixin {
     function __getDecimalsForAsset(address _asset) internal view returns (uint256) {
         uint256 decimals = specialAssetToDecimals[_asset];
         if (decimals == 0) {
-            decimals = uint256(IERC20Extended(_asset).decimals());
+            decimals = uint256(ERC20(_asset).decimals());
         }
 
         return decimals;

@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
@@ -356,7 +356,7 @@ contract IntegrationManager is
         view
         returns (uint256)
     {
-        return IERC20(_asset).balanceOf(_vaultProxy);
+        return ERC20(_asset).balanceOf(_vaultProxy);
     }
 
     /// @dev Helper for the actions to take on external contracts prior to executing CoI

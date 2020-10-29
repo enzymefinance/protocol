@@ -3,7 +3,7 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../IIntegrationAdapter.sol";
 import "./IntegrationSelectors.sol";
 
@@ -11,7 +11,7 @@ import "./IntegrationSelectors.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A base contract for integration adapters
 abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
     address internal immutable INTEGRATION_MANAGER;
@@ -44,7 +44,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         if (spendAssetsHandleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
             for (uint256 i = 0; i < spendAssets.length; i++) {
                 // Custody asset
-                IERC20(spendAssets[i]).safeTransferFrom(
+                ERC20(spendAssets[i]).safeTransferFrom(
                     _vaultProxy,
                     address(this),
                     spendAssetAmounts[i]
@@ -57,15 +57,15 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
 
         // Transfer incoming assets back to fund
         for (uint256 i = 0; i < incomingAssets.length; i++) {
-            uint256 postCallAmount = IERC20(incomingAssets[i]).balanceOf(address(this));
-            IERC20(incomingAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
+            uint256 postCallAmount = ERC20(incomingAssets[i]).balanceOf(address(this));
+            ERC20(incomingAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
         }
 
         // Send remaining spendAssets balances back to the fund
         for (uint256 i = 0; i < spendAssets.length; i++) {
-            uint256 postCallAmount = IERC20(spendAssets[i]).balanceOf(address(this));
+            uint256 postCallAmount = ERC20(spendAssets[i]).balanceOf(address(this));
             if (postCallAmount > 0) {
-                IERC20(spendAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
+                ERC20(spendAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
             }
         }
     }
@@ -129,8 +129,8 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         address _target,
         uint256 _neededAmount
     ) internal {
-        if (IERC20(_asset).allowance(address(this), _target) < _neededAmount) {
-            IERC20(_asset).approve(_target, type(uint256).max);
+        if (ERC20(_asset).allowance(address(this), _target) < _neededAmount) {
+            ERC20(_asset).approve(_target, type(uint256).max);
         }
     }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../../interfaces/IERC20Extended.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../../interfaces/IKyberNetworkProxy.sol";
 import "../../../../interfaces/IWETH.sol";
 import "../../../../utils/MathHelpers.sol";
@@ -116,9 +116,9 @@ contract KyberAdapter is AdapterBase, MathHelpers {
 
         // Execute fill
         uint256 minExpectedRate = __calcNormalizedRate(
-            IERC20Extended(outgoingAsset).decimals(),
+            ERC20(outgoingAsset).decimals(),
             outgoingAssetAmount,
-            IERC20Extended(incomingAsset).decimals(),
+            ERC20(incomingAsset).decimals(),
             minIncomingAssetAmount
         );
 

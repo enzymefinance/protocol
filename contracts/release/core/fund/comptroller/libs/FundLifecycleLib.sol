@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../../extensions/IExtension.sol";
 import "../../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../fund-deployer/IFundDeployer.sol";
@@ -122,7 +122,7 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
             // Distribute any shares in the VaultProxy to the fund owner.
             // This is a mechanism to ensure that even in the edge case of a fund being unable
             // to payout fee shares owed during migration, these shares are not lost.
-            uint256 sharesDue = IERC20(_vaultProxy).balanceOf(_vaultProxy);
+            uint256 sharesDue = ERC20(_vaultProxy).balanceOf(_vaultProxy);
             if (sharesDue > 0) {
                 IVault(_vaultProxy).transferShares(
                     _vaultProxy,

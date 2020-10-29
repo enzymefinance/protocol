@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../interfaces/IERC20Extended.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "./IValueInterpreter.sol";
@@ -180,8 +180,8 @@ contract ValueInterpreter is IValueInterpreter {
         return
             _normalizedRate
                 .mul(_baseAssetAmount)
-                .mul(10**uint256(IERC20Extended(_quoteAsset).decimals()))
-                .div(10**(RATE_PRECISION.add(uint256(IERC20Extended(_baseAsset).decimals()))));
+                .mul(10**uint256(ERC20(_quoteAsset).decimals()))
+                .div(10**(RATE_PRECISION.add(uint256(ERC20(_baseAsset).decimals()))));
     }
 
     /// @dev Helper to calculate the value of a derivative in an arbitrary asset.

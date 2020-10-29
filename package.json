@@ -19,7 +19,7 @@
     "lint": "yarn lint:prettier && yarn lint:solhint",
     "lint:prettier": "prettier --list-different \"{tests,contracts,src}/{*,**/*}.{sol,ts}\"",
     "lint:solhint": "solhint --max-warnings 0 \"contracts/{*,**/*}.sol\"",
-    "format": "prettier --write \"*.{sol,ts}\" \"{tests,contracts,src}/{*,**/*}.{sol,ts}\"",
+    "format": "yarn lint:prettier --write",
     "test": "TS_JEST_DISABLE_VER_CHECKER=true jest"
   },
   "dependencies": {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../release/interfaces/IERC20Extended.sol";
-import "../../release/extensions/integration-manager/integrations/utils/AdapterBase.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../../release/extensions/integration-manager/integrations/utils/AdapterBase.sol";
 
 /// @title IMockGenericIntegratee Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -115,7 +115,7 @@ contract MockGenericAdapter is AdapterBase, Ownable {
         ) = __decodeCallArgs(_callArgs);
 
         for (uint256 i; i < spendAssets.length; i++) {
-            IERC20Extended(spendAssets[i]).approve(INTEGRATEE, spendAssetAmounts[i]);
+            ERC20(spendAssets[i]).approve(INTEGRATEE, spendAssetAmounts[i]);
         }
         IMockGenericIntegratee(INTEGRATEE).swap(
             spendAssets,

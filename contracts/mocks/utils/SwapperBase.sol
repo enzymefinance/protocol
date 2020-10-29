@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../release/interfaces/IERC20Extended.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./EthConstantMixin.sol";
 
 abstract contract SwapperBase is EthConstantMixin {
@@ -24,7 +24,7 @@ abstract contract SwapperBase is EthConstantMixin {
             if (asset == ETH_ADDRESS) {
                 continue;
             }
-            IERC20Extended(asset).transferFrom(_trader, address(this), amount);
+            ERC20(asset).transferFrom(_trader, address(this), amount);
         }
 
         // Distribute outgoing assets
@@ -36,7 +36,7 @@ abstract contract SwapperBase is EthConstantMixin {
             if (asset == ETH_ADDRESS) {
                 _trader.transfer(amount);
             } else {
-                IERC20Extended(asset).transfer(_trader, amount);
+                ERC20(asset).transfer(_trader, amount);
             }
         }
     }

@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
@@ -135,7 +135,7 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     ) private returns (bool isValid_) {
         if (_incomingAsset == _denominationAsset) return true;
 
-        uint256 assetBalance = IERC20(_incomingAsset).balanceOf(_vaultProxy);
+        uint256 assetBalance = ERC20(_incomingAsset).balanceOf(_vaultProxy);
         (uint256 assetGav, bool assetGavIsValid) = ValueInterpreter(VALUE_INTERPRETER)
             .calcLiveAssetValue(_incomingAsset, assetBalance, _denominationAsset);
 

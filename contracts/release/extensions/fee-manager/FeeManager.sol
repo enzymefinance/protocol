@@ -3,7 +3,7 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
@@ -176,7 +176,7 @@ contract FeeManager is
     function __forcePayoutAllSharesOutstanding(address _comptrollerProxy) private {
         address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
 
-        uint256 totalSharesOutstanding = IERC20(vaultProxy).balanceOf(vaultProxy);
+        uint256 totalSharesOutstanding = ERC20(vaultProxy).balanceOf(vaultProxy);
         if (totalSharesOutstanding == 0) {
             return;
         }
@@ -317,7 +317,7 @@ contract FeeManager is
     /// @dev Helper to validate that the total supply of shares for a fund is not 0
     function __validateNonZeroSharesSupply(address _vaultProxy) private view {
         require(
-            IERC20(_vaultProxy).totalSupply() > 0,
+            ERC20(_vaultProxy).totalSupply() > 0,
             "__validateNonZeroSharesSupply: Shares supply is 0"
         );
     }
