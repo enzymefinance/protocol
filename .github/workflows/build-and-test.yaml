@@ -29,8 +29,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build
-        run: yarn build
+      - name: Compile contracts
+        run: yarn compile
 
       - name: Run test suite
         run: yarn test
@@ -47,7 +47,7 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         run: |
           yarn manypkg exec -- yarn version --non-interactive --no-git-tag-version --new-version=2.0.0-dev.$(git rev-list HEAD --count)+${GITHUB_SHA::8}
-          yarn manypkg fix && yarn preconstruct build
+          yarn manypkg fix && yarn build
           yarn manypkg exec -- yarn publish --non-interactive --tag=dev --registry https://npm.fury.io/melonproject/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GEMFURY_TOKEN }}

@@ -12,9 +12,9 @@
   "scripts": {
     "postinstall": "preconstruct dev && manypkg check",
     "compile": "hardhat compile && manypkg run @melonproject/protocol codegen",
-    "prebuild": "yarn compile",
+    "dev": "preconstruct dev",
     "build": "preconstruct build",
-    "release": "yarn build && changeset publish",
+    "release": "yarn compile && yarn build && changeset publish",
     "typecheck": "manypkg exec tsc --noEmit",
     "lint": "yarn lint:prettier && yarn lint:solhint",
     "lint:prettier": "prettier --list-different \"{tests,contracts,src}/{*,**/*}.{sol,ts}\"",
