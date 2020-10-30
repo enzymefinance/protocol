@@ -2,12 +2,12 @@
 pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./utils/FeeBase.sol";
+import "./FeeBase.sol";
 
-/// @title EntranceRateFee Contract
+/// @title EntranceRateFeeBase Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Calculates a fee based on a rate to be charged to an investor upon entering a fund
-contract EntranceRateFee is FeeBase {
+abstract contract EntranceRateFeeBase is FeeBase {
     using SafeMath for uint256;
 
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
@@ -15,10 +15,21 @@ contract EntranceRateFee is FeeBase {
     event Settled(address indexed comptrollerProxy, address indexed payer, uint256 sharesQuantity);
 
     uint256 private constant RATE_DIVISOR = 10**18;
+    IFeeManager.SettlementType private immutable SETTLEMENT_TYPE;
 
     mapping(address => uint256) private comptrollerProxyToRate;
 
-    constructor(address _feeManager) public FeeBase(_feeManager) {}
+    constructor(address _feeManager, IFeeManager.SettlementType _settlementType)
+        public
+        FeeBase(_feeManager)
+    {
+        require(
+            _settlementType == IFeeManager.SettlementType.Burn ||
+                _settlementType == IFeeManager.SettlementType.Direct,
+            "constructor: Invalid _settlementType"
+        );
+        SETTLEMENT_TYPE = _settlementType;
+    }
 
     // EXTERNAL FUNCTIONS
 
@@ -91,7 +102,7 @@ contract EntranceRateFee is FeeBase {
 
         emit Settled(_comptrollerProxy, payer_, sharesDue_);
 
-        return (IFeeManager.SettlementType.Direct, payer_, sharesDue_);
+        return (SETTLEMENT_TYPE, payer_, sharesDue_);
     }
 
     ///////////////////
@@ -103,5 +114,15 @@ contract EntranceRateFee is FeeBase {
     /// @return rate_ The `rate` variable value
     function getRateForFund(address _comptrollerProxy) external view returns (uint256 rate_) {
         return comptrollerProxyToRate[_comptrollerProxy];
+    }
+
+    /// @notice Gets the `SETTLEMENT_TYPE` variable
+    /// @return settlementType_ The `SETTLEMENT_TYPE` variable value
+    function getSettlementType()
+        external
+        view
+        returns (IFeeManager.SettlementType settlementType_)
+    {
+        return SETTLEMENT_TYPE;
     }
 }

@@ -76,7 +76,8 @@ describe('constructor', () => {
       deployment: {
         feeManager,
         fundDeployer,
-        entranceRateFee,
+        entranceRateBurnFee,
+        entranceRateDirectFee,
         managementFee,
         performanceFee,
       },
@@ -85,7 +86,8 @@ describe('constructor', () => {
 
     const getRegisteredFeesCall = feeManager.getRegisteredFees();
     await expect(getRegisteredFeesCall).resolves.toMatchObject([
-      entranceRateFee.address,
+      entranceRateBurnFee.address,
+      entranceRateDirectFee.address,
       managementFee.address,
       performanceFee.address,
       ...Object.values(fees).map((fee) => fee.address),

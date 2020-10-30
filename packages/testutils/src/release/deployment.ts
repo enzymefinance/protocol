@@ -14,7 +14,8 @@ import {
   ComptrollerLib,
   Engine,
   EngineAdapter,
-  EntranceRateFee,
+  EntranceRateBurnFee,
+  EntranceRateDirectFee,
   FeeManager,
   FundCalculator,
   FundDeployer,
@@ -113,7 +114,8 @@ export interface ReleaseDeploymentOutput {
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   zeroExV2Adapter: Promise<ZeroExV2Adapter>;
   // Fees
-  entranceRateFee: Promise<EntranceRateFee>;
+  entranceRateBurnFee: Promise<EntranceRateBurnFee>;
+  entranceRateDirectFee: Promise<EntranceRateDirectFee>;
   managementFee: Promise<ManagementFee>;
   performanceFee: Promise<PerformanceFee>;
   // Policies
@@ -310,8 +312,11 @@ export const deployRelease = describeDeployment<
     );
   },
   // Fees
-  async entranceRateFee(config, deployment) {
-    return EntranceRateFee.deploy(config.deployer, await deployment.feeManager);
+  async entranceRateBurnFee(config, deployment) {
+    return EntranceRateBurnFee.deploy(config.deployer, await deployment.feeManager);
+  },
+  async entranceRateDirectFee(config, deployment) {
+    return EntranceRateDirectFee.deploy(config.deployer, await deployment.feeManager);
   },
   async managementFee(config, deployment) {
     return ManagementFee.deploy(config.deployer, await deployment.feeManager);
@@ -392,7 +397,8 @@ export const deployRelease = describeDeployment<
 
     // Register fees
     const fees = [
-      await deployment.entranceRateFee,
+      await deployment.entranceRateBurnFee,
+      await deployment.entranceRateDirectFee,
       await deployment.managementFee,
       await deployment.performanceFee,
     ];

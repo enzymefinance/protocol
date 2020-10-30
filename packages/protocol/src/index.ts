@@ -57,7 +57,8 @@ export { CompoundAdapter } from './codegen/CompoundAdapter';
 
 // Fees
 export { IFee } from './codegen/IFee';
-export { EntranceRateFee } from './codegen/EntranceRateFee';
+export { EntranceRateBurnFee } from './codegen/EntranceRateBurnFee';
+export { EntranceRateDirectFee } from './codegen/EntranceRateDirectFee';
 export { ManagementFee } from './codegen/ManagementFee';
 export { PerformanceFee } from './codegen/PerformanceFee';
 
