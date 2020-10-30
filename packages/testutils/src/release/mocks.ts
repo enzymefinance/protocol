@@ -10,6 +10,8 @@ import {
   MockChaiPriceSource,
   MockGenericAdapter,
   MockGenericIntegratee,
+  MockUniswapV2Integratee,
+  MockUniswapV2Pair,
   MockKyberIntegratee,
   MockToken,
   MockZeroExV2Integratee,
@@ -35,8 +37,13 @@ export interface MockDeploymentOutput {
     dai: MockToken;
     ren: MockToken;
   }>;
+  uniswapV2Derivatives: Promise<{
+    mlnWeth: MockToken;
+    kncWeth: MockToken;
+  }>;
   kyberIntegratee: Promise<MockKyberIntegratee>;
   chaiIntegratee: Promise<MockChaiIntegratee>;
+  uniswapV2Integratee: Promise<MockUniswapV2Integratee>;
   mockGenericAdapter: Promise<MockGenericAdapter>;
   mockGenericIntegratee: Promise<MockGenericIntegratee>;
   chainlinkEthUsdAggregator: Promise<MockChainlinkPriceSource>;
@@ -72,6 +79,15 @@ export const deployMocks = describeDeployment<
     ]);
 
     return { weth, mln, rep, knc, zrx, dai, ren };
+  },
+  async uniswapV2Derivatives(config, deployment) {
+    const tokens = await deployment.tokens;
+    const [mlnWeth, kncWeth] = await Promise.all([
+      MockUniswapV2Pair.deploy(config.deployer, tokens.mln, tokens.weth),
+      MockUniswapV2Pair.deploy(config.deployer, tokens.knc, tokens.weth),
+    ]);
+
+    return { mlnWeth, kncWeth };
   },
   // Price feed sources
   async chaiPriceSource(config) {
@@ -109,6 +125,17 @@ export const deployMocks = describeDeployment<
   async mockGenericIntegratee(config) {
     return MockGenericIntegratee.deploy(config.deployer);
   },
+  async uniswapV2Integratee(config, deployment) {
+    const derivatives = await deployment.uniswapV2Derivatives;
+    const tokens = await deployment.tokens;
+    return MockUniswapV2Integratee.deploy(
+      config.deployer,
+      [],
+      [tokens.mln, tokens.knc],
+      [tokens.weth, tokens.weth],
+      [derivatives.mlnWeth, derivatives.kncWeth],
+    );
+  },
   async zeroExV2Integratee(config, deployment) {
     const tokens = await deployment.tokens;
     const assetData = encodeZeroExV2AssetData(tokens.zrx.address);
@@ -130,9 +157,10 @@ export async function configureMockRelease({
   accounts: Signer[];
 }): Promise<ReleaseDeploymentConfig> {
   const integratees = [
-    mocks.kyberIntegratee,
     mocks.chaiIntegratee,
+    mocks.kyberIntegratee,
     mocks.mockGenericIntegratee,
+    mocks.uniswapV2Integratee,
   ];
 
   const tokens = [
@@ -142,7 +170,14 @@ export async function configureMockRelease({
     mocks.tokens.zrx as MockToken,
     mocks.tokens.dai as MockToken,
     mocks.tokens.ren as MockToken,
+    mocks.uniswapV2Derivatives.mlnWeth as MockToken,
+    mocks.uniswapV2Derivatives.kncWeth as MockToken,
     mocks.chaiIntegratee,
+  ];
+
+  const uniswapV2Derivatives = [
+    mocks.uniswapV2Derivatives.mlnWeth as MockToken,
+    mocks.uniswapV2Derivatives.kncWeth as MockToken,
   ];
 
   const chainlinkPrimitives = [
@@ -184,20 +219,22 @@ export async function configureMockRelease({
     }),
   ]);
 
-  // Make integratees rich in WETH, ETH, and tokens.
-  await Promise.all(
-    integratees.map(async (integratee) => {
-      await Promise.all([
-        mocks.tokens.weth.transfer(integratee, utils.parseEther('100')),
-        makeEthRich(deployer, integratee),
-        makeTokenRich(tokens, integratee),
-      ]);
-    }),
-  );
+  await makeTokenRich(Object.values(uniswapV2Derivatives), deployer),
+    // Make integratees rich in WETH, ETH, and tokens.
+    await Promise.all(
+      integratees.map(async (integratee) => {
+        await Promise.all([
+          mocks.tokens.weth.transfer(integratee, utils.parseEther('100')),
+          makeEthRich(deployer, integratee),
+          makeTokenRich(tokens, integratee),
+        ]);
+      }),
+    );
 
   return {
     deployer,
     derivatives: {
+      chai: mocks.chaiIntegratee.address,
       compound: {
         ccomp: randomAddress(),
         cdai: randomAddress(),
@@ -205,6 +242,10 @@ export async function configureMockRelease({
         crep: randomAddress(),
         cusdc: randomAddress(),
         czrx: randomAddress(),
+      },
+      uniswapV2: {
+        mlnWeth: mocks.uniswapV2Derivatives.mlnWeth,
+        kncWeth: mocks.uniswapV2Derivatives.kncWeth,
       },
     },
     mgm,
@@ -229,14 +270,14 @@ export async function configureMockRelease({
       trackedAssetsLimit: 20, // TODO
     },
     integratees: {
-      chai: mocks.chaiIntegratee.address,
       kyber: mocks.kyberIntegratee.address,
       makerDao: {
         dai: mocks.tokens.dai.address,
         pot: mocks.chaiPriceSource.address,
       },
       uniswapV2: {
-        factory: randomAddress(), // TODO
+        router: mocks.uniswapV2Integratee.address,
+        factory: mocks.uniswapV2Integratee.address,
       },
       zeroExV2: {
         // TODO

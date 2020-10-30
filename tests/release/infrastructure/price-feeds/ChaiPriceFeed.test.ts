@@ -20,12 +20,14 @@ describe('constructor', () => {
     const {
       deployment: { chaiPriceFeed },
       config: {
+        derivatives: { chai },
         integratees: {
-          chai,
           makerDao: { pot, dai },
         },
       },
     } = await provider.snapshot(snapshot);
+
+    console.log(chai);
 
     tx = chaiPriceFeed.getChai();
     await expect(tx).resolves.toBe(chai);
@@ -43,7 +45,7 @@ describe('getRatesToUnderlyings', () => {
     const {
       deployment: { chaiPriceFeed },
       config: {
-        integratees: { chai },
+        derivatives: { chai },
       },
     } = await provider.snapshot(snapshot);
     const derivative = randomAddress();
@@ -59,8 +61,8 @@ describe('getRatesToUnderlyings', () => {
     const {
       deployment: { chaiPriceFeed, chaiPriceSource },
       config: {
+        derivatives: { chai },
         integratees: {
-          chai,
           makerDao: { dai },
         },
       },
@@ -81,7 +83,7 @@ describe('getRatesToUnderlyings', () => {
     const {
       deployment: { chaiPriceFeed, chaiPriceSource },
       config: {
-        integratees: { chai },
+        derivatives: { chai },
       },
     } = await provider.snapshot(snapshot);
 

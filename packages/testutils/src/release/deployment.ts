@@ -29,6 +29,8 @@ import {
   PermissionedVaultActionLib,
   PolicyManager,
   TrackedAssetsAdapter,
+  UniswapV2Adapter,
+  UniswapV2PoolPriceFeed,
   ValueInterpreter,
   VaultLib,
   ZeroExV2Adapter,
@@ -60,6 +62,7 @@ export interface ReleaseDeploymentConfig {
     rateAssets: BigNumberish[];
   };
   derivatives: {
+    chai: AddressLike;
     compound: {
       ccomp: AddressLike;
       cdai: AddressLike;
@@ -68,15 +71,19 @@ export interface ReleaseDeploymentConfig {
       cusdc: AddressLike;
       czrx: AddressLike;
     };
+    uniswapV2: {
+      mlnWeth: AddressLike;
+      kncWeth: AddressLike;
+    };
   };
   integratees: {
-    chai: AddressLike;
     kyber: AddressLike;
     makerDao: {
       dai: AddressLike;
       pot: AddressLike;
     };
     uniswapV2: {
+      router: AddressLike;
       factory: AddressLike;
     };
     zeroExV2: {
@@ -106,12 +113,14 @@ export interface ReleaseDeploymentOutput {
   aggregatedDerivativePriceFeed: Promise<AggregatedDerivativePriceFeed>;
   chaiPriceFeed: Promise<ChaiPriceFeed>;
   compoundPriceFeed: Promise<CompoundPriceFeed>;
+  uniswapV2PoolPriceFeed: Promise<UniswapV2PoolPriceFeed>;
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
   compoundAdapter: Promise<CompoundAdapter>;
   engineAdapter: Promise<EngineAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
+  uniswapV2Adapter: Promise<UniswapV2Adapter>;
   zeroExV2Adapter: Promise<ZeroExV2Adapter>;
   // Fees
   entranceRateBurnFee: Promise<EntranceRateBurnFee>;
@@ -235,24 +244,29 @@ export const deployRelease = describeDeployment<
   },
   // Derivative price feeds
   async aggregatedDerivativePriceFeed(config, deployment) {
+    const chaiPriceFeed = await deployment.chaiPriceFeed;
+
     const cTokens = Object.values(config.derivatives.compound);
     const compoundPriceFeeds: Array<AddressLike> = new Array(
       cTokens.length,
     ).fill(await deployment.compoundPriceFeed);
 
+    const uniswapPoolTokens = Object.values(config.derivatives.uniswapV2);
+    const uniswapPoolPriceFeeds: Array<AddressLike> = new Array(
+      uniswapPoolTokens.length,
+    ).fill(await deployment.uniswapV2PoolPriceFeed);
+
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
       config.dispatcher,
-      [config.integratees.chai].concat(cTokens),
-      [(await deployment.chaiPriceFeed) as AddressLike].concat(
-        compoundPriceFeeds,
-      ),
+      [config.derivatives.chai, ...cTokens, ...uniswapPoolTokens],
+      [chaiPriceFeed, ...compoundPriceFeeds, ...uniswapPoolPriceFeeds]
     );
   },
   async chaiPriceFeed(config) {
     return ChaiPriceFeed.deploy(
       config.deployer,
-      config.integratees.chai,
+      config.derivatives.chai,
       config.integratees.makerDao.dai,
       config.integratees.makerDao.pot,
     );
@@ -264,12 +278,15 @@ export const deployRelease = describeDeployment<
       config.derivatives.compound.ceth,
     );
   },
+  async uniswapV2PoolPriceFeed(config) {
+    return UniswapV2PoolPriceFeed.deploy(config.deployer);
+  },
   // Adapters
   async chaiAdapter(config, deployment) {
     return ChaiAdapter.deploy(
       config.deployer,
       await deployment.integrationManager,
-      config.integratees.chai,
+      config.derivatives.chai,
       config.integratees.makerDao.dai,
     );
   },
@@ -301,6 +318,14 @@ export const deployRelease = describeDeployment<
     return TrackedAssetsAdapter.deploy(
       config.deployer,
       await deployment.integrationManager,
+    );
+  },
+  async uniswapV2Adapter(config, deployment) {
+    return UniswapV2Adapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      config.integratees.uniswapV2.router,
+      config.integratees.uniswapV2.factory,
     );
   },
   async zeroExV2Adapter(config, deployment) {
@@ -384,6 +409,7 @@ export const deployRelease = describeDeployment<
       await deployment.engineAdapter,
       await deployment.kyberAdapter,
       await deployment.trackedAssetsAdapter,
+      await deployment.uniswapV2Adapter,
       await deployment.zeroExV2Adapter,
     ];
 

@@ -45,8 +45,8 @@ describe('constructor', () => {
     const {
       deployment: { chaiAdapter, integrationManager },
       config: {
+        derivatives: { chai },
         integratees: {
-          chai,
           makerDao: { dai },
         },
       },
@@ -94,8 +94,8 @@ describe('parseAssetsForMethod', () => {
     const {
       deployment: { chaiAdapter },
       config: {
+        derivatives: { chai },
         integratees: {
-          chai,
           makerDao: { dai },
         },
       },
@@ -139,8 +139,8 @@ describe('parseAssetsForMethod', () => {
     const {
       deployment: { chaiAdapter },
       config: {
+        derivatives: { chai },
         integratees: {
-          chai,
           makerDao: { dai },
         },
       },

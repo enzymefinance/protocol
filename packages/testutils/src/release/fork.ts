@@ -107,14 +107,14 @@ export async function configureForkRelease({
     },
     derivatives: mainnet.derivatives,
     integratees: {
-      chai: mainnet.chai,
       kyber: mainnet.kyber,
       makerDao: {
         dai: randomAddress(), // TODO
         pot: randomAddress(), // TODO
       },
       uniswapV2: {
-        factory: randomAddress(), // TODO
+        router: mainnet.uniswapV2.router,
+        factory: mainnet.uniswapV2.factory,
       },
       zeroExV2: {
         exchange: mainnet.zeroExV2.exchange,

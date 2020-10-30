@@ -1,5 +1,4 @@
 {
-  "chai": "0x06AF07097C9Eeb7fD685c692751D5C66dB49c215",
   "chaiPriceSource": "0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7",
   "chainlinkEthUsdAggregator": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
   "chainlinkAggregators": {
@@ -11,6 +10,7 @@
   },
   "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
   "derivatives": { 
+    "chai": "0x06AF07097C9Eeb7fD685c692751D5C66dB49c215",
     "compound": {
       "ccomp": "0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4",
       "cdai": "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
@@ -18,6 +18,10 @@
       "crep": "0x158079ee67fce2f58472a96584a73c7ab9ac95c1",
       "cusdc": "0x39aa39c021dfbae8fac545936693ac917d5e7563",
       "czrx": "0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407"
+    },
+    "uniswapV2": {
+      "mlnWeth": "0x15ab0333985FD1E289adF4fBBe19261454776642",
+      "kncWeth": "0xf49C43Ae0fAf37217bDcB00DF478cF793eDd6687"
     }
   },
   "kyber": "0x9AAb3f75489902f3a48495025729a0AF77d4b11e",
@@ -42,6 +46,10 @@
     "usdc": "0x18F77cf74D91f946dD65CC235B8100DCec741280",
     "weth": "0xe08A8b19e5722a201EaF20A6BC595eF655397bd5",
     "zrx": "0x206376e8940e42538781cd94ef024df3c1e0fd43"
+  },
+  "uniswapV2": {
+    "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+    "router": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
   },
   "zeroExV2": {
     "exchange": "0x080bf510fcbf18b91105470639e9561022937712",

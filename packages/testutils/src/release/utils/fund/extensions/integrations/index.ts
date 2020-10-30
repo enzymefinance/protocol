@@ -5,4 +5,5 @@ export * from './engineAdapter';
 export * from './kyber';
 export * from './mockGeneric';
 export * from './trackedAssets';
+export * from './uniswap';
 export * from './zeroExV2';
