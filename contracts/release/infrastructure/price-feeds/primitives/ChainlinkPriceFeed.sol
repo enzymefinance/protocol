@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../interfaces/IChainlinkAggregator.sol";
 import "../../utils/DispatcherOwnerMixin.sol";
 import "./utils/PrimitivePriceFeedBase.sol";
@@ -13,19 +13,26 @@ import "./utils/PrimitivePriceFeedBase.sol";
 contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     using SafeMath for uint256;
 
-    event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
-
-    event PrimitiveSet(
+    event AggregatorUpdated(
         address indexed primitive,
         address prevAggregator,
-        address nextAggregator,
-        RateAsset prevRateAsset,
-        RateAsset nextRateAsset
+        address nextAggregator
     );
+
+    event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
+
+    event PrimitiveAdded(address indexed primitive, address aggregator, RateAsset rateAsset);
+
+    event PrimitiveRemoved(address indexed primitive);
 
     event StaleRateThresholdSet(uint256 prevStaleRateThreshold, uint256 nextStaleRateThreshold);
 
     enum RateAsset {ETH, USD}
+
+    struct AggregatorInfo {
+        address aggregator;
+        RateAsset rateAsset;
+    }
 
     uint256 private constant ETH_PRECISION = 18;
     uint256 private constant FEED_PRECISION = 18;
@@ -33,8 +40,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
 
     address private ethUsdAggregator;
     uint256 private staleRateThreshold;
-    mapping(address => address) private primitiveToAggregator;
-    mapping(address => RateAsset) private primitiveToRateAsset;
+    mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
 
     constructor(
         address _dispatcher,
@@ -48,10 +54,22 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         WETH_TOKEN = _wethToken;
         __setStaleRateThreshold(_staleRateThreshold);
         __setEthUsdAggregator(_ethUsdAggregator);
-        __setPrimitives(_primitives, _aggregators, _rateAssets);
+        __addPrimitives(_primitives, _aggregators, _rateAssets);
     }
 
     // EXTERNAL FUNCTIONS
+
+    /// @notice Adds a list of primitives with the given aggregator and rateAsset values
+    /// @param _primitives The primitives to add
+    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
+    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
+    function addPrimitives(
+        address[] calldata _primitives,
+        address[] calldata _aggregators,
+        RateAsset[] calldata _rateAssets
+    ) external onlyDispatcherOwner {
+        __addPrimitives(_primitives, _aggregators, _rateAssets);
+    }
 
     /// @notice Gets the canonical conversion rate for a pair of assets
     /// @param _baseAsset The base asset
@@ -126,7 +144,15 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     /// @param _asset The asset to check
     /// @return isSupported_ True if the asset is a supported primitive
     function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
-        return _asset == WETH_TOKEN || primitiveToAggregator[_asset] != address(0);
+        return _asset == WETH_TOKEN || primitiveToAggregatorInfo[_asset].aggregator != address(0);
+    }
+
+    /// @notice Removes a list of primitives from the feed
+    /// @param _primitives The primitives to remove
+    function removePrimitives(address[] calldata _primitives) external onlyDispatcherOwner {
+        for (uint256 i; i < _primitives.length; i++) {
+            delete primitiveToAggregatorInfo[_primitives[i]];
+        }
     }
 
     /// @notice Sets the `ehUsdAggregator` variable value
@@ -135,25 +161,66 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         __setEthUsdAggregator(_nextEthUsdAggregator);
     }
 
-    /// @notice Sets the aggregator and rateAsset values for given primitives
-    /// @param _primitives The primitives for which to set values
-    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
-    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
-    function setPrimitives(
-        address[] calldata _primitives,
-        address[] calldata _aggregators,
-        RateAsset[] calldata _rateAssets
-    ) external onlyDispatcherOwner {
-        __setPrimitives(_primitives, _aggregators, _rateAssets);
-    }
-
     /// @notice Sets the `staleRateThreshold` variable
     /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
     function setStaleRateThreshold(uint256 _nextStaleRateThreshold) external onlyDispatcherOwner {
         __setStaleRateThreshold(_nextStaleRateThreshold);
     }
 
+    /// @notice Updates the aggregators for given primitives
+    /// @param _primitives The primitives to update
+    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
+    function updateAggregators(address[] calldata _primitives, address[] calldata _aggregators)
+        external
+        onlyDispatcherOwner
+    {
+        require(_primitives.length > 0, "updateAggregators: _primitives cannot be empty");
+        require(
+            _primitives.length == _aggregators.length,
+            "updateAggregators: Unequal _primitives and _aggregators array lengths"
+        );
+
+        for (uint256 i; i < _primitives.length; i++) {
+            address prevAggregator = primitiveToAggregatorInfo[_primitives[i]].aggregator;
+            require(_aggregators[i] != prevAggregator, "updateAggregators: Value already set");
+
+            __validateAggregator(_aggregators[i]);
+
+            primitiveToAggregatorInfo[_primitives[i]].aggregator = _aggregators[i];
+
+            emit AggregatorUpdated(_primitives[i], prevAggregator, _aggregators[i]);
+        }
+    }
+
     // PRIVATE FUNCTIONS
+
+    /// @dev Helper to add primitives to the feed
+    function __addPrimitives(
+        address[] memory _primitives,
+        address[] memory _aggregators,
+        RateAsset[] memory _rateAssets
+    ) private {
+        require(_primitives.length > 0, "__addPrimitives: _primitives cannot be empty");
+        require(
+            _primitives.length == _aggregators.length,
+            "__addPrimitives: Unequal _primitives and _aggregators array lengths"
+        );
+        require(
+            _primitives.length == _rateAssets.length,
+            "__addPrimitives: Unequal _primitives and _quoteAssets array lengths"
+        );
+
+        for (uint256 i = 0; i < _primitives.length; i++) {
+            __validateAggregator(_aggregators[i]);
+
+            primitiveToAggregatorInfo[_primitives[i]] = AggregatorInfo({
+                aggregator: _aggregators[i],
+                rateAsset: _rateAssets[i]
+            });
+
+            emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i]);
+        }
+    }
 
     /// @dev Helper to calculate the conversion rate from a _baseAsset to a _quoteAsset
     function __calcConversionRate(
@@ -162,8 +229,8 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         address _quoteAsset,
         uint256 _quoteAssetRate
     ) private view returns (uint256 rate_) {
-        RateAsset baseAssetRateAsset = getRateAssetForPrimitive(_baseAsset);
-        RateAsset quoteAssetRateAsset = getRateAssetForPrimitive(_quoteAsset);
+        RateAsset baseAssetRateAsset = primitiveToAggregatorInfo[_baseAsset].rateAsset;
+        RateAsset quoteAssetRateAsset = primitiveToAggregatorInfo[_quoteAsset].rateAsset;
 
         // If rates are both in ETH or both in USD
         if (baseAssetRateAsset == quoteAssetRateAsset) {
@@ -198,10 +265,8 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
             return (int256(10**ETH_PRECISION), now);
         }
 
-        address aggregator = primitiveToAggregator[_primitive];
-        if (aggregator == address(0)) {
-            return (0, 0);
-        }
+        address aggregator = primitiveToAggregatorInfo[_primitive].aggregator;
+        require(aggregator != address(0), "__getLatestRateData: Primitive does not exist");
 
         IChainlinkAggregator aggregatorContract = IChainlinkAggregator(aggregator);
 
@@ -223,45 +288,6 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         emit EthUsdAggregatorSet(prevEthUsdAggregator, _nextEthUsdAggregator);
     }
 
-    /// @dev Helper to set the aggregator and rateAsset values for a given primitive
-    function __setPrimitives(
-        address[] memory _primitives,
-        address[] memory _aggregators,
-        RateAsset[] memory _rateAssets
-    ) private {
-        require(_primitives.length > 0, "__setPrimitives: _primitives cannot be empty");
-        require(
-            _primitives.length == _aggregators.length,
-            "__setPrimitives: unequal _primitives and _aggregators array lengths"
-        );
-        require(
-            _primitives.length == _rateAssets.length,
-            "__setPrimitives: unequal _primitives and _quoteAssets array lengths"
-        );
-
-        for (uint256 i = 0; i < _primitives.length; i++) {
-            __validateAggregator(_aggregators[i]);
-
-            address prevAggregator = primitiveToAggregator[_primitives[i]];
-            if (_aggregators[i] != prevAggregator) {
-                primitiveToAggregator[_primitives[i]] = _aggregators[i];
-            }
-
-            RateAsset prevRateAsset = primitiveToRateAsset[_primitives[i]];
-            if (_rateAssets[i] != prevRateAsset) {
-                primitiveToRateAsset[_primitives[i]] = _rateAssets[i];
-            }
-
-            emit PrimitiveSet(
-                _primitives[i],
-                prevAggregator,
-                _aggregators[i],
-                prevRateAsset,
-                _rateAssets[i]
-            );
-        }
-    }
-
     /// @dev Helper to set the `staleRateThreshold` variable
     function __setStaleRateThreshold(uint256 _nextStaleRateThreshold) private {
         uint256 prevStaleRateThreshold = staleRateThreshold;
@@ -275,8 +301,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
     }
 
-    /// @dev Helper to validate an aggregator by checking its return values for the expected interface.
-    /// An aggregator should never be allowed to be unset, only updated to a new valid aggregator.
+    /// @dev Helper to validate an aggregator by checking its return values for the expected interface
     function __validateAggregator(address _aggregator) private view {
         require(_aggregator != address(0), "__validateAggregator: Empty _aggregator");
 
@@ -292,15 +317,15 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the aggregator variable value for a primitive
-    /// @param _primitive The primitive asset for which to get the aggregator value
-    /// @return aggregator_ The aggregator variable value
-    function getAggregatorForPrimitive(address _primitive)
+    /// @notice Gets the aggregatorInfo variable value for a primitive
+    /// @param _primitive The primitive asset for which to get the aggregatorInfo value
+    /// @return aggregatorInfo_ The aggregatorInfo value
+    function getAggregatorInfoForPrimitive(address _primitive)
         external
         view
-        returns (address aggregator_)
+        returns (AggregatorInfo memory aggregatorInfo_)
     {
-        return primitiveToAggregator[_primitive];
+        return primitiveToAggregatorInfo[_primitive];
     }
 
     /// @notice Gets the `ethUsdAggregator` variable value
@@ -319,20 +344,5 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     /// @return wethToken_ The `WETH_TOKEN` variable value
     function getWethToken() external view returns (address wethToken_) {
         return WETH_TOKEN;
-    }
-
-    /// @notice Gets the rateAsset variable value for a primitive
-    /// @param _primitive The primitive asset for which to get the aggregator value
-    /// @return rateAsset_ The rateAsset variable value
-    function getRateAssetForPrimitive(address _primitive)
-        public
-        view
-        returns (RateAsset rateAsset_)
-    {
-        if (_primitive == WETH_TOKEN) {
-            return RateAsset.ETH;
-        }
-
-        return primitiveToRateAsset[_primitive];
     }
 }
