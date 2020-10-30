@@ -8,13 +8,13 @@ import "../../vault/IVault.sol";
 interface IFundLifecycleLib {
     function activate(address, bool) external;
 
+    function configureExtensions(bytes calldata, bytes calldata) external;
+
     function destruct() external;
 
     function init(
         address,
         uint256,
-        address[] calldata,
-        bytes calldata,
-        bytes calldata
+        address[] calldata
     ) external;
 }

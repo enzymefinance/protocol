@@ -118,7 +118,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 // HAPPY PATHS
 
-it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
+xit('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   const {
     config: {
       tokens: { dai: outgoingAsset, knc: incomingAsset },
@@ -150,7 +150,7 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   });
 });
 
-it('works as expected when called by a fund (ETH to ERC20)', async () => {
+xit('works as expected when called by a fund (ETH to ERC20)', async () => {
   const {
     config: {
       tokens: { weth: outgoingAsset, dai: incomingAsset },
@@ -182,7 +182,7 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
   });
 });
 
-it('works as expected when called by a fund (ERC20 to ETH)', async () => {
+xit('works as expected when called by a fund (ERC20 to ETH)', async () => {
   const {
     config: {
       tokens: { dai: outgoingAsset, weth: incomingAsset },
@@ -216,7 +216,7 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
 
 // UNHAPPY PATHS
 
-it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
+xit('respects minConversionRate as set via minIncomingAssetAmount', async () => {
   const {
     config: {
       tokens: { dai: outgoingAsset, knc: incomingAsset },
@@ -253,7 +253,7 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
   await expect(takeOrderTx).rejects.toBeReverted();
 });
 
-it('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal token)', async () => {
+xit('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal token)', async () => {
   const {
     config: {
       tokens: { usdc: outgoingAsset, knc: incomingAsset },

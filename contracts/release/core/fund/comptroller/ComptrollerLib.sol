@@ -239,16 +239,27 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     function init(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
-        address[] calldata _allowedBuySharesCallers,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
+        address[] calldata _allowedBuySharesCallers
     ) external override {
         (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
             abi.encodeWithSelector(
                 IFundLifecycleLib.init.selector,
                 _denominationAsset,
                 _sharesActionTimelock,
-                _allowedBuySharesCallers,
+                _allowedBuySharesCallers
+            )
+        );
+        __assertLowLevelCall(success, returnData);
+    }
+
+    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
+    function configureExtensions(
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external override {
+        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
+            abi.encodeWithSelector(
+                IFundLifecycleLib.configureExtensions.selector,
                 _feeManagerConfigData,
                 _policyManagerConfigData
             )

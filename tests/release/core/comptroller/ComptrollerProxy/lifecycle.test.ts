@@ -73,8 +73,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     comptrollerLib,
     denominationAsset: deployment.tokens.weth.address,
     sharesActionTimelock,
-    feeManagerConfigData,
-    policyManagerConfigData,
   });
 
   // Deploy Mock VaultProxy
@@ -121,10 +119,6 @@ describe('init', () => {
   it('correctly handles valid call', async () => {
     const {
       comptrollerProxy,
-      feeManagerConfigData,
-      mockFeeManager,
-      mockPolicyManager,
-      policyManagerConfigData,
       sharesActionTimelock,
       supportedAsset: denominationAsset,
     } = await provider.snapshot(snapshot);
@@ -145,6 +139,67 @@ describe('init', () => {
     await expect(getSharesActionTimelockCall).resolves.toEqBigNumber(
       sharesActionTimelock,
     );
+  });
+
+  it('can only be called once', async () => {
+    const { comptrollerProxy } = await provider.snapshot(snapshot);
+
+    // ComptrollerProxy has already been created (and init() called)
+
+    const initTx = comptrollerProxy.init(randomAddress(), 0, []);
+    await expect(initTx).rejects.toBeRevertedWith('Already initialized');
+  });
+});
+
+describe('configureExtensions', () => {
+  it('can only be called by FundDeployer', async () => {
+    const { comptrollerProxy } = await provider.snapshot(snapshot);
+
+    const configureExtensionsTx = comptrollerProxy.configureExtensions(
+      '0x',
+      '0x',
+    );
+    await expect(configureExtensionsTx).rejects.toBeRevertedWith(
+      'Only FundDeployer callable',
+    );
+  });
+
+  it('correctly handles valid call (no extensions)', async () => {
+    const {
+      comptrollerProxy,
+      mockFeeManager,
+      mockFundDeployer,
+      mockPolicyManager,
+    } = await provider.snapshot(snapshot);
+
+    const configureExtensionsTx = mockFundDeployer.forward(
+      comptrollerProxy.configureExtensions,
+      '0x',
+      '0x',
+    );
+    await expect(configureExtensionsTx).resolves.toBeReceipt();
+
+    // No calls should have been made, because no extension configuration data exists
+    expect(mockFeeManager.setConfigForFund).not.toHaveBeenCalledOnContract();
+    expect(mockPolicyManager.setConfigForFund).not.toHaveBeenCalledOnContract();
+  });
+
+  it('correctly handles valid call (two extensions)', async () => {
+    const {
+      comptrollerProxy,
+      feeManagerConfigData,
+      mockFeeManager,
+      mockFundDeployer,
+      mockPolicyManager,
+      policyManagerConfigData,
+    } = await provider.snapshot(snapshot);
+
+    const configureExtensionsTx = mockFundDeployer.forward(
+      comptrollerProxy.configureExtensions,
+      feeManagerConfigData,
+      policyManagerConfigData,
+    );
+    await expect(configureExtensionsTx).resolves.toBeReceipt();
 
     // Assert expected calls
     await expect(
@@ -153,15 +208,6 @@ describe('init', () => {
     await expect(
       mockPolicyManager.setConfigForFund,
     ).toHaveBeenCalledOnContractWith(policyManagerConfigData);
-  });
-
-  it('can only be called once', async () => {
-    const { comptrollerProxy } = await provider.snapshot(snapshot);
-
-    // ComptrollerProxy has already been created (and init() called)
-
-    const initTx = comptrollerProxy.init(randomAddress(), 0, [], '0x', '0x');
-    await expect(initTx).rejects.toBeRevertedWith('Already initialized');
   });
 });
 

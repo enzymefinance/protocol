@@ -14,7 +14,8 @@ import "./IFundLifecycleLib.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A library for fund lifecycle actions
 /// @dev Ordered function calls for stages in a fund lifecycle:
-/// 1. init() - called on deployment of ComptrollerProxy
+/// 1a. init() - called on deployment of ComptrollerProxy
+/// 1b. configureExtensions() - called immediately after init()
 /// 2. activate() - called upon linking a VaultProxy to activate the fund
 /// 3. destruct() - called upon migrating to another release
 contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerEvents {
@@ -63,21 +64,18 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
         isLib = true;
     }
 
-    /// @notice Initializes a fund with config for its core and extensions
+    /// @notice Initializes a fund with its core config
     /// @param _denominationAsset The asset in which the fund's value should be denominated
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
-    /// @param _feeManagerConfigData Encoded config for fees to enable
-    /// @param _policyManagerConfigData Encoded config for policies to enable
+    /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
     function init(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
-        address[] calldata _allowedBuySharesCallers,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
+        address[] calldata _allowedBuySharesCallers
     ) external override {
         require(!isLib, "init: Only delegate callable");
         require(denominationAsset == address(0), "init: Already initialized");
@@ -99,7 +97,18 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
 
             emit AllowedBuySharesCallerAdded(_allowedBuySharesCallers[i]);
         }
+    }
 
+    /// @notice Configure the extensions of a fund
+    /// @param _feeManagerConfigData Encoded config for fees to enable
+    /// @param _policyManagerConfigData Encoded config for policies to enable
+    /// @dev No need to assert anything beyond FundDeployer access.
+    /// Called atomically with init(), but after ComptrollerLib has been deployed,
+    /// giving access to its state and interface
+    function configureExtensions(
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external override onlyFundDeployer {
         // Configure extensions
         if (_feeManagerConfigData.length > 0) {
             IExtension(FEE_MANAGER).setConfigForFund(_feeManagerConfigData);

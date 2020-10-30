@@ -16,6 +16,8 @@ interface IComptroller {
         bytes calldata
     ) external;
 
+    function configureExtensions(bytes calldata, bytes calldata) external;
+
     function destruct() external;
 
     function getVaultProxy() external view returns (address);
@@ -23,9 +25,7 @@ interface IComptroller {
     function init(
         address,
         uint256,
-        address[] calldata,
-        bytes calldata,
-        bytes calldata
+        address[] calldata
     ) external;
 
     function permissionedVaultAction(IVault.VaultAction, bytes calldata) external;

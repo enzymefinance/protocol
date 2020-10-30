@@ -50,26 +50,20 @@ export async function createComptrollerProxy({
   comptrollerLib,
   denominationAsset,
   sharesActionTimelock = 0,
-  allowedBuySharesCallers = [],
-  feeManagerConfigData = '0x',
-  policyManagerConfigData = '0x',
+  allowedBuySharesCallers = []
 }: {
   signer: Signer;
   comptrollerLib: ComptrollerLib;
   denominationAsset: AddressLike;
   sharesActionTimelock?: BigNumberish;
   allowedBuySharesCallers?: AddressLike[];
-  feeManagerConfigData?: BytesLike;
-  policyManagerConfigData?: BytesLike;
 }) {
   const constructData = comptrollerLib.abi.encodeFunctionData(
     comptrollerLib.init.fragment,
     [
       denominationAsset,
       sharesActionTimelock,
-      allowedBuySharesCallers,
-      feeManagerConfigData,
-      policyManagerConfigData,
+      allowedBuySharesCallers
     ],
   );
   const comptrollerProxyContract = await ComptrollerProxy.deploy(

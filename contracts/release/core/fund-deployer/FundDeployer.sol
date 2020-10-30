@@ -162,6 +162,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
+    /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action.
@@ -200,6 +201,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
+    /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action.
@@ -293,11 +295,16 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             IComptroller.init.selector,
             _denominationAsset,
             _sharesActionTimelock,
-            _allowedBuySharesCallers,
-            _feeManagerConfigData,
-            _policyManagerConfigData
+            _allowedBuySharesCallers
         );
         comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
+
+        if (_feeManagerConfigData.length > 0 || _policyManagerConfigData.length > 0) {
+            IComptroller(comptrollerProxy_).configureExtensions(
+                _feeManagerConfigData,
+                _policyManagerConfigData
+            );
+        }
 
         emit ComptrollerProxyDeployed(
             msg.sender,
