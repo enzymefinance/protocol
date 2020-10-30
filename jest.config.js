@@ -1,15 +1,5 @@
 const { whales } = require('@melonproject/testutils/mainnet.json');
 
-if (!process.env.MAINNET_ARCHIVE_NODE) {
-  console.warn('=====================================================');
-  console.warn('WARNING: Skipping end-to-end tests.');
-  console.warn('');
-  console.warn(
-    'You must specify a mainnet archive node endpoint (MAINNET_ARCHIVE_NODE) to run the end-to-end tests.',
-  );
-  console.warn('=====================================================');
-}
-
 const common = {
   roots: ['<rootDir>/tests'],
   globals: {
@@ -22,6 +12,7 @@ const common = {
   },
 };
 
+const fork = process.env.MAINNET_ARCHIVE_NODE || 'http://localhost:8545';
 const e2e = {
   ...common,
   displayName: 'e2e',
@@ -30,10 +21,11 @@ const e2e = {
   testEnvironmentOptions: {
     ganacheProviderOptions: {
       gasLimit: 0x989680,
+      mnemonic: 'test test test test test test test test test test test junk',
       default_balance_ether: 10000000000000,
       unlocked_accounts: Object.values(whales),
       fork_block_number: 11091788,
-      fork: process.env.MAINNET_ARCHIVE_NODE,
+      fork,
     },
   },
 };
@@ -46,5 +38,5 @@ const unit = {
 
 module.exports = {
   testTimeout: 240000,
-  projects: process.env.MAINNET_ARCHIVE_NODE ? [unit, e2e] : [unit],
+  projects: [unit, e2e],
 };

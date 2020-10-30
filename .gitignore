@@ -3,6 +3,7 @@
 
 # ignore all dotfiles except the whitelisted ones
 .*
+!.env.example
 !.changeset
 !.github
 !.gitignore
