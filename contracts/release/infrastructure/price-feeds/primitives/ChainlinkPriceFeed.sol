@@ -13,17 +13,17 @@ import "./utils/PrimitivePriceFeedBase.sol";
 contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
     using SafeMath for uint256;
 
-    event AggregatorUpdated(
-        address indexed primitive,
-        address prevAggregator,
-        address nextAggregator
-    );
-
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
 
     event PrimitiveAdded(address indexed primitive, address aggregator, RateAsset rateAsset);
 
     event PrimitiveRemoved(address indexed primitive);
+
+    event PrimitiveUpdated(
+        address indexed primitive,
+        address prevAggregator,
+        address nextAggregator
+    );
 
     event StaleRateThresholdSet(uint256 prevStaleRateThreshold, uint256 nextStaleRateThreshold);
 
@@ -54,22 +54,12 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         WETH_TOKEN = _wethToken;
         __setStaleRateThreshold(_staleRateThreshold);
         __setEthUsdAggregator(_ethUsdAggregator);
-        __addPrimitives(_primitives, _aggregators, _rateAssets);
+        if (_primitives.length > 0) {
+            __addPrimitives(_primitives, _aggregators, _rateAssets);
+        }
     }
 
     // EXTERNAL FUNCTIONS
-
-    /// @notice Adds a list of primitives with the given aggregator and rateAsset values
-    /// @param _primitives The primitives to add
-    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
-    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
-    function addPrimitives(
-        address[] calldata _primitives,
-        address[] calldata _aggregators,
-        RateAsset[] calldata _rateAssets
-    ) external onlyDispatcherOwner {
-        __addPrimitives(_primitives, _aggregators, _rateAssets);
-    }
 
     /// @notice Gets the canonical conversion rate for a pair of assets
     /// @param _baseAsset The base asset
@@ -146,14 +136,6 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         return _asset == WETH_TOKEN || primitiveToAggregatorInfo[_asset].aggregator != address(0);
     }
 
-    /// @notice Removes a list of primitives from the feed
-    /// @param _primitives The primitives to remove
-    function removePrimitives(address[] calldata _primitives) external onlyDispatcherOwner {
-        for (uint256 i; i < _primitives.length; i++) {
-            delete primitiveToAggregatorInfo[_primitives[i]];
-        }
-    }
-
     /// @notice Sets the `ehUsdAggregator` variable value
     /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
     function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyDispatcherOwner {
@@ -166,60 +148,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         __setStaleRateThreshold(_nextStaleRateThreshold);
     }
 
-    /// @notice Updates the aggregators for given primitives
-    /// @param _primitives The primitives to update
-    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
-    function updateAggregators(address[] calldata _primitives, address[] calldata _aggregators)
-        external
-        onlyDispatcherOwner
-    {
-        require(_primitives.length > 0, "updateAggregators: _primitives cannot be empty");
-        require(
-            _primitives.length == _aggregators.length,
-            "updateAggregators: Unequal _primitives and _aggregators array lengths"
-        );
-
-        for (uint256 i; i < _primitives.length; i++) {
-            address prevAggregator = primitiveToAggregatorInfo[_primitives[i]].aggregator;
-            require(_aggregators[i] != prevAggregator, "updateAggregators: Value already set");
-
-            __validateAggregator(_aggregators[i]);
-
-            primitiveToAggregatorInfo[_primitives[i]].aggregator = _aggregators[i];
-
-            emit AggregatorUpdated(_primitives[i], prevAggregator, _aggregators[i]);
-        }
-    }
-
     // PRIVATE FUNCTIONS
-
-    /// @dev Helper to add primitives to the feed
-    function __addPrimitives(
-        address[] memory _primitives,
-        address[] memory _aggregators,
-        RateAsset[] memory _rateAssets
-    ) private {
-        require(_primitives.length > 0, "__addPrimitives: _primitives cannot be empty");
-        require(
-            _primitives.length == _aggregators.length,
-            "__addPrimitives: Unequal _primitives and _aggregators array lengths"
-        );
-        require(
-            _primitives.length == _rateAssets.length,
-            "__addPrimitives: Unequal _primitives and _rateAssets array lengths"
-        );
-
-        for (uint256 i = 0; i < _primitives.length; i++) {
-            __validateAggregator(_aggregators[i]);
-
-            primitiveToAggregatorInfo[_primitives[i]] = AggregatorInfo({
-                aggregator: _aggregators[i],
-                rateAsset: _rateAssets[i]
-            });
-
-            emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i]);
-        }
-    }
 
     /// @dev Helper to calculate the conversion rate from a _baseAsset to a _quoteAsset
     function __calcConversionRate(
@@ -298,6 +227,94 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         staleRateThreshold = _nextStaleRateThreshold;
 
         emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
+    }
+
+    /////////////////////////
+    // PRIMITIVES REGISTRY //
+    /////////////////////////
+
+    /// @notice Adds a list of primitives with the given aggregator and rateAsset values
+    /// @param _primitives The primitives to add
+    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
+    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
+    function addPrimitives(
+        address[] calldata _primitives,
+        address[] calldata _aggregators,
+        RateAsset[] calldata _rateAssets
+    ) external onlyDispatcherOwner {
+        require(_primitives.length > 0, "addPrimitives: _primitives cannot be empty");
+
+        __addPrimitives(_primitives, _aggregators, _rateAssets);
+    }
+
+    /// @notice Removes a list of primitives from the feed
+    /// @param _primitives The primitives to remove
+    function removePrimitives(address[] calldata _primitives) external onlyDispatcherOwner {
+        require(_primitives.length > 0, "removePrimitives: _primitives cannot be empty");
+
+        for (uint256 i; i < _primitives.length; i++) {
+            require(
+                primitiveToAggregatorInfo[_primitives[i]].aggregator != address(0),
+                "removePrimitives: Primitive not yet added"
+            );
+
+            delete primitiveToAggregatorInfo[_primitives[i]];
+
+            emit PrimitiveRemoved(_primitives[i]);
+        }
+    }
+
+    /// @notice Updates the aggregators for given primitives
+    /// @param _primitives The primitives to update
+    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
+    function updatePrimitives(address[] calldata _primitives, address[] calldata _aggregators)
+        external
+        onlyDispatcherOwner
+    {
+        require(_primitives.length > 0, "updatePrimitives: _primitives cannot be empty");
+        require(
+            _primitives.length == _aggregators.length,
+            "updatePrimitives: Unequal _primitives and _aggregators array lengths"
+        );
+
+        for (uint256 i; i < _primitives.length; i++) {
+            address prevAggregator = primitiveToAggregatorInfo[_primitives[i]].aggregator;
+            require(prevAggregator != address(0), "updatePrimitives: Primitive not yet added");
+            require(_aggregators[i] != prevAggregator, "updatePrimitives: Value already set");
+
+            __validateAggregator(_aggregators[i]);
+
+            primitiveToAggregatorInfo[_primitives[i]].aggregator = _aggregators[i];
+
+            emit PrimitiveUpdated(_primitives[i], prevAggregator, _aggregators[i]);
+        }
+    }
+
+    /// @dev Helper to add primitives to the feed
+    function __addPrimitives(
+        address[] memory _primitives,
+        address[] memory _aggregators,
+        RateAsset[] memory _rateAssets
+    ) private {
+        require(
+            _primitives.length == _aggregators.length,
+            "__addPrimitives: Unequal _primitives and _aggregators array lengths"
+        );
+        require(
+            _primitives.length == _rateAssets.length,
+            "__addPrimitives: Unequal _primitives and _rateAssets array lengths"
+        );
+
+        for (uint256 i = 0; i < _primitives.length; i++) {
+            __validateAggregator(_aggregators[i]);
+
+            primitiveToAggregatorInfo[_primitives[i]] = AggregatorInfo({
+                aggregator: _aggregators[i],
+                rateAsset: _rateAssets[i]
+            });
+
+            emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i]);
+        }
     }
 
     /// @dev Helper to validate an aggregator by checking its return values for the expected interface
