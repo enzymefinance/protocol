@@ -3,27 +3,34 @@ import {
   contract,
   Send,
   Contract,
+  AddressLike,
+  randomAddress,
 } from '@crestproject/crestproject';
+import { utils, BigNumber, BigNumberish } from 'ethers';
 import {
   createNewFund,
   releaseStatusTypes,
   sighash,
   assertEvent,
   defaultTestDeployment,
+  encodeArgsSync,
 } from '@melonproject/testutils';
 
 // prettier-ignore
 interface MockExternalContract extends Contract<MockExternalContract> {
   functionA: Send<() => void, MockExternalContract>
   functionB: Send<() => void, MockExternalContract>
+  functionC: Send<(addr: AddressLike, num: BigNumberish) => void, MockExternalContract>
   'functionA()': Send<() => void, MockExternalContract>
   'functionB()': Send<() => void, MockExternalContract>
+  'functionC(address addr, uint256 num)': Send<(addr: AddressLike, num: BigNumberish) => void, MockExternalContract>
 }
 
 // prettier-ignore
 const MockExternalContract = contract<MockExternalContract>()`
   function functionA()
   function functionB()
+  function functionC(address addr, uint256 num)
 `;
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -45,6 +52,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const mockExternalContract = await MockExternalContract.mock(config.deployer);
   await mockExternalContract.functionA.returns(undefined);
   await mockExternalContract.functionB.returns(undefined);
+  await mockExternalContract.functionC.returns(undefined);
 
   // Register one of the vault calls, but not the other
   const unregisteredVaultCallSelector = sighash(
@@ -53,9 +61,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const registeredVaultCallSelector = sighash(
     mockExternalContract.functionA.fragment,
   );
+  const registeredVaultCallSelectorWithArgs = sighash(
+    mockExternalContract.functionC.fragment,
+  );
   await deployment.fundDeployer.registerVaultCalls(
-    [mockExternalContract.address],
-    [registeredVaultCallSelector],
+    [mockExternalContract.address, mockExternalContract.address],
+    [registeredVaultCallSelector, registeredVaultCallSelectorWithArgs],
   );
 
   return {
@@ -71,6 +82,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     },
     mockExternalContract,
     registeredVaultCallSelector,
+    registeredVaultCallSelectorWithArgs,
     unregisteredVaultCallSelector,
   };
 }
@@ -156,6 +168,7 @@ describe('vaultCallOnContract', () => {
       fund: { comptrollerProxy },
       mockExternalContract,
       registeredVaultCallSelector,
+      registeredVaultCallSelectorWithArgs,
       unregisteredVaultCallSelector,
     } = await provider.snapshot(snapshot);
 
@@ -174,6 +187,22 @@ describe('vaultCallOnContract', () => {
       '0x',
     );
     await expect(registeredCall).resolves.toBeReceipt();
-    expect(mockExternalContract.functionA).toHaveBeenCalledOnContract();
+    await expect(mockExternalContract.functionA).toHaveBeenCalledOnContract();
+
+    // The registered call with args should succeed
+    const addr = randomAddress();
+    const num = BigNumber.from(utils.randomBytes(32));
+    const callData = encodeArgsSync(['address', 'uint256'], [addr, num]);
+
+    const registeredCallWithArgs = comptrollerProxy.vaultCallOnContract(
+      mockExternalContract,
+      registeredVaultCallSelectorWithArgs,
+      callData,
+    );
+    await expect(registeredCallWithArgs).resolves.toBeReceipt();
+    await expect(mockExternalContract.functionC).toHaveBeenCalledOnContractWith(
+      addr,
+      num,
+    );
   });
 });

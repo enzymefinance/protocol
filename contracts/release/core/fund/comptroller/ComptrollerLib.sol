@@ -220,7 +220,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
             "vaultCallOnContract: Unregistered"
         );
 
-        IVault(vaultProxy).callOnContract(_contract, abi.encodeWithSelector(_selector, _callData));
+        IVault(vaultProxy).callOnContract(_contract, abi.encodePacked(_selector, _callData));
     }
 
     /// @dev Helper to check whether the release is paused and there is no local override
