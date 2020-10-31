@@ -5,12 +5,12 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../interfaces/IChainlinkAggregator.sol";
 import "../../utils/DispatcherOwnerMixin.sol";
-import "./utils/PrimitivePriceFeedBase.sol";
+import "./IPrimitivePriceFeed.sol";
 
 /// @title ChainlinkPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A price feed that uses Chainlink oracles as price sources
-contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
+contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     using SafeMath for uint256;
 
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
