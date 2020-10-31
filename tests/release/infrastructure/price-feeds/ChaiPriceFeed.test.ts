@@ -51,7 +51,7 @@ describe('getRatesToUnderlyings', () => {
     const derivative = randomAddress();
 
     tx = chaiPriceFeed.getRatesToUnderlyings(derivative);
-    await expect(tx).rejects.toBeRevertedWith('only Chai is supported');
+    await expect(tx).rejects.toBeRevertedWith('Only Chai is supported');
 
     tx = chaiPriceFeed.getRatesToUnderlyings(chai);
     await expect(tx).resolves.toBeReceipt();

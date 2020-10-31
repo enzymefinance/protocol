@@ -28,13 +28,13 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
     /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
     /// @param _derivative The derivative for which to get the rates
     /// @return underlyings_ The underlying assets for the _derivative
-    /// @return rates_ The rates for the _derivative to the _underlyings
+    /// @return rates_ The rates for the _derivative to the underlyings_
     function getRatesToUnderlyings(address _derivative)
         external
         override
         returns (address[] memory underlyings_, uint256[] memory rates_)
     {
-        require(_derivative == CHAI, "getRatesToUnderlyings: only Chai is supported");
+        require(isSupportedAsset(_derivative), "getRatesToUnderlyings: Only Chai is supported");
 
         underlyings_ = new address[](1);
         underlyings_[0] = DAI;
@@ -42,12 +42,15 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
         rates_[0] = __calcChaiRate();
     }
 
-    function isSupportedAsset(address _asset) external view override returns (bool) {
+    /// @notice Checks if an asset is supported by the price feed
+    /// @param _asset The asset to check
+    /// @return isSupported_ True if the asset is supported
+    function isSupportedAsset(address _asset) public view override returns (bool isSupported_) {
         return _asset == CHAI;
     }
 
     /// @dev Calculation based on Chai source: https://github.com/dapphub/chai/blob/master/src/chai.sol
-    function __calcChaiRate() private returns (uint256) {
+    function __calcChaiRate() private returns (uint256 chaiRate_) {
         IMakerDaoPot pot = IMakerDaoPot(DSR_POT);
         uint256 chi = (now > pot.rho()) ? pot.drip() : pot.chi();
         return chi.div(10**9); // Refactor of mul(chi, 10 ** 18) / 10 ** 27
@@ -57,15 +60,21 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
     // STATE GETTERS //
     ///////////////////
 
-    function getChai() external view returns (address) {
+    /// @notice Gets the `CHAI` variable value
+    /// @return chai_ The `CHAI` variable value
+    function getChai() external view returns (address chai_) {
         return CHAI;
     }
 
-    function getDai() external view returns (address) {
+    /// @notice Gets the `DAI` variable value
+    /// @return dai_ The `DAI` variable value
+    function getDai() external view returns (address dai_) {
         return DAI;
     }
 
-    function getDsrPot() external view returns (address) {
+    /// @notice Gets the `DSR_POT` variable value
+    /// @return dsrPot_ The `DSR_POT` variable value
+    function getDsrPot() external view returns (address dsrPot_) {
         return DSR_POT;
     }
 }
