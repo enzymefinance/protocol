@@ -420,7 +420,7 @@ describe('adapter registry', () => {
         kyberAdapter,
       ]);
       await expect(deregisterAdaptersTx).rejects.toBeRevertedWith(
-        'adapter is not registered',
+        'Adapter is not registered',
       );
     });
   });
@@ -453,7 +453,7 @@ describe('adapter registry', () => {
         constants.AddressZero,
       ]);
       await expect(registerAdaptersTx).rejects.toBeRevertedWith(
-        'adapter cannot be empty',
+        'Adapter cannot be empty',
       );
     });
 
@@ -467,7 +467,7 @@ describe('adapter registry', () => {
         chaiAdapter,
       ]);
       await expect(registerAdaptersTx).rejects.toBeRevertedWith(
-        'adapter already registered',
+        'Adapter already registered',
       );
     });
 

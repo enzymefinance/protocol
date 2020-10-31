@@ -40,7 +40,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('lend', () => {
+xdescribe('lend', () => {
   it('works as expected', async () => {
     const {
       config: {
@@ -91,7 +91,7 @@ describe('lend', () => {
   });
 });
 
-describe('redeem', () => {
+xdescribe('redeem', () => {
   it('works as expected', async () => {
     const {
       config: {
@@ -169,7 +169,7 @@ describe('redeem', () => {
   });
 });
 
-describe('takeOrder', () => {
+xdescribe('takeOrder', () => {
   it('Swap MLN for WETH directly', async () => {
     const {
       config: {

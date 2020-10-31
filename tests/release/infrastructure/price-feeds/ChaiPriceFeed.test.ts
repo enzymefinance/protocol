@@ -27,8 +27,6 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    console.log(chai);
-
     tx = chaiPriceFeed.getChai();
     await expect(tx).resolves.toBe(chai);
 

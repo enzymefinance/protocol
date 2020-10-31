@@ -261,34 +261,6 @@ describe('lend', () => {
       outgoingAssetAmounts: [daiAmount],
     });
   });
-
-  it('reverts if the incoming asset amount is too low', async () => {
-    const {
-      deployment: {
-        chaiAdapter,
-        integrationManager,
-        tokens: { dai },
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-    const daiAmount = utils.parseEther('1');
-    const minChaiAmount = utils.parseEther('2'); // Expect to receive twice as much as the current rate.
-
-    const lendTx = chaiLend({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      chaiAdapter,
-      dai,
-      daiAmount,
-      minChaiAmount,
-      seedFund: true,
-    });
-    await expect(lendTx).rejects.toBeRevertedWith(
-      'received incoming asset less than expected',
-    );
-  });
 });
 
 describe('redeem', () => {
@@ -370,29 +342,5 @@ describe('redeem', () => {
       outgoingAssets: [chai.address],
       outgoingAssetAmounts: [chaiAmount],
     });
-  });
-
-  it('reverts if the incoming asset amount is too low', async () => {
-    const {
-      deployment: { chaiAdapter, chaiIntegratee: chai, integrationManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-    const chaiAmount = utils.parseEther('1');
-    const minDaiAmount = utils.parseEther('2'); // Expect to receive twice as much as the current rate.
-
-    const redeemTx = chaiRedeem({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      chaiAdapter,
-      chai,
-      chaiAmount,
-      minDaiAmount,
-      seedFund: true,
-    });
-    await expect(redeemTx).rejects.toBeRevertedWith(
-      'received incoming asset less than expected',
-    );
   });
 });

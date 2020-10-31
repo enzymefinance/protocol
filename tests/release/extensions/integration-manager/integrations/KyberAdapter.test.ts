@@ -362,33 +362,6 @@ describe('takeOrder', () => {
     });
   });
 
-  it('reverts if the incoming asset amount is too low', async () => {
-    const {
-      deployment: {
-        kyberAdapter,
-        tokens: { mln: outgoingAsset, dai: incomingAsset },
-        integrationManager,
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    const badTakeOrderTx = kyberTakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      kyberAdapter,
-      outgoingAsset,
-      outgoingAssetAmount: utils.parseEther('1'),
-      incomingAsset,
-      minIncomingAssetAmount: utils.parseEther('1.0001'),
-      seedFund: true,
-    });
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
-      'received incoming asset less than expected',
-    );
-  });
-
   it.todo('min incoming assets works precisely with non-18 decimal tokens');
 
   it.todo('figure out a way to test many pairs and conversion rates');

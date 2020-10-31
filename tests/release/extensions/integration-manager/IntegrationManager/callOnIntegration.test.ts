@@ -4,6 +4,7 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import {
+  addTrackedAssets,
   assertEvent,
   defaultTestDeployment,
   callOnIntegrationArgs,
@@ -206,7 +207,7 @@ describe('callOnIntegration', () => {
     });
 
     await expect(badSwapTx).rejects.toBeRevertedWith(
-      'adapter is not registered',
+      'Adapter is not registered',
     );
   });
 
@@ -241,7 +242,7 @@ describe('callOnIntegration', () => {
         callArgs,
       );
     await expect(swapTx).rejects.toBeRevertedWith(
-      'spend assets arrays unequal',
+      'Spend assets arrays unequal',
     );
   });
 
@@ -276,7 +277,7 @@ describe('callOnIntegration', () => {
         callArgs,
       );
     await expect(swapTx).rejects.toBeRevertedWith(
-      'incoming assets arrays unequal',
+      'Incoming assets arrays unequal',
     );
   });
 
@@ -310,8 +311,67 @@ describe('callOnIntegration', () => {
         integrationManagerActionIds.CallOnIntegration,
         callArgs,
       );
-    await expect(swapTx).rejects.toBeRevertedWith(
-      'duplicate spend asset detected',
+    await expect(swapTx).rejects.toBeRevertedWith('Duplicate spend asset');
+  });
+
+  it('does not allow a non-spendable spend asset', async () => {
+    const {
+      deployment: {
+        chainlinkPriceFeed,
+        integrationManager,
+        mockGenericAdapter,
+        tokens: { mln: spendAsset },
+        trackedAssetsAdapter,
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    // Seed a fund with MLN and track it
+    const spendAssetAmount = utils.parseEther('1');
+    await spendAsset.transfer(vaultProxy, spendAssetAmount);
+    const trackedAssetsTx = addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets: [spendAsset],
+    });
+    await expect(trackedAssetsTx).resolves.toBeReceipt();
+
+    // Remove MLN from the price feed
+    const removePrimitivesTx = chainlinkPriceFeed.removePrimitives([
+      spendAsset,
+    ]);
+    await expect(removePrimitivesTx).resolves.toBeReceipt();
+
+    // Spending MLN should succeed since it is already tracked by the fund.
+    // Spend entire MLN balance to remove it from trackedAssets.
+    const goodSwapTx = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [spendAsset],
+      spendAssetAmounts: [spendAssetAmount],
+    });
+    await expect(goodSwapTx).resolves.toBeReceipt();
+
+    // Seed a fund with MLN but do not track it
+    await spendAsset.transfer(vaultProxy, spendAssetAmount);
+
+    // Attempting to spend MLN should fail since it is not tracked nor supported
+    const badSwapTx = mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets: [spendAsset],
+      spendAssetAmounts: [spendAssetAmount],
+    });
+    await expect(badSwapTx).rejects.toBeRevertedWith(
+      'Non-spendable spend asset',
     );
   });
 
@@ -345,12 +405,10 @@ describe('callOnIntegration', () => {
         integrationManagerActionIds.CallOnIntegration,
         callArgs,
       );
-    await expect(swapTx).rejects.toBeRevertedWith(
-      'duplicate incoming asset detected',
-    );
+    await expect(swapTx).rejects.toBeRevertedWith('Duplicate incoming asset');
   });
 
-  it('does not allow a non-receivable asset', async () => {
+  it('does not allow a non-receivable incoming asset', async () => {
     const {
       deployment: {
         mockGenericAdapter,
@@ -378,7 +436,7 @@ describe('callOnIntegration', () => {
     });
 
     await expect(badSwapTx).rejects.toBeRevertedWith(
-      'non-receivable asset detected',
+      'Non-receivable incoming asset',
     );
   });
 
@@ -407,7 +465,7 @@ describe('callOnIntegration', () => {
     });
 
     await expect(badSwapTx).rejects.toBeRevertedWith(
-      'received incoming asset less than expected',
+      'Received incoming asset less than expected',
     );
   });
 
@@ -441,7 +499,7 @@ describe('callOnIntegration', () => {
         integrationManagerActionIds.CallOnIntegration,
         callArgs,
       );
-    await expect(swapTx).rejects.toBeRevertedWith('empty spendAsset detected');
+    await expect(swapTx).rejects.toBeRevertedWith('Empty spend asset');
   });
 
   it('does not allow empty incoming asset address', async () => {
@@ -476,7 +534,7 @@ describe('callOnIntegration', () => {
         callArgs,
       );
     await expect(swapTx).rejects.toBeRevertedWith(
-      'empty incoming asset address',
+      'Empty incoming asset address',
     );
   });
 
@@ -503,7 +561,7 @@ describe('callOnIntegration', () => {
     });
 
     await expect(badSwapTx).rejects.toBeRevertedWith(
-      'empty spendAssetAmount detected',
+      'Empty spend asset amount',
     );
   });
 

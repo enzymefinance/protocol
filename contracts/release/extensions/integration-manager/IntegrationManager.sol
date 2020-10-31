@@ -387,7 +387,7 @@ contract IntegrationManager is
             bytes memory integrationData
         ) = __decodeCallOnIntegrationArgs(_callArgs);
 
-        require(adapterIsRegistered(adapter), "callOnIntegration: adapter is not registered");
+        require(adapterIsRegistered(adapter), "callOnIntegration: Adapter is not registered");
 
         // Note that expected incoming and spend assets are allowed to overlap
         // (e.g., a fee for the incomingAsset charged in a spend asset)
@@ -400,36 +400,39 @@ contract IntegrationManager is
         ) = IIntegrationAdapter(adapter).parseAssetsForMethod(selector, integrationData);
         require(
             spendAssets_.length == spendAssetAmounts_.length,
-            "__preProcessCoI: spend assets arrays unequal"
+            "__preProcessCoI: Spend assets arrays unequal"
         );
         require(
             expectedIncomingAssets_.length == minIncomingAssetAmounts_.length,
-            "__preProcessCoI: incoming assets arrays unequal"
+            "__preProcessCoI: Incoming assets arrays unequal"
         );
-        require(spendAssets_.isUniqueSet(), "__preProcessCoI: duplicate spend asset detected");
+        require(spendAssets_.isUniqueSet(), "__preProcessCoI: Duplicate spend asset");
         require(
             expectedIncomingAssets_.isUniqueSet(),
-            "__preProcessCoI: duplicate incoming asset detected"
+            "__preProcessCoI: Duplicate incoming asset"
         );
+
+        IVault vaultProxyContract = IVault(_vaultProxy);
+        IValueInterpreter valueInterpreterContract = IValueInterpreter(VALUE_INTERPRETER);
 
         preCallIncomingAssetBalances_ = new uint256[](expectedIncomingAssets_.length);
         for (uint256 i = 0; i < expectedIncomingAssets_.length; i++) {
             require(
                 expectedIncomingAssets_[i] != address(0),
-                "__preProcessCoI: empty incoming asset address detected"
+                "__preProcessCoI: Empty incoming asset address"
             );
             require(
                 minIncomingAssetAmounts_[i] > 0,
                 "__preProcessCoI: minIncomingAssetAmount must be >0"
             );
             require(
-                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(expectedIncomingAssets_[i]),
-                "__preProcessCoI: non-receivable asset detected"
+                valueInterpreterContract.isSupportedAsset(expectedIncomingAssets_[i]),
+                "__preProcessCoI: Non-receivable incoming asset"
             );
 
             // Get pre-call balance of each incoming asset.
             // If the asset is not tracked by the fund, allow the balance to default to 0.
-            if (IVault(_vaultProxy).isTrackedAsset(expectedIncomingAssets_[i])) {
+            if (vaultProxyContract.isTrackedAsset(expectedIncomingAssets_[i])) {
                 preCallIncomingAssetBalances_[i] = __getVaultAssetBalance(
                     _vaultProxy,
                     expectedIncomingAssets_[i]
@@ -440,8 +443,16 @@ contract IntegrationManager is
         // Get pre-call balances of spend assets and grant approvals to adapter
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
         for (uint256 i = 0; i < spendAssets_.length; i++) {
-            require(spendAssets_[i] != address(0), "__preProcessCoI: empty spendAsset detected");
-            require(spendAssetAmounts_[i] > 0, "__preProcessCoI: empty spendAssetAmount detected");
+            require(spendAssets_[i] != address(0), "__preProcessCoI: Empty spend asset");
+            require(spendAssetAmounts_[i] > 0, "__preProcessCoI: Empty spend asset amount");
+            // A spend asset must either be a tracked asset of the fund or a supported asset,
+            // in order to prevent seeding the fund with a malicious token and performing arbitrary
+            // actions within an adapter.
+            require(
+                vaultProxyContract.isTrackedAsset(spendAssets_[i]) ||
+                    valueInterpreterContract.isSupportedAsset(spendAssets_[i]),
+                "__preProcessCoI: Non-spendable spend asset"
+            );
 
             // If spend asset is also an incoming asset, no need to record its balance
             if (!expectedIncomingAssets_.contains(spendAssets_[i])) {
@@ -547,7 +558,7 @@ contract IntegrationManager is
                 .sub(_preCallIncomingAssetBalances[i]);
             require(
                 balanceDiff >= _minIncomingAssetAmounts[i],
-                "__reconcileCoIAssets: received incoming asset less than expected"
+                "__reconcileCoIAssets: Received incoming asset less than expected"
             );
 
             // Even if the asset's previous balance was >0, it might not have been tracked
@@ -687,7 +698,7 @@ contract IntegrationManager is
         for (uint256 i; i < _adapters.length; i++) {
             require(
                 adapterIsRegistered(_adapters[i]),
-                "deregisterAdapters: adapter is not registered"
+                "deregisterAdapters: Adapter is not registered"
             );
 
             registeredAdapters.remove(_adapters[i]);
@@ -702,11 +713,11 @@ contract IntegrationManager is
         require(_adapters.length > 0, "registerAdapters: _adapters cannot be empty");
 
         for (uint256 i; i < _adapters.length; i++) {
-            require(_adapters[i] != address(0), "registerAdapters: adapter cannot be empty");
+            require(_adapters[i] != address(0), "registerAdapters: Adapter cannot be empty");
 
             require(
                 !adapterIsRegistered(_adapters[i]),
-                "registerAdapters: adapter already registered"
+                "registerAdapters: Adapter already registered"
             );
 
             registeredAdapters.add(_adapters[i]);

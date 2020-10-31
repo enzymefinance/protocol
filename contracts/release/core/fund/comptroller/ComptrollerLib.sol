@@ -613,9 +613,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         }
     }
 
-    /// @notice Redeem a specified quantity of the sender's shares
-    /// for a proportionate slice of the fund's assets
-    /// @param _sharesQuantity The amount of shares to redeem
+    /// @dev Helper to redeem shares
     function __redeemShares(
         address _redeemer,
         uint256 _sharesQuantity,
@@ -653,7 +651,11 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
             "__redeemShares: Low balance"
         );
 
-        // Parse the payout assets given optional params to add or skip assets
+        // Parse the payout assets given optional params to add or skip assets.
+        // Note that there is no validation that the _additionalAssets are known assets to
+        // the protocol. This means that the redeemer could specify a malicious asset,
+        // but since all state-changing, user-callable functions on this contract share the
+        // non-reentrant modifier, there is nowhere to perform a reentrancy attack.
         payoutAssets_ = __parseRedemptionPayoutAssets(
             vaultProxyContract.getTrackedAssets(),
             _additionalAssets,
