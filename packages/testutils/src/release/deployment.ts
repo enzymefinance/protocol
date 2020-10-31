@@ -5,7 +5,6 @@ import {
   AggregatedDerivativePriceFeed,
   AssetBlacklist,
   AssetWhitelist,
-  BuySharesPriceFeedTolerance,
   ChaiAdapter,
   ChainlinkPriceFeed,
   ChaiPriceFeed,
@@ -372,15 +371,6 @@ export const deployRelease = describeDeployment<
     return AssetWhitelist.deploy(
       config.deployer,
       await deployment.policyManager,
-    );
-  },
-  async buySharesPriceFeedTolerance(config, deployment) {
-    return BuySharesPriceFeedTolerance.deploy(
-      config.deployer,
-      await deployment.policyManager,
-      config.integratees.uniswapV2.factory,
-      await deployment.valueInterpreter,
-      config.weth,
     );
   },
   async maxConcentration(config, deployment) {

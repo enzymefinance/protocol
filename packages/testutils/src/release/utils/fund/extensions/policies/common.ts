@@ -181,10 +181,6 @@ export async function assetWhitelistArgs(assets: AddressLike[]) {
   return encodeArgs(['address[]'], [assets]);
 }
 
-export async function buySharesPriceFeedToleranceArgs(tolerance: BigNumberish) {
-  return encodeArgs(['uint256'], [tolerance]);
-}
-
 export async function investorWhitelistArgs({
   investorsToAdd = [],
   investorsToRemove = [],
