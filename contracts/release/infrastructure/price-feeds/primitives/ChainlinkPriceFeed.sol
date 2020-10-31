@@ -86,7 +86,6 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
             return (10**FEED_PRECISION, true);
         }
 
-        // Get the latest rate data for each asset and return early if there is an invalid rate
         (int256 baseAssetRate, uint256 baseAssetRateTimestamp) = __getLatestRateData(_baseAsset);
         if (baseAssetRate <= 0) {
             return (0, false);
@@ -207,7 +206,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         );
         require(
             _primitives.length == _rateAssets.length,
-            "__addPrimitives: Unequal _primitives and _quoteAssets array lengths"
+            "__addPrimitives: Unequal _primitives and _rateAssets array lengths"
         );
 
         for (uint256 i = 0; i < _primitives.length; i++) {
@@ -262,7 +261,7 @@ contract ChainlinkPriceFeed is PrimitivePriceFeedBase, DispatcherOwnerMixin {
         returns (int256 rate_, uint256 timestamp_)
     {
         if (_primitive == WETH_TOKEN) {
-            return (int256(10**ETH_PRECISION), now);
+            return (int256(10**ETH_PRECISION), block.timestamp);
         }
 
         address aggregator = primitiveToAggregatorInfo[_primitive].aggregator;
