@@ -2,13 +2,11 @@
   "name": "@melonproject/root",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "crestproject/packages/*"
+    "packages/*"
   ],
   "preconstruct": {
     "packages": [
-      "packages/*",
-      "crestproject/packages/*"
+      "packages/*"
     ]
   },
   "scripts": {
