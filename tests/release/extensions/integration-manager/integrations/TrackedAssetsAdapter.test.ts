@@ -7,12 +7,14 @@ import {
   defaultTestDeployment,
   assertEvent,
   addTrackedAssets,
+  createNewFund,
+} from '@melonproject/testutils';
+import {
   addTrackedAssetsArgs,
   addTrackedAssetsSelector,
   assetTransferArgs,
-  createNewFund,
-  spendAssetsHandleTypes,
-} from '@melonproject/testutils';
+  SpendAssetsHandleType,
+} from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -45,10 +47,8 @@ describe('constructor', () => {
       deployment: { integrationManager, trackedAssetsAdapter },
     } = await provider.snapshot(snapshot);
 
-    const getIntegrationManagerCall = trackedAssetsAdapter.getIntegrationManager();
-    await expect(getIntegrationManagerCall).resolves.toBe(
-      integrationManager.address,
-    );
+    const getIntegrationManagerCall = await trackedAssetsAdapter.getIntegrationManager();
+    expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
   });
 });
 
@@ -58,22 +58,14 @@ describe('parseAssetsForMethod', () => {
       deployment: { trackedAssetsAdapter },
     } = await provider.snapshot(snapshot);
 
-    const args = await addTrackedAssetsArgs({
-      incomingAssets: [randomAddress()],
-    });
-    const badSelectorParseAssetsCall = trackedAssetsAdapter.parseAssetsForMethod(
-      utils.randomBytes(4),
-      args,
-    );
-    await expect(badSelectorParseAssetsCall).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    const args = addTrackedAssetsArgs([randomAddress()]);
+    await expect(
+      trackedAssetsAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    const goodSelectorParseAssetsCall = trackedAssetsAdapter.parseAssetsForMethod(
-      addTrackedAssetsSelector,
-      args,
-    );
-    await expect(goodSelectorParseAssetsCall).resolves.toBeTruthy();
+    await expect(
+      trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args),
+    ).resolves.toBeTruthy();
   });
 
   it('generates expected output', async () => {
@@ -82,9 +74,7 @@ describe('parseAssetsForMethod', () => {
     } = await provider.snapshot(snapshot);
 
     const incomingAsset = randomAddress();
-    const args = await addTrackedAssetsArgs({
-      incomingAssets: [incomingAsset],
-    });
+    const args = addTrackedAssetsArgs([incomingAsset]);
 
     const {
       spendAssetsHandleType_,
@@ -104,7 +94,7 @@ describe('parseAssetsForMethod', () => {
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
-      spendAssetsHandleType_: spendAssetsHandleTypes.None,
+      spendAssetsHandleType_: SpendAssetsHandleType.None,
       incomingAssets_: [incomingAsset],
       spendAssets_: [],
       spendAssetAmounts_: [],
@@ -120,9 +110,7 @@ describe('addTrackedAssets', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const args = await addTrackedAssetsArgs({
-      incomingAssets: [randomAddress()],
-    });
+    const args = addTrackedAssetsArgs([randomAddress()]);
 
     const transferArgs = await assetTransferArgs({
       adapter: trackedAssetsAdapter,
@@ -130,12 +118,13 @@ describe('addTrackedAssets', () => {
       encodedCallArgs: args,
     });
 
-    const badTx = trackedAssetsAdapter.addTrackedAssets(
-      vaultProxy,
-      addTrackedAssetsSelector,
-      transferArgs,
-    );
-    await expect(badTx).rejects.toBeRevertedWith(
+    await expect(
+      trackedAssetsAdapter.addTrackedAssets(
+        vaultProxy,
+        addTrackedAssetsSelector,
+        transferArgs,
+      ),
+    ).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -155,26 +144,26 @@ describe('addTrackedAssets', () => {
     await mln.transfer(vaultProxy, utils.parseEther('1'));
 
     // Adding MLN as a tracked asset should succeed
-    const goodTrackedAssetsTx = addTrackedAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      trackedAssetsAdapter,
-      incomingAssets,
-    });
-    await expect(goodTrackedAssetsTx).resolves.toBeReceipt();
+    await expect(
+      addTrackedAssets({
+        comptrollerProxy,
+        integrationManager,
+        fundOwner,
+        trackedAssetsAdapter,
+        incomingAssets,
+      }),
+    ).resolves.toBeReceipt();
 
     // Attempting to add MLN once already tracked should fail
-    const badTrackedAssetsTx = addTrackedAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      trackedAssetsAdapter,
-      incomingAssets,
-    });
-    await expect(badTrackedAssetsTx).rejects.toBeRevertedWith(
-      'Already tracked',
-    );
+    await expect(
+      addTrackedAssets({
+        comptrollerProxy,
+        integrationManager,
+        fundOwner,
+        trackedAssetsAdapter,
+        incomingAssets,
+      }),
+    ).rejects.toBeRevertedWith('Already tracked');
   });
 
   it('does not allow an asset with no balance in the vault', async () => {
@@ -190,14 +179,15 @@ describe('addTrackedAssets', () => {
     // Does NOT seed fund with MLN
 
     // Attempting to add MLN should fail without any MLN balance in the vault
-    const badTrackedAssetsTx = addTrackedAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      trackedAssetsAdapter,
-      incomingAssets: [mln],
-    });
-    await expect(badTrackedAssetsTx).rejects.toBeRevertedWith('Zero balance');
+    await expect(
+      addTrackedAssets({
+        comptrollerProxy,
+        integrationManager,
+        fundOwner,
+        trackedAssetsAdapter,
+        incomingAssets: [mln],
+      }),
+    ).rejects.toBeRevertedWith('Zero balance');
   });
 
   it('addTrackedAssets successfully', async () => {
@@ -217,7 +207,7 @@ describe('addTrackedAssets', () => {
     await mln.transfer(vaultProxy, mlnAmount);
     await weth.transfer(vaultProxy, wethAmount);
 
-    const addTrackedAssetsTx = addTrackedAssets({
+    const receipt = await addTrackedAssets({
       comptrollerProxy,
       integrationManager,
       fundOwner,
@@ -228,25 +218,20 @@ describe('addTrackedAssets', () => {
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
       'CallOnIntegrationExecutedForFund',
     );
-    await assertEvent(
-      addTrackedAssetsTx,
-      CallOnIntegrationExecutedForFundEvent,
-      {
-        comptrollerProxy: comptrollerProxy.address,
-        vaultProxy: vaultProxy.address,
-        caller: await fundOwner.getAddress(),
-        adapter: trackedAssetsAdapter.address,
-        incomingAssets: [mln.address, weth.address],
-        incomingAssetAmounts: [mlnAmount, wethAmount],
-        outgoingAssets: [],
-        outgoingAssetAmounts: [],
-      },
-    );
+
+    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+      comptrollerProxy,
+      vaultProxy,
+      caller: fundOwner,
+      adapter: trackedAssetsAdapter,
+      incomingAssets: [mln, weth],
+      incomingAssetAmounts: [mlnAmount, wethAmount],
+      outgoingAssets: [],
+      outgoingAssetAmounts: [],
+    });
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
-    await expect(
-      trackedAssets.includes(mln.address) &&
-        trackedAssets.includes(weth.address),
-    ).toBe(true);
+    expect(trackedAssets.includes(mln.address)).toBe(true);
+    expect(trackedAssets.includes(weth.address)).toBe(true);
   });
 });

@@ -30,27 +30,29 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const routesCall = comptrollerLib.getLibRoutes();
-    await expect(routesCall).resolves.toMatchObject({
-      feeManager_: feeManager.address,
-      fundDeployer_: fundDeployer.address,
-      fundLifecycleLib_: fundLifecycleLib.address,
-      integrationManager_: integrationManager.address,
-      permissionedVaultActionLib_: permissionedVaultActionLib.address,
-      policyManager_: policyManager.address,
-      valueInterpreter_: valueInterpreter.address,
-    });
+    const routesCall = await comptrollerLib.getLibRoutes();
+    expect(routesCall).toMatchFunctionOutput(
+      comptrollerLib.getLibRoutes.fragment,
+      {
+        feeManager_: feeManager,
+        fundDeployer_: fundDeployer,
+        fundLifecycleLib_: fundLifecycleLib,
+        integrationManager_: integrationManager,
+        permissionedVaultActionLib_: permissionedVaultActionLib,
+        policyManager_: policyManager,
+        valueInterpreter_: valueInterpreter,
+      },
+    );
 
-    const engineCall = comptrollerLib.getEngine();
-    await expect(engineCall).resolves.toBe(engine.address);
+    const engineCall = await comptrollerLib.getEngine();
+    expect(engineCall).toMatchAddress(engine);
 
     // The following should be default values
+    const denominationAssetCall = await comptrollerLib.getDenominationAsset();
+    expect(denominationAssetCall).toMatchAddress(constants.AddressZero);
 
-    const denominationAssetCall = comptrollerLib.getDenominationAsset();
-    await expect(denominationAssetCall).resolves.toBe(constants.AddressZero);
-
-    const vaultProxyCall = comptrollerLib.getVaultProxy();
-    await expect(vaultProxyCall).resolves.toBe(constants.AddressZero);
+    const vaultProxyCall = await comptrollerLib.getVaultProxy();
+    expect(vaultProxyCall).toMatchAddress(constants.AddressZero);
   });
 });
 

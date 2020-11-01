@@ -1,7 +1,6 @@
 import {
   EthereumTestnetProvider,
   randomAddress,
-  resolveAddress,
 } from '@crestproject/crestproject';
 import { constants } from 'ethers';
 import {
@@ -10,8 +9,8 @@ import {
   createNewFund,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
-  releaseStatusTypes,
 } from '@melonproject/testutils';
+import { ReleaseStatusTypes } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -23,6 +22,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     deployer: config.deployer,
     feeManager: deployment.feeManager,
   });
+
   const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies(
     {
       deployer: config.deployer,
@@ -45,17 +45,17 @@ describe('createNewFund', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const newFundTx = fundDeployer.createNewFund(
-      constants.AddressZero,
-      '',
-      randomAddress(),
-      0,
-      [],
-      constants.HashZero,
-      constants.HashZero,
-    );
-
-    await expect(newFundTx).rejects.toBeRevertedWith(' _owner cannot be empty');
+    await expect(
+      fundDeployer.createNewFund(
+        constants.AddressZero,
+        '',
+        randomAddress(),
+        0,
+        [],
+        constants.HashZero,
+        constants.HashZero,
+      ),
+    ).rejects.toBeRevertedWith(' _owner cannot be empty');
   });
 
   it('does not allow an empty _denominationAsset', async () => {
@@ -63,19 +63,17 @@ describe('createNewFund', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const newFundTx = fundDeployer.createNewFund(
-      randomAddress(),
-      '',
-      constants.AddressZero,
-      0,
-      [],
-      constants.HashZero,
-      constants.HashZero,
-    );
-
-    await expect(newFundTx).rejects.toBeRevertedWith(
-      ' _denominationAsset cannot be empty',
-    );
+    await expect(
+      fundDeployer.createNewFund(
+        randomAddress(),
+        '',
+        constants.AddressZero,
+        0,
+        [],
+        constants.HashZero,
+        constants.HashZero,
+      ),
+    ).rejects.toBeRevertedWith(' _denominationAsset cannot be empty');
   });
 
   it('does not allow the release to be paused', async () => {
@@ -87,18 +85,19 @@ describe('createNewFund', () => {
     } = await provider.snapshot(snapshot);
 
     // Pause the release
-    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
-    const newFundTx = fundDeployer.createNewFund(
-      randomAddress(),
-      '',
-      denominationAsset,
-      0,
-      [],
-      constants.HashZero,
-      constants.HashZero,
-    );
-    await expect(newFundTx).rejects.toBeRevertedWith('Release is paused');
+    await expect(
+      fundDeployer.createNewFund(
+        randomAddress(),
+        '',
+        denominationAsset,
+        0,
+        [],
+        constants.HashZero,
+        constants.HashZero,
+      ),
+    ).rejects.toBeRevertedWith('Release is paused');
   });
 
   it('correctly handles valid call', async () => {
@@ -136,8 +135,8 @@ describe('createNewFund', () => {
     // ]);
 
     // Assert expected calls
-    await expect(comptrollerProxy.activate).toHaveBeenCalledOnContractWith(
-      vaultProxy.address,
+    expect(comptrollerProxy.activate).toHaveBeenCalledOnContractWith(
+      vaultProxy,
       false,
     );
   });
@@ -151,17 +150,15 @@ describe('createMigratedFundConfig', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const createMigratedFundConfigTx = fundDeployer.createMigratedFundConfig(
-      constants.AddressZero,
-      0,
-      [],
-      constants.HashZero,
-      constants.HashZero,
-    );
-
-    await expect(createMigratedFundConfigTx).rejects.toBeRevertedWith(
-      '_denominationAsset cannot be empty',
-    );
+    await expect(
+      fundDeployer.createMigratedFundConfig(
+        constants.AddressZero,
+        0,
+        [],
+        constants.HashZero,
+        constants.HashZero,
+      ),
+    ).rejects.toBeRevertedWith('_denominationAsset cannot be empty');
   });
 
   it('does not allow the release to be paused', async () => {
@@ -173,18 +170,17 @@ describe('createMigratedFundConfig', () => {
     } = await provider.snapshot(snapshot);
 
     // Pause the release
-    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
-    const createMigratedFundConfigTx = fundDeployer.createMigratedFundConfig(
-      denominationAsset,
-      0,
-      [],
-      constants.HashZero,
-      constants.HashZero,
-    );
-    await expect(createMigratedFundConfigTx).rejects.toBeRevertedWith(
-      'Release is paused',
-    );
+    await expect(
+      fundDeployer.createMigratedFundConfig(
+        denominationAsset,
+        0,
+        [],
+        constants.HashZero,
+        constants.HashZero,
+      ),
+    ).rejects.toBeRevertedWith('Release is paused');
   });
 
   it('correctly handles valid call', async () => {
@@ -210,12 +206,11 @@ describe('createMigratedFundConfig', () => {
     });
 
     // Assert FundDeployer state has been set
-    const getPendingComptrollerProxyCreatorCall = fundDeployer.getPendingComptrollerProxyCreator(
+    const getPendingComptrollerProxyCreatorCall = await fundDeployer.getPendingComptrollerProxyCreator(
       comptrollerProxy,
     );
-    await expect(getPendingComptrollerProxyCreatorCall).resolves.toBe(
-      await resolveAddress(signer),
-    );
+
+    expect(getPendingComptrollerProxyCreatorCall).toMatchAddress(signer);
 
     // Assert expected calls
     expect(comptrollerProxy.activate).not.toHaveBeenCalledOnContract();

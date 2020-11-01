@@ -48,8 +48,8 @@ describe('constructor', () => {
     );
 
     const block = await provider.getBlock('latest');
-    const lastThawCall = engine.getLastThaw();
-    await expect(lastThawCall).resolves.toEqBigNumber(block.timestamp);
+    const lastThawCall = await engine.getLastThaw();
+    expect(lastThawCall).toEqBigNumber(block.timestamp);
   });
 
   it('sets state vars', async () => {
@@ -65,24 +65,24 @@ describe('constructor', () => {
         engine: { thawDelay },
       },
     } = await provider.snapshot(snapshot);
-    const getMGM = engine.getMGM();
-    await expect(getMGM).resolves.toBe(await resolveAddress(mgm));
+    const getMGM = await engine.getMGM();
+    expect(getMGM).toMatchAddress(mgm);
 
     // The deployer should initially be the dispatcher owner.
-    const dispatcherOwner = engine.getOwner();
-    await expect(dispatcherOwner).resolves.toBe(await resolveAddress(deployer));
+    const getOwner = await engine.getOwner();
+    expect(getOwner).toMatchAddress(deployer);
 
-    const getValueInterpreter = engine.getValueInterpreter();
-    await expect(getValueInterpreter).resolves.toBe(valueInterpreter.address);
+    const getValueInterpreter = await engine.getValueInterpreter();
+    expect(getValueInterpreter).toMatchAddress(valueInterpreter);
 
-    const getMlnToken = engine.getMlnToken();
-    await expect(getMlnToken).resolves.toBe(mln.address);
+    const getMlnToken = await engine.getMlnToken();
+    expect(getMlnToken).toMatchAddress(mln);
 
-    const getWethToken = engine.getWethToken();
-    await expect(getWethToken).resolves.toBe(weth.address);
+    const getWethToken = await engine.getWethToken();
+    expect(getWethToken).toMatchAddress(weth);
 
-    const getThawDelayCall = engine.getThawDelay();
-    await expect(getThawDelayCall).resolves.toEqBigNumber(thawDelay);
+    const getThawDelayCall = await engine.getThawDelay();
+    expect(getThawDelayCall).toEqBigNumber(thawDelay);
   });
 });
 
@@ -92,8 +92,7 @@ describe('setAmguPrice', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    const setAmguPriceTx = engine.setAmguPrice(1);
-    await expect(setAmguPriceTx).rejects.toBeRevertedWith(
+    await expect(engine.setAmguPrice(1)).rejects.toBeRevertedWith(
       'Only MGM can call this',
     );
   });
@@ -105,19 +104,17 @@ describe('setAmguPrice', () => {
     } = await provider.snapshot(snapshot);
 
     const preAmguPriceCall = await engine.getAmguPrice();
-    const priceToBeSet = 1;
+    const priceToBeSet = 123456;
 
-    const setAmguPriceTx = engine
-      .connect(provider.getSigner(await resolveAddress(mgm)))
-      .setAmguPrice(priceToBeSet);
-
-    const postAmguGetPriceCall = engine.getAmguPrice();
-    await expect(postAmguGetPriceCall).resolves.toEqBigNumber(priceToBeSet);
-
-    await assertEvent(setAmguPriceTx, 'AmguPriceSet', {
+    const mgmSigner = await provider.getSignerWithAddress(resolveAddress(mgm));
+    const receipt = await engine.connect(mgmSigner).setAmguPrice(priceToBeSet);
+    assertEvent(receipt, 'AmguPriceSet', {
       prevAmguPrice: preAmguPriceCall,
-      nextAmguPrice: postAmguGetPriceCall,
+      nextAmguPrice: priceToBeSet,
     });
+
+    const postAmguGetPriceCall = await engine.getAmguPrice();
+    expect(postAmguGetPriceCall).toEqBigNumber(priceToBeSet);
   });
 });
 
@@ -128,14 +125,13 @@ describe('payAmguInEther', () => {
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
-    const payAmguTx = engine.payAmguInEther.value(amount).send();
-
-    const frozenEtherAfter = engine.getFrozenEther();
-    await expect(frozenEtherAfter).resolves.toEqBigNumber(amount);
-
-    await assertEvent(payAmguTx, 'AmguPaidInEther', {
+    const receipt = await engine.payAmguInEther.value(amount).send();
+    assertEvent(receipt, 'AmguPaidInEther', {
       amount: amount,
     });
+
+    const frozenEtherAfter = await engine.getFrozenEther();
+    expect(frozenEtherAfter).toEqBigNumber(amount);
   });
 });
 
@@ -147,8 +143,9 @@ describe('thaw', () => {
 
     await engine.payAmguInEther.value(utils.parseEther('1')).send();
 
-    const thawTx = engine.thaw();
-    await expect(thawTx).rejects.toBeRevertedWith('Thaw delay has not passed');
+    await expect(engine.thaw()).rejects.toBeRevertedWith(
+      'Thaw delay has not passed',
+    );
   });
 
   it('cannot be called when frozenEther is 0', async () => {
@@ -159,8 +156,9 @@ describe('thaw', () => {
     await warpEngine(provider, engine);
     await updateChainlinkAggregator(chainlinkAggregators.mln);
 
-    const thawTx = engine.thaw();
-    await expect(thawTx).rejects.toBeRevertedWith('No frozen ETH to thaw');
+    await expect(engine.thaw()).rejects.toBeRevertedWith(
+      'No frozen ETH to thaw',
+    );
   });
 
   it('frozenEther is added to liquidEther', async () => {
@@ -174,17 +172,16 @@ describe('thaw', () => {
     await updateChainlinkAggregator(chainlinkAggregators.mln);
 
     const preLiquidEther = await engine.getLiquidEther();
-    const thawTx = engine.thaw();
-
-    await assertEvent(thawTx, 'FrozenEtherThawed', {
+    const receipt = await engine.thaw();
+    assertEvent(receipt, 'FrozenEtherThawed', {
       amount: amount,
     });
 
     const postLiquidEther = await engine.getLiquidEther();
     expect(postLiquidEther.sub(preLiquidEther)).toEqBigNumber(amount);
 
-    const frozenEthCall = engine.getFrozenEther();
-    await expect(frozenEthCall).resolves.toEqBigNumber(0);
+    const frozenEthCall = await engine.getFrozenEther();
+    expect(frozenEthCall).toEqBigNumber(0);
   });
 });
 
@@ -198,13 +195,13 @@ describe('etherTakers', () => {
       const newEtherTaker = randomAddress();
 
       // Assuming the deployer is the Dispatcher owner
-      const addEtherTakerTx = engine.addEtherTakers([newEtherTaker]);
-      await assertEvent(addEtherTakerTx, 'EtherTakerAdded', {
+      const receipt = await engine.addEtherTakers([newEtherTaker]);
+      assertEvent(receipt, 'EtherTakerAdded', {
         etherTaker: newEtherTaker,
       });
 
-      const isEtherTakerCall = engine.isEtherTaker(newEtherTaker);
-      await expect(isEtherTakerCall).resolves.toBeTruthy;
+      const isEtherTakerCall = await engine.isEtherTaker(newEtherTaker);
+      expect(isEtherTakerCall).toBeTruthy;
     });
 
     it('reverts when adding an account twice', async () => {
@@ -213,13 +210,13 @@ describe('etherTakers', () => {
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      const firstAddEtherTakerTx = engine.addEtherTakers([newEtherTaker]);
-      await expect(firstAddEtherTakerTx).resolves.toBeReceipt();
+      await expect(
+        engine.addEtherTakers([newEtherTaker]),
+      ).resolves.toBeReceipt();
 
-      const secondAddEtherTakerTx = engine.addEtherTakers([newEtherTaker]);
-      await expect(secondAddEtherTakerTx).rejects.toBeRevertedWith(
-        'Account has already been added',
-      );
+      await expect(
+        engine.addEtherTakers([newEtherTaker]),
+      ).rejects.toBeRevertedWith('Account has already been added');
     });
 
     it('Can only be called by the dispatcher owner', async () => {
@@ -229,10 +226,9 @@ describe('etherTakers', () => {
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      const addEtherTakerTx = engine
-        .connect(randomUser)
-        .addEtherTakers([newEtherTaker]);
-      await expect(addEtherTakerTx).rejects.toBeRevertedWith(
+      await expect(
+        engine.connect(randomUser).addEtherTakers([newEtherTaker]),
+      ).rejects.toBeRevertedWith(
         'Only the Dispatcher owner can call this function',
       );
     });
@@ -247,13 +243,13 @@ describe('etherTakers', () => {
 
       await engine.addEtherTakers([newEtherTaker]);
 
-      const removeEtherTakerTx = engine.removeEtherTakers([newEtherTaker]);
-      const isEtherTakerCall = engine.isEtherTaker(newEtherTaker);
-      await expect(isEtherTakerCall).resolves.toBeFalsy;
-
-      await assertEvent(removeEtherTakerTx, 'EtherTakerRemoved', {
+      const receipt = await engine.removeEtherTakers([newEtherTaker]);
+      assertEvent(receipt, 'EtherTakerRemoved', {
         etherTaker: newEtherTaker,
       });
+
+      const isEtherTakerCall = await engine.isEtherTaker(newEtherTaker);
+      expect(isEtherTakerCall).toBeFalsy;
     });
 
     it('reverts when removing a non existing account ', async () => {
@@ -262,11 +258,9 @@ describe('etherTakers', () => {
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      const removeEtherTakerTx = engine.removeEtherTakers([newEtherTaker]);
-
-      await expect(removeEtherTakerTx).rejects.toBeRevertedWith(
-        'Account is not an etherTaker',
-      );
+      await expect(
+        engine.removeEtherTakers([newEtherTaker]),
+      ).rejects.toBeRevertedWith('Account is not an etherTaker');
     });
 
     it('Can only be called by the Dispatcher owner', async () => {
@@ -276,11 +270,9 @@ describe('etherTakers', () => {
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      const removeEtherTakersTx = engine
-        .connect(randomUser)
-        .removeEtherTakers([newEtherTaker]);
-
-      await expect(removeEtherTakersTx).rejects.toBeRevertedWith(
+      await expect(
+        engine.connect(randomUser).removeEtherTakers([newEtherTaker]),
+      ).rejects.toBeRevertedWith(
         'Only the Dispatcher owner can call this function',
       );
     });
@@ -295,9 +287,9 @@ describe('calcPremiumPercent', () => {
 
     await seedAndThawEngine(provider, engine, utils.parseEther('0.99'));
     await updateChainlinkAggregator(chainlinkAggregators.mln);
-    const premiumPercentCall = engine.calcPremiumPercent();
 
-    await expect(premiumPercentCall).resolves.toEqBigNumber(0);
+    const premiumPercentCall = await engine.calcPremiumPercent();
+    expect(premiumPercentCall).toEqBigNumber(0);
   });
 
   it('returns 5 if liquidEther is 1 ether', async () => {
@@ -307,9 +299,9 @@ describe('calcPremiumPercent', () => {
 
     await seedAndThawEngine(provider, engine, utils.parseEther('1'));
     await updateChainlinkAggregator(chainlinkAggregators.mln);
-    const premiumPercentCall = engine.calcPremiumPercent();
 
-    await expect(premiumPercentCall).resolves.toEqBigNumber(5);
+    const premiumPercentCall = await engine.calcPremiumPercent();
+    expect(premiumPercentCall).toEqBigNumber(5);
   });
 
   it('returns 10 if liquidEther is 5 ether', async () => {
@@ -319,9 +311,9 @@ describe('calcPremiumPercent', () => {
 
     await seedAndThawEngine(provider, engine, utils.parseEther('5'));
     await updateChainlinkAggregator(chainlinkAggregators.mln);
-    const premiumPercentCall = engine.calcPremiumPercent();
 
-    await expect(premiumPercentCall).resolves.toEqBigNumber(10);
+    const premiumPercentCall = await engine.calcPremiumPercent();
+    expect(premiumPercentCall).toEqBigNumber(10);
   });
 
   it('returns 15 if liquidEther is >= 10 ether', async () => {
@@ -331,9 +323,9 @@ describe('calcPremiumPercent', () => {
 
     await seedAndThawEngine(provider, engine, utils.parseEther('10'));
     await updateChainlinkAggregator(chainlinkAggregators.mln);
-    const premiumPercentCall = engine.calcPremiumPercent();
 
-    await expect(premiumPercentCall).resolves.toEqBigNumber(15);
+    const premiumPercentCall = await engine.calcPremiumPercent();
+    expect(premiumPercentCall).toEqBigNumber(15);
   });
 });
 
@@ -352,13 +344,16 @@ describe('calcEthOutputForMlnInput', () => {
       true,
     );
 
-    const calcEthOutput = engine.calcEthOutputForMlnInput
+    const calcEthOutput = await engine.calcEthOutputForMlnInput
       .args(expectedOutput)
       .call();
-    await expect(calcEthOutput).resolves.toMatchObject({
-      ethAmount_: expectedOutput,
-      isValidRate_: true,
-    });
+    expect(calcEthOutput).toMatchFunctionOutput(
+      engine.calcEthOutputForMlnInput.fragment,
+      {
+        ethAmount_: expectedOutput,
+        isValidRate_: true,
+      },
+    );
   });
 });
 
@@ -375,37 +370,32 @@ describe('sellAndBurnMln', () => {
 
     const mlnAmount = utils.parseEther('1');
     const ethAmountWithPremium = utils.parseEther('1.05');
-    const deployerAddress = await resolveAddress(deployer);
 
     await engine.addEtherTakers([deployer]);
     await seedAndThawEngine(provider, engine, ethAmountWithPremium);
     await updateChainlinkAggregator(chainlinkAggregators.mln);
 
-    const preMlnBalance = await mln.balanceOf(deployerAddress);
-    await mln.approve(engine.address, mlnAmount);
+    const preMlnBalance = await mln.balanceOf(deployer);
+    await mln.approve(engine, mlnAmount);
 
     // Check ETH balance right before doing the tx
     const preEthBalance = await deployer.getBalance();
-    const sellAndBurnMlnTx = engine.sellAndBurnMln(mlnAmount);
-
-    const ethGasSpent = (await sellAndBurnMlnTx).gasUsed.mul(
-      await deployer.getGasPrice(),
-    );
+    const receipt = await engine.sellAndBurnMln(mlnAmount);
+    assertEvent(receipt, 'MlnSoldAndBurned', {
+      mlnAmount: mlnAmount,
+      ethAmount: ethAmountWithPremium,
+    });
 
     // Check ETH Balance was received as expected (taking gas into account)
+    const ethGasSpent = receipt.gasUsed.mul(await deployer.getGasPrice());
     const postSellEthBalance = await deployer.getBalance();
     expect(postSellEthBalance).toEqBigNumber(
       preEthBalance.sub(ethGasSpent).add(ethAmountWithPremium),
     );
 
     // Check MLN Balance was spent
-    const postMlnBalance = await mln.balanceOf(deployerAddress);
-    await expect(postMlnBalance).toEqBigNumber(preMlnBalance.sub(mlnAmount));
-
-    await assertEvent(sellAndBurnMlnTx, 'MlnSoldAndBurned', {
-      mlnAmount: mlnAmount,
-      ethAmount: ethAmountWithPremium,
-    });
+    const postMlnBalance = await mln.balanceOf(deployer);
+    expect(postMlnBalance).toEqBigNumber(preMlnBalance.sub(mlnAmount));
   });
 
   it('reverts if sender is not an authorized ether taker', async () => {
@@ -413,9 +403,9 @@ describe('sellAndBurnMln', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    const failSellBurnTx = engine.sellAndBurnMln(utils.parseEther('1'));
-
-    await expect(failSellBurnTx).rejects.toBeRevertedWith('Unauthorized');
+    await expect(
+      engine.sellAndBurnMln(utils.parseEther('1')),
+    ).rejects.toBeRevertedWith('Unauthorized');
   });
 
   it('reverts if MLN/ETH received from ValueInterpreter is not valid rate', async () => {
@@ -435,8 +425,9 @@ describe('sellAndBurnMln', () => {
     );
 
     // Returning an invalid rate should cause the tx to fail
-    const failSellBurnTx = engine.sellAndBurnMln(utils.parseEther('1'));
-    await expect(failSellBurnTx).rejects.toBeRevertedWith('Invalid rate');
+    await expect(
+      engine.sellAndBurnMln(utils.parseEther('1')),
+    ).rejects.toBeRevertedWith('Invalid rate');
   });
 
   it('reverts if mlnAmount value is greater than available liquidEther', async () => {
@@ -452,9 +443,7 @@ describe('sellAndBurnMln', () => {
     await updateChainlinkAggregator(chainlinkAggregators.mln);
     await engine.addEtherTakers([deployer]);
 
-    const failSellBurnTx = engine.sellAndBurnMln(mlnAmount);
-
-    await expect(failSellBurnTx).rejects.toBeRevertedWith(
+    await expect(engine.sellAndBurnMln(mlnAmount)).rejects.toBeRevertedWith(
       'Not enough liquid ether',
     );
   });
@@ -471,12 +460,8 @@ describe('sellAndBurnMln', () => {
     await mockValueInterpreter.calcCanonicalAssetValue.returns(0, true);
 
     const mlnAmount = utils.parseEther('1');
-    const deployerAddress = await resolveAddress(deployer);
-
-    await engine.addEtherTakers([deployerAddress]);
-    const failSellBurnTx = engine.sellAndBurnMln(mlnAmount);
-
-    await expect(failSellBurnTx).rejects.toBeRevertedWith(
+    await engine.addEtherTakers([deployer]);
+    await expect(engine.sellAndBurnMln(mlnAmount)).rejects.toBeRevertedWith(
       'MLN quantity too low',
     );
   });

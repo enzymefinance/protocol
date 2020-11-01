@@ -4,13 +4,16 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { IMigrationHookHandler, MockVaultLib } from '@melonproject/protocol';
+import {
+  IMigrationHookHandler,
+  MockVaultLib,
+  ReleaseStatusTypes,
+} from '@melonproject/protocol';
 import {
   defaultTestDeployment,
   createMigratedFundConfig,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
-  releaseStatusTypes,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -41,10 +44,11 @@ async function snapshot(provider: EthereumTestnetProvider) {
     randomAddress(),
     '',
   );
-  const vaultProxyDeployedEvent = extractEvent(
-    receipt,
-    deployment.dispatcher.abi.getEvent('VaultProxyDeployed'),
-  )[0];
+
+  const eventFragment = deployment.dispatcher.abi.getEvent(
+    'VaultProxyDeployed',
+  );
+  const vaultProxyDeployedEvent = extractEvent(receipt, eventFragment)[0];
   const vaultProxyAddress = vaultProxyDeployedEvent.args.vaultProxy;
 
   // Set real fund deployer on Dispatcher
@@ -102,10 +106,11 @@ describe('signalMigration', () => {
       denominationAsset,
     });
 
-    const signalMigrationTx = fundDeployer
-      .connect(randomUser)
-      .signalMigration(vaultProxyAddress, comptrollerProxy);
-    await expect(signalMigrationTx).rejects.toBeRevertedWith(
+    await expect(
+      fundDeployer
+        .connect(randomUser)
+        .signalMigration(vaultProxyAddress, comptrollerProxy),
+    ).rejects.toBeRevertedWith(
       'Only the ComptrollerProxy creator can call this function',
     );
   });
@@ -126,10 +131,11 @@ describe('signalMigration', () => {
       denominationAsset,
     });
 
-    const signalMigrationTx = fundDeployer
-      .connect(randomComptrollerProxyCreator)
-      .signalMigration(vaultProxyAddress, comptrollerProxy);
-    await expect(signalMigrationTx).rejects.toBeRevertedWith(
+    await expect(
+      fundDeployer
+        .connect(randomComptrollerProxyCreator)
+        .signalMigration(vaultProxyAddress, comptrollerProxy),
+    ).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
@@ -143,14 +149,13 @@ describe('signalMigration', () => {
     } = await provider.snapshot(snapshot);
 
     // Pause the release
-    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
-    const signalMigrationTx = fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-    await expect(signalMigrationTx).rejects.toBeRevertedWith(
-      'Release is paused',
-    );
+    await expect(
+      fundDeployer
+        .connect(fundOwner)
+        .signalMigration(vaultProxyAddress, nextComptrollerProxy),
+    ).rejects.toBeRevertedWith('Release is paused');
   });
 
   it('correctly handles valid call', async () => {
@@ -161,16 +166,15 @@ describe('signalMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    const signalMigrationTx = fundDeployer
+    await fundDeployer
       .connect(fundOwner)
       .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-    await expect(signalMigrationTx).resolves.toBeReceipt();
 
     // Assert expected calls
-    await expect(dispatcher.signalMigration).toHaveBeenCalledOnContractWith(
+    expect(dispatcher.signalMigration).toHaveBeenCalledOnContractWith(
       vaultProxyAddress,
-      nextComptrollerProxy.address,
-      vaultLib.address,
+      nextComptrollerProxy,
+      vaultLib,
       false,
     );
   });
@@ -195,19 +199,17 @@ describe('executeMigration', () => {
       denominationAsset,
     });
 
-    const signalMigrationTx = fundDeployer
+    await fundDeployer
       .connect(fundOwner)
       .signalMigration(vaultProxyAddress, comptrollerProxy);
-    await expect(signalMigrationTx).resolves.toBeReceipt();
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationTx = fundDeployer
-      .connect(randomUser)
-      .executeMigration(vaultProxyAddress);
-    await expect(executeMigrationTx).rejects.toBeRevertedWith(
+    await expect(
+      fundDeployer.connect(randomUser).executeMigration(vaultProxyAddress),
+    ).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
@@ -225,14 +227,11 @@ describe('executeMigration', () => {
       .signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
     // Pause the release
-    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
-    const executeMigrationTx = fundDeployer
-      .connect(fundOwner)
-      .executeMigration(vaultProxyAddress);
-    await expect(executeMigrationTx).rejects.toBeRevertedWith(
-      'Release is paused',
-    );
+    await expect(
+      fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress),
+    ).rejects.toBeRevertedWith('Release is paused');
   });
 
   it('correctly handles valid call', async () => {
@@ -243,34 +242,30 @@ describe('executeMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    const signalMigrationTx = fundDeployer
+    await fundDeployer
       .connect(fundOwner)
       .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-    await expect(signalMigrationTx).resolves.toBeReceipt();
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationTx = fundDeployer
-      .connect(fundOwner)
-      .executeMigration(vaultProxyAddress);
-    await expect(executeMigrationTx).resolves.toBeReceipt();
+    await fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress);
 
     // Assert expected state changes
-    const getPendingComptrollerProxyCreatorCall = fundDeployer.getPendingComptrollerProxyCreator(
+    const getPendingComptrollerProxyCreatorCall = await fundDeployer.getPendingComptrollerProxyCreator(
       nextComptrollerProxy,
     );
-    await expect(getPendingComptrollerProxyCreatorCall).resolves.toBe(
+    expect(getPendingComptrollerProxyCreatorCall).toMatchAddress(
       constants.AddressZero,
     );
 
     // Assert expected calls
-    await expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(
+    expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(
       vaultProxyAddress,
       false,
     );
-    await expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(
+    expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(
       vaultProxyAddress,
       true,
     );
@@ -295,15 +290,13 @@ describe('cancelMigration', () => {
       denominationAsset,
     });
 
-    const signalMigrationTx = fundDeployer
+    await fundDeployer
       .connect(fundOwner)
       .signalMigration(vaultProxyAddress, comptrollerProxy);
-    await expect(signalMigrationTx).resolves.toBeReceipt();
 
-    const cancelMigrationTx = fundDeployer
-      .connect(randomUser)
-      .cancelMigration(vaultProxyAddress);
-    await expect(cancelMigrationTx).rejects.toBeRevertedWith(
+    await expect(
+      fundDeployer.connect(randomUser).cancelMigration(vaultProxyAddress),
+    ).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
@@ -321,14 +314,11 @@ describe('cancelMigration', () => {
       .signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
     // Pause the release
-    await fundDeployer.setReleaseStatus(releaseStatusTypes.Paused);
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
-    const cancelMigrationTx = fundDeployer
-      .connect(fundOwner)
-      .cancelMigration(vaultProxyAddress);
-    await expect(cancelMigrationTx).rejects.toBeRevertedWith(
-      'Release is paused',
-    );
+    await expect(
+      fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress),
+    ).rejects.toBeRevertedWith('Release is paused');
   });
 
   it('correctly handles valid call', async () => {
@@ -339,18 +329,14 @@ describe('cancelMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    const signalMigrationTx = fundDeployer
+    await fundDeployer
       .connect(fundOwner)
       .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-    await expect(signalMigrationTx).resolves.toBeReceipt();
 
-    const cancelMigrationTx = fundDeployer
-      .connect(fundOwner)
-      .cancelMigration(vaultProxyAddress);
-    await expect(cancelMigrationTx).resolves.toBeReceipt();
+    await fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress);
 
     // Assert expected calls
-    await expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(
+    expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(
       vaultProxyAddress,
       false,
     );
@@ -373,22 +359,25 @@ describe('emergency functions', () => {
       await mockPrevFundDeployer.preSignalMigrationOriginHook.reverts(
         revertReason,
       );
-      const badSignalMigrationTx = fundDeployer
-        .connect(fundOwner)
-        .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-      await expect(badSignalMigrationTx).rejects.toBeRevertedWith(revertReason);
+
+      await expect(
+        fundDeployer
+          .connect(fundOwner)
+          .signalMigration(vaultProxyAddress, nextComptrollerProxy),
+      ).rejects.toBeRevertedWith(revertReason);
 
       // Bypassing failing hooks should allow the call to succeed
-      const goodSignalMigrationTx = fundDeployer
-        .connect(fundOwner)
-        .signalMigrationEmergency(vaultProxyAddress, nextComptrollerProxy);
-      await expect(goodSignalMigrationTx).resolves.toBeReceipt();
+      await expect(
+        fundDeployer
+          .connect(fundOwner)
+          .signalMigrationEmergency(vaultProxyAddress, nextComptrollerProxy),
+      ).resolves.toBeReceipt();
 
       // Assert expected calls
-      await expect(dispatcher.signalMigration).toHaveBeenCalledOnContractWith(
+      expect(dispatcher.signalMigration).toHaveBeenCalledOnContractWith(
         vaultProxyAddress,
-        nextComptrollerProxy.address,
-        vaultLib.address,
+        nextComptrollerProxy,
+        vaultLib,
         true,
       );
     });
@@ -404,10 +393,9 @@ describe('emergency functions', () => {
         vaultProxyAddress,
       } = await provider.snapshot(snapshot);
 
-      const signalMigrationTx = fundDeployer
+      await fundDeployer
         .connect(fundOwner)
         .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-      await expect(signalMigrationTx).resolves.toBeReceipt();
 
       // Warp to migratable time
       const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -416,27 +404,27 @@ describe('emergency functions', () => {
       // Set an executeMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
       await mockPrevFundDeployer.preMigrateOriginHook.reverts(revertReason);
-      const badExecuteMigrationTx = fundDeployer
-        .connect(fundOwner)
-        .executeMigration(vaultProxyAddress);
-      await expect(badExecuteMigrationTx).rejects.toBeRevertedWith(
-        revertReason,
-      );
+      await expect(
+        fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress),
+      ).rejects.toBeRevertedWith(revertReason);
 
       // Bypassing failing hooks should allow the call to succeed
-      const goodExecuteMigrationTx = fundDeployer
-        .connect(fundOwner)
-        .executeMigrationEmergency(vaultProxyAddress);
-      await expect(goodExecuteMigrationTx).resolves.toBeReceipt();
+      await expect(
+        fundDeployer
+          .connect(fundOwner)
+          .executeMigrationEmergency(vaultProxyAddress),
+      ).resolves.toBeReceipt();
 
       // Assert expected calls
-      await expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(
+      expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(
         vaultProxyAddress,
         true,
       );
-      await expect(
-        nextComptrollerProxy.activate,
-      ).toHaveBeenCalledOnContractWith(vaultProxyAddress, true);
+
+      expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(
+        vaultProxyAddress,
+        true,
+      );
     });
   });
 
@@ -450,29 +438,29 @@ describe('emergency functions', () => {
         vaultProxyAddress,
       } = await provider.snapshot(snapshot);
 
-      const signalMigrationTx = fundDeployer
+      await fundDeployer
         .connect(fundOwner)
         .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-      await expect(signalMigrationTx).resolves.toBeReceipt();
 
       // Set a cancelMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
       await mockPrevFundDeployer.postCancelMigrationOriginHook.reverts(
         revertReason,
       );
-      const badCancelMigrationTx = fundDeployer
-        .connect(fundOwner)
-        .cancelMigration(vaultProxyAddress);
-      await expect(badCancelMigrationTx).rejects.toBeRevertedWith(revertReason);
+
+      await expect(
+        fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress),
+      ).rejects.toBeRevertedWith(revertReason);
 
       // Bypassing failing hooks should allow the call to succeed
-      const goodCancelMigrationTx = fundDeployer
-        .connect(fundOwner)
-        .cancelMigrationEmergency(vaultProxyAddress);
-      await expect(goodCancelMigrationTx).resolves.toBeReceipt();
+      await expect(
+        fundDeployer
+          .connect(fundOwner)
+          .cancelMigrationEmergency(vaultProxyAddress),
+      ).resolves.toBeReceipt();
 
       // Assert expected calls
-      await expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(
+      expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(
         vaultProxyAddress,
         true,
       );

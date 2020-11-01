@@ -5,16 +5,13 @@ import {
 } from '@crestproject/crestproject';
 import {
   AssetWhitelist,
+  assetWhitelistArgs,
   ComptrollerLib,
+  PolicyHook,
+  validateRulePostCoIArgs,
   VaultLib,
 } from '@melonproject/protocol';
-import {
-  defaultTestDeployment,
-  assertEvent,
-  assetWhitelistArgs,
-  policyHooks,
-  validateRulePostCoIArgs,
-} from '@melonproject/testutils';
+import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -47,6 +44,7 @@ async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
   await mockComptrollerProxy.getDenominationAsset.returns(
     denominationAssetAddress,
   );
+
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   return {
@@ -77,7 +75,7 @@ async function snapshotWithConfiguredStandalonePolicy(
   } = await provider.snapshot(snapshotWithStandalonePolicy);
 
   const permissionedAssetWhitelist = assetWhitelist.connect(EOAPolicyManager);
-  const assetWhitelistConfig = await assetWhitelistArgs(whitelistedAssets);
+  const assetWhitelistConfig = assetWhitelistArgs(whitelistedAssets);
   await permissionedAssetWhitelist.addFundSettings(
     mockComptrollerProxy,
     assetWhitelistConfig,
@@ -99,12 +97,12 @@ describe('constructor', () => {
       deployment: { policyManager, assetWhitelist },
     } = await provider.snapshot(snapshot);
 
-    const getPolicyManagerCall = assetWhitelist.getPolicyManager();
-    await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
+    const getPolicyManagerCall = await assetWhitelist.getPolicyManager();
+    expect(getPolicyManagerCall).toMatchAddress(policyManager);
 
-    const implementedHooksCall = assetWhitelist.implementedHooks();
-    await expect(implementedHooksCall).resolves.toMatchObject([
-      policyHooks.PostCallOnIntegration,
+    const implementedHooksCall = await assetWhitelist.implementedHooks();
+    expect(implementedHooksCall).toMatchObject([
+      PolicyHook.PostCallOnIntegration,
     ]);
   });
 });
@@ -117,15 +115,14 @@ describe('addFundSettings', () => {
       whitelistedAssets,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const assetWhitelistConfig = await assetWhitelistArgs(whitelistedAssets);
-    const addFundSettingsTx = assetWhitelist.addFundSettings(
-      mockComptrollerProxy,
-      assetWhitelistConfig,
-    );
+    const assetWhitelistConfig = assetWhitelistArgs(whitelistedAssets);
 
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'Only the PolicyManager can make this call',
-    );
+    await expect(
+      assetWhitelist.addFundSettings(
+        mockComptrollerProxy,
+        assetWhitelistConfig,
+      ),
+    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('requires that the denomination asset be whitelisted', async () => {
@@ -137,16 +134,15 @@ describe('addFundSettings', () => {
       whitelistedAssets,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const assetWhitelistConfig = await assetWhitelistArgs(
+    const assetWhitelistConfig = assetWhitelistArgs(
       whitelistedAssets.filter((asset) => asset != denominationAssetAddress),
     );
-    const addFundSettingsTx = assetWhitelist
-      .connect(EOAPolicyManager)
-      .addFundSettings(mockComptrollerProxy, assetWhitelistConfig);
 
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'must whitelist denominationAsset',
-    );
+    await expect(
+      assetWhitelist
+        .connect(EOAPolicyManager)
+        .addFundSettings(mockComptrollerProxy, assetWhitelistConfig),
+    ).rejects.toBeRevertedWith('must whitelist denominationAsset');
   });
 
   it('sets initial config values for fund and fires events', async () => {
@@ -157,20 +153,20 @@ describe('addFundSettings', () => {
       EOAPolicyManager,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const assetWhitelistConfig = await assetWhitelistArgs(whitelistedAssets);
-    const addFundSettingsTx = assetWhitelist
+    const assetWhitelistConfig = assetWhitelistArgs(whitelistedAssets);
+    const receipt = await assetWhitelist
       .connect(EOAPolicyManager)
       .addFundSettings(mockComptrollerProxy, assetWhitelistConfig);
 
-    // List should be the whitelisted assets
-    const getListCall = assetWhitelist.getList(mockComptrollerProxy);
-    await expect(getListCall).resolves.toMatchObject(whitelistedAssets);
-
     // Assert the AddressesAdded event was emitted
-    await assertEvent(addFundSettingsTx, 'AddressesAdded', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'AddressesAdded', {
+      comptrollerProxy: mockComptrollerProxy,
       items: whitelistedAssets,
     });
+
+    // List should be the whitelisted assets
+    const getListCall = await assetWhitelist.getList(mockComptrollerProxy);
+    expect(getListCall).toMatchObject(whitelistedAssets);
   });
 });
 
@@ -180,14 +176,9 @@ describe('updateFundSettings', () => {
       snapshotWithStandalonePolicy,
     );
 
-    const updateFundSettingsTx = assetWhitelist.updateFundSettings(
-      randomAddress(),
-      randomAddress(),
-      '0x',
-    );
-    await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
-      'Updates not allowed for this policy',
-    );
+    await expect(
+      assetWhitelist.updateFundSettings(randomAddress(), randomAddress(), '0x'),
+    ).rejects.toBeRevertedWith('Updates not allowed for this policy');
   });
 });
 
@@ -202,24 +193,18 @@ describe('activateForFund', () => {
 
     // Activation should pass if trackedAssets are only whitelisted assets
     await mockVaultProxy.getTrackedAssets.returns(whitelistedAssets);
-    const goodActivateForFundTx = assetWhitelist.activateForFund(
-      mockComptrollerProxy,
-      mockVaultProxy,
-    );
-    await expect(goodActivateForFundTx).resolves.toBeReceipt();
+    await expect(
+      assetWhitelist.activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).resolves.toBeReceipt();
 
     // Setting a non-whitelisted asset as a trackedAsset should make activation fail
     await mockVaultProxy.getTrackedAssets.returns([
       whitelistedAssets[0],
       randomAddress(),
     ]);
-    const badActivateForFundTx = assetWhitelist.activateForFund(
-      mockComptrollerProxy,
-      mockVaultProxy,
-    );
-    await expect(badActivateForFundTx).rejects.toBeRevertedWith(
-      'non-whitelisted asset detected',
-    );
+    await expect(
+      assetWhitelist.activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).rejects.toBeRevertedWith('non-whitelisted asset detected');
   });
 });
 
@@ -233,23 +218,25 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the incoming assets arg matters for this policy
-    const postCoIArgs = await validateRulePostCoIArgs(
-      constants.AddressZero,
-      utils.randomBytes(4),
-      [whitelistedAssets[0]], // good incoming asset
-      [],
-      [],
-      [],
-    );
-    const validateRuleCall = assetWhitelist.validateRule
+    const postCoIArgs = validateRulePostCoIArgs({
+      adapter: constants.AddressZero,
+      selector: utils.randomBytes(4),
+      incomingAssets: [whitelistedAssets[0]], // good incoming asset
+      incomingAssetAmounts: [],
+      outgoingAssets: [],
+      outgoingAssetAmounts: [],
+    });
+
+    const validateRuleCall = await assetWhitelist.validateRule
       .args(
         mockComptrollerProxy,
         mockVaultProxy,
-        policyHooks.PostCallOnIntegration,
+        PolicyHook.PostCallOnIntegration,
         postCoIArgs,
       )
       .call();
-    await expect(validateRuleCall).resolves.toBeTruthy();
+
+    expect(validateRuleCall).toBeTruthy();
   });
 
   it('returns false if an asset is not in the whitelist', async () => {
@@ -260,22 +247,24 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the incoming assets arg matters for this policy
-    const postCoIArgs = await validateRulePostCoIArgs(
-      constants.AddressZero,
-      utils.randomBytes(4),
-      [randomAddress()], // bad incoming asset
-      [],
-      [],
-      [],
-    );
-    const validateRuleCall = assetWhitelist.validateRule
+    const postCoIArgs = validateRulePostCoIArgs({
+      adapter: constants.AddressZero,
+      selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()], // good incoming asset
+      incomingAssetAmounts: [],
+      outgoingAssets: [],
+      outgoingAssetAmounts: [],
+    });
+
+    const validateRuleCall = await assetWhitelist.validateRule
       .args(
         mockComptrollerProxy,
         mockVaultProxy,
-        policyHooks.PostCallOnIntegration,
+        PolicyHook.PostCallOnIntegration,
         postCoIArgs,
       )
       .call();
-    await expect(validateRuleCall).resolves.toBeFalsy();
+
+    expect(validateRuleCall).toBeFalsy();
   });
 });

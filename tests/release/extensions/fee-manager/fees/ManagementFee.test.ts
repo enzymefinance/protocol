@@ -2,16 +2,17 @@ import { BigNumber, constants, utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
+  FeeHook,
+  FeeSettlementType,
   ManagementFee,
+  managementFeeConfigArgs,
+  managementFeeSharesDue,
   VaultLib,
 } from '@melonproject/protocol';
 import {
   assertEvent,
-  feeHooks,
-  feeSettlementTypes,
   defaultTestDeployment,
-  managementFeeConfigArgs,
-  managementFeeSharesDue,
+  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -32,11 +33,11 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Mock a ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
-  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy.address);
+  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   // Add fee settings for ComptrollerProxy
   const managementFeeRate = utils.parseEther('.1'); // 10%
-  const managementFeeConfig = await managementFeeConfigArgs(managementFeeRate);
+  const managementFeeConfig = managementFeeConfigArgs(managementFeeRate);
   await standaloneManagementFee
     .connect(EOAFeeManager)
     .addFundSettings(mockComptrollerProxy, managementFeeConfig);
@@ -59,15 +60,15 @@ describe('constructor', () => {
       deployment: { feeManager, managementFee },
     } = await provider.snapshot(snapshot);
 
-    const getFeeManagerCall = managementFee.getFeeManager();
-    await expect(getFeeManagerCall).resolves.toBe(feeManager.address);
+    const getFeeManagerCall = await managementFee.getFeeManager();
+    expect(getFeeManagerCall).toMatchAddress(feeManager);
 
     // Implements expected hooks
-    const implementedHooksCall = managementFee.implementedHooks();
-    await expect(implementedHooksCall).resolves.toMatchObject([
-      feeHooks.Continuous,
-      feeHooks.PreBuyShares,
-      feeHooks.PreRedeemShares,
+    const implementedHooksCall = await managementFee.implementedHooks();
+    expect(implementedHooksCall).toMatchObject([
+      FeeHook.Continuous,
+      FeeHook.PreBuyShares,
+      FeeHook.PreRedeemShares,
     ]);
   });
 });
@@ -80,17 +81,13 @@ describe('addFundSettings', () => {
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
 
-    const managementFeeConfig = await managementFeeConfigArgs(
-      managementFeeRate,
-    );
-    const addFundSettingsTx = standaloneManagementFee.addFundSettings(
-      mockComptrollerProxy,
-      managementFeeConfig,
-    );
-
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    const managementFeeConfig = managementFeeConfigArgs(managementFeeRate);
+    await expect(
+      standaloneManagementFee.addFundSettings(
+        mockComptrollerProxy,
+        managementFeeConfig,
+      ),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('sets initial config values for fund and fires events', async () => {
@@ -101,28 +98,29 @@ describe('addFundSettings', () => {
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
 
-    const managementFeeConfig = await managementFeeConfigArgs(
-      managementFeeRate,
-    );
-    const addFundSettingsTx = standaloneManagementFee
+    const managementFeeConfig = managementFeeConfigArgs(managementFeeRate);
+    const receipt = await standaloneManagementFee
       .connect(EOAFeeManager)
       .addFundSettings(mockComptrollerProxy, managementFeeConfig);
-    await expect(addFundSettingsTx).resolves.toBeReceipt();
-
-    // managementFeeRate should be set for comptrollerProxy
-    const getFeeInfoForFundCall = standaloneManagementFee.getFeeInfoForFund(
-      mockComptrollerProxy,
-    );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: managementFeeRate,
-      lastSettled: BigNumber.from(0),
-    });
 
     // Assert the FundSettingsAdded event was emitted
-    await assertEvent(addFundSettingsTx, 'FundSettingsAdded', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'FundSettingsAdded', {
+      comptrollerProxy: mockComptrollerProxy,
       rate: managementFeeRate,
     });
+
+    // managementFeeRate should be set for comptrollerProxy
+    const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(
+      mockComptrollerProxy,
+    );
+
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      standaloneManagementFee.getFeeInfoForFund.fragment,
+      {
+        rate: managementFeeRate,
+        lastSettled: BigNumber.from(0),
+      },
+    );
   });
 });
 
@@ -134,10 +132,11 @@ describe('payout', () => {
       standaloneManagementFee,
     } = await provider.snapshot(snapshot);
 
-    const payoutCall = standaloneManagementFee.payout
+    const payoutCall = await standaloneManagementFee.payout
       .args(mockComptrollerProxy, mockVaultProxy)
       .call();
-    await expect(payoutCall).resolves.toBe(false);
+
+    expect(payoutCall).toBe(false);
   });
 });
 
@@ -152,7 +151,7 @@ describe('settle', () => {
     const settleTx = standaloneManagementFee.settle(
       mockComptrollerProxy,
       mockVaultProxy,
-      feeHooks.Continuous,
+      FeeHook.Continuous,
       '0x',
     );
 
@@ -171,43 +170,50 @@ describe('settle', () => {
     } = await provider.snapshot(snapshot);
 
     // Check the return value via a call
-    const settleCall = standaloneManagementFee
+    const settleCall = await standaloneManagementFee
       .connect(EOAFeeManager)
       .settle.args(
         mockComptrollerProxy,
         mockVaultProxy,
-        feeHooks.Continuous,
+        FeeHook.Continuous,
         '0x',
       )
       .call();
-    await expect(settleCall).resolves.toMatchObject({
-      0: feeSettlementTypes.None,
-      1: constants.AddressZero,
-      2: BigNumber.from(0),
-    });
+
+    expect(settleCall).toMatchFunctionOutput(
+      standaloneManagementFee.settle.fragment,
+      {
+        settlementType_: FeeSettlementType.None,
+        sharesDue_: BigNumber.from(0),
+      },
+    );
 
     // Send the tx to actually settle
-    const settleTx = standaloneManagementFee
+    const receipt = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, mockVaultProxy, feeHooks.Continuous, '0x');
-    await expect(settleTx).resolves.toBeReceipt();
-    const settlementTimestamp = (await provider.getBlock('latest')).timestamp;
-
-    // Fee info should be updated with lastSettled, even though no shares were due
-    const getFeeInfoForFundCall = standaloneManagementFee.getFeeInfoForFund(
-      mockComptrollerProxy,
-    );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: managementFeeRate,
-      lastSettled: BigNumber.from(settlementTimestamp),
-    });
+      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x');
 
     // Settled event emitted
-    await assertEvent(settleTx, 'Settled', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'Settled', {
+      comptrollerProxy: mockComptrollerProxy,
       sharesQuantity: BigNumber.from(0),
       prevSettled: BigNumber.from(0),
     });
+
+    const settlementTimestamp = await transactionTimestamp(receipt);
+
+    // Fee info should be updated with lastSettled, even though no shares were due
+    const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(
+      mockComptrollerProxy,
+    );
+
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      standaloneManagementFee.getFeeInfoForFund.fragment,
+      {
+        rate: managementFeeRate,
+        lastSettled: BigNumber.from(settlementTimestamp),
+      },
+    );
   });
 
   it('correctly handles shares supply >0', async () => {
@@ -220,10 +226,10 @@ describe('settle', () => {
     } = await provider.snapshot(snapshot);
 
     // Settle while shares supply is 0 to set lastSettled
-    await standaloneManagementFee
+    const receiptOne = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, mockVaultProxy, feeHooks.Continuous, '0x');
-    const settlementTimestamp1 = (await provider.getBlock('latest')).timestamp;
+      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x');
+    const settlementTimestampOne = await transactionTimestamp(receiptOne);
 
     // Update shares supply on mock
     const sharesSupply = utils.parseEther('1');
@@ -243,53 +249,57 @@ describe('settle', () => {
     });
 
     // Check the return values via a call() to settle()
-    const settleCall = standaloneManagementFee
+    const settleCall = await standaloneManagementFee
       .connect(EOAFeeManager)
       .settle.args(
         mockComptrollerProxy,
         mockVaultProxy,
-        feeHooks.Continuous,
+        FeeHook.Continuous,
         '0x',
       )
       .call();
 
-    await expect(settleCall).resolves.toMatchObject({
-      0: feeSettlementTypes.Mint,
-      1: constants.AddressZero,
-      2: expectedSharesDueForCall,
-    });
+    expect(settleCall).toMatchFunctionOutput(
+      standaloneManagementFee.settle.fragment,
+      {
+        settlementType_: FeeSettlementType.Mint,
+        sharesDue_: expectedSharesDueForCall,
+      },
+    );
 
     // Send the tx to actually settle()
-    const settleTx = standaloneManagementFee
+    const receiptTwo = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, mockVaultProxy, feeHooks.Continuous, '0x');
-    await expect(settleTx).resolves.toBeReceipt();
-    const settlementTimestamp2 = (await provider.getBlock('latest')).timestamp;
+      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x');
+    const settlementTimestampTwo = await transactionTimestamp(receiptTwo);
 
     // Get the expected shares due for the actual settlement
     const expectedSharesDueForTx = managementFeeSharesDue({
       rate: managementFeeRate,
       sharesSupply,
-      secondsSinceLastSettled: BigNumber.from(settlementTimestamp2).sub(
-        settlementTimestamp1,
+      secondsSinceLastSettled: BigNumber.from(settlementTimestampTwo).sub(
+        settlementTimestampOne,
       ),
     });
 
     // Settled event emitted with correct settlement values
-    await assertEvent(settleTx, 'Settled', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receiptTwo, 'Settled', {
+      comptrollerProxy: mockComptrollerProxy,
       sharesQuantity: expectedSharesDueForTx,
-      prevSettled: BigNumber.from(settlementTimestamp1),
+      prevSettled: BigNumber.from(settlementTimestampOne),
     });
 
     // Fee info should be updated with lastSettled, even though no shares were due
-    const getFeeInfoForFundCall = standaloneManagementFee.getFeeInfoForFund(
+    const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(
       mockComptrollerProxy,
     );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: managementFeeRate,
-      lastSettled: BigNumber.from(settlementTimestamp2),
-    });
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      standaloneManagementFee.getFeeInfoForFund.fragment,
+      {
+        rate: managementFeeRate,
+        lastSettled: BigNumber.from(settlementTimestampTwo),
+      },
+    );
   });
 
   // How can we batch 2 txs into the same block?

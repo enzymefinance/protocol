@@ -3,14 +3,13 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { AdapterBlacklist } from '@melonproject/protocol';
 import {
-  defaultTestDeployment,
-  assertEvent,
+  AdapterBlacklist,
   adapterBlacklistArgs,
-  policyHooks,
+  PolicyHook,
   validateRulePreCoIArgs,
-} from '@melonproject/testutils';
+} from '@melonproject/protocol';
+import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -56,9 +55,8 @@ async function snapshotWithConfiguredStandalonePolicy(
   const permissionedAdapterBlacklist = adapterBlacklist.connect(
     EOAPolicyManager,
   );
-  const adapterBlacklistConfig = await adapterBlacklistArgs(
-    blacklistedAdapters,
-  );
+
+  const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
   await permissionedAdapterBlacklist.addFundSettings(
     comptrollerProxy,
     adapterBlacklistConfig,
@@ -79,12 +77,12 @@ describe('constructor', () => {
       deployment: { policyManager, adapterBlacklist },
     } = await provider.snapshot(snapshot);
 
-    const getPolicyManagerCall = adapterBlacklist.getPolicyManager();
-    await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
+    const policyManagerResult = await adapterBlacklist.getPolicyManager();
+    expect(policyManagerResult).toMatchAddress(policyManager);
 
-    const implementedHooksCall = adapterBlacklist.implementedHooks();
-    await expect(implementedHooksCall).resolves.toMatchObject([
-      policyHooks.PreCallOnIntegration,
+    const implementedHooksResult = await adapterBlacklist.implementedHooks();
+    expect(implementedHooksResult).toMatchObject([
+      PolicyHook.PreCallOnIntegration,
     ]);
   });
 });
@@ -97,17 +95,14 @@ describe('addFundSettings', () => {
       comptrollerProxy,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const adapterBlacklistConfig = await adapterBlacklistArgs(
-      blacklistedAdapters,
-    );
-    const addFundSettingsTx = adapterBlacklist.addFundSettings(
-      comptrollerProxy,
-      adapterBlacklistConfig,
-    );
+    const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
 
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'Only the PolicyManager can make this call',
-    );
+    await expect(
+      adapterBlacklist.addFundSettings(
+        comptrollerProxy,
+        adapterBlacklistConfig,
+      ),
+    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('sets initial config values for fund and fires events', async () => {
@@ -118,22 +113,20 @@ describe('addFundSettings', () => {
       EOAPolicyManager,
     } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    const adapterBlacklistConfig = await adapterBlacklistArgs(
-      blacklistedAdapters,
-    );
-    const addFundSettingsTx = adapterBlacklist
+    const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
+    const receipt = await adapterBlacklist
       .connect(EOAPolicyManager)
       .addFundSettings(comptrollerProxy, adapterBlacklistConfig);
 
-    // List should be the blacklisted adapters
-    const getListCall = adapterBlacklist.getList(comptrollerProxy);
-    await expect(getListCall).resolves.toMatchObject(blacklistedAdapters);
-
     // Assert the AddressesAdded event was emitted
-    await assertEvent(addFundSettingsTx, 'AddressesAdded', {
+    assertEvent(receipt, 'AddressesAdded', {
       comptrollerProxy,
       items: blacklistedAdapters,
     });
+
+    // List should be the blacklisted adapters
+    const listResult = await adapterBlacklist.getList(comptrollerProxy);
+    expect(listResult).toMatchObject(blacklistedAdapters);
   });
 });
 
@@ -143,14 +136,13 @@ describe('updateFundSettings', () => {
       snapshotWithStandalonePolicy,
     );
 
-    const updateFundSettingsTx = adapterBlacklist.updateFundSettings(
-      randomAddress(),
-      randomAddress(),
-      '0x',
-    );
-    await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
-      'Updates not allowed for this policy',
-    );
+    await expect(
+      adapterBlacklist.updateFundSettings(
+        randomAddress(),
+        randomAddress(),
+        '0x',
+      ),
+    ).rejects.toBeRevertedWith('Updates not allowed for this policy');
   });
 });
 
@@ -163,19 +155,21 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = await validateRulePreCoIArgs(
-      blacklistedAdapters[0], // bad adapter
-      utils.randomBytes(4),
-    );
-    const validateRuleCall = adapterBlacklist.validateRule
+    const preCoIArgs = validateRulePreCoIArgs({
+      adapter: blacklistedAdapters[0], // bad adapter
+      selector: utils.randomBytes(4),
+    });
+
+    const validateRuleResult = await adapterBlacklist.validateRule
       .args(
         comptrollerProxy,
         randomAddress(),
-        policyHooks.PreCallOnIntegration,
+        PolicyHook.PreCallOnIntegration,
         preCoIArgs,
       )
       .call();
-    await expect(validateRuleCall).resolves.toBeFalsy();
+
+    expect(validateRuleResult).toBeFalsy();
   });
 
   it('returns true if an adapter is not in the blacklist', async () => {
@@ -184,18 +178,20 @@ describe('validateRule', () => {
     );
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = await validateRulePreCoIArgs(
-      randomAddress(), // good adapter
-      utils.randomBytes(4),
-    );
-    const validateRuleCall = adapterBlacklist.validateRule
+    const preCoIArgs = validateRulePreCoIArgs({
+      adapter: randomAddress(), // good adapter
+      selector: utils.randomBytes(4),
+    });
+
+    const validateRuleResult = await adapterBlacklist.validateRule
       .args(
         comptrollerProxy,
         randomAddress(),
-        policyHooks.PreCallOnIntegration,
+        PolicyHook.PreCallOnIntegration,
         preCoIArgs,
       )
       .call();
-    await expect(validateRuleCall).resolves.toBeTruthy();
+
+    expect(validateRuleResult).toBeTruthy();
   });
 });

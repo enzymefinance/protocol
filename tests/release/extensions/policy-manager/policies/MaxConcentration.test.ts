@@ -10,14 +10,11 @@ import {
   ComptrollerLib,
   MaxConcentration,
   ValueInterpreter,
-} from '@melonproject/protocol';
-import {
-  defaultTestDeployment,
-  assertEvent,
-  policyHooks,
   maxConcentrationArgs,
+  PolicyHook,
   validateRulePostCoIArgs,
-} from '@melonproject/testutils';
+} from '@melonproject/protocol';
+import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -56,9 +53,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await mockComptrollerProxy.getDenominationAsset.returns(denominationAsset);
 
   // Add policy settings for ComptrollerProxy
-  const maxConcentrationConfig = await maxConcentrationArgs(
-    maxConcentrationValue,
-  );
+  const maxConcentrationConfig = maxConcentrationArgs(maxConcentrationValue);
   await maxConcentration
     .connect(EOAPolicyManager)
     .addFundSettings(mockComptrollerProxy, maxConcentrationConfig);
@@ -104,20 +99,20 @@ async function mockValuesAndValidateRule({
   );
 
   // Only the incoming assets arg matters for this policy
-  const postCoIArgs = await validateRulePostCoIArgs(
-    constants.AddressZero,
-    utils.randomBytes(4),
-    [incomingAsset],
-    [],
-    [],
-    [],
-  );
+  const postCoIArgs = validateRulePostCoIArgs({
+    adapter: constants.AddressZero,
+    selector: utils.randomBytes(4),
+    incomingAssets: [incomingAsset],
+    incomingAssetAmounts: [],
+    outgoingAssets: [],
+    outgoingAssetAmounts: [],
+  });
 
   return maxConcentration.validateRule
     .args(
       mockComptrollerProxy,
       await mockComptrollerProxy.getVaultProxy(),
-      policyHooks.PostCallOnIntegration,
+      PolicyHook.PostCallOnIntegration,
       postCoIArgs,
     )
     .call();
@@ -129,12 +124,12 @@ describe('constructor', () => {
       deployment: { policyManager, maxConcentration },
     } = await provider.snapshot(snapshot);
 
-    const getPolicyManagerCall = maxConcentration.getPolicyManager();
-    await expect(getPolicyManagerCall).resolves.toBe(policyManager.address);
+    const getPolicyManagerCall = await maxConcentration.getPolicyManager();
+    expect(getPolicyManagerCall).toMatchAddress(policyManager);
 
-    const implementedHooksCall = maxConcentration.implementedHooks();
-    await expect(implementedHooksCall).resolves.toMatchObject([
-      policyHooks.PostCallOnIntegration,
+    const implementedHooksCall = await maxConcentration.implementedHooks();
+    expect(implementedHooksCall).toMatchObject([
+      PolicyHook.PostCallOnIntegration,
     ]);
   });
 });
@@ -155,17 +150,11 @@ describe('addFundSettings', () => {
       snapshot,
     );
 
-    const maxConcentrationConfig = await maxConcentrationArgs(
-      maxConcentrationValue,
-    );
-    const addFundSettingsTx = maxConcentration.addFundSettings(
-      randomAddress(),
-      maxConcentrationConfig,
-    );
+    const maxConcentrationConfig = maxConcentrationArgs(maxConcentrationValue);
 
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'Only the PolicyManager can make this call',
-    );
+    await expect(
+      maxConcentration.addFundSettings(randomAddress(), maxConcentrationConfig),
+    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('sets initial config values for fund and fires events', async () => {
@@ -177,27 +166,22 @@ describe('addFundSettings', () => {
 
     const comptrollerProxy = randomAddress();
 
-    const maxConcentrationConfig = await maxConcentrationArgs(
-      maxConcentrationValue,
-    );
-    const addFundSettingsTx = maxConcentration
+    const maxConcentrationConfig = maxConcentrationArgs(maxConcentrationValue);
+    const receipt = await maxConcentration
       .connect(EOAPolicyManager)
       .addFundSettings(comptrollerProxy, maxConcentrationConfig);
-    await expect(addFundSettingsTx).resolves.toBeReceipt();
-
-    // maxConcentration should be set for comptrollerProxy
-    const getMaxConcentrationForFundCall = maxConcentration.getMaxConcentrationForFund(
-      comptrollerProxy,
-    );
-    await expect(getMaxConcentrationForFundCall).resolves.toEqBigNumber(
-      maxConcentrationValue,
-    );
 
     // Assert the MaxConcentrationSet event was emitted
-    await assertEvent(addFundSettingsTx, 'MaxConcentrationSet', {
+    assertEvent(receipt, 'MaxConcentrationSet', {
       comptrollerProxy: comptrollerProxy,
       value: maxConcentrationValue,
     });
+
+    // maxConcentration should be set for comptrollerProxy
+    const getMaxConcentrationForFundCall = await maxConcentration.getMaxConcentrationForFund(
+      comptrollerProxy,
+    );
+    expect(getMaxConcentrationForFundCall).toEqBigNumber(maxConcentrationValue);
   });
 });
 
@@ -205,14 +189,13 @@ describe('updateFundSettings', () => {
   it('cannot be called', async () => {
     const { maxConcentration } = await provider.snapshot(snapshot);
 
-    const updateFundSettingsTx = maxConcentration.updateFundSettings(
-      randomAddress(),
-      randomAddress(),
-      '0x',
-    );
-    await expect(updateFundSettingsTx).rejects.toBeRevertedWith(
-      'Updates not allowed for this policy',
-    );
+    await expect(
+      maxConcentration.updateFundSettings(
+        randomAddress(),
+        randomAddress(),
+        '0x',
+      ),
+    ).rejects.toBeRevertedWith('Updates not allowed for this policy');
   });
 });
 
@@ -223,24 +206,25 @@ describe('validateRule', () => {
     );
 
     // Empty args
-    const postCoIArgs = await validateRulePostCoIArgs(
-      constants.AddressZero,
-      utils.randomBytes(4),
-      [],
-      [],
-      [],
-      [],
-    );
+    const postCoIArgs = validateRulePostCoIArgs({
+      adapter: constants.AddressZero,
+      selector: utils.randomBytes(4),
+      incomingAssets: [],
+      incomingAssetAmounts: [],
+      outgoingAssets: [],
+      outgoingAssetAmounts: [],
+    });
 
-    const validateRuleCall = maxConcentration.validateRule
+    const validateRuleCall = await maxConcentration.validateRule
       .args(
         mockComptrollerProxy,
         await mockComptrollerProxy.getVaultProxy(),
-        policyHooks.PostCallOnIntegration,
+        PolicyHook.PostCallOnIntegration,
         postCoIArgs,
       )
       .call();
-    await expect(validateRuleCall).resolves.toBeTruthy();
+
+    expect(validateRuleCall).toBeTruthy();
   });
 
   it('properly queries live rates', async () => {
@@ -268,7 +252,7 @@ describe('validateRule', () => {
     expect(
       mockValueInterpreter.calcLiveAssetValue,
     ).toHaveBeenCalledOnContractWith(
-      incomingAsset.address,
+      incomingAsset,
       incomingAssetGav,
       denominationAsset,
     );
@@ -286,7 +270,7 @@ describe('validateRule', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    const validateRuleCall = mockValuesAndValidateRule({
+    const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
       vaultProxyAddress,
       mockValueInterpreter,
@@ -295,7 +279,7 @@ describe('validateRule', () => {
       incomingAssetGav,
     });
 
-    await expect(validateRuleCall).resolves.toBeTruthy();
+    expect(validateRuleCall).toBeTruthy();
   });
 
   it('returns false if the incoming asset gav is slightly over the threshold amount', async () => {
@@ -311,7 +295,7 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshot);
 
     // Increase incoming asset balance to be 1 wei over the limit
-    const validateRuleCall = mockValuesAndValidateRule({
+    const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
       vaultProxyAddress,
       mockValueInterpreter,
@@ -320,7 +304,7 @@ describe('validateRule', () => {
       incomingAssetGav: BigNumber.from(assetGavLimit).add(1),
     });
 
-    await expect(validateRuleCall).resolves.toBeFalsy();
+    expect(validateRuleCall).toBeFalsy();
   });
 
   it('returns true if the incoming asset is the denomination asset', async () => {
@@ -334,7 +318,7 @@ describe('validateRule', () => {
     } = await provider.snapshot(snapshot);
 
     // Increase incoming asset balance to be 1 wei over the limit
-    const validateRuleCall = mockValuesAndValidateRule({
+    const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
       vaultProxyAddress,
       mockValueInterpreter,
@@ -343,7 +327,7 @@ describe('validateRule', () => {
       incomingAssetGav: BigNumber.from(assetGavLimit).add(1),
     });
 
-    await expect(validateRuleCall).resolves.toBeTruthy();
+    expect(validateRuleCall).toBeTruthy();
   });
 
   it('returns false if the asset value lookup is invalid', async () => {
@@ -358,7 +342,7 @@ describe('validateRule', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    const validateRuleCall = mockValuesAndValidateRule({
+    const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
       vaultProxyAddress,
       mockValueInterpreter,
@@ -368,6 +352,6 @@ describe('validateRule', () => {
       assetValueIsValid: false,
     });
 
-    await expect(validateRuleCall).resolves.toBeFalsy();
+    expect(validateRuleCall).toBeFalsy();
   });
 });

@@ -1,13 +1,9 @@
 import {
   EthereumTestnetProvider,
   randomAddress,
-  resolveAddress,
 } from '@crestproject/crestproject';
-import {
-  assertEvent,
-  defaultTestDeployment,
-  releaseStatusTypes,
-} from '@melonproject/testutils';
+import { ReleaseStatusTypes } from '@melonproject/protocol';
+import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -28,32 +24,30 @@ describe('constructor', () => {
       deployment: { dispatcher, engine, fundDeployer, vaultLib },
     } = await provider.snapshot(snapshot);
 
-    const getCreatorCall = fundDeployer.getCreator();
-    await expect(getCreatorCall).resolves.toBe(await resolveAddress(deployer));
+    const getCreatorCall = await fundDeployer.getCreator();
+    expect(getCreatorCall).toMatchAddress(deployer);
 
-    const getDispatcherCall = fundDeployer.getDispatcher();
-    await expect(getDispatcherCall).resolves.toBe(dispatcher.address);
+    const getDispatcherCall = await fundDeployer.getDispatcher();
+    expect(getDispatcherCall).toMatchAddress(dispatcher);
 
-    const getEngineCall = fundDeployer.getEngine();
-    await expect(getEngineCall).resolves.toBe(engine.address);
+    const getEngineCall = await fundDeployer.getEngine();
+    expect(getEngineCall).toMatchAddress(engine);
 
-    const getOwnerCall = fundDeployer.getOwner();
-    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
+    const getOwnerCall = await fundDeployer.getOwner();
+    expect(getOwnerCall).toMatchAddress(deployer);
 
-    const getReleaseStatusCall = fundDeployer.getReleaseStatus();
-    await expect(getReleaseStatusCall).resolves.toBe(
-      releaseStatusTypes.PreLaunch,
-    );
+    const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
+    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.PreLaunch);
 
-    const getVaultLibCall = fundDeployer.getVaultLib();
-    await expect(getVaultLibCall).resolves.toBe(vaultLib.address);
+    const getVaultLibCall = await fundDeployer.getVaultLib();
+    expect(getVaultLibCall).toMatchAddress(vaultLib);
 
     for (const key in registeredVaultCalls.contracts) {
-      const isRegisteredVaultCallCall = fundDeployer.isRegisteredVaultCall(
+      const isRegisteredVaultCallCall = await fundDeployer.isRegisteredVaultCall(
         registeredVaultCalls.contracts[key],
         registeredVaultCalls.selectors[key],
       );
-      await expect(isRegisteredVaultCallCall).resolves.toBe(true);
+      expect(isRegisteredVaultCallCall).toBe(true);
     }
   });
 });
@@ -66,13 +60,12 @@ describe('setComptrollerLib', () => {
       deployment: { fundDeployer, comptrollerLib },
     } = await provider.snapshot(snapshot);
 
-    const comptrollerLibCall = fundDeployer.getComptrollerLib();
-    await expect(comptrollerLibCall).resolves.toBe(comptrollerLib.address);
+    const comptrollerLibCall = await fundDeployer.getComptrollerLib();
+    expect(comptrollerLibCall).toMatchAddress(comptrollerLib);
 
-    const comptrollerLibTx = fundDeployer.setComptrollerLib(randomAddress());
-    await expect(comptrollerLibTx).rejects.toBeRevertedWith(
-      'This value can only be set once',
-    );
+    await expect(
+      fundDeployer.setComptrollerLib(randomAddress()),
+    ).rejects.toBeRevertedWith('This value can only be set once');
   });
 });
 
@@ -90,20 +83,19 @@ describe('setReleaseStatus', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const setReleaseStatusTx = fundDeployer.setReleaseStatus(
-      releaseStatusTypes.Live,
+    const receipt = await fundDeployer.setReleaseStatus(
+      ReleaseStatusTypes.Live,
     );
-    await expect(setReleaseStatusTx).resolves.toBeReceipt();
-
-    // Release Status should be Live
-    const getReleaseStatusCall = fundDeployer.getReleaseStatus();
-    await expect(getReleaseStatusCall).resolves.toBe(releaseStatusTypes.Live);
 
     // ReleaseStatusSet event is emitted
-    await assertEvent(setReleaseStatusTx, 'ReleaseStatusSet', {
-      prevStatus: releaseStatusTypes.PreLaunch,
-      nextStatus: releaseStatusTypes.Live,
+    assertEvent(receipt, 'ReleaseStatusSet', {
+      prevStatus: ReleaseStatusTypes.PreLaunch,
+      nextStatus: ReleaseStatusTypes.Live,
     });
+
+    // Release Status should be Live
+    const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
+    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Live);
   });
 });
 

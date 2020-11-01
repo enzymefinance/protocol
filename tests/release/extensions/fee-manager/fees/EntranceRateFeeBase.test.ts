@@ -8,14 +8,13 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { EntranceRateDirectFee } from '@melonproject/protocol';
 import {
-  assertEvent,
-  feeHooks,
-  defaultTestDeployment,
+  EntranceRateDirectFee,
   entranceRateFeeConfigArgs,
+  FeeHook,
   settlePostBuySharesArgs,
-} from '@melonproject/testutils';
+} from '@melonproject/protocol';
+import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -44,30 +43,26 @@ describe('constructor', () => {
       deployment: { feeManager, entranceRateDirectFee },
     } = await provider.snapshot(snapshot);
 
-    const getFeeManagerCall = entranceRateDirectFee.getFeeManager();
-    await expect(getFeeManagerCall).resolves.toBe(feeManager.address);
+    const getFeeManagerCall = await entranceRateDirectFee.getFeeManager();
+    expect(getFeeManagerCall).toMatchAddress(feeManager);
 
     // Implements expected hooks
-    const implementedHooksCall = entranceRateDirectFee.implementedHooks();
-    await expect(implementedHooksCall).resolves.toMatchObject([
-      feeHooks.PostBuyShares,
-    ]);
+    const implementedHooksCall = await entranceRateDirectFee.implementedHooks();
+    expect(implementedHooksCall).toMatchObject([FeeHook.PostBuyShares]);
   });
 });
 
 describe('addFundSettings', () => {
   it('can only be called by the FeeManager', async () => {
     const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
-
     const entranceRateFeeConfig = await entranceRateFeeConfigArgs(1);
-    const addFundSettingsTx = standaloneEntranceRateFee.addFundSettings(
-      randomAddress(),
-      entranceRateFeeConfig,
-    );
 
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    await expect(
+      standaloneEntranceRateFee.addFundSettings(
+        randomAddress(),
+        entranceRateFeeConfig,
+      ),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
@@ -80,33 +75,32 @@ describe('addFundSettings', () => {
     const comptrollerProxyAddress = randomAddress();
     const rate = utils.parseEther('1');
     const entranceRateFeeConfig = await entranceRateFeeConfigArgs(rate);
-    const addFundSettingsTx = standaloneEntranceRateFee
+    const receipt = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
-    await expect(addFundSettingsTx).resolves.toBeReceipt();
-
-    // Assert state has been set
-    const getRateForFundCall = standaloneEntranceRateFee.getRateForFund(
-      comptrollerProxyAddress,
-    );
-    await expect(getRateForFundCall).resolves.toEqBigNumber(rate);
 
     // Assert the FundSettingsAdded event was emitted
-    await assertEvent(addFundSettingsTx, 'FundSettingsAdded', {
+    assertEvent(receipt, 'FundSettingsAdded', {
       comptrollerProxy: comptrollerProxyAddress,
       rate,
     });
+
+    // Assert state has been set
+    const getRateForFundCall = await standaloneEntranceRateFee.getRateForFund(
+      comptrollerProxyAddress,
+    );
+    expect(getRateForFundCall).toEqBigNumber(rate);
   });
 });
 
 describe('payout', () => {
   it('returns false', async () => {
     const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
-
-    const payoutCall = standaloneEntranceRateFee.payout
+    const payoutCall = await standaloneEntranceRateFee.payout
       .args(randomAddress(), randomAddress())
       .call();
-    await expect(payoutCall).resolves.toBe(false);
+
+    expect(payoutCall).toBe(false);
   });
 });
 
@@ -114,16 +108,19 @@ describe('settle', () => {
   it('can only be called by the FeeManager', async () => {
     const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
 
-    const settlementData = await settlePostBuySharesArgs({});
-    const settleTx = standaloneEntranceRateFee.settle(
-      randomAddress(),
-      randomAddress(),
-      feeHooks.PostBuyShares,
-      settlementData,
-    );
+    const settlementData = await settlePostBuySharesArgs({
+      buyer: randomAddress(),
+      investmentAmount: utils.parseEther('1'),
+      sharesBought: utils.parseEther('1'),
+    });
 
-    await expect(settleTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    await expect(
+      standaloneEntranceRateFee.settle(
+        randomAddress(),
+        randomAddress(),
+        FeeHook.PostBuyShares,
+        settlementData,
+      ),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 });

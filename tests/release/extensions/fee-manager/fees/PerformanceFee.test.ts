@@ -9,15 +9,16 @@ import {
   FeeManager,
   PerformanceFee,
   VaultLib,
+  performanceFeeConfigArgs,
+  FeeHook,
+  FeeSettlementType,
+  performanceFeeSharesDue,
 } from '@melonproject/protocol';
 import {
   assertEvent,
   assertNoEvent,
   defaultTestDeployment,
-  feeHooks,
-  feeSettlementTypes,
-  performanceFeeConfigArgs,
-  performanceFeeSharesDue,
+  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -50,12 +51,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await mockComptrollerProxy.getDenominationAsset.returns(
     mockDenominationAsset,
   );
-  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy.address);
+  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   // Add fee settings for ComptrollerProxy
   const performanceFeeRate = utils.parseEther('.1'); // 10%
   const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
-  const performanceFeeConfig = await performanceFeeConfigArgs({
+  const performanceFeeConfig = performanceFeeConfigArgs({
     rate: performanceFeeRate,
     period: performanceFeePeriod,
   });
@@ -98,14 +99,13 @@ async function activateWithInitialValues({
   await mockComptrollerProxy.calcGrossShareValue.returns(
     BigNumber.from(gav).mul(utils.parseEther('1')).div(totalSharesSupply),
   );
-  const activateTx = mockFeeManager.forward(
+  const receipt = await mockFeeManager.forward(
     performanceFee.activateForFund,
     mockComptrollerProxy,
     mockVaultProxy,
   );
-  await expect(activateTx).resolves.toBeReceipt();
 
-  return activateTx;
+  return receipt;
 }
 
 async function assertAdjustedPerformance({
@@ -114,7 +114,7 @@ async function assertAdjustedPerformance({
   mockVaultProxy,
   performanceFee,
   nextGav,
-  feeHook = feeHooks.Continuous,
+  feeHook = FeeHook.Continuous,
   settlementData = constants.HashZero,
 }: {
   mockFeeManager: MockContract<FeeManager>;
@@ -122,7 +122,7 @@ async function assertAdjustedPerformance({
   mockVaultProxy: MockContract<VaultLib>;
   performanceFee: PerformanceFee;
   nextGav: BigNumberish;
-  feeHook?: feeHooks;
+  feeHook?: FeeHook;
   settlementData?: BytesLike;
 }) {
   // Change the share price by altering the gav
@@ -140,6 +140,7 @@ async function assertAdjustedPerformance({
     mockComptrollerProxy,
     performanceFee,
   );
+
   const {
     nextAggregateValueDue,
     nextSharePrice,
@@ -155,37 +156,36 @@ async function assertAdjustedPerformance({
   });
 
   // Determine fee settlement type
-  let feeSettlementType = feeSettlementTypes.None;
+  let feeSettlementType = FeeSettlementType.None;
   if (sharesDue.gt(0)) {
-    feeSettlementType = feeSettlementTypes.MintSharesOutstanding;
+    feeSettlementType = FeeSettlementType.MintSharesOutstanding;
   } else if (sharesDue.lt(0)) {
-    feeSettlementType = feeSettlementTypes.BurnSharesOutstanding;
+    feeSettlementType = FeeSettlementType.BurnSharesOutstanding;
   }
 
   // settle.call() to assert return values and get the sharesOutstanding
-  const settleCall = performanceFee.settle
+  const settleCall = await performanceFee.settle
     .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData)
-    .from(mockFeeManager.address)
+    .from(mockFeeManager)
     .call();
-  await expect(settleCall).resolves.toMatchObject({
-    0: feeSettlementType,
-    1: constants.AddressZero,
-    2: sharesDue.abs(),
+
+  expect(settleCall).toMatchFunctionOutput(performanceFee.settle.fragment, {
+    settlementType_: feeSettlementType,
+    sharesDue_: sharesDue.abs(),
   });
 
   // Execute settle() tx
-  const settleTx = mockFeeManager.forward(
+  const settleReceipt = await mockFeeManager.forward(
     performanceFee.settle,
     mockComptrollerProxy,
     mockVaultProxy,
     feeHook,
     settlementData,
   );
-  await expect(settleTx).resolves.toBeReceipt();
 
   // Assert event
-  await assertEvent(settleTx, 'PerformanceUpdated', {
-    comptrollerProxy: mockComptrollerProxy.address,
+  assertEvent(settleReceipt, 'PerformanceUpdated', {
+    comptrollerProxy: mockComptrollerProxy,
     prevSharePrice: feeInfo.lastSharePrice,
     nextSharePrice,
     prevAggregateValueDue: feeInfo.aggregateValueDue,
@@ -197,11 +197,12 @@ async function assertAdjustedPerformance({
   await mockFeeManager.getFeeSharesOutstandingForFund
     .given(mockComptrollerProxy, performanceFee)
     .returns(prevSharesOutstanding.add(sharesDue));
+
   await mockVaultProxy.totalSupply.returns(
     prevTotalSharesSupply.add(sharesDue),
   );
 
-  return { feeSettlementType, settleTx };
+  return { feeSettlementType, settleReceipt };
 }
 
 describe('constructor', () => {
@@ -210,15 +211,15 @@ describe('constructor', () => {
       deployment: { feeManager, performanceFee },
     } = await provider.snapshot(snapshot);
 
-    const getFeeManagerCall = performanceFee.getFeeManager();
-    await expect(getFeeManagerCall).resolves.toBe(feeManager.address);
+    const getFeeManagerCall = await performanceFee.getFeeManager();
+    expect(getFeeManagerCall).toMatchAddress(feeManager);
 
     // Implements expected hooks
-    const implementedHooksCall = performanceFee.implementedHooks();
-    await expect(implementedHooksCall).resolves.toMatchObject([
-      feeHooks.Continuous,
-      feeHooks.PreBuyShares,
-      feeHooks.PreRedeemShares,
+    const implementedHooksCall = await performanceFee.implementedHooks();
+    expect(implementedHooksCall).toMatchObject([
+      FeeHook.Continuous,
+      FeeHook.PreBuyShares,
+      FeeHook.PreRedeemShares,
     ]);
   });
 });
@@ -232,18 +233,17 @@ describe('addFundSettings', () => {
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
-    const performanceFeeConfig = await performanceFeeConfigArgs({
+    const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
       period: performanceFeePeriod,
     });
-    const addFundSettingsTx = standalonePerformanceFee.addFundSettings(
-      mockComptrollerProxy,
-      performanceFeeConfig,
-    );
 
-    await expect(addFundSettingsTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    await expect(
+      standalonePerformanceFee.addFundSettings(
+        mockComptrollerProxy,
+        performanceFeeConfig,
+      ),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
@@ -255,37 +255,41 @@ describe('addFundSettings', () => {
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
-    const performanceFeeConfig = await performanceFeeConfigArgs({
+    const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
       period: performanceFeePeriod,
     });
-    const addFundSettingsTx = mockFeeManager.forward(
+
+    const receipt = await mockFeeManager.forward(
       standalonePerformanceFee.addFundSettings,
       mockComptrollerProxy,
       performanceFeeConfig,
     );
-    await expect(addFundSettingsTx).resolves.toBeReceipt();
-
-    // Assert state
-    const getFeeInfoForFundCall = standalonePerformanceFee.getFeeInfoForFund(
-      mockComptrollerProxy,
-    );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: performanceFeeRate,
-      period: performanceFeePeriod,
-      activated: BigNumber.from(0),
-      lastPaid: BigNumber.from(0),
-      highWaterMark: BigNumber.from(0),
-      lastSharePrice: BigNumber.from(0),
-      aggregateValueDue: BigNumber.from(0),
-    });
 
     // Assert correct event was emitted
-    await assertEvent(addFundSettingsTx, 'FundSettingsAdded', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'FundSettingsAdded', {
+      comptrollerProxy: mockComptrollerProxy,
       rate: performanceFeeRate,
       period: performanceFeePeriod,
     });
+
+    // Assert state
+    const getFeeInfoForFundCall = await standalonePerformanceFee.getFeeInfoForFund(
+      mockComptrollerProxy,
+    );
+
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      standalonePerformanceFee.getFeeInfoForFund.fragment,
+      {
+        rate: performanceFeeRate,
+        period: performanceFeePeriod,
+        activated: BigNumber.from(0),
+        lastPaid: BigNumber.from(0),
+        highWaterMark: BigNumber.from(0),
+        lastSharePrice: BigNumber.from(0),
+        aggregateValueDue: BigNumber.from(0),
+      },
+    );
   });
 });
 
@@ -297,13 +301,12 @@ describe('activateForFund', () => {
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
-    const activateTx = standalonePerformanceFee.activateForFund(
-      mockComptrollerProxy,
-      mockVaultProxy,
-    );
-    await expect(activateTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    await expect(
+      standalonePerformanceFee.activateForFund(
+        mockComptrollerProxy,
+        mockVaultProxy,
+      ),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
@@ -321,33 +324,36 @@ describe('activateForFund', () => {
     await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue);
 
     // Activate fund
-    const activateTx = mockFeeManager.forward(
+    const receipt = await mockFeeManager.forward(
       standalonePerformanceFee.activateForFund,
       mockComptrollerProxy,
       mockVaultProxy,
     );
-    await expect(activateTx).resolves.toBeReceipt();
-    const activationTimestamp = (await provider.getBlock('latest')).timestamp;
-
-    // Assert state
-    const getFeeInfoForFundCall = standalonePerformanceFee.getFeeInfoForFund(
-      mockComptrollerProxy,
-    );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: performanceFeeRate,
-      period: performanceFeePeriod,
-      activated: BigNumber.from(activationTimestamp),
-      lastPaid: BigNumber.from(0),
-      highWaterMark: grossShareValue,
-      lastSharePrice: grossShareValue,
-      aggregateValueDue: BigNumber.from(0),
-    });
 
     // Assert event
-    await assertEvent(activateTx, 'ActivatedForFund', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'ActivatedForFund', {
+      comptrollerProxy: mockComptrollerProxy,
       highWaterMark: grossShareValue,
     });
+
+    // Assert state
+    const getFeeInfoForFundCall = await standalonePerformanceFee.getFeeInfoForFund(
+      mockComptrollerProxy,
+    );
+
+    const activationTimestamp = await transactionTimestamp(receipt);
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      standalonePerformanceFee.getFeeInfoForFund.fragment,
+      {
+        rate: performanceFeeRate,
+        period: performanceFeePeriod,
+        activated: BigNumber.from(activationTimestamp),
+        lastPaid: BigNumber.from(0),
+        highWaterMark: grossShareValue,
+        lastSharePrice: grossShareValue,
+        aggregateValueDue: BigNumber.from(0),
+      },
+    );
   });
 });
 
@@ -359,13 +365,9 @@ describe('payout', () => {
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
-    const activateTx = standalonePerformanceFee.payout(
-      mockComptrollerProxy,
-      mockVaultProxy,
-    );
-    await expect(activateTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    await expect(
+      standalonePerformanceFee.payout(mockComptrollerProxy, mockVaultProxy),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles a valid call (HWM has not increased)', async () => {
@@ -393,41 +395,45 @@ describe('payout', () => {
     await provider.send('evm_mine', []);
 
     // call() function to assert return value
-    const payoutCall = performanceFee.payout
+    const payoutCall = await performanceFee.payout
       .args(mockComptrollerProxy, mockVaultProxy)
-      .from(mockFeeManager.address)
+      .from(mockFeeManager)
       .call();
-    await expect(payoutCall).resolves.toBe(false);
+
+    expect(payoutCall).toBe(false);
 
     // send() function
-    const payoutTx = mockFeeManager.forward(
+    const receipt = await mockFeeManager.forward(
       performanceFee.payout,
       mockComptrollerProxy,
       mockVaultProxy,
     );
-    await expect(payoutTx).resolves.toBeReceipt();
-    const payoutTimestamp = (await provider.getBlock('latest')).timestamp;
-
-    // Assert state
-    const getFeeInfoForFundCall = performanceFee.getFeeInfoForFund(
-      mockComptrollerProxy,
-    );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: feeInfoPrePayout.rate,
-      period: feeInfoPrePayout.period,
-      activated: feeInfoPrePayout.activated,
-      lastPaid: BigNumber.from(payoutTimestamp), // updated
-      highWaterMark: feeInfoPrePayout.highWaterMark,
-      lastSharePrice: feeInfoPrePayout.lastSharePrice,
-      aggregateValueDue: feeInfoPrePayout.aggregateValueDue,
-    });
 
     // Assert event
-    await assertEvent(payoutTx, 'PaidOut', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'PaidOut', {
+      comptrollerProxy: mockComptrollerProxy,
       prevHighWaterMark: feeInfoPrePayout.highWaterMark,
       nextHighWaterMark: feeInfoPrePayout.highWaterMark,
     });
+
+    // Assert state
+    const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(
+      mockComptrollerProxy,
+    );
+
+    const payoutTimestamp = await transactionTimestamp(receipt);
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      performanceFee.getFeeInfoForFund.fragment,
+      {
+        rate: feeInfoPrePayout.rate,
+        period: feeInfoPrePayout.period,
+        activated: feeInfoPrePayout.activated,
+        lastPaid: BigNumber.from(payoutTimestamp), // updated
+        highWaterMark: feeInfoPrePayout.highWaterMark,
+        lastSharePrice: feeInfoPrePayout.lastSharePrice,
+        aggregateValueDue: feeInfoPrePayout.aggregateValueDue,
+      },
+    );
   });
 
   it('correctly handles a valid call (HWM has increased)', async () => {
@@ -466,41 +472,45 @@ describe('payout', () => {
     await provider.send('evm_mine', []);
 
     // call() function to assert return value
-    const payoutCall = performanceFee.payout
+    const payoutCall = await performanceFee.payout
       .args(mockComptrollerProxy, mockVaultProxy)
-      .from(mockFeeManager.address)
+      .from(mockFeeManager)
       .call();
-    await expect(payoutCall).resolves.toBe(true);
+
+    expect(payoutCall).toBe(true);
 
     // send() function
-    const payoutTx = mockFeeManager.forward(
+    const receipt = await mockFeeManager.forward(
       performanceFee.payout,
       mockComptrollerProxy,
       mockVaultProxy,
     );
-    await expect(payoutTx).resolves.toBeReceipt();
-    const payoutTimestamp = (await provider.getBlock('latest')).timestamp;
-
-    // Assert state
-    const getFeeInfoForFundCall = performanceFee.getFeeInfoForFund(
-      mockComptrollerProxy,
-    );
-    await expect(getFeeInfoForFundCall).resolves.toMatchObject({
-      rate: feeInfoPrePayout.rate,
-      period: feeInfoPrePayout.period,
-      activated: feeInfoPrePayout.activated,
-      lastPaid: BigNumber.from(payoutTimestamp), // updated
-      highWaterMark: feeInfoPrePayout.lastSharePrice, // updated
-      lastSharePrice: feeInfoPrePayout.lastSharePrice,
-      aggregateValueDue: feeInfoPrePayout.aggregateValueDue,
-    });
 
     // Assert event
-    await assertEvent(payoutTx, 'PaidOut', {
-      comptrollerProxy: mockComptrollerProxy.address,
+    assertEvent(receipt, 'PaidOut', {
+      comptrollerProxy: mockComptrollerProxy,
       prevHighWaterMark: initialSharePrice,
       nextHighWaterMark: feeInfoPrePayout.lastSharePrice,
     });
+
+    // Assert state
+    const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(
+      mockComptrollerProxy,
+    );
+
+    const payoutTimestamp = await transactionTimestamp(receipt);
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(
+      performanceFee.getFeeInfoForFund.fragment,
+      {
+        rate: feeInfoPrePayout.rate,
+        period: feeInfoPrePayout.period,
+        activated: feeInfoPrePayout.activated,
+        lastPaid: BigNumber.from(payoutTimestamp), // updated
+        highWaterMark: feeInfoPrePayout.lastSharePrice, // updated
+        lastSharePrice: feeInfoPrePayout.lastSharePrice,
+        aggregateValueDue: feeInfoPrePayout.aggregateValueDue,
+      },
+    );
   });
 });
 
@@ -522,10 +532,9 @@ describe('payoutAllowed', () => {
     });
 
     // payoutAllowed should be false
-    const badPayoutAllowedCall1 = performanceFee.payoutAllowed(
-      mockComptrollerProxy,
-    );
-    await expect(badPayoutAllowedCall1).resolves.toBe(false);
+    await expect(
+      performanceFee.payoutAllowed(mockComptrollerProxy),
+    ).resolves.toBe(false);
 
     // Warp to almost the end of the period
     const warpOffset = 10;
@@ -535,20 +544,18 @@ describe('payoutAllowed', () => {
     await provider.send('evm_mine', []);
 
     // payoutAllowed should still be false
-    const badPayoutAllowedCall2 = performanceFee.payoutAllowed(
-      mockComptrollerProxy,
-    );
-    await expect(badPayoutAllowedCall2).resolves.toBe(false);
+    await expect(
+      performanceFee.payoutAllowed(mockComptrollerProxy),
+    ).resolves.toBe(false);
 
     // Warp to the end of the period
     await provider.send('evm_increaseTime', [warpOffset]);
     await provider.send('evm_mine', []);
 
     // payoutAllowed should be true
-    const goodPayoutAllowedCall = performanceFee.payoutAllowed(
-      mockComptrollerProxy,
-    );
-    await expect(goodPayoutAllowedCall).resolves.toBe(true);
+    await expect(
+      performanceFee.payoutAllowed(mockComptrollerProxy),
+    ).resolves.toBe(true);
   });
 
   it('requires a subsequent period to pass after a previous payout', async () => {
@@ -584,11 +591,13 @@ describe('payoutAllowed', () => {
     await provider.send('evm_mine', []);
 
     // Payout once to reset the fee period
-    const initialPayoutCall = performanceFee.payout
+    const initialPayoutCall = await performanceFee.payout
       .args(mockComptrollerProxy, mockVaultProxy)
-      .from(mockFeeManager.address)
+      .from(mockFeeManager)
       .call();
-    await expect(initialPayoutCall).resolves.toBe(true);
+
+    expect(initialPayoutCall).toBe(true);
+
     await mockFeeManager.forward(
       performanceFee.payout,
       mockComptrollerProxy,
@@ -597,26 +606,29 @@ describe('payoutAllowed', () => {
 
     // Warp to the end of the 2nd period (performanceFeePeriod - offset1) - another offset2
     const offset2 = 100;
-    await provider.send('evm_increaseTime', [
-      performanceFeePeriod.sub(offset).sub(offset2).toNumber(),
-    ]);
+    const increaseTime = performanceFeePeriod
+      .sub(offset)
+      .sub(offset2)
+      .toNumber();
+
+    await provider.send('evm_increaseTime', [increaseTime]);
     await provider.send('evm_mine', []);
 
     // payoutAllowed should return false since we haven't completed the 2nd period
-    const badPayoutAllowedCall = performanceFee.payoutAllowed(
+    const badPayoutAllowedCall = await performanceFee.payoutAllowed(
       mockComptrollerProxy,
     );
-    await expect(badPayoutAllowedCall).resolves.toBe(false);
+    expect(badPayoutAllowedCall).toBe(false);
 
     // Warp to the end of the period
     await provider.send('evm_increaseTime', [offset2]);
     await provider.send('evm_mine', []);
 
     // payoutAllowed should now return true
-    const goodPayoutAllowedCall = performanceFee.payoutAllowed(
+    const goodPayoutAllowedCall = await performanceFee.payoutAllowed(
       mockComptrollerProxy,
     );
-    await expect(goodPayoutAllowedCall).resolves.toBe(true);
+    expect(goodPayoutAllowedCall).toBe(true);
   });
 });
 
@@ -628,16 +640,14 @@ describe('settle', () => {
       standalonePerformanceFee,
     } = await provider.snapshot(snapshot);
 
-    const settleTx = standalonePerformanceFee.settle(
-      mockComptrollerProxy,
-      mockVaultProxy,
-      feeHooks.Continuous,
-      '0x',
-    );
-
-    await expect(settleTx).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+    await expect(
+      standalonePerformanceFee.settle(
+        mockComptrollerProxy,
+        mockVaultProxy,
+        FeeHook.Continuous,
+        '0x',
+      ),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call (no change in share price)', async () => {
@@ -655,32 +665,31 @@ describe('settle', () => {
       performanceFee,
     });
 
-    const feeHook = feeHooks.Continuous;
+    const feeHook = FeeHook.Continuous;
     const settlementData = constants.HashZero;
 
     // settle.call() to assert return values and get the sharesOutstanding
-    const settleCall = performanceFee.settle
+    const settleCall = await performanceFee.settle
       .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData)
-      .from(mockFeeManager.address)
+      .from(mockFeeManager)
       .call();
-    await expect(settleCall).resolves.toMatchObject({
-      0: feeSettlementTypes.None,
-      1: constants.AddressZero,
-      2: BigNumber.from(0),
+
+    expect(settleCall).toMatchFunctionOutput(performanceFee.settle.fragment, {
+      settlementType_: FeeSettlementType.None,
+      sharesDue_: BigNumber.from(0),
     });
 
     // Execute settle() tx
-    const settleTx = mockFeeManager.forward(
+    const settleReceipt = await mockFeeManager.forward(
       performanceFee.settle,
       mockComptrollerProxy,
       mockVaultProxy,
       feeHook,
       settlementData,
     );
-    await expect(settleTx).resolves.toBeReceipt();
 
     // Assert that no events were emitted
-    await assertNoEvent(settleTx, 'PerformanceUpdated');
+    assertNoEvent(settleReceipt, 'PerformanceUpdated');
   });
 
   it('correctly handles valid call (positive value change with no shares outstanding)', async () => {
@@ -706,7 +715,7 @@ describe('settle', () => {
       nextGav: utils.parseEther('2'),
       performanceFee,
     });
-    expect(feeSettlementType).toBe(feeSettlementTypes.MintSharesOutstanding);
+    expect(feeSettlementType).toBe(FeeSettlementType.MintSharesOutstanding);
   });
 
   it('correctly handles valid call (positive value change with shares outstanding)', async () => {
@@ -741,7 +750,7 @@ describe('settle', () => {
       nextGav: utils.parseEther('3'),
       performanceFee,
     });
-    expect(feeSettlementType).toBe(feeSettlementTypes.MintSharesOutstanding);
+    expect(feeSettlementType).toBe(FeeSettlementType.MintSharesOutstanding);
   });
 
   it('correctly handles valid call (negative value change less than shares outstanding)', async () => {
@@ -776,7 +785,7 @@ describe('settle', () => {
       nextGav: utils.parseEther('1.5'),
       performanceFee,
     });
-    expect(feeSettlementType).toBe(feeSettlementTypes.BurnSharesOutstanding);
+    expect(feeSettlementType).toBe(FeeSettlementType.BurnSharesOutstanding);
   });
 
   it('correctly handles valid call (negative value change greater than shares outstanding)', async () => {
@@ -811,7 +820,7 @@ describe('settle', () => {
       nextGav: utils.parseEther('0.5'),
       performanceFee,
     });
-    expect(feeSettlementType).toBe(feeSettlementTypes.BurnSharesOutstanding);
+    expect(feeSettlementType).toBe(FeeSettlementType.BurnSharesOutstanding);
 
     // Outstanding shares should be back to 0
     await expect(

@@ -8,16 +8,15 @@ import {
   EthereumTestnetProvider,
   randomAddress,
 } from '@crestproject/crestproject';
-import { EntranceRateBurnFee } from '@melonproject/protocol';
 import {
-  assertEvent,
-  feeHooks,
-  feeSettlementTypes,
-  defaultTestDeployment,
+  EntranceRateBurnFee,
+  FeeHook,
+  FeeSettlementType,
   entranceRateFeeConfigArgs,
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
-} from '@melonproject/testutils';
+} from '@melonproject/protocol';
+import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -46,8 +45,8 @@ describe('constructor', () => {
       deployment: { entranceRateBurnFee },
     } = await provider.snapshot(snapshot);
 
-    const getSettlementTypeCall = entranceRateBurnFee.getSettlementType();
-    await expect(getSettlementTypeCall).resolves.toBe(feeSettlementTypes.Burn);
+    const getSettlementTypeCall = await entranceRateBurnFee.getSettlementType();
+    expect(getSettlementTypeCall).toBe(FeeSettlementType.Burn);
   });
 });
 
@@ -69,9 +68,11 @@ describe('settle', () => {
     // Create settlementData
     const buyer = randomAddress();
     const sharesBought = utils.parseEther('2');
+    const investmentAmount = utils.parseEther('2');
     const settlementData = await settlePostBuySharesArgs({
       buyer,
       sharesBought,
+      investmentAmount,
     });
 
     // Get the expected shares due for the settlement
@@ -81,34 +82,37 @@ describe('settle', () => {
     });
 
     // Check the return values via a call() to settle()
-    const settleCall = standaloneEntranceRateFee
+    const settleCall = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .settle.args(
         comptrollerProxyAddress,
         randomAddress(),
-        feeHooks.PostBuyShares,
+        FeeHook.PostBuyShares,
         settlementData,
       )
       .call();
-    await expect(settleCall).resolves.toMatchObject({
-      0: feeSettlementTypes.Burn,
-      1: buyer,
-      2: expectedSharesDueForCall,
-    });
+
+    expect(settleCall).toMatchFunctionOutput(
+      standaloneEntranceRateFee.settle.fragment,
+      {
+        settlementType_: FeeSettlementType.Burn,
+        payer_: buyer,
+        sharesDue_: expectedSharesDueForCall,
+      },
+    );
 
     // Send the tx to actually settle()
-    const settleTx = standaloneEntranceRateFee
+    const receipt = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .settle(
         comptrollerProxyAddress,
         randomAddress(),
-        feeHooks.PostBuyShares,
+        FeeHook.PostBuyShares,
         settlementData,
       );
-    await expect(settleTx).resolves.toBeReceipt();
 
     // Assert the event was emitted
-    await assertEvent(settleTx, 'Settled', {
+    assertEvent(receipt, 'Settled', {
       comptrollerProxy: comptrollerProxyAddress,
       payer: buyer,
       sharesQuantity: BigNumber.from(expectedSharesDueForCall),

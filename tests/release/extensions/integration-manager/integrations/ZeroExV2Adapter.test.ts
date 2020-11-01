@@ -3,17 +3,15 @@ import {
   AddressLike,
   EthereumTestnetProvider,
   randomAddress,
-  resolveAddress,
 } from '@crestproject/crestproject';
-import { Dispatcher } from '@melonproject/protocol';
 import {
-  defaultTestDeployment,
-  createNewFund,
-  takeOrderSelector,
   createUnsignedZeroExV2Order,
+  Dispatcher,
   signZeroExV2Order,
+  takeOrderSelector,
   zeroExV2TakeOrderArgs,
-} from '@melonproject/testutils';
+} from '@melonproject/protocol';
+import { defaultTestDeployment, createNewFund } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -44,11 +42,7 @@ async function getFundDeployerOwner(
   dispatcher: AddressLike,
   provider: EthereumTestnetProvider,
 ) {
-  const dispatcherContract = new Dispatcher(
-    await resolveAddress(dispatcher),
-    provider,
-  );
-
+  const dispatcherContract = new Dispatcher(dispatcher, provider);
   return dispatcherContract.getOwner();
 }
 
@@ -61,13 +55,11 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const getExchangeCall = zeroExV2Adapter.getExchange();
-    await expect(getExchangeCall).resolves.toBe(zeroExV2.exchange);
+    const getExchangeCall = await zeroExV2Adapter.getExchange();
+    expect(getExchangeCall).toMatchAddress(zeroExV2.exchange);
 
-    const getIntegrationManagerCall = zeroExV2Adapter.getIntegrationManager();
-    await expect(getIntegrationManagerCall).resolves.toBe(
-      integrationManager.address,
-    );
+    const getIntegrationManagerCall = await zeroExV2Adapter.getIntegrationManager();
+    expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
   });
 });
 
@@ -102,18 +94,14 @@ describe('parseAssetsForMethod', () => {
       takerAsset: outgoingAsset,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
-    const takeOrderArgs = await zeroExV2TakeOrderArgs(
+    const takeOrderArgs = zeroExV2TakeOrderArgs({
       signedOrder,
       takerAssetFillAmount,
-    );
+    });
 
-    const parseAssetsForMethodCall = zeroExV2Adapter.parseAssetsForMethod(
-      takeOrderSelector,
-      takeOrderArgs,
-    );
-    await expect(parseAssetsForMethodCall).rejects.toBeRevertedWith(
-      'maker is not allowed',
-    );
+    await expect(
+      zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs),
+    ).rejects.toBeRevertedWith('maker is not allowed');
   });
 
   it('generates expected output without takerFee', async () => {
@@ -131,15 +119,10 @@ describe('parseAssetsForMethod', () => {
 
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const makerAddress = await resolveAddress(deployer);
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress],
-      [true],
-    );
-    await expect(updateAllowedMakersTx).resolves.toBeReceipt();
+    await adapter.updateAllowedMakers([deployer], [true]);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
@@ -161,33 +144,27 @@ describe('parseAssetsForMethod', () => {
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
     });
+
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
-    const takeOrderArgs = await zeroExV2TakeOrderArgs(
+    const takeOrderArgs = zeroExV2TakeOrderArgs({
       signedOrder,
       takerAssetFillAmount,
-    );
+    });
 
-    const {
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await zeroExV2Adapter.parseAssetsForMethod(
+    const result = await zeroExV2Adapter.parseAssetsForMethod(
       takeOrderSelector,
       takeOrderArgs,
     );
 
-    expect({
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      incomingAssets_: [incomingAsset.address],
-      spendAssets_: [outgoingAsset.address],
-      spendAssetAmounts_: [takerAssetFillAmount],
-      minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      zeroExV2Adapter.parseAssetsForMethod.fragment,
+      {
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [outgoingAsset],
+        spendAssetAmounts_: [takerAssetFillAmount],
+        minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      },
+    );
   });
 
   it('generates expected output with takerFeeAsset that is the same as makerAsset', async () => {
@@ -205,15 +182,10 @@ describe('parseAssetsForMethod', () => {
 
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const makerAddress = await resolveAddress(deployer);
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress],
-      [true],
-    );
-    await expect(updateAllowedMakersTx).resolves.toBeReceipt();
+    await adapter.updateAllowedMakers([deployer], [true]);
 
     const feeRecipientAddress = constants.AddressZero;
     const takerFee = BigNumber.from(3);
@@ -240,32 +212,25 @@ describe('parseAssetsForMethod', () => {
       takerAsset: outgoingAsset,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
-    const takeOrderArgs = await zeroExV2TakeOrderArgs(
+    const takeOrderArgs = zeroExV2TakeOrderArgs({
       signedOrder,
       takerAssetFillAmount,
-    );
+    });
 
-    const {
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await zeroExV2Adapter.parseAssetsForMethod(
+    const result = await zeroExV2Adapter.parseAssetsForMethod(
       takeOrderSelector,
       takeOrderArgs,
     );
 
-    expect({
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      incomingAssets_: [incomingAsset.address],
-      spendAssets_: [outgoingAsset.address],
-      spendAssetAmounts_: [takerAssetFillAmount],
-      minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      zeroExV2Adapter.parseAssetsForMethod.fragment,
+      {
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [outgoingAsset],
+        spendAssetAmounts_: [takerAssetFillAmount],
+        minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      },
+    );
   });
 
   it('generates expected output with takerFeeAsset that is the same as takerAsset', async () => {
@@ -283,15 +248,10 @@ describe('parseAssetsForMethod', () => {
 
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const makerAddress = await resolveAddress(deployer);
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress],
-      [true],
-    );
-    await expect(updateAllowedMakersTx).resolves.toBeReceipt();
+    await adapter.updateAllowedMakers([deployer], [true]);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
@@ -317,32 +277,25 @@ describe('parseAssetsForMethod', () => {
       takerAsset: outgoingAsset,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
-    const takeOrderArgs = await zeroExV2TakeOrderArgs(
+    const takeOrderArgs = zeroExV2TakeOrderArgs({
       signedOrder,
       takerAssetFillAmount,
-    );
+    });
 
-    const {
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await zeroExV2Adapter.parseAssetsForMethod(
+    const result = await zeroExV2Adapter.parseAssetsForMethod(
       takeOrderSelector,
       takeOrderArgs,
     );
 
-    expect({
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      incomingAssets_: [incomingAsset.address],
-      spendAssets_: [outgoingAsset.address],
-      spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
-      minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      zeroExV2Adapter.parseAssetsForMethod.fragment,
+      {
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [outgoingAsset],
+        spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
+        minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      },
+    );
   });
 
   it('generates expected output with takerFee', async () => {
@@ -360,15 +313,10 @@ describe('parseAssetsForMethod', () => {
 
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const makerAddress = await resolveAddress(deployer);
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress],
-      [true],
-    );
-    await expect(updateAllowedMakersTx).resolves.toBeReceipt();
+    await adapter.updateAllowedMakers([deployer], [true]);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
@@ -393,33 +341,27 @@ describe('parseAssetsForMethod', () => {
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
     });
+
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
-    const takeOrderArgs = await zeroExV2TakeOrderArgs(
+    const takeOrderArgs = zeroExV2TakeOrderArgs({
       signedOrder,
       takerAssetFillAmount,
-    );
+    });
 
-    const {
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await zeroExV2Adapter.parseAssetsForMethod(
+    const result = await zeroExV2Adapter.parseAssetsForMethod(
       takeOrderSelector,
       takeOrderArgs,
     );
 
-    expect({
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      incomingAssets_: [incomingAsset.address],
-      spendAssets_: [outgoingAsset.address, takerFeeAsset.address],
-      spendAssetAmounts_: [takerAssetFillAmount, expectedTakerFee],
-      minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      zeroExV2Adapter.parseAssetsForMethod.fragment,
+      {
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [outgoingAsset, takerFeeAsset],
+        spendAssetAmounts_: [takerAssetFillAmount, expectedTakerFee],
+        minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      },
+    );
   });
 });
 
@@ -434,24 +376,23 @@ describe('updateAllowedMakers', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const makerAddress = randomAddress();
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const failUpdateAllowedMakersTx = adapter
-      .connect(fundOwner)
-      .updateAllowedMakers([makerAddress], [true]);
-    await expect(failUpdateAllowedMakersTx).rejects.toBeRevertedWith(
+    await expect(
+      adapter.connect(fundOwner).updateAllowedMakers([makerAddress], [true]),
+    ).rejects.toBeRevertedWith(
       'Only the FundDeployer owner can call this function',
     );
 
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress],
-      [true],
-    );
-    await expect(updateAllowedMakersTx).resolves.toBeReceipt();
+    await expect(
+      adapter.updateAllowedMakers([makerAddress], [true]),
+    ).resolves.toBeReceipt();
 
-    const isAllowedMakerCall = zeroExV2Adapter.isAllowedMaker(makerAddress);
-    await expect(isAllowedMakerCall).resolves.toBe(true);
+    const isAllowedMakerCall = await zeroExV2Adapter.isAllowedMaker(
+      makerAddress,
+    );
+    expect(isAllowedMakerCall).toBe(true);
   });
 
   it('does not allow makers and alloweds arrays to have unequal length', async () => {
@@ -463,16 +404,12 @@ describe('updateAllowedMakers', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const makerAddress = randomAddress();
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress, makerAddress],
-      [true],
-    );
-    await expect(updateAllowedMakersTx).rejects.toBeRevertedWith(
-      '_makers and _alloweds arrays unequal',
-    );
+    await expect(
+      adapter.updateAllowedMakers([makerAddress, makerAddress], [true]),
+    ).rejects.toBeRevertedWith('_makers and _alloweds arrays unequal');
   });
 
   it('does not allow a duplicate maker', async () => {
@@ -484,15 +421,11 @@ describe('updateAllowedMakers', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const makerAddress = randomAddress();
     const adapter = zeroExV2Adapter.connect(
-      provider.getSigner(fundDeployerOwner),
+      await provider.getSignerWithAddress(fundDeployerOwner),
     );
 
-    const updateAllowedMakersTx = adapter.updateAllowedMakers(
-      [makerAddress, makerAddress],
-      [true, true],
-    );
-    await expect(updateAllowedMakersTx).rejects.toBeRevertedWith(
-      'duplicate maker detected',
-    );
+    await expect(
+      adapter.updateAllowedMakers([makerAddress, makerAddress], [true, true]),
+    ).rejects.toBeRevertedWith('duplicate maker detected');
   });
 });

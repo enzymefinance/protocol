@@ -1,5 +1,6 @@
 import {
   EthereumTestnetProvider,
+  SignerWithAddress,
   randomAddress,
 } from '@crestproject/crestproject';
 import {
@@ -8,19 +9,19 @@ import {
   KyberAdapter,
   StandardToken,
   VaultLib,
+  assetTransferArgs,
+  kyberTakeOrderArgs,
+  takeOrderSelector,
+  SpendAssetsHandleType,
 } from '@melonproject/protocol';
 import {
   assertEvent,
-  assetTransferArgs,
   createNewFund,
   defaultTestDeployment,
   getAssetBalances,
   kyberTakeOrder,
-  kyberTakeOrderArgs,
-  spendAssetsHandleTypes,
-  takeOrderSelector,
 } from '@melonproject/testutils';
-import { BigNumberish, Signer, utils } from 'ethers';
+import { BigNumberish, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -61,7 +62,7 @@ async function assertKyberTakeOrder({
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
-  fundOwner: Signer;
+  fundOwner: SignerWithAddress;
   kyberAdapter: KyberAdapter;
   outgoingAsset: StandardToken;
   outgoingAssetAmount?: BigNumberish;
@@ -78,7 +79,11 @@ async function assertKyberTakeOrder({
     assets: [incomingAsset, outgoingAsset],
   });
 
-  const takeOrderTx = kyberTakeOrder({
+  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+    'CallOnIntegrationExecutedForFund',
+  );
+
+  const receipt = await kyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
     integrationManager,
@@ -89,6 +94,17 @@ async function assertKyberTakeOrder({
     incomingAsset,
     minIncomingAssetAmount,
     seedFund: false,
+  });
+
+  assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+    comptrollerProxy,
+    vaultProxy,
+    caller: fundOwner,
+    adapter: kyberAdapter,
+    incomingAssets: [incomingAsset],
+    incomingAssetAmounts: [minIncomingAssetAmount],
+    outgoingAssets: [outgoingAsset],
+    outgoingAssetAmounts: [outgoingAssetAmount],
   });
 
   const [
@@ -107,20 +123,6 @@ async function assertKyberTakeOrder({
   expect(postTxOutgoingAssetBalance).toEqBigNumber(
     preTxOutgoingAssetBalance.sub(outgoingAssetAmount),
   );
-
-  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-    'CallOnIntegrationExecutedForFund',
-  );
-  await assertEvent(takeOrderTx, CallOnIntegrationExecutedForFundEvent, {
-    comptrollerProxy: comptrollerProxy.address,
-    vaultProxy: vaultProxy.address,
-    caller: await fundOwner.getAddress(),
-    adapter: kyberAdapter.address,
-    incomingAssets: [incomingAsset.address],
-    incomingAssetAmounts: [minIncomingAssetAmount],
-    outgoingAssets: [outgoingAsset.address],
-    outgoingAssetAmounts: [outgoingAssetAmount],
-  });
 }
 
 describe('constructor', () => {
@@ -132,13 +134,11 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const getExchangeCall = kyberAdapter.getExchange();
-    await expect(getExchangeCall).resolves.toBe(kyber);
+    const exchangeResult = await kyberAdapter.getExchange();
+    expect(exchangeResult).toMatchAddress(kyber);
 
-    const getIntegrationManagerCall = kyberAdapter.getIntegrationManager();
-    await expect(getIntegrationManagerCall).resolves.toBe(
-      integrationManager.address,
-    );
+    const integrationManagerResult = await kyberAdapter.getIntegrationManager();
+    expect(integrationManagerResult).toMatchAddress(integrationManager);
   });
 });
 
@@ -148,26 +148,20 @@ describe('parseAssetsForMethod', () => {
       deployment: { kyberAdapter },
     } = await provider.snapshot(snapshot);
 
-    const args = await kyberTakeOrderArgs({
+    const args = kyberTakeOrderArgs({
       incomingAsset: randomAddress(),
       minIncomingAssetAmount: 1,
       outgoingAsset: randomAddress(),
       outgoingAssetAmount: 1,
     });
 
-    const badSelectorParseAssetsCall = kyberAdapter.parseAssetsForMethod(
-      utils.randomBytes(4),
-      args,
-    );
-    await expect(badSelectorParseAssetsCall).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      kyberAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    const goodSelectorParseAssetsCall = kyberAdapter.parseAssetsForMethod(
-      takeOrderSelector,
-      args,
-    );
-    await expect(goodSelectorParseAssetsCall).resolves.toBeTruthy();
+    await expect(
+      kyberAdapter.parseAssetsForMethod(takeOrderSelector, args),
+    ).resolves.toBeTruthy();
   });
 
   it('generates expected output', async () => {
@@ -180,37 +174,28 @@ describe('parseAssetsForMethod', () => {
     const outgoingAsset = randomAddress();
     const outgoingAssetAmount = utils.parseEther('1');
 
-    const takeOrderArgs = await kyberTakeOrderArgs({
+    const takeOrderArgs = kyberTakeOrderArgs({
       incomingAsset,
       minIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
     });
 
-    const {
-      spendAssetsHandleType_,
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await kyberAdapter.parseAssetsForMethod(
+    const result = await kyberAdapter.parseAssetsForMethod(
       takeOrderSelector,
       takeOrderArgs,
     );
 
-    expect({
-      spendAssetsHandleType_,
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      spendAssetsHandleType_: spendAssetsHandleTypes.Transfer,
-      incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [outgoingAssetAmount],
-      minIncomingAssetAmounts_: [minIncomingAssetAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      kyberAdapter.parseAssetsForMethod.fragment,
+      {
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [outgoingAsset],
+        spendAssetAmounts_: [outgoingAssetAmount],
+        minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      },
+    );
   });
 });
 
@@ -221,7 +206,7 @@ describe('takeOrder', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const takeOrderArgs = await kyberTakeOrderArgs({
+    const takeOrderArgs = kyberTakeOrderArgs({
       incomingAsset: randomAddress(),
       minIncomingAssetAmount: 1,
       outgoingAsset: randomAddress(),
@@ -234,12 +219,9 @@ describe('takeOrder', () => {
       encodedCallArgs: takeOrderArgs,
     });
 
-    const badTakeOrderTx = kyberAdapter.takeOrder(
-      vaultProxy,
-      takeOrderSelector,
-      transferArgs,
-    );
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
+    await expect(
+      kyberAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs),
+    ).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -254,19 +236,19 @@ describe('takeOrder', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const badTakeOrderTx = kyberTakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      kyberAdapter,
-      outgoingAsset,
-      outgoingAssetAmount: utils.parseEther('1'),
-      incomingAsset,
-      seedFund: true,
-    });
-
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
+    await expect(
+      kyberTakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        kyberAdapter,
+        outgoingAsset,
+        outgoingAssetAmount: utils.parseEther('1'),
+        incomingAsset,
+        seedFund: true,
+      }),
+    ).rejects.toBeRevertedWith(
       'incomingAsset and outgoingAsset asset cannot be the same',
     );
   });
@@ -281,22 +263,20 @@ describe('takeOrder', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const badTakeOrderTx = kyberTakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      kyberAdapter,
-      outgoingAsset,
-      outgoingAssetAmount: utils.parseEther('1'),
-      minIncomingAssetAmount: 0,
-      incomingAsset,
-      seedFund: true,
-    });
-
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
-      'minIncomingAssetAmount must be >0',
-    );
+    await expect(
+      kyberTakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        kyberAdapter,
+        outgoingAsset,
+        outgoingAssetAmount: utils.parseEther('1'),
+        minIncomingAssetAmount: 0,
+        incomingAsset,
+        seedFund: true,
+      }),
+    ).rejects.toBeRevertedWith('minIncomingAssetAmount must be >0');
   });
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {

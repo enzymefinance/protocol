@@ -12,8 +12,7 @@
     "./dist/testutils.esm.js": "./dist/testutils.browser.esm.js"
   },
   "files": [
-    "dist",
-    "mainnet.json"
+    "dist"
   ],
   "publishConfig": {
     "access": "public"
@@ -33,15 +32,16 @@
     "Solidity"
   ],
   "dependencies": {
+    "@babel/runtime": "^7.12.1",
     "@melonproject/protocol": "^2.0.0"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.0.64",
+    "@crestproject/crestproject": "^0.1.1",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   },
   "peerDependencies": {
-    "@crestproject/crestproject": "^0.0.64",
+    "@crestproject/crestproject": "^0.1.1",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   }

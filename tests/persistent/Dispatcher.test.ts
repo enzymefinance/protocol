@@ -2,14 +2,14 @@ import { constants, BigNumber } from 'ethers';
 import {
   EthereumTestnetProvider,
   randomAddress,
-  resolveAddress,
+  sameAddress,
   AddressLike,
   MockContract,
-  ContractReceipt,
 } from '@crestproject/crestproject';
 import {
   assertEvent,
   defaultPersistetTestDeployment,
+  transactionTimestamp,
 } from '@melonproject/testutils';
 import {
   Dispatcher,
@@ -66,16 +66,11 @@ async function ensureFundDeployer({
   fundDeployer: AddressLike;
 }) {
   const currentDeployer = await dispatcher.getCurrentFundDeployer();
-  const nextDeployerAddress = await resolveAddress(fundDeployer);
-  if (currentDeployer != nextDeployerAddress) {
-    const fundDeployerTx = dispatcher.setCurrentFundDeployer(
-      nextDeployerAddress,
-    );
-
-    await expect(fundDeployerTx).resolves.toBeReceipt();
-    await assertEvent(fundDeployerTx, 'CurrentFundDeployerSet', {
+  if (!sameAddress(currentDeployer, fundDeployer)) {
+    const receipt = await dispatcher.setCurrentFundDeployer(fundDeployer);
+    assertEvent(receipt, 'CurrentFundDeployerSet', {
       prevFundDeployer: currentDeployer,
-      nextFundDeployer: await resolveAddress(fundDeployer),
+      nextFundDeployer: fundDeployer,
     });
   }
 }
@@ -98,7 +93,7 @@ async function deployVault({
   await ensureFundDeployer({ dispatcher, fundDeployer: mockFundDeployer });
 
   const event = dispatcher.abi.getEvent('VaultProxyDeployed');
-  const forwardTx = mockFundDeployer.forward(
+  const receipt = await mockFundDeployer.forward(
     dispatcher.deployVaultProxy,
     vaultLib,
     owner,
@@ -106,12 +101,12 @@ async function deployVault({
     fundName,
   );
 
-  const args = await assertEvent(forwardTx, event, {
+  const args = assertEvent(receipt, event, {
     fundName,
-    owner: await resolveAddress(owner),
-    vaultAccessor: await resolveAddress(vaultAccessor),
-    fundDeployer: await resolveAddress(mockFundDeployer),
-    vaultLib: await resolveAddress(vaultLib),
+    owner,
+    vaultAccessor,
+    vaultLib,
+    fundDeployer: mockFundDeployer,
     vaultProxy: expect.any(String) as string,
   });
 
@@ -147,14 +142,6 @@ async function signalMigration({
   );
 }
 
-async function transactionTimestamp(
-  tx: ContractReceipt<any> | Promise<ContractReceipt<any>>,
-) {
-  expect(tx).resolves.toBeReceipt();
-  const block = await provider.getBlock((await tx).blockNumber);
-  return block.timestamp;
-}
-
 describe('constructor', () => {
   it('sets initial state', async () => {
     const {
@@ -162,16 +149,14 @@ describe('constructor', () => {
       config: { deployer },
     } = await provider.snapshot(snapshot);
 
-    const getOwnerCall = dispatcher.getOwner();
-    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
+    const getOwnerCall = await dispatcher.getOwner();
+    expect(getOwnerCall).toMatchAddress(deployer);
 
-    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
-    await expect(getNominatedOwnerCall).resolves.toBe(constants.AddressZero);
+    const getNominatedOwnerCall = await dispatcher.getNominatedOwner();
+    expect(getNominatedOwnerCall).toMatchAddress(constants.AddressZero);
 
-    const getCurrentFundDeployerCall = dispatcher.getCurrentFundDeployer();
-    await expect(getCurrentFundDeployerCall).resolves.toBe(
-      constants.AddressZero,
-    );
+    const getCurrentFundDeployerCall = await dispatcher.getCurrentFundDeployer();
+    expect(getCurrentFundDeployerCall).toMatchAddress(constants.AddressZero);
   });
 });
 
@@ -182,10 +167,9 @@ describe('setNominatedOwner', () => {
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    const nominateOwnerTx = dispatcher
-      .connect(randomUser)
-      .setNominatedOwner(randomAddress());
-    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
+    await expect(
+      dispatcher.connect(randomUser).setNominatedOwner(randomAddress()),
+    ).rejects.toBeRevertedWith(
       'Only the contract owner can call this function',
     );
   });
@@ -195,10 +179,9 @@ describe('setNominatedOwner', () => {
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    const nominateOwnerTx = dispatcher.setNominatedOwner(constants.AddressZero);
-    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
-      '_nextOwner cannot be empty',
-    );
+    await expect(
+      dispatcher.setNominatedOwner(constants.AddressZero),
+    ).rejects.toBeRevertedWith('_nextOwner cannot be empty');
   });
 
   it('does not allow the next owner to be the current owner', async () => {
@@ -207,10 +190,9 @@ describe('setNominatedOwner', () => {
       config: { deployer: currentOwner },
     } = await provider.snapshot(snapshot);
 
-    const nominateOwnerTx = dispatcher.setNominatedOwner(currentOwner);
-    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
-      '_nextOwner is already the owner',
-    );
+    await expect(
+      dispatcher.setNominatedOwner(currentOwner),
+    ).rejects.toBeRevertedWith('_nextOwner is already the owner');
   });
 
   it('does not allow the next owner to already be nominated', async () => {
@@ -223,10 +205,9 @@ describe('setNominatedOwner', () => {
     await dispatcher.setNominatedOwner(nextOwner);
 
     // Attempt to nominate the same nextOwner a second time
-    const nominateOwnerTx = dispatcher.setNominatedOwner(nextOwner);
-    await expect(nominateOwnerTx).rejects.toBeRevertedWith(
-      '_nextOwner is already nominated',
-    );
+    await expect(
+      dispatcher.setNominatedOwner(nextOwner),
+    ).rejects.toBeRevertedWith('_nextOwner is already nominated');
   });
 
   it('correctly handles nominating a new owner', async () => {
@@ -237,21 +218,20 @@ describe('setNominatedOwner', () => {
 
     // Nominate the nextOwner a first time
     const nextOwnerAddress = randomAddress();
-    const setNominatedOwnerTx = dispatcher.setNominatedOwner(nextOwnerAddress);
-    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
-
-    // New owner should have been nominated
-    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
-    await expect(getNominatedOwnerCall).resolves.toBe(nextOwnerAddress);
-
-    // Ownership should not have changed
-    const getOwnerCall = dispatcher.getOwner();
-    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
+    const receipt = await dispatcher.setNominatedOwner(nextOwnerAddress);
 
     // NominatedOwnerSet event properly emitted
-    assertEvent(setNominatedOwnerTx, 'NominatedOwnerSet', {
+    assertEvent(receipt, 'NominatedOwnerSet', {
       nominatedOwner: nextOwnerAddress,
     });
+
+    // New owner should have been nominated
+    const getNominatedOwnerCall = await dispatcher.getNominatedOwner();
+    expect(getNominatedOwnerCall).toMatchAddress(nextOwnerAddress);
+
+    // Ownership should not have changed
+    const getOwnerCall = await dispatcher.getOwner();
+    expect(getOwnerCall).toMatchAddress(deployer);
   });
 });
 
@@ -263,14 +243,12 @@ describe('removeNominatedOwner', () => {
     } = await provider.snapshot(snapshot);
 
     // Set nominated owner
-    const setNominatedOwnerTx = dispatcher.setNominatedOwner(randomAddress());
-    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+    await dispatcher.setNominatedOwner(randomAddress());
 
     // Attempt by a random user to remove nominated owner should fail
-    const removeNominateOwnerTx = dispatcher
-      .connect(randomUser)
-      .removeNominatedOwner();
-    await expect(removeNominateOwnerTx).rejects.toBeRevertedWith(
+    await expect(
+      dispatcher.connect(randomUser).removeNominatedOwner(),
+    ).rejects.toBeRevertedWith(
       'Only the contract owner can call this function',
     );
   });
@@ -283,25 +261,23 @@ describe('removeNominatedOwner', () => {
 
     // Set nominated owner
     const nextOwnerAddress = randomAddress();
-    const setNominatedOwnerTx = dispatcher.setNominatedOwner(nextOwnerAddress);
-    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+    await dispatcher.setNominatedOwner(nextOwnerAddress);
 
     // Attempt by a random user to remove nominated owner should fail
-    const removeNominateOwnerTx = dispatcher.removeNominatedOwner();
-    await expect(removeNominateOwnerTx).resolves.toBeReceipt();
+    const receipt = await dispatcher.removeNominatedOwner();
 
-    // Nomination should have been removed
-    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
-    await expect(getNominatedOwnerCall).resolves.toBe(constants.AddressZero);
-
-    // Ownership should not have changed
-    const getOwnerCall = dispatcher.getOwner();
-    await expect(getOwnerCall).resolves.toBe(await resolveAddress(deployer));
-
-    // NominatedOwnerSet event properly emitted
-    assertEvent(removeNominateOwnerTx, 'NominatedOwnerRemoved', {
+    // NominatedOwnerRemoved event properly emitted
+    assertEvent(receipt, 'NominatedOwnerRemoved', {
       nominatedOwner: nextOwnerAddress,
     });
+
+    // Nomination should have been removed
+    const getNominatedOwnerCall = await dispatcher.getNominatedOwner();
+    expect(getNominatedOwnerCall).toMatchAddress(constants.AddressZero);
+
+    // Ownership should not have changed
+    const getOwnerCall = await dispatcher.getOwner();
+    expect(getOwnerCall).toMatchAddress(deployer);
   });
 });
 
@@ -313,12 +289,12 @@ describe('claimOwnership', () => {
     } = await provider.snapshot(snapshot);
 
     // Set nominated owner
-    const setNominatedOwnerTx = dispatcher.setNominatedOwner(randomAddress());
-    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+    await dispatcher.setNominatedOwner(randomAddress());
 
     // Attempt by a random user to claim ownership should fail
-    const claimOwnershipTx = dispatcher.connect(randomUser).claimOwnership();
-    await expect(claimOwnershipTx).rejects.toBeRevertedWith(
+    await expect(
+      dispatcher.connect(randomUser).claimOwnership(),
+    ).rejects.toBeRevertedWith(
       'Only the nominatedOwner can call this function',
     );
   });
@@ -331,31 +307,24 @@ describe('claimOwnership', () => {
     } = await provider.snapshot(snapshot);
 
     // Set nominated owner
-    const nominatedOwnerAddress = await resolveAddress(nominatedOwner);
-    const setNominatedOwnerTx = dispatcher.setNominatedOwner(
-      nominatedOwnerAddress,
-    );
-    await expect(setNominatedOwnerTx).resolves.toBeReceipt();
+    await dispatcher.setNominatedOwner(nominatedOwner);
 
     // Claim ownership
-    const claimOwnershipTx = dispatcher
-      .connect(nominatedOwner)
-      .claimOwnership();
-    await expect(claimOwnershipTx).resolves.toBeReceipt();
-
-    // Owner should now be the nominatedOwner
-    const getOwnerCall = dispatcher.getOwner();
-    await expect(getOwnerCall).resolves.toBe(nominatedOwnerAddress);
-
-    // nominatedOwner should be empty
-    const getNominatedOwnerCall = dispatcher.getNominatedOwner();
-    await expect(getNominatedOwnerCall).resolves.toBe(constants.AddressZero);
+    const receipt = await dispatcher.connect(nominatedOwner).claimOwnership();
 
     // OwnershipTransferred event properly emitted
-    assertEvent(claimOwnershipTx, 'OwnershipTransferred', {
-      prevOwner: await resolveAddress(deployer),
-      nextOwner: nominatedOwnerAddress,
+    assertEvent(receipt, 'OwnershipTransferred', {
+      prevOwner: deployer,
+      nextOwner: nominatedOwner,
     });
+
+    // Owner should now be the nominatedOwner
+    const getOwnerCall = await dispatcher.getOwner();
+    expect(getOwnerCall).toMatchAddress(nominatedOwner);
+
+    // nominatedOwner should be empty
+    const getNominatedOwnerCall = await dispatcher.getNominatedOwner();
+    expect(getNominatedOwnerCall).toMatchAddress(constants.AddressZero);
   });
 });
 
@@ -382,30 +351,30 @@ describe('deployVaultProxy', () => {
     });
 
     // Assert VaultLib state
-    const creatorCall = vaultProxy.getCreator();
-    await expect(creatorCall).resolves.toBe(dispatcher.address);
+    const creatorCall = await vaultProxy.getCreator();
+    expect(creatorCall).toMatchAddress(dispatcher);
 
-    const accessorCall = vaultProxy.getAccessor();
-    await expect(accessorCall).resolves.toBe(vaultAccessor);
+    const accessorCall = await vaultProxy.getAccessor();
+    expect(accessorCall).toMatchAddress(vaultAccessor);
 
-    const migratorCall = vaultProxy.getMigrator();
-    await expect(migratorCall).resolves.toBe(constants.AddressZero);
+    const migratorCall = await vaultProxy.getMigrator();
+    expect(migratorCall).toMatchAddress(constants.AddressZero);
 
-    const ownerCall = vaultProxy.getOwner();
-    await expect(ownerCall).resolves.toBe(owner);
+    const ownerCall = await vaultProxy.getOwner();
+    expect(ownerCall).toMatchAddress(owner);
 
-    const initializedCall = vaultProxy.getInitialized();
-    await expect(initializedCall).resolves.toBe(true);
+    const initializedCall = await vaultProxy.getInitialized();
+    expect(initializedCall).toBe(true);
 
     // Assert ERC20 state
-    const nameCall = vaultProxy.name();
-    await expect(nameCall).resolves.toBe(fundName);
+    const nameCall = await vaultProxy.name();
+    expect(nameCall).toBe(fundName);
 
-    const symbolCall = vaultProxy.symbol();
-    await expect(symbolCall).resolves.toBe('MLNF');
+    const symbolCall = await vaultProxy.symbol();
+    expect(symbolCall).toBe('MLNF');
 
-    const decimalsCall = vaultProxy.decimals();
-    await expect(decimalsCall).resolves.toBe(18);
+    const decimalsCall = await vaultProxy.decimals();
+    expect(decimalsCall).toBe(18);
 
     // TODO: Check VaultProxy events and ERC20 events
   });
@@ -442,20 +411,19 @@ describe('signalMigration', () => {
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     // This should fail because of the missing hook implementation.
     const nextVaultAccessor = randomAddress();
-    const failingTx = signalMigration({
-      dispatcher,
-      mockNextFundDeployer,
-      nextVaultLib,
-      vaultProxy,
-      nextVaultAccessor,
-    });
 
-    await expect(failingTx).rejects.toBeRevertedWith(
-      'preSignalMigrationOriginHook failure',
-    );
+    await expect(
+      signalMigration({
+        dispatcher,
+        mockNextFundDeployer,
+        nextVaultLib,
+        vaultProxy,
+        nextVaultAccessor,
+      }),
+    ).rejects.toBeRevertedWith('preSignalMigrationOriginHook failure');
 
     // Bypassing the failure should allow the tx to succeed and fire the failure event
-    const signalTx = signalMigration({
+    const receipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -464,14 +432,13 @@ describe('signalMigration', () => {
       bypassFailure: true,
     });
 
-    await expect(signalTx).resolves.toBeReceipt();
-    await assertEvent(signalTx, 'PreSignalMigrationOriginHookFailed', {
+    assertEvent(receipt, 'PreSignalMigrationOriginHookFailed', {
       failureReturnData: expect.any(String),
-      vaultProxy: vaultProxy.address,
-      prevFundDeployer: mockPrevFundDeployer.address,
-      nextFundDeployer: mockNextFundDeployer.address,
+      vaultProxy: vaultProxy,
+      prevFundDeployer: mockPrevFundDeployer,
+      nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
-      nextVaultLib: nextVaultLib.address,
+      nextVaultLib: nextVaultLib,
     });
   });
 
@@ -495,7 +462,7 @@ describe('signalMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const signalTx = signalMigration({
+    const receipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -503,34 +470,35 @@ describe('signalMigration', () => {
       nextVaultAccessor,
     });
 
-    await expect(signalTx).resolves.toBeReceipt();
-    const signalTimestamp = await transactionTimestamp(signalTx);
-
-    await assertEvent(signalTx, 'MigrationSignaled', {
-      vaultProxy: vaultProxy.address,
-      prevFundDeployer: mockPrevFundDeployer.address,
-      nextFundDeployer: mockNextFundDeployer.address,
+    assertEvent(receipt, 'MigrationSignaled', {
+      vaultProxy,
+      prevFundDeployer: mockPrevFundDeployer,
+      nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
-      nextVaultLib: nextVaultLib.address,
+      nextVaultLib,
     });
 
-    const detailsCall = dispatcher.getMigrationRequestDetailsForVaultProxy(
+    const signalTimestamp = await transactionTimestamp(receipt);
+    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(
       vaultProxy,
     );
 
-    await expect(detailsCall).resolves.toMatchObject({
-      nextFundDeployer_: mockNextFundDeployer.address,
-      nextVaultAccessor_: nextVaultAccessor,
-      nextVaultLib_: nextVaultLib.address,
-      signalTimestamp_: BigNumber.from(signalTimestamp),
-    });
+    expect(detailsCall).toMatchFunctionOutput(
+      dispatcher.getMigrationRequestDetailsForVaultProxy.fragment,
+      {
+        nextFundDeployer_: mockNextFundDeployer,
+        nextVaultAccessor_: nextVaultAccessor,
+        nextVaultLib_: nextVaultLib,
+        signalTimestamp_: signalTimestamp,
+      },
+    );
 
     // Calls pre- and post- hooks on the mockPrevFundDeployer
-    await expect(
+    expect(
       mockPrevFundDeployer.preSignalMigrationOriginHook,
     ).toHaveBeenCalledOnContract();
 
-    await expect(
+    expect(
       mockPrevFundDeployer.preSignalMigrationOriginHook,
     ).toHaveBeenCalledOnContractWith(
       vaultProxy,
@@ -539,11 +507,11 @@ describe('signalMigration', () => {
       nextVaultLib,
     );
 
-    await expect(
+    expect(
       mockPrevFundDeployer.postSignalMigrationOriginHook,
     ).toHaveBeenCalledOnContract();
 
-    await expect(
+    expect(
       mockPrevFundDeployer.postSignalMigrationOriginHook,
     ).toHaveBeenCalledOnContractWith(
       vaultProxy,
@@ -587,7 +555,7 @@ describe('cancelMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const signalTx = signalMigration({
+    const signalReceipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -595,38 +563,40 @@ describe('cancelMigration', () => {
       nextVaultAccessor,
     });
 
-    await expect(signalTx).resolves.toBeReceipt();
-    const signalTimestamp = await transactionTimestamp(signalTx);
+    const signalTimestamp = await transactionTimestamp(signalReceipt);
 
     // Cancel migration (as owner / deployer)
-    const cancelTx = dispatcher.cancelMigration(vaultProxy, false);
-    await assertEvent(cancelTx, 'MigrationCancelled', {
-      vaultProxy: vaultProxy.address,
-      prevFundDeployer: mockPrevFundDeployer.address,
-      nextFundDeployer: mockNextFundDeployer.address,
+    const cancelReceipt = await dispatcher.cancelMigration(vaultProxy, false);
+    assertEvent(cancelReceipt, 'MigrationCancelled', {
+      vaultProxy,
+      prevFundDeployer: mockPrevFundDeployer,
+      nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
-      nextVaultLib: nextVaultLib.address,
+      nextVaultLib,
       signalTimestamp: BigNumber.from(signalTimestamp),
     });
 
     // Removes MigrationRequest
-    const detailsCall = dispatcher.getMigrationRequestDetailsForVaultProxy(
+    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(
       vaultProxy,
     );
 
-    await expect(detailsCall).resolves.toMatchObject({
-      nextFundDeployer_: constants.AddressZero,
-      nextVaultAccessor_: constants.AddressZero,
-      nextVaultLib_: constants.AddressZero,
-      signalTimestamp_: BigNumber.from(0),
-    });
+    expect(detailsCall).toMatchFunctionOutput(
+      dispatcher.getMigrationRequestDetailsForVaultProxy.fragment,
+      {
+        nextFundDeployer_: constants.AddressZero,
+        nextVaultAccessor_: constants.AddressZero,
+        nextVaultLib_: constants.AddressZero,
+        signalTimestamp_: BigNumber.from(0),
+      },
+    );
 
     // Calls post- hooks on the mockPrevFundDeployer and mockNextFundDeployer
-    await expect(
+    expect(
       mockPrevFundDeployer.postCancelMigrationOriginHook,
     ).toHaveBeenCalledOnContract();
 
-    await expect(
+    expect(
       mockPrevFundDeployer.postCancelMigrationOriginHook,
     ).toHaveBeenCalledOnContractWith(
       vaultProxy,
@@ -636,11 +606,11 @@ describe('cancelMigration', () => {
       signalTimestamp,
     );
 
-    await expect(
+    expect(
       mockNextFundDeployer.postCancelMigrationTargetHook,
     ).toHaveBeenCalledOnContract();
 
-    await expect(
+    expect(
       mockNextFundDeployer.postCancelMigrationTargetHook,
     ).toHaveBeenCalledOnContractWith(
       vaultProxy,
@@ -685,38 +655,35 @@ describe('executeMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const signalTx = signalMigration({
+    await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
       vaultProxy,
       nextVaultAccessor,
     });
-    await expect(signalTx).resolves.toBeReceipt();
 
     // Try to migrate immediately, which should fail
-    const executeTx1 = mockNextFundDeployer.forward(
-      dispatcher.executeMigration,
-      vaultProxy,
-      false,
-    );
-    await expect(executeTx1).rejects.toBeRevertedWith(
-      'The migration timelock has not been met',
-    );
+    await expect(
+      mockNextFundDeployer.forward(
+        dispatcher.executeMigration,
+        vaultProxy,
+        false,
+      ),
+    ).rejects.toBeRevertedWith('The migration timelock has not been met');
 
     // Warp to 5 secs prior to the timelock expiry, which should also fail
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - 5]);
 
     // Try to migrate again, which should fail
-    const executeTx2 = mockNextFundDeployer.forward(
-      dispatcher.executeMigration,
-      vaultProxy,
-      false,
-    );
-    await expect(executeTx2).rejects.toBeRevertedWith(
-      'The migration timelock has not been met',
-    );
+    await expect(
+      mockNextFundDeployer.forward(
+        dispatcher.executeMigration,
+        vaultProxy,
+        false,
+      ),
+    ).rejects.toBeRevertedWith('The migration timelock has not been met');
   });
 
   it.todo('correctly handles preMigrateOriginHook failure');
@@ -743,7 +710,7 @@ describe('executeMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const signalTx = signalMigration({
+    const singalReceipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -751,53 +718,56 @@ describe('executeMigration', () => {
       nextVaultAccessor,
     });
 
-    await expect(signalTx).resolves.toBeReceipt();
-    const signalTimestamp = await transactionTimestamp(signalTx);
+    const signalTimestamp = await transactionTimestamp(singalReceipt);
 
     // Warp to exactly the timelock expiry
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Execute migration
-    const executeTx = mockNextFundDeployer.forward(
+    const executeReceipt = await mockNextFundDeployer.forward(
       dispatcher.executeMigration,
       vaultProxy,
       false,
     );
-    await expect(executeTx).resolves.toBeReceipt();
 
-    await assertEvent(executeTx, 'MigrationExecuted', {
-      vaultProxy: vaultProxy.address,
-      prevFundDeployer: mockPrevFundDeployer.address,
-      nextFundDeployer: mockNextFundDeployer.address,
+    assertEvent(executeReceipt, 'MigrationExecuted', {
+      vaultProxy,
+      prevFundDeployer: mockPrevFundDeployer,
+      nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
-      nextVaultLib: nextVaultLib.address,
+      nextVaultLib,
       signalTimestamp: BigNumber.from(signalTimestamp),
     });
 
     // Assert VaultProxy changes
-    const vaultLibCall = vaultProxy.getVaultLib();
-    await expect(vaultLibCall).resolves.toBe(nextVaultLib.address);
+    const vaultLibCall = await vaultProxy.getVaultLib();
+    expect(vaultLibCall).toMatchAddress(nextVaultLib);
 
-    const accessorCall = vaultProxy.getAccessor();
-    await expect(accessorCall).resolves.toBe(nextVaultAccessor);
+    const accessorCall = await vaultProxy.getAccessor();
+    expect(accessorCall).toMatchAddress(nextVaultAccessor);
 
     // Removes MigrationRequest
-    const detailsCall = dispatcher.getMigrationRequestDetailsForVaultProxy(
+    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(
       vaultProxy,
     );
-    await expect(detailsCall).resolves.toMatchObject({
-      nextFundDeployer_: constants.AddressZero,
-      nextVaultAccessor_: constants.AddressZero,
-      nextVaultLib_: constants.AddressZero,
-      signalTimestamp_: BigNumber.from(0),
-    });
+
+    expect(detailsCall).toMatchFunctionOutput(
+      dispatcher.getMigrationRequestDetailsForVaultProxy.fragment,
+      {
+        nextFundDeployer_: constants.AddressZero,
+        nextVaultAccessor_: constants.AddressZero,
+        nextVaultLib_: constants.AddressZero,
+        signalTimestamp_: BigNumber.from(0),
+      },
+    );
 
     // Calls pre- and post- hooks on the mockPrevFundDeployer
-    await expect(
+    expect(
       mockPrevFundDeployer.preMigrateOriginHook,
     ).toHaveBeenCalledOnContract();
-    await expect(
+
+    expect(
       mockPrevFundDeployer.preMigrateOriginHook,
     ).toHaveBeenCalledOnContractWith(
       vaultProxy,
@@ -807,10 +777,11 @@ describe('executeMigration', () => {
       signalTimestamp,
     );
 
-    await expect(
+    expect(
       mockPrevFundDeployer.postMigrateOriginHook,
     ).toHaveBeenCalledOnContract();
-    await expect(
+
+    expect(
       mockPrevFundDeployer.postMigrateOriginHook,
     ).toHaveBeenCalledOnContractWith(
       vaultProxy,
@@ -829,10 +800,9 @@ describe('setMigrationTimelock', () => {
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    const setMigrationTimelockTx = dispatcher
-      .connect(randomUser)
-      .setMigrationTimelock(randomAddress());
-    await expect(setMigrationTimelockTx).rejects.toBeRevertedWith(
+    await expect(
+      dispatcher.connect(randomUser).setMigrationTimelock(randomAddress()),
+    ).rejects.toBeRevertedWith(
       'Only the contract owner can call this function',
     );
   });
@@ -844,12 +814,9 @@ describe('setMigrationTimelock', () => {
 
     const migrationTimelock = await dispatcher.getMigrationTimelock();
 
-    const setMigrationTimelockTx = dispatcher.setMigrationTimelock(
-      migrationTimelock,
-    );
-    await expect(setMigrationTimelockTx).rejects.toBeRevertedWith(
-      '_nextTimelock is the current timelock',
-    );
+    await expect(
+      dispatcher.setMigrationTimelock(migrationTimelock),
+    ).rejects.toBeRevertedWith('_nextTimelock is the current timelock');
   });
 
   it('correctly handles setting a new migration timelock', async () => {
@@ -860,19 +827,16 @@ describe('setMigrationTimelock', () => {
     // Set a new timelock
     const prevTimelock = await dispatcher.getMigrationTimelock();
     const nextTimelock = prevTimelock.add(1);
-    const setMigrationTimelockTx = dispatcher.setMigrationTimelock(
-      nextTimelock,
-    );
-    await expect(setMigrationTimelockTx).resolves.toBeReceipt();
-
-    // migrationTimelock should have updated to the new value
-    const getMigrationTimelockCall = dispatcher.getMigrationTimelock();
-    await expect(getMigrationTimelockCall).resolves.toEqBigNumber(nextTimelock);
+    const receipt = await dispatcher.setMigrationTimelock(nextTimelock);
 
     // MigrationTimelockSet event properly emitted
-    assertEvent(setMigrationTimelockTx, 'MigrationTimelockSet', {
+    assertEvent(receipt, 'MigrationTimelockSet', {
       prevTimelock,
       nextTimelock,
     });
+
+    // migrationTimelock should have updated to the new value
+    const getMigrationTimelockCall = await dispatcher.getMigrationTimelock();
+    expect(getMigrationTimelockCall).toEqBigNumber(nextTimelock);
   });
 });

@@ -1,18 +1,20 @@
+import { utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   assertEvent,
-  assetTransferArgs,
   createNewFund,
   defaultTestDeployment,
   engineAdapterTakeOrder,
-  engineAdapterTakeOrderArgs,
   getAssetBalances,
   seedAndThawEngine,
-  spendAssetsHandleTypes,
-  takeOrderSelector,
   updateChainlinkAggregator,
 } from '@melonproject/testutils';
-import { utils } from 'ethers';
+import {
+  assetTransferArgs,
+  engineTakeOrderArgs,
+  SpendAssetsHandleType,
+  takeOrderSelector,
+} from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -46,19 +48,17 @@ describe('constructor', () => {
       deployment: { integrationManager, engineAdapter, engine },
     } = await provider.snapshot(snapshot);
 
-    const getIntegrationManagerCall = engineAdapter.getIntegrationManager();
-    await expect(getIntegrationManagerCall).resolves.toBe(
-      integrationManager.address,
-    );
+    const getIntegrationManagerCall = await engineAdapter.getIntegrationManager();
+    expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
 
-    const getEngineCall = engineAdapter.getEngine();
-    await expect(getEngineCall).resolves.toBe(engine.address);
+    const getEngineCall = await engineAdapter.getEngine();
+    expect(getEngineCall).toMatchAddress(engine);
 
-    const getMlnTokenCall = engineAdapter.getMlnToken();
-    await expect(getMlnTokenCall).resolves.toBe(mln);
+    const getMlnTokenCall = await engineAdapter.getMlnToken();
+    expect(getMlnTokenCall).toMatchAddress(mln);
 
-    const getWethTokenCall = engineAdapter.getWethToken();
-    await expect(getWethTokenCall).resolves.toBe(weth);
+    const getWethTokenCall = await engineAdapter.getWethToken();
+    expect(getWethTokenCall).toMatchAddress(weth);
   });
 });
 
@@ -68,23 +68,18 @@ describe('parseAssetsForMethod', () => {
       deployment: { engineAdapter },
     } = await provider.snapshot(snapshot);
 
-    const args = await engineAdapterTakeOrderArgs({
+    const args = engineTakeOrderArgs({
       minWethAmount: 1,
       mlnAmount: 1,
     });
-    const badSelectorParseAssetsCall = engineAdapter.parseAssetsForMethod(
-      utils.randomBytes(4),
-      args,
-    );
-    await expect(badSelectorParseAssetsCall).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
 
-    const goodSelectorParseAssetsCall = engineAdapter.parseAssetsForMethod(
-      takeOrderSelector,
-      args,
-    );
-    await expect(goodSelectorParseAssetsCall).resolves.toBeTruthy();
+    await expect(
+      engineAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
+
+    await expect(
+      engineAdapter.parseAssetsForMethod(takeOrderSelector, args),
+    ).resolves.toBeTruthy();
   });
 
   it('correctly handles valid call', async () => {
@@ -100,32 +95,26 @@ describe('parseAssetsForMethod', () => {
     const outgoingAmount = utils.parseEther('1');
     const outgoingAsset = mln;
 
-    const args = await engineAdapterTakeOrderArgs({
+    const args = engineTakeOrderArgs({
       minWethAmount: incomingAmount,
       mlnAmount: outgoingAmount,
     });
 
-    const {
-      spendAssetsHandleType_,
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await engineAdapter.parseAssetsForMethod(takeOrderSelector, args);
+    const result = await engineAdapter.parseAssetsForMethod(
+      takeOrderSelector,
+      args,
+    );
 
-    expect({
-      spendAssetsHandleType_,
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      spendAssetsHandleType_: spendAssetsHandleTypes.Transfer,
-      incomingAssets_: [incomingAsset.address],
-      spendAssets_: [outgoingAsset.address],
-      spendAssetAmounts_: [outgoingAmount],
-      minIncomingAssetAmounts_: [incomingAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      engineAdapter.parseAssetsForMethod.fragment,
+      {
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [outgoingAsset],
+        spendAssetAmounts_: [outgoingAmount],
+        minIncomingAssetAmounts_: [incomingAmount],
+      },
+    );
   });
 });
 
@@ -136,7 +125,7 @@ describe('takeOrder', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const takeOrderArgs = await engineAdapterTakeOrderArgs({
+    const takeOrderArgs = engineTakeOrderArgs({
       minWethAmount: 1,
       mlnAmount: 1,
     });
@@ -152,6 +141,7 @@ describe('takeOrder', () => {
       takeOrderSelector,
       transferArgs,
     );
+
     await expect(badTakeOrderTx).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
@@ -186,13 +176,28 @@ describe('takeOrder', () => {
       assets: [weth, mln],
     });
 
-    const takeOrderTx = await engineAdapterTakeOrder({
+    const receipt = await engineAdapterTakeOrder({
       comptrollerProxy,
       vaultProxy,
       integrationManager,
       fundOwner,
       engineAdapter,
       mln,
+    });
+
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
+      'CallOnIntegrationExecutedForFund',
+    );
+
+    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+      comptrollerProxy: comptrollerProxy,
+      vaultProxy: vaultProxy,
+      caller: fundOwner,
+      adapter: engineAdapter,
+      incomingAssets: [weth],
+      incomingAssetAmounts: [expectedWeth],
+      outgoingAssets: [mln],
+      outgoingAssetAmounts: [mlnAmount],
     });
 
     const [postTxWethBalance, postTxMlnBalance] = await getAssetBalances({
@@ -202,20 +207,5 @@ describe('takeOrder', () => {
 
     expect(postTxWethBalance).toEqBigNumber(preTxWethBalance.add(expectedWeth));
     expect(postTxMlnBalance).toEqBigNumber(preTxMlnBalance.sub(mlnAmount));
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
-
-    await assertEvent(takeOrderTx, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy.address,
-      vaultProxy: vaultProxy.address,
-      caller: await fundOwner.getAddress(),
-      adapter: engineAdapter.address,
-      incomingAssets: [weth.address],
-      incomingAssetAmounts: [expectedWeth],
-      outgoingAssets: [mln.address],
-      outgoingAssetAmounts: [mlnAmount],
-    });
   });
 });

@@ -1,32 +1,32 @@
 // TODO: NEED TO REVIEW THESE TESTS
 
-import { utils, Signer, BigNumberish } from 'ethers';
+import { utils, BigNumberish } from 'ethers';
 import {
   EthereumTestnetProvider,
-  resolveAddress,
+  SignerWithAddress,
 } from '@crestproject/crestproject';
 import {
+  assetTransferArgs,
   ComptrollerLib,
   IntegrationManager,
+  lendSelector,
+  redeemSelector,
   StandardToken,
+  takeOrderSelector,
   UniswapV2Adapter,
+  uniswapV2LendArgs,
+  uniswapV2RedeemArgs,
+  uniswapV2TakeOrderArgs,
   VaultLib,
 } from '@melonproject/protocol';
 import {
   assertEvent,
-  assetTransferArgs,
   createNewFund,
   defaultTestDeployment,
   getAssetBalances,
-  lendSelector,
-  redeemSelector,
-  takeOrderSelector,
   uniswapV2Lend,
-  uniswapV2LendArgs,
   uniswapV2Redeem,
-  uniswapv2RedeemArgs,
   uniswapV2TakeOrder,
-  uniswapv2TakeOrderArgs,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -67,7 +67,7 @@ async function assertUniswapV2TakeOrder({
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
-  fundOwner: Signer;
+  fundOwner: SignerWithAddress;
   uniswapV2Adapter: UniswapV2Adapter;
   path: StandardToken[];
   outgoingAssetAmount: BigNumberish;
@@ -87,7 +87,7 @@ async function assertUniswapV2TakeOrder({
     assets: [incomingAsset, outgoingAsset],
   });
 
-  const takeOrderTx = uniswapV2TakeOrder({
+  const receipt = await uniswapV2TakeOrder({
     comptrollerProxy,
     vaultProxy,
     integrationManager,
@@ -101,14 +101,15 @@ async function assertUniswapV2TakeOrder({
   const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
     'CallOnIntegrationExecutedForFund',
   );
-  await assertEvent(takeOrderTx, CallOnIntegrationExecutedForFundEvent, {
-    comptrollerProxy: comptrollerProxy.address,
-    vaultProxy: vaultProxy.address,
-    caller: await fundOwner.getAddress(),
-    adapter: uniswapV2Adapter.address,
-    incomingAssets: [incomingAsset.address],
+
+  assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+    comptrollerProxy: comptrollerProxy,
+    vaultProxy,
+    caller: fundOwner,
+    adapter: uniswapV2Adapter,
+    incomingAssets: [incomingAsset],
     incomingAssetAmounts: [minIncomingAssetAmount],
-    outgoingAssets: [outgoingAsset.address],
+    outgoingAssets: [outgoingAsset],
     outgoingAssetAmounts: [outgoingAssetAmount],
   });
 
@@ -141,16 +142,14 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const getRouterCall = uniswapV2Adapter.getRouter();
-    await expect(getRouterCall).resolves.toBe(router);
+    const getRouterCall = await uniswapV2Adapter.getRouter();
+    expect(getRouterCall).toMatchAddress(router);
 
-    const getFactoryCall = uniswapV2Adapter.getFactory();
-    await expect(getFactoryCall).resolves.toBe(factory);
+    const getFactoryCall = await uniswapV2Adapter.getFactory();
+    expect(getFactoryCall).toMatchAddress(factory);
 
-    const getIntegrationManagerCall = uniswapV2Adapter.getIntegrationManager();
-    await expect(getIntegrationManagerCall).resolves.toBe(
-      integrationManager.address,
-    );
+    const getIntegrationManagerCall = await uniswapV2Adapter.getIntegrationManager();
+    expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
   });
 });
 
@@ -184,19 +183,13 @@ describe('parseAssetsForMethod', () => {
       minIncomingAssetAmount,
     });
 
-    const badSelectorParseAssetsCall = uniswapV2Adapter.parseAssetsForMethod(
-      utils.randomBytes(4),
-      args,
-    );
-    await expect(badSelectorParseAssetsCall).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      uniswapV2Adapter.parseAssetsForMethod(utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    const goodSelectorParseAssetsCall = uniswapV2Adapter.parseAssetsForMethod(
-      lendSelector,
-      args,
-    );
-    await expect(goodSelectorParseAssetsCall).resolves.toBeTruthy();
+    await expect(
+      uniswapV2Adapter.parseAssetsForMethod(lendSelector, args),
+    ).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -227,26 +220,22 @@ describe('parseAssetsForMethod', () => {
       incomingAsset,
       minIncomingAssetAmount,
     });
+
     const selector = lendSelector;
+    const result = await uniswapV2Adapter.parseAssetsForMethod(
+      selector,
+      lendArgs,
+    );
 
-    const {
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await uniswapV2Adapter.parseAssetsForMethod(selector, lendArgs);
-
-    expect({
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      incomingAssets_: [await resolveAddress(incomingAsset)],
-      spendAssets_: [tokenA, tokenB],
-      spendAssetAmounts_: [amountADesired, amountBDesired],
-      minIncomingAssetAmounts_: [minIncomingAssetAmount],
-    });
+    expect(result).toMatchFunctionOutput(
+      uniswapV2Adapter.parseAssetsForMethod.fragment,
+      {
+        incomingAssets_: [incomingAsset],
+        spendAssets_: [tokenA, tokenB],
+        spendAssetAmounts_: [amountADesired, amountBDesired],
+        minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      },
+    );
   });
 
   it('generates expected output for redeeming', async () => {
@@ -265,7 +254,7 @@ describe('parseAssetsForMethod', () => {
     const amountAMin = utils.parseEther('1');
     const amountBMin = utils.parseEther('1');
 
-    const redeemArgs = await uniswapv2RedeemArgs({
+    const redeemArgs = await uniswapV2RedeemArgs({
       outgoingAsset,
       liquidity,
       tokenA,
@@ -273,26 +262,22 @@ describe('parseAssetsForMethod', () => {
       amountAMin,
       amountBMin,
     });
+
     const selector = redeemSelector;
+    const result = await uniswapV2Adapter.parseAssetsForMethod(
+      selector,
+      redeemArgs,
+    );
 
-    const {
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await uniswapV2Adapter.parseAssetsForMethod(selector, redeemArgs);
-
-    expect({
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    }).toMatchObject({
-      incomingAssets_: [tokenA, tokenB],
-      spendAssets_: [await resolveAddress(outgoingAsset)],
-      spendAssetAmounts_: [liquidity],
-      minIncomingAssetAmounts_: [amountAMin, amountBMin],
-    });
+    expect(result).toMatchFunctionOutput(
+      uniswapV2Adapter.parseAssetsForMethod.fragment,
+      {
+        incomingAssets_: [tokenA, tokenB],
+        spendAssets_: [outgoingAsset],
+        spendAssetAmounts_: [liquidity],
+        minIncomingAssetAmounts_: [amountAMin, amountBMin],
+      },
+    );
   });
 });
 
@@ -333,8 +318,9 @@ describe('lend', () => {
       encodedCallArgs: lendArgs,
     });
 
-    const badLendTx = uniswapV2Adapter.lend(vaultProxy, lendArgs, transferArgs);
-    await expect(badLendTx).rejects.toBeRevertedWith(
+    await expect(
+      uniswapV2Adapter.lend(vaultProxy, lendArgs, transferArgs),
+    ).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -354,10 +340,7 @@ describe('lend', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const incomingAssetContract = new StandardToken(
-      await resolveAddress(incomingAsset),
-      provider,
-    );
+    const incomingAssetContract = new StandardToken(incomingAsset, provider);
 
     const amountADesired = utils.parseEther('1');
     const amountBDesired = utils.parseEther('1');
@@ -378,7 +361,7 @@ describe('lend', () => {
       assets: [tokenA, tokenB],
     });
 
-    const lendTx = uniswapV2Lend({
+    const receipt = await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -397,14 +380,15 @@ describe('lend', () => {
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
       'CallOnIntegrationExecutedForFund',
     );
-    await assertEvent(lendTx, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy.address,
-      vaultProxy: vaultProxy.address,
-      caller: await fundOwner.getAddress(),
-      adapter: uniswapV2Adapter.address,
-      incomingAssets: [incomingAssetContract.address],
+
+    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+      comptrollerProxy: comptrollerProxy,
+      vaultProxy: vaultProxy,
+      caller: fundOwner,
+      adapter: uniswapV2Adapter,
+      incomingAssets: [incomingAssetContract],
       incomingAssetAmounts: [utils.parseEther('1')],
-      outgoingAssets: [tokenA.address, tokenB.address],
+      outgoingAssets: [tokenA, tokenB],
       outgoingAssetAmounts: [amountADesired, amountBDesired],
     });
 
@@ -448,7 +432,7 @@ describe('redeem', () => {
     const amountAMin = utils.parseEther('1');
     const amountBMin = utils.parseEther('1');
 
-    const redeemArgs = await uniswapv2RedeemArgs({
+    const redeemArgs = await uniswapV2RedeemArgs({
       outgoingAsset,
       liquidity,
       tokenA,
@@ -463,12 +447,9 @@ describe('redeem', () => {
       encodedCallArgs: redeemArgs,
     });
 
-    const redeemTx = uniswapV2Adapter.redeem(
-      vaultProxy,
-      redeemArgs,
-      transferArgs,
-    );
-    await expect(redeemTx).rejects.toBeRevertedWith(
+    await expect(
+      uniswapV2Adapter.redeem(vaultProxy, redeemArgs, transferArgs),
+    ).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -476,12 +457,12 @@ describe('redeem', () => {
   it('works as expected when called by a fund', async () => {
     const {
       config: {
+        deployer,
         derivatives: {
           uniswapV2: { mlnWeth: outgoingAsset },
         },
       },
       deployment: {
-        deployer,
         uniswapV2Adapter,
         integrationManager,
         tokens: { mln: tokenA, weth: tokenB },
@@ -492,14 +473,11 @@ describe('redeem', () => {
     const liquidity = utils.parseEther('0.5');
     const amountAMin = utils.parseEther('1');
     const amountBMin = utils.parseEther('1');
-    const outgoingAssetContract = new StandardToken(
-      await resolveAddress(outgoingAsset),
-      provider,
-    );
+    const outgoingAssetContract = new StandardToken(outgoingAsset, provider);
 
     // seed fund
     await outgoingAssetContract
-      .connect(provider.getSigner(deployer))
+      .connect(deployer)
       .transfer(vaultProxy, liquidity);
 
     const preTxIncomingAssetBalances = await getAssetBalances({
@@ -511,7 +489,7 @@ describe('redeem', () => {
       assets: [outgoingAssetContract],
     });
 
-    const redeemTx = uniswapV2Redeem({
+    const receipt = await uniswapV2Redeem({
       comptrollerProxy,
       integrationManager,
       fundOwner,
@@ -527,14 +505,15 @@ describe('redeem', () => {
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
       'CallOnIntegrationExecutedForFund',
     );
-    await assertEvent(redeemTx, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy.address,
-      vaultProxy: vaultProxy.address,
-      caller: await fundOwner.getAddress(),
-      adapter: uniswapV2Adapter.address,
-      incomingAssets: [tokenA.address, tokenB.address],
+
+    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+      comptrollerProxy: comptrollerProxy,
+      vaultProxy: vaultProxy,
+      caller: fundOwner,
+      adapter: uniswapV2Adapter,
+      incomingAssets: [tokenA, tokenB],
       incomingAssetAmounts: [amountAMin, amountBMin],
-      outgoingAssets: [outgoingAssetContract.address],
+      outgoingAssets: [outgoingAssetContract],
       outgoingAssetAmounts: [liquidity],
     });
 
@@ -569,7 +548,7 @@ describe('takeOrder', () => {
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const takeOrderArgs = await uniswapv2TakeOrderArgs({
+    const takeOrderArgs = await uniswapV2TakeOrderArgs({
       path: [tokenA, tokenB],
       outgoingAssetAmount: utils.parseEther('1'),
       minIncomingAssetAmount: utils.parseEther('1'),
@@ -580,12 +559,9 @@ describe('takeOrder', () => {
       encodedCallArgs: takeOrderArgs,
     });
 
-    const badTakeOrderTx = uniswapV2Adapter.takeOrder(
-      vaultProxy,
-      takeOrderSelector,
-      transferArgs,
-    );
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
+    await expect(
+      uniswapV2Adapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs),
+    ).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -600,21 +576,19 @@ describe('takeOrder', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const badTakeOrderTx = uniswapV2TakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      uniswapV2Adapter,
-      path: [outgoingAsset, incomingAsset],
-      outgoingAssetAmount: utils.parseEther('1'),
-      minIncomingAssetAmount: 0,
-      seedFund: true,
-    });
-
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
-      'minIncomingAssetAmount must be >0',
-    );
+    await expect(
+      uniswapV2TakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        uniswapV2Adapter,
+        path: [outgoingAsset, incomingAsset],
+        outgoingAssetAmount: utils.parseEther('1'),
+        minIncomingAssetAmount: 0,
+        seedFund: true,
+      }),
+    ).rejects.toBeRevertedWith('minIncomingAssetAmount must be >0');
   });
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {

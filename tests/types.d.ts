@@ -1,3 +1,3 @@
-import '@crestproject/jest/dist/types';
+import '@crestproject/jest/types';
 
 export {};

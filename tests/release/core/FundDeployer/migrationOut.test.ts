@@ -71,18 +71,17 @@ describe('preMigrateOriginHook', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const preMigrateOriginHookTx = fundDeployer
-      .connect(randomUser)
-      .preMigrateOriginHook(
-        randomAddress(),
-        constants.AddressZero,
-        constants.AddressZero,
-        constants.AddressZero,
-        0,
-      );
-    await expect(preMigrateOriginHookTx).rejects.toBeRevertedWith(
-      'Only Dispatcher can call this function',
-    );
+    await expect(
+      fundDeployer
+        .connect(randomUser)
+        .preMigrateOriginHook(
+          randomAddress(),
+          constants.AddressZero,
+          constants.AddressZero,
+          constants.AddressZero,
+          0,
+        ),
+    ).rejects.toBeRevertedWith('Only Dispatcher can call this function');
   });
 
   it('correctly handles valid call', async () => {

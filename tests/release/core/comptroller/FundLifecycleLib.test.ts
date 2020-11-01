@@ -29,14 +29,17 @@ describe('constructor', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const routesCall = fundLifecycleLib.getLibRoutes();
-    await expect(routesCall).resolves.toMatchObject({
-      feeManager_: feeManager.address,
-      fundDeployer_: fundDeployer.address,
-      integrationManager_: integrationManager.address,
-      policyManager_: policyManager.address,
-      primitivePriceFeed_: chainlinkPriceFeed.address,
-    });
+    const routesCall = await fundLifecycleLib.getLibRoutes();
+    expect(routesCall).toMatchFunctionOutput(
+      fundLifecycleLib.getLibRoutes.fragment,
+      {
+        feeManager_: feeManager,
+        fundDeployer_: fundDeployer,
+        integrationManager_: integrationManager,
+        policyManager_: policyManager,
+        primitivePriceFeed_: chainlinkPriceFeed,
+      },
+    );
   });
 });
 
@@ -46,7 +49,8 @@ describe('init', () => {
       deployment: { fundLifecycleLib },
     } = await provider.snapshot(snapshot);
 
-    const initTx = fundLifecycleLib.init(randomAddress(), 0, [], '0x', '0x');
-    await expect(initTx).rejects.toBeRevertedWith('Only delegate callable');
+    await expect(
+      fundLifecycleLib.init(randomAddress(), 0, []),
+    ).rejects.toBeRevertedWith('Only delegate callable');
   });
 });

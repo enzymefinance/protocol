@@ -1,6 +1,6 @@
 # Melon Protocol
 
-![Build Status](https://github.com/avantgardefinance/protocol/workflows/Build%20%26%20Test/badge.svg)
+![Build Status](https://github.com/avantgardefinance/protocol/workflows/CI/badge.svg)
 
 Melon is an Ethereum-based protocol for decentralized on-chain asset management. It is a protocol for people or entities to manage their wealth & the wealth of others within a customizable and safe environment. Melon empowers anyone to set up, manage and invest in customized on-chain investment vehicles.
 

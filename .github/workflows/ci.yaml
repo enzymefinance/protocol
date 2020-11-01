@@ -1,0 +1,82 @@
+name: CI
+on: [push]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project:
+          ['core', 'infrastructure', 'fee', 'policy', 'integration', 'e2e']
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          always-auth: true
+          registry-url: https://npm.fury.io/melonproject/
+          scope: '@melonproject'
+
+      - name: Retrieve dependency cache
+        uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      # Stores a cache for fork requests for the e2e jest project.
+      - name: Retrieve fork cache
+        uses: actions/cache@v2
+        if: ${{ matrix.project == 'e2e' }}
+        with:
+          path: 'packages/protocol/cache/hardhat-network-fork'
+          key: static
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Compile contracts
+        run: yarn compile
+
+      - name: Run tests
+        run: yarn test --selectProjects ${{ matrix.project }}
+        env:
+          MAINNET_ARCHIVE_NODE: ${{ secrets.MAINNET_ARCHIVE_NODE }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          always-auth: true
+          registry-url: https://npm.fury.io/melonproject/
+          scope: '@melonproject'
+
+      - name: Retrieve dependency cache
+        uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Compile contracts
+        run: yarn compile
+
+      - name: Check types
+        run: yarn typecheck
+
+      - name: Check linting
+        run: yarn lint

@@ -4,8 +4,7 @@ import { MockChainlinkPriceSource } from '@melonproject/protocol';
 import { assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const [deployer] = await provider.listAccounts();
-  const signer = provider.getSigner(deployer);
+  const signer = await provider.getSignerWithAddress(1);
   const chainlinkPriceSource = await MockChainlinkPriceSource.deploy(
     signer,
     18,
@@ -28,13 +27,12 @@ it('is updated correctly', async () => {
   const chainlinkPriceSource = await provider.snapshot(snapshot);
 
   const nextAnswer = utils.parseEther('2');
-  const nextTimestamp = Math.round(Date.now() / 1000);
-
-  const tx = chainlinkPriceSource.setLatestAnswer
-    .args(nextAnswer, nextTimestamp)
+  const latestBlock = await provider.getBlock('latest');
+  const receipt = await chainlinkPriceSource.setLatestAnswer
+    .args(nextAnswer, latestBlock.timestamp)
     .send();
 
-  await assertEvent(tx, 'AnswerUpdated');
+  assertEvent(receipt, 'AnswerUpdated');
 
   const latestAnswer = await chainlinkPriceSource.latestAnswer();
   expect(latestAnswer).toEqBigNumber(nextAnswer);
@@ -43,5 +41,5 @@ it('is updated correctly', async () => {
   expect(roundId).toEqBigNumber('2');
 
   const latestTimestamp = await chainlinkPriceSource.latestTimestamp();
-  expect(latestTimestamp).toEqBigNumber(nextTimestamp);
+  expect(latestTimestamp).toEqBigNumber(latestBlock.timestamp);
 });

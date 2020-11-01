@@ -2,14 +2,9 @@ import { utils } from 'ethers';
 import {
   EthereumTestnetProvider,
   randomAddress,
-  resolveAddress,
 } from '@crestproject/crestproject';
-import {
-  defaultTestDeployment,
-  createNewFund,
-  lendSelector,
-  compoundArgs,
-} from '@melonproject/testutils';
+import { defaultTestDeployment, createNewFund } from '@melonproject/testutils';
+import { compoundArgs, lendSelector } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(
@@ -42,10 +37,8 @@ describe('constructor', () => {
       deployment: { compoundAdapter, integrationManager },
     } = await provider.snapshot(snapshot);
 
-    const getIntegrationManagerCall = compoundAdapter.getIntegrationManager();
-    await expect(getIntegrationManagerCall).resolves.toBe(
-      integrationManager.address,
-    );
+    const getIntegrationManagerCall = await compoundAdapter.getIntegrationManager();
+    expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
   });
 });
 
@@ -58,25 +51,19 @@ describe('parseAssetsForMethod', () => {
     const outgoingAsset = randomAddress();
     const incomingAsset = randomAddress();
 
-    const args = await compoundArgs({
+    const args = compoundArgs({
       outgoingAsset,
       incomingAsset,
       minIncomingAssetAmount: utils.parseEther('1'),
       outgoingAssetAmount: utils.parseEther('1'),
     });
-    const badSelectorParseAssetsCall = compoundAdapter.parseAssetsForMethod(
-      utils.randomBytes(4),
-      args,
-    );
-    await expect(badSelectorParseAssetsCall).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      compoundAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    const goodSelectorParseAssetsCall = compoundAdapter.parseAssetsForMethod(
-      lendSelector,
-      args,
-    );
-    await expect(goodSelectorParseAssetsCall).resolves.toBeTruthy();
+    await expect(
+      compoundAdapter.parseAssetsForMethod(lendSelector, args),
+    ).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending and redeeming', async () => {
@@ -89,7 +76,7 @@ describe('parseAssetsForMethod', () => {
     const minIncomingAssetAmount = utils.parseEther('1');
     const outgoingAssetAmount = utils.parseEther('1');
 
-    const args = await compoundArgs({
+    const args = compoundArgs({
       outgoingAsset,
       incomingAsset,
       minIncomingAssetAmount,
@@ -110,8 +97,8 @@ describe('parseAssetsForMethod', () => {
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
     }).toMatchObject({
-      incomingAssets_: [resolveAddress(incomingAsset)],
-      spendAssets_: [resolveAddress(outgoingAsset)],
+      incomingAssets_: [incomingAsset],
+      spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [outgoingAssetAmount],
       minIncomingAssetAmounts_: [minIncomingAssetAmount],
     });
