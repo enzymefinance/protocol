@@ -21,7 +21,10 @@ abstract contract FundDeployerOwnerMixin {
         FUND_DEPLOYER = _fundDeployer;
     }
 
-    function getOwner() public view returns (address) {
+    /// @notice Gets the owner of this contract
+    /// @return owner_ The owner
+    /// @dev Ownership is deferred to the owner of the FundDeployer contract
+    function getOwner() public view returns (address owner_) {
         return IFundDeployer(FUND_DEPLOYER).getOwner();
     }
 
@@ -29,7 +32,9 @@ abstract contract FundDeployerOwnerMixin {
     // STATE GETTERS //
     ///////////////////
 
-    function getFundDeployer() external view returns (address) {
+    /// @notice Gets the `FUND_DEPLOYER` variable
+    /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
+    function getFundDeployer() external view returns (address fundDeployer_) {
         return FUND_DEPLOYER;
     }
 }
