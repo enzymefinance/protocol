@@ -2,14 +2,13 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../core/fund/vault/VaultLib.sol";
 import "../../utils/SharesInflationMixin.sol";
 import "./utils/FeeBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Calculates the management fee for a particular fund
+/// @notice A management fee with a configurable rate
 contract ManagementFee is FeeBase, SharesInflationMixin {
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
 
@@ -67,7 +66,7 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         return implementedHooks_;
     }
 
-    /// @notice Settle the fee and reconcile shares due
+    /// @notice Settle the fee and calculate shares due
     /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @return settlementType_ The type of settlement
@@ -135,7 +134,14 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
     // STATE GETTERS //
     ///////////////////
 
-    function getFeeInfoForFund(address _comptrollerProxy) external view returns (FeeInfo memory) {
+    /// @notice Gets the feeInfo for a given fund
+    /// @param _comptrollerProxy The ComptrollerProxy contract of the fund
+    /// @return feeInfo_ The feeInfo
+    function getFeeInfoForFund(address _comptrollerProxy)
+        external
+        view
+        returns (FeeInfo memory feeInfo_)
+    {
         return comptrollerProxyToFeeInfo[_comptrollerProxy];
     }
 }
