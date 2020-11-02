@@ -11,4 +11,10 @@ contract EntranceRateBurnFee is EntranceRateFeeBase {
         public
         EntranceRateFeeBase(_feeManager, IFeeManager.SettlementType.Burn)
     {}
+
+    /// @notice Provides a constant string identifier for a fee
+    /// @return identifier_ The identifier string
+    function identifier() external pure override returns (string memory identifier_) {
+        return "ENTRANCE_RATE_BURN";
+    }
 }

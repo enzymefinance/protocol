@@ -49,12 +49,6 @@ abstract contract EntranceRateFeeBase is FeeBase {
         emit FundSettingsAdded(_comptrollerProxy, rate);
     }
 
-    /// @notice Provides a constant string identifier for a fee
-    /// @return identifier_ The identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "ENTRANCE_RATE";
-    }
-
     /// @notice Gets the implemented FeeHooks for a fee
     /// @return implementedHooks_ The implemented FeeHooks
     function implementedHooks()
