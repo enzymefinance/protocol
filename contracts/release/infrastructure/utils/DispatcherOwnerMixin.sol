@@ -21,7 +21,10 @@ abstract contract DispatcherOwnerMixin {
         DISPATCHER = _dispatcher;
     }
 
-    function getOwner() public view returns (address) {
+    /// @notice Gets the owner of this contract
+    /// @return owner_ The owner
+    /// @dev Ownership is deferred to the owner of the Dispatcher contract
+    function getOwner() public view returns (address owner_) {
         return IDispatcher(DISPATCHER).getOwner();
     }
 
@@ -29,7 +32,9 @@ abstract contract DispatcherOwnerMixin {
     // STATE GETTERS //
     ///////////////////
 
-    function getDispatcher() external view returns (address) {
+    /// @notice Gets the `DISPATCHER` variable
+    /// @return dispatcher_ The `DISPATCHER` variable value
+    function getDispatcher() external view returns (address dispatcher_) {
         return DISPATCHER;
     }
 }
