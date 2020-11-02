@@ -52,7 +52,7 @@ describe('takeOrder', () => {
 
     await outgoingAsset.transfer(vaultProxy, takerAssetAmount);
     await incomingAsset.approve(erc20Proxy, makerAssetAmount);
-    await zeroExV2Adapter.updateAllowedMakers([maker], [true]);
+    await zeroExV2Adapter.addAllowedMakers([maker]);
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -117,7 +117,7 @@ describe('takeOrder', () => {
     await outgoingAsset.transfer(vaultProxy, takerFee);
     await outgoingAsset.transfer(vaultProxy, takerAssetAmount);
     await incomingAsset.approve(erc20Proxy, makerAssetAmount);
-    await zeroExV2Adapter.updateAllowedMakers([maker], [true]);
+    await zeroExV2Adapter.addAllowedMakers([maker]);
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -180,7 +180,7 @@ describe('takeOrder', () => {
 
     await outgoingAsset.transfer(vaultProxy, takerAssetAmount);
     await incomingAsset.approve(erc20Proxy, makerAssetAmount);
-    await zeroExV2Adapter.updateAllowedMakers([maker], [true]);
+    await zeroExV2Adapter.addAllowedMakers([maker]);
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,

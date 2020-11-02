@@ -86,6 +86,7 @@ export interface ReleaseDeploymentConfig {
       factory: AddressLike;
     };
     zeroExV2: {
+      allowedMakers: AddressLike[];
       exchange: AddressLike;
       erc20Proxy: AddressLike;
     };
@@ -315,6 +316,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.integrationManager,
       config.integratees.zeroExV2.exchange,
       await deployment.fundDeployer,
+      config.integratees.zeroExV2.allowedMakers,
     );
   },
   // Fees

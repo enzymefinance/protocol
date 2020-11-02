@@ -116,6 +116,7 @@ export async function configureForkRelease({
         factory: mainnet.uniswapV2.factory,
       },
       zeroExV2: {
+        allowedMakers: [], // TODO
         exchange: mainnet.zeroExV2.exchange,
         erc20Proxy: mainnet.zeroExV2.erc20Proxy,
       },

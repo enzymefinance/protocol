@@ -54,6 +54,11 @@ describe('constructor', () => {
 
     const getIntegrationManagerCall = await zeroExV2Adapter.getIntegrationManager();
     expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
+
+    for (const allowedMaker of zeroExV2.allowedMakers) {
+      const isAllowedMakerCall = await zeroExV2Adapter.isAllowedMaker(allowedMaker);
+      expect(isAllowedMakerCall).toBe(true);
+    }
   });
 });
 
@@ -94,7 +99,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs)).rejects.toBeRevertedWith(
-      'maker is not allowed',
+      'Order maker is not allowed',
     );
   });
 
@@ -114,13 +119,13 @@ describe('parseAssetsForMethod', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
-    await adapter.updateAllowedMakers([deployer], [true]);
+    await adapter.addAllowedMakers([deployer]);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
     const takerAssetAmount = BigNumber.from(5);
     const takerFee = BigNumber.from(0);
-    const takerAssetFillAmount = BigNumber.from(11);
+    const takerAssetFillAmount = BigNumber.from(2);
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
@@ -167,7 +172,7 @@ describe('parseAssetsForMethod', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
-    await adapter.updateAllowedMakers([deployer], [true]);
+    await adapter.addAllowedMakers([deployer]);
 
     const feeRecipientAddress = constants.AddressZero;
     const takerFee = BigNumber.from(3);
@@ -223,13 +228,13 @@ describe('parseAssetsForMethod', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
-    await adapter.updateAllowedMakers([deployer], [true]);
+    await adapter.addAllowedMakers([deployer]);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
     const takerAssetAmount = BigNumber.from(5);
     const takerFee = BigNumber.from(7);
-    const takerAssetFillAmount = BigNumber.from(11);
+    const takerAssetFillAmount = BigNumber.from(2);
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
@@ -276,13 +281,13 @@ describe('parseAssetsForMethod', () => {
     const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
-    await adapter.updateAllowedMakers([deployer], [true]);
+    await adapter.addAllowedMakers([deployer]);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
     const takerAssetAmount = BigNumber.from(5);
     const takerFee = BigNumber.from(7);
-    const takerAssetFillAmount = BigNumber.from(11);
+    const takerAssetFillAmount = BigNumber.from(2);
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
@@ -315,55 +320,51 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('updateAllowedMakers', () => {
-  it('can only be called by fundDeployerOwner', async () => {
-    const {
-      config: { dispatcher },
-      deployment: { zeroExV2Adapter },
-      fund: { fundOwner },
-    } = await provider.snapshot(snapshot);
+describe('allowed makers', () => {
+  describe('addAllowedMakers', () => {
+    it('can only be called by fundDeployerOwner', async () => {
+      const {
+        config: { dispatcher },
+        deployment: { zeroExV2Adapter },
+        fund: { fundOwner },
+      } = await provider.snapshot(snapshot);
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const makerAddress = randomAddress();
-    const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
+      const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+      const makerAddress = randomAddress();
+      const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
-    await expect(adapter.connect(fundOwner).updateAllowedMakers([makerAddress], [true])).rejects.toBeRevertedWith(
-      'Only the FundDeployer owner can call this function',
-    );
+      await expect(adapter.connect(fundOwner).addAllowedMakers([makerAddress])).rejects.toBeRevertedWith(
+        'Only the FundDeployer owner can call this function',
+      );
+    });
 
-    await expect(adapter.updateAllowedMakers([makerAddress], [true])).resolves.toBeReceipt();
+    it('does not allow an already-set maker', async () => {
+      const {
+        config: { dispatcher },
+        deployment: { zeroExV2Adapter },
+      } = await provider.snapshot(snapshot);
 
-    const isAllowedMakerCall = await zeroExV2Adapter.isAllowedMaker(makerAddress);
-    expect(isAllowedMakerCall).toBe(true);
+      const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+      const makerAddress = randomAddress();
+      const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
+
+      await expect(adapter.addAllowedMakers([makerAddress, makerAddress])).rejects.toBeRevertedWith(
+        'Value already set',
+      );
+
+      it.todo('does not allow an empty _accountsToAdd param');
+
+      it.todo('adds accounts to allowedMakers and emits the correct event per removed account');
+    });
   });
 
-  it('does not allow makers and alloweds arrays to have unequal length', async () => {
-    const {
-      config: { dispatcher },
-      deployment: { zeroExV2Adapter },
-    } = await provider.snapshot(snapshot);
+  describe('removeAllowedMakers', () => {
+    it.todo('does not allow a random caller');
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const makerAddress = randomAddress();
-    const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
+    it.todo('does not allow an empty _accountsToRemove param');
 
-    await expect(adapter.updateAllowedMakers([makerAddress, makerAddress], [true])).rejects.toBeRevertedWith(
-      '_makers and _alloweds arrays unequal',
-    );
-  });
+    it.todo('does not allow an input account that is not an allowed maker');
 
-  it('does not allow a duplicate maker', async () => {
-    const {
-      config: { dispatcher },
-      deployment: { zeroExV2Adapter },
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const makerAddress = randomAddress();
-    const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
-
-    await expect(adapter.updateAllowedMakers([makerAddress, makerAddress], [true, true])).rejects.toBeRevertedWith(
-      'duplicate maker detected',
-    );
+    it.todo('removes accounts from allowedMakers and emits the correct event per removed account');
   });
 });

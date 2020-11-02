@@ -292,6 +292,7 @@ export async function configureMockRelease({
       },
       zeroExV2: {
         // TODO
+        allowedMakers: [randomAddress()],
         exchange: mocks.zeroExV2Integratee,
         erc20Proxy: randomAddress(),
       },

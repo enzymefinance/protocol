@@ -16,15 +16,25 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
+    event AllowedMakerAdded(address indexed account);
+
+    event AllowedMakerRemoved(address indexed account);
+
     address private immutable EXCHANGE;
     mapping(address => bool) private makerToIsAllowed;
 
+    // Gas could be optimized for the end-user by also storing an immutable ZRX_ASSET_DATA,
+    // for example, but in the narrow OTC use-case of this adapter, taker fees are unlikely.
     constructor(
         address _integrationManager,
         address _exchange,
-        address _fundDeployer
+        address _fundDeployer,
+        address[] memory _allowedMakers
     ) public AdapterBase(_integrationManager) FundDeployerOwnerMixin(_fundDeployer) {
         EXCHANGE = _exchange;
+        if (_allowedMakers.length > 0) {
+            __addAllowedMakers(_allowedMakers);
+        }
     }
 
     // EXTERNAL FUNCTIONS
@@ -56,56 +66,82 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector == TAKE_ORDER_SELECTOR) {
-            (
-                bytes memory encodedZeroExOrderArgs,
-                uint256 takerAssetFillAmount
-            ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
 
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
+        (
+            bytes memory encodedZeroExOrderArgs,
+            uint256 takerAssetFillAmount
+        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
 
-            IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
-            address makerAsset = __getAssetAddress(order.makerAssetData);
+        require(
+            isAllowedMaker(order.makerAddress),
+            "parseIncomingAssets: Order maker is not allowed"
+        );
+        require(
+            takerAssetFillAmount <= order.takerAssetAmount,
+            "parseIncomingAssets: Taker asset fill amount greater than available"
+        );
+
+        address makerAsset = __getAssetAddress(order.makerAssetData);
+        address takerAsset = __getAssetAddress(order.takerAssetData);
+
+        // Format incoming assets
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = makerAsset;
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = __calcRelativeQuantity(
+            order.takerAssetAmount,
+            order.makerAssetAmount,
+            takerAssetFillAmount
+        );
+
+        if (order.takerFee > 0) {
             address takerFeeAsset = __getAssetAddress(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA());
-            uint256 takerFee = __calcRelativeQuantity(
+            uint256 takerFeeFillAmount = __calcRelativeQuantity(
                 order.takerAssetAmount,
                 order.takerFee,
                 takerAssetFillAmount
             ); // fee calculated relative to taker fill amount
 
-            // Format spend assets
-            address[] memory rawSpendAssets = new address[](2);
-            rawSpendAssets[0] = __getAssetAddress(order.takerAssetData);
-            rawSpendAssets[1] = takerFeeAsset;
-            uint256[] memory rawSpendAssetAmounts = new uint256[](2);
-            rawSpendAssetAmounts[0] = takerAssetFillAmount;
-            // Set spend amount to 0 for taker fee if the asset is the same as the maker asset,
-            // as it can be deducted from the amount received
-            rawSpendAssetAmounts[1] = takerFeeAsset == makerAsset ? 0 : takerFee;
-            (spendAssets_, spendAssetAmounts_) = __aggregateAssets(
-                rawSpendAssets,
-                rawSpendAssetAmounts
-            );
+            if (takerFeeAsset == makerAsset) {
+                require(
+                    order.takerFee < order.makerAssetAmount,
+                    "parseAssetsForMethod: Fee greater than makerAssetAmount"
+                );
 
-            // Format incoming assets
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = makerAsset;
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = __calcRelativeQuantity(
-                order.takerAssetAmount,
-                order.makerAssetAmount,
-                takerAssetFillAmount
-            );
-            // If there is a taker fee and the maker asset is zrx, need to subtract fee
-            if (takerFee > 0 && makerAsset == takerFeeAsset) {
-                minIncomingAssetAmounts_[0] = minIncomingAssetAmounts_[0].sub(takerFee);
+                spendAssets_ = new address[](1);
+                spendAssets_[0] = takerAsset;
+
+                spendAssetAmounts_ = new uint256[](1);
+                spendAssetAmounts_[0] = takerAssetFillAmount;
+
+                minIncomingAssetAmounts_[0] = minIncomingAssetAmounts_[0].sub(takerFeeFillAmount);
+            } else if (takerFeeAsset == takerAsset) {
+                spendAssets_ = new address[](1);
+                spendAssets_[0] = takerAsset;
+
+                spendAssetAmounts_ = new uint256[](1);
+                spendAssetAmounts_[0] = takerAssetFillAmount.add(takerFeeFillAmount);
+            } else {
+                spendAssets_ = new address[](2);
+                spendAssets_[0] = takerAsset;
+                spendAssets_[1] = takerFeeAsset;
+
+                spendAssetAmounts_ = new uint256[](2);
+                spendAssetAmounts_[0] = takerAssetFillAmount;
+                spendAssetAmounts_[1] = takerFeeFillAmount;
             }
         } else {
-            revert("parseIncomingAssets: _selector invalid");
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = takerAsset;
+
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = takerAssetFillAmount;
         }
 
         return (
-            spendAssetsHandleType_,
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
             spendAssetAmounts_,
             incomingAssets_,
@@ -113,7 +149,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         );
     }
 
-    /// @notice Take order on 0x Protocol
+    /// @notice Take an order on 0x
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
@@ -132,18 +168,13 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
         IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
 
-        // Validate args
-        require(
-            takerAssetFillAmount <= order.takerAssetAmount,
-            "takeOrder: Taker asset fill amount greater than available"
-        );
-
-        // Approve spend assets
+        // Approve spend assets as needed
         __approveMaxAsNeeded(
             __getAssetAddress(order.takerAssetData),
             __getAssetProxy(order.takerAssetData),
             takerAssetFillAmount
         );
+        // Ignores whether makerAsset or takerAsset overlap with the takerFee asset for simplicity
         if (order.takerFee > 0) {
             bytes memory zrxData = IZeroExV2(EXCHANGE).ZRX_ASSET_DATA();
             __approveMaxAsNeeded(
@@ -164,11 +195,11 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
 
     // PRIVATE FUNCTIONS
 
-    /// @notice Parses user inputs into a ZeroExV2.Order format
+    /// @dev Parses user inputs into a ZeroExV2.Order format
     function __constructOrderStruct(bytes memory _encodedOrderArgs)
         private
-        view
-        returns (IZeroExV2.Order memory order)
+        pure
+        returns (IZeroExV2.Order memory order_)
     {
         (
             address[4] memory orderAddresses,
@@ -177,52 +208,24 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
 
         ) = __decodeZeroExOrderArgs(_encodedOrderArgs);
 
-        require(
-            makerToIsAllowed[orderAddresses[0]],
-            "__constructOrderStruct: maker is not allowed"
-        );
-
-        order = IZeroExV2.Order({
-            makerAddress: orderAddresses[0],
-            takerAddress: orderAddresses[1],
-            feeRecipientAddress: orderAddresses[2],
-            senderAddress: orderAddresses[3],
-            makerAssetAmount: orderValues[0],
-            takerAssetAmount: orderValues[1],
-            makerFee: orderValues[2],
-            takerFee: orderValues[3],
-            expirationTimeSeconds: orderValues[4],
-            salt: orderValues[5],
-            makerAssetData: orderData[0],
-            takerAssetData: orderData[1]
-        });
+        return
+            IZeroExV2.Order({
+                makerAddress: orderAddresses[0],
+                takerAddress: orderAddresses[1],
+                feeRecipientAddress: orderAddresses[2],
+                senderAddress: orderAddresses[3],
+                makerAssetAmount: orderValues[0],
+                takerAssetAmount: orderValues[1],
+                makerFee: orderValues[2],
+                takerFee: orderValues[3],
+                expirationTimeSeconds: orderValues[4],
+                salt: orderValues[5],
+                makerAssetData: orderData[0],
+                takerAssetData: orderData[1]
+            });
     }
 
-    /// @notice Gets the 0x assetProxy address for an ERC20 token
-    function __getAssetProxy(bytes memory _assetData) private view returns (address assetProxy_) {
-        bytes4 assetProxyId;
-
-        assembly {
-            assetProxyId := and(
-                mload(add(_assetData, 32)),
-                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            )
-        }
-        assetProxy_ = IZeroExV2(EXCHANGE).getAssetProxy(assetProxyId);
-    }
-
-    /// @notice Parses the asset address from 0x assetData
-    function __getAssetAddress(bytes memory _assetData)
-        private
-        pure
-        returns (address assetAddress_)
-    {
-        assembly {
-            assetAddress_ := mload(add(_assetData, 36))
-        }
-    }
-
-    /// @notice Decode the parameters of a takeOrder call
+    /// @dev Decode the parameters of a takeOrder call
     /// @param _encodedCallArgs Encoded parameters passed from client side
     /// @return encodedZeroExOrderArgs_ Encoded args of the 0x order
     /// @return takerAssetFillAmount_ Amount of taker asset to fill
@@ -265,33 +268,87 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         return abi.decode(_encodedZeroExOrderArgs, (address[4], uint256[6], bytes[2], bytes));
     }
 
-    /// @notice Updates makers are allowed to trade on 0x
-    /// @param _makers Makers' addresses
-    /// @param _alloweds Makers' permission to trade on 0x
-    function updateAllowedMakers(address[] calldata _makers, bool[] calldata _alloweds)
-        external
-        onlyFundDeployerOwner
+    /// @dev Parses the asset address from 0x assetData
+    function __getAssetAddress(bytes memory _assetData)
+        private
+        pure
+        returns (address assetAddress_)
     {
-        require(
-            _makers.length == _alloweds.length,
-            "updateAllowedMakers: _makers and _alloweds arrays unequal"
-        );
-        require(_makers.isUniqueSet(), "updateAllowedMakers: duplicate maker detected");
-
-        for (uint256 i; i < _makers.length; i++) {
-            makerToIsAllowed[_makers[i]] = _alloweds[i];
+        assembly {
+            assetAddress_ := mload(add(_assetData, 36))
         }
     }
 
-    function isAllowedMaker(address _who) external view returns (bool) {
-        return makerToIsAllowed[_who];
+    /// @dev Gets the 0x assetProxy address for an ERC20 token
+    function __getAssetProxy(bytes memory _assetData) private view returns (address assetProxy_) {
+        bytes4 assetProxyId;
+
+        assembly {
+            assetProxyId := and(
+                mload(add(_assetData, 32)),
+                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+            )
+        }
+        assetProxy_ = IZeroExV2(EXCHANGE).getAssetProxy(assetProxyId);
+    }
+
+    /////////////////////////////
+    // ALLOWED MAKERS REGISTRY //
+    /////////////////////////////
+
+    /// @notice Adds accounts to the list of allowed 0x order makers
+    /// @param _accountsToAdd Accounts to add
+    function addAllowedMakers(address[] calldata _accountsToAdd) external onlyFundDeployerOwner {
+        __addAllowedMakers(_accountsToAdd);
+    }
+
+    /// @notice Removes accounts from the list of allowed 0x order makers
+    /// @param _accountsToRemove Accounts to remove
+    function removeAllowedMakers(address[] calldata _accountsToRemove)
+        external
+        onlyFundDeployerOwner
+    {
+        require(_accountsToRemove.length > 0, "removeAllowedMakers: Empty _accountsToRemove");
+
+        for (uint256 i; i < _accountsToRemove.length; i++) {
+            require(
+                isAllowedMaker(_accountsToRemove[i]),
+                "removeAllowedMakers: Account is not an allowed maker"
+            );
+
+            makerToIsAllowed[_accountsToRemove[i]] = false;
+
+            emit AllowedMakerRemoved(_accountsToRemove[i]);
+        }
+    }
+
+    /// @dev Helper to add accounts to the list of allowed makers
+    function __addAllowedMakers(address[] memory _accountsToAdd) private {
+        require(_accountsToAdd.length > 0, "__addAllowedMakers: Empty _accountsToAdd");
+
+        for (uint256 i; i < _accountsToAdd.length; i++) {
+            require(!isAllowedMaker(_accountsToAdd[i]), "__addAllowedMakers: Value already set");
+
+            makerToIsAllowed[_accountsToAdd[i]] = true;
+
+            emit AllowedMakerAdded(_accountsToAdd[i]);
+        }
     }
 
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    function getExchange() external view returns (address) {
+    /// @notice Gets the `EXCHANGE` variable value
+    /// @return exchange_ The `EXCHANGE` variable value
+    function getExchange() external view returns (address exchange_) {
         return EXCHANGE;
+    }
+
+    /// @notice Checks whether an account is an allowed maker of 0x orders
+    /// @param _who The account to check
+    /// @return isAllowedMaker_ True if _who is an allowed maker
+    function isAllowedMaker(address _who) public view returns (bool isAllowedMaker_) {
+        return makerToIsAllowed[_who];
     }
 }
