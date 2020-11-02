@@ -20,7 +20,7 @@ yarn install
 ## Compile contracts
 
 ```sh
-yarn build
+yarn compile
 ```
 
 ## Test
