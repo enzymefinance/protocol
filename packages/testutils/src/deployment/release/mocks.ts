@@ -1,18 +1,18 @@
-import { AddressLike, SignerWithAddress, randomAddress, resolveAddress } from '@crestproject/crestproject';
+import { AddressLike, randomAddress, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
   Dispatcher,
+  encodeZeroExV2AssetData,
   MockChaiIntegratee,
   MockChainlinkPriceSource,
   MockChaiPriceSource,
   MockGenericAdapter,
   MockGenericIntegratee,
-  MockUniswapV2Integratee,
-  MockUniswapV2Pair,
   MockKyberIntegratee,
   MockToken,
+  MockUniswapV2Integratee,
+  MockUniswapV2Pair,
   MockZeroExV2Integratee,
   WETH,
-  encodeZeroExV2AssetData,
 } from '@melonproject/protocol';
 import { utils } from 'ethers';
 import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
@@ -36,6 +36,14 @@ export interface MockDeploymentOutput {
   uniswapV2Derivatives: Promise<{
     mlnWeth: MockToken;
     kncWeth: MockToken;
+  }>;
+  compoundTokens: Promise<{
+    ccomp: MockToken;
+    cdai: MockToken;
+    ceth: MockToken;
+    crep: MockToken;
+    cusdc: MockToken;
+    czrx: MockToken;
   }>;
   kyberIntegratee: Promise<MockKyberIntegratee>;
   chaiIntegratee: Promise<MockChaiIntegratee>;
@@ -61,15 +69,27 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   async tokens(config) {
     const [weth, mln, rep, knc, zrx, dai, ren] = await Promise.all([
       WETH.deploy(config.deployer),
-      MockToken.deploy(config.deployer, 'mln', 'MLN', 18),
-      MockToken.deploy(config.deployer, 'rep', 'REP', 18),
-      MockToken.deploy(config.deployer, 'knc', 'KNC', 18),
-      MockToken.deploy(config.deployer, 'zrx', 'ZRX', 18),
-      MockToken.deploy(config.deployer, 'dai', 'DAI', 18),
-      MockToken.deploy(config.deployer, 'ren', 'REN', 18),
+      MockToken.deploy(config.deployer, 'Melon Token', 'MLN', 18),
+      MockToken.deploy(config.deployer, 'Reputation', 'REP', 18),
+      MockToken.deploy(config.deployer, 'Kyber Network Crystal', 'KNC', 18),
+      MockToken.deploy(config.deployer, '0x Protocol Token', 'ZRX', 18),
+      MockToken.deploy(config.deployer, 'Dai Stablecoin', 'DAI', 18),
+      MockToken.deploy(config.deployer, 'Republic Token', 'REN', 18),
     ]);
 
     return { weth, mln, rep, knc, zrx, dai, ren };
+  },
+  async compoundTokens(config) {
+    const [ccomp, cdai, ceth, crep, cusdc, czrx] = await Promise.all([
+      MockToken.deploy(config.deployer, 'Compound Collateral', 'cCOMP', 8),
+      MockToken.deploy(config.deployer, 'Compound Dai', 'cDAI', 8),
+      MockToken.deploy(config.deployer, 'Compound Ether', 'cETH', 8),
+      MockToken.deploy(config.deployer, 'Compound Augur', 'cREP', 8),
+      MockToken.deploy(config.deployer, 'Compound USD Coin', 'cUSDC', 8),
+      MockToken.deploy(config.deployer, 'Compound 0x', 'cZRX', 8),
+    ]);
+
+    return { ccomp, cdai, ceth, crep, cusdc, czrx };
   },
   async uniswapV2Derivatives(config, deployment) {
     const tokens = await deployment.tokens;
@@ -161,6 +181,12 @@ export async function configureMockRelease({
     mocks.uniswapV2Derivatives.mlnWeth as MockToken,
     mocks.uniswapV2Derivatives.kncWeth as MockToken,
     mocks.chaiIntegratee,
+    mocks.compoundTokens.ccomp,
+    mocks.compoundTokens.cdai,
+    mocks.compoundTokens.ceth,
+    mocks.compoundTokens.crep,
+    mocks.compoundTokens.cusdc,
+    mocks.compoundTokens.czrx,
   ];
 
   const uniswapV2Derivatives = [
@@ -221,12 +247,12 @@ export async function configureMockRelease({
     derivatives: {
       chai: mocks.chaiIntegratee,
       compound: {
-        ccomp: randomAddress(),
-        cdai: randomAddress(),
-        ceth: randomAddress(),
-        crep: randomAddress(),
-        cusdc: randomAddress(),
-        czrx: randomAddress(),
+        ccomp: mocks.compoundTokens.ccomp,
+        cdai: mocks.compoundTokens.cdai,
+        ceth: mocks.compoundTokens.ceth,
+        crep: mocks.compoundTokens.crep,
+        cusdc: mocks.compoundTokens.cusdc,
+        czrx: mocks.compoundTokens.czrx,
       },
       uniswapV2: {
         mlnWeth: mocks.uniswapV2Derivatives.mlnWeth,
