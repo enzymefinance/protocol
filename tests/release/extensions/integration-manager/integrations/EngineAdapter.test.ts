@@ -136,13 +136,9 @@ describe('takeOrder', () => {
       encodedCallArgs: takeOrderArgs,
     });
 
-    const badTakeOrderTx = engineAdapter.takeOrder(
-      vaultProxy,
-      takeOrderSelector,
-      transferArgs,
-    );
-
-    await expect(badTakeOrderTx).rejects.toBeRevertedWith(
+    await expect(
+      engineAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs),
+    ).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });

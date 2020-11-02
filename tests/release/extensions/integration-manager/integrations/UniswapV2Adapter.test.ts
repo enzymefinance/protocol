@@ -624,79 +624,78 @@ describe('takeOrder', () => {
     });
   });
 
-  // it('works as expected when called by a fund (ERC20 to ETH)', async () => {
-  // const {
-  // deployment: {
-  // uniswapV2Adapter,
-  // integrationManager,
-  // tokens: { mln: tokenA, weth: tokenB },
-  // },
-  // fund: { comptrollerProxy, fundOwner, vaultProxy },
-  // } = await provider.snapshot(snapshot);
+  it('works as expected when called by a fund (ERC20 to ETH)', async () => {
+    const {
+      deployment: {
+        uniswapV2Adapter,
+        integrationManager,
+        tokens: { mln: tokenA, weth: tokenB },
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
-  // const outgoingAssetAmount = utils.parseEther('1');
-  // const minIncomingAssetAmount = utils.parseEther('1');
+    const outgoingAssetAmount = utils.parseEther('1');
+    const minIncomingAssetAmount = utils.parseEther('1');
 
-  // await assertUniswapV2TakeOrder({
-  // comptrollerProxy,
-  // vaultProxy,
-  // integrationManager,
-  // fundOwner,
-  // uniswapV2Adapter,
-  // path: [tokenA, tokenB],
-  // outgoingAssetAmount,
-  // minIncomingAssetAmount,
-  // });
-  // });
+    await assertUniswapV2TakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      uniswapV2Adapter,
+      path: [tokenA, tokenB],
+      outgoingAssetAmount,
+      minIncomingAssetAmount,
+    });
+  });
 
-  // it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
-  // const {
-  // deployment: {
-  // uniswapV2Adapter,
-  // integrationManager,
-  // tokens: { mln: tokenA, dai: tokenB },
-  // },
-  // fund: { comptrollerProxy, fundOwner, vaultProxy },
-  // } = await provider.snapshot(snapshot);
+  it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
+    const {
+      deployment: {
+        uniswapV2Adapter,
+        integrationManager,
+        tokens: { mln: tokenA, dai: tokenB },
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
-  // const outgoingAssetAmount = utils.parseEther('1');
-  // const minIncomingAssetAmount = utils.parseEther('1');
+    const outgoingAssetAmount = utils.parseEther('1');
+    const minIncomingAssetAmount = utils.parseEther('1');
 
-  // await assertUniswapV2TakeOrder({
-  // comptrollerProxy,
-  // vaultProxy,
-  // integrationManager,
-  // fundOwner,
-  // uniswapV2Adapter,
-  // path: [tokenA, tokenB],
-  // outgoingAssetAmount,
-  // minIncomingAssetAmount,
-  // });
-  // });
+    await assertUniswapV2TakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      uniswapV2Adapter,
+      path: [tokenA, tokenB],
+      outgoingAssetAmount,
+      minIncomingAssetAmount,
+    });
+  });
 
-  // it('reverts if the incoming asset amount is too low', async () => {
-  // const {
-  // deployment: {
-  // uniswapV2Adapter,
-  // integrationManager,
-  // tokens: { mln: tokenA, weth: tokenB },
-  // },
-  // fund: { comptrollerProxy, fundOwner, vaultProxy },
-  // } = await provider.snapshot(snapshot);
+  xit('reverts if the incoming asset amount is too low', async () => {
+    const {
+      deployment: {
+        uniswapV2Adapter,
+        integrationManager,
+        tokens: { mln: tokenA, weth: tokenB },
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
-  // const badTakeOrderTx = uniswapV2TakeOrder({
-  // comptrollerProxy,
-  // vaultProxy,
-  // integrationManager,
-  // fundOwner,
-  // uniswapV2Adapter,
-  // path: [tokenA, tokenB],
-  // outgoingAssetAmount: utils.parseEther('1'),
-  // minIncomingAssetAmount: utils.parseEther('1.0001'),
-  // seedFund: true,
-  // });
-  // await expect(badTakeOrderTx).rejects.toBeRevertedWith(
-  // 'received incoming asset less than expected',
-  // );
-  // });
+    await expect(
+      uniswapV2TakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        uniswapV2Adapter,
+        path: [tokenA, tokenB],
+        outgoingAssetAmount: utils.parseEther('1'),
+        minIncomingAssetAmount: utils.parseEther('1.0001'),
+        seedFund: true,
+      }),
+    ).rejects.toBeRevertedWith('received incoming asset less than expected');
+  });
 });

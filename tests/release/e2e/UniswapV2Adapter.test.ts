@@ -37,8 +37,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-xdescribe('lend', () => {
-  it('works as expected', async () => {
+describe('lend', () => {
+  xit('works as expected', async () => {
     const {
       config: {
         derivatives: {
@@ -83,7 +83,7 @@ xdescribe('lend', () => {
   });
 });
 
-xdescribe('redeem', () => {
+describe('redeem', () => {
   it('works as expected', async () => {
     const {
       config: {
@@ -151,8 +151,8 @@ xdescribe('redeem', () => {
   });
 });
 
-xdescribe('takeOrder', () => {
-  it('Swap MLN for WETH directly', async () => {
+describe('takeOrder', () => {
+  xit('Swap MLN for WETH directly', async () => {
     const {
       config: {
         integratees: {
@@ -205,7 +205,7 @@ xdescribe('takeOrder', () => {
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });
 
-  it('Swap MLN for KNC indirectly via WETH', async () => {
+  xit('Swap MLN for KNC indirectly via WETH', async () => {
     const {
       config: {
         integratees: {

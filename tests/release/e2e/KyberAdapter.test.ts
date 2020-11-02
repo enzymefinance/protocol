@@ -117,7 +117,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 // HAPPY PATHS
 
-xit('works as expected when called by a fund (ERC20 to ERC20)', async () => {
+it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   const {
     config: {
       tokens: { dai: outgoingAsset, knc: incomingAsset },
@@ -149,7 +149,7 @@ xit('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   });
 });
 
-xit('works as expected when called by a fund (ETH to ERC20)', async () => {
+it('works as expected when called by a fund (ETH to ERC20)', async () => {
   const {
     config: {
       tokens: { weth: outgoingAsset, dai: incomingAsset },
@@ -181,7 +181,7 @@ xit('works as expected when called by a fund (ETH to ERC20)', async () => {
   });
 });
 
-xit('works as expected when called by a fund (ERC20 to ETH)', async () => {
+it('works as expected when called by a fund (ERC20 to ETH)', async () => {
   const {
     config: {
       tokens: { dai: outgoingAsset, weth: incomingAsset },
@@ -215,7 +215,7 @@ xit('works as expected when called by a fund (ERC20 to ETH)', async () => {
 
 // UNHAPPY PATHS
 
-xit('respects minConversionRate as set via minIncomingAssetAmount', async () => {
+it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
   const {
     config: {
       tokens: { dai: outgoingAsset, knc: incomingAsset },

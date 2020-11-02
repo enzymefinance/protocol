@@ -39,15 +39,11 @@ export async function zeroExV2TakeOrder({
     encodedCallArgs: takeOrderArgs,
   });
 
-  const takeOrderTx = comptrollerProxy
+  return comptrollerProxy
     .connect(fundOwner)
     .callOnExtension(
       integrationManager,
       IntegrationManagerActionId.CallOnIntegration,
       callArgs,
     );
-
-  await expect(takeOrderTx).resolves.toBeReceipt();
-
-  return takeOrderTx;
 }

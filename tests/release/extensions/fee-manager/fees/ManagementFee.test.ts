@@ -1,4 +1,4 @@
-import { BigNumber, constants, utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
