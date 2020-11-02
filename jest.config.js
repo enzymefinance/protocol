@@ -16,9 +16,7 @@ function common(name, roots) {
     globals: {
       'ts-jest': {
         babelConfig: true,
-        diagnostics: {
-          warnOnly: true,
-        },
+        diagnostics: false,
       },
     },
   };

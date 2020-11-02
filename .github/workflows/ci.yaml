@@ -7,8 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project:
-          ['core', 'infrastructure', 'fee', 'policy', 'integration', 'e2e']
+        project: ['core', 'infrastructure', 'fee', 'policy', 'integration', 'e2e']
 
     steps:
       - name: Check out repository
@@ -33,7 +32,7 @@ jobs:
         uses: actions/cache@v2
         if: ${{ matrix.project == 'e2e' }}
         with:
-          path: 'packages/protocol/cache/hardhat-network-fork'
+          path: '.hardhat/cache/hardhat-network-fork'
           key: static
 
       - name: Install dependencies

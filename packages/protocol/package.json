@@ -32,20 +32,17 @@
     "Smart Contracts",
     "Solidity"
   ],
-  "scripts": {
-    "codegen": "crestproject codegen \"artifacts/contracts/**/!(*.dbg).json\" src/codegen"
-  },
   "dependencies": {
     "@babel/runtime": "^7.12.1"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.1.1",
+    "@crestproject/crestproject": "^0.1.5",
     "@openzeppelin/contracts": "^3.2.0",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   },
   "peerDependencies": {
-    "@crestproject/crestproject": "^0.1.1",
+    "@crestproject/crestproject": "^0.1.5",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   }

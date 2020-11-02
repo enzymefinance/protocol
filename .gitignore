@@ -3,7 +3,6 @@
 
 # ignore all dotfiles except the whitelisted ones
 .*
-!.env.example
 !.changeset
 !.github
 !.gitignore
@@ -15,8 +14,7 @@
 !.solhintignore
 
 # ignore build output and dependencies
-artifacts/
 codegen/
-cache/
 dist/
+artifacts/
 node_modules/
