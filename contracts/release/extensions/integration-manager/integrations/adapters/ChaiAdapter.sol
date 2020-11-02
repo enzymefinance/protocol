@@ -21,8 +21,8 @@ contract ChaiAdapter is AdapterBase {
     }
 
     /// @notice Provides a constant string identifier for an adapter
-    /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    /// @return identifier_ An identifier string
+    function identifier() external pure override returns (string memory identifier_) {
         return "CHAI";
     }
 
@@ -50,8 +50,6 @@ contract ChaiAdapter is AdapterBase {
         if (_selector == LEND_SELECTOR) {
             (uint256 daiAmount, uint256 minChaiAmount) = __decodeCallArgs(_encodedCallArgs);
 
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
-
             spendAssets_ = new address[](1);
             spendAssets_[0] = DAI;
             spendAssetAmounts_ = new uint256[](1);
@@ -63,8 +61,6 @@ contract ChaiAdapter is AdapterBase {
             minIncomingAssetAmounts_[0] = minChaiAmount;
         } else if (_selector == REDEEM_SELECTOR) {
             (uint256 chaiAmount, uint256 minDaiAmount) = __decodeCallArgs(_encodedCallArgs);
-
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = CHAI;
@@ -80,7 +76,7 @@ contract ChaiAdapter is AdapterBase {
         }
 
         return (
-            spendAssetsHandleType_,
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
             spendAssetAmounts_,
             incomingAssets_,
@@ -102,12 +98,11 @@ contract ChaiAdapter is AdapterBase {
         fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
         (uint256 daiAmount, ) = __decodeCallArgs(_encodedCallArgs);
-        require(daiAmount > 0, "lend: daiAmount must be >0");
 
-        // Execute Lend on Chai
         __approveMaxAsNeeded(DAI, CHAI, daiAmount);
 
-        // Chai.join allows specifying the destination of Chai tokens directly
+        // Execute Lend on Chai
+        // Chai.join allows specifying the vaultProxy as the destination of Chai tokens
         IChai(CHAI).join(_vaultProxy, daiAmount);
     }
 
@@ -125,14 +120,15 @@ contract ChaiAdapter is AdapterBase {
         fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
         (uint256 chaiAmount, ) = __decodeCallArgs(_encodedCallArgs);
-        require(chaiAmount > 0, "redeem: chaiAmount must be >0");
 
-        // Execute Redeem on Chai
+        // Execute redeem on Chai
+        // Chai.exit sends Dai back to the adapter
         IChai(CHAI).exit(address(this), chaiAmount);
     }
 
     // PRIVATE FUNCTIONS
 
+    /// @dev Helper to decode the encoded call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
@@ -145,11 +141,15 @@ contract ChaiAdapter is AdapterBase {
     // STATE GETTERS //
     ///////////////////
 
-    function getChai() external view returns (address) {
+    /// @notice Gets the `CHAI` variable value
+    /// @return chai_ The `CHAI` variable value
+    function getChai() external view returns (address chai_) {
         return CHAI;
     }
 
-    function getDai() external view returns (address) {
+    /// @notice Gets the `DAI` variable value
+    /// @return dai_ The `DAI` variable value
+    function getDai() external view returns (address dai_) {
         return DAI;
     }
 }
