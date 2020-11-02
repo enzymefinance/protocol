@@ -18,16 +18,19 @@ abstract contract FeeBase is IFee {
         FEE_MANAGER = _feeManager;
     }
 
+    /// @notice Allows Fee to run logic during fund activation
+    /// @dev Unimplemented by default, may be overrode.
     function activateForFund(address, address) external virtual override {
         // UNIMPLEMENTED
     }
 
-    /// @dev Returns empty by default, can be overridden by fee
+    /// @notice Runs payout logic for a fee that utilizes shares outstanding as its settlement type
+    /// @dev Returns false by default, can be overridden by fee
     function payout(address, address) external virtual override returns (bool) {
         return false;
     }
 
-    /// @notice Helper to parse settlement arguments from encoded data
+    /// @notice Helper to parse settlement arguments from encoded data for PreBuyShares fee hook
     function __decodePreBuySharesSettlementData(bytes memory _settlementData)
         internal
         pure
@@ -41,7 +44,7 @@ abstract contract FeeBase is IFee {
         return abi.decode(_settlementData, (address, uint256, uint256, uint256));
     }
 
-    /// @notice Helper to parse settlement arguments from encoded data
+    /// @notice Helper to parse settlement arguments from encoded data for PreRedeemShares fee hook
     function __decodePreRedeemSharesSettlementData(bytes memory _settlementData)
         internal
         pure
@@ -50,7 +53,7 @@ abstract contract FeeBase is IFee {
         return abi.decode(_settlementData, (address, uint256));
     }
 
-    /// @notice Helper to parse settlement arguments from encoded data
+    /// @notice Helper to parse settlement arguments from encoded data for PostBuyShares fee hook
     function __decodePostBuySharesSettlementData(bytes memory _settlementData)
         internal
         pure
@@ -67,6 +70,8 @@ abstract contract FeeBase is IFee {
     // STATE GETTERS //
     ///////////////////
 
+    /// @notice Gets the `FEE_MANAGER` variable
+    /// @return feeManager_ The `FEE_MANAGER` variable value
     function getFeeManager() external view returns (address feeManager_) {
         return FEE_MANAGER;
     }
