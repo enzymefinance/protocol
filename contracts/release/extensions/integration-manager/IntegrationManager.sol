@@ -5,7 +5,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
+import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
@@ -50,8 +51,9 @@ contract IntegrationManager is
 
     event TrackedAssetsLimitSet(uint256 nextTrackedAssetsLimit);
 
+    address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
-    address private immutable VALUE_INTERPRETER;
+    address private immutable PRIMITIVE_PRICE_FEED;
 
     uint256 private trackedAssetsLimit;
     EnumerableSet.AddressSet private registeredAdapters;
@@ -61,11 +63,13 @@ contract IntegrationManager is
     constructor(
         address _fundDeployer,
         address _policyManager,
-        address _valueInterpreter,
+        address _derivativePriceFeed,
+        address _primitivePriceFeed,
         uint256 _trackedAssetsLimit
     ) public FundDeployerOwnerMixin(_fundDeployer) {
+        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
-        VALUE_INTERPRETER = _valueInterpreter;
+        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         trackedAssetsLimit = _trackedAssetsLimit;
     }
 
@@ -359,6 +363,13 @@ contract IntegrationManager is
         return ERC20(_asset).balanceOf(_vaultProxy);
     }
 
+    /// @dev Helper to check if an asset is supported
+    function __isSupportedAsset(address _asset) private view returns (bool isSupported_) {
+        return
+            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
+            IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
+    }
+
     /// @dev Helper for the actions to take on external contracts prior to executing CoI
     function __preCoIHook(address _adapter, bytes4 _selector) private {
         IPolicyManager(POLICY_MANAGER).validatePolicies(
@@ -413,7 +424,6 @@ contract IntegrationManager is
         );
 
         IVault vaultProxyContract = IVault(_vaultProxy);
-        IValueInterpreter valueInterpreterContract = IValueInterpreter(VALUE_INTERPRETER);
 
         preCallIncomingAssetBalances_ = new uint256[](expectedIncomingAssets_.length);
         for (uint256 i = 0; i < expectedIncomingAssets_.length; i++) {
@@ -426,7 +436,7 @@ contract IntegrationManager is
                 "__preProcessCoI: minIncomingAssetAmount must be >0"
             );
             require(
-                valueInterpreterContract.isSupportedAsset(expectedIncomingAssets_[i]),
+                __isSupportedAsset(expectedIncomingAssets_[i]),
                 "__preProcessCoI: Non-receivable incoming asset"
             );
 
@@ -450,7 +460,7 @@ contract IntegrationManager is
             // actions within an adapter.
             require(
                 vaultProxyContract.isTrackedAsset(spendAssets_[i]) ||
-                    valueInterpreterContract.isSupportedAsset(spendAssets_[i]),
+                    __isSupportedAsset(spendAssets_[i]),
                 "__preProcessCoI: Non-spendable spend asset"
             );
 
@@ -750,10 +760,22 @@ contract IntegrationManager is
         return registeredAdapters.contains(_adapter);
     }
 
+    /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable
+    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
+    function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
+        return DERIVATIVE_PRICE_FEED;
+    }
+
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() external view returns (address policyManager_) {
         return POLICY_MANAGER;
+    }
+
+    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
+    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
+    function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
+        return PRIMITIVE_PRICE_FEED;
     }
 
     /// @notice Gets all registered integration adapters
@@ -775,11 +797,5 @@ contract IntegrationManager is
     /// @return trackedAssetsLimit_ The `trackedAssetsLimit` variable value
     function getTrackedAssetsLimit() external view returns (uint256 trackedAssetsLimit_) {
         return trackedAssetsLimit;
-    }
-
-    /// @notice Gets the `VALUE_INTERPRETER` variable
-    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getValueInterpreter() external view returns (address valueInterpreter_) {
-        return VALUE_INTERPRETER;
     }
 }

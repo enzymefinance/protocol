@@ -39,7 +39,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   // Mock the ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
   await mockComptrollerProxy.getVaultProxy.returns(vaultProxyAddress);
-  await mockComptrollerProxy.calcGav.returns(totalGav);
+  await mockComptrollerProxy.calcGav.returns(totalGav, true);
   await mockComptrollerProxy.getDenominationAsset.returns(denominationAsset);
 
   // Add policy settings for ComptrollerProxy

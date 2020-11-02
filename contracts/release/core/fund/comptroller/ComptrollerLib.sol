@@ -288,56 +288,46 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     ////////////////
 
     /// @notice Calculates the gross asset value (GAV) of the fund
-    /// @param _useLiveRates True if should use live rates instead of canonical rates
     /// @return gav_ The fund GAV
-    /// @dev _useLiveRates is `false` within the core protocol, but plugins will often want to use
-    /// live rates, for example a MaxConcentration policy
+    /// @return isValid_ True if the conversion rates to derive the GAV are all valid
     /// @dev Does not alter local state,
     /// but not a view because calls to price feeds can potentially update 3rd party state
-    function calcGav(bool _useLiveRates) public onlyDelegateCall returns (uint256 gav_) {
-        IVault vaultProxyContract = IVault(vaultProxy);
-        address[] memory assets = vaultProxyContract.getTrackedAssets();
+    function calcGav() public onlyDelegateCall returns (uint256 gav_, bool isValid_) {
+        address vaultProxyAddress = vaultProxy;
+        address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
-            balances[i] = __getVaultAssetBalance(address(vaultProxyContract), assets[i]);
+            balances[i] = __getVaultAssetBalance(vaultProxyAddress, assets[i]);
         }
 
-        bool isValid;
-        if (_useLiveRates) {
-            (gav_, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcLiveAssetsTotalValue(
+        return
+            IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
                 assets,
                 balances,
                 denominationAsset
             );
-        } else {
-            (gav_, isValid) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
-                assets,
-                balances,
-                denominationAsset
-            );
-        }
-
-        // TODO: return validity instead of reverting?
-        require(isValid, "calcGav: gav is invalid");
-
-        return gav_;
     }
 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
     /// @return grossShareValue_ The amount of the denomination asset per share
+    /// @return isValid_ True if the conversion rates to derive the value are all valid
     /// @dev Does not account for any fees outstanding
     function calcGrossShareValue()
         external
         override
         onlyDelegateCall
-        returns (uint256 grossShareValue_)
+        returns (uint256 grossShareValue_, bool isValid_)
     {
-        return
-            __calcGrossShareValue(
-                calcGav(false),
-                ERC20(vaultProxy).totalSupply(),
-                10**uint256(ERC20(denominationAsset).decimals())
-            );
+        uint256 gav;
+        (gav, isValid_) = calcGav();
+
+        grossShareValue_ = __calcGrossShareValue(
+            gav,
+            ERC20(vaultProxy).totalSupply(),
+            10**uint256(ERC20(denominationAsset).decimals())
+        );
+
+        return (grossShareValue_, isValid_);
     }
 
     /// @dev Helper for calculating the gross share value
@@ -395,49 +385,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         amguPayable
         returns (uint256 sharesReceived_)
     {
-        require(
-            allowedBuySharesCallers.length() == 0 || allowedBuySharesCallers.contains(msg.sender),
-            "buyShares: Unauthorized caller"
-        );
-
-        uint256 preBuySharesGav = calcGav(false);
-
-        __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
-
-        IVault vaultProxyContract = IVault(vaultProxy);
-        ERC20 sharesContract = ERC20(address(vaultProxyContract));
-        ERC20 denominationAssetContract = ERC20(denominationAsset);
-
-        // Calculate the amount of shares to buy with the investment amount
-        uint256 sharesBought = __calcBuyableSharesQuantity(
-            sharesContract,
-            denominationAssetContract,
-            _investmentAmount,
-            preBuySharesGav
-        );
-
-        // Mint shares to the buyer
-        uint256 prevBuyerShares = sharesContract.balanceOf(_buyer);
-        vaultProxyContract.mintShares(_buyer, sharesBought);
-
-        // Post-buy actions
-        // TODO: could add additional params like gav and totalSupply here too
-        __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
-
-        sharesReceived_ = sharesContract.balanceOf(_buyer).sub(prevBuyerShares);
-        require(sharesReceived_ >= _minSharesQuantity, "buyShares: < _minSharesQuantity");
-
-        // Transfer investment asset
-        denominationAssetContract.safeTransferFrom(
-            msg.sender,
-            address(vaultProxyContract),
-            _investmentAmount
-        );
-        vaultProxyContract.addTrackedAsset(address(denominationAssetContract));
-
-        emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived_);
-
-        return sharesReceived_;
+        return __buyShares(_buyer, _investmentAmount, _minSharesQuantity);
     }
 
     /// @notice Remove approval of accounts that can call the `buyShares` function
@@ -477,6 +425,58 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
 
             emit AllowedBuySharesCallerAdded(_callersToAdd[i]);
         }
+    }
+
+    /// @dev Avoids the stack-too-deep error in buyShares()
+    function __buyShares(
+        address _buyer,
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
+    ) private returns (uint256 sharesReceived_) {
+        require(
+            allowedBuySharesCallers.length() == 0 || allowedBuySharesCallers.contains(msg.sender),
+            "buyShares: Unauthorized caller"
+        );
+
+        (uint256 preBuySharesGav, bool gavIsValid) = calcGav();
+        require(gavIsValid, "buyShares: Invalid GAV");
+
+        __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
+
+        IVault vaultProxyContract = IVault(vaultProxy);
+        ERC20 sharesContract = ERC20(address(vaultProxyContract));
+        ERC20 denominationAssetContract = ERC20(denominationAsset);
+
+        // Calculate the amount of shares to buy with the investment amount
+        uint256 sharesBought = __calcBuyableSharesQuantity(
+            sharesContract,
+            denominationAssetContract,
+            _investmentAmount,
+            preBuySharesGav
+        );
+
+        // Mint shares to the buyer
+        uint256 prevBuyerShares = sharesContract.balanceOf(_buyer);
+        vaultProxyContract.mintShares(_buyer, sharesBought);
+
+        // Post-buy actions
+        // TODO: could add additional params like gav and totalSupply here too
+        __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
+
+        sharesReceived_ = sharesContract.balanceOf(_buyer).sub(prevBuyerShares);
+        require(sharesReceived_ >= _minSharesQuantity, "buyShares: < _minSharesQuantity");
+
+        // Transfer investment asset
+        denominationAssetContract.safeTransferFrom(
+            msg.sender,
+            address(vaultProxyContract),
+            _investmentAmount
+        );
+        vaultProxyContract.addTrackedAsset(address(denominationAssetContract));
+
+        emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived_);
+
+        return sharesReceived_;
     }
 
     /// @dev Helper to calculate the quantity of shares buyable for a given investment amount.

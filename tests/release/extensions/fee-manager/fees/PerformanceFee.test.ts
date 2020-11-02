@@ -33,8 +33,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Mock a ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
-  await mockComptrollerProxy.calcGav.returns(0);
-  await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseEther('1'));
+  await mockComptrollerProxy.calcGav.returns(0, false);
+  await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseEther('1'), true);
   await mockComptrollerProxy.getDenominationAsset.returns(mockDenominationAsset);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
@@ -76,10 +76,11 @@ async function activateWithInitialValues({
   gav?: BigNumberish;
   totalSharesSupply?: BigNumberish;
 }) {
-  await mockComptrollerProxy.calcGav.returns(gav);
+  await mockComptrollerProxy.calcGav.returns(gav, true);
   await mockVaultProxy.totalSupply.returns(totalSharesSupply);
   await mockComptrollerProxy.calcGrossShareValue.returns(
     BigNumber.from(gav).mul(utils.parseEther('1')).div(totalSharesSupply),
+    true,
   );
 
   return mockFeeManager.forward(performanceFee.activateForFund, mockComptrollerProxy, mockVaultProxy);
@@ -104,9 +105,10 @@ async function assertAdjustedPerformance({
 }) {
   // Change the share price by altering the gav
   const prevTotalSharesSupply = await mockVaultProxy.totalSupply();
-  await mockComptrollerProxy.calcGav.returns(nextGav);
+  await mockComptrollerProxy.calcGav.returns(nextGav, true);
   await mockComptrollerProxy.calcGrossShareValue.returns(
     BigNumber.from(nextGav).mul(utils.parseEther('1')).div(prevTotalSharesSupply),
+    true,
   );
 
   // Calculate expected performance results for next settlement
@@ -271,7 +273,7 @@ describe('activateForFund', () => {
 
     // Set grossShareValue to an arbitrary value
     const grossShareValue = utils.parseEther('5');
-    await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue);
+    await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue, true);
 
     // Activate fund
     const receipt = await mockFeeManager.forward(
@@ -381,7 +383,7 @@ describe('payout', () => {
       performanceFee,
     });
 
-    const initialSharePrice = await mockComptrollerProxy.calcGrossShareValue.call();
+    const initialSharePrice = (await mockComptrollerProxy.calcGrossShareValue.call()).grossShareValue_;
 
     // Raise next high water mark by increasing price
     await assertAdjustedPerformance({

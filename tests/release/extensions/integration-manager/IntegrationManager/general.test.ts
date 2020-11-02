@@ -43,8 +43,17 @@ describe('constructor', () => {
       config: {
         integrationManager: { trackedAssetsLimit },
       },
-      deployment: { integrationManager, fundDeployer, policyManager, valueInterpreter },
+      deployment: {
+        aggregatedDerivativePriceFeed,
+        chainlinkPriceFeed,
+        integrationManager,
+        fundDeployer,
+        policyManager,
+      },
     } = await provider.snapshot(snapshot);
+
+    const getDerivativePriceFeedCall = await integrationManager.getDerivativePriceFeed();
+    expect(getDerivativePriceFeedCall).toMatchAddress(aggregatedDerivativePriceFeed);
 
     const getFundDeployerCall = await integrationManager.getFundDeployer();
     expect(getFundDeployerCall).toMatchAddress(fundDeployer);
@@ -52,11 +61,11 @@ describe('constructor', () => {
     const getPolicyManagerCall = await integrationManager.getPolicyManager();
     expect(getPolicyManagerCall).toMatchAddress(policyManager);
 
+    const getPrimitivePriceFeedCall = await integrationManager.getPrimitivePriceFeed();
+    expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
+
     const getTrackedAssetsLimitCall = await integrationManager.getTrackedAssetsLimit();
     expect(getTrackedAssetsLimitCall).toEqBigNumber(trackedAssetsLimit);
-
-    const getValueInterpreterCall = await integrationManager.getValueInterpreter();
-    expect(getValueInterpreterCall).toMatchAddress(valueInterpreter);
   });
 });
 

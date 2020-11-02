@@ -76,10 +76,16 @@ describe('buyShares', () => {
 
     // Assert calls on ComptrollerProxy
     const calcGavCall = await comptrollerProxy.calcGav.call();
-    expect(calcGavCall).toEqBigNumber(investmentAmount);
+    expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav.fragment, {
+      gav_: investmentAmount,
+      isValid_: true,
+    });
 
     const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
-    expect(calcGrossShareValueCall).toEqBigNumber(utils.parseEther('1'));
+    expect(calcGrossShareValueCall).toMatchFunctionOutput(comptrollerProxy.calcGrossShareValue.fragment, {
+      grossShareValue_: utils.parseEther('1'),
+      isValid_: true,
+    });
 
     // Assert calls on VaultProxy
     // TODO: does this belong here?

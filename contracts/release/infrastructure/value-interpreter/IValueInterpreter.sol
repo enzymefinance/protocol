@@ -27,6 +27,4 @@ interface IValueInterpreter {
         uint256[] calldata,
         address
     ) external returns (uint256, bool);
-
-    function isSupportedAsset(address) external view returns (bool);
 }

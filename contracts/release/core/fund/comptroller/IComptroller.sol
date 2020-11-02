@@ -8,7 +8,7 @@ import "../vault/IVault.sol";
 interface IComptroller {
     function activate(address, bool) external;
 
-    function calcGrossShareValue() external returns (uint256);
+    function calcGrossShareValue() external returns (uint256, bool);
 
     function callOnExtension(
         address,

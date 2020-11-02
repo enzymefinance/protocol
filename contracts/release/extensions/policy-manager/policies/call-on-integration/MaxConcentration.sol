@@ -85,7 +85,10 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
         uint256 maxConcentration = comptrollerProxyToMaxConcentration[_comptrollerProxy];
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
         address denominationAsset = comptrollerProxyContract.getDenominationAsset();
-        uint256 totalGav = comptrollerProxyContract.calcGav(true);
+        (uint256 totalGav, bool gavIsValid) = comptrollerProxyContract.calcGav();
+        if (!gavIsValid) {
+            return false;
+        }
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];

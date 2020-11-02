@@ -57,12 +57,14 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     function activateForFund(address _comptrollerProxy, address) external override onlyFeeManager {
         FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
-        feeInfo.activated = block.timestamp;
 
-        // TODO: what if GAV is invalid?
-        uint256 grossSharePrice = ComptrollerLib(_comptrollerProxy).calcGrossShareValue();
+        (uint256 grossSharePrice, bool sharePriceIsValid) = ComptrollerLib(_comptrollerProxy)
+            .calcGrossShareValue();
+        require(sharePriceIsValid, "activateForFund: Invalid share price");
+
         feeInfo.highWaterMark = grossSharePrice;
         feeInfo.lastSharePrice = grossSharePrice;
+        feeInfo.activated = block.timestamp;
 
         emit ActivatedForFund(_comptrollerProxy, grossSharePrice);
     }
@@ -321,7 +323,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         if (_hook == IFeeManager.FeeHook.PreBuyShares) {
             (, , , gav) = __decodePreBuySharesSettlementData(_settlementData);
         } else {
-            gav = _comptrollerProxyContract.calcGav(false);
+            bool gavIsValid;
+            (gav, gavIsValid) = _comptrollerProxyContract.calcGav();
+            require(gavIsValid, "__calcPerformance: Invalid GAV");
         }
         uint256 sharePriceWithoutPerformance = gav.mul(SHARE_UNIT).div(netSharesSupply);
 

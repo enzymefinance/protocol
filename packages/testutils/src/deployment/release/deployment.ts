@@ -215,7 +215,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       config.deployer,
       await deployment.fundDeployer,
       await deployment.policyManager,
-      await deployment.valueInterpreter,
+      await deployment.aggregatedDerivativePriceFeed,
+      await deployment.chainlinkPriceFeed,
       config.integrationManager.trackedAssetsLimit,
     );
   },
