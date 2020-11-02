@@ -10,6 +10,29 @@ import "../utils/AdapterBase.sol";
 contract TrackedAssetsAdapter is AdapterBase {
     constructor(address _integrationManager) public AdapterBase(_integrationManager) {}
 
+    /// @notice Add multiple assets to the Vault's list of tracked assets
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @dev No need to validate caller
+    function addTrackedAssets(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external view {
+        address[] memory incomingAssets = __decodeCallArgs(_encodedCallArgs);
+
+        for (uint256 i; i < incomingAssets.length; i++) {
+            require(
+                !VaultLib(_vaultProxy).isTrackedAsset(incomingAssets[i]),
+                "addTrackedAssets: Already tracked"
+            );
+            require(
+                ERC20(incomingAssets[i]).balanceOf(_vaultProxy) > 0,
+                "addTrackedAssets: Zero balance"
+            );
+        }
+    }
+
     /// @notice Provides a constant string identifier for an adapter
     /// @return identifier_ The identifer string
     function identifier() external pure override returns (string memory identifier_) {
@@ -37,15 +60,16 @@ contract TrackedAssetsAdapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector == ADD_TRACKED_ASSETS_SELECTOR) {
-            incomingAssets_ = __decodeCallArgs(_encodedCallArgs);
+        require(
+            _selector == ADD_TRACKED_ASSETS_SELECTOR,
+            "parseIncomingAssets: _selector invalid"
+        );
 
-            minIncomingAssetAmounts_ = new uint256[](incomingAssets_.length);
-            for (uint256 i; i < minIncomingAssetAmounts_.length; i++) {
-                minIncomingAssetAmounts_[i] = 1;
-            }
-        } else {
-            revert("parseIncomingAssets: _selector invalid");
+        incomingAssets_ = __decodeCallArgs(_encodedCallArgs);
+
+        minIncomingAssetAmounts_ = new uint256[](incomingAssets_.length);
+        for (uint256 i; i < minIncomingAssetAmounts_.length; i++) {
+            minIncomingAssetAmounts_[i] = 1;
         }
 
         return (
@@ -57,31 +81,9 @@ contract TrackedAssetsAdapter is AdapterBase {
         );
     }
 
-    /// @notice Add multiple assets to the Vault's owned assets
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
-    function addTrackedAssets(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
-        bytes calldata
-    ) external view onlyIntegrationManager {
-        address[] memory incomingAssets = __decodeCallArgs(_encodedCallArgs);
-
-        for (uint256 i; i < incomingAssets.length; i++) {
-            require(
-                !VaultLib(_vaultProxy).isTrackedAsset(incomingAssets[i]),
-                "addTrackedAssets: Already tracked"
-            );
-            require(
-                ERC20(incomingAssets[i]).balanceOf(_vaultProxy) > 0,
-                "addTrackedAssets: Zero balance"
-            );
-        }
-    }
-
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to decode the encoded arguments
+    /// @dev Helper to decode the encoded call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure

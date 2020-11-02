@@ -1,12 +1,7 @@
 import { BigNumber, utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { defaultTestDeployment, assertEvent, addTrackedAssets, createNewFund } from '@melonproject/testutils';
-import {
-  addTrackedAssetsArgs,
-  addTrackedAssetsSelector,
-  assetTransferArgs,
-  SpendAssetsHandleType,
-} from '@melonproject/protocol';
+import { addTrackedAssetsArgs, addTrackedAssetsSelector, SpendAssetsHandleType } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -92,25 +87,6 @@ describe('parseAssetsForMethod', () => {
 });
 
 describe('addTrackedAssets', () => {
-  it('can only be called via the IntegrationManager', async () => {
-    const {
-      deployment: { trackedAssetsAdapter },
-      fund: { vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    const args = addTrackedAssetsArgs([randomAddress()]);
-
-    const transferArgs = await assetTransferArgs({
-      adapter: trackedAssetsAdapter,
-      selector: addTrackedAssetsSelector,
-      encodedCallArgs: args,
-    });
-
-    await expect(
-      trackedAssetsAdapter.addTrackedAssets(vaultProxy, addTrackedAssetsSelector, transferArgs),
-    ).rejects.toBeRevertedWith('Only the IntegrationManager can call this function');
-  });
-
   it('does not allow an already-tracked asset', async () => {
     const {
       deployment: {
