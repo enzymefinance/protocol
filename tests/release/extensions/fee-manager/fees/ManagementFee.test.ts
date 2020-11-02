@@ -225,7 +225,12 @@ describe('settle', () => {
       lastSettled: BigNumber.from(settlementTimestampTwo),
     });
   });
+});
 
-  // How can we batch 2 txs into the same block?
-  it.todo('returns 0 if lastSettled is the same block as a call');
+describe('integration', () => {
+  it.todo(
+    'can create a new fund with this fee, works correctly while buying shares, redeeming shares, and calling __settleContinuousFees()',
+  );
+
+  it.todo('can create a migrated fund with this fee');
 });

@@ -718,10 +718,12 @@ describe('settle', () => {
       mockFeeManager.getFeeSharesOutstandingForFund(mockComptrollerProxy, performanceFee),
     ).resolves.toEqBigNumber(0);
   });
+});
 
-  it.todo('correctly handles valid call (PreBuySharesHook)');
+describe('integration', () => {
+  it.todo(
+    'can create a new fund with this fee, works correctly while buying shares, and is not called during __settleContinuousFees(), and is paid out when allowed',
+  );
 
-  it.todo('correctly handles valid call (PreRedeemSharesHook)');
-
-  it.todo('correctly handles slight change in accrued value with no shares due');
+  it.todo('can create a migrated fund with this fee');
 });

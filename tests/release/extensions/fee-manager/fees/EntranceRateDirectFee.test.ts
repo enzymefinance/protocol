@@ -98,3 +98,11 @@ describe('settle', () => {
     });
   });
 });
+
+describe('integration', () => {
+  it.todo(
+    'can create a new fund with this fee, works correctly while buying shares, and is not called during __settleContinuousFees()',
+  );
+
+  it.todo('can create a migrated fund with this fee');
+});

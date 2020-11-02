@@ -86,17 +86,53 @@ describe('constructor', () => {
     expect(policyManagerOwner).toMatchAddress(fundDeployerOwner);
   });
 
-  it.todo('check registered PolicyHook per policy');
+  it.todo('[check policyImplementsHook() against each policy above]');
+});
+
+describe('activateForFund', () => {
+  it.todo('stores the validated VaultProxy and calls `activateForFund()` on each policy (migrated fund only)');
+});
+
+describe('deactivateForFund', () => {
+  it.todo('removes VaultProxy and all policies from local storage');
+});
+
+describe('disablePolicyForFund', () => {
+  it.todo('does not allow a random caller');
+
+  it.todo('does not allow an un-enabled policy');
+
+  it.todo('does not allow a policy that implements a non-BuyShares hook');
+
+  it.todo('removes specified policies and emits an event for each');
+});
+
+describe('enablePolicyForFund', () => {
+  it.todo('does not allow a random caller');
+
+  it.todo('does not allow a policy that implements a non-BuyShares hook');
+
+  it.todo('does not allow an already enabled policy');
+
+  it.todo('does not allow an unregistered policy');
+
+  it.todo(
+    'adds specified policies, calls `addFundSettings` and `activateForFund` on each with the correct params, and emits an event for each',
+  );
+
+  it.todo(
+    'Policy with no settings: adds the policy and emits an event, does NOT call `addFundSettings()` on fee but DOES call `activateForFund`',
+  );
 });
 
 describe('setConfigForFund', () => {
   it.todo('does not allow unequal policies and settingsData array lengths');
 
-  it.todo('does not allow duplicate policies');
+  it.todo('does not allow an already enabled policy');
 
   it.todo('does not allow unregistered policies');
 
-  it('successfully configures PolicyManager state and fires events', async () => {
+  it('adds specified policies, calls `addFundSettings` on each with the correct params, and emits an event for each', async () => {
     const {
       deployment: { fundDeployer, policyManager },
       fundOwner,
@@ -145,97 +181,18 @@ describe('setConfigForFund', () => {
       });
     }
   });
+
+  it.todo('Policy with no settings: adds the policy and emits an event, does NOT call `addFundSettings()`');
 });
 
-describe('activateForFund', () => {
-  it.todo('calls each enabled policy to activate (migrated fund only)');
-});
+describe('updatePolicySettingsForFund', () => {
+  it.todo('does not allow a random caller');
 
-describe('state getters', () => {
-  it.todo('determine tests');
-});
+  it.todo('does not allow a policy that implements a non-BuyShares hook');
 
-describe('deregisterPolicies', () => {
-  it.todo('can only be called by the owner of the FundDeployer contract');
+  it.todo('does not allow an un-enabled policy');
 
-  it.todo('does not allow empty _policies param');
-
-  it.todo('does not allow an unregistered policy');
-
-  it.todo('successfully de-registers multiple policies and fires one event per policy');
-});
-
-describe('registerPolicies', () => {
-  it.todo('can only be called by the owner of the FundDeployer contract');
-
-  it.todo('does not allow empty _policies param');
-
-  it.todo('does not allow an already registered policy');
-
-  it('correctly handles a valid call (multiple implemented hooks)', async () => {
-    const {
-      config: { deployer },
-      deployment: { policyManager },
-    } = await provider.snapshot(snapshot);
-
-    // Setup a mock policy that implements multiple hooks
-    const identifier = `MOCK_POLICY`;
-    const hooks = [PolicyHook.PreBuyShares, PolicyHook.PreCallOnIntegration];
-    const notIncludedHooks = [PolicyHook.PostBuyShares, PolicyHook.PostCallOnIntegration];
-    const mockPolicy = await IPolicy.mock(deployer);
-    await mockPolicy.identifier.returns(identifier);
-    await mockPolicy.implementedHooks.returns(hooks);
-
-    const receipt = await policyManager.registerPolicies([mockPolicy]);
-
-    // Assert event
-    assertEvent(receipt, 'PolicyRegistered', {
-      policy: mockPolicy,
-      implementedHooks: hooks,
-      // TODO: Improve param matching to automatically derive the sighash for indexed event args.
-      address: expect.objectContaining({
-        hash: utils.id(identifier),
-      }),
-    });
-
-    // Policies should be registered
-    const registeredPolicies = await policyManager.getRegisteredPolicies();
-    expect(registeredPolicies).toMatchFunctionOutput(
-      policyManager.getRegisteredPolicies.fragment,
-      expect.arrayContaining([mockPolicy.address]),
-    );
-
-    // Policy hooks should be stored
-    for (const hook of hooks) {
-      const goodPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
-
-      expect(goodPolicyImplementsHookCall).toBe(true);
-    }
-
-    for (const hook of notIncludedHooks) {
-      const badPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
-
-      expect(badPolicyImplementsHookCall).toBe(false);
-    }
-  });
-});
-
-describe('disablePolicyForFund', () => {
-  it.todo('does not allow a random user');
-
-  it.todo('does not allow disabled policy');
-
-  it.todo('does not allow non-BuyShares policy');
-
-  it.todo('handles a valid call');
-});
-
-describe('enablePolicyForFund', () => {
-  it.todo('does not allow a random user');
-
-  it.todo('does not allow non-BuyShares policy');
-
-  it.todo('handles a valid call');
+  it.todo('calls `updateFundSettings` on the policy with the correct params');
 });
 
 describe('validatePolicies', () => {
@@ -408,5 +365,72 @@ describe('validatePolicies', () => {
         mockGenericAdapter,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false');
+  });
+});
+
+describe('policy registry', () => {
+  describe('deregisterPolicies', () => {
+    it.todo('can only be called by the owner of the FundDeployer contract');
+
+    it.todo('does not allow empty _policies param');
+
+    it.todo('does not allow an unregistered policy');
+
+    it.todo('successfully de-registers multiple policies and emits one event per policy');
+  });
+
+  describe('registerPolicies', () => {
+    it.todo('can only be called by the owner of the FundDeployer contract');
+
+    it.todo('does not allow empty _policies param');
+
+    it.todo('does not allow an already registered policy');
+
+    it('successfully registers a policy with multiple implemented hooks and emits the correct event', async () => {
+      const {
+        config: { deployer },
+        deployment: { policyManager },
+      } = await provider.snapshot(snapshot);
+
+      // Setup a mock policy that implements multiple hooks
+      const identifier = `MOCK_POLICY`;
+      const hooks = [PolicyHook.PreBuyShares, PolicyHook.PreCallOnIntegration];
+      const notIncludedHooks = [PolicyHook.PostBuyShares, PolicyHook.PostCallOnIntegration];
+      const mockPolicy = await IPolicy.mock(deployer);
+      await mockPolicy.identifier.returns(identifier);
+      await mockPolicy.implementedHooks.returns(hooks);
+
+      const receipt = await policyManager.registerPolicies([mockPolicy]);
+
+      // Assert event
+      assertEvent(receipt, 'PolicyRegistered', {
+        policy: mockPolicy,
+        implementedHooks: hooks,
+        // TODO: Improve param matching to automatically derive the sighash for indexed event args.
+        address: expect.objectContaining({
+          hash: utils.id(identifier),
+        }),
+      });
+
+      // Policies should be registered
+      const registeredPolicies = await policyManager.getRegisteredPolicies();
+      expect(registeredPolicies).toMatchFunctionOutput(
+        policyManager.getRegisteredPolicies.fragment,
+        expect.arrayContaining([mockPolicy.address]),
+      );
+
+      // Policy hooks should be stored
+      for (const hook of hooks) {
+        const goodPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
+
+        expect(goodPolicyImplementsHookCall).toBe(true);
+      }
+
+      for (const hook of notIncludedHooks) {
+        const badPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
+
+        expect(badPolicyImplementsHookCall).toBe(false);
+      }
+    });
   });
 });

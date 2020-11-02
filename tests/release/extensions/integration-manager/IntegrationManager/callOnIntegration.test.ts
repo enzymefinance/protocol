@@ -1244,7 +1244,13 @@ describe('valid calls', () => {
     ).resolves.toBeReceipt();
   });
 
-  it.todo('add integrationData to the event return values in all tests');
+  it.todo('[add integrationData to the event return values in all tests]');
 
-  it.todo('test SpendAssetsHandleType options');
+  describe('SpendAssetsHandleType', () => {
+    it.todo('does not approve or transfer a spend asset if type is `None`');
+
+    it.todo('approves adapter with spend asset allowance if type is `Approve`');
+
+    it.todo('transfers spend asset to adapter if type is `Transfer`');
+  });
 });

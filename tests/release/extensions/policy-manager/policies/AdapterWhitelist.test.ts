@@ -147,3 +147,9 @@ describe('validateRule', () => {
     expect(validateRuleResult).toBeFalsy();
   });
 });
+
+describe('integration tests', () => {
+  it.todo('can create a new fund with this policy, and it works correctly during callOnIntegration');
+
+  it.todo('can create a migrated fund with this policy');
+});
