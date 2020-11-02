@@ -2,6 +2,7 @@
 pragma solidity 0.6.8;
 
 import "../../core/fund/comptroller/IComptroller.sol";
+import "../../core/fund/vault/IVault.sol";
 import "../IExtension.sol";
 
 /// @title ExtensionBase Contract

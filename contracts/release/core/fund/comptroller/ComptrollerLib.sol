@@ -178,12 +178,10 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     /// @notice Makes an permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
-    function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData)
-        external
-        override
-        onlyActive
-        onlyNotPaused
-    {
+    function permissionedVaultAction(
+        IPermissionedVaultActionLib.VaultAction _action,
+        bytes calldata _actionData
+    ) external override onlyActive onlyNotPaused {
         (bool success, bytes memory returnData) = PERMISSIONED_VAULT_ACTION_LIB.delegatecall(
             abi.encodeWithSelector(
                 IPermissionedVaultActionLib.dispatchAction.selector,

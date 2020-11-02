@@ -7,29 +7,29 @@ import "./IPermissionedVaultActionLib.sol";
 
 /// @title PermissionedVaultActionLib Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A library for permissioned vault actions
-/// @dev Always delegate-called by a ComptrollerProxy.
+/// @notice A library for permissioned vault actions callable by Extensions
+/// @dev Always delegate-called by a ComptrollerProxy
 contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultActionLib {
     address private immutable FEE_MANAGER;
     address private immutable INTEGRATION_MANAGER;
 
-    modifier onlyPermissionedAction(IVault.VaultAction _action) {
+    modifier onlyPermissionedAction(VaultAction _action) {
         require(permissionedVaultActionAllowed, "onlyPermissionedAction: No action allowed");
 
         bool isValidAction;
         if (msg.sender == INTEGRATION_MANAGER) {
             require(
-                _action == IVault.VaultAction.ApproveAssetSpender ||
-                    _action == IVault.VaultAction.AddTrackedAsset ||
-                    _action == IVault.VaultAction.RemoveTrackedAsset ||
-                    _action == IVault.VaultAction.WithdrawAssetTo,
+                _action == VaultAction.ApproveAssetSpender ||
+                    _action == VaultAction.AddTrackedAsset ||
+                    _action == VaultAction.RemoveTrackedAsset ||
+                    _action == VaultAction.WithdrawAssetTo,
                 "onlyPermissionedAction: Not valid for IntegrationManager"
             );
         } else if (msg.sender == FEE_MANAGER) {
             require(
-                _action == IVault.VaultAction.BurnShares ||
-                    _action == IVault.VaultAction.MintShares ||
-                    _action == IVault.VaultAction.TransferShares,
+                _action == VaultAction.BurnShares ||
+                    _action == VaultAction.MintShares ||
+                    _action == VaultAction.TransferShares,
                 "onlyPermissionedAction: Not valid for FeeManager"
             );
         } else {
@@ -47,37 +47,35 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
     /// @notice Dispatches an action to be called on the vault
     /// @param _action The enum VaultAction for the action to perform
     /// @param _actionData The encoded data for the action
-    function dispatchAction(IVault.VaultAction _action, bytes calldata _actionData)
+    function dispatchAction(VaultAction _action, bytes calldata _actionData)
         external
         override
         onlyPermissionedAction(_action)
     {
-        if (_action == IVault.VaultAction.AddTrackedAsset) {
+        if (_action == VaultAction.AddTrackedAsset) {
             __addTrackedAsset(_actionData);
-        } else if (_action == IVault.VaultAction.ApproveAssetSpender) {
+        } else if (_action == VaultAction.ApproveAssetSpender) {
             __approveAssetSpender(_actionData);
-        } else if (_action == IVault.VaultAction.BurnShares) {
+        } else if (_action == VaultAction.BurnShares) {
             __burnShares(_actionData);
-        } else if (_action == IVault.VaultAction.MintShares) {
+        } else if (_action == VaultAction.MintShares) {
             __mintShares(_actionData);
-        } else if (_action == IVault.VaultAction.RemoveTrackedAsset) {
+        } else if (_action == VaultAction.RemoveTrackedAsset) {
             __removeTrackedAsset(_actionData);
-        } else if (_action == IVault.VaultAction.TransferShares) {
+        } else if (_action == VaultAction.TransferShares) {
             __transferShares(_actionData);
-        } else if (_action == IVault.VaultAction.WithdrawAssetTo) {
+        } else if (_action == VaultAction.WithdrawAssetTo) {
             __withdrawAssetTo(_actionData);
         }
     }
 
-    /// @notice Adds a tracked asset to the fund
-    /// @param _actionData The encoded data for the action
+    /// @dev Helper to add a tracked asset to the fund
     function __addTrackedAsset(bytes memory _actionData) private {
         address asset = abi.decode(_actionData, (address));
         IVault(vaultProxy).addTrackedAsset(asset);
     }
 
-    /// @notice Grants an allowance to a spender to use a fund's asset
-    /// @param _actionData The encoded data for the action
+    /// @dev Helper to grant a spender an allowance for a fund's asset
     function __approveAssetSpender(bytes memory _actionData) private {
         (address asset, address target, uint256 amount) = abi.decode(
             _actionData,
@@ -86,30 +84,25 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
         IVault(vaultProxy).approveAssetSpender(asset, target, amount);
     }
 
-    /// @notice Burns fund shares for a particular account
-    /// @param _actionData The encoded data for the action
+    /// @dev Helper to burn fund shares for a particular account
     function __burnShares(bytes memory _actionData) private {
         (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
         IVault(vaultProxy).burnShares(target, amount);
     }
 
-    /// @notice Mints fund shares to a particular account
-    /// @param _actionData The encoded data for the action
+    /// @dev Helper to mint fund shares to a particular account
     function __mintShares(bytes memory _actionData) private {
         (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
         IVault(vaultProxy).mintShares(target, amount);
     }
 
-    /// @notice Removes a tracked asset from the fund
-    /// @param _actionData The encoded data for the action
+    /// @dev Helper to remove a tracked asset from the fund
     function __removeTrackedAsset(bytes memory _actionData) private {
         address asset = abi.decode(_actionData, (address));
         IVault(vaultProxy).removeTrackedAsset(asset);
     }
 
-    /// @notice Transfers fund shares from one account to another
-    // /// @param _target The account to which to mint shares
-    // /// @param _amount The amount of shares to mint
+    /// @dev Helper to transfer fund shares from one account to another
     function __transferShares(bytes memory _actionData) private {
         (address from, address to, uint256 amount) = abi.decode(
             _actionData,
@@ -118,8 +111,7 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
         IVault(vaultProxy).transferShares(from, to, amount);
     }
 
-    /// @notice Transfers an asset from the VaultProxy to another account
-    /// @param _actionData The encoded data for the action
+    /// @dev Helper to withdraw an asset from the VaultProxy to a given account
     function __withdrawAssetTo(bytes memory _actionData) private {
         (address asset, address target, uint256 amount) = abi.decode(
             _actionData,

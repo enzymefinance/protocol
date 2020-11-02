@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../vault/IVault.sol";
+import "./libs/IPermissionedVaultActionLib.sol";
 
 /// @title IComptroller Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -28,5 +28,6 @@ interface IComptroller {
         address[] calldata
     ) external;
 
-    function permissionedVaultAction(IVault.VaultAction, bytes calldata) external;
+    function permissionedVaultAction(IPermissionedVaultActionLib.VaultAction, bytes calldata)
+        external;
 }

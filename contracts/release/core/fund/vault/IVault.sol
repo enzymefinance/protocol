@@ -6,17 +6,6 @@ import "../../../../persistent/vault/IProxiableVault.sol";
 /// @title IVault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 interface IVault is IProxiableVault {
-    enum VaultAction {
-        None,
-        BurnShares,
-        MintShares,
-        TransferShares,
-        ApproveAssetSpender,
-        WithdrawAssetTo,
-        AddTrackedAsset,
-        RemoveTrackedAsset
-    }
-
     function addTrackedAsset(address) external;
 
     function approveAssetSpender(
