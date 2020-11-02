@@ -4834,10 +4834,10 @@ hard-rejection@^2.1.0:
   resolved "https://registry.yarnpkg.com/hard-rejection/-/hard-rejection-2.1.0.tgz#1c6eda5c1685c63942766d79bb40ae773cecd883"
   integrity sha512-VIZB+ibDhx7ObhAe7OVtoEbuP4h/MuOTHJ+J8h/eBXotJYl0fBgR72xDFCKgIh22OJZIOVNxBMWuhAr10r8HdA==
 
-hardhat@^2.0.2:
-  version "2.0.2"
-  resolved "https://npm-proxy.fury.io/melonproject/~/up/ver_1Nm4Xd/hardhat-2.0.2.tgz#0d5bef6dcb2cda590bee1451a0b2da3d0b3c8689"
-  integrity sha1-DVvvbcss2lkL7hRRoLLaPQs8hok=
+hardhat@^2.0.4:
+  version "2.0.4"
+  resolved "https://npm-proxy.fury.io/melonproject/~/up/ver_1m9slq/hardhat-2.0.4.tgz#1b69e692f4c29aaa93914345a754a5f8dd775188"
+  integrity sha1-G2nmkvTCmqqTkUNFp1Sl+N13UYg=
   dependencies:
     "@nomiclabs/ethereumjs-vm" "^4.1.1"
     "@sentry/node" "^5.18.1"

@@ -2,9 +2,7 @@ if (!process.env.MAINNET_ARCHIVE_NODE) {
   console.warn('=====================================================');
   console.warn('WARNING: Skipping end-to-end tests.');
   console.warn('');
-  console.warn(
-    'You must specify a mainnet archive node endpoint (MAINNET_ARCHIVE_NODE) to run the end-to-end tests.',
-  );
+  console.warn('You must specify a mainnet archive node endpoint (MAINNET_ARCHIVE_NODE) to run the end-to-end tests.');
   console.warn('=====================================================');
 }
 
@@ -42,8 +40,6 @@ function fork(name, roots) {
           enabled: true,
           blockNumber: 11091788,
         },
-        // TODO: Hardhat currently doesn't support relative time in forks.
-        // initialDate: '2020-10-20T08:01:46',
       },
     },
   };

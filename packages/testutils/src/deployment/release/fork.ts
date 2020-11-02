@@ -96,9 +96,7 @@ export async function configureForkRelease({
     },
     chainlink: {
       ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
-      // staleRateThreshold: 259200, // 72 hours
-      // TODO: Set this to a reasonable number once hardhat supports relative time in forks.
-      staleRateThreshold: constants.MaxUint256,
+      staleRateThreshold: 259200, // 72 hours
       aggregators: chainlinkAggregators,
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,
