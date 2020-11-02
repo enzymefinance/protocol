@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../../interfaces/IWETH.sol";
 import "../../../../infrastructure/engine/IEngine.sol";
+import "../../../../interfaces/IWETH.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title EngineAdapter Contract
@@ -30,8 +30,8 @@ contract EngineAdapter is AdapterBase {
     // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
-    /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    /// @return identifer_ An identifier string
+    function identifier() external pure override returns (string memory identifer_) {
         return "MELON_ENGINE";
     }
 
@@ -56,26 +56,22 @@ contract EngineAdapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector == TAKE_ORDER_SELECTOR) {
-            (uint256 minWethAmount, uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
+        require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
 
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
+        (uint256 minWethAmount, uint256 mlnTokenAmount) = __decodeCallArgs(_encodedCallArgs);
 
-            spendAssets_ = new address[](1);
-            spendAssets_[0] = MLN_TOKEN;
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = mlnTokenAmount;
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = MLN_TOKEN;
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = mlnTokenAmount;
 
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = WETH_TOKEN;
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = minWethAmount;
-        } else {
-            revert("parseIncomingAssets: _selector invalid");
-        }
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = WETH_TOKEN;
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = minWethAmount;
 
         return (
-            spendAssetsHandleType_,
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
             spendAssetAmounts_,
             incomingAssets_,
@@ -83,7 +79,7 @@ contract EngineAdapter is AdapterBase {
         );
     }
 
-    /// @notice Trades assets on Kyber
+    /// @notice Trades assets on the Melon Engine
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
@@ -100,16 +96,14 @@ contract EngineAdapter is AdapterBase {
 
         __approveMaxAsNeeded(MLN_TOKEN, ENGINE, mlnTokenAmount);
 
-        // Execute fill
         IEngine(ENGINE).sellAndBurnMln(mlnTokenAmount);
 
-        // Return ETH to WETH
         IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
     }
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to decode the encoded arguments
+    /// @dev Helper to decode the encoded call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
@@ -122,15 +116,21 @@ contract EngineAdapter is AdapterBase {
     // STATE GETTERS //
     ///////////////////
 
-    function getEngine() external view returns (address) {
+    /// @notice Gets the `ENGINE` variable
+    /// @return engine_ The `ENGINE` variable value
+    function getEngine() external view returns (address engine_) {
         return ENGINE;
     }
 
-    function getMlnToken() external view returns (address) {
+    /// @notice Gets the `MLN_TOKEN` variable
+    /// @return mlnToken_ The `MLN_TOKEN` variable value
+    function getMlnToken() external view returns (address mlnToken_) {
         return MLN_TOKEN;
     }
 
-    function getWethToken() external view returns (address) {
+    /// @notice Gets the `WETH_TOKEN` variable
+    /// @return wethToken_ The `WETH_TOKEN` variable value
+    function getWethToken() external view returns (address wethToken_) {
         return WETH_TOKEN;
     }
 }
