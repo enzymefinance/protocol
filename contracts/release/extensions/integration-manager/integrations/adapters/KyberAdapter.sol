@@ -29,8 +29,8 @@ contract KyberAdapter is AdapterBase, MathHelpers {
     // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for an adapter
-    /// @return An identifier string
-    function identifier() external pure override returns (string memory) {
+    /// @return identifier_ An identifier string
+    function identifier() external pure override returns (string memory identifier_) {
         return "KYBER_NETWORK";
     }
 
@@ -55,31 +55,33 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector == TAKE_ORDER_SELECTOR) {
-            (
-                address incomingAsset,
-                uint256 minIncomingAssetAmount,
-                address outgoingAsset,
-                uint256 outgoingAssetAmount
-            ) = __decodeCallArgs(_encodedCallArgs);
+        require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
 
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
+        (
+            address incomingAsset,
+            uint256 minIncomingAssetAmount,
+            address outgoingAsset,
+            uint256 outgoingAssetAmount
+        ) = __decodeCallArgs(_encodedCallArgs);
 
-            spendAssets_ = new address[](1);
-            spendAssets_[0] = outgoingAsset;
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = outgoingAssetAmount;
+        require(
+            incomingAsset != outgoingAsset,
+            "parseIncomingAssets: incomingAsset and outgoingAsset asset cannot be the same"
+        );
+        require(outgoingAssetAmount > 0, "parseIncomingAssets: outgoingAssetAmount must be >0");
 
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = incomingAsset;
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-        } else {
-            revert("parseIncomingAssets: _selector invalid");
-        }
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = outgoingAsset;
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = outgoingAssetAmount;
+
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = incomingAsset;
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
 
         return (
-            spendAssetsHandleType_,
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
             spendAssetAmounts_,
             incomingAssets_,
@@ -107,14 +109,6 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             uint256 outgoingAssetAmount
         ) = __decodeCallArgs(_encodedCallArgs);
 
-        // Validate args
-        require(
-            incomingAsset != outgoingAsset,
-            "takeOrder: incomingAsset and outgoingAsset asset cannot be the same"
-        );
-        require(outgoingAssetAmount > 0, "takeOrder: outgoingAssetAmount must be >0");
-
-        // Execute fill
         uint256 minExpectedRate = __calcNormalizedRate(
             ERC20(outgoingAsset).decimals(),
             outgoingAssetAmount,
@@ -133,7 +127,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to decode the encoded arguments
+    /// @dev Helper to decode the encoded call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
@@ -153,10 +147,8 @@ contract KyberAdapter is AdapterBase, MathHelpers {
         uint256 _outgoingAssetAmount,
         uint256 _minExpectedRate
     ) private {
-        // Convert WETH to ETH
         IWETH(payable(WETH_TOKEN)).withdraw(_outgoingAssetAmount);
 
-        // Swap tokens
         IKyberNetworkProxy(EXCHANGE).swapEtherToToken{value: _outgoingAssetAmount}(
             _incomingAsset,
             _minExpectedRate
@@ -177,7 +169,6 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             _minExpectedRate
         );
 
-        // Convert ETH to WETH
         IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
     }
 
@@ -202,11 +193,15 @@ contract KyberAdapter is AdapterBase, MathHelpers {
     // STATE GETTERS //
     ///////////////////
 
-    function getExchange() external view returns (address) {
+    /// @notice Gets the `EXCHANGE` variable
+    /// @return exchange_ The `EXCHANGE` variable value
+    function getExchange() external view returns (address exchange_) {
         return EXCHANGE;
     }
 
-    function getWethToken() external view returns (address) {
+    /// @notice Gets the `WETH_TOKEN` variable
+    /// @return wethToken_ The `WETH_TOKEN` variable value
+    function getWethToken() external view returns (address wethToken_) {
         return WETH_TOKEN;
     }
 }
