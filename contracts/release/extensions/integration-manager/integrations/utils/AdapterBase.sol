@@ -17,9 +17,9 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
     address internal immutable INTEGRATION_MANAGER;
 
     /// @dev Provides a standard implementation for transferring assets between
-    /// the fund and the adapter, by wrapping the adapter action.
-    /// This modifier should be implemented in almost all adapter actions that do not require
-    /// special transfer logic (e.g., ignoring transfer requirements)
+    /// the fund's VaultProxy and the adapter, by wrapping the adapter action.
+    /// This modifier should be implemented in almost all adapter actions, unless they
+    /// do not move assets or can spend and receive assets directly with the VaultProxy
     modifier fundAssetsTransferHandler(
         address _vaultProxy,
         bytes memory _encodedAssetTransferArgs
@@ -34,16 +34,9 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
             (IIntegrationManager.SpendAssetsHandleType, address[], uint256[], address[])
         );
 
-        // Sanity check
-        require(
-            spendAssets.length == spendAssetAmounts.length,
-            "fundAssetsTransferHandler: spend assets arrays unequal"
-        );
-
         // Take custody of spend assets (if necessary)
         if (spendAssetsHandleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
             for (uint256 i = 0; i < spendAssets.length; i++) {
-                // Custody asset
                 ERC20(spendAssets[i]).safeTransferFrom(
                     _vaultProxy,
                     address(this),
@@ -55,19 +48,9 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         // Execute call
         _;
 
-        // Transfer incoming assets back to fund
-        for (uint256 i = 0; i < incomingAssets.length; i++) {
-            uint256 postCallAmount = ERC20(incomingAssets[i]).balanceOf(address(this));
-            ERC20(incomingAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
-        }
-
-        // Send remaining spendAssets balances back to the fund
-        for (uint256 i = 0; i < spendAssets.length; i++) {
-            uint256 postCallAmount = ERC20(spendAssets[i]).balanceOf(address(this));
-            if (postCallAmount > 0) {
-                ERC20(spendAssets[i]).safeTransfer(_vaultProxy, postCallAmount);
-            }
-        }
+        // Transfer remaining assets back to the fund's VaultProxy
+        __transferContractAssetBalancesToFund(_vaultProxy, incomingAssets);
+        __transferContractAssetBalancesToFund(_vaultProxy, spendAssets);
     }
 
     modifier onlyIntegrationManager {
@@ -134,11 +117,25 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         }
     }
 
+    /// @dev Helper to transfer full contract balances of assets to the specified VaultProxy
+    function __transferContractAssetBalancesToFund(address _vaultProxy, address[] memory _assets)
+        private
+    {
+        for (uint256 i = 0; i < _assets.length; i++) {
+            uint256 postCallAmount = ERC20(_assets[i]).balanceOf(address(this));
+            if (postCallAmount > 0) {
+                ERC20(_assets[i]).safeTransfer(_vaultProxy, postCallAmount);
+            }
+        }
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    function getIntegrationManager() external view returns (address) {
+    /// @notice Gets the `INTEGRATION_MANAGER` variable
+    /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
+    function getIntegrationManager() external view returns (address integrationManager_) {
         return INTEGRATION_MANAGER;
     }
 }
