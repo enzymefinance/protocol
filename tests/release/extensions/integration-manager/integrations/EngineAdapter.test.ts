@@ -17,11 +17,12 @@ import {
 } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -73,13 +74,11 @@ describe('parseAssetsForMethod', () => {
       mlnAmount: 1,
     });
 
-    await expect(
-      engineAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
-    ).rejects.toBeRevertedWith('_selector invalid');
+    await expect(engineAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
+      '_selector invalid',
+    );
 
-    await expect(
-      engineAdapter.parseAssetsForMethod(takeOrderSelector, args),
-    ).resolves.toBeTruthy();
+    await expect(engineAdapter.parseAssetsForMethod(takeOrderSelector, args)).resolves.toBeTruthy();
   });
 
   it('correctly handles valid call', async () => {
@@ -100,21 +99,15 @@ describe('parseAssetsForMethod', () => {
       mlnAmount: outgoingAmount,
     });
 
-    const result = await engineAdapter.parseAssetsForMethod(
-      takeOrderSelector,
-      args,
-    );
+    const result = await engineAdapter.parseAssetsForMethod(takeOrderSelector, args);
 
-    expect(result).toMatchFunctionOutput(
-      engineAdapter.parseAssetsForMethod.fragment,
-      {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        incomingAssets_: [incomingAsset],
-        spendAssets_: [outgoingAsset],
-        spendAssetAmounts_: [outgoingAmount],
-        minIncomingAssetAmounts_: [incomingAmount],
-      },
-    );
+    expect(result).toMatchFunctionOutput(engineAdapter.parseAssetsForMethod.fragment, {
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      incomingAssets_: [incomingAsset],
+      spendAssets_: [outgoingAsset],
+      spendAssetAmounts_: [outgoingAmount],
+      minIncomingAssetAmounts_: [incomingAmount],
+    });
   });
 });
 
@@ -136,9 +129,7 @@ describe('takeOrder', () => {
       encodedCallArgs: takeOrderArgs,
     });
 
-    await expect(
-      engineAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs),
-    ).rejects.toBeRevertedWith(
+    await expect(engineAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -181,9 +172,7 @@ describe('takeOrder', () => {
       mln,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy: comptrollerProxy,

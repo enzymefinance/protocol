@@ -18,11 +18,12 @@ import {
 } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -76,13 +77,11 @@ describe('parseAssetsForMethod', () => {
       expectedIncomingChaiAmount: 1,
     });
 
-    await expect(
-      chaiAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
-    ).rejects.toBeRevertedWith('_selector invalid');
+    await expect(chaiAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
+      '_selector invalid',
+    );
 
-    await expect(
-      chaiAdapter.parseAssetsForMethod(lendSelector, args),
-    ).resolves.toBeTruthy();
+    await expect(chaiAdapter.parseAssetsForMethod(lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -108,16 +107,13 @@ describe('parseAssetsForMethod', () => {
 
     const selector = lendSelector;
     const result = await chaiAdapter.parseAssetsForMethod(selector, args);
-    expect(result).toMatchFunctionOutput(
-      chaiAdapter.parseAssetsForMethod.fragment,
-      {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        incomingAssets_: [incomingAsset],
-        spendAssets_: [outgoingAsset],
-        spendAssetAmounts_: [outgoingAmount],
-        minIncomingAssetAmounts_: [incomingAmount],
-      },
-    );
+    expect(result).toMatchFunctionOutput(chaiAdapter.parseAssetsForMethod.fragment, {
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      incomingAssets_: [incomingAsset],
+      spendAssets_: [outgoingAsset],
+      spendAssetAmounts_: [outgoingAmount],
+      minIncomingAssetAmounts_: [incomingAmount],
+    });
   });
 
   it('generates expected output for redeeming', async () => {
@@ -143,16 +139,13 @@ describe('parseAssetsForMethod', () => {
 
     const selector = redeemSelector;
     const result = await chaiAdapter.parseAssetsForMethod(selector, args);
-    expect(result).toMatchFunctionOutput(
-      chaiAdapter.parseAssetsForMethod.fragment,
-      {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        incomingAssets_: [incomingAsset],
-        spendAssets_: [outgoingAsset],
-        spendAssetAmounts_: [outgoingAmount],
-        minIncomingAssetAmounts_: [incomingAmount],
-      },
-    );
+    expect(result).toMatchFunctionOutput(chaiAdapter.parseAssetsForMethod.fragment, {
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      incomingAssets_: [incomingAsset],
+      spendAssets_: [outgoingAsset],
+      spendAssetAmounts_: [outgoingAmount],
+      minIncomingAssetAmounts_: [incomingAmount],
+    });
   });
 });
 
@@ -174,9 +167,7 @@ describe('lend', () => {
       encodedCallArgs: lendArgs,
     });
 
-    await expect(
-      chaiAdapter.lend(vaultProxy, lendArgs, transferArgs),
-    ).rejects.toBeRevertedWith(
+    await expect(chaiAdapter.lend(vaultProxy, lendArgs, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -201,9 +192,7 @@ describe('lend', () => {
       assets: [chai, dai],
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     const receipt = await chaiLend({
       comptrollerProxy,
@@ -233,9 +222,7 @@ describe('lend', () => {
     });
 
     const expectedChaiAmount = daiAmount;
-    expect(postTxChaiBalance).toEqBigNumber(
-      preTxChaiBalance.add(expectedChaiAmount),
-    );
+    expect(postTxChaiBalance).toEqBigNumber(preTxChaiBalance.add(expectedChaiAmount));
     expect(postTxDaiBalance).toEqBigNumber(preTxDaiBalance.sub(daiAmount));
   });
 });
@@ -258,9 +245,7 @@ describe('redeem', () => {
       encodedCallArgs: redeemArgs,
     });
 
-    await expect(
-      chaiAdapter.redeem(vaultProxy, redeemArgs, transferArgs),
-    ).rejects.toBeRevertedWith(
+    await expect(chaiAdapter.redeem(vaultProxy, redeemArgs, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -286,9 +271,7 @@ describe('redeem', () => {
       assets: [chai, dai],
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     const receipt = await chaiRedeem({
       comptrollerProxy,
@@ -319,8 +302,6 @@ describe('redeem', () => {
 
     const expectedDaiAmount = chaiAmount;
     expect(postTxChaiBalance).toEqBigNumber(preTxChaiBalance.sub(chaiAmount));
-    expect(postTxDaiBalance).toEqBigNumber(
-      preTxDaiBalance.add(expectedDaiAmount),
-    );
+    expect(postTxDaiBalance).toEqBigNumber(preTxDaiBalance.add(expectedDaiAmount));
   });
 });

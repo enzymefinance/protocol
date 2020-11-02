@@ -4,10 +4,7 @@
  */
 
 import { utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import {
   EntranceRateDirectFee,
   entranceRateFeeConfigArgs,
@@ -17,16 +14,14 @@ import {
 import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [EOAFeeManager, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
   // Create standalone EntranceRateDirectFee
-  const [EOAFeeManager, ...remainingAccounts] = accounts;
-  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(
-    config.deployer,
-    EOAFeeManager,
-  );
+  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(config.deployer, EOAFeeManager);
 
   return {
     accounts: remainingAccounts,
@@ -58,18 +53,12 @@ describe('addFundSettings', () => {
     const entranceRateFeeConfig = await entranceRateFeeConfigArgs(1);
 
     await expect(
-      standaloneEntranceRateFee.addFundSettings(
-        randomAddress(),
-        entranceRateFeeConfig,
-      ),
+      standaloneEntranceRateFee.addFundSettings(randomAddress(), entranceRateFeeConfig),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      EOAFeeManager,
-      standaloneEntranceRateFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, standaloneEntranceRateFee } = await provider.snapshot(snapshot);
 
     // Add fee config for a random comptrollerProxyAddress
     const comptrollerProxyAddress = randomAddress();
@@ -86,9 +75,7 @@ describe('addFundSettings', () => {
     });
 
     // Assert state has been set
-    const getRateForFundCall = await standaloneEntranceRateFee.getRateForFund(
-      comptrollerProxyAddress,
-    );
+    const getRateForFundCall = await standaloneEntranceRateFee.getRateForFund(comptrollerProxyAddress);
     expect(getRateForFundCall).toEqBigNumber(rate);
   });
 });
@@ -96,9 +83,7 @@ describe('addFundSettings', () => {
 describe('payout', () => {
   it('returns false', async () => {
     const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
-    const payoutCall = await standaloneEntranceRateFee.payout
-      .args(randomAddress(), randomAddress())
-      .call();
+    const payoutCall = await standaloneEntranceRateFee.payout.args(randomAddress(), randomAddress()).call();
 
     expect(payoutCall).toBe(false);
   });
@@ -115,12 +100,7 @@ describe('settle', () => {
     });
 
     await expect(
-      standaloneEntranceRateFee.settle(
-        randomAddress(),
-        randomAddress(),
-        FeeHook.PostBuyShares,
-        settlementData,
-      ),
+      standaloneEntranceRateFee.settle(randomAddress(), randomAddress(), FeeHook.PostBuyShares, settlementData),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 });

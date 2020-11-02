@@ -1,8 +1,5 @@
 import { utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  extractEvent,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
 import {
   IPolicy,
   PolicyHook,
@@ -23,9 +20,11 @@ import {
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
   const policies = await generateRegisteredMockPolicies({
     deployer: config.deployer,
@@ -33,19 +32,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
   });
 
   const orderedPolicies = Object.values(policies);
-  const policiesSettingsData = [
-    utils.randomBytes(10),
-    '0x',
-    utils.randomBytes(2),
-    '0x',
-  ];
+  const policiesSettingsData = [utils.randomBytes(10), '0x', utils.randomBytes(2), '0x'];
 
   const policyManagerConfig = policyManagerConfigArgs({
     policies: orderedPolicies,
     settings: policiesSettingsData,
   });
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
 
   return {
@@ -78,18 +71,15 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     const result = await policyManager.getRegisteredPolicies();
-    expect(result).toMatchFunctionOutput(
-      policyManager.getRegisteredPolicies.fragment,
-      [
-        adapterBlacklist,
-        adapterWhitelist,
-        assetBlacklist,
-        assetWhitelist,
-        maxConcentration,
-        investorWhitelist,
-        ...Object.values(policies),
-      ],
-    );
+    expect(result).toMatchFunctionOutput(policyManager.getRegisteredPolicies.fragment, [
+      adapterBlacklist,
+      adapterWhitelist,
+      assetBlacklist,
+      assetWhitelist,
+      maxConcentration,
+      investorWhitelist,
+      ...Object.values(policies),
+    ]);
 
     const policyManagerOwner = await policyManager.getOwner();
     const fundDeployerOwner = await fundDeployer.getOwner();
@@ -125,26 +115,17 @@ describe('setConfigForFund', () => {
     });
 
     // Assert state for fund
-    const enabledPolicies = await policyManager.getEnabledPoliciesForFund(
-      comptrollerProxy,
-    );
+    const enabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
 
-    expect(enabledPolicies).toMatchFunctionOutput(
-      policyManager.getEnabledPoliciesForFund.fragment,
-      orderedPolicies,
-    );
+    expect(enabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund.fragment, orderedPolicies);
 
     // Assert addFundSettings was called on each policy with its settingsData,
     // only if settingsData was passed
     for (const key in orderedPolicies) {
       if (policiesSettingsData[key] === '0x') {
-        expect(
-          orderedPolicies[key].addFundSettings,
-        ).not.toHaveBeenCalledOnContract();
+        expect(orderedPolicies[key].addFundSettings).not.toHaveBeenCalledOnContract();
       } else {
-        expect(
-          orderedPolicies[key].addFundSettings,
-        ).toHaveBeenCalledOnContractWith(
+        expect(orderedPolicies[key].addFundSettings).toHaveBeenCalledOnContractWith(
           comptrollerProxy,
           policiesSettingsData[key],
         );
@@ -152,9 +133,7 @@ describe('setConfigForFund', () => {
     }
 
     // Assert PolicyEnabledForFund events
-    const policyEnabledForFundEvent = policyManager.abi.getEvent(
-      'PolicyEnabledForFund',
-    );
+    const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
 
     const events = extractEvent(receipt, policyEnabledForFundEvent);
     expect(events.length).toBe(orderedPolicies.length);
@@ -183,9 +162,7 @@ describe('deregisterPolicies', () => {
 
   it.todo('does not allow an unregistered policy');
 
-  it.todo(
-    'successfully de-registers multiple policies and fires one event per policy',
-  );
+  it.todo('successfully de-registers multiple policies and fires one event per policy');
 });
 
 describe('registerPolicies', () => {
@@ -204,10 +181,7 @@ describe('registerPolicies', () => {
     // Setup a mock policy that implements multiple hooks
     const identifier = `MOCK_POLICY`;
     const hooks = [PolicyHook.PreBuyShares, PolicyHook.PreCallOnIntegration];
-    const notIncludedHooks = [
-      PolicyHook.PostBuyShares,
-      PolicyHook.PostCallOnIntegration,
-    ];
+    const notIncludedHooks = [PolicyHook.PostBuyShares, PolicyHook.PostCallOnIntegration];
     const mockPolicy = await IPolicy.mock(deployer);
     await mockPolicy.identifier.returns(identifier);
     await mockPolicy.implementedHooks.returns(hooks);
@@ -233,19 +207,13 @@ describe('registerPolicies', () => {
 
     // Policy hooks should be stored
     for (const hook of hooks) {
-      const goodPolicyImplementsHookCall = await policyManager.policyImplementsHook(
-        mockPolicy,
-        hook,
-      );
+      const goodPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
 
       expect(goodPolicyImplementsHookCall).toBe(true);
     }
 
     for (const hook of notIncludedHooks) {
-      const badPolicyImplementsHookCall = await policyManager.policyImplementsHook(
-        mockPolicy,
-        hook,
-      );
+      const badPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
 
       expect(badPolicyImplementsHookCall).toBe(false);
     }
@@ -274,12 +242,7 @@ describe('validatePolicies', () => {
   it('correctly handles a BuyShares PolicyHook', async () => {
     const {
       accounts: [buyer],
-      policies: {
-        mockPreBuySharesPolicy,
-        mockPostBuySharesPolicy,
-        mockPreCoIPolicy,
-        mockPostCoIPolicy,
-      },
+      policies: { mockPreBuySharesPolicy, mockPostBuySharesPolicy, mockPreCoIPolicy, mockPostCoIPolicy },
       deployment: { fundDeployer },
       fundOwner,
       denominationAsset,
@@ -342,12 +305,7 @@ describe('validatePolicies', () => {
         mockGenericAdapter,
         tokens: { dai, mln, weth },
       },
-      policies: {
-        mockPreBuySharesPolicy,
-        mockPostBuySharesPolicy,
-        mockPreCoIPolicy,
-        mockPostCoIPolicy,
-      },
+      policies: { mockPreBuySharesPolicy, mockPostBuySharesPolicy, mockPreCoIPolicy, mockPostCoIPolicy },
       fundOwner,
       denominationAsset,
       policyManagerConfig,
@@ -371,10 +329,7 @@ describe('validatePolicies', () => {
     // the incoming assets are not yet tracked, meaning the final token balance
     // will be the reported incoming asset amount
     // (rather than the diff in token balances from start to finish)
-    const actualIncomingAssetAmounts = [
-      utils.parseEther('10'),
-      utils.parseEther('2'),
-    ];
+    const actualIncomingAssetAmounts = [utils.parseEther('10'), utils.parseEther('2')];
 
     await mockGenericSwap({
       comptrollerProxy,
@@ -420,12 +375,8 @@ describe('validatePolicies', () => {
     );
 
     // Assert validateRule not called on other policies
-    expect(
-      mockPreBuySharesPolicy.validateRule,
-    ).not.toHaveBeenCalledOnContract();
-    expect(
-      mockPostBuySharesPolicy.validateRule,
-    ).not.toHaveBeenCalledOnContract();
+    expect(mockPreBuySharesPolicy.validateRule).not.toHaveBeenCalledOnContract();
+    expect(mockPostBuySharesPolicy.validateRule).not.toHaveBeenCalledOnContract();
   });
 
   it('reverts if return value is false', async () => {

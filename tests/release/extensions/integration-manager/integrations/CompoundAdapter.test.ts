@@ -1,17 +1,15 @@
 import { utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { defaultTestDeployment, createNewFund } from '@melonproject/testutils';
 import { compoundArgs, lendSelector } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -57,13 +55,11 @@ describe('parseAssetsForMethod', () => {
       minIncomingAssetAmount: utils.parseEther('1'),
       outgoingAssetAmount: utils.parseEther('1'),
     });
-    await expect(
-      compoundAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
-    ).rejects.toBeRevertedWith('_selector invalid');
+    await expect(compoundAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
+      '_selector invalid',
+    );
 
-    await expect(
-      compoundAdapter.parseAssetsForMethod(lendSelector, args),
-    ).resolves.toBeTruthy();
+    await expect(compoundAdapter.parseAssetsForMethod(lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending and redeeming', async () => {

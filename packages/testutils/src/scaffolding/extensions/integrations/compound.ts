@@ -56,11 +56,7 @@ export async function compoundLend({
 
   const lendTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
   return lendTx;
 }
@@ -107,11 +103,7 @@ export async function compoundRedeem({
 
   const redeemTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
   return redeemTx;
 }

@@ -11,10 +11,7 @@ export function uniswapV2TakeOrderArgs({
   outgoingAssetAmount: BigNumberish;
   minIncomingAssetAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address[]', 'uint256', 'uint256'],
-    [path, outgoingAssetAmount, minIncomingAssetAmount],
-  );
+  return encodeArgs(['address[]', 'uint256', 'uint256'], [path, outgoingAssetAmount, minIncomingAssetAmount]);
 }
 
 export function uniswapV2LendArgs({

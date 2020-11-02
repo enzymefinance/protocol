@@ -29,10 +29,7 @@ export function investorWhitelistArgs({
   investorsToAdd?: AddressLike[];
   investorsToRemove?: AddressLike[];
 } = {}) {
-  return encodeArgs(
-    ['address[]', 'address[]'],
-    [investorsToAdd, investorsToRemove],
-  );
+  return encodeArgs(['address[]', 'address[]'], [investorsToAdd, investorsToRemove]);
 }
 
 export function maxConcentrationArgs(maxConcentration: BigNumberish) {

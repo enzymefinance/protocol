@@ -12,17 +12,11 @@ import {
   IntegrationManagerActionId,
 } from '@melonproject/protocol';
 
-export const mockGenericSwapASelector = sighash(
-  utils.FunctionFragment.fromString('swapA(address,bytes,bytes)'),
-);
+export const mockGenericSwapASelector = sighash(utils.FunctionFragment.fromString('swapA(address,bytes,bytes)'));
 
-export const mockGenericSwapBSelector = sighash(
-  utils.FunctionFragment.fromString('swapB(address,bytes,bytes)'),
-);
+export const mockGenericSwapBSelector = sighash(utils.FunctionFragment.fromString('swapB(address,bytes,bytes)'));
 
-export const mockGenericSwapCSelector = sighash(
-  utils.FunctionFragment.fromString('swapC(address,bytes,bytes)'),
-);
+export const mockGenericSwapCSelector = sighash(utils.FunctionFragment.fromString('swapC(address,bytes,bytes)'));
 
 export function mockGenericSwapArgs({
   spendAssets,
@@ -39,13 +33,7 @@ export function mockGenericSwapArgs({
 }) {
   return encodeArgs(
     ['address[]', 'uint256[]', 'address[]', 'uint256[]', 'uint256[]'],
-    [
-      spendAssets,
-      spendAssetAmounts,
-      incomingAssets,
-      minIncomingAssetAmounts,
-      incomingAssetAmounts,
-    ],
+    [spendAssets, spendAssetAmounts, incomingAssets, minIncomingAssetAmounts, incomingAssetAmounts],
   );
 }
 
@@ -99,11 +87,7 @@ export async function mockGenericSwap({
 
   const swapTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
   await expect(swapTx).resolves.toBeReceipt();
 

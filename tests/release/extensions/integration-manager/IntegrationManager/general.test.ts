@@ -1,22 +1,15 @@
 import { utils, constants, BigNumber } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  extractEvent,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
 import { ComptrollerLib, VaultLib } from '@melonproject/protocol';
-import {
-  defaultTestDeployment,
-  assertEvent,
-  createNewFund,
-} from '@melonproject/testutils';
+import { defaultTestDeployment, assertEvent, createNewFund } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -50,12 +43,7 @@ describe('constructor', () => {
       config: {
         integrationManager: { trackedAssetsLimit },
       },
-      deployment: {
-        integrationManager,
-        fundDeployer,
-        policyManager,
-        valueInterpreter,
-      },
+      deployment: { integrationManager, fundDeployer, policyManager, valueInterpreter },
     } = await provider.snapshot(snapshot);
 
     const getFundDeployerCall = await integrationManager.getFundDeployer();
@@ -80,14 +68,12 @@ describe('activateForFund', () => {
     } = await provider.snapshot(snapshot);
 
     // Should pass the first time
-    await expect(
-      mockComptrollerProxy.forward(integrationManager.activateForFund, false),
-    ).resolves.toBeReceipt();
+    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).resolves.toBeReceipt();
 
     // Should fail a second time
-    await expect(
-      mockComptrollerProxy.forward(integrationManager.activateForFund, false),
-    ).rejects.toBeRevertedWith('Already set');
+    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).rejects.toBeRevertedWith(
+      'Already set',
+    );
   });
 
   it('does not allow a missing vaultProxy', async () => {
@@ -98,9 +84,9 @@ describe('activateForFund', () => {
 
     await mockComptrollerProxy.getVaultProxy.returns(constants.AddressZero);
 
-    await expect(
-      mockComptrollerProxy.forward(integrationManager.activateForFund, false),
-    ).rejects.toBeRevertedWith('Missing vaultProxy');
+    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).rejects.toBeRevertedWith(
+      'Missing vaultProxy',
+    );
   });
 
   it('does not allow a vaultProxy for which the sender is not the accessor', async () => {
@@ -112,9 +98,9 @@ describe('activateForFund', () => {
 
     await mockVaultProxy.getAccessor.returns(randomAddress());
 
-    await expect(
-      mockComptrollerProxy.forward(integrationManager.activateForFund, false),
-    ).rejects.toBeRevertedWith('Not the VaultProxy accessor');
+    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).rejects.toBeRevertedWith(
+      'Not the VaultProxy accessor',
+    );
   });
 
   it('correctly handles a valid call', async () => {
@@ -124,17 +110,12 @@ describe('activateForFund', () => {
     } = await provider.snapshot(snapshot);
 
     // Stores the ComptrollerProxy-VaultProxy pairing
-    const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(
-      comptrollerProxy,
-    );
+    const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(comptrollerProxy);
 
     expect(getVaultProxyForFundCall).toMatchAddress(vaultProxy);
 
     // Vault owner should be an authorized user
-    const isAuthUserForFundCall = await integrationManager.isAuthUserForFund(
-      comptrollerProxy,
-      fundOwner,
-    );
+    const isAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, fundOwner);
 
     expect(isAuthUserForFundCall).toBe(true);
   });
@@ -148,18 +129,13 @@ describe('deactivateForFund', () => {
     } = await provider.snapshot(snapshot);
 
     // Activate the fund
-    await mockComptrollerProxy.forward(
-      integrationManager.activateForFund,
-      false,
-    );
+    await mockComptrollerProxy.forward(integrationManager.activateForFund, false);
 
     // Deactivate the fund
     await mockComptrollerProxy.forward(integrationManager.deactivateForFund);
 
     // The ComptrollerProxy-VaultProxy pairing should be deleted
-    const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(
-      mockComptrollerProxy,
-    );
+    const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(mockComptrollerProxy);
 
     expect(getVaultProxyForFundCall).toMatchAddress(constants.AddressZero);
   });
@@ -177,16 +153,12 @@ describe('auth users', () => {
       const newManager = randomAddress();
 
       await expect(
-        integrationManager
-          .connect(fundOwner)
-          .addAuthUserForFund(comptrollerProxy, newManager),
+        integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager),
       ).resolves.toBeReceipt();
 
       // Adding the already added manager should fail
       await expect(
-        integrationManager
-          .connect(fundOwner)
-          .addAuthUserForFund(comptrollerProxy, newManager),
+        integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager),
       ).rejects.toBeRevertedWith('Account is already an authorized user');
     });
 
@@ -198,17 +170,12 @@ describe('auth users', () => {
 
       // isAuthUserForFund should be false for an unset manager
       const newManager = randomAddress();
-      const preIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(
-        comptrollerProxy,
-        newManager,
-      );
+      const preIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
 
       expect(preIsAuthUserForFundCall).toBe(false);
 
       // Set the newManager as an auth user
-      const receipt = await integrationManager
-        .connect(fundOwner)
-        .addAuthUserForFund(comptrollerProxy, newManager);
+      const receipt = await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager);
 
       // Assert event
       assertEvent(receipt, 'AuthUserAddedForFund', {
@@ -217,10 +184,7 @@ describe('auth users', () => {
       });
 
       // isAuthUserForFund should now be true
-      const postIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(
-        comptrollerProxy,
-        newManager,
-      );
+      const postIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
 
       expect(postIsAuthUserForFundCall).toBe(true);
     });
@@ -234,9 +198,7 @@ describe('auth users', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        integrationManager
-          .connect(fundOwner)
-          .removeAuthUserForFund(comptrollerProxy, randomAddress()),
+        integrationManager.connect(fundOwner).removeAuthUserForFund(comptrollerProxy, randomAddress()),
       ).rejects.toBeRevertedWith('Account is not an authorized user');
     });
 
@@ -248,22 +210,15 @@ describe('auth users', () => {
 
       // Add a new auth user
       const newManager = randomAddress();
-      await integrationManager
-        .connect(fundOwner)
-        .addAuthUserForFund(comptrollerProxy, newManager);
+      await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager);
 
       // isAuthUserForFund should be true
-      const preIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(
-        comptrollerProxy,
-        newManager,
-      );
+      const preIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
 
       expect(preIsAuthUserForFundCall).toBe(true);
 
       // Remove the auth user
-      const receipt = await integrationManager
-        .connect(fundOwner)
-        .removeAuthUserForFund(comptrollerProxy, newManager);
+      const receipt = await integrationManager.connect(fundOwner).removeAuthUserForFund(comptrollerProxy, newManager);
 
       // Assert event
       assertEvent(receipt, 'AuthUserRemovedForFund', {
@@ -272,10 +227,7 @@ describe('auth users', () => {
       });
 
       // isAuthUserForFund should now be false
-      const postIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(
-        comptrollerProxy,
-        newManager,
-      );
+      const postIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
 
       expect(postIsAuthUserForFundCall).toBe(false);
     });
@@ -288,9 +240,9 @@ describe('auth users', () => {
         deployment: { integrationManager },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.addAuthUserForFund(randomAddress(), randomAddress()),
-      ).rejects.toBeRevertedWith('Fund has not been activated');
+      await expect(integrationManager.addAuthUserForFund(randomAddress(), randomAddress())).rejects.toBeRevertedWith(
+        'Fund has not been activated',
+      );
     });
 
     it('does not allow a random user', async () => {
@@ -301,9 +253,7 @@ describe('auth users', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        integrationManager
-          .connect(randomUser)
-          .addAuthUserForFund(comptrollerProxy, randomAddress()),
+        integrationManager.connect(randomUser).addAuthUserForFund(comptrollerProxy, randomAddress()),
       ).rejects.toBeRevertedWith('Only the fund owner can call this function');
     });
 
@@ -314,9 +264,7 @@ describe('auth users', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        integrationManager
-          .connect(fundOwner)
-          .addAuthUserForFund(comptrollerProxy, fundOwner),
+        integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, fundOwner),
       ).rejects.toBeRevertedWith('Cannot set for the fund owner');
     });
   });
@@ -330,9 +278,7 @@ describe('adapter registry', () => {
         deployment: { integrationManager },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.connect(randomUser).deregisterAdapters([]),
-      ).rejects.toBeRevertedWith(
+      await expect(integrationManager.connect(randomUser).deregisterAdapters([])).rejects.toBeRevertedWith(
         'Only the FundDeployer owner can call this function',
       );
     });
@@ -342,9 +288,7 @@ describe('adapter registry', () => {
         deployment: { integrationManager },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.deregisterAdapters([]),
-      ).rejects.toBeRevertedWith('_adapters cannot be empty');
+      await expect(integrationManager.deregisterAdapters([])).rejects.toBeRevertedWith('_adapters cannot be empty');
     });
 
     it('correctly handles valid call', async () => {
@@ -353,28 +297,22 @@ describe('adapter registry', () => {
       } = await provider.snapshot(snapshot);
 
       const preAdapters = await integrationManager.getRegisteredAdapters();
-      expect(preAdapters).toEqual(
-        expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]),
-      );
+      expect(preAdapters).toEqual(expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]));
 
-      const receipt = await integrationManager.deregisterAdapters([
-        kyberAdapter,
-        chaiAdapter,
-      ]);
-
+      const receipt = await integrationManager.deregisterAdapters([kyberAdapter, chaiAdapter]);
       const events = extractEvent(receipt, 'AdapterDeregistered');
 
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
-        0: kyberAdapter,
-        1: expect.objectContaining({
+        adapter: kyberAdapter,
+        identifier: expect.objectContaining({
           hash: utils.id('KYBER_NETWORK'),
         }),
       });
 
       expect(events[1]).toMatchEventArgs({
-        0: chaiAdapter,
-        1: expect.objectContaining({
+        adapter: chaiAdapter,
+        identifier: expect.objectContaining({
           hash: utils.id('CHAI'),
         }),
       });
@@ -390,26 +328,21 @@ describe('adapter registry', () => {
         deployment: { integrationManager, kyberAdapter },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.deregisterAdapters([kyberAdapter]),
-      ).resolves.toBeReceipt();
-
-      await expect(
-        integrationManager.deregisterAdapters([kyberAdapter]),
-      ).rejects.toBeRevertedWith('Adapter is not registered');
+      await expect(integrationManager.deregisterAdapters([kyberAdapter])).resolves.toBeReceipt();
+      await expect(integrationManager.deregisterAdapters([kyberAdapter])).rejects.toBeRevertedWith(
+        'Adapter is not registered',
+      );
     });
   });
 
   describe('registerAdapters', () => {
     it('can only be called by fundDeployerOwner', async () => {
       const {
-        accounts: { 0: randomUser },
+        accounts: [randomUser],
         deployment: { integrationManager },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.connect(randomUser).registerAdapters([]),
-      ).rejects.toBeRevertedWith(
+      await expect(integrationManager.connect(randomUser).registerAdapters([])).rejects.toBeRevertedWith(
         'Only the FundDeployer owner can call this function',
       );
     });
@@ -419,13 +352,10 @@ describe('adapter registry', () => {
         deployment: { integrationManager },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.registerAdapters([]),
-      ).rejects.toBeRevertedWith('_adapters cannot be empty');
-
-      await expect(
-        integrationManager.registerAdapters([constants.AddressZero]),
-      ).rejects.toBeRevertedWith('Adapter cannot be empty');
+      await expect(integrationManager.registerAdapters([])).rejects.toBeRevertedWith('_adapters cannot be empty');
+      await expect(integrationManager.registerAdapters([constants.AddressZero])).rejects.toBeRevertedWith(
+        'Adapter cannot be empty',
+      );
     });
 
     it('does not allow a registered adapter', async () => {
@@ -433,9 +363,9 @@ describe('adapter registry', () => {
         deployment: { integrationManager, kyberAdapter, chaiAdapter },
       } = await provider.snapshot(snapshot);
 
-      await expect(
-        integrationManager.registerAdapters([kyberAdapter, chaiAdapter]),
-      ).rejects.toBeRevertedWith('Adapter already registered');
+      await expect(integrationManager.registerAdapters([kyberAdapter, chaiAdapter])).rejects.toBeRevertedWith(
+        'Adapter already registered',
+      );
     });
 
     it('correctly handles valid call', async () => {
@@ -444,10 +374,7 @@ describe('adapter registry', () => {
       } = await provider.snapshot(snapshot);
 
       await integrationManager.deregisterAdapters([kyberAdapter, chaiAdapter]);
-      const receipt = await integrationManager.registerAdapters([
-        kyberAdapter,
-        chaiAdapter,
-      ]);
+      const receipt = await integrationManager.registerAdapters([kyberAdapter, chaiAdapter]);
 
       const events = extractEvent(receipt, 'AdapterRegistered');
       expect(events.length).toBe(2);
@@ -466,9 +393,7 @@ describe('adapter registry', () => {
       });
 
       const getRegisteredAdaptersCall = await integrationManager.getRegisteredAdapters();
-      expect(getRegisteredAdaptersCall).toEqual(
-        expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]),
-      );
+      expect(getRegisteredAdaptersCall).toEqual(expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]));
     });
   });
 });
@@ -480,9 +405,7 @@ describe('setTrackedAssetsLimit', () => {
       deployment: { integrationManager },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      integrationManager.connect(randomUser).setTrackedAssetsLimit(1),
-    ).rejects.toBeRevertedWith(
+    await expect(integrationManager.connect(randomUser).setTrackedAssetsLimit(1)).rejects.toBeRevertedWith(
       'Only the FundDeployer owner can call this function',
     );
   });
@@ -493,9 +416,7 @@ describe('setTrackedAssetsLimit', () => {
     } = await provider.snapshot(snapshot);
 
     const nextTrackedAssetsLimit = 1;
-    const receipt = await integrationManager.setTrackedAssetsLimit(
-      nextTrackedAssetsLimit,
-    );
+    const receipt = await integrationManager.setTrackedAssetsLimit(nextTrackedAssetsLimit);
 
     // Assert event
     assertEvent(receipt, 'TrackedAssetsLimitSet', {

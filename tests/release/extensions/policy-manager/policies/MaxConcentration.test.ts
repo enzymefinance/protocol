@@ -1,10 +1,5 @@
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
-import {
-  AddressLike,
-  EthereumTestnetProvider,
-  MockContract,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { AddressLike, EthereumTestnetProvider, MockContract, randomAddress } from '@crestproject/crestproject';
 import {
   StandardToken,
   ComptrollerLib,
@@ -17,9 +12,11 @@ import {
 import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [EOAPolicyManager, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
   const maxConcentrationValue = utils.parseEther('.1'); // 10%
 
@@ -28,19 +25,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await mockValueInterpreter.calcLiveAssetValue.returns(0, false);
 
   // Deploy the standalone MaxConcentration policy
-  const [EOAPolicyManager, ...remainingAccounts] = accounts;
-  const maxConcentration = await MaxConcentration.deploy(
-    config.deployer,
-    EOAPolicyManager,
-    mockValueInterpreter,
-  );
+  const maxConcentration = await MaxConcentration.deploy(config.deployer, EOAPolicyManager, mockValueInterpreter);
 
   // Define mock fund values and calculate the limit of assetGav based on the maxConcentration
   const denominationAsset = deployment.tokens.weth;
   const totalGav = utils.parseEther('1');
-  const assetGavLimit = BigNumber.from(totalGav)
-    .mul(maxConcentrationValue)
-    .div(utils.parseEther('1'));
+  const assetGavLimit = BigNumber.from(totalGav).mul(maxConcentrationValue).div(utils.parseEther('1'));
   expect(assetGavLimit).toEqBigNumber(utils.parseEther('0.1'));
 
   // Only need an address for some contracts
@@ -54,9 +44,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Add policy settings for ComptrollerProxy
   const maxConcentrationConfig = maxConcentrationArgs(maxConcentrationValue);
-  await maxConcentration
-    .connect(EOAPolicyManager)
-    .addFundSettings(mockComptrollerProxy, maxConcentrationConfig);
+  await maxConcentration.connect(EOAPolicyManager).addFundSettings(mockComptrollerProxy, maxConcentrationConfig);
 
   return {
     accounts: remainingAccounts,
@@ -93,10 +81,7 @@ async function mockValuesAndValidateRule({
   await incomingAsset.transfer(vaultProxyAddress, incomingAssetGav);
 
   // Set value interpreter to return hardcoded amount
-  await mockValueInterpreter.calcLiveAssetValue.returns(
-    incomingAssetGav.toString(),
-    assetValueIsValid,
-  );
+  await mockValueInterpreter.calcLiveAssetValue.returns(incomingAssetGav.toString(), assetValueIsValid);
 
   // Only the incoming assets arg matters for this policy
   const postCoIArgs = validateRulePostCoIArgs({
@@ -128,16 +113,12 @@ describe('constructor', () => {
     expect(getPolicyManagerCall).toMatchAddress(policyManager);
 
     const implementedHooksCall = await maxConcentration.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([
-      PolicyHook.PostCallOnIntegration,
-    ]);
+    expect(implementedHooksCall).toMatchObject([PolicyHook.PostCallOnIntegration]);
   });
 });
 
 describe('activateForFund', () => {
-  it.todo(
-    'does not allow a misc asset with balance >maxConcentration in the fund trackedAssets',
-  );
+  it.todo('does not allow a misc asset with balance >maxConcentration in the fund trackedAssets');
 
   it.todo('allows the denomination asset to have >maxConcentration');
 
@@ -146,23 +127,17 @@ describe('activateForFund', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const { maxConcentration, maxConcentrationValue } = await provider.snapshot(
-      snapshot,
-    );
+    const { maxConcentration, maxConcentrationValue } = await provider.snapshot(snapshot);
 
     const maxConcentrationConfig = maxConcentrationArgs(maxConcentrationValue);
 
-    await expect(
-      maxConcentration.addFundSettings(randomAddress(), maxConcentrationConfig),
-    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
+    await expect(maxConcentration.addFundSettings(randomAddress(), maxConcentrationConfig)).rejects.toBeRevertedWith(
+      'Only the PolicyManager can make this call',
+    );
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const {
-      maxConcentration,
-      maxConcentrationValue,
-      EOAPolicyManager,
-    } = await provider.snapshot(snapshot);
+    const { maxConcentration, maxConcentrationValue, EOAPolicyManager } = await provider.snapshot(snapshot);
 
     const comptrollerProxy = randomAddress();
 
@@ -178,9 +153,7 @@ describe('addFundSettings', () => {
     });
 
     // maxConcentration should be set for comptrollerProxy
-    const getMaxConcentrationForFundCall = await maxConcentration.getMaxConcentrationForFund(
-      comptrollerProxy,
-    );
+    const getMaxConcentrationForFundCall = await maxConcentration.getMaxConcentrationForFund(comptrollerProxy);
     expect(getMaxConcentrationForFundCall).toEqBigNumber(maxConcentrationValue);
   });
 });
@@ -189,21 +162,15 @@ describe('updateFundSettings', () => {
   it('cannot be called', async () => {
     const { maxConcentration } = await provider.snapshot(snapshot);
 
-    await expect(
-      maxConcentration.updateFundSettings(
-        randomAddress(),
-        randomAddress(),
-        '0x',
-      ),
-    ).rejects.toBeRevertedWith('Updates not allowed for this policy');
+    await expect(maxConcentration.updateFundSettings(randomAddress(), randomAddress(), '0x')).rejects.toBeRevertedWith(
+      'Updates not allowed for this policy',
+    );
   });
 });
 
 describe('validateRule', () => {
   it('returns true if there are no incoming assets', async () => {
-    const { maxConcentration, mockComptrollerProxy } = await provider.snapshot(
-      snapshot,
-    );
+    const { maxConcentration, mockComptrollerProxy } = await provider.snapshot(snapshot);
 
     // Empty args
     const postCoIArgs = validateRulePostCoIArgs({
@@ -249,9 +216,7 @@ describe('validateRule', () => {
       incomingAssetGav,
     });
 
-    expect(
-      mockValueInterpreter.calcLiveAssetValue,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockValueInterpreter.calcLiveAssetValue).toHaveBeenCalledOnContractWith(
       incomingAsset,
       incomingAssetGav,
       denominationAsset,

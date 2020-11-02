@@ -14,10 +14,7 @@ export function assertEvent<TResult = any>(
   return ((args as unknown) as typeof match)!;
 }
 
-export function assertNoEvent(
-  receipt: ContractReceipt<any>,
-  event: string | utils.EventFragment,
-) {
+export function assertNoEvent(receipt: ContractReceipt<any>, event: string | utils.EventFragment) {
   const events = extractEvent(receipt, event);
   expect(events.length).toBe(0);
 }

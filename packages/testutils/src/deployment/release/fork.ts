@@ -37,26 +37,20 @@ export async function configureForkRelease({
   dispatcher: Dispatcher;
   accounts: SignerWithAddress[];
 }): Promise<ForkReleaseDeploymentConfig> {
-  const whales = await Object.entries(mainnet.whales).reduce(
-    (carry: Promise<MainnetWhales>, [key, address]) => {
-      return new Promise(async (resolve) => {
-        const previous = await carry;
-        const signer = await provider.getSignerWithAddress(address);
-        await provider.send('hardhat_impersonateAccount', [address]);
+  const whales = await Object.entries(mainnet.whales).reduce((carry: Promise<MainnetWhales>, [key, address]) => {
+    return new Promise(async (resolve) => {
+      const previous = await carry;
+      const signer = await provider.getSignerWithAddress(address);
+      await provider.send('hardhat_impersonateAccount', [address]);
 
-        resolve({ ...previous, [key]: signer });
-      });
-    },
-    Promise.resolve({}) as Promise<MainnetWhales>,
-  );
+      resolve({ ...previous, [key]: signer });
+    });
+  }, Promise.resolve({}) as Promise<MainnetWhales>);
 
-  const tokens = Object.entries(mainnet.tokens).reduce(
-    (carry: MainnetTokens, [key, address]) => {
-      const token = new StandardToken(address, deployer);
-      return { ...carry, [key]: token };
-    },
-    {} as MainnetTokens,
-  );
+  const tokens = Object.entries(mainnet.tokens).reduce((carry: MainnetTokens, [key, address]) => {
+    const token = new StandardToken(address, deployer);
+    return { ...carry, [key]: token };
+  }, {} as MainnetTokens);
 
   const chainlinkConfig = Object.values(mainnet.chainlinkAggregators);
   const chainlinkRateAssets = chainlinkConfig.map(([, b]) => b as number);
@@ -138,11 +132,7 @@ async function makeEthRich(sender: SignerWithAddress, receiver: AddressLike) {
   });
 }
 
-async function makeTokenRich(
-  token: StandardToken,
-  sender: SignerWithAddress,
-  receiver: AddressLike,
-) {
+async function makeTokenRich(token: StandardToken, sender: SignerWithAddress, receiver: AddressLike) {
   // 100 * 10^(decimals)
   const amount = constants.One.mul(10)
     .pow(await token.decimals())

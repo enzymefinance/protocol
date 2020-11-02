@@ -1,25 +1,15 @@
 import { BigNumber, constants, utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
-import {
-  createNewFund,
-  getAssetBalances,
-  zeroExV2TakeOrder,
-  defaultForkDeployment,
-} from '@melonproject/testutils';
-import {
-  createUnsignedZeroExV2Order,
-  signZeroExV2Order,
-} from '@melonproject/protocol';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { createNewFund, getAssetBalances, zeroExV2TakeOrder, defaultForkDeployment } from '@melonproject/testutils';
+import { createUnsignedZeroExV2Order, signZeroExV2Order } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(
-    defaultForkDeployment,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await provider.snapshot(defaultForkDeployment);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -64,10 +54,7 @@ describe('takeOrder', () => {
     await incomingAsset.approve(erc20Proxy, makerAssetAmount);
     await zeroExV2Adapter.updateAllowedMakers([maker], [true]);
 
-    const [
-      preTxIncomingAssetBalance,
-      preTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
@@ -95,22 +82,15 @@ describe('takeOrder', () => {
       takerAssetFillAmount,
     });
 
-    const [
-      postTxIncomingAssetBalance,
-      postTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
 
-    const incomingAssetAmount = postTxIncomingAssetBalance.sub(
-      preTxIncomingAssetBalance,
-    );
+    const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
 
     expect(incomingAssetAmount).toEqBigNumber(makerAssetAmount);
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(
-      preTxOutgoingAssetBalance.sub(takerAssetAmount),
-    );
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(takerAssetAmount));
   });
 
   it('works as expected with takerFee', async () => {
@@ -139,10 +119,7 @@ describe('takeOrder', () => {
     await incomingAsset.approve(erc20Proxy, makerAssetAmount);
     await zeroExV2Adapter.updateAllowedMakers([maker], [true]);
 
-    const [
-      preTxIncomingAssetBalance,
-      preTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
@@ -170,22 +147,14 @@ describe('takeOrder', () => {
       takerAssetFillAmount,
     });
 
-    const [
-      postTxIncomingAssetBalance,
-      postTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
 
-    const incomingAssetAmount = postTxIncomingAssetBalance.sub(
-      preTxIncomingAssetBalance,
-    );
-
+    const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
     expect(incomingAssetAmount).toEqBigNumber(makerAssetAmount);
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(
-      preTxOutgoingAssetBalance.sub(takerAssetAmount.add(takerFee)),
-    );
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(takerAssetAmount.add(takerFee)));
   });
 
   it('partially fill an order', async () => {
@@ -207,18 +176,13 @@ describe('takeOrder', () => {
     const takerAssetAmount = utils.parseEther('0.1');
     const takerFee = BigNumber.from(0);
     const takerAssetFillAmount = utils.parseEther('0.03');
-    const expectedIncomingAssetAmount = makerAssetAmount
-      .mul(takerAssetFillAmount)
-      .div(takerAssetAmount);
+    const expectedIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     await outgoingAsset.transfer(vaultProxy, takerAssetAmount);
     await incomingAsset.approve(erc20Proxy, makerAssetAmount);
     await zeroExV2Adapter.updateAllowedMakers([maker], [true]);
 
-    const [
-      preTxIncomingAssetBalance,
-      preTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
@@ -246,21 +210,13 @@ describe('takeOrder', () => {
       takerAssetFillAmount,
     });
 
-    const [
-      postTxIncomingAssetBalance,
-      postTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
 
-    const incomingAssetAmount = postTxIncomingAssetBalance.sub(
-      preTxIncomingAssetBalance,
-    );
-
+    const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
     expect(incomingAssetAmount).toEqBigNumber(expectedIncomingAssetAmount);
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(
-      preTxOutgoingAssetBalance.sub(takerAssetFillAmount),
-    );
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(takerAssetFillAmount));
   });
 });

@@ -1,14 +1,6 @@
 import { constants } from 'ethers';
-import {
-  extractEvent,
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
-import {
-  IMigrationHookHandler,
-  MockVaultLib,
-  ReleaseStatusTypes,
-} from '@melonproject/protocol';
+import { extractEvent, EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { IMigrationHookHandler, MockVaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
 import {
   defaultTestDeployment,
   createMigratedFundConfig,
@@ -17,14 +9,14 @@ import {
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, config, deployment } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    config,
+    deployment,
+  } = await defaultTestDeployment(provider);
 
   // Mock a FundDeployer contract for the prev fund
-  const mockPrevFundDeployer = await IMigrationHookHandler.mock(
-    config.deployer,
-  );
+  const mockPrevFundDeployer = await IMigrationHookHandler.mock(config.deployer);
   await mockPrevFundDeployer.postCancelMigrationOriginHook.returns(undefined);
   await mockPrevFundDeployer.preMigrateOriginHook.returns(undefined);
   await mockPrevFundDeployer.postMigrateOriginHook.returns(undefined);
@@ -36,7 +28,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Deploy a migratable VaultProxy using a mock VaultLib
   const mockPrevVaultLib = await MockVaultLib.deploy(config.deployer);
-  const [fundOwner, ...remainingAccounts] = accounts;
   const receipt = await mockPrevFundDeployer.forward(
     deployment.dispatcher.deployVaultProxy,
     mockPrevVaultLib,
@@ -45,9 +36,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     '',
   );
 
-  const eventFragment = deployment.dispatcher.abi.getEvent(
-    'VaultProxyDeployed',
-  );
+  const eventFragment = deployment.dispatcher.abi.getEvent('VaultProxyDeployed');
   const vaultProxyDeployedEvent = extractEvent(receipt, eventFragment)[0];
   const vaultProxyAddress = vaultProxyDeployedEvent.args.vaultProxy;
 
@@ -59,17 +48,14 @@ async function snapshot(provider: EthereumTestnetProvider) {
     deployer: config.deployer,
     feeManager: deployment.feeManager,
   });
-  const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies(
-    {
-      deployer: config.deployer,
-      policyManager: deployment.policyManager,
-    },
-  );
+
+  const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies({
+    deployer: config.deployer,
+    policyManager: deployment.policyManager,
+  });
 
   // Create fund config on the FundDeployer
-  const {
-    comptrollerProxy: nextComptrollerProxy,
-  } = await createMigratedFundConfig({
+  const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
     signer: fundOwner,
     fundDeployer: deployment.fundDeployer,
     denominationAsset: deployment.tokens.weth,
@@ -91,7 +77,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('signalMigration', () => {
   it('can only be called by the comptrollerProxy creator', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: {
         fundDeployer,
         tokens: { weth: denominationAsset },
@@ -107,17 +93,13 @@ describe('signalMigration', () => {
     });
 
     await expect(
-      fundDeployer
-        .connect(randomUser)
-        .signalMigration(vaultProxyAddress, comptrollerProxy),
-    ).rejects.toBeRevertedWith(
-      'Only the ComptrollerProxy creator can call this function',
-    );
+      fundDeployer.connect(randomUser).signalMigration(vaultProxyAddress, comptrollerProxy),
+    ).rejects.toBeRevertedWith('Only the ComptrollerProxy creator can call this function');
   });
 
   it('can only be called by a permissioned migrator of the vault', async () => {
     const {
-      accounts: { 0: randomComptrollerProxyCreator },
+      accounts: [randomComptrollerProxyCreator],
       deployment: {
         fundDeployer,
         tokens: { weth: denominationAsset },
@@ -132,12 +114,8 @@ describe('signalMigration', () => {
     });
 
     await expect(
-      fundDeployer
-        .connect(randomComptrollerProxyCreator)
-        .signalMigration(vaultProxyAddress, comptrollerProxy),
-    ).rejects.toBeRevertedWith(
-      'Only a permissioned migrator can call this function',
-    );
+      fundDeployer.connect(randomComptrollerProxyCreator).signalMigration(vaultProxyAddress, comptrollerProxy),
+    ).rejects.toBeRevertedWith('Only a permissioned migrator can call this function');
   });
 
   it('does not allow the release to be paused', async () => {
@@ -152,9 +130,7 @@ describe('signalMigration', () => {
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     await expect(
-      fundDeployer
-        .connect(fundOwner)
-        .signalMigration(vaultProxyAddress, nextComptrollerProxy),
+      fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy),
     ).rejects.toBeRevertedWith('Release is paused');
   });
 
@@ -166,9 +142,7 @@ describe('signalMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
     // Assert expected calls
     expect(dispatcher.signalMigration).toHaveBeenCalledOnContractWith(
@@ -183,7 +157,7 @@ describe('signalMigration', () => {
 describe('executeMigration', () => {
   it('can only be called by a permissioned migrator of the vault', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: {
         dispatcher,
         fundDeployer,
@@ -199,17 +173,13 @@ describe('executeMigration', () => {
       denominationAsset,
     });
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, comptrollerProxy);
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, comptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    await expect(
-      fundDeployer.connect(randomUser).executeMigration(vaultProxyAddress),
-    ).rejects.toBeRevertedWith(
+    await expect(fundDeployer.connect(randomUser).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
@@ -222,16 +192,13 @@ describe('executeMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-    await expect(
-      fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress),
-    ).rejects.toBeRevertedWith('Release is paused');
+    await expect(fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
+      'Release is paused',
+    );
   });
 
   it('correctly handles valid call', async () => {
@@ -242,9 +209,7 @@ describe('executeMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -256,26 +221,18 @@ describe('executeMigration', () => {
     const getPendingComptrollerProxyCreatorCall = await fundDeployer.getPendingComptrollerProxyCreator(
       nextComptrollerProxy,
     );
-    expect(getPendingComptrollerProxyCreatorCall).toMatchAddress(
-      constants.AddressZero,
-    );
+    expect(getPendingComptrollerProxyCreatorCall).toMatchAddress(constants.AddressZero);
 
     // Assert expected calls
-    expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(
-      vaultProxyAddress,
-      false,
-    );
-    expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(
-      vaultProxyAddress,
-      true,
-    );
+    expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(vaultProxyAddress, false);
+    expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(vaultProxyAddress, true);
   });
 });
 
 describe('cancelMigration', () => {
   it('can only be called by a permissioned migrator of the vault', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: {
         fundDeployer,
         tokens: { weth: denominationAsset },
@@ -290,13 +247,8 @@ describe('cancelMigration', () => {
       denominationAsset,
     });
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, comptrollerProxy);
-
-    await expect(
-      fundDeployer.connect(randomUser).cancelMigration(vaultProxyAddress),
-    ).rejects.toBeRevertedWith(
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, comptrollerProxy);
+    await expect(fundDeployer.connect(randomUser).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
@@ -309,16 +261,13 @@ describe('cancelMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-    await expect(
-      fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress),
-    ).rejects.toBeRevertedWith('Release is paused');
+    await expect(fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
+      'Release is paused',
+    );
   });
 
   it('correctly handles valid call', async () => {
@@ -329,17 +278,11 @@ describe('cancelMigration', () => {
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
-    await fundDeployer
-      .connect(fundOwner)
-      .signalMigration(vaultProxyAddress, nextComptrollerProxy);
-
+    await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
     await fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress);
 
     // Assert expected calls
-    expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(
-      vaultProxyAddress,
-      false,
-    );
+    expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(vaultProxyAddress, false);
   });
 });
 
@@ -356,21 +299,15 @@ describe('emergency functions', () => {
 
       // Set a signalMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.preSignalMigrationOriginHook.reverts(
-        revertReason,
-      );
+      await mockPrevFundDeployer.preSignalMigrationOriginHook.reverts(revertReason);
 
       await expect(
-        fundDeployer
-          .connect(fundOwner)
-          .signalMigration(vaultProxyAddress, nextComptrollerProxy),
+        fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy),
       ).rejects.toBeRevertedWith(revertReason);
 
       // Bypassing failing hooks should allow the call to succeed
       await expect(
-        fundDeployer
-          .connect(fundOwner)
-          .signalMigrationEmergency(vaultProxyAddress, nextComptrollerProxy),
+        fundDeployer.connect(fundOwner).signalMigrationEmergency(vaultProxyAddress, nextComptrollerProxy),
       ).resolves.toBeReceipt();
 
       // Assert expected calls
@@ -393,9 +330,7 @@ describe('emergency functions', () => {
         vaultProxyAddress,
       } = await provider.snapshot(snapshot);
 
-      await fundDeployer
-        .connect(fundOwner)
-        .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+      await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
       // Warp to migratable time
       const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -404,27 +339,16 @@ describe('emergency functions', () => {
       // Set an executeMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
       await mockPrevFundDeployer.preMigrateOriginHook.reverts(revertReason);
-      await expect(
-        fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress),
-      ).rejects.toBeRevertedWith(revertReason);
+      await expect(fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
+        revertReason,
+      );
 
       // Bypassing failing hooks should allow the call to succeed
-      await expect(
-        fundDeployer
-          .connect(fundOwner)
-          .executeMigrationEmergency(vaultProxyAddress),
-      ).resolves.toBeReceipt();
+      await expect(fundDeployer.connect(fundOwner).executeMigrationEmergency(vaultProxyAddress)).resolves.toBeReceipt();
 
       // Assert expected calls
-      expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(
-        vaultProxyAddress,
-        true,
-      );
-
-      expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(
-        vaultProxyAddress,
-        true,
-      );
+      expect(dispatcher.executeMigration).toHaveBeenCalledOnContractWith(vaultProxyAddress, true);
+      expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(vaultProxyAddress, true);
     });
   });
 
@@ -438,32 +362,21 @@ describe('emergency functions', () => {
         vaultProxyAddress,
       } = await provider.snapshot(snapshot);
 
-      await fundDeployer
-        .connect(fundOwner)
-        .signalMigration(vaultProxyAddress, nextComptrollerProxy);
+      await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
       // Set a cancelMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.postCancelMigrationOriginHook.reverts(
+      await mockPrevFundDeployer.postCancelMigrationOriginHook.reverts(revertReason);
+
+      await expect(fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
         revertReason,
       );
 
-      await expect(
-        fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress),
-      ).rejects.toBeRevertedWith(revertReason);
-
       // Bypassing failing hooks should allow the call to succeed
-      await expect(
-        fundDeployer
-          .connect(fundOwner)
-          .cancelMigrationEmergency(vaultProxyAddress),
-      ).resolves.toBeReceipt();
+      await expect(fundDeployer.connect(fundOwner).cancelMigrationEmergency(vaultProxyAddress)).resolves.toBeReceipt();
 
       // Assert expected calls
-      expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(
-        vaultProxyAddress,
-        true,
-      );
+      expect(dispatcher.cancelMigration).toHaveBeenCalledOnContractWith(vaultProxyAddress, true);
     });
   });
 });

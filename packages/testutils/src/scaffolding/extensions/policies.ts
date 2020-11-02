@@ -1,10 +1,5 @@
 import { constants, Signer, utils } from 'ethers';
-import {
-  IPolicy,
-  PolicyHook,
-  PolicyManager,
-  policyManagerConfigArgs,
-} from '@melonproject/protocol';
+import { IPolicy, PolicyHook, PolicyManager, policyManagerConfigArgs } from '@melonproject/protocol';
 
 // Policy Manager
 
@@ -20,12 +15,7 @@ export async function generatePolicyManagerConfigWithMockPolicies({
     policyManager,
   });
 
-  const policiesSettingsData = [
-    utils.randomBytes(10),
-    constants.HashZero,
-    constants.HashZero,
-    utils.randomBytes(2),
-  ];
+  const policiesSettingsData = [utils.randomBytes(10), constants.HashZero, constants.HashZero, utils.randomBytes(2)];
 
   return policyManagerConfigArgs({
     policies: Object.values(policies),
@@ -59,25 +49,19 @@ export async function generateRegisteredMockPolicies({
     mockPostBuySharesPolicy.addFundSettings.returns(undefined),
     mockPostBuySharesPolicy.activateForFund.returns(undefined),
     mockPostBuySharesPolicy.validateRule.returns(true),
-    mockPostBuySharesPolicy.implementedHooks.returns([
-      PolicyHook.PostBuyShares,
-    ]),
+    mockPostBuySharesPolicy.implementedHooks.returns([PolicyHook.PostBuyShares]),
     // PreCallOnIntegration
     mockPreCoIPolicy.identifier.returns(`MOCK_PRE_CALL_ON_INTEGRATION`),
     mockPreCoIPolicy.addFundSettings.returns(undefined),
     mockPreCoIPolicy.activateForFund.returns(undefined),
     mockPreCoIPolicy.validateRule.returns(true),
-    mockPreCoIPolicy.implementedHooks.returns([
-      PolicyHook.PreCallOnIntegration,
-    ]),
+    mockPreCoIPolicy.implementedHooks.returns([PolicyHook.PreCallOnIntegration]),
     // PostCallOnIntegration
     mockPostCoIPolicy.identifier.returns(`MOCK_POST_CALL_ON_INTEGRATION`),
     mockPostCoIPolicy.addFundSettings.returns(undefined),
     mockPostCoIPolicy.activateForFund.returns(undefined),
     mockPostCoIPolicy.validateRule.returns(true),
-    mockPostCoIPolicy.implementedHooks.returns([
-      PolicyHook.PostCallOnIntegration,
-    ]),
+    mockPostCoIPolicy.implementedHooks.returns([PolicyHook.PostCallOnIntegration]),
   ]);
 
   // Register all mock policies

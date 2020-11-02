@@ -6,21 +6,11 @@ import {
   AddressLike,
   MockContract,
 } from '@crestproject/crestproject';
-import {
-  assertEvent,
-  defaultPersistetTestDeployment,
-  transactionTimestamp,
-} from '@melonproject/testutils';
-import {
-  Dispatcher,
-  IMigrationHookHandler,
-  MockVaultLib,
-} from '@melonproject/protocol';
+import { assertEvent, defaultPersistetTestDeployment, transactionTimestamp } from '@melonproject/testutils';
+import { Dispatcher, IMigrationHookHandler, MockVaultLib } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, config, deployment } = await defaultPersistetTestDeployment(
-    provider,
-  );
+  const { accounts, config, deployment } = await defaultPersistetTestDeployment(provider);
 
   return {
     accounts,
@@ -58,13 +48,7 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   };
 }
 
-async function ensureFundDeployer({
-  dispatcher,
-  fundDeployer,
-}: {
-  dispatcher: Dispatcher;
-  fundDeployer: AddressLike;
-}) {
+async function ensureFundDeployer({ dispatcher, fundDeployer }: { dispatcher: Dispatcher; fundDeployer: AddressLike }) {
   const currentDeployer = await dispatcher.getCurrentFundDeployer();
   if (!sameAddress(currentDeployer, fundDeployer)) {
     const receipt = await dispatcher.setCurrentFundDeployer(fundDeployer);
@@ -93,13 +77,7 @@ async function deployVault({
   await ensureFundDeployer({ dispatcher, fundDeployer: mockFundDeployer });
 
   const event = dispatcher.abi.getEvent('VaultProxyDeployed');
-  const receipt = await mockFundDeployer.forward(
-    dispatcher.deployVaultProxy,
-    vaultLib,
-    owner,
-    vaultAccessor,
-    fundName,
-  );
+  const receipt = await mockFundDeployer.forward(dispatcher.deployVaultProxy, vaultLib, owner, vaultAccessor, fundName);
 
   const args = assertEvent(receipt, event, {
     fundName,
@@ -163,13 +141,11 @@ describe('constructor', () => {
 describe('setNominatedOwner', () => {
   it('can only be called by the contract owner', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      dispatcher.connect(randomUser).setNominatedOwner(randomAddress()),
-    ).rejects.toBeRevertedWith(
+    await expect(dispatcher.connect(randomUser).setNominatedOwner(randomAddress())).rejects.toBeRevertedWith(
       'Only the contract owner can call this function',
     );
   });
@@ -179,9 +155,9 @@ describe('setNominatedOwner', () => {
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      dispatcher.setNominatedOwner(constants.AddressZero),
-    ).rejects.toBeRevertedWith('_nextOwner cannot be empty');
+    await expect(dispatcher.setNominatedOwner(constants.AddressZero)).rejects.toBeRevertedWith(
+      '_nextOwner cannot be empty',
+    );
   });
 
   it('does not allow the next owner to be the current owner', async () => {
@@ -190,9 +166,9 @@ describe('setNominatedOwner', () => {
       config: { deployer: currentOwner },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      dispatcher.setNominatedOwner(currentOwner),
-    ).rejects.toBeRevertedWith('_nextOwner is already the owner');
+    await expect(dispatcher.setNominatedOwner(currentOwner)).rejects.toBeRevertedWith(
+      '_nextOwner is already the owner',
+    );
   });
 
   it('does not allow the next owner to already be nominated', async () => {
@@ -205,9 +181,7 @@ describe('setNominatedOwner', () => {
     await dispatcher.setNominatedOwner(nextOwner);
 
     // Attempt to nominate the same nextOwner a second time
-    await expect(
-      dispatcher.setNominatedOwner(nextOwner),
-    ).rejects.toBeRevertedWith('_nextOwner is already nominated');
+    await expect(dispatcher.setNominatedOwner(nextOwner)).rejects.toBeRevertedWith('_nextOwner is already nominated');
   });
 
   it('correctly handles nominating a new owner', async () => {
@@ -238,7 +212,7 @@ describe('setNominatedOwner', () => {
 describe('removeNominatedOwner', () => {
   it('can only be called by the contract owner', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
@@ -246,9 +220,7 @@ describe('removeNominatedOwner', () => {
     await dispatcher.setNominatedOwner(randomAddress());
 
     // Attempt by a random user to remove nominated owner should fail
-    await expect(
-      dispatcher.connect(randomUser).removeNominatedOwner(),
-    ).rejects.toBeRevertedWith(
+    await expect(dispatcher.connect(randomUser).removeNominatedOwner()).rejects.toBeRevertedWith(
       'Only the contract owner can call this function',
     );
   });
@@ -284,7 +256,7 @@ describe('removeNominatedOwner', () => {
 describe('claimOwnership', () => {
   it('can only be called by the nominatedOwner', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
@@ -292,16 +264,14 @@ describe('claimOwnership', () => {
     await dispatcher.setNominatedOwner(randomAddress());
 
     // Attempt by a random user to claim ownership should fail
-    await expect(
-      dispatcher.connect(randomUser).claimOwnership(),
-    ).rejects.toBeRevertedWith(
+    await expect(dispatcher.connect(randomUser).claimOwnership()).rejects.toBeRevertedWith(
       'Only the nominatedOwner can call this function',
     );
   });
 
   it('correctly handles transferring ownership', async () => {
     const {
-      accounts: { 0: nominatedOwner },
+      accounts: [nominatedOwner],
       config: { deployer },
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
@@ -479,41 +449,28 @@ describe('signalMigration', () => {
     });
 
     const signalTimestamp = await transactionTimestamp(receipt);
-    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(
-      vaultProxy,
-    );
+    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
-    expect(detailsCall).toMatchFunctionOutput(
-      dispatcher.getMigrationRequestDetailsForVaultProxy.fragment,
-      {
-        nextFundDeployer_: mockNextFundDeployer,
-        nextVaultAccessor_: nextVaultAccessor,
-        nextVaultLib_: nextVaultLib,
-        signalTimestamp_: signalTimestamp,
-      },
-    );
+    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy.fragment, {
+      nextFundDeployer_: mockNextFundDeployer,
+      nextVaultAccessor_: nextVaultAccessor,
+      nextVaultLib_: nextVaultLib,
+      signalTimestamp_: signalTimestamp,
+    });
 
     // Calls pre- and post- hooks on the mockPrevFundDeployer
-    expect(
-      mockPrevFundDeployer.preSignalMigrationOriginHook,
-    ).toHaveBeenCalledOnContract();
+    expect(mockPrevFundDeployer.preSignalMigrationOriginHook).toHaveBeenCalledOnContract();
 
-    expect(
-      mockPrevFundDeployer.preSignalMigrationOriginHook,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.preSignalMigrationOriginHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockNextFundDeployer,
       nextVaultAccessor,
       nextVaultLib,
     );
 
-    expect(
-      mockPrevFundDeployer.postSignalMigrationOriginHook,
-    ).toHaveBeenCalledOnContract();
+    expect(mockPrevFundDeployer.postSignalMigrationOriginHook).toHaveBeenCalledOnContract();
 
-    expect(
-      mockPrevFundDeployer.postSignalMigrationOriginHook,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.postSignalMigrationOriginHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockNextFundDeployer,
       nextVaultAccessor,
@@ -527,9 +484,7 @@ describe('cancelMigration', () => {
 
   it.todo('does not allow non-existent migration request');
 
-  it.todo(
-    'can only be called by the vaultProxy owner or migrator, or the FundDeployer in the migration request',
-  );
+  it.todo('can only be called by the vaultProxy owner or migrator, or the FundDeployer in the migration request');
 
   it.todo('correctly handles postCancelMigrationOriginHook failure');
 
@@ -577,28 +532,19 @@ describe('cancelMigration', () => {
     });
 
     // Removes MigrationRequest
-    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(
-      vaultProxy,
-    );
+    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
-    expect(detailsCall).toMatchFunctionOutput(
-      dispatcher.getMigrationRequestDetailsForVaultProxy.fragment,
-      {
-        nextFundDeployer_: constants.AddressZero,
-        nextVaultAccessor_: constants.AddressZero,
-        nextVaultLib_: constants.AddressZero,
-        signalTimestamp_: BigNumber.from(0),
-      },
-    );
+    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy.fragment, {
+      nextFundDeployer_: constants.AddressZero,
+      nextVaultAccessor_: constants.AddressZero,
+      nextVaultLib_: constants.AddressZero,
+      signalTimestamp_: BigNumber.from(0),
+    });
 
     // Calls post- hooks on the mockPrevFundDeployer and mockNextFundDeployer
-    expect(
-      mockPrevFundDeployer.postCancelMigrationOriginHook,
-    ).toHaveBeenCalledOnContract();
+    expect(mockPrevFundDeployer.postCancelMigrationOriginHook).toHaveBeenCalledOnContract();
 
-    expect(
-      mockPrevFundDeployer.postCancelMigrationOriginHook,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.postCancelMigrationOriginHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockNextFundDeployer,
       nextVaultAccessor,
@@ -606,13 +552,9 @@ describe('cancelMigration', () => {
       signalTimestamp,
     );
 
-    expect(
-      mockNextFundDeployer.postCancelMigrationTargetHook,
-    ).toHaveBeenCalledOnContract();
+    expect(mockNextFundDeployer.postCancelMigrationTargetHook).toHaveBeenCalledOnContract();
 
-    expect(
-      mockNextFundDeployer.postCancelMigrationTargetHook,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockNextFundDeployer.postCancelMigrationTargetHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockPrevFundDeployer,
       nextVaultAccessor,
@@ -627,9 +569,7 @@ describe('executeMigration', () => {
 
   it.todo('does not allow non-existent migration request');
 
-  it.todo(
-    'can only be called by the target FundDeployer in the migration request',
-  );
+  it.todo('can only be called by the target FundDeployer in the migration request');
 
   it.todo(
     'cannot be called when the target FundDeployer in the migration request is no longer the current FundDeployer',
@@ -664,26 +604,18 @@ describe('executeMigration', () => {
     });
 
     // Try to migrate immediately, which should fail
-    await expect(
-      mockNextFundDeployer.forward(
-        dispatcher.executeMigration,
-        vaultProxy,
-        false,
-      ),
-    ).rejects.toBeRevertedWith('The migration timelock has not been met');
+    await expect(mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false)).rejects.toBeRevertedWith(
+      'The migration timelock has not been met',
+    );
 
     // Warp to 5 secs prior to the timelock expiry, which should also fail
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - 5]);
 
     // Try to migrate again, which should fail
-    await expect(
-      mockNextFundDeployer.forward(
-        dispatcher.executeMigration,
-        vaultProxy,
-        false,
-      ),
-    ).rejects.toBeRevertedWith('The migration timelock has not been met');
+    await expect(mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false)).rejects.toBeRevertedWith(
+      'The migration timelock has not been met',
+    );
   });
 
   it.todo('correctly handles preMigrateOriginHook failure');
@@ -725,11 +657,7 @@ describe('executeMigration', () => {
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Execute migration
-    const executeReceipt = await mockNextFundDeployer.forward(
-      dispatcher.executeMigration,
-      vaultProxy,
-      false,
-    );
+    const executeReceipt = await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
 
     assertEvent(executeReceipt, 'MigrationExecuted', {
       vaultProxy,
@@ -748,28 +676,19 @@ describe('executeMigration', () => {
     expect(accessorCall).toMatchAddress(nextVaultAccessor);
 
     // Removes MigrationRequest
-    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(
-      vaultProxy,
-    );
+    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
-    expect(detailsCall).toMatchFunctionOutput(
-      dispatcher.getMigrationRequestDetailsForVaultProxy.fragment,
-      {
-        nextFundDeployer_: constants.AddressZero,
-        nextVaultAccessor_: constants.AddressZero,
-        nextVaultLib_: constants.AddressZero,
-        signalTimestamp_: BigNumber.from(0),
-      },
-    );
+    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy.fragment, {
+      nextFundDeployer_: constants.AddressZero,
+      nextVaultAccessor_: constants.AddressZero,
+      nextVaultLib_: constants.AddressZero,
+      signalTimestamp_: BigNumber.from(0),
+    });
 
     // Calls pre- and post- hooks on the mockPrevFundDeployer
-    expect(
-      mockPrevFundDeployer.preMigrateOriginHook,
-    ).toHaveBeenCalledOnContract();
+    expect(mockPrevFundDeployer.preMigrateOriginHook).toHaveBeenCalledOnContract();
 
-    expect(
-      mockPrevFundDeployer.preMigrateOriginHook,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.preMigrateOriginHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockNextFundDeployer,
       nextVaultAccessor,
@@ -777,13 +696,9 @@ describe('executeMigration', () => {
       signalTimestamp,
     );
 
-    expect(
-      mockPrevFundDeployer.postMigrateOriginHook,
-    ).toHaveBeenCalledOnContract();
+    expect(mockPrevFundDeployer.postMigrateOriginHook).toHaveBeenCalledOnContract();
 
-    expect(
-      mockPrevFundDeployer.postMigrateOriginHook,
-    ).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.postMigrateOriginHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockNextFundDeployer,
       nextVaultAccessor,
@@ -796,13 +711,11 @@ describe('executeMigration', () => {
 describe('setMigrationTimelock', () => {
   it('can only be called by the contract owner', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      dispatcher.connect(randomUser).setMigrationTimelock(randomAddress()),
-    ).rejects.toBeRevertedWith(
+    await expect(dispatcher.connect(randomUser).setMigrationTimelock(randomAddress())).rejects.toBeRevertedWith(
       'Only the contract owner can call this function',
     );
   });
@@ -814,9 +727,9 @@ describe('setMigrationTimelock', () => {
 
     const migrationTimelock = await dispatcher.getMigrationTimelock();
 
-    await expect(
-      dispatcher.setMigrationTimelock(migrationTimelock),
-    ).rejects.toBeRevertedWith('_nextTimelock is the current timelock');
+    await expect(dispatcher.setMigrationTimelock(migrationTimelock)).rejects.toBeRevertedWith(
+      '_nextTimelock is the current timelock',
+    );
   });
 
   it('correctly handles setting a new migration timelock', async () => {

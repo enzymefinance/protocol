@@ -1,15 +1,6 @@
-import {
-  EthereumTestnetProvider,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
 import { BigNumber, BigNumberish, utils } from 'ethers';
-import {
-  StandardToken,
-  ComptrollerLib,
-  IntegrationManager,
-  KyberAdapter,
-  VaultLib,
-} from '@melonproject/protocol';
+import { StandardToken, ComptrollerLib, IntegrationManager, KyberAdapter, VaultLib } from '@melonproject/protocol';
 import {
   defaultForkDeployment,
   createNewFund,
@@ -43,10 +34,7 @@ async function assertKyberTakeOrder({
 }) {
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 
-  const [
-    preTxIncomingAssetBalance,
-    preTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [incomingAsset, outgoingAsset],
   });
@@ -64,31 +52,24 @@ async function assertKyberTakeOrder({
     seedFund: false,
   });
 
-  const [
-    postTxIncomingAssetBalance,
-    postTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [incomingAsset, outgoingAsset],
   });
 
-  const incomingAssetAmount = postTxIncomingAssetBalance.sub(
-    preTxIncomingAssetBalance,
-  );
+  const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
 
   expect(incomingAssetAmount).toEqBigNumber(expectedRate);
   expect(incomingAssetAmount).toBeGteBigNumber(minIncomingAssetAmount);
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(
-    preTxOutgoingAssetBalance.sub(outgoingAssetAmount),
-  );
+  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(
-    defaultForkDeployment,
-  );
-
-  const [fundOwner, ...remainingAccounts] = accounts;
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await provider.snapshot(defaultForkDeployment);
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
@@ -97,10 +78,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     denominationAsset: config.tokens.weth,
   });
 
-  const kyberNetworkProxy = new KyberNetworkProxy(
-    config.integratees.kyber,
-    provider,
-  );
+  const kyberNetworkProxy = new KyberNetworkProxy(config.integratees.kyber, provider);
 
   return {
     accounts: remainingAccounts,
@@ -129,11 +107,7 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
 
   const outgoingAssetAmount = utils.parseEther('1');
 
-  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-    outgoingAsset,
-    incomingAsset,
-    outgoingAssetAmount,
-  );
+  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
   await assertKyberTakeOrder({
     comptrollerProxy,
@@ -161,11 +135,7 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
 
   const outgoingAssetAmount = utils.parseEther('1');
 
-  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-    outgoingAsset,
-    incomingAsset,
-    outgoingAssetAmount,
-  );
+  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
   await assertKyberTakeOrder({
     comptrollerProxy,
@@ -193,11 +163,7 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
 
   const outgoingAssetAmount = utils.parseEther('1');
 
-  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-    outgoingAsset,
-    incomingAsset,
-    outgoingAssetAmount,
-  );
+  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
   await assertKyberTakeOrder({
     comptrollerProxy,
@@ -227,11 +193,7 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
 
   const outgoingAssetAmount = utils.parseEther('1');
 
-  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-    outgoingAsset,
-    incomingAsset,
-    outgoingAssetAmount,
-  );
+  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 
@@ -265,11 +227,7 @@ xit('respects minConversionRate as set via minIncomingAssetAmount (non-18 decima
   // 1 USDC (6 decimals)
   const outgoingAssetAmount = BigNumber.from('1000000');
 
-  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-    outgoingAsset,
-    incomingAsset,
-    outgoingAssetAmount,
-  );
+  const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 

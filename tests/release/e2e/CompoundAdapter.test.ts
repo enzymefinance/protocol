@@ -1,7 +1,4 @@
-import {
-  EthereumTestnetProvider,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
 import {
   CompoundAdapter,
   ComptrollerLib,
@@ -20,11 +17,11 @@ import {
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(
-    defaultForkDeployment,
-  );
-
-  const [fundOwner, ...remainingAccounts] = accounts;
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await provider.snapshot(defaultForkDeployment);
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
@@ -79,10 +76,7 @@ async function assertCompoundLend({
     .mul(BigNumber.from('999'))
     .div(BigNumber.from('1000'));
 
-  const [
-    preTxIncomingAssetBalance,
-    preTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [cToken, token],
   });
@@ -102,23 +96,14 @@ async function assertCompoundLend({
 
   // Get exchange rate after tx (the rate is updated right after)
   const rate = await cToken.exchangeRateStored();
-
-  const [
-    postTxIncomingAssetBalance,
-    postTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [cToken, token],
   });
 
   const expectedCTokenAmount = tokenAmount.mul(utils.parseEther('1')).div(rate);
-
-  expect(postTxIncomingAssetBalance).toEqBigNumber(
-    preTxIncomingAssetBalance.add(expectedCTokenAmount),
-  );
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(
-    preTxOutgoingAssetBalance.sub(tokenAmount),
-  );
+  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedCTokenAmount));
+  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(tokenAmount));
 }
 
 async function assertCompoundRedeem({
@@ -152,18 +137,14 @@ async function assertCompoundRedeem({
     seedFund: true,
   });
 
-  const [
-    preTxIncomingAssetBalance,
-    preTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [token, cToken],
   });
+
   const rateBefore = await cToken.exchangeRateStored();
   const redeemAmount = preTxOutgoingAssetBalance;
-  const minIncomingTokenAmount = redeemAmount
-    .mul(utils.parseEther('1'))
-    .div(rateBefore);
+  const minIncomingTokenAmount = redeemAmount.mul(utils.parseEther('1')).div(rateBefore);
 
   await compoundRedeem({
     comptrollerProxy,
@@ -177,10 +158,7 @@ async function assertCompoundRedeem({
     cTokenAmount: redeemAmount,
   });
 
-  const [
-    postTxIncomingAssetBalance,
-    postTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [token, cToken],
   });
@@ -189,13 +167,8 @@ async function assertCompoundRedeem({
   const rate = await cToken.exchangeRateStored();
   const expectedTokenAmount = redeemAmount.mul(rate).div(utils.parseEther('1'));
 
-  expect(postTxIncomingAssetBalance).toEqBigNumber(
-    preTxIncomingAssetBalance.add(expectedTokenAmount),
-  );
-
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(
-    preTxOutgoingAssetBalance.sub(redeemAmount),
-  );
+  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedTokenAmount));
+  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(redeemAmount));
 }
 
 // HAPPY PATHS

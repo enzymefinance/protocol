@@ -41,9 +41,5 @@ export async function zeroExV2TakeOrder({
 
   return comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }

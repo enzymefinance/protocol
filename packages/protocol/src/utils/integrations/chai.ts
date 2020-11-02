@@ -8,10 +8,7 @@ export function chaiLendArgs({
   outgoingDaiAmount: BigNumberish;
   expectedIncomingChaiAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['uint256', 'uint256'],
-    [outgoingDaiAmount, expectedIncomingChaiAmount],
-  );
+  return encodeArgs(['uint256', 'uint256'], [outgoingDaiAmount, expectedIncomingChaiAmount]);
 }
 
 export function chaiRedeemArgs({
@@ -21,8 +18,5 @@ export function chaiRedeemArgs({
   outgoingChaiAmount: BigNumberish;
   expectedIncomingDaiAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['uint256', 'uint256'],
-    [outgoingChaiAmount, expectedIncomingDaiAmount],
-  );
+  return encodeArgs(['uint256', 'uint256'], [outgoingChaiAmount, expectedIncomingDaiAmount]);
 }

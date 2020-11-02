@@ -5,10 +5,7 @@ import { assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const signer = await provider.getSignerWithAddress(1);
-  const chainlinkPriceSource = await MockChainlinkPriceSource.deploy(
-    signer,
-    18,
-  );
+  const chainlinkPriceSource = await MockChainlinkPriceSource.deploy(signer, 18);
 
   return chainlinkPriceSource;
 }
@@ -28,9 +25,7 @@ it('is updated correctly', async () => {
 
   const nextAnswer = utils.parseEther('2');
   const latestBlock = await provider.getBlock('latest');
-  const receipt = await chainlinkPriceSource.setLatestAnswer
-    .args(nextAnswer, latestBlock.timestamp)
-    .send();
+  const receipt = await chainlinkPriceSource.setLatestAnswer.args(nextAnswer, latestBlock.timestamp).send();
 
   assertEvent(receipt, 'AnswerUpdated');
 

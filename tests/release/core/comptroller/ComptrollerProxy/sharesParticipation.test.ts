@@ -1,9 +1,5 @@
 import { utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  extractEvent,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
 import {
   assertEvent,
   defaultTestDeployment,
@@ -15,11 +11,12 @@ import {
 import { ReleaseStatusTypes } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner,
@@ -92,9 +89,7 @@ describe('buyShares', () => {
     expect(sharesTotalSupplyCall).toEqBigNumber(sharesBuyerBalanceCall);
     const trackedAssetsCall = await vaultProxy.getTrackedAssets();
     expect(trackedAssetsCall).toContain(denominationAsset.address);
-    const isTrackedAssetCall = await vaultProxy.isTrackedAsset(
-      denominationAsset,
-    );
+    const isTrackedAssetCall = await vaultProxy.isTrackedAsset(denominationAsset);
     expect(isTrackedAssetCall).toBe(true);
   });
 
@@ -190,9 +185,7 @@ describe('allowedBuySharesCallers', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        comptrollerProxy
-          .connect(randomUser)
-          .addAllowedBuySharesCallers([randomAddress()]),
+        comptrollerProxy.connect(randomUser).addAllowedBuySharesCallers([randomAddress()]),
       ).rejects.toBeRevertedWith('Only fund owner callable');
     });
 
@@ -204,19 +197,14 @@ describe('allowedBuySharesCallers', () => {
       const callersToAdd = [randomAddress(), randomAddress()];
 
       // Add the allowed callers
-      const receipt = await comptrollerProxy.addAllowedBuySharesCallers(
-        callersToAdd,
-      );
+      const receipt = await comptrollerProxy.addAllowedBuySharesCallers(callersToAdd);
 
       // Assert state has been set
       const getAllowedBuySharesCallersCall = await comptrollerProxy.getAllowedBuySharesCallers();
       expect(getAllowedBuySharesCallersCall).toMatchObject(callersToAdd);
 
       for (const added of callersToAdd) {
-        const isAllowedBuySharesCallerCall = await comptrollerProxy.isAllowedBuySharesCaller(
-          added,
-        );
-
+        const isAllowedBuySharesCallerCall = await comptrollerProxy.isAllowedBuySharesCaller(added);
         expect(isAllowedBuySharesCallerCall).toBe(true);
       }
 
@@ -242,9 +230,7 @@ describe('allowedBuySharesCallers', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        comptrollerProxy
-          .connect(randomUser)
-          .removeAllowedBuySharesCallers([randomAddress(), randomAddress()]),
+        comptrollerProxy.connect(randomUser).removeAllowedBuySharesCallers([randomAddress(), randomAddress()]),
       ).rejects.toBeRevertedWith('Only fund owner callable');
     });
 
@@ -257,15 +243,10 @@ describe('allowedBuySharesCallers', () => {
       const callerToRemain = randomAddress();
 
       // Add allowed callers, including callers to-be-removed
-      await comptrollerProxy.addAllowedBuySharesCallers([
-        ...callersToRemove,
-        callerToRemain,
-      ]);
+      await comptrollerProxy.addAllowedBuySharesCallers([...callersToRemove, callerToRemain]);
 
       // Remove callers
-      const receipt = await comptrollerProxy.removeAllowedBuySharesCallers(
-        callersToRemove,
-      );
+      const receipt = await comptrollerProxy.removeAllowedBuySharesCallers(callersToRemove);
 
       // Assert events emitted
       const event = 'AllowedBuySharesCallerRemoved';
@@ -285,17 +266,11 @@ describe('allowedBuySharesCallers', () => {
       expect(getAllowedBuySharesCallersCall).toMatchObject([callerToRemain]);
 
       for (const removed of callersToRemove) {
-        const isAllowedBuySharesCallerCall = await comptrollerProxy.isAllowedBuySharesCaller(
-          removed,
-        );
-
+        const isAllowedBuySharesCallerCall = await comptrollerProxy.isAllowedBuySharesCaller(removed);
         expect(isAllowedBuySharesCallerCall).toBe(false);
       }
 
-      const isAllowedBuySharesCallerCall = await comptrollerProxy.isAllowedBuySharesCaller(
-        callerToRemain,
-      );
-
+      const isAllowedBuySharesCallerCall = await comptrollerProxy.isAllowedBuySharesCaller(callerToRemain);
       expect(isAllowedBuySharesCallerCall).toBe(true);
     });
   });
@@ -398,10 +373,7 @@ describe('redeemSharesDetailed', () => {
     const redeemQuantity = investmentAmount.div(2);
     const additionalAssets = [untrackedAsset];
     const expectedPayoutAssets = [denominationAsset, untrackedAsset];
-    const expectedPayoutAmounts = [
-      investmentAmount.div(2),
-      untrackedAssetBalance.div(4),
-    ];
+    const expectedPayoutAmounts = [investmentAmount.div(2), untrackedAssetBalance.div(4)];
 
     // Record the investor's pre-redemption balances
     const preExpectedPayoutAssetBalances = await getAssetBalances({
@@ -431,18 +403,11 @@ describe('redeemSharesDetailed', () => {
 
     // Assert the redeemer has redeemed the correct shares quantity and received the expected assets and balances
     const investorSharesBalanceCall = await vaultProxy.balanceOf(investor);
-    expect(investorSharesBalanceCall).toEqBigNumber(
-      investmentAmount.sub(redeemQuantity),
-    );
+    expect(investorSharesBalanceCall).toEqBigNumber(investmentAmount.sub(redeemQuantity));
 
     for (const key in expectedPayoutAssets) {
-      const expectedBalance = preExpectedPayoutAssetBalances[key].add(
-        expectedPayoutAmounts[key],
-      );
-
-      expect(postExpectedPayoutAssetBalances[key]).toEqBigNumber(
-        expectedBalance,
-      );
+      const expectedBalance = preExpectedPayoutAssetBalances[key].add(expectedPayoutAmounts[key]);
+      expect(postExpectedPayoutAssetBalances[key]).toEqBigNumber(expectedBalance);
     }
   });
 
@@ -492,10 +457,7 @@ describe('redeemSharesDetailed', () => {
     const expectedPayoutAmounts = [untrackedAssetBalance.div(4)];
 
     // Record the investor's pre-redemption balances
-    const [
-      preExpectedPayoutAssetBalance,
-      preAssetToSkipBalance,
-    ] = await getAssetBalances({
+    const [preExpectedPayoutAssetBalance, preAssetToSkipBalance] = await getAssetBalances({
       account: investor,
       assets: [untrackedAsset, denominationAsset],
     });
@@ -517,24 +479,15 @@ describe('redeemSharesDetailed', () => {
       receivedAssetQuantities: expectedPayoutAmounts,
     });
 
-    const [
-      postExpectedPayoutAssetBalance,
-      postAssetToSkipBalance,
-    ] = await getAssetBalances({
+    const [postExpectedPayoutAssetBalance, postAssetToSkipBalance] = await getAssetBalances({
       account: investor,
       assets: [untrackedAsset, denominationAsset],
     });
 
     // Assert the redeemer has redeemed the correct shares quantity and received the expected assets and balances
     const investorSharesBalanceCall = await vaultProxy.balanceOf(investor);
-    expect(investorSharesBalanceCall).toEqBigNumber(
-      investmentAmount.sub(redeemQuantity),
-    );
-
-    expect(postExpectedPayoutAssetBalance).toEqBigNumber(
-      preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]),
-    );
-
+    expect(investorSharesBalanceCall).toEqBigNumber(investmentAmount.sub(redeemQuantity));
+    expect(postExpectedPayoutAssetBalance).toEqBigNumber(preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]));
     expect(postAssetToSkipBalance).toEqBigNumber(preAssetToSkipBalance);
   });
 });
@@ -588,7 +541,7 @@ describe('sharesActionTimelock', () => {
         fundDeployer,
         tokens: { weth: denominationAsset },
       },
-      accounts: { 0: fundManager, 1: investor, 2: buySharesCaller },
+      accounts: [fundManager, investor, buySharesCaller],
     } = await provider.snapshot(snapshot);
 
     const failureMessage = 'Shares action timelocked';

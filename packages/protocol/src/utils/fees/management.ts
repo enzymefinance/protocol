@@ -15,13 +15,9 @@ export function managementFeeSharesDue({
   sharesSupply: BigNumberish;
   secondsSinceLastSettled: BigNumberish;
 }) {
-  const yearlyRawSharesDue = BigNumber.from(sharesSupply)
-    .mul(rate)
-    .div(utils.parseEther('1'));
+  const yearlyRawSharesDue = BigNumber.from(sharesSupply).mul(rate).div(utils.parseEther('1'));
 
-  const rawSharesDue = yearlyRawSharesDue
-    .mul(secondsSinceLastSettled)
-    .div(60 * 60 * 24 * 365);
+  const rawSharesDue = yearlyRawSharesDue.mul(secondsSinceLastSettled).div(60 * 60 * 24 * 365);
 
   return sharesDueWithInflation({ rawSharesDue, sharesSupply });
 }

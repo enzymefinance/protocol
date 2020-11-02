@@ -28,19 +28,10 @@ export function validateRulePostBuySharesArgs({
   investmentAmount: BigNumberish;
   sharesBought: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address', 'uint256', 'uint256'],
-    [buyer, investmentAmount, sharesBought],
-  );
+  return encodeArgs(['address', 'uint256', 'uint256'], [buyer, investmentAmount, sharesBought]);
 }
 
-export function validateRulePreCoIArgs({
-  adapter,
-  selector,
-}: {
-  adapter: AddressLike;
-  selector: BytesLike;
-}) {
+export function validateRulePreCoIArgs({ adapter, selector }: { adapter: AddressLike; selector: BytesLike }) {
   return encodeArgs(['address', 'bytes4'], [adapter, selector]);
 }
 
@@ -61,13 +52,6 @@ export function validateRulePostCoIArgs({
 }) {
   return encodeArgs(
     ['address', 'bytes4', 'address[]', 'uint256[]', 'address[]', 'uint256[]'],
-    [
-      adapter,
-      selector,
-      incomingAssets,
-      incomingAssetAmounts,
-      outgoingAssets,
-      outgoingAssetAmounts,
-    ],
+    [adapter, selector, incomingAssets, incomingAssetAmounts, outgoingAssets, outgoingAssetAmounts],
   );
 }

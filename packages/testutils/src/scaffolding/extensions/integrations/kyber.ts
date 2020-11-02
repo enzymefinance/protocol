@@ -1,11 +1,5 @@
 import { BigNumber, BigNumberish, utils } from 'ethers';
-import {
-  contract,
-  AddressLike,
-  Call,
-  Contract,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { contract, AddressLike, Call, Contract, SignerWithAddress } from '@crestproject/crestproject';
 import {
   StandardToken,
   ComptrollerLib,
@@ -70,9 +64,5 @@ export async function kyberTakeOrder({
 
   return comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }

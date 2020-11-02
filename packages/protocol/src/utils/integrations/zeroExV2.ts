@@ -1,10 +1,6 @@
 import { BigNumber, BigNumberish, Signer, constants, utils } from 'ethers';
 import { buildTypedData, encodeTypedDataDigest } from 'ethers-eip712';
-import {
-  AddressLike,
-  EthereumTestnetProvider,
-  resolveAddress,
-} from '@crestproject/crestproject';
+import { AddressLike, EthereumTestnetProvider, resolveAddress } from '@crestproject/crestproject';
 import { encodeArgs, encodeFunctionData } from '../encoding';
 
 export interface UnsignedZeroExV2Order {
@@ -35,9 +31,7 @@ export function generatePseudoRandomZeroExV2Salt() {
   return BigNumber.from(`${number}`.slice(0, 10));
 }
 
-export const zeroExV2AssetFragment = utils.FunctionFragment.fromString(
-  'ERC20Token(address)',
-);
+export const zeroExV2AssetFragment = utils.FunctionFragment.fromString('ERC20Token(address)');
 
 export function encodeZeroExV2AssetData(token: AddressLike) {
   const lowerCaseAddress = resolveAddress(token).toLowerCase();
@@ -76,9 +70,7 @@ export async function createUnsignedZeroExV2Order({
   const takerAssetData = encodeZeroExV2AssetData(takerAssetAddress);
   const salt = generatePseudoRandomZeroExV2Salt();
   const latestBlock = await provider.getBlock('latest');
-  const expirationTimeSeconds = BigNumber.from(
-    latestBlock.timestamp + duration,
-  );
+  const expirationTimeSeconds = BigNumber.from(latestBlock.timestamp + duration);
 
   return {
     exchangeAddress,
@@ -99,18 +91,13 @@ export async function createUnsignedZeroExV2Order({
   };
 }
 
-export async function signZeroExV2Order(
-  order: UnsignedZeroExV2Order,
-  signer: Signer,
-): Promise<SignedZeroExV2Order> {
+export async function signZeroExV2Order(order: UnsignedZeroExV2Order, signer: Signer): Promise<SignedZeroExV2Order> {
   const orderTypedData = createZeroExV2OrderTypedData(order);
   const orderHashHex = encodeTypedDataDigest(orderTypedData);
   const signature = await signer.signMessage(orderHashHex);
   const split = utils.splitSignature(signature);
   const type = utils.hexlify(3); // ETHSign
-  const joined = utils.hexlify(
-    utils.concat([utils.hexlify(split.v), split.r, split.s, type]),
-  );
+  const joined = utils.hexlify(utils.concat([utils.hexlify(split.v), split.r, split.s, type]));
 
   return {
     ...order,
@@ -149,12 +136,7 @@ export function encodeZeroExV2Order(order: SignedZeroExV2Order) {
   return encodeArgs(
     ['address[4]', 'uint256[6]', 'bytes[2]', 'bytes'],
     [
-      [
-        order.makerAddress,
-        order.takerAddress,
-        order.feeRecipientAddress,
-        order.senderAddress,
-      ],
+      [order.makerAddress, order.takerAddress, order.feeRecipientAddress, order.senderAddress],
       [
         order.makerAssetAmount,
         order.takerAssetAmount,
@@ -176,8 +158,5 @@ export function zeroExV2TakeOrderArgs({
   signedOrder: SignedZeroExV2Order;
   takerAssetFillAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['bytes', 'uint256'],
-    [encodeZeroExV2Order(signedOrder), takerAssetFillAmount],
-  );
+  return encodeArgs(['bytes', 'uint256'], [encodeZeroExV2Order(signedOrder), takerAssetFillAmount]);
 }

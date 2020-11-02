@@ -13,11 +13,12 @@ import {
 import { IUniswapV2Router2, StandardToken } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await provider.snapshot(
-    defaultForkDeployment,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await provider.snapshot(defaultForkDeployment);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -127,6 +128,7 @@ describe('redeem', () => {
       account: vaultProxy,
       assets: [outgoingAssetContract],
     });
+
     expect(outgoingAssetAmount).not.toEqBigNumber(BigNumber.from(0));
 
     await uniswapV2Redeem({
@@ -167,10 +169,7 @@ describe('takeOrder', () => {
     const path = [outgoingAsset, incomingAsset];
     const outgoingAssetAmount = utils.parseEther('0.1');
     const routerContract = new IUniswapV2Router2(router, provider);
-    const amountsOut = await routerContract.getAmountsOut(
-      outgoingAssetAmount,
-      path,
-    );
+    const amountsOut = await routerContract.getAmountsOut(outgoingAssetAmount, path);
 
     const [preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -189,18 +188,12 @@ describe('takeOrder', () => {
       seedFund: true,
     });
 
-    const [
-      postTxIncomingAssetBalance,
-      postTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
 
-    const incomingAssetAmount = postTxIncomingAssetBalance.sub(
-      preTxIncomingAssetBalance,
-    );
-
+    const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
     expect(incomingAssetAmount).toBeGteBigNumber(amountsOut[1]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });
@@ -220,10 +213,7 @@ describe('takeOrder', () => {
     const path = [outgoingAsset, weth, incomingAsset];
     const outgoingAssetAmount = utils.parseEther('0.1');
     const routerContract = new IUniswapV2Router2(router, provider);
-    const amountsOut = await routerContract.getAmountsOut(
-      outgoingAssetAmount,
-      path,
-    );
+    const amountsOut = await routerContract.getAmountsOut(outgoingAssetAmount, path);
 
     const [preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -242,18 +232,12 @@ describe('takeOrder', () => {
       seedFund: true,
     });
 
-    const [
-      postTxIncomingAssetBalance,
-      postTxOutgoingAssetBalance,
-    ] = await getAssetBalances({
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
 
-    const incomingAssetAmount = postTxIncomingAssetBalance.sub(
-      preTxIncomingAssetBalance,
-    );
-
+    const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
     expect(incomingAssetAmount).toBeGteBigNumber(amountsOut[1]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });

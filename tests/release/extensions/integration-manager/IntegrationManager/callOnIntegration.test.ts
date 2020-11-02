@@ -1,9 +1,5 @@
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
   assertEvent,
   defaultTestDeployment,
@@ -27,11 +23,12 @@ import {
 } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
@@ -92,9 +89,7 @@ async function seedFundByTrading({
     seedFund: true,
   });
 
-  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-    'CallOnIntegrationExecutedForFund',
-  );
+  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
   assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
     adapter: mockGenericAdapter,
@@ -112,6 +107,7 @@ async function seedFundByTrading({
     account: vaultProxy,
     assets: [incomingAsset],
   });
+
   expect(postTxAssetBalancesCall).toEqual([incomingAssetAmount]);
   const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
   expect(postTxGetTrackedAssetsCall).toEqual([incomingAsset.address]);
@@ -120,7 +116,7 @@ async function seedFundByTrading({
 describe('callOnIntegration', () => {
   it('only allows authorized users', async () => {
     const {
-      accounts: { 0: newAuthUser },
+      accounts: [newAuthUser],
       deployment: { mockGenericAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
@@ -143,38 +139,24 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).resolves.toBeReceipt();
 
     // Call not allowed by the yet-to-be authorized user
     await expect(
       comptrollerProxy
         .connect(newAuthUser)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Not an authorized user');
 
     // Set the new auth user
-    await integrationManager
-      .connect(fundOwner)
-      .addAuthUserForFund(comptrollerProxy, newAuthUser);
+    await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newAuthUser);
 
     // Call should be allowed for the authorized user
     await expect(
       comptrollerProxy
         .connect(newAuthUser)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).resolves.toBeReceipt();
   });
 
@@ -188,9 +170,7 @@ describe('callOnIntegration', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      integrationManager.deregisterAdapters([mockGenericAdapter]),
-    ).resolves.toBeReceipt();
+    await expect(integrationManager.deregisterAdapters([mockGenericAdapter])).resolves.toBeReceipt();
 
     await expect(
       mockGenericSwap({
@@ -234,11 +214,7 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Spend assets arrays unequal');
   });
 
@@ -269,11 +245,7 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Incoming assets arrays unequal');
   });
 
@@ -304,11 +276,7 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Duplicate spend asset');
   });
 
@@ -339,11 +307,7 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Duplicate incoming asset');
   });
 
@@ -427,11 +391,7 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Empty spend asset');
   });
 
@@ -462,11 +422,7 @@ describe('callOnIntegration', () => {
     await expect(
       comptrollerProxy
         .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.CallOnIntegration,
-          callArgs,
-        ),
+        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).rejects.toBeRevertedWith('Empty incoming asset address');
   });
 
@@ -530,9 +486,7 @@ describe('valid calls', () => {
       seedFund: true,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -572,10 +526,7 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: spendAssets,
     });
-    expect(spendAssetBalancesCall).toEqual([
-      utils.parseEther('0'),
-      utils.parseEther('0'),
-    ]);
+    expect(spendAssetBalancesCall).toEqual([utils.parseEther('0'), utils.parseEther('0')]);
 
     const incomingAssetBalancesCall = await getAssetBalances({
       account: vaultProxy,
@@ -604,9 +555,7 @@ describe('valid calls', () => {
     const incomingAssets = [knc];
     const incomingAssetAmounts = [utils.parseEther('2')];
     const minIncomingAssetAmounts = [utils.parseEther('1')];
-    const expectedIncomingAssetAmount = incomingAssetAmounts[0].add(
-      seedFundAmount,
-    );
+    const expectedIncomingAssetAmount = incomingAssetAmounts[0].add(seedFundAmount);
 
     const preTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
     expect(preTxGetTrackedAssetsCall).toEqual([]);
@@ -624,9 +573,7 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -668,9 +615,7 @@ describe('valid calls', () => {
     });
     expect(incomingAssetBalancesCall).toEqual([expectedIncomingAssetAmount]);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
-    expect(postTxGetTrackedAssetsCall).toEqual(
-      incomingAssets.map((token) => token.address),
-    );
+    expect(postTxGetTrackedAssetsCall).toEqual(incomingAssets.map((token) => token.address));
   });
 
   it('handles untracked incoming asset with a zero starting balance', async () => {
@@ -706,9 +651,7 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -750,9 +693,7 @@ describe('valid calls', () => {
     });
     expect(incomingAssetBalancesCall).toEqual(incomingAssetAmounts);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
-    expect(postTxGetTrackedAssetsCall).toEqual(
-      incomingAssets.map((token) => token.address),
-    );
+    expect(postTxGetTrackedAssetsCall).toEqual(incomingAssets.map((token) => token.address));
   });
 
   it('handles a spend asset that is also an incoming asset and increases', async () => {
@@ -786,9 +727,7 @@ describe('valid calls', () => {
       seedFund: true,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -851,9 +790,7 @@ describe('valid calls', () => {
     const incomingAssets = [mln];
     const incomingAssetAmounts = [utils.parseEther('1')];
     const minIncomingAssetAmounts = [utils.parseEther('1')];
-    const expectedSpendAssetBalance = amount
-      .sub(spendAssetAmounts[0])
-      .add(incomingAssetAmounts[0]);
+    const expectedSpendAssetBalance = amount.sub(spendAssetAmounts[0]).add(incomingAssetAmounts[0]);
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
@@ -868,9 +805,7 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -947,15 +882,11 @@ describe('valid calls', () => {
       seedFund: true,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     // Actual incoming asset info, accounting for token balance on adapter
     const actualIncomingAssets = spendAssets;
-    const actualIncomingAssetAmounts = [
-      spendAssetAmountOnAdapter.sub(spendAssetAmounts[0]),
-    ];
+    const actualIncomingAssetAmounts = [spendAssetAmountOnAdapter.sub(spendAssetAmounts[0])];
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -1023,9 +954,7 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -1102,9 +1031,7 @@ describe('valid calls', () => {
       actualIncomingAssetAmounts: incomingAssetAmounts,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
@@ -1152,9 +1079,7 @@ describe('valid calls', () => {
     });
     expect(incomingAssetBalancesCall).toEqual(incomingAssetAmounts);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
-    expect(postTxGetTrackedAssetsCall).toEqual(
-      incomingAssets.map((token) => token.address),
-    );
+    expect(postTxGetTrackedAssetsCall).toEqual(incomingAssets.map((token) => token.address));
   });
 
   it('handles a fund that is at the exact trackedAssetsLimit', async () => {

@@ -1,9 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import {
-  MockToken,
-  MockUniswapV2Pair,
-  StandardToken,
-} from '@melonproject/protocol';
+import { MockToken, MockUniswapV2Pair, StandardToken } from '@melonproject/protocol';
 import { defaultTestDeployment } from '@melonproject/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -30,10 +26,7 @@ describe('getRatesToUnderlyings', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const derivativeAssetContract = new StandardToken(
-      derivativeAsset,
-      provider,
-    );
+    const derivativeAssetContract = new StandardToken(derivativeAsset, provider);
     const totalSupply = await derivativeAssetContract.totalSupply();
     const mlnAmount = utils.parseEther('1');
     const wethAmount = utils.parseEther('1');
@@ -41,21 +34,13 @@ describe('getRatesToUnderlyings', () => {
     await mln.transfer(derivativeAsset, mlnAmount);
     await weth.transfer(derivativeAsset, wethAmount);
 
-    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings
-      .args(derivativeAsset)
-      .call();
+    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(derivativeAsset).call();
 
     const ratePricision = BigNumber.from(10).pow(18);
-    expect(getRatesToUnderlyings).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getRatesToUnderlyings.fragment,
-      {
-        rates_: [
-          mlnAmount.mul(ratePricision).div(totalSupply),
-          wethAmount.mul(ratePricision).div(totalSupply),
-        ],
-        underlyings_: [mln, weth],
-      },
-    );
+    expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings.fragment, {
+      rates_: [mlnAmount.mul(ratePricision).div(totalSupply), wethAmount.mul(ratePricision).div(totalSupply)],
+      underlyings_: [mln, weth],
+    });
   });
 
   it('returns rate for non-18 decimals underlying assets', async () => {
@@ -69,10 +54,7 @@ describe('getRatesToUnderlyings', () => {
 
     const mln = await MockToken.deploy(deployer, 'mln', 'MLN', 17);
     const derivativeAsset = await MockUniswapV2Pair.deploy(deployer, mln, weth);
-    const derivativeAssetContract = new StandardToken(
-      derivativeAsset,
-      provider,
-    );
+    const derivativeAssetContract = new StandardToken(derivativeAsset, provider);
     const totalSupply = await derivativeAssetContract.totalSupply();
     const mlnAmount = utils.parseEther('1');
     const wethAmount = utils.parseEther('1');
@@ -80,22 +62,14 @@ describe('getRatesToUnderlyings', () => {
     await mln.transfer(derivativeAsset, mlnAmount);
     await weth.transfer(derivativeAsset, wethAmount);
 
-    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings
-      .args(derivativeAsset)
-      .call();
+    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(derivativeAsset).call();
 
     const pow17 = BigNumber.from(10).pow(17);
     const pow18 = BigNumber.from(10).pow(18);
 
-    expect(getRatesToUnderlyings).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getRatesToUnderlyings.fragment,
-      {
-        rates_: [
-          mlnAmount.mul(pow18).div(pow17).mul(pow18).div(totalSupply),
-          wethAmount.mul(pow18).div(totalSupply),
-        ],
-        underlyings_: [mln, weth],
-      },
-    );
+    expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings.fragment, {
+      rates_: [mlnAmount.mul(pow18).div(pow17).mul(pow18).div(totalSupply), wethAmount.mul(pow18).div(totalSupply)],
+      underlyings_: [mln, weth],
+    });
   });
 });

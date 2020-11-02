@@ -29,19 +29,12 @@ export function settlePostBuySharesArgs({
   investmentAmount: BigNumberish;
   sharesBought: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address', 'uint256', 'uint256'],
-    [buyer, investmentAmount, sharesBought],
-  );
+  return encodeArgs(['address', 'uint256', 'uint256'], [buyer, investmentAmount, sharesBought]);
 }
 
-export const settleContinuousFeesFragment = utils.FunctionFragment.fromString(
-  'settleContinuousFees(address,bytes)',
-);
+export const settleContinuousFeesFragment = utils.FunctionFragment.fromString('settleContinuousFees(address,bytes)');
 
-export const settleContinuousFeesSelector = sighash(
-  settleContinuousFeesFragment,
-);
+export const settleContinuousFeesSelector = sighash(settleContinuousFeesFragment);
 
 export function sharesDueWithInflation({
   rawSharesDue,
@@ -57,7 +50,5 @@ export function sharesDueWithInflation({
   const sharesSupplyBn = BigNumber.from(sharesSupply);
   const rawSharesDueBn = BigNumber.from(rawSharesDue);
 
-  return rawSharesDueBn
-    .mul(sharesSupplyBn)
-    .div(sharesSupplyBn.sub(rawSharesDueBn));
+  return rawSharesDueBn.mul(sharesSupplyBn).div(sharesSupplyBn.sub(rawSharesDueBn));
 }

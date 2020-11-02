@@ -18,15 +18,9 @@ export async function callOnExtension({
   let callOnExtensionTx: any;
 
   if (signer) {
-    callOnExtensionTx = comptrollerProxy
-      .connect(signer)
-      .callOnExtension(extension, actionId, callArgs);
+    callOnExtensionTx = comptrollerProxy.connect(signer).callOnExtension(extension, actionId, callArgs);
   } else {
-    callOnExtensionTx = comptrollerProxy.callOnExtension(
-      extension,
-      actionId,
-      callArgs,
-    );
+    callOnExtensionTx = comptrollerProxy.callOnExtension(extension, actionId, callArgs);
   }
 
   await expect(callOnExtensionTx).resolves.toBeReceipt();

@@ -9,10 +9,7 @@ export function encodeArgs(types: (string | utils.ParamType)[], args: any[]) {
   return utils.hexlify(utils.arrayify(hex));
 }
 
-export function encodeFunctionData(
-  fragment: utils.FunctionFragment,
-  args: any[] = [],
-) {
+export function encodeFunctionData(fragment: utils.FunctionFragment, args: any[] = []) {
   const encodedArgs = encodeArgs(fragment.inputs, args);
   return utils.hexlify(utils.concat([sighash(fragment), encodedArgs]));
 }

@@ -10,10 +10,7 @@ export interface PersistentDeploymentOutput {
   dispatcher: Promise<Dispatcher>;
 }
 
-export const deployPersistent = describeDeployment<
-  PersistentDeploymentConfig,
-  PersistentDeploymentOutput
->({
+export const deployPersistent = describeDeployment<PersistentDeploymentConfig, PersistentDeploymentOutput>({
   dispatcher(config) {
     return Dispatcher.deploy(config.deployer);
   },

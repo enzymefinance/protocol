@@ -7,25 +7,14 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import { utils, BigNumber, BigNumberish } from 'ethers';
-import {
-  assertEvent,
-  createNewFund,
-  defaultTestDeployment,
-} from '@melonproject/testutils';
-import {
-  encodeArgs,
-  ReleaseStatusTypes,
-  sighash,
-} from '@melonproject/protocol';
+import { assertEvent, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
+import { encodeArgs, ReleaseStatusTypes, sighash } from '@melonproject/protocol';
 
 // prettier-ignore
 interface MockExternalContract extends Contract<MockExternalContract> {
   functionA: Send<() => void, MockExternalContract>
   functionB: Send<() => void, MockExternalContract>
   functionC: Send<(addr: AddressLike, num: BigNumberish) => void, MockExternalContract>
-  'functionA()': Send<() => void, MockExternalContract>
-  'functionB()': Send<() => void, MockExternalContract>
-  'functionC(address addr, uint256 num)': Send<(addr: AddressLike, num: BigNumberish) => void, MockExternalContract>
 }
 
 // prettier-ignore
@@ -36,12 +25,13 @@ const MockExternalContract = contract<MockExternalContract>()`
 `;
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
   // Create a fund
-  const [fundOwner, ...remainingAccounts] = accounts;
   const denominationAsset = deployment.tokens.weth;
 
   // Define a mock external contract to call with 2 functions
@@ -51,15 +41,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await mockExternalContract.functionC.returns(undefined);
 
   // Register one of the vault calls, but not the other
-  const unregisteredVaultCallSelector = sighash(
-    mockExternalContract.functionB.fragment,
-  );
-  const registeredVaultCallSelector = sighash(
-    mockExternalContract.functionA.fragment,
-  );
-  const registeredVaultCallSelectorWithArgs = sighash(
-    mockExternalContract.functionC.fragment,
-  );
+  const unregisteredVaultCallSelector = sighash(mockExternalContract.functionB.fragment);
+  const registeredVaultCallSelector = sighash(mockExternalContract.functionA.fragment);
+  const registeredVaultCallSelectorWithArgs = sighash(mockExternalContract.functionC.fragment);
   await deployment.fundDeployer.registerVaultCalls(
     [mockExternalContract, mockExternalContract],
     [registeredVaultCallSelector, registeredVaultCallSelectorWithArgs],
@@ -100,9 +84,9 @@ describe('setOverridePause', () => {
       denominationAsset,
     });
 
-    await expect(
-      comptrollerProxy.connect(randomUser).setOverridePause(true),
-    ).rejects.toBeRevertedWith('Only fund owner callable');
+    await expect(comptrollerProxy.connect(randomUser).setOverridePause(true)).rejects.toBeRevertedWith(
+      'Only fund owner callable',
+    );
   });
 
   it('correctly handles valid call', async () => {
@@ -157,11 +141,7 @@ describe('vaultCallOnContract', () => {
 
     // The call should fail
     await expect(
-      comptrollerProxy.vaultCallOnContract(
-        mockExternalContract,
-        registeredVaultCallSelector,
-        '0x',
-      ),
+      comptrollerProxy.vaultCallOnContract(mockExternalContract, registeredVaultCallSelector, '0x'),
     ).rejects.toBeRevertedWith('Fund is paused');
 
     // Override the pause
@@ -169,11 +149,7 @@ describe('vaultCallOnContract', () => {
 
     // The call should then succeed
     await expect(
-      comptrollerProxy.vaultCallOnContract(
-        mockExternalContract,
-        registeredVaultCallSelector,
-        '0x',
-      ),
+      comptrollerProxy.vaultCallOnContract(mockExternalContract, registeredVaultCallSelector, '0x'),
     ).resolves.toBeReceipt();
   });
 
@@ -197,20 +173,12 @@ describe('vaultCallOnContract', () => {
 
     // The unregistered call should fail
     await expect(
-      comptrollerProxy.vaultCallOnContract(
-        mockExternalContract,
-        unregisteredVaultCallSelector,
-        '0x',
-      ),
+      comptrollerProxy.vaultCallOnContract(mockExternalContract, unregisteredVaultCallSelector, '0x'),
     ).rejects.toBeRevertedWith('Unregistered');
 
     // The registered call should succeed
     await expect(
-      comptrollerProxy.vaultCallOnContract(
-        mockExternalContract,
-        registeredVaultCallSelector,
-        '0x',
-      ),
+      comptrollerProxy.vaultCallOnContract(mockExternalContract, registeredVaultCallSelector, '0x'),
     ).resolves.toBeReceipt();
 
     expect(mockExternalContract.functionA).toHaveBeenCalledOnContract();
@@ -221,16 +189,9 @@ describe('vaultCallOnContract', () => {
     const callData = encodeArgs(['address', 'uint256'], [addr, num]);
 
     await expect(
-      comptrollerProxy.vaultCallOnContract(
-        mockExternalContract,
-        registeredVaultCallSelectorWithArgs,
-        callData,
-      ),
+      comptrollerProxy.vaultCallOnContract(mockExternalContract, registeredVaultCallSelectorWithArgs, callData),
     ).resolves.toBeReceipt();
 
-    expect(mockExternalContract.functionC).toHaveBeenCalledOnContractWith(
-      addr,
-      num,
-    );
+    expect(mockExternalContract.functionC).toHaveBeenCalledOnContractWith(addr, num);
   });
 });

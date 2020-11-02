@@ -31,11 +31,7 @@ export async function addTrackedAssets({
 
   const addTrackedAssetsTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
   await expect(addTrackedAssetsTx).resolves.toBeReceipt();
 

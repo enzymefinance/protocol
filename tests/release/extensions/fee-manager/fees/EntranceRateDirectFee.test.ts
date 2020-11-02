@@ -4,10 +4,7 @@
  */
 
 import { BigNumber, utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import {
   EntranceRateDirectFee,
   FeeHook,
@@ -19,16 +16,14 @@ import {
 import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [EOAFeeManager, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
   // Create standalone EntranceRateDirectFee
-  const [EOAFeeManager, ...remainingAccounts] = accounts;
-  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(
-    config.deployer,
-    EOAFeeManager,
-  );
+  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(config.deployer, EOAFeeManager);
 
   return {
     accounts: remainingAccounts,
@@ -52,10 +47,7 @@ describe('constructor', () => {
 
 describe('settle', () => {
   it('correctly handles valid call', async () => {
-    const {
-      EOAFeeManager,
-      standaloneEntranceRateFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, standaloneEntranceRateFee } = await provider.snapshot(snapshot);
 
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
@@ -84,32 +76,19 @@ describe('settle', () => {
     // Check the return values via a call() to settle()
     const settleCall = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
-      .settle.args(
-        comptrollerProxyAddress,
-        randomAddress(),
-        FeeHook.PostBuyShares,
-        settlementData,
-      )
+      .settle.args(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData)
       .call();
 
-    expect(settleCall).toMatchFunctionOutput(
-      standaloneEntranceRateFee.settle.fragment,
-      {
-        settlementType_: FeeSettlementType.Direct,
-        payer_: buyer,
-        sharesDue_: expectedSharesDueForCall,
-      },
-    );
+    expect(settleCall).toMatchFunctionOutput(standaloneEntranceRateFee.settle.fragment, {
+      settlementType_: FeeSettlementType.Direct,
+      payer_: buyer,
+      sharesDue_: expectedSharesDueForCall,
+    });
 
     // Send the tx to actually settle()
     const receipt = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
-      .settle(
-        comptrollerProxyAddress,
-        randomAddress(),
-        FeeHook.PostBuyShares,
-        settlementData,
-      );
+      .settle(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData);
 
     // Assert the event was emitted
     assertEvent(receipt, 'Settled', {

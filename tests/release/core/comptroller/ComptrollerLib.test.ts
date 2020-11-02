@@ -3,9 +3,7 @@ import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
   return {
     accounts,
@@ -31,18 +29,15 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     const routesCall = await comptrollerLib.getLibRoutes();
-    expect(routesCall).toMatchFunctionOutput(
-      comptrollerLib.getLibRoutes.fragment,
-      {
-        feeManager_: feeManager,
-        fundDeployer_: fundDeployer,
-        fundLifecycleLib_: fundLifecycleLib,
-        integrationManager_: integrationManager,
-        permissionedVaultActionLib_: permissionedVaultActionLib,
-        policyManager_: policyManager,
-        valueInterpreter_: valueInterpreter,
-      },
-    );
+    expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes.fragment, {
+      feeManager_: feeManager,
+      fundDeployer_: fundDeployer,
+      fundLifecycleLib_: fundLifecycleLib,
+      integrationManager_: integrationManager,
+      permissionedVaultActionLib_: permissionedVaultActionLib,
+      policyManager_: policyManager,
+      valueInterpreter_: valueInterpreter,
+    });
 
     const engineCall = await comptrollerLib.getEngine();
     expect(engineCall).toMatchAddress(engine);
@@ -56,6 +51,4 @@ describe('constructor', () => {
   });
 });
 
-it.todo(
-  'test that no functions can be called directly (only can be delegatecalled)',
-);
+it.todo('test that no functions can be called directly (only can be delegatecalled)');

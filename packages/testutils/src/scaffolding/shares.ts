@@ -1,10 +1,5 @@
 import { BigNumberish, utils } from 'ethers';
-import {
-  AddressLike,
-  Contract,
-  Send,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { AddressLike, Contract, Send, SignerWithAddress } from '@crestproject/crestproject';
 import { ComptrollerLib } from '@melonproject/protocol';
 
 // prettier-ignore
@@ -43,10 +38,7 @@ export async function buyShares({
   await callerDenominationAsset.approve(comptrollerProxy, investmentAmount);
 
   const callerComptrollerProxy = comptrollerProxy.connect(signer);
-  return callerComptrollerProxy.buyShares
-    .args(buyer, investmentAmount, minSharesAmount)
-    .value(amguValue)
-    .send();
+  return callerComptrollerProxy.buyShares.args(buyer, investmentAmount, minSharesAmount).value(amguValue).send();
 }
 
 export async function redeemShares({
@@ -62,8 +54,6 @@ export async function redeemShares({
     }
     return comptrollerProxy.connect(signer).redeemShares();
   } else {
-    return comptrollerProxy
-      .connect(signer)
-      .redeemSharesDetailed(quantity, additionalAssets, assetsToSkip);
+    return comptrollerProxy.connect(signer).redeemSharesDetailed(quantity, additionalAssets, assetsToSkip);
   }
 }

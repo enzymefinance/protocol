@@ -1,20 +1,10 @@
 import { utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
-import {
-  AdapterBlacklist,
-  adapterBlacklistArgs,
-  PolicyHook,
-  validateRulePreCoIArgs,
-} from '@melonproject/protocol';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { AdapterBlacklist, adapterBlacklistArgs, PolicyHook, validateRulePreCoIArgs } from '@melonproject/protocol';
 import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
   return {
     accounts,
@@ -24,13 +14,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
 }
 
 async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
-  const { accounts, config } = await provider.snapshot(snapshot);
+  const {
+    accounts: [EOAPolicyManager, ...remainingAccounts],
+    config,
+  } = await provider.snapshot(snapshot);
 
-  const [EOAPolicyManager, ...remainingAccounts] = accounts;
-  const adapterBlacklist = await AdapterBlacklist.deploy(
-    config.deployer,
-    EOAPolicyManager,
-  );
+  const adapterBlacklist = await AdapterBlacklist.deploy(config.deployer, EOAPolicyManager);
 
   return {
     accounts: remainingAccounts,
@@ -41,9 +30,7 @@ async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
   };
 }
 
-async function snapshotWithConfiguredStandalonePolicy(
-  provider: EthereumTestnetProvider,
-) {
+async function snapshotWithConfiguredStandalonePolicy(provider: EthereumTestnetProvider) {
   const {
     accounts,
     adapterBlacklist,
@@ -52,15 +39,10 @@ async function snapshotWithConfiguredStandalonePolicy(
     EOAPolicyManager,
   } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-  const permissionedAdapterBlacklist = adapterBlacklist.connect(
-    EOAPolicyManager,
-  );
+  const permissionedAdapterBlacklist = adapterBlacklist.connect(EOAPolicyManager);
 
   const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
-  await permissionedAdapterBlacklist.addFundSettings(
-    comptrollerProxy,
-    adapterBlacklistConfig,
-  );
+  await permissionedAdapterBlacklist.addFundSettings(comptrollerProxy, adapterBlacklistConfig);
 
   return {
     accounts,
@@ -81,37 +63,27 @@ describe('constructor', () => {
     expect(policyManagerResult).toMatchAddress(policyManager);
 
     const implementedHooksResult = await adapterBlacklist.implementedHooks();
-    expect(implementedHooksResult).toMatchObject([
-      PolicyHook.PreCallOnIntegration,
-    ]);
+    expect(implementedHooksResult).toMatchObject([PolicyHook.PreCallOnIntegration]);
   });
 });
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const {
-      adapterBlacklist,
-      blacklistedAdapters,
-      comptrollerProxy,
-    } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(
+      snapshotWithStandalonePolicy,
+    );
 
     const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
 
-    await expect(
-      adapterBlacklist.addFundSettings(
-        comptrollerProxy,
-        adapterBlacklistConfig,
-      ),
-    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
+    await expect(adapterBlacklist.addFundSettings(comptrollerProxy, adapterBlacklistConfig)).rejects.toBeRevertedWith(
+      'Only the PolicyManager can make this call',
+    );
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const {
-      adapterBlacklist,
-      blacklistedAdapters,
-      comptrollerProxy,
-      EOAPolicyManager,
-    } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy, EOAPolicyManager } = await provider.snapshot(
+      snapshotWithStandalonePolicy,
+    );
 
     const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
     const receipt = await adapterBlacklist
@@ -132,27 +104,19 @@ describe('addFundSettings', () => {
 
 describe('updateFundSettings', () => {
   it('cannot be called', async () => {
-    const { adapterBlacklist } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const { adapterBlacklist } = await provider.snapshot(snapshotWithStandalonePolicy);
 
-    await expect(
-      adapterBlacklist.updateFundSettings(
-        randomAddress(),
-        randomAddress(),
-        '0x',
-      ),
-    ).rejects.toBeRevertedWith('Updates not allowed for this policy');
+    await expect(adapterBlacklist.updateFundSettings(randomAddress(), randomAddress(), '0x')).rejects.toBeRevertedWith(
+      'Updates not allowed for this policy',
+    );
   });
 });
 
 describe('validateRule', () => {
   it('returns false if an adapter is in the blacklist', async () => {
-    const {
-      adapterBlacklist,
-      blacklistedAdapters,
-      comptrollerProxy,
-    } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
+    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(
+      snapshotWithConfiguredStandalonePolicy,
+    );
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -161,21 +125,14 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await adapterBlacklist.validateRule
-      .args(
-        comptrollerProxy,
-        randomAddress(),
-        PolicyHook.PreCallOnIntegration,
-        preCoIArgs,
-      )
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
     expect(validateRuleResult).toBeFalsy();
   });
 
   it('returns true if an adapter is not in the blacklist', async () => {
-    const { adapterBlacklist, comptrollerProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { adapterBlacklist, comptrollerProxy } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -184,12 +141,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await adapterBlacklist.validateRule
-      .args(
-        comptrollerProxy,
-        randomAddress(),
-        PolicyHook.PreCallOnIntegration,
-        preCoIArgs,
-      )
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
     expect(validateRuleResult).toBeTruthy();

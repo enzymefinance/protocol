@@ -53,11 +53,7 @@ export async function chaiLend({
 
   const lendTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
   await expect(lendTx).resolves.toBeReceipt();
 
   return lendTx;
@@ -102,11 +98,7 @@ export async function chaiRedeem({
 
   const redeemTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
   await expect(redeemTx).resolves.toBeReceipt();
 

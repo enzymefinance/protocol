@@ -1,7 +1,4 @@
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -41,13 +38,9 @@ describe('getRatesToUnderlyings', () => {
     } = await provider.snapshot(snapshot);
     const derivative = randomAddress();
 
-    await expect(
-      chaiPriceFeed.getRatesToUnderlyings(derivative),
-    ).rejects.toBeRevertedWith('Only Chai is supported');
+    await expect(chaiPriceFeed.getRatesToUnderlyings(derivative)).rejects.toBeRevertedWith('Only Chai is supported');
 
-    await expect(
-      chaiPriceFeed.getRatesToUnderlyings(chai),
-    ).resolves.toBeReceipt();
+    await expect(chaiPriceFeed.getRatesToUnderlyings(chai)).resolves.toBeReceipt();
   });
 
   it('returns rate for underlying dai', async () => {
@@ -61,14 +54,10 @@ describe('getRatesToUnderlyings', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      chaiPriceFeed.getRatesToUnderlyings(chai),
-    ).resolves.toBeReceipt();
+    await expect(chaiPriceFeed.getRatesToUnderlyings(chai)).resolves.toBeReceipt();
 
     const chi = await chaiPriceSource.chi();
-    await expect(
-      chaiPriceFeed.getRatesToUnderlyings.args(chai).call(),
-    ).resolves.toMatchFunctionOutput(
+    await expect(chaiPriceFeed.getRatesToUnderlyings.args(chai).call()).resolves.toMatchFunctionOutput(
       chaiPriceFeed.getRatesToUnderlyings.fragment,
       {
         rates_: [chi.div(10 ** 9)],

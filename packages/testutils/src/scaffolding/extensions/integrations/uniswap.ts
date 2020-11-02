@@ -72,11 +72,7 @@ export async function uniswapV2Lend({
 
   const lendTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
   await expect(lendTx).resolves.toBeReceipt();
 
   return lendTx;
@@ -121,11 +117,7 @@ export async function uniswapV2Redeem({
 
   const redeemTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
   await expect(redeemTx).resolves.toBeReceipt();
 
   return redeemTx;
@@ -170,9 +162,5 @@ export async function uniswapV2TakeOrder({
 
   return comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(
-      integrationManager,
-      IntegrationManagerActionId.CallOnIntegration,
-      callArgs,
-    );
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }

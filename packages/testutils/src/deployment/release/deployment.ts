@@ -137,10 +137,7 @@ export interface ReleaseDeploymentOutput {
   fundCalculator: Promise<FundCalculator>;
 }
 
-export const deployRelease = describeDeployment<
-  ReleaseDeploymentConfig,
-  ReleaseDeploymentOutput
->({
+export const deployRelease = describeDeployment<ReleaseDeploymentConfig, ReleaseDeploymentOutput>({
   // Core
   async comptrollerLib(config, deployment) {
     const comptrollerLib = await ComptrollerLib.deploy(
@@ -211,10 +208,7 @@ export const deployRelease = describeDeployment<
   },
   // Extensions
   async feeManager(config, deployment) {
-    return await FeeManager.deploy(
-      config.deployer,
-      await deployment.fundDeployer,
-    );
+    return await FeeManager.deploy(config.deployer, await deployment.fundDeployer);
   },
   async integrationManager(config, deployment) {
     return IntegrationManager.deploy(
@@ -246,14 +240,12 @@ export const deployRelease = describeDeployment<
     const chaiPriceFeed = await deployment.chaiPriceFeed;
 
     const cTokens = Object.values(config.derivatives.compound);
-    const compoundPriceFeeds: Array<AddressLike> = new Array(
-      cTokens.length,
-    ).fill(await deployment.compoundPriceFeed);
+    const compoundPriceFeeds: Array<AddressLike> = new Array(cTokens.length).fill(await deployment.compoundPriceFeed);
 
     const uniswapPoolTokens = Object.values(config.derivatives.uniswapV2);
-    const uniswapPoolPriceFeeds: Array<AddressLike> = new Array(
-      uniswapPoolTokens.length,
-    ).fill(await deployment.uniswapV2PoolPriceFeed);
+    const uniswapPoolPriceFeeds: Array<AddressLike> = new Array(uniswapPoolTokens.length).fill(
+      await deployment.uniswapV2PoolPriceFeed,
+    );
 
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
@@ -271,11 +263,7 @@ export const deployRelease = describeDeployment<
     );
   },
   async compoundPriceFeed(config) {
-    return CompoundPriceFeed.deploy(
-      config.deployer,
-      config.weth,
-      config.derivatives.compound.ceth,
-    );
+    return CompoundPriceFeed.deploy(config.deployer, config.weth, config.derivatives.compound.ceth);
   },
   async uniswapV2PoolPriceFeed(config) {
     return UniswapV2PoolPriceFeed.deploy(config.deployer);
@@ -290,11 +278,7 @@ export const deployRelease = describeDeployment<
     );
   },
   async compoundAdapter(config, deployment) {
-    return CompoundAdapter.deploy(
-      config.deployer,
-      await deployment.integrationManager,
-      config.weth,
-    );
+    return CompoundAdapter.deploy(config.deployer, await deployment.integrationManager, config.weth);
   },
   async engineAdapter(config, deployment) {
     return EngineAdapter.deploy(
@@ -314,10 +298,7 @@ export const deployRelease = describeDeployment<
     );
   },
   async trackedAssetsAdapter(config, deployment) {
-    return TrackedAssetsAdapter.deploy(
-      config.deployer,
-      await deployment.integrationManager,
-    );
+    return TrackedAssetsAdapter.deploy(config.deployer, await deployment.integrationManager);
   },
   async uniswapV2Adapter(config, deployment) {
     return UniswapV2Adapter.deploy(
@@ -337,16 +318,10 @@ export const deployRelease = describeDeployment<
   },
   // Fees
   async entranceRateBurnFee(config, deployment) {
-    return EntranceRateBurnFee.deploy(
-      config.deployer,
-      await deployment.feeManager,
-    );
+    return EntranceRateBurnFee.deploy(config.deployer, await deployment.feeManager);
   },
   async entranceRateDirectFee(config, deployment) {
-    return EntranceRateDirectFee.deploy(
-      config.deployer,
-      await deployment.feeManager,
-    );
+    return EntranceRateDirectFee.deploy(config.deployer, await deployment.feeManager);
   },
   async managementFee(config, deployment) {
     return ManagementFee.deploy(config.deployer, await deployment.feeManager);
@@ -356,41 +331,22 @@ export const deployRelease = describeDeployment<
   },
   // Policies
   async adapterBlacklist(config, deployment) {
-    return AdapterBlacklist.deploy(
-      config.deployer,
-      await deployment.policyManager,
-    );
+    return AdapterBlacklist.deploy(config.deployer, await deployment.policyManager);
   },
   async adapterWhitelist(config, deployment) {
-    return AdapterWhitelist.deploy(
-      config.deployer,
-      await deployment.policyManager,
-    );
+    return AdapterWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
   async assetBlacklist(config, deployment) {
-    return AssetBlacklist.deploy(
-      config.deployer,
-      await deployment.policyManager,
-    );
+    return AssetBlacklist.deploy(config.deployer, await deployment.policyManager);
   },
   async assetWhitelist(config, deployment) {
-    return AssetWhitelist.deploy(
-      config.deployer,
-      await deployment.policyManager,
-    );
+    return AssetWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
   async maxConcentration(config, deployment) {
-    return MaxConcentration.deploy(
-      config.deployer,
-      await deployment.policyManager,
-      await deployment.valueInterpreter,
-    );
+    return MaxConcentration.deploy(config.deployer, await deployment.policyManager, await deployment.valueInterpreter);
   },
   async investorWhitelist(config, deployment) {
-    return InvestorWhitelist.deploy(
-      config.deployer,
-      await deployment.policyManager,
-    );
+    return InvestorWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
   // Peripheral
   async fundCalculator(config, deployment) {

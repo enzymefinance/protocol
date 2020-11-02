@@ -1,14 +1,9 @@
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { ReleaseStatusTypes } from '@melonproject/protocol';
 import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
   return {
     accounts,
@@ -63,9 +58,9 @@ describe('setComptrollerLib', () => {
     const comptrollerLibCall = await fundDeployer.getComptrollerLib();
     expect(comptrollerLibCall).toMatchAddress(comptrollerLib);
 
-    await expect(
-      fundDeployer.setComptrollerLib(randomAddress()),
-    ).rejects.toBeRevertedWith('This value can only be set once');
+    await expect(fundDeployer.setComptrollerLib(randomAddress())).rejects.toBeRevertedWith(
+      'This value can only be set once',
+    );
   });
 });
 
@@ -83,9 +78,7 @@ describe('setReleaseStatus', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const receipt = await fundDeployer.setReleaseStatus(
-      ReleaseStatusTypes.Live,
-    );
+    const receipt = await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
 
     // ReleaseStatusSet event is emitted
     assertEvent(receipt, 'ReleaseStatusSet', {

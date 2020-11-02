@@ -1,8 +1,5 @@
 import { constants } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { IMigrationHookHandler, MockVaultLib } from '@melonproject/protocol';
 import {
   defaultTestDeployment,
@@ -12,28 +9,25 @@ import {
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, config, deployment } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    config,
+    deployment,
+  } = await defaultTestDeployment(provider);
 
   // Get mock fees and mock policies data with which to configure fund
   const feeManagerConfig = await generateFeeManagerConfigWithMockFees({
     deployer: config.deployer,
     feeManager: deployment.feeManager,
   });
-  const policyManagerConfig = await generatePolicyManagerConfigWithMockPolicies(
-    {
-      deployer: config.deployer,
-      policyManager: deployment.policyManager,
-    },
-  );
+
+  const policyManagerConfig = await generatePolicyManagerConfigWithMockPolicies({
+    deployer: config.deployer,
+    policyManager: deployment.policyManager,
+  });
 
   // Create initial fund on prevFundDeployer
-  const [fundOwner, ...remainingAccounts] = accounts;
-  const {
-    comptrollerProxy: prevComptrollerProxy,
-    vaultProxy,
-  } = await createNewFund({
+  const { comptrollerProxy: prevComptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner,
     fundDeployer: deployment.fundDeployer,
     fundOwner,
@@ -43,9 +37,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   });
 
   // Mock a nextFundDeployer contract and nextVaultLib
-  const mockNextFundDeployer = await IMigrationHookHandler.mock(
-    config.deployer,
-  );
+  const mockNextFundDeployer = await IMigrationHookHandler.mock(config.deployer);
   await mockNextFundDeployer.postCancelMigrationTargetHook.returns(undefined);
   const mockNextVaultLib = await MockVaultLib.deploy(config.deployer);
 
@@ -67,20 +59,14 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('preMigrateOriginHook', () => {
   it('can only be called by the Dispatcher', async () => {
     const {
-      accounts: { 0: randomUser },
+      accounts: [randomUser],
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
     await expect(
       fundDeployer
         .connect(randomUser)
-        .preMigrateOriginHook(
-          randomAddress(),
-          constants.AddressZero,
-          constants.AddressZero,
-          constants.AddressZero,
-          0,
-        ),
+        .preMigrateOriginHook(randomAddress(), constants.AddressZero, constants.AddressZero, constants.AddressZero, 0),
     ).rejects.toBeRevertedWith('Only Dispatcher can call this function');
   });
 
@@ -107,15 +93,10 @@ describe('preMigrateOriginHook', () => {
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Execute migrate from nextFundDeployer
-    await mockNextFundDeployer.forward(
-      dispatcher.executeMigration,
-      vaultProxy,
-      false,
-    );
+    await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
 
     // Assert expected calls
     expect(fundDeployer.preMigrateOriginHook).toHaveBeenCalledOnContract();
-
     expect(prevComptrollerProxy.destruct).toHaveBeenCalledOnContract();
   });
 });

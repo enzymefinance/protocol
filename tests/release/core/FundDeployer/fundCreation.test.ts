@@ -1,7 +1,4 @@
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { constants } from 'ethers';
 import {
   defaultTestDeployment,
@@ -13,9 +10,7 @@ import {
 import { ReleaseStatusTypes } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
   // Get mock fees and mock policies data with which to configure funds
   const feeManagerConfigData = await generateFeeManagerConfigWithMockFees({
@@ -23,12 +18,10 @@ async function snapshot(provider: EthereumTestnetProvider) {
     feeManager: deployment.feeManager,
   });
 
-  const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies(
-    {
-      deployer: config.deployer,
-      policyManager: deployment.policyManager,
-    },
-  );
+  const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies({
+    deployer: config.deployer,
+    policyManager: deployment.policyManager,
+  });
 
   return {
     accounts,
@@ -88,15 +81,7 @@ describe('createNewFund', () => {
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     await expect(
-      fundDeployer.createNewFund(
-        randomAddress(),
-        '',
-        denominationAsset,
-        0,
-        [],
-        constants.HashZero,
-        constants.HashZero,
-      ),
+      fundDeployer.createNewFund(randomAddress(), '', denominationAsset, 0, [], constants.HashZero, constants.HashZero),
     ).rejects.toBeRevertedWith('Release is paused');
   });
 
@@ -106,7 +91,7 @@ describe('createNewFund', () => {
         fundDeployer,
         tokens: { weth },
       },
-      accounts: { 0: signer },
+      accounts: [signer],
     } = await provider.snapshot(snapshot);
 
     const fundOwner = randomAddress();
@@ -135,10 +120,7 @@ describe('createNewFund', () => {
     // ]);
 
     // Assert expected calls
-    expect(comptrollerProxy.activate).toHaveBeenCalledOnContractWith(
-      vaultProxy,
-      false,
-    );
+    expect(comptrollerProxy.activate).toHaveBeenCalledOnContractWith(vaultProxy, false);
   });
 
   it.todo('test that amgu is sent to the Engine in the above function');
@@ -151,13 +133,7 @@ describe('createMigratedFundConfig', () => {
     } = await provider.snapshot(snapshot);
 
     await expect(
-      fundDeployer.createMigratedFundConfig(
-        constants.AddressZero,
-        0,
-        [],
-        constants.HashZero,
-        constants.HashZero,
-      ),
+      fundDeployer.createMigratedFundConfig(constants.AddressZero, 0, [], constants.HashZero, constants.HashZero),
     ).rejects.toBeRevertedWith('_denominationAsset cannot be empty');
   });
 
@@ -173,13 +149,7 @@ describe('createMigratedFundConfig', () => {
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     await expect(
-      fundDeployer.createMigratedFundConfig(
-        denominationAsset,
-        0,
-        [],
-        constants.HashZero,
-        constants.HashZero,
-      ),
+      fundDeployer.createMigratedFundConfig(denominationAsset, 0, [], constants.HashZero, constants.HashZero),
     ).rejects.toBeRevertedWith('Release is paused');
   });
 
@@ -189,7 +159,7 @@ describe('createMigratedFundConfig', () => {
         fundDeployer,
         tokens: { weth: denominationAsset },
       },
-      accounts: { 0: signer },
+      accounts: [signer],
       feeManagerConfigData,
       policyManagerConfigData,
     } = await provider.snapshot(snapshot);

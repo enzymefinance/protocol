@@ -1,10 +1,7 @@
 // TODO: NEED TO REVIEW THESE TESTS
 
 import { utils, BigNumberish } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
 import {
   assetTransferArgs,
   ComptrollerLib,
@@ -30,11 +27,12 @@ import {
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -79,10 +77,7 @@ async function assertUniswapV2TakeOrder({
   // seed fund
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 
-  const [
-    preTxIncomingAssetBalance,
-    preTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [incomingAsset, outgoingAsset],
   });
@@ -98,9 +93,7 @@ async function assertUniswapV2TakeOrder({
     minIncomingAssetAmount,
   });
 
-  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-    'CallOnIntegrationExecutedForFund',
-  );
+  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
   assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
     comptrollerProxy: comptrollerProxy,
@@ -113,22 +106,15 @@ async function assertUniswapV2TakeOrder({
     outgoingAssetAmounts: [outgoingAssetAmount],
   });
 
-  const [
-    postTxIncomingAssetBalance,
-    postTxOutgoingAssetBalance,
-  ] = await getAssetBalances({
+  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [incomingAsset, outgoingAsset],
   });
 
   // TODO: if we use rates other than 1:1, need to look up the actual rate
   const expectedIncomingAssetAmount = outgoingAssetAmount;
-  expect(postTxIncomingAssetBalance).toEqBigNumber(
-    preTxIncomingAssetBalance.add(expectedIncomingAssetAmount),
-  );
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(
-    preTxOutgoingAssetBalance.sub(outgoingAssetAmount),
-  );
+  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
 describe('constructor', () => {
@@ -183,13 +169,11 @@ describe('parseAssetsForMethod', () => {
       minIncomingAssetAmount,
     });
 
-    await expect(
-      uniswapV2Adapter.parseAssetsForMethod(utils.randomBytes(4), args),
-    ).rejects.toBeRevertedWith('_selector invalid');
+    await expect(uniswapV2Adapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
+      '_selector invalid',
+    );
 
-    await expect(
-      uniswapV2Adapter.parseAssetsForMethod(lendSelector, args),
-    ).resolves.toBeTruthy();
+    await expect(uniswapV2Adapter.parseAssetsForMethod(lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -222,20 +206,14 @@ describe('parseAssetsForMethod', () => {
     });
 
     const selector = lendSelector;
-    const result = await uniswapV2Adapter.parseAssetsForMethod(
-      selector,
-      lendArgs,
-    );
+    const result = await uniswapV2Adapter.parseAssetsForMethod(selector, lendArgs);
 
-    expect(result).toMatchFunctionOutput(
-      uniswapV2Adapter.parseAssetsForMethod.fragment,
-      {
-        incomingAssets_: [incomingAsset],
-        spendAssets_: [tokenA, tokenB],
-        spendAssetAmounts_: [amountADesired, amountBDesired],
-        minIncomingAssetAmounts_: [minIncomingAssetAmount],
-      },
-    );
+    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod.fragment, {
+      incomingAssets_: [incomingAsset],
+      spendAssets_: [tokenA, tokenB],
+      spendAssetAmounts_: [amountADesired, amountBDesired],
+      minIncomingAssetAmounts_: [minIncomingAssetAmount],
+    });
   });
 
   it('generates expected output for redeeming', async () => {
@@ -264,20 +242,14 @@ describe('parseAssetsForMethod', () => {
     });
 
     const selector = redeemSelector;
-    const result = await uniswapV2Adapter.parseAssetsForMethod(
-      selector,
-      redeemArgs,
-    );
+    const result = await uniswapV2Adapter.parseAssetsForMethod(selector, redeemArgs);
 
-    expect(result).toMatchFunctionOutput(
-      uniswapV2Adapter.parseAssetsForMethod.fragment,
-      {
-        incomingAssets_: [tokenA, tokenB],
-        spendAssets_: [outgoingAsset],
-        spendAssetAmounts_: [liquidity],
-        minIncomingAssetAmounts_: [amountAMin, amountBMin],
-      },
-    );
+    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod.fragment, {
+      incomingAssets_: [tokenA, tokenB],
+      spendAssets_: [outgoingAsset],
+      spendAssetAmounts_: [liquidity],
+      minIncomingAssetAmounts_: [amountAMin, amountBMin],
+    });
   });
 });
 
@@ -318,9 +290,7 @@ describe('lend', () => {
       encodedCallArgs: lendArgs,
     });
 
-    await expect(
-      uniswapV2Adapter.lend(vaultProxy, lendArgs, transferArgs),
-    ).rejects.toBeRevertedWith(
+    await expect(uniswapV2Adapter.lend(vaultProxy, lendArgs, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -377,9 +347,7 @@ describe('lend', () => {
       minIncomingAssetAmount: utils.parseEther('1'),
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy: comptrollerProxy,
@@ -402,15 +370,9 @@ describe('lend', () => {
       assets: [tokenA, tokenB],
     });
 
-    expect(postTxIncomingAssetBalance).toEqBigNumber(
-      preTxIncomingAssetBalance.add(amountADesired),
-    );
-    expect(postTxOutgoingAssetBalances[0]).toEqBigNumber(
-      preTxOutgoingAssetBalances[0].sub(amountADesired),
-    );
-    expect(postTxOutgoingAssetBalances[1]).toEqBigNumber(
-      preTxOutgoingAssetBalances[1].sub(amountBDesired),
-    );
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amountADesired));
+    expect(postTxOutgoingAssetBalances[0]).toEqBigNumber(preTxOutgoingAssetBalances[0].sub(amountADesired));
+    expect(postTxOutgoingAssetBalances[1]).toEqBigNumber(preTxOutgoingAssetBalances[1].sub(amountBDesired));
   });
 });
 
@@ -447,9 +409,7 @@ describe('redeem', () => {
       encodedCallArgs: redeemArgs,
     });
 
-    await expect(
-      uniswapV2Adapter.redeem(vaultProxy, redeemArgs, transferArgs),
-    ).rejects.toBeRevertedWith(
+    await expect(uniswapV2Adapter.redeem(vaultProxy, redeemArgs, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
@@ -476,9 +436,7 @@ describe('redeem', () => {
     const outgoingAssetContract = new StandardToken(outgoingAsset, provider);
 
     // seed fund
-    await outgoingAssetContract
-      .connect(deployer)
-      .transfer(vaultProxy, liquidity);
+    await outgoingAssetContract.connect(deployer).transfer(vaultProxy, liquidity);
 
     const preTxIncomingAssetBalances = await getAssetBalances({
       account: vaultProxy,
@@ -502,9 +460,7 @@ describe('redeem', () => {
       amountBMin,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy: comptrollerProxy,
@@ -526,15 +482,9 @@ describe('redeem', () => {
       assets: [outgoingAssetContract],
     });
 
-    expect(postTxIncomingAssetBalances[0]).toEqBigNumber(
-      preTxIncomingAssetBalances[0].add(amountAMin),
-    );
-    expect(postTxIncomingAssetBalances[1]).toEqBigNumber(
-      preTxIncomingAssetBalances[1].add(amountBMin),
-    );
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(
-      preTxOutgoingAssetBalance.sub(liquidity),
-    );
+    expect(postTxIncomingAssetBalances[0]).toEqBigNumber(preTxIncomingAssetBalances[0].add(amountAMin));
+    expect(postTxIncomingAssetBalances[1]).toEqBigNumber(preTxIncomingAssetBalances[1].add(amountBMin));
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(liquidity));
   });
 });
 
@@ -559,9 +509,7 @@ describe('takeOrder', () => {
       encodedCallArgs: takeOrderArgs,
     });
 
-    await expect(
-      uniswapV2Adapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs),
-    ).rejects.toBeRevertedWith(
+    await expect(uniswapV2Adapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });

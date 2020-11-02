@@ -1,14 +1,6 @@
 import { BigNumber, utils } from 'ethers';
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-} from '@crestproject/crestproject';
-import {
-  defaultTestDeployment,
-  assertEvent,
-  addTrackedAssets,
-  createNewFund,
-} from '@melonproject/testutils';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { defaultTestDeployment, assertEvent, addTrackedAssets, createNewFund } from '@melonproject/testutils';
 import {
   addTrackedAssetsArgs,
   addTrackedAssetsSelector,
@@ -17,11 +9,12 @@ import {
 } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const {
+    accounts: [fundOwner, ...remainingAccounts],
+    deployment,
+    config,
+  } = await defaultTestDeployment(provider);
 
-  const [fundOwner, ...remainingAccounts] = accounts;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: config.deployer,
     fundOwner,
@@ -59,13 +52,11 @@ describe('parseAssetsForMethod', () => {
     } = await provider.snapshot(snapshot);
 
     const args = addTrackedAssetsArgs([randomAddress()]);
-    await expect(
-      trackedAssetsAdapter.parseAssetsForMethod(utils.randomBytes(4), args),
-    ).rejects.toBeRevertedWith('_selector invalid');
+    await expect(trackedAssetsAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
+      '_selector invalid',
+    );
 
-    await expect(
-      trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args),
-    ).resolves.toBeTruthy();
+    await expect(trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output', async () => {
@@ -82,10 +73,7 @@ describe('parseAssetsForMethod', () => {
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
-    } = await trackedAssetsAdapter.parseAssetsForMethod(
-      addTrackedAssetsSelector,
-      args,
-    );
+    } = await trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args);
 
     expect({
       spendAssetsHandleType_,
@@ -119,14 +107,8 @@ describe('addTrackedAssets', () => {
     });
 
     await expect(
-      trackedAssetsAdapter.addTrackedAssets(
-        vaultProxy,
-        addTrackedAssetsSelector,
-        transferArgs,
-      ),
-    ).rejects.toBeRevertedWith(
-      'Only the IntegrationManager can call this function',
-    );
+      trackedAssetsAdapter.addTrackedAssets(vaultProxy, addTrackedAssetsSelector, transferArgs),
+    ).rejects.toBeRevertedWith('Only the IntegrationManager can call this function');
   });
 
   it('does not allow an already-tracked asset', async () => {
@@ -215,9 +197,7 @@ describe('addTrackedAssets', () => {
       incomingAssets,
     });
 
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent(
-      'CallOnIntegrationExecutedForFund',
-    );
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
 
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       comptrollerProxy,

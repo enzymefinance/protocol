@@ -1,11 +1,5 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import {
-  contract,
-  Call,
-  Send,
-  Contract,
-  AddressLike,
-} from '@crestproject/crestproject';
+import { contract, Call, Send, Contract, AddressLike } from '@crestproject/crestproject';
 
 // Persistent core
 export { Dispatcher } from './codegen/Dispatcher';

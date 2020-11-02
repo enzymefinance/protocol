@@ -1,9 +1,4 @@
-import {
-  AddressLike,
-  SignerWithAddress,
-  randomAddress,
-  resolveAddress,
-} from '@crestproject/crestproject';
+import { AddressLike, SignerWithAddress, randomAddress, resolveAddress } from '@crestproject/crestproject';
 import {
   Dispatcher,
   MockChaiIntegratee,
@@ -20,11 +15,7 @@ import {
   encodeZeroExV2AssetData,
 } from '@melonproject/protocol';
 import { utils } from 'ethers';
-import {
-  Deployment,
-  DeploymentHandlers,
-  describeDeployment,
-} from '../deployment';
+import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
 import { ReleaseDeploymentConfig } from './deployment';
 
 export interface MockDeploymentConfig {
@@ -63,14 +54,9 @@ export interface MockDeploymentOutput {
   chaiPriceSource: Promise<MockChaiPriceSource>;
 }
 
-export type MockDeployment = Deployment<
-  DeploymentHandlers<MockDeploymentConfig, MockDeploymentOutput>
->;
+export type MockDeployment = Deployment<DeploymentHandlers<MockDeploymentConfig, MockDeploymentOutput>>;
 
-export const deployMocks = describeDeployment<
-  MockDeploymentConfig,
-  MockDeploymentOutput
->({
+export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeploymentOutput>({
   // Assets
   async tokens(config) {
     const [weth, mln, rep, knc, zrx, dai, ren] = await Promise.all([
@@ -122,10 +108,7 @@ export const deployMocks = describeDeployment<
     return MockKyberIntegratee.deploy(config.deployer, []);
   },
   async mockGenericAdapter(config, deployment) {
-    return MockGenericAdapter.deploy(
-      config.deployer,
-      await deployment.mockGenericIntegratee,
-    );
+    return MockGenericAdapter.deploy(config.deployer, await deployment.mockGenericIntegratee);
   },
   async mockGenericIntegratee(config) {
     return MockGenericIntegratee.deploy(config.deployer);
@@ -217,10 +200,7 @@ export async function configureMockRelease({
     makeWethRich(mocks.tokens.weth, deployer, utils.parseEther('1000')),
     makeTokenRich(Object.values(tokens), deployer),
     ...accounts.map(async (account) => {
-      await Promise.all([
-        makeTokenRich(Object.values(tokens), account),
-        makeWethRich(mocks.tokens.weth, account),
-      ]);
+      await Promise.all([makeTokenRich(Object.values(tokens), account), makeWethRich(mocks.tokens.weth, account)]);
     }),
   ]);
 
@@ -293,31 +273,19 @@ export async function configureMockRelease({
   };
 }
 
-export async function makeEthRich(
-  sender: SignerWithAddress,
-  receiver: AddressLike,
-  amount = utils.parseEther('100'),
-) {
+export async function makeEthRich(sender: SignerWithAddress, receiver: AddressLike, amount = utils.parseEther('100')) {
   return sender.sendTransaction({
     to: resolveAddress(receiver),
     value: amount,
   });
 }
 
-export async function makeWethRich(
-  weth: WETH,
-  account: SignerWithAddress,
-  amount = utils.parseEther('100'),
-) {
+export async function makeWethRich(weth: WETH, account: SignerWithAddress, amount = utils.parseEther('100')) {
   const connected = weth.connect(account);
   return connected.deposit.value(amount).send();
 }
 
-export function makeTokenRich(
-  tokens: MockToken[],
-  receiver: AddressLike,
-  amount = utils.parseEther('1000000'),
-) {
+export function makeTokenRich(tokens: MockToken[], receiver: AddressLike, amount = utils.parseEther('1000000')) {
   const promises = tokens.map((token) => {
     return token.mintFor(receiver, amount);
   });

@@ -1,27 +1,10 @@
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
-import {
-  AddressLike,
-  randomAddress,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
-import {
-  ComptrollerLib,
-  ComptrollerProxy,
-  encodeFunctionData,
-  FundDeployer,
-  VaultLib,
-} from '@melonproject/protocol';
-import {
-  buyShares,
-  BuySharesParams,
-  DenominationAssetInterface,
-} from './shares';
+import { AddressLike, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { ComptrollerLib, ComptrollerProxy, encodeFunctionData, FundDeployer, VaultLib } from '@melonproject/protocol';
+import { buyShares, BuySharesParams, DenominationAssetInterface } from './shares';
 import { assertEvent } from '../assertions';
 
-export type InitialInvestmentParams = Omit<
-  BuySharesParams,
-  'comptrollerProxy' | 'denominationAsset'
->;
+export type InitialInvestmentParams = Omit<BuySharesParams, 'comptrollerProxy' | 'denominationAsset'>;
 
 export interface CreateMigratedFundConfigParams {
   signer: SignerWithAddress;
@@ -65,11 +48,7 @@ export async function createComptrollerProxy({
     allowedBuySharesCallers,
   ]);
 
-  const comptrollerProxyContract = await ComptrollerProxy.deploy(
-    signer,
-    constructData,
-    comptrollerLib,
-  );
+  const comptrollerProxyContract = await ComptrollerProxy.deploy(signer, constructData, comptrollerLib);
 
   return {
     comptrollerProxy: new ComptrollerLib(comptrollerProxyContract, signer),
@@ -96,27 +75,20 @@ export async function createMigratedFundConfig({
       policyManagerConfigData,
     );
 
-  const comptrollerDeployedArgs = await assertEvent(
-    receipt,
-    'ComptrollerProxyDeployed',
-    {
-      creator: signer,
-      comptrollerProxy: expect.any(String) as string,
-      denominationAsset,
-      sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-      allowedBuySharesCallers,
-      feeManagerConfigData: utils.hexlify(feeManagerConfigData),
-      policyManagerConfigData: utils.hexlify(policyManagerConfigData),
-      forMigration: true,
-    },
-  );
+  const comptrollerDeployedArgs = await assertEvent(receipt, 'ComptrollerProxyDeployed', {
+    creator: signer,
+    comptrollerProxy: expect.any(String) as string,
+    denominationAsset,
+    sharesActionTimelock: BigNumber.from(sharesActionTimelock),
+    allowedBuySharesCallers,
+    feeManagerConfigData: utils.hexlify(feeManagerConfigData),
+    policyManagerConfigData: utils.hexlify(policyManagerConfigData),
+    forMigration: true,
+  });
 
   return {
     receipt,
-    comptrollerProxy: new ComptrollerLib(
-      comptrollerDeployedArgs.comptrollerProxy,
-      signer,
-    ),
+    comptrollerProxy: new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer),
   };
 }
 
@@ -145,25 +117,18 @@ export async function createNewFund({
       policyManagerConfig,
     );
 
-  const comptrollerDeployedArgs = assertEvent(
-    receipt,
-    'ComptrollerProxyDeployed',
-    {
-      creator: signer,
-      comptrollerProxy: expect.any(String) as string,
-      denominationAsset,
-      sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-      allowedBuySharesCallers,
-      feeManagerConfigData: utils.hexlify(feeManagerConfig),
-      policyManagerConfigData: utils.hexlify(policyManagerConfig),
-      forMigration: false,
-    },
-  );
+  const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
+    creator: signer,
+    comptrollerProxy: expect.any(String) as string,
+    denominationAsset,
+    sharesActionTimelock: BigNumber.from(sharesActionTimelock),
+    allowedBuySharesCallers,
+    feeManagerConfigData: utils.hexlify(feeManagerConfig),
+    policyManagerConfigData: utils.hexlify(policyManagerConfig),
+    forMigration: false,
+  });
 
-  const comptrollerProxy = new ComptrollerLib(
-    comptrollerDeployedArgs.comptrollerProxy,
-    signer,
-  );
+  const comptrollerProxy = new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer);
 
   const newFundDeployedArgs = assertEvent(receipt, 'NewFundCreated', {
     creator: signer,

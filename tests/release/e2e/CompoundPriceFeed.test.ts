@@ -3,9 +3,7 @@ import { ICERC20 } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(
-    provider,
-  );
+  const { accounts, deployment, config } = await defaultForkDeployment(provider);
 
   return {
     accounts,
@@ -32,10 +30,7 @@ describe('getRatesToUnderlyings', () => {
 
     // exchangeRate (base 1e18) = (totalCash + totalBorrows - totalReserves) / totalSupply
     const expectedRate = await cToken.exchangeRateStored();
-
-    const feedRate = await compoundPriceFeed.getRatesToUnderlyings
-      .args(cToken)
-      .call();
+    const feedRate = await compoundPriceFeed.getRatesToUnderlyings.args(cToken).call();
 
     expect(feedRate.rates_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(token);
@@ -53,9 +48,7 @@ describe('getRatesToUnderlyings', () => {
     await compoundPriceFeed.getRatesToUnderlyings(cToken);
 
     const expectedRate = await cToken.exchangeRateStored();
-    const feedRate = await compoundPriceFeed.getRatesToUnderlyings
-      .args(cToken)
-      .call();
+    const feedRate = await compoundPriceFeed.getRatesToUnderlyings.args(cToken).call();
 
     expect(feedRate.rates_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(token);

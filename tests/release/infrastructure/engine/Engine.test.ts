@@ -1,8 +1,4 @@
-import {
-  EthereumTestnetProvider,
-  randomAddress,
-  resolveAddress,
-} from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress, resolveAddress } from '@crestproject/crestproject';
 import { Engine, ValueInterpreter } from '@melonproject/protocol';
 import {
   assertEvent,
@@ -14,9 +10,7 @@ import {
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(
-    provider,
-  );
+  const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
   // Create a mock value interpreter that returns (0, false) by default
   const mockValueInterpreter = await ValueInterpreter.mock(config.deployer);
@@ -92,9 +86,7 @@ describe('setAmguPrice', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    await expect(engine.setAmguPrice(1)).rejects.toBeRevertedWith(
-      'Only MGM can call this',
-    );
+    await expect(engine.setAmguPrice(1)).rejects.toBeRevertedWith('Only MGM can call this');
   });
 
   it('sets amguPrice', async () => {
@@ -143,9 +135,7 @@ describe('thaw', () => {
 
     await engine.payAmguInEther.value(utils.parseEther('1')).send();
 
-    await expect(engine.thaw()).rejects.toBeRevertedWith(
-      'Thaw delay has not passed',
-    );
+    await expect(engine.thaw()).rejects.toBeRevertedWith('Thaw delay has not passed');
   });
 
   it('cannot be called when frozenEther is 0', async () => {
@@ -156,9 +146,7 @@ describe('thaw', () => {
     await warpEngine(provider, engine);
     await updateChainlinkAggregator(chainlinkAggregators.mln);
 
-    await expect(engine.thaw()).rejects.toBeRevertedWith(
-      'No frozen ETH to thaw',
-    );
+    await expect(engine.thaw()).rejects.toBeRevertedWith('No frozen ETH to thaw');
   });
 
   it('frozenEther is added to liquidEther', async () => {
@@ -210,25 +198,19 @@ describe('etherTakers', () => {
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      await expect(
-        engine.addEtherTakers([newEtherTaker]),
-      ).resolves.toBeReceipt();
+      await expect(engine.addEtherTakers([newEtherTaker])).resolves.toBeReceipt();
 
-      await expect(
-        engine.addEtherTakers([newEtherTaker]),
-      ).rejects.toBeRevertedWith('Account has already been added');
+      await expect(engine.addEtherTakers([newEtherTaker])).rejects.toBeRevertedWith('Account has already been added');
     });
 
     it('Can only be called by the dispatcher owner', async () => {
       const {
-        accounts: { 0: randomUser },
+        accounts: [randomUser],
         deployment: { engine },
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      await expect(
-        engine.connect(randomUser).addEtherTakers([newEtherTaker]),
-      ).rejects.toBeRevertedWith(
+      await expect(engine.connect(randomUser).addEtherTakers([newEtherTaker])).rejects.toBeRevertedWith(
         'Only the Dispatcher owner can call this function',
       );
     });
@@ -258,21 +240,17 @@ describe('etherTakers', () => {
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      await expect(
-        engine.removeEtherTakers([newEtherTaker]),
-      ).rejects.toBeRevertedWith('Account is not an etherTaker');
+      await expect(engine.removeEtherTakers([newEtherTaker])).rejects.toBeRevertedWith('Account is not an etherTaker');
     });
 
     it('Can only be called by the Dispatcher owner', async () => {
       const {
-        accounts: { 0: randomUser },
+        accounts: [randomUser],
         deployment: { engine },
       } = await provider.snapshot(snapshot);
       const newEtherTaker = randomAddress();
 
-      await expect(
-        engine.connect(randomUser).removeEtherTakers([newEtherTaker]),
-      ).rejects.toBeRevertedWith(
+      await expect(engine.connect(randomUser).removeEtherTakers([newEtherTaker])).rejects.toBeRevertedWith(
         'Only the Dispatcher owner can call this function',
       );
     });
@@ -339,21 +317,13 @@ describe('calcEthOutputForMlnInput', () => {
     // Update the valueInterpreter used by the Engine to a mock and set expected return values
     await engine.setValueInterpreter(mockValueInterpreter);
     const expectedOutput = BigNumber.from('1');
-    await mockValueInterpreter.calcCanonicalAssetValue.returns(
-      expectedOutput,
-      true,
-    );
+    await mockValueInterpreter.calcCanonicalAssetValue.returns(expectedOutput, true);
 
-    const calcEthOutput = await engine.calcEthOutputForMlnInput
-      .args(expectedOutput)
-      .call();
-    expect(calcEthOutput).toMatchFunctionOutput(
-      engine.calcEthOutputForMlnInput.fragment,
-      {
-        ethAmount_: expectedOutput,
-        isValidRate_: true,
-      },
-    );
+    const calcEthOutput = await engine.calcEthOutputForMlnInput.args(expectedOutput).call();
+    expect(calcEthOutput).toMatchFunctionOutput(engine.calcEthOutputForMlnInput.fragment, {
+      ethAmount_: expectedOutput,
+      isValidRate_: true,
+    });
   });
 });
 
@@ -389,9 +359,7 @@ describe('sellAndBurnMln', () => {
     // Check ETH Balance was received as expected (taking gas into account)
     const ethGasSpent = receipt.gasUsed.mul(await deployer.getGasPrice());
     const postSellEthBalance = await deployer.getBalance();
-    expect(postSellEthBalance).toEqBigNumber(
-      preEthBalance.sub(ethGasSpent).add(ethAmountWithPremium),
-    );
+    expect(postSellEthBalance).toEqBigNumber(preEthBalance.sub(ethGasSpent).add(ethAmountWithPremium));
 
     // Check MLN Balance was spent
     const postMlnBalance = await mln.balanceOf(deployer);
@@ -403,9 +371,7 @@ describe('sellAndBurnMln', () => {
       deployment: { engine },
     } = await provider.snapshot(snapshot);
 
-    await expect(
-      engine.sellAndBurnMln(utils.parseEther('1')),
-    ).rejects.toBeRevertedWith('Unauthorized');
+    await expect(engine.sellAndBurnMln(utils.parseEther('1'))).rejects.toBeRevertedWith('Unauthorized');
   });
 
   it('reverts if MLN/ETH received from ValueInterpreter is not valid rate', async () => {
@@ -419,15 +385,10 @@ describe('sellAndBurnMln', () => {
 
     // Update the valueInterpreter used by the Engine to a mock and set expected return values
     await engine.setValueInterpreter(mockValueInterpreter);
-    await mockValueInterpreter.calcCanonicalAssetValue.returns(
-      utils.parseEther('1'),
-      false,
-    );
+    await mockValueInterpreter.calcCanonicalAssetValue.returns(utils.parseEther('1'), false);
 
     // Returning an invalid rate should cause the tx to fail
-    await expect(
-      engine.sellAndBurnMln(utils.parseEther('1')),
-    ).rejects.toBeRevertedWith('Invalid rate');
+    await expect(engine.sellAndBurnMln(utils.parseEther('1'))).rejects.toBeRevertedWith('Invalid rate');
   });
 
   it('reverts if mlnAmount value is greater than available liquidEther', async () => {
@@ -443,9 +404,7 @@ describe('sellAndBurnMln', () => {
     await updateChainlinkAggregator(chainlinkAggregators.mln);
     await engine.addEtherTakers([deployer]);
 
-    await expect(engine.sellAndBurnMln(mlnAmount)).rejects.toBeRevertedWith(
-      'Not enough liquid ether',
-    );
+    await expect(engine.sellAndBurnMln(mlnAmount)).rejects.toBeRevertedWith('Not enough liquid ether');
   });
 
   it('reverts if the ETH amount to be sent to the user is zero', async () => {
@@ -461,9 +420,7 @@ describe('sellAndBurnMln', () => {
 
     const mlnAmount = utils.parseEther('1');
     await engine.addEtherTakers([deployer]);
-    await expect(engine.sellAndBurnMln(mlnAmount)).rejects.toBeRevertedWith(
-      'MLN quantity too low',
-    );
+    await expect(engine.sellAndBurnMln(mlnAmount)).rejects.toBeRevertedWith('MLN quantity too low');
   });
 });
 
