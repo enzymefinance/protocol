@@ -13,10 +13,11 @@ import "./IFundLifecycleLib.sol";
 /// @title FundLifecycleLib Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A library for fund lifecycle actions
-/// @dev Ordered function calls for stages in a fund lifecycle:
+/// @dev Always delegate-called by a ComptrollerProxy.
+/// Ordered function calls for stages in a fund lifecycle:
 /// 1a. init() - called on deployment of ComptrollerProxy
-/// 1b. configureExtensions() - called immediately after init()
-/// 2. activate() - called upon linking a VaultProxy to activate the fund
+/// 1b. configureExtensions() - called atomically after ComptrollerProxy is deployed
+/// 2. activate() - called to link a VaultProxy, thereby activating the fund
 /// 3. destruct() - called upon migrating to another release
 contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerEvents {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -79,14 +80,11 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
     ) external override {
         require(!isLib, "init: Only delegate callable");
         require(denominationAsset == address(0), "init: Already initialized");
-
-        // Configure core
         require(
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
             "init: Bad denomination asset"
         );
-        denominationAsset = _denominationAsset;
-        sharesActionTimelock = _sharesActionTimelock;
+
         for (uint256 i; i < _allowedBuySharesCallers.length; i++) {
             require(
                 i == 0 || !allowedBuySharesCallers.contains(_allowedBuySharesCallers[i]),
@@ -97,6 +95,8 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
 
             emit AllowedBuySharesCallerAdded(_allowedBuySharesCallers[i]);
         }
+        denominationAsset = _denominationAsset;
+        sharesActionTimelock = _sharesActionTimelock;
     }
 
     /// @notice Configure the extensions of a fund
@@ -109,7 +109,6 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external override onlyFundDeployer {
-        // Configure extensions
         if (_feeManagerConfigData.length > 0) {
             IExtension(FEE_MANAGER).setConfigForFund(_feeManagerConfigData);
         }
@@ -118,7 +117,7 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
         }
     }
 
-    /// @notice Activates the fund after running pre-activation logic
+    /// @notice Activates the fund by attaching a VaultProxy and activating all Extensions
     /// @param _vaultProxy The VaultProxy to attach to the fund
     /// @param _isMigration True if a migrated fund is being activated
     /// @dev No need to assert anything beyond FundDeployer access.
@@ -166,9 +165,9 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
         IExtension(POLICY_MANAGER).deactivateForFund();
 
         // Delete storage of ComptrollerProxy
-        // There should never be ETH in this contract, but if there is,
-        // we can send to the VaultProxy.
-        selfdestruct(payable(vaultProxy));
+        // There should never be ETH in the ComptrollerLib, so no need to waste gas
+        // to get the fund owner
+        selfdestruct(address(0));
     }
 
     ///////////////////
