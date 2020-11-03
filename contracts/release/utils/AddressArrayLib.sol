@@ -6,7 +6,11 @@ pragma solidity 0.6.8;
 /// @notice A library to extend the address array data type
 library AddressArrayLib {
     /// @dev Helper to verify if an array contains a particular value
-    function contains(address[] memory _self, address _target) internal pure returns (bool) {
+    function contains(address[] memory _self, address _target)
+        internal
+        pure
+        returns (bool doesContain_)
+    {
         for (uint256 i; i < _self.length; i++) {
             if (_target == _self[i]) {
                 return true;
@@ -17,7 +21,7 @@ library AddressArrayLib {
 
     /// @dev Helper to verify if array is a set of unique values.
     /// Does not assert length > 0.
-    function isUniqueSet(address[] memory _self) internal pure returns (bool) {
+    function isUniqueSet(address[] memory _self) internal pure returns (bool isUnique_) {
         if (_self.length <= 1) {
             return true;
         }
