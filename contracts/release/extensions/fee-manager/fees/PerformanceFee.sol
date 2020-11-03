@@ -11,7 +11,7 @@ import "./utils/FeeBase.sol";
 
 /// @title PerformanceFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Calculates the performance fee for a particular fund
+/// @notice A performance-based fee with configurable rate and period
 contract PerformanceFee is FeeBase, SharesInflationMixin {
     using SignedSafeMath for int256;
 
@@ -70,9 +70,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     }
 
     /// @notice Add the initial fee settings for a fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
-    /// @param _settingsData Encoded settings to apply to the policy for a fund
-    /// @dev `lastSharePrice` and `activated` are added during activation
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _settingsData Encoded settings to apply to the policy for the fund
+    /// @dev `highWaterMark`, `lastSharePrice`, and `activated` are added during activation
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
         external
         override
@@ -117,8 +117,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         return implementedHooks_;
     }
 
-    /// @notice Update fee state for fund, if payout is allowed
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @notice Checks whether the shares outstanding for the fee can be paid out, and updates
+    /// the info for the fee's last payout
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return isPayable_ True if shares outstanding can be paid out
     function payout(address _comptrollerProxy, address)
         external
@@ -148,9 +149,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         return true;
     }
 
-    /// @notice Settle the fee and reconcile shares due
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
-    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @notice Settles the fee and calculates shares due
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
     /// @param _hook The FeeHook being executed
     /// @param _settlementData Encoded args to use in calculating the settlement
     /// @return settlementType_ The type of settlement
@@ -198,10 +199,11 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     // PUBLIC FUNCTIONS
 
-    /// @notice Checks whether the outstanding shares can be paid out
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @notice Checks whether the shares outstanding can be paid out
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return payoutAllowed_ True if the fee payment is due
-    /// @dev Payout is allowed if fees have not yet been settled in an elapsed redemption period
+    /// @dev Payout is allowed if fees have not yet been settled in an elapsed redemption period,
+    /// and at least 1 period has expired since activation
     function payoutAllowed(address _comptrollerProxy) public view returns (bool payoutAllowed_) {
         FeeInfo memory feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
         uint256 period = feeInfo.period;
@@ -221,7 +223,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to calculate the total accrued value for a fund
+    /// @dev Helper to calculate the aggregated value accumulated to a fund during the period
     function __calcAggregateValueDue(
         uint256 _netSharesSupply,
         uint256 _sharePriceWithoutPerformance,
@@ -284,7 +286,8 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
                 .div(SHARE_UNIT);
             nextNetSharesSupply = _netSharesSupply.add(sharesIncrease);
         } else {
-            // If not PreBuyShares, must be PreRedeemShares
+            // If not PreBuyShares, must be PreRedeemShares because Continuous is checked in the
+            // calling function
             (, uint256 sharesDecrease) = __decodePreRedeemSharesSettlementData(_settlementData);
             nextNetSharesSupply = _netSharesSupply.sub(sharesDecrease);
 
@@ -317,7 +320,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
             int256 sharesDue_
         )
     {
-        // Use the shares supply net shares outstanding for performance calcs
+        // Use the 'shares supply net shares outstanding' for performance calcs
         uint256 netSharesSupply = _totalSharesSupply.sub(_sharesOutstanding);
         uint256 gav;
         if (_hook == IFeeManager.FeeHook.PreBuyShares) {
@@ -378,7 +381,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
             _nextAggregateValueDue.mul(_netSharesSupply).div(_gav),
             _netSharesSupply
         );
-        // Shares due is either the +/- diff or the total shares outstanding already minted
+        // Shares due is the +/- diff or the total shares outstanding already minted
         return int256(sharesDueForAggregateValueDue).sub(int256(_sharesOutstanding));
     }
 
@@ -455,6 +458,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     // STATE GETTERS //
     ///////////////////
 
+    /// @notice Gets the feeInfo for a given fund
+    /// @param _comptrollerProxy The ComptrollerProxy contract of the fund
+    /// @return feeInfo_ The feeInfo
     function getFeeInfoForFund(address _comptrollerProxy)
         external
         view

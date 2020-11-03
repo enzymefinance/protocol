@@ -34,7 +34,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
     // EXTERNAL FUNCTIONS
 
     /// @notice Add the fee settings for a fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the policy for a fund
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
         external
@@ -64,7 +64,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
     }
 
     /// @notice Settles the fee
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settlementData Encoded args to use in calculating the settlement
     /// @return settlementType_ The type of settlement
     /// @return payer_ The payer of shares due

@@ -29,7 +29,7 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
     // EXTERNAL FUNCTIONS
 
     /// @notice Add the initial fee settings for a fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the policy for a fund
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
         external
@@ -67,8 +67,8 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
     }
 
     /// @notice Settle the fee and calculate shares due
-    /// @param _comptrollerProxy The ComptrollerProxy of the calling fund
-    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
     /// @return settlementType_ The type of settlement
     /// @return (unused) The payer of shares due
     /// @return sharesDue_ The amount of shares due
