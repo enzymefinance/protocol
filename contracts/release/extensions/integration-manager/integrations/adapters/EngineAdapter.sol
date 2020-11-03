@@ -7,7 +7,7 @@ import "../utils/AdapterBase.sol";
 
 /// @title EngineAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Adapter for Melon Engine
+/// @notice Adapter for trading MLN for discounted ETH via the Engine Contract
 contract EngineAdapter is AdapterBase {
     address private immutable ENGINE;
     address private immutable MLN_TOKEN;
@@ -32,7 +32,7 @@ contract EngineAdapter is AdapterBase {
     /// @notice Provides a constant string identifier for an adapter
     /// @return identifer_ An identifier string
     function identifier() external pure override returns (string memory identifer_) {
-        return "MELON_ENGINE";
+        return "ENGINE";
     }
 
     /// @notice Parses the expected assets to receive from a call on integration
@@ -79,7 +79,7 @@ contract EngineAdapter is AdapterBase {
         );
     }
 
-    /// @notice Trades assets on the Melon Engine
+    /// @notice Trades MLN for discounted ETH via the Engine contract
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive

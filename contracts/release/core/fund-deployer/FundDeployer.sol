@@ -11,9 +11,10 @@ import "./IFundDeployer.sol";
 
 /// @title FundDeployer Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice The top-level contract of a Melon Protocol release that
-/// coordinates fund deployment and fund migration. It serves as the top-level contract
-/// for a release, and is thus also deferred to for contract ownership access control.
+/// @notice The top-level contract of the release.
+/// It primarily coordinates fund deployment and fund migration, but
+/// it is also deferred to for contract access control and for allowed calls
+/// that can be made with a fund's VaultProxy as the msg.sender.
 contract FundDeployer is IFundDeployer, AmguConsumer {
     event ComptrollerLibSet(address comptrollerLib);
 

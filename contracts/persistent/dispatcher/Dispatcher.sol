@@ -8,8 +8,9 @@ import "./IDispatcher.sol";
 
 /// @title Dispatcher Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice The top-level contract linking multiple releases of Melon infrastructure,
-/// regulating the deployment of new VaultProxy instances and the migration of funds between releases.
+/// @notice The top-level contract linking multiple releases,
+/// handling the deployment of new VaultProxy instances,
+/// and regulating the migration of funds between releases.
 contract Dispatcher is IDispatcher {
     event CurrentFundDeployerSet(address prevFundDeployer, address nextFundDeployer);
 
