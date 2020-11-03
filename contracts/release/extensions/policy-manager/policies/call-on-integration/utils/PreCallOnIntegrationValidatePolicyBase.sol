@@ -3,10 +3,10 @@ pragma solidity 0.6.8;
 
 import "../../utils/PolicyBase.sol";
 
-/// @title BuySharesPolicyMixin Contract
+/// @title CallOnIntegrationPreValidatePolicyMixin Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A mixin contract for policies implemented while buying shares
-abstract contract BuySharesPreValidatePolicyBase is PolicyBase {
+/// @notice A mixin contract for policies that only implement the PreCallOnIntegration policy hook
+abstract contract PreCallOnIntegrationValidatePolicyBase is PolicyBase {
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
     function implementedHooks()
@@ -16,22 +16,17 @@ abstract contract BuySharesPreValidatePolicyBase is PolicyBase {
         returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
     {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
-        implementedHooks_[0] = IPolicyManager.PolicyHook.PreBuyShares;
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PreCallOnIntegration;
 
         return implementedHooks_;
     }
 
     /// @notice Helper to decode rule arguments
-    function __decodeRuleArgs(bytes memory _encodedArgs)
+    function __decodeRuleArgs(bytes memory _encodedRuleArgs)
         internal
         pure
-        returns (
-            address buyer_,
-            uint256 investmentAmount_,
-            uint256 minSharesQuantity_,
-            uint256 gav_
-        )
+        returns (address adapter_, bytes4 selector_)
     {
-        return abi.decode(_encodedArgs, (address, uint256, uint256, uint256));
+        return abi.decode(_encodedRuleArgs, (address, bytes4));
     }
 }

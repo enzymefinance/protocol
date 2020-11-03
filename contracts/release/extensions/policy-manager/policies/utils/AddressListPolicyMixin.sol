@@ -3,9 +3,9 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
-/// @title AddressListPolicyBase Contract
+/// @title AddressListPolicyMixin Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice An abstract base contract for an address list
+/// @notice An abstract mixin contract for policies that use an address list
 abstract contract AddressListPolicyMixin {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -17,11 +17,9 @@ abstract contract AddressListPolicyMixin {
 
     // EXTERNAL FUNCTIONS
 
-    // TODO: do we want to provide length and get in case of super long lists?
-
     /// @notice Get all addresses in a fund's list
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @return list_ An array of addresses
+    /// @return list_ The addresses in the fund's list
     function getList(address _comptrollerProxy) external view returns (address[] memory list_) {
         list_ = new address[](comptrollerProxyToList[_comptrollerProxy].length());
         for (uint256 i = 0; i < list_.length; i++) {
@@ -48,12 +46,12 @@ abstract contract AddressListPolicyMixin {
 
     /// @dev Helper to add addresses to the calling fund's list
     function __addToList(address _comptrollerProxy, address[] memory _items) internal {
-        require(_items.length > 0, "__addToList: no addresses provided");
+        require(_items.length > 0, "__addToList: No addresses provided");
 
         for (uint256 i = 0; i < _items.length; i++) {
             require(
                 comptrollerProxyToList[_comptrollerProxy].add(_items[i]),
-                "__addToList: address already exists in list"
+                "__addToList: Address already exists in list"
             );
         }
 
@@ -62,12 +60,12 @@ abstract contract AddressListPolicyMixin {
 
     /// @dev Helper to remove addresses from the calling fund's list
     function __removeFromList(address _comptrollerProxy, address[] memory _items) internal {
-        require(_items.length > 0, "__removeFromList: no addresses provided");
+        require(_items.length > 0, "__removeFromList: No addresses provided");
 
         for (uint256 i = 0; i < _items.length; i++) {
             require(
                 comptrollerProxyToList[_comptrollerProxy].remove(_items[i]),
-                "__removeFromList: address does not exist in list"
+                "__removeFromList: Address does not exist in list"
             );
         }
 

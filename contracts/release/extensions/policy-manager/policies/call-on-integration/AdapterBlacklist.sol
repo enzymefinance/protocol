@@ -2,12 +2,12 @@
 pragma solidity 0.6.8;
 
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/CallOnIntegrationPreValidatePolicyBase.sol";
+import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AdapterBlacklist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A blacklist of adapters to add to a fund's vault
-contract AdapterBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressListPolicyMixin {
+/// @notice A policy that disallows a configurable blacklist of adapters from use by a fund
+contract AdapterBlacklist is PreCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Add the initial policy settings for a fund
@@ -39,7 +39,7 @@ contract AdapterBlacklist is CallOnIntegrationPreValidatePolicyBase, AddressList
         return !isInList(_comptrollerProxy, _adapter);
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Apply the rule with the specified parameters of a PolicyHook
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes

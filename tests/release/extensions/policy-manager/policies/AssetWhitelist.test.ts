@@ -116,7 +116,7 @@ describe('addFundSettings', () => {
 
     await expect(
       assetWhitelist.connect(EOAPolicyManager).addFundSettings(mockComptrollerProxy, assetWhitelistConfig),
-    ).rejects.toBeRevertedWith('must whitelist denominationAsset');
+    ).rejects.toBeRevertedWith('Must whitelist denominationAsset');
   });
 
   it('sets initial config values for fund and fires events', async () => {
@@ -164,7 +164,7 @@ describe('activateForFund', () => {
     // Setting a non-whitelisted asset as a trackedAsset should make activation fail
     await mockVaultProxy.getTrackedAssets.returns([whitelistedAssets[0], randomAddress()]);
     await expect(assetWhitelist.activateForFund(mockComptrollerProxy, mockVaultProxy)).rejects.toBeRevertedWith(
-      'non-whitelisted asset detected',
+      'Non-whitelisted asset detected',
     );
   });
 });

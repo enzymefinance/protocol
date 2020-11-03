@@ -2,12 +2,12 @@
 pragma solidity 0.6.8;
 
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/CallOnIntegrationPreValidatePolicyBase.sol";
+import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AdapterWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A whitelist of integration adapters that can be used by a fund
-contract AdapterWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressListPolicyMixin {
+/// @notice A policy that only allows a configurable whitelist of adapters for use by a fund
+contract AdapterWhitelist is PreCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Add the initial policy settings for a fund
@@ -39,7 +39,7 @@ contract AdapterWhitelist is CallOnIntegrationPreValidatePolicyBase, AddressList
         return isInList(_comptrollerProxy, _adapter);
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Apply the rule with the specified parameters of a PolicyHook
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes

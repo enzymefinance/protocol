@@ -114,7 +114,7 @@ describe('addFundSettings', () => {
 
     await expect(
       assetBlacklist.connect(EOAPolicyManager).addFundSettings(mockComptrollerProxy, assetBlacklistConfig),
-    ).rejects.toBeRevertedWith('cannot blacklist denominationAsset');
+    ).rejects.toBeRevertedWith('Cannot blacklist denominationAsset');
   });
 
   it('sets initial config values for fund and fires events', async () => {
@@ -164,7 +164,7 @@ describe('activateForFund', () => {
     await mockVaultProxy.getTrackedAssets.returns([randomAddress(), blacklistedAssets[0]]);
 
     await expect(assetBlacklist.activateForFund(mockComptrollerProxy, mockVaultProxy)).rejects.toBeRevertedWith(
-      'blacklisted asset detected',
+      'Blacklisted asset detected',
     );
   });
 });

@@ -5,8 +5,8 @@ import "../../utils/PolicyBase.sol";
 
 /// @title CallOnIntegrationPostValidatePolicyMixin Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A mixin contract for policies implemented during post-validation of callOnIntegration
-abstract contract CallOnIntegrationPostValidatePolicyBase is PolicyBase {
+/// @notice A mixin contract for policies that only implement the PostCallOnIntegration policy hook
+abstract contract PostCallOnIntegrationValidatePolicyBase is PolicyBase {
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
     function implementedHooks()

@@ -5,12 +5,12 @@ import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/CallOnIntegrationPostValidatePolicyBase.sol";
+import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AssetBlacklist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A blacklist of assets that cannot be added to a fund's vault
-contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListPolicyMixin {
+/// @notice A policy that disallows a configurable blacklist of assets in a fund's holdings
+contract AssetBlacklist is PostCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     using AddressArrayLib for address[];
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
@@ -18,7 +18,6 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
     /// @notice Validates and initializes a policy as necessary prior to fund activation
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _vaultProxy The fund's VaultProxy address
-    /// @dev No need to authenticate access, as there are no state transitions
     function activateForFund(address _comptrollerProxy, address _vaultProxy)
         external
         override
@@ -26,7 +25,7 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
     {
         require(
             passesRule(_comptrollerProxy, VaultLib(_vaultProxy).getTrackedAssets()),
-            "activateForFund: blacklisted asset detected"
+            "activateForFund: Blacklisted asset detected"
         );
     }
 
@@ -41,7 +40,7 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
         address[] memory assets = abi.decode(_encodedSettings, (address[]));
         require(
             !assets.contains(ComptrollerLib(_comptrollerProxy).getDenominationAsset()),
-            "addFundSettings: cannot blacklist denominationAsset"
+            "addFundSettings: Cannot blacklist denominationAsset"
         );
 
         __addToList(_comptrollerProxy, assets);
@@ -71,7 +70,7 @@ contract AssetBlacklist is CallOnIntegrationPostValidatePolicyBase, AddressListP
         return true;
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Apply the rule with the specified parameters of a PolicyHook
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes

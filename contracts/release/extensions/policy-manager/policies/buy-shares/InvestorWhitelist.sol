@@ -2,15 +2,15 @@
 pragma solidity 0.6.8;
 
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/BuySharesPreValidatePolicyBase.sol";
+import "./utils/PreBuySharesValidatePolicyBase.sol";
 
 /// @title InvestorWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A whitelist of investors who can buy shares in a fund
-contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyMixin {
+/// @notice A policy that only allows a configurable whitelist of investors to buy shares in a fund
+contract InvestorWhitelist is PreBuySharesValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
-    /// @notice Add the initial policy settings for a fund
+    /// @notice Adds the initial policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
     function addFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
@@ -27,7 +27,7 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
         return "INVESTOR_WHITELIST";
     }
 
-    /// @notice Update the policy settings for a fund
+    /// @notice Updates the policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
     function updateFundSettings(
@@ -50,7 +50,7 @@ contract InvestorWhitelist is BuySharesPreValidatePolicyBase, AddressListPolicyM
         return isInList(_comptrollerProxy, _investor);
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Apply the rule with the specified parameters of a PolicyHook
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes

@@ -6,12 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
-import "./utils/CallOnIntegrationPostValidatePolicyBase.sol";
+import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title MaxConcentration Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A concentration limit for any given asset in a particular fund
-contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
+/// @notice A policy that defines a configurable threshold for the concentration of any one asset
+/// in a fund's holdings
+contract MaxConcentration is PostCallOnIntegrationValidatePolicyBase {
     using SafeMath for uint256;
 
     event MaxConcentrationSet(address comptrollerProxy, uint256 value);
@@ -40,7 +41,7 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
     {
         require(
             passesRule(_comptrollerProxy, _vaultProxy, VaultLib(_vaultProxy).getTrackedAssets()),
-            "activateForFund: max concentration exceeded"
+            "activateForFund: Max concentration exceeded"
         );
     }
 
@@ -108,7 +109,7 @@ contract MaxConcentration is CallOnIntegrationPostValidatePolicyBase {
         return true;
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Apply the rule with the specified parameters of a PolicyHook
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _vaultProxy The fund's VaultProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule

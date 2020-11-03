@@ -5,12 +5,12 @@ import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/CallOnIntegrationPostValidatePolicyBase.sol";
+import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AssetWhitelist Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A whitelist of assets that cannot be added to a fund's vault
-contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListPolicyMixin {
+/// @notice A policy that only allows a configurable whitelist of assets in a fund's holdings
+contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     using AddressArrayLib for address[];
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
@@ -18,7 +18,6 @@ contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListP
     /// @notice Validates and initializes a policy as necessary prior to fund activation
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _vaultProxy The fund's VaultProxy address
-    /// @dev No need to authenticate access, as there are no state transitions
     function activateForFund(address _comptrollerProxy, address _vaultProxy)
         external
         override
@@ -26,7 +25,7 @@ contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListP
     {
         require(
             passesRule(_comptrollerProxy, VaultLib(_vaultProxy).getTrackedAssets()),
-            "activateForFund: non-whitelisted asset detected"
+            "activateForFund: Non-whitelisted asset detected"
         );
     }
 
@@ -41,7 +40,7 @@ contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListP
         address[] memory assets = abi.decode(_encodedSettings, (address[]));
         require(
             assets.contains(ComptrollerLib(_comptrollerProxy).getDenominationAsset()),
-            "addFundSettings: must whitelist denominationAsset"
+            "addFundSettings: Must whitelist denominationAsset"
         );
 
         __addToList(_comptrollerProxy, abi.decode(_encodedSettings, (address[])));
@@ -71,7 +70,7 @@ contract AssetWhitelist is CallOnIntegrationPostValidatePolicyBase, AddressListP
         return true;
     }
 
-    /// @notice Apply the rule with specified parameters, in the context of a fund
+    /// @notice Apply the rule with the specified parameters of a PolicyHook
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes

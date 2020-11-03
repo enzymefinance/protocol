@@ -19,13 +19,13 @@ abstract contract PolicyBase is IPolicy {
     }
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
-    /// @dev Disallowed by default
+    /// @dev Disallowed by default, can be overrode by the policy
     function activateForFund(address, address) external virtual override {
         // UNIMPLEMENTED
     }
 
-    /// @notice Update the policy settings for a fund
-    /// @dev Disallowed by default
+    /// @notice Updates the policy settings for a fund
+    /// @dev Disallowed by default, can be overrode by the policy
     function updateFundSettings(
         address,
         address,
@@ -38,8 +38,8 @@ abstract contract PolicyBase is IPolicy {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the PolicyManager contract address
-    /// @return policyManager_ The PolicyManager contract address
+    /// @notice Gets the `POLICY_MANAGER` variable value
+    /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() external view returns (address policyManager_) {
         return POLICY_MANAGER;
     }
