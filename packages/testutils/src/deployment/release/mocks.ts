@@ -5,6 +5,7 @@ import {
   MockChaiIntegratee,
   MockChainlinkPriceSource,
   MockChaiPriceSource,
+  MockCTokenIntegratee,
   MockGenericAdapter,
   MockGenericIntegratee,
   MockKyberIntegratee,
@@ -32,6 +33,8 @@ export interface MockDeploymentOutput {
     zrx: MockToken;
     dai: MockToken;
     ren: MockToken;
+    comp: MockToken;
+    usdc: MockToken;
   }>;
   uniswapV2Derivatives: Promise<{
     mlnWeth: MockToken;
@@ -67,7 +70,7 @@ export type MockDeployment = Deployment<DeploymentHandlers<MockDeploymentConfig,
 export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeploymentOutput>({
   // Assets
   async tokens(config) {
-    const [weth, mln, rep, knc, zrx, dai, ren] = await Promise.all([
+    const [weth, mln, rep, knc, zrx, dai, ren, comp, usdc] = await Promise.all([
       WETH.deploy(config.deployer),
       MockToken.deploy(config.deployer, 'Melon Token', 'MLN', 18),
       MockToken.deploy(config.deployer, 'Reputation', 'REP', 18),
@@ -75,18 +78,22 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       MockToken.deploy(config.deployer, '0x Protocol Token', 'ZRX', 18),
       MockToken.deploy(config.deployer, 'Dai Stablecoin', 'DAI', 18),
       MockToken.deploy(config.deployer, 'Republic Token', 'REN', 18),
+      MockToken.deploy(config.deployer, 'Compound', 'COMP', 18),
+      MockToken.deploy(config.deployer, 'USD Coin', 'USDC', 6),
     ]);
 
-    return { weth, mln, rep, knc, zrx, dai, ren };
+    return { weth, mln, rep, knc, zrx, dai, ren, comp, usdc };
   },
-  async compoundTokens(config) {
-    const [ccomp, cdai, ceth, crep, cusdc, czrx] = await Promise.all([
-      MockToken.deploy(config.deployer, 'Compound Collateral', 'cCOMP', 8),
-      MockToken.deploy(config.deployer, 'Compound Dai', 'cDAI', 8),
+  async compoundTokens(config, deployment) {
+    const tokens = await deployment.tokens;
+    const [ceth, ccomp, cdai, crep, cusdc, czrx] = await Promise.all([
+      // TODO: deploy MockCEther contract
       MockToken.deploy(config.deployer, 'Compound Ether', 'cETH', 8),
-      MockToken.deploy(config.deployer, 'Compound Augur', 'cREP', 8),
-      MockToken.deploy(config.deployer, 'Compound USD Coin', 'cUSDC', 8),
-      MockToken.deploy(config.deployer, 'Compound 0x', 'cZRX', 8),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound Collateral', 'cCOMP', 8, tokens.comp),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound Dai', 'cDAI', 8, tokens.dai),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound Augur', 'cREP', 8, tokens.rep),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound USD Coin', 'cUSDC', 8, tokens.usdc),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound 0x', 'cZRX', 8, tokens.zrx),
     ]);
 
     return { ccomp, cdai, ceth, crep, cusdc, czrx };

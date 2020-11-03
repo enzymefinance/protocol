@@ -2,21 +2,31 @@
 pragma solidity 0.6.8;
 
 import "../../../../interfaces/ICERC20.sol";
-import "../../../../utils/MathHelpers.sol";
+import "../../../utils/DispatcherOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title CompoundPriceFeed Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Price source oracle for Compound Tokens (cTokens)
-contract CompoundPriceFeed is IDerivativePriceFeed {
-    using SafeMath for uint256;
+contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+    event CTokenAdded(address indexed cToken, address indexed token);
 
-    address private immutable WETH;
-    address private immutable CETH;
+    mapping(address => address) private cTokenToToken;
 
-    constructor(address _weth, address _ceth) public {
-        WETH = _weth;
-        CETH = _ceth;
+    constructor(
+        address _dispatcher,
+        address _weth,
+        address _ceth,
+        address[] memory cERC20Tokens
+    ) public DispatcherOwnerMixin(_dispatcher) {
+        // Set cEth
+        cTokenToToken[_ceth] = _weth;
+        emit CTokenAdded(_ceth, _weth);
+
+        // Set any other cTokens
+        if (cERC20Tokens.length > 0) {
+            __addCERC20Tokens(cERC20Tokens);
+        }
     }
 
     /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
@@ -29,19 +39,55 @@ contract CompoundPriceFeed is IDerivativePriceFeed {
         returns (address[] memory underlyings_, uint256[] memory rates_)
     {
         underlyings_ = new address[](1);
-        if (_derivative == CETH) {
-            underlyings_[0] = WETH;
-        } else {
-            underlyings_[0] = ICERC20(_derivative).underlying();
-        }
+        underlyings_[0] = cTokenToToken[_derivative];
+        require(underlyings_[0] != address(0), "getRatesToUnderlyings: Unsupported derivative");
 
         rates_ = new uint256[](1);
+        // Returns a value with 10^18 precision
         rates_[0] = ICERC20(_derivative).exchangeRateStored();
+
+        return (underlyings_, rates_);
     }
 
-    /// @notice Check if an asset is supported by the price feed
-    /// @dev Currently unused
-    function isSupportedAsset(address) external view override returns (bool) {
-        return true;
+    /// @notice Checks if an asset is supported by the price feed
+    /// @param _asset The asset to check
+    /// @return isSupported_ True if the asset is supported
+    function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
+        return cTokenToToken[_asset] != address(0);
+    }
+
+    //////////////////////
+    // CTOKENS REGISTRY //
+    //////////////////////
+
+    /// @notice Adds cTokens to the price feed
+    /// @param _cTokens cTokens to add
+    /// @dev Only allows CERC20 tokens. CEther is set in the constructor.
+    function addCTokens(address[] calldata _cTokens) external onlyDispatcherOwner {
+        __addCERC20Tokens(_cTokens);
+    }
+
+    /// @dev Helper to add cTokens
+    function __addCERC20Tokens(address[] memory _cTokens) private {
+        require(_cTokens.length > 0, "__addCTokens: Empty _cTokens");
+
+        for (uint256 i; i < _cTokens.length; i++) {
+            require(cTokenToToken[_cTokens[i]] == address(0), "__addCTokens: Value already set");
+
+            address token = ICERC20(_cTokens[i]).underlying();
+            cTokenToToken[_cTokens[i]] = token;
+
+            emit CTokenAdded(_cTokens[i], token);
+        }
+    }
+
+    ////////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Returns the underlying asset of a given cToken
+    /// @param _cToken The cToken for which to get the underlying asset
+    function getTokenFromCToken(address _cToken) public view returns (address) {
+        return cTokenToToken[_cToken];
     }
 }

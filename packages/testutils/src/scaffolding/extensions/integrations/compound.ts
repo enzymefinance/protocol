@@ -1,50 +1,38 @@
-import { utils, BigNumberish } from 'ethers';
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
-  ComptrollerLib,
-  IntegrationManager,
-  VaultLib,
-  CompoundAdapter,
-  ICERC20,
-  StandardToken,
-  compoundArgs,
   callOnIntegrationArgs,
-  lendSelector,
+  CompoundAdapter,
+  compoundArgs,
+  ComptrollerLib,
+  ICERC20,
+  IntegrationManager,
   IntegrationManagerActionId,
+  lendSelector,
   redeemSelector,
+  VaultLib,
 } from '@melonproject/protocol';
+import { BigNumberish, utils } from 'ethers';
 
 export async function compoundLend({
   comptrollerProxy,
-  vaultProxy,
   integrationManager,
   fundOwner,
   compoundAdapter,
-  token,
   cToken,
   tokenAmount = utils.parseEther('1'),
   cTokenAmount = utils.parseEther('1'),
-  seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
-  vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   compoundAdapter: CompoundAdapter;
-  token: StandardToken;
   cToken: ICERC20;
   tokenAmount?: BigNumberish;
   cTokenAmount?: BigNumberish;
-  seedFund?: boolean;
 }) {
-  if (seedFund) {
-    await token.transfer(vaultProxy, tokenAmount);
-  }
-
-  const lendArgs = compoundArgs({
-    outgoingAsset: token,
+  const lendArgs = await compoundArgs({
+    cToken: resolveAddress(cToken),
     outgoingAssetAmount: tokenAmount,
-    incomingAsset: cToken,
     minIncomingAssetAmount: cTokenAmount,
   });
 
@@ -63,39 +51,29 @@ export async function compoundLend({
 
 export async function compoundRedeem({
   comptrollerProxy,
-  vaultProxy,
   integrationManager,
   fundOwner,
   compoundAdapter,
-  token,
   cToken,
   tokenAmount = utils.parseEther('1'),
   cTokenAmount = utils.parseEther('1'),
-  seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   compoundAdapter: CompoundAdapter;
-  token: StandardToken;
   cToken: ICERC20;
   tokenAmount?: BigNumberish;
   cTokenAmount?: BigNumberish;
-  seedFund?: boolean;
 }) {
-  if (seedFund) {
-    await cToken.transfer(vaultProxy, cTokenAmount);
-  }
-
-  const redeemArgs = compoundArgs({
-    outgoingAsset: cToken,
+  const redeemArgs = await compoundArgs({
+    cToken: resolveAddress(cToken),
     outgoingAssetAmount: cTokenAmount,
-    incomingAsset: token,
     minIncomingAssetAmount: tokenAmount,
   });
 
-  const callArgs = callOnIntegrationArgs({
+  const callArgs = await callOnIntegrationArgs({
     adapter: compoundAdapter,
     selector: redeemSelector,
     encodedCallArgs: redeemArgs,

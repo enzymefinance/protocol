@@ -74,6 +74,7 @@ export { FundCalculator } from './codegen/FundCalculator';
 export { MockVaultLib } from './codegen/MockVaultLib';
 export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
 export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
+export { MockCTokenIntegratee } from './codegen/MockCTokenIntegratee';
 export { MockGenericAdapter } from './codegen/MockGenericAdapter';
 export { MockGenericIntegratee } from './codegen/MockGenericIntegratee';
 export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';

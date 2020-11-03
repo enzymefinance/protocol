@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
 import "../../../../interfaces/ICERC20.sol";
 import "../../../../interfaces/ICEther.sol";
 import "../../../../interfaces/IWETH.sol";
@@ -10,16 +11,19 @@ import "../utils/AdapterBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for Compound <https://compound.finance/>
 contract CompoundAdapter is AdapterBase {
+    address private immutable COMPOUND_PRICE_FEED;
     address private immutable WETH_TOKEN;
 
-    constructor(address _integrationManager, address _wethToken)
-        public
-        AdapterBase(_integrationManager)
-    {
+    constructor(
+        address _integrationManager,
+        address _compoundPriceFeed,
+        address _wethToken
+    ) public AdapterBase(_integrationManager) {
+        COMPOUND_PRICE_FEED = _compoundPriceFeed;
         WETH_TOKEN = _wethToken;
     }
 
-    /// @dev Needed to receive ETH from swap
+    /// @dev Needed to receive ETH during cEther lend/redeem
     receive() external payable {}
 
     /// @notice Provides a constant string identifier for an adapter
@@ -49,33 +53,44 @@ contract CompoundAdapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector == LEND_SELECTOR || _selector == REDEEM_SELECTOR) {
-            (
-                address _outgoingAsset,
-                uint256 _outgoingAssetAmount,
-                address _incomingAsset,
-                uint256 _minIncomingAssetAmount
-            ) = __decodeCallArgs(_encodedCallArgs);
-
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
+        if (_selector == LEND_SELECTOR) {
+            (address cToken, uint256 tokenAmount, uint256 minCTokenAmount) = __decodeCallArgs(
+                _encodedCallArgs
+            );
+            address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
+            require(token != address(0), "parseAssetsForMethod: Unsupported cToken");
 
             spendAssets_ = new address[](1);
-            spendAssets_[0] = _outgoingAsset;
-
+            spendAssets_[0] = token;
             spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = _outgoingAssetAmount;
+            spendAssetAmounts_[0] = tokenAmount;
 
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = _incomingAsset;
-
+            incomingAssets_[0] = cToken;
             minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = _minIncomingAssetAmount;
+            minIncomingAssetAmounts_[0] = minCTokenAmount;
+        } else if (_selector == REDEEM_SELECTOR) {
+            (address cToken, uint256 cTokenAmount, uint256 minTokenAmount) = __decodeCallArgs(
+                _encodedCallArgs
+            );
+            address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
+            require(token != address(0), "parseAssetsForMethod: Unsupported cToken");
+
+            spendAssets_ = new address[](1);
+            spendAssets_[0] = cToken;
+            spendAssetAmounts_ = new uint256[](1);
+            spendAssetAmounts_[0] = cTokenAmount;
+
+            incomingAssets_ = new address[](1);
+            incomingAssets_[0] = token;
+            minIncomingAssetAmounts_ = new uint256[](1);
+            minIncomingAssetAmounts_[0] = minTokenAmount;
         } else {
             revert("parseIncomingAssets: _selector invalid");
         }
 
         return (
-            spendAssetsHandleType_,
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
             spendAssetAmounts_,
             incomingAssets_,
@@ -83,49 +98,58 @@ contract CompoundAdapter is AdapterBase {
         );
     }
 
-    /// @notice Lends an asset to Compound
+    /// @notice Lends an amount of a token to Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
     function lend(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata,
         bytes calldata _encodedAssetTransferArgs
     )
         external
         onlyIntegrationManager
         fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
-        (address token, uint256 tokenAmount, address cToken, ) = __decodeCallArgs(
-            _encodedCallArgs
-        );
-        if (token == WETH_TOKEN) {
-            IWETH(WETH_TOKEN).withdraw(tokenAmount);
-            ICEther(cToken).mint{value: tokenAmount}();
+        // More efficient to parse all from _encodedAssetTransferArgs
+        (
+            ,
+            address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts,
+            address[] memory incomingAssets
+        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+
+        if (spendAssets[0] == WETH_TOKEN) {
+            IWETH(WETH_TOKEN).withdraw(spendAssetAmounts[0]);
+            ICEther(incomingAssets[0]).mint{value: spendAssetAmounts[0]}();
         } else {
-            __approveMaxAsNeeded(token, cToken, tokenAmount);
-            ICERC20(cToken).mint(tokenAmount);
+            __approveMaxAsNeeded(spendAssets[0], incomingAssets[0], spendAssetAmounts[0]);
+            ICERC20(incomingAssets[0]).mint(spendAssetAmounts[0]);
         }
     }
 
-    /// @notice Redeems an asset from Compound
+    /// @notice Redeems an amount of cTokens from Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
     function redeem(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata,
         bytes calldata _encodedAssetTransferArgs
     )
         external
         onlyIntegrationManager
         fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
-        (address cToken, uint256 cTokenAmount, address token, ) = __decodeCallArgs(
-            _encodedCallArgs
-        );
-        ICERC20(cToken).redeem(cTokenAmount);
-        if (token == WETH_TOKEN) {
+        // More efficient to parse all from _encodedAssetTransferArgs
+        (
+            ,
+            address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts,
+            address[] memory incomingAssets
+        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+
+        ICERC20(spendAssets[0]).redeem(spendAssetAmounts[0]);
+
+        if (incomingAssets[0] == WETH_TOKEN) {
             IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
         }
     }
@@ -137,18 +161,23 @@ contract CompoundAdapter is AdapterBase {
         private
         pure
         returns (
-            address outgoingAsset_,
+            address cToken,
             uint256 outgoingAssetAmount,
-            address incomingAsset_,
-            uint256 minIncomingAssetAmount_
+            uint256 minIncomingAssetAmount
         )
     {
-        return abi.decode(_encodedCallArgs, (address, uint256, address, uint256));
+        return abi.decode(_encodedCallArgs, (address, uint256, uint256));
     }
 
     ///////////////////
     // STATE GETTERS //
     ///////////////////
+
+    /// @notice Gets the `COMPOUND_PRICE_FEED` variable
+    /// @return compoundPriceFeed_ The `COMPOUND_PRICE_FEED` variable value
+    function getCompoundPriceFeed() external view returns (address compoundPriceFeed_) {
+        return COMPOUND_PRICE_FEED;
+    }
 
     /// @notice Gets the `WETH_TOKEN` variable
     /// @return wethToken_ The `WETH_TOKEN` variable value

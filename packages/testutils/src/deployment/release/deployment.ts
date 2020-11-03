@@ -1,4 +1,3 @@
-import { BigNumberish, BytesLike } from 'ethers';
 import { AddressLike, SignerWithAddress } from '@crestproject/crestproject';
 import {
   AdapterBlacklist,
@@ -35,6 +34,7 @@ import {
   VaultLib,
   ZeroExV2Adapter,
 } from '@melonproject/protocol';
+import { BigNumberish, BytesLike } from 'ethers';
 import { describeDeployment } from '../deployment';
 
 export interface ReleaseDeploymentConfig {
@@ -239,6 +239,9 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   },
   // Derivative price feeds
   async aggregatedDerivativePriceFeed(config, deployment) {
+    // Await all derivative price feeds, since the AggregatedDerivativePriceFeed relies on
+    // isSupportedAsset() calls to each feed
+
     const chaiPriceFeed = await deployment.chaiPriceFeed;
 
     const cTokens = Object.values(config.derivatives.compound);
@@ -265,7 +268,9 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     );
   },
   async compoundPriceFeed(config) {
-    return CompoundPriceFeed.deploy(config.deployer, config.weth, config.derivatives.compound.ceth);
+    const { ceth, ...cTokens } = config.derivatives.compound;
+
+    return CompoundPriceFeed.deploy(config.deployer, config.dispatcher, config.weth, ceth, Object.values(cTokens));
   },
   async uniswapV2PoolPriceFeed(config) {
     return UniswapV2PoolPriceFeed.deploy(config.deployer);
@@ -280,7 +285,12 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     );
   },
   async compoundAdapter(config, deployment) {
-    return CompoundAdapter.deploy(config.deployer, await deployment.integrationManager, config.weth);
+    return CompoundAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      await deployment.compoundPriceFeed,
+      config.weth,
+    );
   },
   async engineAdapter(config, deployment) {
     return EngineAdapter.deploy(

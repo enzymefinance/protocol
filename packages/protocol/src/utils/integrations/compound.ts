@@ -1,20 +1,16 @@
-import { BigNumberish } from 'ethers';
 import { AddressLike } from '@crestproject/crestproject';
+import { BigNumberish } from 'ethers';
 import { encodeArgs } from '../encoding';
 
-export function compoundArgs({
-  outgoingAsset,
-  incomingAsset,
+// Note: arguments are valid for both Lend and Redeem functions
+export async function compoundArgs({
+  cToken,
   outgoingAssetAmount,
   minIncomingAssetAmount,
 }: {
-  outgoingAsset: AddressLike;
+  cToken: AddressLike;
   outgoingAssetAmount: BigNumberish;
-  incomingAsset: AddressLike;
   minIncomingAssetAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address', 'uint256', 'address', 'uint256'],
-    [outgoingAsset, outgoingAssetAmount, incomingAsset, minIncomingAssetAmount],
-  );
+  return encodeArgs(['address', 'uint256', 'uint256'], [cToken, outgoingAssetAmount, minIncomingAssetAmount]);
 }

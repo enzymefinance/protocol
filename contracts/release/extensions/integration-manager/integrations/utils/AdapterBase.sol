@@ -27,10 +27,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = abi.decode(
-            _encodedAssetTransferArgs,
-            (IIntegrationManager.SpendAssetsHandleType, address[], uint256[], address[])
-        );
+        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
 
         // Take custody of spend assets (if necessary)
         if (spendAssetsHandleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
@@ -76,6 +73,24 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         if (ERC20(_asset).allowance(address(this), _target) < _neededAmount) {
             ERC20(_asset).approve(_target, type(uint256).max);
         }
+    }
+
+    /// @dev Helper to decode the _encodedAssetTransferArgs param passed to adapter call
+    function __decodeEncodedAssetTransferArgs(bytes memory _encodedAssetTransferArgs)
+        internal
+        pure
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_
+        )
+    {
+        return
+            abi.decode(
+                _encodedAssetTransferArgs,
+                (IIntegrationManager.SpendAssetsHandleType, address[], uint256[], address[])
+            );
     }
 
     /// @dev Helper to transfer full contract balances of assets to the specified VaultProxy

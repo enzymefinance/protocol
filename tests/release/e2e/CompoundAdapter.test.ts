@@ -1,6 +1,7 @@
 import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
 import {
   CompoundAdapter,
+  CompoundPriceFeed,
   ComptrollerLib,
   ICERC20,
   IntegrationManager,
@@ -52,19 +53,20 @@ async function assertCompoundLend({
   integrationManager,
   fundOwner,
   compoundAdapter,
-  token,
   tokenAmount = utils.parseEther('1'),
   cToken,
+  compoundPriceFeed,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   compoundAdapter: CompoundAdapter;
-  token: StandardToken;
   tokenAmount?: BigNumber;
   cToken: ICERC20;
+  compoundPriceFeed: CompoundPriceFeed;
 }) {
+  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), fundOwner);
   await token.transfer(vaultProxy, tokenAmount);
 
   const rateBefore = await cToken.exchangeRateStored.call();
@@ -81,17 +83,14 @@ async function assertCompoundLend({
     assets: [cToken, token],
   });
 
-  await compoundLend({
+  const lendReceipt = await compoundLend({
     comptrollerProxy,
-    vaultProxy,
     integrationManager,
     fundOwner,
     compoundAdapter,
-    token,
     cToken,
     tokenAmount: tokenAmount,
     cTokenAmount: minIncomingCTokenAmount,
-    seedFund: false,
   });
 
   // Get exchange rate after tx (the rate is updated right after)
@@ -104,6 +103,8 @@ async function assertCompoundLend({
   const expectedCTokenAmount = tokenAmount.mul(utils.parseEther('1')).div(rate);
   expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedCTokenAmount));
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(tokenAmount));
+
+  return lendReceipt;
 }
 
 async function assertCompoundRedeem({
@@ -112,29 +113,31 @@ async function assertCompoundRedeem({
   integrationManager,
   fundOwner,
   compoundAdapter,
-  token,
+  cTokenAmount = constants.One,
   cToken,
+  compoundPriceFeed,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   compoundAdapter: CompoundAdapter;
-  token: StandardToken;
-  tokenAmount?: BigNumber;
+  cTokenAmount?: BigNumber;
   cToken: ICERC20;
+  compoundPriceFeed: CompoundPriceFeed;
 }) {
+  const tokenAmount = utils.parseEther('1');
+  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), fundOwner);
+  await token.transfer(vaultProxy, tokenAmount);
+
   await compoundLend({
     comptrollerProxy,
-    vaultProxy,
     integrationManager,
     fundOwner,
     compoundAdapter,
-    token,
     cToken,
-    tokenAmount: utils.parseEther('1'),
-    cTokenAmount: constants.One,
-    seedFund: true,
+    tokenAmount,
+    cTokenAmount,
   });
 
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
@@ -146,13 +149,12 @@ async function assertCompoundRedeem({
   const redeemAmount = preTxOutgoingAssetBalance;
   const minIncomingTokenAmount = redeemAmount.mul(utils.parseEther('1')).div(rateBefore);
 
-  await compoundRedeem({
+  const redeemReceipt = await compoundRedeem({
     comptrollerProxy,
     vaultProxy,
     integrationManager,
     fundOwner,
     compoundAdapter,
-    token,
     cToken,
     tokenAmount: minIncomingTokenAmount,
     cTokenAmount: redeemAmount,
@@ -169,93 +171,97 @@ async function assertCompoundRedeem({
 
   expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedTokenAmount));
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(redeemAmount));
+
+  return redeemReceipt;
 }
 
 // HAPPY PATHS
-it('works as expected when called for lending by a fund', async () => {
-  const {
-    derivatives: { cdai: cToken },
-    config: {
-      tokens: { dai: token },
-    },
-    deployment: { integrationManager, compoundAdapter },
-    fund: { fundOwner, comptrollerProxy, vaultProxy },
-  } = await provider.snapshot(snapshot);
+describe('lend', () => {
+  it('works as expected when called for lending by a fund', async () => {
+    const {
+      derivatives: { cdai: cToken },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
+      fund: { fundOwner, comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
-  await assertCompoundLend({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    compoundAdapter,
-    token,
-    tokenAmount: utils.parseEther('1'),
-    cToken: cToken,
+    const lendReceipt = await assertCompoundLend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      compoundAdapter,
+      tokenAmount: utils.parseEther('1'),
+      cToken,
+      compoundPriceFeed,
+    });
+
+    // Rounding up from 554824
+    expect(lendReceipt).toCostLessThan('555000');
+  });
+
+  it('works as expected when called for lending by a fund (ETH)', async () => {
+    const {
+      derivatives: { ceth: cToken },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
+      fund: { fundOwner, comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    const lendReceipt = await assertCompoundLend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      compoundAdapter,
+      tokenAmount: utils.parseEther('1'),
+      cToken,
+      compoundPriceFeed,
+    });
+
+    // Rounding up from 357882
+    expect(lendReceipt).toCostLessThan('358000');
   });
 });
 
-it('works as expected when called for lending by a fund (ETH)', async () => {
-  const {
-    derivatives: { ceth: cToken },
-    config: {
-      tokens: { weth: token },
-    },
-    deployment: { integrationManager, compoundAdapter },
-    fund: { fundOwner, comptrollerProxy, vaultProxy },
-  } = await provider.snapshot(snapshot);
+describe('redeem', () => {
+  it('works as expected when called for redeeming by a fund', async () => {
+    const {
+      derivatives: { cdai: cToken },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
+      fund: { fundOwner, comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
 
-  await assertCompoundLend({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    compoundAdapter,
-    token,
-    tokenAmount: utils.parseEther('1'),
-    cToken: cToken,
+    const redeemReceipt = await assertCompoundRedeem({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      compoundAdapter,
+      cToken,
+      compoundPriceFeed,
+    });
+
+    // Rounding up from 594224
+    expect(redeemReceipt).toCostLessThan('595000');
+  });
+
+  it('works as expected when called for redeeming by a fund (ETH)', async () => {
+    const {
+      derivatives: { ceth: cToken },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
+      fund: { fundOwner, comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    const redeemReceipt = await assertCompoundRedeem({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      compoundAdapter,
+      cToken,
+      compoundPriceFeed,
+    });
+
+    // Rounding up from 435237
+    expect(redeemReceipt).toCostLessThan('436000');
   });
 });
-
-it('works as expected when called for redeeming by a fund', async () => {
-  const {
-    derivatives: { cdai: cToken },
-    config: {
-      tokens: { dai: token },
-    },
-    deployment: { integrationManager, compoundAdapter },
-    fund: { fundOwner, comptrollerProxy, vaultProxy },
-  } = await provider.snapshot(snapshot);
-
-  await assertCompoundRedeem({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    compoundAdapter,
-    token,
-    cToken: cToken,
-  });
-});
-
-it('works as expected when called for redeeming by a fund (ETH)', async () => {
-  const {
-    derivatives: { ceth: cToken },
-    config: {
-      tokens: { weth: token },
-    },
-    deployment: { integrationManager, compoundAdapter },
-    fund: { fundOwner, comptrollerProxy, vaultProxy },
-  } = await provider.snapshot(snapshot);
-
-  await assertCompoundRedeem({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    compoundAdapter,
-    token,
-    cToken: cToken,
-  });
-});
-
-// UNHAPPY PATHS
