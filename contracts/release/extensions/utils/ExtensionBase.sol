@@ -7,25 +7,25 @@ import "../IExtension.sol";
 
 /// @title ExtensionBase Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Base class for an Extension
+/// @notice Base class for an extension
 abstract contract ExtensionBase is IExtension {
     mapping(address => address) internal comptrollerProxyToVaultProxy;
 
-    /// @notice Allows Extension to run logic during fund activation
-    /// @dev Unimplemented by default, may be overrode.
+    /// @notice Allows extension to run logic during fund activation
+    /// @dev Unimplemented by default, may be overridden.
     function activateForFund(bool) external virtual override {
         // UNIMPLEMENTED
     }
 
-    /// @notice Allows Extension to run logic during fund deactivation (destruct)
-    /// @dev Unimplemented by default, may be overrode.
+    /// @notice Allows extension to run logic during fund deactivation (destruct)
+    /// @dev Unimplemented by default, may be overridden.
     function deactivateForFund() external virtual override {
         // UNIMPLEMENTED
     }
 
     /// @notice Receives calls from ComptrollerLib.callOnExtension()
     /// and dispatches the appropriate action
-    /// @dev Unimplemented by default, may be overrode.
+    /// @dev Unimplemented by default, may be overridden.
     function receiveCallFromComptroller(
         address,
         uint256,
@@ -34,8 +34,8 @@ abstract contract ExtensionBase is IExtension {
         revert("receiveCallFromComptroller: Unimplemented for Extension");
     }
 
-    /// @notice Allows Extension to run logic during fund configuration
-    /// @dev Unimplemented by default, may be overrode.
+    /// @notice Allows extension to run logic during fund configuration
+    /// @dev Unimplemented by default, may be overridden.
     function setConfigForFund(bytes calldata) external virtual override {
         // UNIMPLEMENTED
     }

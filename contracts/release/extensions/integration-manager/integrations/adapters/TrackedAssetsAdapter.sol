@@ -6,7 +6,7 @@ import "../utils/AdapterBase.sol";
 
 /// @title TrackedAssetsAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Adapter to add tracked assets to a fund
+/// @notice Adapter to add tracked assets to a fund (useful e.g. to handle token airdrops)
 contract TrackedAssetsAdapter is AdapterBase {
     constructor(address _integrationManager) public AdapterBase(_integrationManager) {}
 

@@ -235,8 +235,8 @@ contract UniswapV2Adapter is AdapterBase {
             _incomingAsset == IUniswapV2Factory(FACTORY).getPair(_tokenA, _tokenB),
             "__lend: Invalid incomingAsset"
         );
-        require(_amountADesired > 0, "__lend: _amountADesired must be >0");
-        require(_amountBDesired > 0, "__lend: _amountBDesired must be >0");
+        require(_amountADesired > 0, "__lend: _amountADesired must be > 0");
+        require(_amountBDesired > 0, "__lend: _amountBDesired must be > 0");
         require(_amountAMin <= _amountADesired, "__lend: _amountAMin must be <= _amountADesired");
         require(_amountBMin <= _amountBDesired, "__lend: _amountBMin must be <= _amountBDesired");
 
@@ -266,7 +266,7 @@ contract UniswapV2Adapter is AdapterBase {
         uint256 _amountBMin,
         address _outgoingAsset
     ) private {
-        require(_liquidity > 0, "__redeem: _liquidity must be >0");
+        require(_liquidity > 0, "__redeem: _liquidity must be > 0");
 
         require(
             _outgoingAsset == IUniswapV2Factory(FACTORY).getPair(_tokenA, _tokenB),
@@ -295,9 +295,9 @@ contract UniswapV2Adapter is AdapterBase {
         address[] memory _path
     ) private {
         // Validate args
-        require(_path.length >= 2, "__takeOrder: _path must be >=2");
-        require(_minIncomingAssetAmount > 0, "__takeOrder: _minIncomingAssetAmount must be >0");
-        require(_outgoingAssetAmount > 0, "__takeOrder: _outgoingAssetAmount must be >0");
+        require(_path.length >= 2, "__takeOrder: _path must be >= 2");
+        require(_minIncomingAssetAmount > 0, "__takeOrder: _minIncomingAssetAmount must be > 0");
+        require(_outgoingAssetAmount > 0, "__takeOrder: _outgoingAssetAmount must be > 0");
 
         __approveMaxAsNeeded(_path[0], ROUTER, _outgoingAssetAmount);
 

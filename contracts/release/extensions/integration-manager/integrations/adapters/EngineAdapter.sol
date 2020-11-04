@@ -7,7 +7,7 @@ import "../utils/AdapterBase.sol";
 
 /// @title EngineAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Adapter for trading MLN for discounted ETH via the Engine Contract
+/// @notice Adapter for trading MLN for discounted WETH via the Engine Contract
 contract EngineAdapter is AdapterBase {
     address private immutable ENGINE;
     address private immutable MLN_TOKEN;
@@ -79,10 +79,11 @@ contract EngineAdapter is AdapterBase {
         );
     }
 
-    /// @notice Trades MLN for discounted ETH via the Engine contract
+    /// @notice Trades MLN for discounted WETH via the Engine contract
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @dev The Melon Engine holds ETH, but the order taker will receive WETH
     function takeOrder(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,

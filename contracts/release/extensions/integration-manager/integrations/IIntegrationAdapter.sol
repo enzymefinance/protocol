@@ -5,6 +5,7 @@ import "../IIntegrationManager.sol";
 
 /// @title Integration Adapter interface
 /// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Interface for all integration adapters
 interface IIntegrationAdapter {
     function identifier() external pure returns (string memory);
 
