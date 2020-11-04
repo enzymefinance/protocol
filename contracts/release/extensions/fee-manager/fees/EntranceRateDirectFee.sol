@@ -5,7 +5,7 @@ import "./utils/EntranceRateFeeBase.sol";
 
 /// @title EntranceRateDirectFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice An EntranceRateFee that transfers the fee to the fund manager
+/// @notice An EntranceRateFee that transfers the fee shares to the fund manager
 contract EntranceRateDirectFee is EntranceRateFeeBase {
     constructor(address _feeManager)
         public

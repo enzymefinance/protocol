@@ -5,6 +5,7 @@ import "./IFeeManager.sol";
 
 /// @title Fee Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Interface for all fees
 interface IFee {
     function activateForFund(address, address) external;
 

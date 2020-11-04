@@ -90,8 +90,8 @@ contract FeeManager is
     }
 
     /// @notice Deactivate fees for a fund
-    /// If we add a SellShares fee hook, this will need to be refactored to not delete those fees.
     /// @dev msg.sender is validated during __settleFeesForHook()
+    /// If we add a SellShares fee hook, this will need to be refactored to not delete those fees.
     function deactivateForFund() external override {
         // Settle continuous fees one last time
         __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
@@ -103,7 +103,8 @@ contract FeeManager is
         __deleteFundStorage(msg.sender);
     }
 
-    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
+    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy.
+    /// This is the only way for a fund owner to directly call a function in this contract.
     /// @param _actionId An ID representing the desired action
     function receiveCallFromComptroller(
         address,
@@ -122,8 +123,8 @@ contract FeeManager is
     /// @param _configData Encoded config data
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     /// The order of `fees` determines the order in which fees of the same FeeHook will be applied.
-    /// The recommended order is for static fees (e.g., a management fee) to be applied before
-    /// dynamic fees (e.g., a performance fee).
+    /// The recommended order for the currently implemented fees is:
+    /// 1. management fee, 2. performance fee, 3. entrance rate fees
     function setConfigForFund(bytes calldata _configData) external override {
         (address[] memory fees, bytes[] memory settingsData) = abi.decode(
             _configData,
@@ -227,7 +228,8 @@ contract FeeManager is
     /// @dev Settles all "continuous" fees (e.g., ManagementFee and PerformanceFee),
     /// paying out shares whenever possible.
     /// Anyone can call this function, but must do so via the ComptrollerProxy.
-    /// Useful in case there is little activity and a manager wants to cull fees.
+    /// Useful in case there is little investment/redemption activity (fees are automatically
+    /// settled on investment/redemption).
     /// @dev msg.sender is validated during __settleFeesForHook()
     function __settleContinuousFees() private {
         __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
@@ -382,7 +384,7 @@ contract FeeManager is
 
     /// @notice Get the amount of shares outstanding for a particular fee for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _fee The fee
+    /// @param _fee The fee address
     /// @return sharesOutstanding_ The amount of shares outstanding
     function getFeeSharesOutstandingForFund(address _comptrollerProxy, address _fee)
         external

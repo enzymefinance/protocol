@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 /// @title FeeManager Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Interface for the FeeManager
 interface IFeeManager {
     // No fees for the current release are implemented post-redeemShares
     enum FeeHook {Continuous, PreBuyShares, PostBuyShares, PreRedeemShares}

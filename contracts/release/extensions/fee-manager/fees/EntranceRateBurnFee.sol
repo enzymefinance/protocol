@@ -5,7 +5,7 @@ import "./utils/EntranceRateFeeBase.sol";
 
 /// @title EntranceRateBurnFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice An EntranceRateFee that burns the fee
+/// @notice An EntranceRateFee that burns the fee shares
 contract EntranceRateBurnFee is EntranceRateFeeBase {
     constructor(address _feeManager)
         public

@@ -8,7 +8,7 @@ import "./utils/FeeBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A management fee with a configurable rate
+/// @notice A management fee with a configurable annual rate
 contract ManagementFee is FeeBase, SharesInflationMixin {
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
 
@@ -30,7 +30,7 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
 
     /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _settingsData Encoded settings to apply to the policy for a fund
+    /// @param _settingsData Encoded settings to apply to the fee for a fund
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
         external
         override
@@ -99,8 +99,8 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         }
 
         // Must settle even when no shares are due, for the case that settlement is being
-        // done before the first purchase of shares into a fund
-        // (i.e., the only time when shares due would be 0)
+        // done when there are no shares in the fund (i.e. at the first investment, or at the
+        // first investment after all shares have been redeemed)
         comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
         emit Settled(_comptrollerProxy, sharesDue_, prevSettled);
 

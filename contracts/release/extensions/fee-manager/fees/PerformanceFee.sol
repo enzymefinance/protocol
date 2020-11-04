@@ -11,7 +11,8 @@ import "./utils/FeeBase.sol";
 
 /// @title PerformanceFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A performance-based fee with configurable rate and period
+/// @notice A performance-based fee with configurable rate and crystallization period, using
+/// a high watermark
 contract PerformanceFee is FeeBase, SharesInflationMixin {
     using SignedSafeMath for int256;
 
@@ -72,7 +73,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the policy for the fund
-    /// @dev `highWaterMark`, `lastSharePrice`, and `activated` are added during activation
+    /// @dev `highWaterMark`, `lastSharePrice`, and `activated` are set during activation
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
         external
         override
@@ -202,20 +203,20 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @notice Checks whether the shares outstanding can be paid out
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return payoutAllowed_ True if the fee payment is due
-    /// @dev Payout is allowed if fees have not yet been settled in an elapsed redemption period,
-    /// and at least 1 period has expired since activation
+    /// @dev Payout is allowed if fees have not yet been settled in a crystallization period,
+    /// and at least 1 crystallization period has passed since activation
     function payoutAllowed(address _comptrollerProxy) public view returns (bool payoutAllowed_) {
         FeeInfo memory feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
         uint256 period = feeInfo.period;
 
         uint256 timeSinceActivated = block.timestamp.sub(feeInfo.activated);
 
-        // Check if at least 1 period has passed since activation
+        // Check if at least 1 crystallization period has passed since activation
         if (timeSinceActivated < period) {
             return false;
         }
 
-        // Check that a full period has passed since the last payout
+        // Check that a full crystallization period has passed since the last payout
         uint256 timeSincePeriodStart = timeSinceActivated % period;
         uint256 periodStart = block.timestamp.sub(timeSincePeriodStart);
         return feeInfo.lastPaid < periodStart;
@@ -223,7 +224,8 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to calculate the aggregated value accumulated to a fund during the period
+    /// @dev Helper to calculate the aggregated value accumulated to a fund since the last
+    /// settlement (happening at investment/redemption)
     function __calcAggregateValueDue(
         uint256 _netSharesSupply,
         uint256 _sharePriceWithoutPerformance,
