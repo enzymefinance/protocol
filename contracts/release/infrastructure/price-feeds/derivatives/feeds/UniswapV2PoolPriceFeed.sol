@@ -50,8 +50,8 @@ contract UniswapV2PoolPriceFeed is IDerivativePriceFeed, MathHelpers {
     }
 
     /// @notice Checks if an asset is supported by this price feed
-    /// @return True if valid
-    function isSupportedAsset(address) public view override returns (bool) {
+    /// @return isSupported_ True if supported
+    function isSupportedAsset(address) public view override returns (bool isSupported_) {
         return true;
     }
 }

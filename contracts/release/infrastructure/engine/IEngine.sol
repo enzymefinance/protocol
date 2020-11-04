@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 
 /// @title IEngine Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Interface for the Engine
 interface IEngine {
     function calcEthDueForGasUsed(uint256) external returns (uint256, bool);
 

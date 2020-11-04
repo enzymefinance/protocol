@@ -87,7 +87,8 @@ contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
 
     /// @notice Returns the underlying asset of a given cToken
     /// @param _cToken The cToken for which to get the underlying asset
-    function getTokenFromCToken(address _cToken) public view returns (address) {
+    /// @return token_ The underlying token
+    function getTokenFromCToken(address _cToken) public view returns (address token_) {
         return cTokenToToken[_cToken];
     }
 }

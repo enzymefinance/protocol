@@ -85,7 +85,7 @@ contract ValueInterpreter is IValueInterpreter {
         return (value_, isValid_);
     }
 
-    /// @notice Calculates the value of a given amount of one asset in terms of another
+    /// @notice Calculates the value of a given amount of one asset in terms of another asset
     /// @param _baseAsset The asset from which to convert
     /// @param _amount The amount of the _baseAsset to convert
     /// @param _quoteAsset The asset to which to convert

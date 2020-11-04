@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 
 /// @title IValueInterpreter interface
 /// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Interface for ValueInterpreter
 interface IValueInterpreter {
     function calcCanonicalAssetValue(
         address,

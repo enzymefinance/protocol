@@ -229,10 +229,6 @@ contract Engine is IEngine, DispatcherOwnerMixin {
     // STATE GETTERS //
     ///////////////////
 
-    function isEtherTaker(address _who) public view returns (bool) {
-        return acctToIsEtherTaker[_who];
-    }
-
     /// @notice Gets the `amguPrice` variable
     /// @return amguPrice_ The `amguPrice` variable value
     function getAmguPrice() external view override returns (uint256 amguPrice_) {
@@ -285,5 +281,12 @@ contract Engine is IEngine, DispatcherOwnerMixin {
     /// @return wethToken_ The `WETH_TOKEN` variable value
     function getWethToken() external view returns (address wethToken_) {
         return WETH_TOKEN;
+    }
+
+    /// @notice Check whether an account is allowed to trade MLN for discounted ETH
+    /// @param _who The account address
+    /// @return isTaker_ True if the account is allowed
+    function isEtherTaker(address _who) public view returns (bool isTaker_) {
+        return acctToIsEtherTaker[_who];
     }
 }
