@@ -30,7 +30,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
-    // Constants - shared by all proxies
+    // Constants and immutables - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
@@ -51,20 +51,11 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         permissionedVaultActionAllowed = false;
     }
 
-    /// @dev Especially because the current asset universe is limited to non-reentrant ERC20 tokens,
-    /// this reentrancy guard is not strictly necessary, but implemented out of an abundance of
-    /// caution in the case we decide that we do want to allow such assets.
     modifier locksReentrance() {
         __assertNotReentranceLocked();
         reentranceLocked = true;
         _;
         reentranceLocked = false;
-    }
-
-    modifier timelockedSharesAction(address _account) {
-        __assertSharesActionNotTimelocked(_account);
-        _;
-        acctToLastSharesAction[_account] = block.timestamp;
     }
 
     modifier onlyActive() {
@@ -87,8 +78,15 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         _;
     }
 
+    modifier timelockedSharesAction(address _account) {
+        __assertSharesActionNotTimelocked(_account);
+        _;
+        acctToLastSharesAction[_account] = block.timestamp;
+    }
+
     // ASSERTION HELPERS
-    // Modifiers are inefficient in terms of reducing contract size,
+
+    // Modifiers are inefficient in terms of contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
     /// @dev Since vaultProxy is set during activate(),
@@ -152,13 +150,13 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     // GENERAL //
     /////////////
 
-    /// @notice Calls an arbitrary function on an extension
-    /// @param _extension The extension contract to call (e.g., FeeManager)
+    /// @notice Calls a specified action on an Extension
+    /// @param _extension The Extension contract to call (e.g., FeeManager)
     /// @param _actionId An ID representing the action to take on the extension (see extension)
     /// @param _callArgs The encoded data for the call
     /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
-    /// (for access control). Uses a mutex of sorts that only allows permissioned calls
-    /// to the vault during this stack.
+    /// (for access control). Uses a mutex of sorts that allows "permissioned vault actions"
+    /// during calls originating from this function.
     /// Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function callOnExtension(
         address _extension,
@@ -175,13 +173,13 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         IExtension(_extension).receiveCallFromComptroller(msg.sender, _actionId, _callArgs);
     }
 
-    /// @notice Makes an permissioned, state-changing call on the VaultProxy contract
+    /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
     function permissionedVaultAction(
         IPermissionedVaultActionLib.VaultAction _action,
         bytes calldata _actionData
-    ) external override onlyActive onlyNotPaused {
+    ) external override {
         (bool success, bytes memory returnData) = PERMISSIONED_VAULT_ACTION_LIB.delegatecall(
             abi.encodeWithSelector(
                 IPermissionedVaultActionLib.dispatchAction.selector,
@@ -192,18 +190,18 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         __assertLowLevelCall(success, returnData);
     }
 
-    /// @notice Set or unset the release pause override for a fund
-    /// @param _overridePause True if the pause should be overrode
-    /// @dev Does not use onlyDelegateCall, as onlyOwner will only be valid in delegate calls.
-    function setOverridePause(bool _overridePause) external onlyOwner {
-        if (!overridePause == _overridePause) {
-            overridePause = _overridePause;
+    /// @notice Sets or unsets an override on a release-wide pause
+    /// @param _nextOverridePause True if the pause should be overrode
+    /// @dev Does not use onlyDelegateCall, as onlyOwner will only be valid in delegate calls
+    function setOverridePause(bool _nextOverridePause) external onlyOwner {
+        require(_nextOverridePause != overridePause, "setOverridePause: Value already set");
 
-            emit OverridePauseSet(_overridePause);
-        }
+        overridePause = _nextOverridePause;
+
+        emit OverridePauseSet(_nextOverridePause);
     }
 
-    /// @notice Makes an arbitrary call from the VaultProxy contract
+    /// @notice Makes an arbitrary call with the VaultProxy contract as the sender
     /// @param _contract The contract to call
     /// @param _selector The selector to call
     /// @param _callData The call data for the call
@@ -221,7 +219,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         IVault(vaultProxy).callOnContract(_contract, abi.encodePacked(_selector, _callData));
     }
 
-    /// @dev Helper to check whether the release is paused and there is no local override
+    /// @dev Helper to check whether the release is paused, and that there is no local override
     function __fundIsPaused() private view returns (bool) {
         return
             IFundDeployer(FUND_DEPLOYER).getReleaseStatus() ==
@@ -287,10 +285,10 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
 
     /// @notice Calculates the gross asset value (GAV) of the fund
     /// @return gav_ The fund GAV
-    /// @return isValid_ True if the conversion rates to derive the GAV are all valid
-    /// @dev Does not alter local state,
-    /// but not a view because calls to price feeds can potentially update 3rd party state
-    function calcGav() public onlyDelegateCall returns (uint256 gav_, bool isValid_) {
+    /// @return isValid_ True if the conversion rates used to derive the GAV are all valid
+    /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
+    /// are external to the protocol
+    function calcGav() public returns (uint256 gav_, bool isValid_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
         uint256[] memory balances = new uint256[](assets.length);
@@ -309,11 +307,11 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
     /// @return grossShareValue_ The amount of the denomination asset per share
     /// @return isValid_ True if the conversion rates to derive the value are all valid
-    /// @dev Does not account for any fees outstanding
+    /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
+    /// are external to the protocol. Does not account for any fees outstanding.
     function calcGrossShareValue()
         external
         override
-        onlyDelegateCall
         returns (uint256 grossShareValue_, bool isValid_)
     {
         uint256 gav;
@@ -358,16 +356,19 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
 
     /// @notice Add accounts that are allowed to call the `buyShares` function
     /// @param _callersToAdd The accounts to add
+    /// @dev This could be used instead of an InvestorWhitelist policy, but in practice
+    /// it will allow adding "shares requestor" contracts, which will allow much more granular
+    /// regulation over incoming investments into a fund.
     function addAllowedBuySharesCallers(address[] calldata _callersToAdd) external onlyOwner {
         __addAllowedBuySharesCallers(_callersToAdd);
     }
 
-    /// @notice Buy shares on behalf of a specified user
+    /// @notice Buy shares in the fund for a specified user
     /// @param _buyer The account for which to buy shares
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
     /// @return sharesReceived_ The actual amount of shares received by the _buyer
-    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
+    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls
     function buyShares(
         address _buyer,
         uint256 _investmentAmount,
@@ -439,6 +440,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         (uint256 preBuySharesGav, bool gavIsValid) = calcGav();
         require(gavIsValid, "buyShares: Invalid GAV");
 
+        // Gives Extensions a chance to run logic prior to the minting of bought shares
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
 
         IVault vaultProxyContract = IVault(vaultProxy);
@@ -457,14 +459,18 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         uint256 prevBuyerShares = sharesContract.balanceOf(_buyer);
         vaultProxyContract.mintShares(_buyer, sharesBought);
 
-        // Post-buy actions
-        // TODO: could add additional params like gav and totalSupply here too
+        // Gives Extensions a chance to run logic after the minting of bought shares
         __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
 
+        // The number of actual shares received may differ from shares bought due to
+        // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
         sharesReceived_ = sharesContract.balanceOf(_buyer).sub(prevBuyerShares);
-        require(sharesReceived_ >= _minSharesQuantity, "buyShares: < _minSharesQuantity");
+        require(
+            sharesReceived_ >= _minSharesQuantity,
+            "buyShares: Shares received < _minSharesQuantity"
+        );
 
-        // Transfer investment asset
+        // Transfer the investment asset to the fund
         denominationAssetContract.safeTransferFrom(
             msg.sender,
             address(vaultProxyContract),
@@ -492,7 +498,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
             );
     }
 
-    /// @dev Helper for system actions immediately prior to issuing shares
+    /// @dev Helper for Extension actions immediately prior to issuing shares
     function __preBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
@@ -510,7 +516,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         );
     }
 
-    /// @dev Helper for system actions immediately after issuing shares
+    /// @dev Helper for Extension actions immediately after issuing shares
     function __postBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
@@ -530,13 +536,20 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     // REDEEM SHARES
 
     /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
-    function redeemShares() external onlyDelegateCall {
-        __redeemShares(
-            msg.sender,
-            ERC20(vaultProxy).balanceOf(msg.sender),
-            new address[](0),
-            new address[](0)
-        );
+    /// @return payoutAssets_ The assets paid out to the redeemer
+    /// @return payoutAmounts_ The amount of each asset paid out to the redeemer
+    /// @dev See __redeemShares() for further detail
+    function redeemShares()
+        external
+        returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
+    {
+        return
+            __redeemShares(
+                msg.sender,
+                ERC20(vaultProxy).balanceOf(msg.sender),
+                new address[](0),
+                new address[](0)
+            );
     }
 
     /// @notice Redeem a specified quantity of the sender's shares for a proportionate slice of
@@ -544,14 +557,16 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     /// @param _sharesQuantity The quantity of shares to redeem
     /// @param _additionalAssets Additional (non-tracked) assets to claim
     /// @param _assetsToSkip Tracked assets to forfeit
+    /// @return payoutAssets_ The assets paid out to the redeemer
+    /// @return payoutAmounts_ The amount of each asset paid out to the redeemer
     /// @dev Any claim to passed _assetsToSkip will be forfeited entirely. This should generally
     /// only be exercised if a bad asset is causing redemption to fail.
     function redeemSharesDetailed(
         uint256 _sharesQuantity,
         address[] calldata _additionalAssets,
         address[] calldata _assetsToSkip
-    ) external onlyDelegateCall {
-        __redeemShares(msg.sender, _sharesQuantity, _additionalAssets, _assetsToSkip);
+    ) external returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_) {
+        return __redeemShares(msg.sender, _sharesQuantity, _additionalAssets, _assetsToSkip);
     }
 
     /// @dev Helper to parse an array of payout assets during redemption, taking into account
@@ -611,7 +626,15 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         }
     }
 
-    /// @dev Helper to redeem shares
+    /// @dev Helper to redeem shares.
+    /// This function should never fail without a way to bypass the failure, which is assured
+    /// through two mechanisms:
+    /// 1. The FeeManager is called with the try/catch pattern to assure that calls to it
+    /// can never block redemption.
+    /// 2. If a token fails upon transfer(), that token can be skipped (and its balance forfeited)
+    /// by explicitly specifying _assetsToSkip.
+    /// Because of these assurances, shares should always be redeemable, with the exception
+    /// of the timelock period on shares actions that must be respected.
     function __redeemShares(
         address _redeemer,
         uint256 _sharesQuantity,
@@ -619,6 +642,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         address[] memory _assetsToSkip
     )
         private
+        onlyDelegateCall
         timelockedSharesAction(_redeemer)
         locksReentrance
         returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
@@ -632,21 +656,19 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
 
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
-            // Note that if "direct" fees are charged here (i.e., not inflationary),
-            // then those fee shares will be burned from the user's balance rather
+            // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
+            // then those fee shares will be transferred from the user's balance rather
             // than reallocated from the sharesQuantity being redeemed.
             __preRedeemSharesHook(_redeemer, _sharesQuantity);
         }
 
-        // Interfaces currently only contain their own functions that are used elsewhere
-        // within the core protocol. If we change this paradigm, we can combine these vars.
         IVault vaultProxyContract = IVault(vaultProxy);
         ERC20 sharesContract = ERC20(address(vaultProxyContract));
 
-        // Check the shares quantity against the user's balance after settling fees.
+        // Check the shares quantity against the user's balance after settling fees
         require(
             _sharesQuantity <= sharesContract.balanceOf(_redeemer),
-            "__redeemShares: Low balance"
+            "__redeemShares: Insufficient shares"
         );
 
         // Parse the payout assets given optional params to add or skip assets.

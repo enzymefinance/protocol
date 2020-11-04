@@ -57,6 +57,8 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The sum value of _baseAssets, denominated in the _quoteAsset
     /// @return isValid_ True if the price feed rates used to derive value are all valid
+    /// @dev Does not alter protocol state,
+    /// but not a view because calls to price feeds can potentially update third party state
     function calcCanonicalAssetsTotalValue(
         address[] memory _baseAssets,
         uint256[] memory _amounts,
@@ -89,6 +91,8 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
     /// @return isValid_ True if the price feed rates used to derive value are all valid
+    /// @dev Does not alter protocol state,
+    /// but not a view because calls to price feeds can potentially update third party state
     function calcCanonicalAssetValue(
         address _baseAsset,
         uint256 _amount,

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "../../../fund-deployer/IFundDeployer.sol";
 import "../../vault/IVault.sol";
 import "../utils/ComptrollerStorage.sol";
 import "./IPermissionedVaultActionLib.sol";
@@ -11,7 +12,26 @@ import "./IPermissionedVaultActionLib.sol";
 /// @dev Always delegate-called by a ComptrollerProxy
 contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultActionLib {
     address private immutable FEE_MANAGER;
+    address private immutable FUND_DEPLOYER;
     address private immutable INTEGRATION_MANAGER;
+
+    // The use of modifiers for one-time use is generally avoided, but makes it easier to
+    // maintain visual symmetry across Comptroller libs
+
+    modifier onlyActive() {
+        require(vaultProxy != address(0), "Fund not active");
+        _;
+    }
+
+    modifier onlyNotPaused() {
+        require(
+            IFundDeployer(FUND_DEPLOYER).getReleaseStatus() !=
+                IFundDeployer.ReleaseStatus.Paused ||
+                overridePause,
+            "Fund is paused"
+        );
+        _;
+    }
 
     modifier onlyPermissionedAction(VaultAction _action) {
         require(permissionedVaultActionAllowed, "onlyPermissionedAction: No action allowed");
@@ -39,8 +59,13 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
         _;
     }
 
-    constructor(address _feeManager, address _integrationManager) public {
+    constructor(
+        address _fundDeployer,
+        address _feeManager,
+        address _integrationManager
+    ) public {
         FEE_MANAGER = _feeManager;
+        FUND_DEPLOYER = _fundDeployer;
         INTEGRATION_MANAGER = _integrationManager;
     }
 
@@ -50,6 +75,8 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
     function dispatchAction(VaultAction _action, bytes calldata _actionData)
         external
         override
+        onlyNotPaused
+        onlyActive
         onlyPermissionedAction(_action)
     {
         if (_action == VaultAction.AddTrackedAsset) {
@@ -118,5 +145,25 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
             (address, address, uint256)
         );
         IVault(vaultProxy).withdrawAssetTo(asset, target, amount);
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the routes for the various contracts used by all funds
+    /// @return feeManager_ The `FEE_MANAGER` variable value
+    /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
+    /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
+    function getLibRoutes()
+        external
+        view
+        returns (
+            address feeManager_,
+            address fundDeployer_,
+            address integrationManager_
+        )
+    {
+        return (FEE_MANAGER, FUND_DEPLOYER, INTEGRATION_MANAGER);
     }
 }

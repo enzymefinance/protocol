@@ -181,6 +181,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async permissionedVaultActionLib(config, deployment) {
     return PermissionedVaultActionLib.deploy(
       config.deployer,
+      await deployment.fundDeployer,
       await deployment.feeManager,
       await deployment.integrationManager,
     );

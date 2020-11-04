@@ -28,6 +28,9 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
 
+    // The use of modifiers for one-time use is generally avoided, but makes it easier to
+    // maintain visual symmetry across Comptroller libs
+
     modifier allowsPermissionedVaultAction {
         require(!permissionedVaultActionAllowed, "Vault action re-entrance");
         permissionedVaultActionAllowed = true;
