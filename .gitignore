@@ -17,4 +17,6 @@
 codegen/
 dist/
 artifacts/
+hardhat/
+coverage/
 node_modules/

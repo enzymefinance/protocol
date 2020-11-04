@@ -38,6 +38,14 @@ function fork(name, roots) {
           enabled: true,
           blockNumber: 11091788,
         },
+        ...(process.env.COVERAGE && {
+          allowUnlimitedContractSize: true,
+        }),
+      },
+      hardhatTestOptions: {
+        ...(process.env.COVERAGE && {
+          coverage: true,
+        }),
       },
     },
   };
@@ -54,6 +62,14 @@ function unit(name, roots) {
           mnemonic,
           count: 10,
         },
+        ...(process.env.COVERAGE && {
+          allowUnlimitedContractSize: true,
+        }),
+      },
+      hardhatTestOptions: {
+        ...(process.env.COVERAGE && {
+          coverage: true,
+        }),
       },
     },
   };

@@ -1,4 +1,4 @@
-require('@crestproject/hardhat/codegen');
+require('@crestproject/hardhat/plugin');
 require('hardhat-contract-sizer');
 
 module.exports = {
@@ -6,8 +6,8 @@ module.exports = {
     version: '0.6.8',
   },
   paths: {
-    artifacts: './.hardhat/artifacts',
-    cache: './.hardhat/cache',
+    artifacts: './hardhat/artifacts',
+    cache: './hardhat/cache',
   },
   contractSizer: {
     disambiguatePaths: false,

@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache@v2
         if: ${{ matrix.project == 'e2e' }}
         with:
-          path: '.hardhat/cache/hardhat-network-fork'
+          path: 'hardhat/cache/hardhat-network-fork'
           key: static
 
       - name: Install dependencies
