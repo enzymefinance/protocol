@@ -12,8 +12,17 @@ import {
   entranceRateFeeConfigArgs,
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
+  feeManagerConfigArgs,
+  Dispatcher,
 } from '@melonproject/protocol';
-import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
+import {
+  assertEvent,
+  buyShares,
+  createFundDeployer,
+  createMigratedFundConfig,
+  createNewFund,
+  defaultTestDeployment,
+} from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -100,9 +109,246 @@ describe('settle', () => {
 });
 
 describe('integration', () => {
-  it.todo(
-    'can create a new fund with this fee, works correctly while buying shares, and is not called during __settleContinuousFees()',
-  );
+  it('can create a new fund with this fee, works correctly while buying shares', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      deployment: {
+        fundDeployer,
+        entranceRateDirectFee,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('can create a migrated fund with this fee');
+    // Setting up the fund with EntranceRateDirectFee
+    const rate = utils.parseEther('0.1'); // 10%
+    const entranceRateFeeSettings = entranceRateFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [entranceRateDirectFee],
+      settings: [entranceRateFeeSettings],
+    });
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      feeManagerConfig: feeManagerConfigData,
+    });
+
+    // Buying shares of the fund
+    await buyShares({
+      comptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('0.1'),
+    });
+
+    // Check the number of shares we have (check that fee has been paid)
+    const rateDivisor = utils.parseEther('1');
+    const expectedFee = utils.parseEther('1').mul(rate).div(rateDivisor.add(rate));
+    const expectedShares = utils.parseEther('1').sub(expectedFee);
+    const signerBalance = await vaultProxy.balanceOf(fundInvestor);
+    expect(signerBalance).toEqBigNumber(expectedShares);
+
+    // Check that the total supply is the investmentAmount (total supply = shares bought)
+    const totalSupply = await vaultProxy.totalSupply();
+    expect(totalSupply).toEqBigNumber(utils.parseEther('1'));
+
+    // Check that the fee has been sent to the fund manager
+    const fundOwnerShares = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerShares).toEqBigNumber(expectedFee);
+  });
+
+  it('can migrate a fund with this fee', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      config,
+      deployment: {
+        chainlinkPriceFeed,
+        dispatcher,
+        engine,
+        entranceRateDirectFee,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Setting up the fund with EntranceRateDirectFee
+    const rate = utils.parseEther('0.1'); // 10%
+    const entranceRateFeeSettings = entranceRateFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [entranceRateDirectFee],
+      settings: [entranceRateFeeSettings],
+    });
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      feeManagerConfig: feeManagerConfigData,
+    });
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      engine,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      feeManagerConfigData,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    await buyShares({
+      comptrollerProxy: nextComptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('0.1'),
+    });
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+    });
+
+    // Check the number of shares we have (check that fee has been paid)
+    const rateDivisor = utils.parseEther('1');
+    const expectedFee = utils.parseEther('1').mul(rate).div(rateDivisor.add(rate));
+    const expectedShares = utils.parseEther('1').sub(expectedFee);
+    const signerBalance = await vaultProxy.balanceOf(fundInvestor);
+    expect(signerBalance).toEqBigNumber(expectedShares);
+
+    // Check that the total supply is the investmentAmount (total supply = shares bought)
+    const totalSupply = await vaultProxy.totalSupply();
+    expect(totalSupply).toEqBigNumber(utils.parseEther('1'));
+
+    // Check that the fee has been sent to the fund manager
+    const fundOwnerShares = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerShares).toEqBigNumber(expectedFee);
+  });
+
+  it('can add this fee to a fund on migration', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      config,
+      deployment: {
+        chainlinkPriceFeed,
+        dispatcher,
+        engine,
+        entranceRateDirectFee,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Setting up the fund with EntranceRateDirectFee
+    const rate = utils.parseEther('0.1'); // 10%
+    const entranceRateFeeSettings = entranceRateFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [entranceRateDirectFee],
+      settings: [entranceRateFeeSettings],
+    });
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+    });
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      engine,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      feeManagerConfigData,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    await buyShares({
+      comptrollerProxy: nextComptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('0.1'),
+    });
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+    });
+
+    // Check the number of shares we have (check that fee has been paid)
+    const rateDivisor = utils.parseEther('1');
+    const expectedFee = utils.parseEther('1').mul(rate).div(rateDivisor.add(rate));
+    const expectedShares = utils.parseEther('1').sub(expectedFee);
+    const signerBalance = await vaultProxy.balanceOf(fundInvestor);
+    expect(signerBalance).toEqBigNumber(expectedShares);
+
+    // Check that the total supply is the investmentAmount (total supply = shares bought)
+    const totalSupply = await vaultProxy.totalSupply();
+    expect(totalSupply).toEqBigNumber(utils.parseEther('1'));
+
+    // Check that the fee has been sent to the fund manager
+    const fundOwnerShares = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerShares).toEqBigNumber(expectedFee);
+  });
 });

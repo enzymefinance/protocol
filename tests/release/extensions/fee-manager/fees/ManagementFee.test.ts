@@ -2,14 +2,27 @@ import { BigNumber, utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
+  Dispatcher,
   FeeHook,
+  FeeManagerActionId,
+  feeManagerConfigArgs,
   FeeSettlementType,
   ManagementFee,
   managementFeeConfigArgs,
   managementFeeSharesDue,
   VaultLib,
 } from '@melonproject/protocol';
-import { assertEvent, defaultTestDeployment, transactionTimestamp } from '@melonproject/testutils';
+import {
+  assertEvent,
+  buyShares,
+  callOnExtension,
+  createFundDeployer,
+  createMigratedFundConfig,
+  createNewFund,
+  defaultTestDeployment,
+  redeemShares,
+  transactionTimestamp,
+} from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -181,7 +194,7 @@ describe('settle', () => {
 
     // Get the expected shares due for a call() to settle()
     // The call() adds 1 second to the last block timestamp
-    const expectedSharesDueForCall = managementFeeSharesDue({
+    const expectedFeeShares = managementFeeSharesDue({
       rate: managementFeeRate,
       sharesSupply,
       secondsSinceLastSettled: BigNumber.from(secondsToWarp).add(1),
@@ -195,7 +208,7 @@ describe('settle', () => {
 
     expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle.fragment, {
       settlementType_: FeeSettlementType.Mint,
-      sharesDue_: expectedSharesDueForCall,
+      sharesDue_: expectedFeeShares,
     });
 
     // Send the tx to actually settle()
@@ -228,9 +241,382 @@ describe('settle', () => {
 });
 
 describe('integration', () => {
-  it.todo(
-    'can create a new fund with this fee, works correctly while buying shares, redeeming shares, and calling __settleContinuousFees()',
-  );
+  it('can create a new fund with this fee, works correctly while buying shares', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      deployment: {
+        feeManager,
+        fundDeployer,
+        managementFee,
+        tokens: { weth: denominationAsset },
+      },
+      managementFeeRate,
+    } = await provider.snapshot(snapshot);
 
-  it.todo('can create a migrated fund with this fee');
+    const rate = utils.parseEther('0.1'); // 10%
+    const managementFeeSettings = managementFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [managementFee],
+      settings: [managementFeeSettings],
+    });
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      feeManagerConfig: feeManagerConfigData,
+    });
+
+    const feeInfo = await managementFee.getFeeInfoForFund(comptrollerProxy.address);
+    expect(feeInfo.rate).toEqBigNumber(managementFeeRate);
+
+    // Buying shares of the fund
+    const buySharesReceipt = await buyShares({
+      comptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('1'),
+    });
+
+    // Mine a block after a time delay
+    const secondsToWarp = 10;
+    await provider.send('evm_increaseTime', [secondsToWarp]);
+    await provider.send('evm_mine', []);
+
+    const sharesBeforePayout = await vaultProxy.totalSupply();
+
+    const settleFeesReceipt = await callOnExtension({
+      signer: fundOwner,
+      comptrollerProxy,
+      extension: feeManager,
+      actionId: FeeManagerActionId.SettleContinuousFees,
+    });
+
+    const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);
+    const settleFeesTimestamp = await transactionTimestamp(settleFeesReceipt);
+    const elapsedSecondsBetweenBuyAndSettle = BigNumber.from(settleFeesTimestamp - buySharesTimestamp);
+
+    // Get the expected fee shares for the elapsed time
+    const expectedFeeShares = managementFeeSharesDue({
+      rate: managementFeeRate,
+      sharesSupply: utils.parseEther('1'),
+      secondsSinceLastSettled: elapsedSecondsBetweenBuyAndSettle,
+    });
+
+    const sharesAfterPayout = await vaultProxy.totalSupply();
+    const sharesMinted = sharesAfterPayout.sub(sharesBeforePayout);
+
+    // Check that the expected shares due have been minted
+    expect(sharesMinted).toEqBigNumber(expectedFeeShares);
+
+    // Check that the fundOwner has received these minted shares
+    const fundOwnerBalance = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerBalance).toEqBigNumber(expectedFeeShares);
+  });
+
+  it('can create a new fund with this fee, works correctly while buying and then redeeming shares', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      deployment: {
+        fundDeployer,
+        managementFee,
+        tokens: { weth: denominationAsset },
+      },
+      managementFeeRate,
+    } = await provider.snapshot(snapshot);
+
+    const rate = utils.parseEther('0.1'); // 10%
+    const managementFeeSettings = managementFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [managementFee],
+      settings: [managementFeeSettings],
+    });
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      feeManagerConfig: feeManagerConfigData,
+    });
+
+    const feeInfo = await managementFee.getFeeInfoForFund(comptrollerProxy.address);
+    expect(feeInfo.rate).toEqBigNumber(managementFeeRate);
+
+    // Buying shares of the fund
+    const buySharesReceipt = await buyShares({
+      comptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('1'),
+    });
+
+    // Mine a block after a time delay
+    const secondsToWarp = 10;
+    await provider.send('evm_increaseTime', [secondsToWarp]);
+    await provider.send('evm_mine', []);
+
+    // Redeem all fundInvestor shares
+    const redeemSharesReceipt = await redeemShares({
+      comptrollerProxy,
+      signer: fundInvestor,
+    });
+
+    const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);
+    const redeemSharesTimestamp = await transactionTimestamp(redeemSharesReceipt);
+    const secondsElapsedBetweenBuyAndRedeem = BigNumber.from(redeemSharesTimestamp - buySharesTimestamp);
+
+    // Get the expected shares fee shares
+    const expectedFeeShares = managementFeeSharesDue({
+      rate: managementFeeRate,
+      sharesSupply: utils.parseEther('1'),
+      secondsSinceLastSettled: BigNumber.from(secondsElapsedBetweenBuyAndRedeem),
+    });
+
+    // Shares minted are what's left when we substract the only investor has redeemed all shares
+    const sharesMinted = await vaultProxy.totalSupply();
+
+    // Check that the expected shares due  have been minted
+    expect(sharesMinted).toEqBigNumber(expectedFeeShares);
+
+    // Check that the fundOwner has received these shares
+    const fundOwnerBalance = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerBalance).toEqBigNumber(expectedFeeShares);
+  });
+
+  it('can migrate a fund with this fee, buying shares after migration', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      config,
+      deployment: {
+        chainlinkPriceFeed,
+        dispatcher,
+        engine,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        managementFee,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        tokens: { weth: denominationAsset },
+      },
+      managementFeeRate,
+    } = await provider.snapshot(snapshot);
+
+    const rate = utils.parseEther('0.1'); // 10%
+    const managementFeeSettings = managementFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [managementFee],
+      settings: [managementFeeSettings],
+    });
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      feeManagerConfig: feeManagerConfigData,
+    });
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      engine,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      feeManagerConfigData,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+    });
+
+    const feeInfo = await managementFee.getFeeInfoForFund(nextComptrollerProxy.address);
+    expect(feeInfo.rate).toEqBigNumber(managementFeeRate);
+
+    // Buying shares of the fund
+    const buySharesReceipt = await buyShares({
+      comptrollerProxy: nextComptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('1'),
+    });
+
+    // Mine a block after a time delay
+    const secondsToWarp = 10;
+    await provider.send('evm_increaseTime', [secondsToWarp]);
+    await provider.send('evm_mine', []);
+
+    const sharesBeforePayout = await vaultProxy.totalSupply();
+
+    const settleFeesReceipt = await callOnExtension({
+      signer: fundOwner,
+      comptrollerProxy: nextComptrollerProxy,
+      extension: feeManager,
+      actionId: FeeManagerActionId.SettleContinuousFees,
+    });
+
+    const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);
+    const settleFeesTimestamp = await transactionTimestamp(settleFeesReceipt);
+    const elapsedSecondsBetweenBuyAndSettle = BigNumber.from(settleFeesTimestamp - buySharesTimestamp);
+
+    // Get the expected fee shares for the elapsed time
+    const expectedFeeShares = managementFeeSharesDue({
+      rate: managementFeeRate,
+      sharesSupply: utils.parseEther('1'),
+      secondsSinceLastSettled: elapsedSecondsBetweenBuyAndSettle,
+    });
+
+    const sharesAfterPayout = await vaultProxy.totalSupply();
+    const sharesMinted = sharesAfterPayout.sub(sharesBeforePayout);
+
+    // Check that the expected shares due  have been minted
+    expect(sharesMinted).toEqBigNumber(expectedFeeShares);
+
+    // Check that the fundOwner has received these shares
+    const fundOwnerBalance = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerBalance).toEqBigNumber(expectedFeeShares);
+  });
+
+  it('can migrate a fund with this fee, buying shares before migration', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      config,
+      deployment: {
+        chainlinkPriceFeed,
+        dispatcher,
+        engine,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        managementFee,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        tokens: { weth: denominationAsset },
+      },
+      managementFeeRate,
+    } = await provider.snapshot(snapshot);
+
+    const rate = utils.parseEther('0.1'); // 10%
+    const managementFeeSettings = managementFeeConfigArgs(rate);
+    const feeManagerConfigData = feeManagerConfigArgs({
+      fees: [managementFee],
+      settings: [managementFeeSettings],
+    });
+
+    const { vaultProxy, comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      feeManagerConfig: feeManagerConfigData,
+    });
+
+    // Buying shares of the fund
+    const buySharesReceipt = await buyShares({
+      comptrollerProxy: comptrollerProxy,
+      signer: fundInvestor,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: utils.parseEther('1'),
+      minSharesAmount: utils.parseEther('1'),
+    });
+
+    const sharesBeforePayout = await vaultProxy.totalSupply(); // 1.0
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      engine,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      feeManagerConfigData,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Migration execution settles the accrued fee
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+    });
+
+    const feeInfo = await managementFee.getFeeInfoForFund(comptrollerProxy.address);
+    expect(feeInfo.rate).toEqBigNumber(managementFeeRate);
+
+    const sharesAfterPayout = await vaultProxy.totalSupply();
+    const sharesMinted = sharesAfterPayout.sub(sharesBeforePayout);
+
+    const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);
+    const migrationTimestamp = await transactionTimestamp(executeMigrationReceipt);
+    const secondsElapsedBetweenBuyAndMigrate = BigNumber.from(migrationTimestamp - buySharesTimestamp);
+
+    // Get the expected shares due
+    const expectedSharesDue = managementFeeSharesDue({
+      rate: managementFeeRate,
+      sharesSupply: utils.parseEther('1'), // 1.0
+      secondsSinceLastSettled: secondsElapsedBetweenBuyAndMigrate,
+    });
+
+    // Check that the expected shares due have been minted
+    expect(sharesMinted).toEqBigNumber(expectedSharesDue);
+
+    // Check that the fundOwner has received these shares
+    const fundOwnerBalance = await vaultProxy.balanceOf(fundOwner);
+    expect(fundOwnerBalance).toEqBigNumber(expectedSharesDue);
+  });
 });

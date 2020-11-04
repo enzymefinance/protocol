@@ -10,8 +10,23 @@ import {
   FeeHook,
   FeeSettlementType,
   performanceFeeSharesDue,
+  feeManagerConfigArgs,
+  FeeManagerActionId,
+  Dispatcher,
 } from '@melonproject/protocol';
-import { assertEvent, assertNoEvent, defaultTestDeployment, transactionTimestamp } from '@melonproject/testutils';
+import {
+  addTrackedAssets,
+  assertEvent,
+  assertNoEvent,
+  buyShares,
+  callOnExtension,
+  createFundDeployer,
+  createMigratedFundConfig,
+  createNewFund,
+  defaultTestDeployment,
+  transactionTimestamp,
+  updateChainlinkAggregator,
+} from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -723,9 +738,216 @@ describe('settle', () => {
 });
 
 describe('integration', () => {
-  it.todo(
-    'can create a new fund with this fee, works correctly while buying shares, and is not called during __settleContinuousFees(), and is paid out when allowed',
-  );
+  it('can create a new fund with this fee, works correctly while buying shares, and is paid out when allowed', async () => {
+    const {
+      accounts: [fundOwner, fundInvestor],
+      deployment: {
+        chainlinkAggregators,
+        feeManager,
+        trackedAssetsAdapter,
+        integrationManager,
+        performanceFee,
+        fundDeployer,
+        tokens: { weth: denominationAsset, mln: mln },
+      },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('can create a migrated fund with this fee');
+    const performanceFeeRate = utils.parseEther('.1'); // 10%
+
+    const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+
+    const performanceFeeConfigSettings = performanceFeeConfigArgs({
+      rate: performanceFeeRate,
+      period: performanceFeePeriod,
+    });
+
+    const feeManagerConfig = feeManagerConfigArgs({
+      fees: [performanceFee],
+      settings: [performanceFeeConfigSettings],
+    });
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner: fundOwner,
+      fundName: 'TestFund',
+      feeManagerConfig,
+    });
+
+    const feeInfo = await performanceFee.getFeeInfoForFund(comptrollerProxy.address);
+
+    // check that the fee has been registered and the parameters are correct
+    expect(feeInfo.rate).toEqBigNumber(performanceFeeRate);
+    expect(feeInfo.period).toEqBigNumber(performanceFeePeriod);
+
+    // check whether payout is allowed before the fee period has passd
+    const falsePayoutCall = await performanceFee.payoutAllowed(comptrollerProxy);
+
+    // time warp to end of fee period
+    await provider.send('evm_increaseTime', [performanceFeePeriod.toNumber()]);
+    await provider.send('evm_mine', []);
+
+    // check whether payout is allowed at the end of the fee period
+    const truePayoutCall = await performanceFee.payoutAllowed(comptrollerProxy);
+
+    expect(falsePayoutCall).toBe(false);
+    expect(truePayoutCall).toBe(true);
+
+    // invest in the fund so there are shares
+    const investmentAmount = utils.parseEther('1');
+    await buyShares({
+      comptrollerProxy,
+      signer: fundOwner,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: investmentAmount,
+      minSharesAmount: utils.parseEther('1'),
+    });
+
+    // add assets to fund
+    const amount = utils.parseEther('75');
+    await mln.transfer(vaultProxy, amount);
+
+    // track them
+    await addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets: [mln],
+    });
+
+    // make sure you're past the next performanceFeePeriod
+    await provider.send('evm_increaseTime', [performanceFeePeriod.toNumber()]);
+    await provider.send('evm_mine', []);
+
+    // count shares of fund
+    const profitCaseSharesBeforeSettlement = await vaultProxy.totalSupply();
+
+    // update price feed to accommodate time warp
+    await updateChainlinkAggregator(chainlinkAggregators.mln);
+
+    // settle fees
+    await callOnExtension({
+      signer: fundOwner,
+      comptrollerProxy,
+      extension: feeManager,
+      actionId: FeeManagerActionId.SettleContinuousFees,
+    });
+
+    // recount shares of the fund
+    const profitCaseSharesAfterSettlement = await vaultProxy.totalSupply();
+
+    // with gains, contract settles by minting new shares - shares after settlement should be > shares before
+    expect(profitCaseSharesAfterSettlement).toBeGtBigNumber(profitCaseSharesBeforeSettlement);
+
+    // fast forward to payout
+    await provider.send('evm_increaseTime', [performanceFeePeriod.toNumber()]);
+    await provider.send('evm_mine', []);
+
+    // count shares of the fund
+    const lossCaseSharesBeforeSettlement = await vaultProxy.totalSupply();
+
+    // update price feed to accommodate time warp and tick down the price of MLN to decrease GAV
+    await updateChainlinkAggregator(chainlinkAggregators.mln, utils.parseEther('.75'));
+
+    // buy shares to settle fees
+    await buyShares({
+      comptrollerProxy,
+      signer: fundOwner,
+      buyer: fundInvestor,
+      denominationAsset,
+      investmentAmount: investmentAmount,
+      minSharesAmount: utils.parseEther('.01'),
+    });
+
+    // count shares of fund
+    const lossCaseSharesAfterSettlement = await vaultProxy.totalSupply();
+
+    // with losses, fees are settled by burning shares, new total supply of shares after investment
+    // should be less than lossCaseBefore plus investment amount
+    expect(lossCaseSharesAfterSettlement).toBeLtBigNumber(lossCaseSharesBeforeSettlement.add(investmentAmount));
+  });
+
+  it('can create a migrated fund with this fee', async () => {
+    const {
+      accounts: [fundOwner],
+      config,
+      deployment: {
+        chainlinkPriceFeed,
+        dispatcher,
+        engine,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        performanceFee,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const performanceFeeRate = utils.parseEther('.1'); // 10%
+
+    const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+
+    const performanceFeeConfigSettings = performanceFeeConfigArgs({
+      rate: performanceFeeRate,
+      period: performanceFeePeriod,
+    });
+
+    const feeManagerConfig = feeManagerConfigArgs({
+      fees: [performanceFee],
+      settings: [performanceFeeConfigSettings],
+    });
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'TestFund',
+      feeManagerConfig,
+    });
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      engine,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      feeManagerConfigData: feeManagerConfig,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+    });
+
+    const feeInfo = await performanceFee.getFeeInfoForFund(nextComptrollerProxy.address);
+    expect(feeInfo.rate).toEqBigNumber(performanceFeeRate);
+    expect(feeInfo.period).toEqBigNumber(performanceFeePeriod);
+  });
 });
