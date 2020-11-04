@@ -376,12 +376,12 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     )
         external
         payable
+        amguPayable
         onlyActive
         onlyNotPaused
         timelockedSharesAction(_buyer)
         locksReentrance
         allowsPermissionedVaultAction
-        amguPayable
         returns (uint256 sharesReceived_)
     {
         return __buyShares(_buyer, _investmentAmount, _minSharesQuantity);
