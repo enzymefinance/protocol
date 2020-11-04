@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 /// @title PolicyManager Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
+/// @notice Interface for the PolicyManager
 interface IPolicyManager {
     enum PolicyHook {PreBuyShares, PostBuyShares, PreCallOnIntegration, PostCallOnIntegration}
 

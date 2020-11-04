@@ -5,7 +5,7 @@ import "../../IPolicy.sol";
 
 /// @title PolicyBase Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice Abstract base contract for policies
+/// @notice Abstract base contract for all policies
 abstract contract PolicyBase is IPolicy {
     address internal immutable POLICY_MANAGER;
 
@@ -19,13 +19,13 @@ abstract contract PolicyBase is IPolicy {
     }
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
-    /// @dev Disallowed by default, can be overrode by the policy
+    /// @dev Disallowed by default, can be overridden by the policy
     function activateForFund(address, address) external virtual override {
         // UNIMPLEMENTED
     }
 
     /// @notice Updates the policy settings for a fund
-    /// @dev Disallowed by default, can be overrode by the policy
+    /// @dev Disallowed by default, can be overridden by the policy
     function updateFundSettings(
         address,
         address,

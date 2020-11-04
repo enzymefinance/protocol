@@ -76,8 +76,7 @@ contract MaxConcentration is PostCallOnIntegrationValidatePolicyBase {
     /// @param _vaultProxy The fund's VaultProxy address
     /// @param _assets The assets with which to check the rule
     /// @return isValid_ True if the rule passes
-    /// @dev Uses live rates for gav calcs.
-    /// The fund's denomination asset is exempt from the policy limit.
+    /// @dev The fund's denomination asset is exempt from the policy limit.
     function passesRule(
         address _comptrollerProxy,
         address _vaultProxy,

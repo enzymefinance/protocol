@@ -71,7 +71,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         }
     }
 
-    /// @notice Deactivates the extension for a fund by destroying storage
+    /// @notice Deactivates policies for a fund by destroying storage
     function deactivateForFund() external override {
         delete comptrollerProxyToVaultProxy[msg.sender];
         for (uint256 i; i < comptrollerProxyToPolicies[msg.sender].length(); i++) {
@@ -83,7 +83,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
     /// @notice Disables a policy for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _policy The Policy contract to disable
+    /// @param _policy The policy address to disable
     function disablePolicyForFund(address _comptrollerProxy, address _policy)
         external
         onlyBuySharesHooks(_policy)
@@ -98,7 +98,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
     /// @notice Enables a policy for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _policy The Policy contract to enable
+    /// @param _policy The policy address to enable
     /// @param _settingsData The encoded settings data with which to configure the policy
     /// @dev Disabling a policy does not delete fund config on the policy, so if a policy is
     /// disabled and then enabled again, its initial state will be the previous config. It is the
@@ -152,7 +152,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         IPolicy(_policy).updateFundSettings(_comptrollerProxy, vaultProxy, _settingsData);
     }
 
-    /// @notice Validates all policies that apply to a given hook and execution time for a fund
+    /// @notice Validates all policies that apply to a given hook for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _hook The PolicyHook for which to validate policies
     /// @param _validationData The encoded data with which to validate the filtered policies
@@ -318,7 +318,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         return policyToHookToIsImplemented[_policy][_hook];
     }
 
-    /// @notice Check is a policy is enabled for the fund
+    /// @notice Check if a policy is enabled for the fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund to check
     /// @param _policy The address of the policy to check
     /// @return isEnabled_ True if the policy is enabled for the fund
