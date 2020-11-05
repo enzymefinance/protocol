@@ -69,6 +69,8 @@ contract Dispatcher is IDispatcher {
         address nextVaultLib
     );
 
+    event SharesTokenSymbolSet(string _nextSymbol);
+
     event VaultProxyDeployed(
         address indexed fundDeployer,
         address indexed owner,
@@ -89,6 +91,7 @@ contract Dispatcher is IDispatcher {
     address private nominatedOwner;
     address private owner;
     uint256 private migrationTimelock;
+    string private sharesTokenSymbol;
     mapping(address => address) private vaultProxyToFundDeployer;
     mapping(address => MigrationRequest) private vaultProxyToMigrationRequest;
 
@@ -108,6 +111,19 @@ contract Dispatcher is IDispatcher {
     constructor() public {
         migrationTimelock = 2 days;
         owner = msg.sender;
+        sharesTokenSymbol = "MLNF";
+    }
+
+    /////////////
+    // GENERAL //
+    /////////////
+
+    /// @notice Sets a new `symbol` value for VaultProxy instances
+    /// @param _nextSymbol The symbol value to set
+    function setSharesTokenSymbol(string calldata _nextSymbol) external override onlyOwner {
+        sharesTokenSymbol = _nextSymbol;
+
+        emit SharesTokenSymbolSet(_nextSymbol);
     }
 
     ////////////////////
@@ -153,7 +169,7 @@ contract Dispatcher is IDispatcher {
 
         address prevFundDeployer = currentFundDeployer;
         require(
-            prevFundDeployer != _nextFundDeployer,
+            _nextFundDeployer != prevFundDeployer,
             "setCurrentFundDeployer: _nextFundDeployer is already currentFundDeployer"
         );
 
@@ -597,6 +613,17 @@ contract Dispatcher is IDispatcher {
     /// @return owner_ The account that is the owner
     function getOwner() external view override returns (address owner_) {
         return owner;
+    }
+
+    /// @notice Gets the shares token `symbol` value for use in VaultProxy instances
+    /// @return sharesTokenSymbol_ The `symbol` value
+    function getSharesTokenSymbol()
+        external
+        view
+        override
+        returns (string memory sharesTokenSymbol_)
+    {
+        return sharesTokenSymbol;
     }
 
     /// @notice Gets the time remaining until the migration request of a given VaultProxy can be executed

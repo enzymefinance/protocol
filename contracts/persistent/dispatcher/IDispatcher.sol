@@ -37,6 +37,8 @@ interface IDispatcher {
 
     function getOwner() external view returns (address);
 
+    function getSharesTokenSymbol() external view returns (string memory);
+
     function getTimelockRemainingForMigrationRequest(address) external view returns (uint256);
 
     function hasExecutableMigrationRequest(address) external view returns (bool);
@@ -50,6 +52,8 @@ interface IDispatcher {
     function setMigrationTimelock(uint256) external;
 
     function setNominatedOwner(address) external;
+
+    function setSharesTokenSymbol(string calldata) external;
 
     function signalMigration(
         address,

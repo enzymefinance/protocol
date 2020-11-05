@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase1.sol";
 import "./IVault.sol";
 
@@ -174,6 +175,13 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @dev Disallows the standard ERC20 approve() function
     function approve(address, uint256) public override returns (bool) {
         revert("Unimplemented");
+    }
+
+    /// @notice Gets the `symbol` value of the shares token
+    /// @return symbol_ The `symbol` value
+    /// @dev Defers the shares symbol value to the Dispatcher contract
+    function symbol() public view override returns (string memory symbol_) {
+        return IDispatcher(creator).getSharesTokenSymbol();
     }
 
     /// @dev Disallows the standard ERC20 transfer() function

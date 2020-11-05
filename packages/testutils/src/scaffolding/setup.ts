@@ -1,13 +1,6 @@
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
 import { AddressLike, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
-import {
-  ComptrollerLib,
-  ComptrollerProxy,
-  encodeFunctionData,
-  FundDeployer,
-  VaultLib,
-  VaultProxy,
-} from '@melonproject/protocol';
+import { ComptrollerLib, ComptrollerProxy, encodeFunctionData, FundDeployer, VaultLib } from '@melonproject/protocol';
 import { buyShares, BuySharesParams, DenominationAssetInterface } from './shares';
 import { assertEvent } from '../assertions';
 
@@ -164,28 +157,5 @@ export async function createNewFund({
     receipt,
     comptrollerProxy,
     vaultProxy,
-  };
-}
-
-export async function createVaultProxy({
-  creator,
-  vaultLib,
-  accessor,
-  owner,
-  fundName = 'My Test Fund',
-}: {
-  creator: SignerWithAddress;
-  vaultLib: VaultLib;
-  accessor: AddressLike;
-  owner: AddressLike;
-  fundName?: string;
-}) {
-  const constructData = encodeFunctionData(vaultLib.init.fragment, [owner, accessor, fundName]);
-
-  const vaultProxyContract = await VaultProxy.deploy(creator, constructData, vaultLib);
-
-  return {
-    vaultProxy: new VaultLib(vaultProxyContract, creator),
-    receipt: vaultProxyContract.deployment!,
   };
 }

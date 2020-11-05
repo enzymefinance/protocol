@@ -1,47 +1,60 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { assertEvent, createVaultProxy, defaultTestDeployment } from '@melonproject/testutils';
+import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
+import { VaultLib } from '@melonproject/protocol';
+import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
-  const [creator, owner, accessor, ...remainingAccounts] = accounts;
+  // Define the values to use in deploying the VaultProxy
+  const [fundDeployerSigner, fundOwner, vaultAccessor, ...remainingAccounts] = accounts;
   const fundName = 'VaultLib Test Fund';
-  const { vaultProxy } = await createVaultProxy({
-    creator,
-    owner,
-    accessor,
-    fundName,
-    vaultLib: deployment.vaultLib,
-  });
+
+  // Set a fundDeployerSigner as the current FundDeployer to bypass the need to go via a real FundDeployer contract
+  await deployment.dispatcher.setCurrentFundDeployer(fundDeployerSigner);
+
+  // Deploy the VaultProxy via the Dispatcher
+  const deployVaultProxyReceipt = await deployment.dispatcher
+    .connect(fundDeployerSigner)
+    .deployVaultProxy(deployment.vaultLib, fundOwner, vaultAccessor, fundName);
+
+  // Create a VaultLib instance with the deployed VaultProxy address, parsed from the deployment event
+  const vaultProxyDeployedEvent = extractEvent(deployVaultProxyReceipt, 'VaultProxyDeployed')[0];
+  const vaultProxy = new VaultLib(vaultProxyDeployedEvent.args.vaultProxy, fundOwner);
 
   return {
-    accessor,
     accounts: remainingAccounts,
     config,
-    creator,
     deployment,
+    fundDeployerSigner,
     fundName,
-    owner,
+    fundOwner,
+    vaultAccessor,
     vaultProxy,
   };
 }
 
 fdescribe('init', () => {
   it('correctly sets initial proxy values', async () => {
-    const { accessor, creator, fundName, owner, vaultProxy } = await provider.snapshot(snapshot);
+    const {
+      deployment: { dispatcher },
+      fundName,
+      fundOwner,
+      vaultAccessor,
+      vaultProxy,
+    } = await provider.snapshot(snapshot);
 
     const accessorValue = await vaultProxy.getAccessor();
-    expect(accessorValue).toMatchAddress(accessor);
+    expect(accessorValue).toMatchAddress(vaultAccessor);
 
     const creatorValue = await vaultProxy.getCreator();
-    expect(creatorValue).toMatchAddress(creator);
+    expect(creatorValue).toMatchAddress(dispatcher);
 
     const migratorValue = await vaultProxy.getMigrator();
     expect(migratorValue).toMatchAddress(constants.AddressZero);
 
     const ownerValue = await vaultProxy.getOwner();
-    expect(ownerValue).toMatchAddress(owner);
+    expect(ownerValue).toMatchAddress(fundOwner);
 
     const trackedAssetsValue = await vaultProxy.getTrackedAssets();
     expect(trackedAssetsValue).toEqual([]);
@@ -51,9 +64,8 @@ fdescribe('init', () => {
     const nameValue = await vaultProxy.name();
     expect(nameValue).toBe(fundName);
 
-    // TODO: fix this when we set the symbol dynamically
     const symbolValue = await vaultProxy.symbol();
-    expect(symbolValue).toBe('');
+    expect(symbolValue).toBe('MLNF');
 
     const decimalsValue = await vaultProxy.decimals();
     expect(decimalsValue).toBe(18);

@@ -335,9 +335,9 @@ describe('deployVaultProxy', () => {
     const nameCall = await vaultProxy.name();
     expect(nameCall).toBe(fundName);
 
-    // TODO: re-enable this check after implementing Dispatcher-level symbol()
-    // const symbolCall = await vaultProxy.symbol();
-    // expect(symbolCall).toBe('MLNF');
+    // The symbol is empty by default in VaultBaseCore
+    const symbolCall = await vaultProxy.symbol();
+    expect(symbolCall).toBe('');
 
     const decimalsCall = await vaultProxy.decimals();
     expect(decimalsCall).toBe(18);
