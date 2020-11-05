@@ -12,13 +12,9 @@ import "./IVault.sol";
 /// @dev The difference in terminology between "asset" and "trackedAsset" is intentional.
 /// A fund might actually have asset balances of un-tracked assets,
 /// but only tracked assets are used in gav calculations.
-/// Changing the VaultLib happens in two steps:
-/// 1. Update to the next logic contract
-/// 2. Set the next accessor
-/// These need to be separated so as to not assume that the next logic contract sets accessor
-/// in the same way as the current logic contract.
+/// Note that this contract inherits VaultLibSafeMath (a verbatim Open Zeppelin SafeMath copy)
+/// from SharesTokenBase via VaultLibBase1
 contract VaultLib is VaultLibBase1, IVault {
-    using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     modifier onlyAccessor() {
@@ -26,37 +22,32 @@ contract VaultLib is VaultLibBase1, IVault {
         _;
     }
 
-    // CORE LOGIC
+    /////////////
+    // GENERAL //
+    /////////////
 
-    function getAccessor() external view override returns (address) {
-        return accessor;
-    }
-
-    function getCreator() external view returns (address) {
-        return creator;
-    }
-
-    function getMigrator() external view returns (address) {
-        return migrator;
-    }
-
-    function getOwner() external view override returns (address) {
-        return owner;
-    }
-
+    /// @notice Sets the account that is allowed to migrate a fund to new releases
+    /// @param _nextMigrator The account to set as the allowed migrator
+    /// @dev Set to address(0) to remove the migrator.
+    /// Asserting delegate call is not needed because of access control.
     function setMigrator(address _nextMigrator) external {
         require(msg.sender == owner, "setMigrator: Only the owner can call this function");
         address prevMigrator = migrator;
-        if (_nextMigrator != prevMigrator) {
-            migrator = _nextMigrator;
-            emit MigratorSet(prevMigrator, _nextMigrator);
-        }
+        require(_nextMigrator != prevMigrator, "setMigrator: Value already set");
+
+        migrator = _nextMigrator;
+
+        emit MigratorSet(prevMigrator, _nextMigrator);
     }
 
-    // VAULT LOGIC
+    ///////////
+    // VAULT //
+    ///////////
 
-    // TODO: Should this function should not have an opinion about the actual asset balance?
+    /// @notice Adds a tracked asset to the fund
+    /// @param _asset The asset to add
     /// @dev Allows addition of already tracked assets to fail silently.
+    /// Asserting delegate call is not needed because of access control.
     function addTrackedAsset(address _asset) external override onlyAccessor {
         if (!isTrackedAsset(_asset) && __getAssetBalance(_asset) > 0) {
             assetToIsTracked[_asset] = true;
@@ -66,6 +57,10 @@ contract VaultLib is VaultLibBase1, IVault {
         }
     }
 
+    /// @notice Grants an allowance to a spender to use the fund's asset
+    /// @param _asset The asset for which to grant an allowance
+    /// @param _target The spender of the allowance
+    /// @param _amount The amount of the allowance
     function approveAssetSpender(
         address _asset,
         address _target,
@@ -74,6 +69,10 @@ contract VaultLib is VaultLibBase1, IVault {
         ERC20(_asset).approve(_target, _amount);
     }
 
+    /// @notice Makes an arbitrary call with this contract as the sender
+    /// @param _contract The contract to call
+    /// @param _callData The call data for the call
+    /// @dev Asserting delegate call is not needed because of access control
     function callOnContract(address _contract, bytes calldata _callData)
         external
         override
@@ -81,18 +80,20 @@ contract VaultLib is VaultLibBase1, IVault {
     {
         (bool success, bytes memory returnData) = _contract.call(_callData);
         require(success, string(returnData));
-
-        // TODO: need event?
     }
 
-    function getTrackedAssets() external view override returns (address[] memory) {
-        return trackedAssets;
-    }
-
+    /// @notice Removes a tracked asset from the fund
+    /// @param _asset The asset to remove
+    /// @dev Asserting delegate call is not needed because of access control
     function removeTrackedAsset(address _asset) external override onlyAccessor {
         __removeTrackedAsset(_asset);
     }
 
+    /// @notice Withdraws an asset from the VaultProxy to a given account
+    /// @param _asset The asset to withdraw
+    /// @param _target The account to which to withdraw the asset
+    /// @param _amount The amount of asset to withdraw
+    /// @dev Asserting delegate call is not needed because of access control
     function withdrawAssetTo(
         address _asset,
         address _target,
@@ -104,21 +105,18 @@ contract VaultLib is VaultLibBase1, IVault {
         if (balance.sub(_amount) == 0) {
             __removeTrackedAsset(_asset);
         }
-        // TODO: any need to assert that the _target receives the tokens?
         ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
     }
 
-    function isTrackedAsset(address _asset) public view override returns (bool) {
-        return assetToIsTracked[_asset];
-    }
-
-    function __getAssetBalance(address _asset) private view returns (uint256) {
+    /// @dev Helper to the get the Vault's balance of a given asset
+    function __getAssetBalance(address _asset) private view returns (uint256 balance_) {
         return ERC20(_asset).balanceOf(address(this));
     }
 
-    /// @dev Allows removal of non-tracked asset to fail silently.
+    /// @dev Helper to remove an asset from a fund's tracked assets.
+    /// Allows removal of non-tracked asset to fail silently.
     function __removeTrackedAsset(address _asset) private {
         if (isTrackedAsset(_asset)) {
             assetToIsTracked[_asset] = false;
@@ -138,16 +136,31 @@ contract VaultLib is VaultLibBase1, IVault {
         }
     }
 
-    // SHARES LOGIC
+    ////////////
+    // SHARES //
+    ////////////
 
+    /// @notice Burns fund shares from a particular account
+    /// @param _target The account for which to burn shares
+    /// @param _amount The amount of shares to burn
+    /// @dev Asserting delegate call is not needed because of access control
     function burnShares(address _target, uint256 _amount) external override onlyAccessor {
         __burn(_target, _amount);
     }
 
+    /// @notice Mints fund shares to a particular account
+    /// @param _target The account for which to burn shares
+    /// @param _amount The amount of shares to mint
+    /// @dev Asserting delegate call is not needed because of access control
     function mintShares(address _target, uint256 _amount) external override onlyAccessor {
         __mint(_target, _amount);
     }
 
+    /// @notice Transfers fund shares from one account to another
+    /// @param _from The account from which to transfer shares
+    /// @param _to The account to which to transfer shares
+    /// @param _amount The amount of shares to transfer
+    /// @dev Asserting delegate call is not needed because of access control
     function transferShares(
         address _from,
         address _to,
@@ -158,19 +171,63 @@ contract VaultLib is VaultLibBase1, IVault {
 
     // ERC20 overrides
 
+    /// @dev Disallows the standard ERC20 approve() function
     function approve(address, uint256) public override returns (bool) {
         revert("Unimplemented");
     }
 
+    /// @dev Disallows the standard ERC20 transfer() function
     function transfer(address, uint256) public override returns (bool) {
         revert("Unimplemented");
     }
 
+    /// @dev Disallows the standard ERC20 transferFrom() function
     function transferFrom(
         address,
         address,
         uint256
     ) public override returns (bool) {
         revert("Unimplemented");
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the `accessor` variable
+    /// @return accessor_ The `accessor` variable value
+    function getAccessor() external view override returns (address accessor_) {
+        return accessor;
+    }
+
+    /// @notice Gets the `creator` variable
+    /// @return creator_ The `creator` variable value
+    function getCreator() external view returns (address creator_) {
+        return creator;
+    }
+
+    /// @notice Gets the `migrator` variable
+    /// @return migrator_ The `migrator` variable value
+    function getMigrator() external view returns (address migrator_) {
+        return migrator;
+    }
+
+    /// @notice Gets the `owner` variable
+    /// @return owner_ The `owner` variable value
+    function getOwner() external view override returns (address owner_) {
+        return owner;
+    }
+
+    /// @notice Gets the `trackedAssets` variable
+    /// @return trackedAssets_ The `trackedAssets` variable value
+    function getTrackedAssets() external view override returns (address[] memory trackedAssets_) {
+        return trackedAssets;
+    }
+
+    /// @notice Check whether an address is a tracked asset of the fund
+    /// @param _asset The address to check
+    /// @return isTrackedAsset_ True if the address is a tracked asset of the fund
+    function isTrackedAsset(address _asset) public view override returns (bool isTrackedAsset_) {
+        return assetToIsTracked[_asset];
     }
 }

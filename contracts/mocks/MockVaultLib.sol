@@ -23,7 +23,7 @@ contract MockVaultLib is VaultLibBaseCore {
         return owner;
     }
 
-    function getInitialized() external view returns (bool) {
-        return initialized;
+    function getIsLib() external view returns (bool) {
+        return isLib;
     }
 }

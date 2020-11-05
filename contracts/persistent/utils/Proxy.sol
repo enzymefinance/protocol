@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-/// @dev The recommended implementation of a Proxy in EIP-1822, but updated for solc 6,
-/// and with EIP-1967 storage slot for the proxiable implementation.
+/// @dev The recommended implementation of a Proxy in EIP-1822, updated for solc 0.6.8,
+/// and using the EIP-1967 storage slot for the proxiable implementation.
 /// i.e., `bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)`, which is
 /// "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 /// See: https://eips.ethereum.org/EIPS/eip-1822
 contract Proxy {
     constructor(bytes memory _constructData, address _contractLogic) public {
-        // save the code address
         assembly {
             // solium-disable-line
             sstore(

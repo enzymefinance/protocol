@@ -2,101 +2,113 @@
 pragma solidity 0.6.8;
 
 import "../utils/Proxiable.sol";
+import "./utils/SharesTokenBase.sol";
 import "./IProxiableVault.sol";
-import "./StandardERC20.sol";
 
 /// @title VaultLibBaseCore Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A persistent contract containing all required storage variables,
-/// the constructor function, and setters used in deployment.
-/// @dev DO NOT EDIT CONTRACT.
-/// All functions in this file should remain as-is in order to guarantee upgradeability.
-/// If we need a new base with additional storage vars, inherit this contract.
-abstract contract VaultLibBaseCore is StandardERC20, IProxiableVault, Proxiable {
-    // TODO: Need to use a LibraryLock (check initialized) so that lib can only be delegatecalled?
-
+/// @notice A persistent contract containing all required storage variables and
+/// required functions for a VaultLib implementation
+/// @dev DO NOT EDIT CONTRACT. If new events or storage are necessary, they should be added to
+/// a numbered VaultLibBaseXXX that inherits the previous base. See VaultLibBase1.
+abstract contract VaultLibBaseCore is SharesTokenBase, IProxiableVault, Proxiable {
     event AccessorSet(address prevAccessor, address nextAccessor);
+
     event MigratorSet(address prevMigrator, address nextMigrator);
+
     event OwnerSet(address prevOwner, address nextOwner);
+
     event VaultLibSet(address prevVaultLib, address nextVaultLib);
 
-    bool internal initialized = false;
-
-    address internal owner;
-    address internal creator;
+    bool internal isLib;
     address internal accessor;
+    address internal creator;
     address internal migrator;
+    address internal owner;
 
-    modifier onlyCreator() {
-        require(msg.sender == creator, "Only the contract creator can make this call");
-        _;
+    constructor() public {
+        isLib = true;
     }
 
     // EXTERNAL FUNCTIONS
 
+    /// @notice Initializes the VaultProxy with core configuration
+    /// @param _owner The address to set as the fund owner
+    /// @param _accessor The address to set as the permissioned accessor of the VaultLib
+    /// @param _fundName The name of the fund
+    /// @dev Serves as a per-proxy pseudo-constructor
     function init(
         address _owner,
         address _accessor,
         string calldata _fundName
     ) external override {
-        require(!initialized, "init: Proxy already initialized");
-
-        nameInternal = _fundName;
-        symbolInternal = "MLNF";
-        decimalsInternal = 18;
-
+        require(!isLib, "init: Only delegate callable");
+        require(creator == address(0), "init: Proxy already initialized");
         creator = msg.sender;
+        sharesName = _fundName;
+
         __setAccessor(_accessor);
         __setOwner(_owner);
-
-        initialized = true;
 
         emit VaultLibSet(address(0), getVaultLib());
     }
 
-    function setAccessor(address _nextAccessor) external override onlyCreator {
+    /// @notice Sets the permissioned accessor of the VaultLib
+    /// @param _nextAccessor The address to set as the permissioned accessor of the VaultLib
+    function setAccessor(address _nextAccessor) external override {
+        require(msg.sender == creator, "setAccessor: Only callable by the contract creator");
+
         __setAccessor(_nextAccessor);
     }
 
-    /// @dev This is absolutely critical. TODO: add more notes
-    function setVaultLib(address _nextVaultLib) external override onlyCreator {
+    /// @notice Sets the VaultLib target for the VaultProxy
+    /// @param _nextVaultLib The address to set as the VaultLib
+    /// @dev This function is absolutely critical. __updateCodeAddress() validates that the
+    /// target is a valid Proxiable contract instance.
+    /// Does not block _nextVaultLib from being the same as the current VaultLib
+    function setVaultLib(address _nextVaultLib) external override {
+        require(msg.sender == creator, "setVaultLib: Only callable by the contract creator");
+
         address prevVaultLib = getVaultLib();
-        if (_nextVaultLib != prevVaultLib) {
-            __updateCodeAddress(_nextVaultLib);
-            emit VaultLibSet(prevVaultLib, _nextVaultLib);
-        }
+
+        __updateCodeAddress(_nextVaultLib);
+
+        emit VaultLibSet(prevVaultLib, _nextVaultLib);
     }
 
     // PUBLIC FUNCTIONS
 
-    function canMigrate(address _who) public view virtual override returns (bool) {
+    /// @notice Checks whether an account is allowed to migrate the VaultProxy
+    /// @param _who The account to check
+    /// @return canMigrate_ True if the account is allowed to migrate the VaultProxy
+    function canMigrate(address _who) public view virtual override returns (bool canMigrate_) {
         return _who == owner || _who == migrator;
     }
 
-    // TODO: test this function
-    function getVaultLib() public view returns (address) {
-        address vaultLib;
+    /// @notice Gets the VaultLib target for the VaultProxy
+    /// @return vaultLib_ The address of the VaultLib target
+    function getVaultLib() public view returns (address vaultLib_) {
         assembly {
             // solium-disable-line
-            vaultLib := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
+            vaultLib_ := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
         }
-        return vaultLib;
+        return vaultLib_;
     }
 
     // INTERNAL FUNCTIONS
 
-    /// @dev Don't prevent the prevAccessor from being the _nextAccessor, in case releases use the
-    /// same accessor at some point.
+    /// @dev Helper to set the permissioned accessor of the VaultProxy.
+    /// Does not prevent the prevAccessor from being the _nextAccessor.
     function __setAccessor(address _nextAccessor) internal {
         require(_nextAccessor != address(0), "__setAccessor: _nextAccessor cannot be empty");
         address prevAccessor = accessor;
-        if (prevAccessor != _nextAccessor) {
-            accessor = _nextAccessor;
 
-            emit AccessorSet(prevAccessor, _nextAccessor);
-        }
+        accessor = _nextAccessor;
+
+        emit AccessorSet(prevAccessor, _nextAccessor);
     }
 
+    /// @dev Helper to set the owner of the VaultProxy
     function __setOwner(address _nextOwner) internal {
         require(_nextOwner != address(0), "__setOwner: _nextOwner cannot be empty");
         address prevOwner = owner;

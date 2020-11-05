@@ -202,19 +202,19 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     /// @notice Makes an arbitrary call with the VaultProxy contract as the sender
     /// @param _contract The contract to call
     /// @param _selector The selector to call
-    /// @param _callData The call data for the call
+    /// @param _encodedArgs The encoded arguments for the call
     /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function vaultCallOnContract(
         address _contract,
         bytes4 _selector,
-        bytes calldata _callData
+        bytes calldata _encodedArgs
     ) external onlyNotPaused onlyActive onlyOwner {
         require(
             IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
             "vaultCallOnContract: Unregistered"
         );
 
-        IVault(vaultProxy).callOnContract(_contract, abi.encodePacked(_selector, _callData));
+        IVault(vaultProxy).callOnContract(_contract, abi.encodePacked(_selector, _encodedArgs));
     }
 
     /// @dev Helper to check whether the release is paused, and that there is no local override

@@ -5,13 +5,15 @@ import "./VaultLibBaseCore.sol";
 
 /// @title VaultLibBase1 Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice A persistent contract containing all required storage variables,
-/// the constructor function, and setters used in deployment to a VaultLib.
-/// @dev DO NOT EDIT CONTRACT.
-/// If we need a new base with additional storage vars, inherit this contract in VaultLibBase2.
+/// @notice The first implementation of VaultLibBaseCore, with additional events and storage
+/// @dev All subsequent implementations should inherit the previous implementation,
+/// e.g., `VaultLibBase2 is VaultLibBase1`
+/// DO NOT EDIT CONTRACT.
 abstract contract VaultLibBase1 is VaultLibBaseCore {
     event AssetWithdrawn(address indexed asset, address indexed target, uint256 amount);
+
     event TrackedAssetAdded(address asset);
+
     event TrackedAssetRemoved(address asset);
 
     address[] internal trackedAssets;

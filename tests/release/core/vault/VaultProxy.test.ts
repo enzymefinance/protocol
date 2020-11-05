@@ -1,40 +1,62 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
+import { assertEvent, createVaultProxy, defaultTestDeployment } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
-  await deployment.vaultLib.init(config.deployer, config.deployer, 'Mock Fund');
+  const [creator, owner, accessor, ...remainingAccounts] = accounts;
+  const fundName = 'VaultLib Test Fund';
+  const { vaultProxy } = await createVaultProxy({
+    creator,
+    owner,
+    accessor,
+    fundName,
+    vaultLib: deployment.vaultLib,
+  });
 
   return {
-    accounts,
-    deployment,
+    accessor,
+    accounts: remainingAccounts,
     config,
+    creator,
+    deployment,
+    fundName,
+    owner,
+    vaultProxy,
   };
 }
 
-describe('constructor', () => {
-  it('sets initial state for library', async () => {
-    const {
-      config: { deployer },
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
+fdescribe('init', () => {
+  it('correctly sets initial proxy values', async () => {
+    const { accessor, creator, fundName, owner, vaultProxy } = await provider.snapshot(snapshot);
 
-    const accessor = await vaultLib.getAccessor();
-    expect(accessor).toMatchAddress(deployer);
+    const accessorValue = await vaultProxy.getAccessor();
+    expect(accessorValue).toMatchAddress(accessor);
 
-    const creator = await vaultLib.getCreator();
-    expect(creator).toMatchAddress(deployer);
+    const creatorValue = await vaultProxy.getCreator();
+    expect(creatorValue).toMatchAddress(creator);
 
-    const migrator = await vaultLib.getMigrator();
-    expect(migrator).toMatchAddress(constants.AddressZero);
+    const migratorValue = await vaultProxy.getMigrator();
+    expect(migratorValue).toMatchAddress(constants.AddressZero);
 
-    const owner = await vaultLib.getOwner();
-    expect(owner).toMatchAddress(deployer);
+    const ownerValue = await vaultProxy.getOwner();
+    expect(ownerValue).toMatchAddress(owner);
 
-    const trackedAssets = await vaultLib.getTrackedAssets();
-    expect(trackedAssets).toEqual([]);
+    const trackedAssetsValue = await vaultProxy.getTrackedAssets();
+    expect(trackedAssetsValue).toEqual([]);
+
+    // SharesToken values
+
+    const nameValue = await vaultProxy.name();
+    expect(nameValue).toBe(fundName);
+
+    // TODO: fix this when we set the symbol dynamically
+    const symbolValue = await vaultProxy.symbol();
+    expect(symbolValue).toBe('');
+
+    const decimalsValue = await vaultProxy.decimals();
+    expect(decimalsValue).toBe(18);
   });
 });
 

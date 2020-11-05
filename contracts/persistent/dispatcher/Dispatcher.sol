@@ -12,6 +12,7 @@ import "./IDispatcher.sol";
 /// It handles the deployment of new VaultProxy instances,
 /// and the regulation of fund migration from a previous release to the current one.
 /// It can also be referred to for access-control based on this contract's owner.
+/// @dev DO NOT EDIT CONTRACT
 contract Dispatcher is IDispatcher {
     event CurrentFundDeployerSet(address prevFundDeployer, address nextFundDeployer);
 
