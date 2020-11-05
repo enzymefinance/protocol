@@ -12,7 +12,6 @@ export interface BuySharesParams {
   signer: SignerWithAddress;
   buyer: AddressLike;
   denominationAsset: DenominationAssetInterface;
-  amguValue?: BigNumberish;
   investmentAmount?: BigNumberish;
   minSharesAmount?: BigNumberish;
 }
@@ -30,7 +29,6 @@ export async function buyShares({
   signer,
   buyer,
   denominationAsset,
-  amguValue = utils.parseEther('1'), // TODO: get real estimated amgu cost?
   investmentAmount = utils.parseEther('1'),
   minSharesAmount = investmentAmount,
 }: BuySharesParams) {
@@ -38,7 +36,7 @@ export async function buyShares({
   await callerDenominationAsset.approve(comptrollerProxy, investmentAmount);
 
   const callerComptrollerProxy = comptrollerProxy.connect(signer);
-  return callerComptrollerProxy.buyShares.args(buyer, investmentAmount, minSharesAmount).value(amguValue).send();
+  return callerComptrollerProxy.buyShares(buyer, investmentAmount, minSharesAmount);
 }
 
 export async function redeemShares({

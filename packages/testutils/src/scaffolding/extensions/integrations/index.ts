@@ -1,5 +1,4 @@
 export * from './chai';
-export * from './engine';
 export * from './compound';
 export * from './kyber';
 export * from './mock';

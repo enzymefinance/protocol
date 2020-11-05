@@ -56,7 +56,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockPolicyManager,
     fundLifecycleLib, // FundLifecycleLib
     randomAddress(), // PermissionedVaultActionLib
-    randomAddress(), // Engine
   );
 
   // Deploy configured ComptrollerProxy

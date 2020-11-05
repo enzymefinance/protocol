@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../persistent/utils/IMigrationHookHandler.sol";
-import "../../infrastructure/engine/AmguConsumer.sol";
 import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
 import "../fund/vault/IVault.sol";
@@ -16,7 +15,7 @@ import "./IFundDeployer.sol";
 /// It primarily coordinates fund deployment and fund migration, but
 /// it is also deferred to for contract access control and for allowed calls
 /// that can be made with a fund's VaultProxy as the msg.sender.
-contract FundDeployer is IFundDeployer, IMigrationHookHandler, AmguConsumer {
+contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     event ComptrollerLibSet(address comptrollerLib);
 
     event ComptrollerProxyDeployed(
@@ -90,11 +89,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, AmguConsumer {
 
     constructor(
         address _dispatcher,
-        address _engine,
         address _vaultLib,
         address[] memory _vaultCallContracts,
         bytes4[] memory _vaultCallSelectors
-    ) public AmguConsumer(_engine) {
+    ) public {
         if (_vaultCallContracts.length > 0) {
             __registerVaultCalls(_vaultCallContracts, _vaultCallSelectors);
         }
@@ -210,13 +208,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, AmguConsumer {
         address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    )
-        external
-        payable
-        amguPayable
-        onlyNotPaused
-        returns (address comptrollerProxy_, address vaultProxy_)
-    {
+    ) external payable onlyNotPaused returns (address comptrollerProxy_, address vaultProxy_) {
         return
             __createNewFund(
                 _fundOwner,

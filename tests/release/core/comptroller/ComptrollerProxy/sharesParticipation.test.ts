@@ -178,8 +178,6 @@ describe('buyShares', () => {
       }),
     ).resolves.toBeReceipt();
   });
-
-  it.todo('test that amgu is sent to the Engine in the above function');
 });
 
 describe('allowedBuySharesCallers', () => {

@@ -274,9 +274,6 @@ export async function configureMockRelease({
       contracts: [],
       selectors: [],
     },
-    engine: {
-      thawDelay: 3600, // 1 hour
-    },
     chainlink: {
       ethUsdAggregator: mocks.chainlinkEthUsdAggregator,
       staleRateThreshold: 259200, // 72 hours

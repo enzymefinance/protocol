@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
-import "../../../infrastructure/engine/AmguConsumer.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
@@ -24,7 +23,7 @@ import "./IComptroller.sol";
 /// @notice The core logic library shared by all funds
 /// @dev All state-changing functions should be marked as onlyDelegateCall,
 /// unless called directly by the FundDeployer
-contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, AmguConsumer {
+contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
@@ -133,9 +132,8 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
         address _integrationManager,
         address _policyManager,
         address _fundLifecycleLib,
-        address _permissionedVaultActionLib,
-        address _engine
-    ) public AmguConsumer(_engine) {
+        address _permissionedVaultActionLib
+    ) public {
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         FUND_LIFECYCLE_LIB = _fundLifecycleLib;
@@ -376,7 +374,6 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage, 
     )
         external
         payable
-        amguPayable
         onlyActive
         onlyNotPaused
         timelockedSharesAction(_buyer)

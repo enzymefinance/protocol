@@ -877,7 +877,6 @@ describe('integration', () => {
       deployment: {
         chainlinkPriceFeed,
         dispatcher,
-        engine,
         feeManager,
         fundDeployer,
         integrationManager,
@@ -917,7 +916,6 @@ describe('integration', () => {
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,
-      engine,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,

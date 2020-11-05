@@ -4,7 +4,6 @@ import {
   ChainlinkPriceFeed,
   ComptrollerLib,
   Dispatcher,
-  Engine,
   FeeManager,
   FundDeployer,
   FundLifecycleLib,
@@ -19,7 +18,6 @@ export async function createFundDeployer({
   deployer,
   chainlinkPriceFeed,
   dispatcher,
-  engine,
   feeManager,
   integrationManager,
   permissionedVaultActionLib,
@@ -33,7 +31,6 @@ export async function createFundDeployer({
   deployer: Signer;
   chainlinkPriceFeed: ChainlinkPriceFeed;
   dispatcher: Dispatcher;
-  engine: Engine;
   feeManager: FeeManager;
   integrationManager: IntegrationManager;
   permissionedVaultActionLib: PermissionedVaultActionLib;
@@ -47,7 +44,6 @@ export async function createFundDeployer({
   const nextFundDeployer = await FundDeployer.deploy(
     deployer,
     dispatcher,
-    engine,
     vaultLib,
     vaultCallContracts,
     vaultCallSelectors,
@@ -69,7 +65,6 @@ export async function createFundDeployer({
     policyManager,
     nextFundLifecycleLib,
     permissionedVaultActionLib,
-    engine,
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 

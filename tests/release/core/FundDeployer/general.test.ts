@@ -16,7 +16,7 @@ describe('constructor', () => {
   it('sets initial state', async () => {
     const {
       config: { deployer, registeredVaultCalls },
-      deployment: { dispatcher, engine, fundDeployer, vaultLib },
+      deployment: { dispatcher, fundDeployer, vaultLib },
     } = await provider.snapshot(snapshot);
 
     const getCreatorCall = await fundDeployer.getCreator();
@@ -24,9 +24,6 @@ describe('constructor', () => {
 
     const getDispatcherCall = await fundDeployer.getDispatcher();
     expect(getDispatcherCall).toMatchAddress(dispatcher);
-
-    const getEngineCall = await fundDeployer.getEngine();
-    expect(getEngineCall).toMatchAddress(engine);
 
     const getOwnerCall = await fundDeployer.getOwner();
     expect(getOwnerCall).toMatchAddress(deployer);

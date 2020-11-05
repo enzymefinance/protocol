@@ -91,9 +91,6 @@ export async function configureForkRelease({
       contracts: [],
       selectors: [],
     },
-    engine: {
-      thawDelay: 10000000000,
-    },
     chainlink: {
       ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
       staleRateThreshold: 259200, // 72 hours

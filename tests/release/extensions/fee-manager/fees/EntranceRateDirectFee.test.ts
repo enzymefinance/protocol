@@ -168,7 +168,6 @@ describe('integration', () => {
       deployment: {
         chainlinkPriceFeed,
         dispatcher,
-        engine,
         entranceRateDirectFee,
         feeManager,
         fundDeployer,
@@ -202,7 +201,6 @@ describe('integration', () => {
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,
-      engine,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
@@ -264,7 +262,6 @@ describe('integration', () => {
       deployment: {
         chainlinkPriceFeed,
         dispatcher,
-        engine,
         entranceRateDirectFee,
         feeManager,
         fundDeployer,
@@ -297,7 +294,6 @@ describe('integration', () => {
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,
-      engine,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,

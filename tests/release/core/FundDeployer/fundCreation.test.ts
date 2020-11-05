@@ -122,8 +122,6 @@ describe('createNewFund', () => {
     // Assert expected calls
     expect(comptrollerProxy.activate).toHaveBeenCalledOnContractWith(vaultProxy, false);
   });
-
-  it.todo('test that amgu is sent to the Engine in the above function');
 });
 
 describe('createMigratedFundConfig', () => {

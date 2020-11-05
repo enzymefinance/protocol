@@ -17,7 +17,6 @@ describe('constructor', () => {
     const {
       deployment: {
         comptrollerLib,
-        engine,
         feeManager,
         fundDeployer,
         fundLifecycleLib,
@@ -38,9 +37,6 @@ describe('constructor', () => {
       policyManager_: policyManager,
       valueInterpreter_: valueInterpreter,
     });
-
-    const engineCall = await comptrollerLib.getEngine();
-    expect(engineCall).toMatchAddress(engine);
 
     // The following should be default values
     const denominationAssetCall = await comptrollerLib.getDenominationAsset();

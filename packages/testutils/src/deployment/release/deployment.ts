@@ -11,8 +11,6 @@ import {
   CompoundAdapter,
   CompoundPriceFeed,
   ComptrollerLib,
-  Engine,
-  EngineAdapter,
   EntranceRateBurnFee,
   EntranceRateDirectFee,
   FeeManager,
@@ -46,9 +44,6 @@ export interface ReleaseDeploymentConfig {
   registeredVaultCalls: {
     contracts: AddressLike[];
     selectors: BytesLike[];
-  };
-  engine: {
-    thawDelay: BigNumberish;
   };
   integrationManager: {
     trackedAssetsLimit: BigNumberish;
@@ -101,7 +96,6 @@ export interface ReleaseDeploymentOutput {
   permissionedVaultActionLib: Promise<PermissionedVaultActionLib>;
   vaultLib: Promise<VaultLib>;
   // Shared Infrastructure
-  engine: Promise<Engine>;
   valueInterpreter: Promise<ValueInterpreter>;
   // Extensions
   feeManager: Promise<FeeManager>;
@@ -117,7 +111,6 @@ export interface ReleaseDeploymentOutput {
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
   compoundAdapter: Promise<CompoundAdapter>;
-  engineAdapter: Promise<EngineAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   uniswapV2Adapter: Promise<UniswapV2Adapter>;
@@ -150,7 +143,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.policyManager,
       await deployment.fundLifecycleLib,
       await deployment.permissionedVaultActionLib,
-      await deployment.engine,
     );
 
     const fundDeployer = await deployment.fundDeployer;
@@ -162,7 +154,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return FundDeployer.deploy(
       config.deployer,
       config.dispatcher,
-      await deployment.engine,
       await deployment.vaultLib,
       config.registeredVaultCalls.contracts,
       config.registeredVaultCalls.selectors,
@@ -190,17 +181,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return VaultLib.deploy(config.deployer);
   },
   // Shared Infrastructure
-  async engine(config, deployment) {
-    return Engine.deploy(
-      config.deployer,
-      config.dispatcher,
-      config.mgm,
-      config.mln,
-      config.weth,
-      await deployment.valueInterpreter,
-      config.engine.thawDelay,
-    );
-  },
   async valueInterpreter(config, deployment) {
     return ValueInterpreter.deploy(
       config.deployer,
@@ -293,15 +273,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       config.weth,
     );
   },
-  async engineAdapter(config, deployment) {
-    return EngineAdapter.deploy(
-      config.deployer,
-      await deployment.integrationManager,
-      await deployment.engine,
-      config.mln,
-      config.weth,
-    );
-  },
   async kyberAdapter(config, deployment) {
     return KyberAdapter.deploy(
       config.deployer,
@@ -372,7 +343,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     const adapters = [
       await deployment.chaiAdapter,
       await deployment.compoundAdapter,
-      await deployment.engineAdapter,
       await deployment.kyberAdapter,
       await deployment.trackedAssetsAdapter,
       await deployment.uniswapV2Adapter,
@@ -381,11 +351,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
 
     const integrationManager = await deployment.integrationManager;
     await integrationManager.registerAdapters(adapters);
-
-    // Register ether takers on engine
-    const engineAdapter = await deployment.engineAdapter;
-    const engine = await deployment.engine;
-    await engine.addEtherTakers([engineAdapter]);
 
     // Register fees
     const fees = [

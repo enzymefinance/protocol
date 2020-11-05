@@ -18,7 +18,6 @@ export { VaultLib } from './codegen/VaultLib';
 export { FundLifecycleLib } from './codegen/FundLifecycleLib';
 
 // Infrastructure
-export { Engine } from './codegen/Engine';
 export { ValueInterpreter } from './codegen/ValueInterpreter';
 
 // Extensions
@@ -44,7 +43,6 @@ export { IKyberNetworkProxy } from './codegen/IKyberNetworkProxy';
 
 // Integration adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';
-export { EngineAdapter } from './codegen/EngineAdapter';
 export { KyberAdapter } from './codegen/KyberAdapter';
 export { TrackedAssetsAdapter } from './codegen/TrackedAssetsAdapter';
 export { ZeroExV2Adapter } from './codegen/ZeroExV2Adapter';
