@@ -37,6 +37,12 @@ interface IDispatcher {
 
     function getOwner() external view returns (address);
 
+    function getTimelockRemainingForMigrationRequest(address) external view returns (uint256);
+
+    function hasExecutableMigrationRequest(address) external view returns (bool);
+
+    function hasMigrationRequest(address) external view returns (bool);
+
     function removeNominatedOwner() external;
 
     function setCurrentFundDeployer(address) external;

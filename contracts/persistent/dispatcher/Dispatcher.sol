@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "../utils/IMigrationHookHandler.sol";
 import "../vault/IProxiableVault.sol";
 import "../vault/VaultProxy.sol";
-import "./IMigrationHookHandler.sol";
 import "./IDispatcher.sol";
 
 /// @title Dispatcher Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
-/// @notice The top-level contract linking multiple releases,
-/// handling the deployment of new VaultProxy instances,
-/// and regulating the migration of funds between releases.
+/// @notice The top-level contract linking multiple releases.
+/// It handles the deployment of new VaultProxy instances,
+/// and the regulation of fund migration from a previous release to the current one.
+/// It can also be referred to for access-control based on this contract's owner.
 contract Dispatcher is IDispatcher {
     event CurrentFundDeployerSet(address prevFundDeployer, address nextFundDeployer);
 
@@ -48,47 +49,7 @@ contract Dispatcher is IDispatcher {
 
     event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
 
-    event PostCancelMigrationOriginHookFailed(
-        bytes failureReturnData,
-        address indexed vaultProxy,
-        address indexed prevFundDeployer,
-        address indexed nextFundDeployer,
-        address nextVaultAccessor,
-        address nextVaultLib,
-        uint256 signalTimestamp
-    );
-
-    event PostCancelMigrationTargetHookFailed(
-        bytes failureReturnData,
-        address indexed vaultProxy,
-        address indexed prevFundDeployer,
-        address indexed nextFundDeployer,
-        address nextVaultAccessor,
-        address nextVaultLib,
-        uint256 signalTimestamp
-    );
-
-    event PreMigrateOriginHookFailed(
-        bytes failureReturnData,
-        address indexed vaultProxy,
-        address indexed prevFundDeployer,
-        address indexed nextFundDeployer,
-        address nextVaultAccessor,
-        address nextVaultLib,
-        uint256 signalTimestamp
-    );
-
-    event PostMigrateOriginHookFailed(
-        bytes failureReturnData,
-        address indexed vaultProxy,
-        address indexed prevFundDeployer,
-        address indexed nextFundDeployer,
-        address nextVaultAccessor,
-        address nextVaultLib,
-        uint256 signalTimestamp
-    );
-
-    event PreSignalMigrationOriginHookFailed(
+    event MigrationInCancelHookFailed(
         bytes failureReturnData,
         address indexed vaultProxy,
         address indexed prevFundDeployer,
@@ -97,8 +58,9 @@ contract Dispatcher is IDispatcher {
         address nextVaultLib
     );
 
-    event PostSignalMigrationOriginHookFailed(
+    event MigrationOutHookFailed(
         bytes failureReturnData,
+        IMigrationHookHandler.MigrationOutHook hook,
         address indexed vaultProxy,
         address indexed prevFundDeployer,
         address indexed nextFundDeployer,
@@ -110,7 +72,7 @@ contract Dispatcher is IDispatcher {
         address indexed fundDeployer,
         address indexed owner,
         address vaultProxy,
-        address vaultLib,
+        address indexed vaultLib,
         address vaultAccessor,
         string fundName
     );
@@ -143,8 +105,8 @@ contract Dispatcher is IDispatcher {
     }
 
     constructor() public {
-        owner = msg.sender;
         migrationTimelock = 2 days;
+        owner = msg.sender;
     }
 
     ////////////////////
@@ -156,7 +118,7 @@ contract Dispatcher is IDispatcher {
         address nextOwner = nominatedOwner;
         require(
             msg.sender == nextOwner,
-            "acceptOwnership: Only the nominatedOwner can call this function"
+            "claimOwnership: Only the nominatedOwner can call this function"
         );
 
         delete nominatedOwner;
@@ -172,7 +134,7 @@ contract Dispatcher is IDispatcher {
         address removedNominatedOwner = nominatedOwner;
         require(
             removedNominatedOwner != address(0),
-            "revokeOwnershipNomination: there is no nominated owner"
+            "removeNominatedOwner: There is no nominated owner"
         );
 
         delete nominatedOwner;
@@ -201,12 +163,19 @@ contract Dispatcher is IDispatcher {
 
     /// @notice Nominate a new contract owner
     /// @param _nextNominatedOwner The account to nominate
+    /// @dev Does not prohibit overwriting the current nominatedOwner
     function setNominatedOwner(address _nextNominatedOwner) external override onlyOwner {
-        require(_nextNominatedOwner != address(0), "nominateOwner: _nextOwner cannot be empty");
-        require(_nextNominatedOwner != owner, "nominateOwner: _nextOwner is already the owner");
+        require(
+            _nextNominatedOwner != address(0),
+            "setNominatedOwner: _nextNominatedOwner cannot be empty"
+        );
+        require(
+            _nextNominatedOwner != owner,
+            "setNominatedOwner: _nextNominatedOwner is already the owner"
+        );
         require(
             _nextNominatedOwner != nominatedOwner,
-            "nominateOwner: _nextOwner is already nominated"
+            "setNominatedOwner: _nextNominatedOwner is already nominated"
         );
 
         nominatedOwner = _nextNominatedOwner;
@@ -218,15 +187,18 @@ contract Dispatcher is IDispatcher {
     // DEPLOYMENT //
     ////////////////
 
+    /// @notice Deploys a VaultProxy
+    /// @param _vaultLib The VaultLib library with which to instantiate the VaultProxy
+    /// @param _owner The account to set as the VaultProxy's owner
+    /// @param _vaultAccessor The account to set as the VaultProxy's permissioned accessor
+    /// @param _fundName The name of the fund
+    /// @dev Input validation should be handled by the VaultProxy during deployment
     function deployVaultProxy(
         address _vaultLib,
         address _owner,
         address _vaultAccessor,
         string calldata _fundName
     ) external override onlyCurrentFundDeployer returns (address) {
-        // Need to perform validation?
-        // require(_manager != address(0), "deployVaultProxy: _manager cannot be empty");
-
         bytes memory constructData = abi.encodeWithSelector(
             IProxiableVault.init.selector,
             _owner,
@@ -254,20 +226,21 @@ contract Dispatcher is IDispatcher {
     // MIGRATIONS //
     ////////////////
 
-    // TODO: Need convenience functions for hasMigrationRequest(), migrationRequestIsExecutable(), getMigrationRequest(), etc?
-
-    /// @dev Only either the fund owner or the nextFundDeployer in the MigrationRequest can call this.
+    /// @notice Cancels a pending migration request
+    /// @param _vaultProxy The VaultProxy contract for which to cancel the migration request
+    /// @param _bypassFailure True if a failure in either migration hook should be ignored
+    /// @dev Because this function must also be callable by a permissioned migrator, it has an
+    /// extra migration hook to the nextFundDeployer for the case where cancelMigration()
+    /// is called directly (rather than via the nextFundDeployer).
     function cancelMigration(address _vaultProxy, bool _bypassFailure) external override {
-        require(_vaultProxy != address(0), "cancelMigration: _vaultProxy cannot be empty");
-
         MigrationRequest memory request = vaultProxyToMigrationRequest[_vaultProxy];
         address nextFundDeployer = request.nextFundDeployer;
-        require(nextFundDeployer != address(0), "cancelMigration: no migration request exists");
+        require(nextFundDeployer != address(0), "cancelMigration: No migration request exists");
 
         // TODO: confirm that if canMigrate() does not exist but the caller is a valid FundDeployer, this still works.
         require(
             msg.sender == nextFundDeployer || IProxiableVault(_vaultProxy).canMigrate(msg.sender),
-            "Only an authorized migrator or the fund's FundDeployer can call this function"
+            "cancelMigration: Not an allowed caller"
         );
 
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
@@ -277,64 +250,23 @@ contract Dispatcher is IDispatcher {
 
         delete vaultProxyToMigrationRequest[_vaultProxy];
 
-        // Allow to fail silently
-        bool success;
-        bytes memory returnData;
-        (success, returnData) = prevFundDeployer.call(
-            abi.encodeWithSelector(
-                IMigrationHookHandler.postCancelMigrationOriginHook.selector,
-                _vaultProxy,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            )
+        __invokeMigrationOutHook(
+            IMigrationHookHandler.MigrationOutHook.PostCancel,
+            _vaultProxy,
+            prevFundDeployer,
+            nextFundDeployer,
+            nextVaultAccessor,
+            nextVaultLib,
+            _bypassFailure
         );
-        if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("postCancelMigrationOriginHook failure: ", returnData))
-            );
-
-            emit PostCancelMigrationOriginHookFailed(
-                returnData,
-                _vaultProxy,
-                prevFundDeployer,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            );
-        }
-
-        // TODO: this could be conditional if the sender is the owner rather than the FundDeployer
-        (success, returnData) = nextFundDeployer.call(
-            abi.encodeWithSelector(
-                IMigrationHookHandler.postCancelMigrationTargetHook.selector,
-                _vaultProxy,
-                prevFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            )
+        __invokeMigrationInCancelHook(
+            _vaultProxy,
+            prevFundDeployer,
+            nextFundDeployer,
+            nextVaultAccessor,
+            nextVaultLib,
+            _bypassFailure
         );
-        // Allow to fail silently
-        if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("postCancelMigrationTargetHook failure: ", returnData))
-            );
-
-            emit PostCancelMigrationTargetHookFailed(
-                returnData,
-                _vaultProxy,
-                prevFundDeployer,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            );
-        }
 
         emit MigrationCancelled(
             _vaultProxy,
@@ -346,9 +278,10 @@ contract Dispatcher is IDispatcher {
         );
     }
 
+    /// @notice Executes a pending migration request
+    /// @param _vaultProxy The VaultProxy contract for which to execute the migration request
+    /// @param _bypassFailure True if a failure in either migration hook should be ignored
     function executeMigration(address _vaultProxy, bool _bypassFailure) external override {
-        require(_vaultProxy != address(0), "executeMigration: _vaultProxy cannot be empty");
-
         MigrationRequest memory request = vaultProxyToMigrationRequest[_vaultProxy];
         address nextFundDeployer = request.nextFundDeployer;
         require(
@@ -364,10 +297,8 @@ contract Dispatcher is IDispatcher {
             "executeMigration: The target FundDeployer is no longer the current FundDeployer"
         );
         uint256 signalTimestamp = request.signalTimestamp;
-        // No chance of underflow, so since we are not using a SafeMath library otherwise,
-        // we use the default solidity subtraction operation here.
         require(
-            block.timestamp - signalTimestamp >= migrationTimelock,
+            __getSecondsSinceTimestamp(signalTimestamp) >= migrationTimelock,
             "executeMigration: The migration timelock has not been met"
         );
 
@@ -375,75 +306,35 @@ contract Dispatcher is IDispatcher {
         address nextVaultAccessor = request.nextVaultAccessor;
         address nextVaultLib = request.nextVaultLib;
 
-        // Allow to fail silently
-        bool success;
-        bytes memory returnData;
-        (success, returnData) = prevFundDeployer.call(
-            abi.encodeWithSelector(
-                IMigrationHookHandler.preMigrateOriginHook.selector,
-                _vaultProxy,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            )
+        __invokeMigrationOutHook(
+            IMigrationHookHandler.MigrationOutHook.PreMigrate,
+            _vaultProxy,
+            prevFundDeployer,
+            nextFundDeployer,
+            nextVaultAccessor,
+            nextVaultLib,
+            _bypassFailure
         );
-        if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("preMigrateOriginHook failure: ", returnData))
-            );
-
-            emit PreMigrateOriginHookFailed(
-                returnData,
-                _vaultProxy,
-                prevFundDeployer,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            );
-        }
 
         // Upgrade the VaultProxy to a new VaultLib and update the accessor via the new VaultLib
-        // TODO: Any way to validate that the nextVaultLib can setVaultLib properly?
         IProxiableVault(_vaultProxy).setVaultLib(nextVaultLib);
-        // TODO: Any need to make this a general postUpdate() call?
         IProxiableVault(_vaultProxy).setAccessor(nextVaultAccessor);
 
-        // Update FundDeployer for the fund
+        // Update the FundDeployer that migrated the VaultProxy
         vaultProxyToFundDeployer[_vaultProxy] = nextFundDeployer;
 
         // Remove the migration request
         delete vaultProxyToMigrationRequest[_vaultProxy];
 
-        // Allow to fail silently
-        (success, returnData) = prevFundDeployer.call(
-            abi.encodeWithSelector(
-                IMigrationHookHandler.postMigrateOriginHook.selector,
-                _vaultProxy,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            )
+        __invokeMigrationOutHook(
+            IMigrationHookHandler.MigrationOutHook.PostMigrate,
+            _vaultProxy,
+            prevFundDeployer,
+            nextFundDeployer,
+            nextVaultAccessor,
+            nextVaultLib,
+            _bypassFailure
         );
-        if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("postMigrateOriginHook failure: ", returnData))
-            );
-
-            emit PostMigrateOriginHookFailed(
-                returnData,
-                _vaultProxy,
-                prevFundDeployer,
-                nextFundDeployer,
-                nextVaultAccessor,
-                nextVaultLib,
-                signalTimestamp
-            );
-        }
 
         emit MigrationExecuted(
             _vaultProxy,
@@ -455,7 +346,7 @@ contract Dispatcher is IDispatcher {
         );
     }
 
-    /// @notice Set a new migration timelock
+    /// @notice Sets a new migration timelock
     /// @param _nextTimelock The number of seconds for the new timelock
     function setMigrationTimelock(uint256 _nextTimelock) external override onlyOwner {
         uint256 prevTimelock = migrationTimelock;
@@ -469,55 +360,35 @@ contract Dispatcher is IDispatcher {
         emit MigrationTimelockSet(prevTimelock, _nextTimelock);
     }
 
+    /// @notice Signals a migration by creating a migration request
+    /// @param _vaultProxy The VaultProxy contract for which to signal migration
+    /// @param _nextVaultAccessor The account that will be the next `accessor` on the VaultProxy
+    /// @param _nextVaultLib The next VaultLib library contract address to set on the VaultProxy
+    /// @param _bypassFailure True if a failure in either migration hook should be ignored
     function signalMigration(
         address _vaultProxy,
         address _nextVaultAccessor,
         address _nextVaultLib,
         bool _bypassFailure
     ) external override onlyCurrentFundDeployer {
-        require(_vaultProxy != address(0), "signalMigration: _vaultProxy cannot be empty");
-        require(
-            _nextVaultAccessor != address(0),
-            "signalMigration: _nextVaultAccessor cannot be empty"
-        );
-        require(_nextVaultLib != address(0), "signalMigration: _nextVaultLib cannot be empty");
-
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
         require(prevFundDeployer != address(0), "signalMigration: _vaultProxy does not exist");
 
         address nextFundDeployer = msg.sender;
         require(
-            prevFundDeployer != nextFundDeployer,
-            "signalMigration: can only migrate to a new FundDeployer"
+            nextFundDeployer != prevFundDeployer,
+            "signalMigration: Can only migrate to a new FundDeployer"
         );
 
-        // Allow to fail silently
-        bool success;
-        bytes memory returnData;
-        (success, returnData) = prevFundDeployer.call(
-            abi.encodeWithSelector(
-                IMigrationHookHandler.preSignalMigrationOriginHook.selector,
-                _vaultProxy,
-                nextFundDeployer,
-                _nextVaultAccessor,
-                _nextVaultLib
-            )
+        __invokeMigrationOutHook(
+            IMigrationHookHandler.MigrationOutHook.PreSignal,
+            _vaultProxy,
+            prevFundDeployer,
+            nextFundDeployer,
+            _nextVaultAccessor,
+            _nextVaultLib,
+            _bypassFailure
         );
-        if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("preSignalMigrationOriginHook failure: ", returnData))
-            );
-
-            emit PreSignalMigrationOriginHookFailed(
-                returnData,
-                _vaultProxy,
-                prevFundDeployer,
-                nextFundDeployer,
-                _nextVaultAccessor,
-                _nextVaultLib
-            );
-        }
 
         vaultProxyToMigrationRequest[_vaultProxy] = MigrationRequest({
             nextFundDeployer: nextFundDeployer,
@@ -526,31 +397,15 @@ contract Dispatcher is IDispatcher {
             signalTimestamp: now
         });
 
-        // Allow to fail silently
-        (success, returnData) = prevFundDeployer.call(
-            abi.encodeWithSelector(
-                IMigrationHookHandler.postSignalMigrationOriginHook.selector,
-                _vaultProxy,
-                nextFundDeployer,
-                _nextVaultAccessor,
-                _nextVaultLib
-            )
+        __invokeMigrationOutHook(
+            IMigrationHookHandler.MigrationOutHook.PostSignal,
+            _vaultProxy,
+            prevFundDeployer,
+            nextFundDeployer,
+            _nextVaultAccessor,
+            _nextVaultLib,
+            _bypassFailure
         );
-        if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("postSignalMigrationOriginHook failure: ", returnData))
-            );
-
-            emit PostSignalMigrationOriginHookFailed(
-                returnData,
-                _vaultProxy,
-                prevFundDeployer,
-                nextFundDeployer,
-                _nextVaultAccessor,
-                _nextVaultLib
-            );
-        }
 
         emit MigrationSignaled(
             _vaultProxy,
@@ -561,23 +416,153 @@ contract Dispatcher is IDispatcher {
         );
     }
 
+    /// @dev Helper to get the number of seconds that have passed since a given timestamp.
+    /// Subtraction here has no chance of underflow, as _timestamp is always
+    /// fetched from a migration request.
+    function __getSecondsSinceTimestamp(uint256 _timestamp)
+        private
+        view
+        returns (uint256 seconds_)
+    {
+        return block.timestamp - _timestamp;
+    }
+
+    /// @dev Helper to invoke a MigrationInCancelHook on the next FundDeployer being "migrated in" to,
+    /// which can optionally be implemented on the FundDeployer
+    function __invokeMigrationInCancelHook(
+        address _vaultProxy,
+        address _prevFundDeployer,
+        address _nextFundDeployer,
+        address _nextVaultAccessor,
+        address _nextVaultLib,
+        bool _bypassFailure
+    ) private {
+        (bool success, bytes memory returnData) = _nextFundDeployer.call(
+            abi.encodeWithSelector(
+                IMigrationHookHandler.implementMigrationInCancelHook.selector,
+                _vaultProxy,
+                _prevFundDeployer,
+                _nextVaultAccessor,
+                _nextVaultLib
+            )
+        );
+        if (!success) {
+            require(
+                _bypassFailure,
+                string(abi.encodePacked("MigrationOutCancelHook: ", returnData))
+            );
+
+            emit MigrationInCancelHookFailed(
+                returnData,
+                _vaultProxy,
+                _prevFundDeployer,
+                _nextFundDeployer,
+                _nextVaultAccessor,
+                _nextVaultLib
+            );
+        }
+    }
+
+    /// @dev Helper to invoke a IMigrationHookHandler.MigrationOutHook on the previous FundDeployer being "migrated out" of,
+    /// which can optionally be implemented on the FundDeployer
+    function __invokeMigrationOutHook(
+        IMigrationHookHandler.MigrationOutHook _hook,
+        address _vaultProxy,
+        address _prevFundDeployer,
+        address _nextFundDeployer,
+        address _nextVaultAccessor,
+        address _nextVaultLib,
+        bool _bypassFailure
+    ) private {
+        (bool success, bytes memory returnData) = _prevFundDeployer.call(
+            abi.encodeWithSelector(
+                IMigrationHookHandler.implementMigrationOutHook.selector,
+                _hook,
+                _vaultProxy,
+                _nextFundDeployer,
+                _nextVaultAccessor,
+                _nextVaultLib
+            )
+        );
+        if (!success) {
+            require(
+                _bypassFailure,
+                string(abi.encodePacked(__migrationOutHookFailureReasonPrefix(_hook), returnData))
+            );
+
+            emit MigrationOutHookFailed(
+                returnData,
+                _hook,
+                _vaultProxy,
+                _prevFundDeployer,
+                _nextFundDeployer,
+                _nextVaultAccessor,
+                _nextVaultLib
+            );
+        }
+    }
+
+    /// @dev Helper to return a revert reason string prefix for a given MigrationOutHook
+    function __migrationOutHookFailureReasonPrefix(IMigrationHookHandler.MigrationOutHook _hook)
+        private
+        pure
+        returns (string memory failureReasonPrefix_)
+    {
+        if (_hook == IMigrationHookHandler.MigrationOutHook.PreSignal) {
+            return "MigrationOutHook.PreSignal: ";
+        }
+        if (_hook == IMigrationHookHandler.MigrationOutHook.PostSignal) {
+            return "MigrationOutHook.PostSignal: ";
+        }
+        if (_hook == IMigrationHookHandler.MigrationOutHook.PreMigrate) {
+            return "MigrationOutHook.PreMigrate: ";
+        }
+        if (_hook == IMigrationHookHandler.MigrationOutHook.PostMigrate) {
+            return "MigrationOutHook.PostMigrate: ";
+        }
+        if (_hook == IMigrationHookHandler.MigrationOutHook.PostCancel) {
+            return "MigrationOutHook.PostCancel: ";
+        }
+
+        return "";
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    function getCurrentFundDeployer() external view override returns (address) {
+    // Provides several potentially helpful getters that are not strictly necessary
+
+    /// @notice Gets the current FundDeployer that is allowed to deploy and migrate funds
+    /// @return currentFundDeployer_ The current FundDeployer contract address
+    function getCurrentFundDeployer()
+        external
+        view
+        override
+        returns (address currentFundDeployer_)
+    {
         return currentFundDeployer;
     }
 
+    /// @notice Gets the FundDeployer with which a given VaultProxy is associated
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return fundDeployer_ The FundDeployer contract address
     function getFundDeployerForVaultProxy(address _vaultProxy)
         external
         view
         override
-        returns (address)
+        returns (address fundDeployer_)
     {
         return vaultProxyToFundDeployer[_vaultProxy];
     }
 
+    /// @notice Gets the details of a pending migration request for a given VaultProxy
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return nextFundDeployer_ The FundDeployer contract address from which the migration
+    /// request was made
+    /// @return nextVaultAccessor_ The account that will be the next `accessor` on the VaultProxy
+    /// @return nextVaultLib_ The next VaultLib library contract address to set on the VaultProxy
+    /// @return signalTimestamp_ The time (in seconds) at which the migration request was made
     function getMigrationRequestDetailsForVaultProxy(address _vaultProxy)
         external
         view
@@ -595,15 +580,73 @@ contract Dispatcher is IDispatcher {
         }
     }
 
-    function getMigrationTimelock() external view override returns (uint256) {
+    /// @notice Gets the amount of time that must pass between signaling and executing a migration
+    /// @return migrationTimelock_ The timelock value (in seconds)
+    function getMigrationTimelock() external view override returns (uint256 migrationTimelock_) {
         return migrationTimelock;
     }
 
-    function getNominatedOwner() external view override returns (address) {
+    /// @notice Gets the account that is nominated to be the next owner of this contract
+    /// @return nominatedOwner_ The account that is nominated to be the owner
+    function getNominatedOwner() external view override returns (address nominatedOwner_) {
         return nominatedOwner;
     }
 
-    function getOwner() external view override returns (address) {
+    /// @notice Gets the owner of this contract
+    /// @return owner_ The account that is the owner
+    function getOwner() external view override returns (address owner_) {
         return owner;
+    }
+
+    /// @notice Gets the time remaining until the migration request of a given VaultProxy can be executed
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return secondsRemaining_ The number of seconds remaining on the timelock
+    /// @dev Subtraction here has no chance of underflow, as the signalTimestamp is always
+    /// fetched from a migration request.
+    function getTimelockRemainingForMigrationRequest(address _vaultProxy)
+        external
+        view
+        override
+        returns (uint256 secondsRemaining_)
+    {
+        uint256 signalTimestamp = vaultProxyToMigrationRequest[_vaultProxy].signalTimestamp;
+        if (signalTimestamp == 0) {
+            return 0;
+        }
+
+        uint256 timeElapsed = __getSecondsSinceTimestamp(signalTimestamp);
+        if (timeElapsed >= migrationTimelock) {
+            return 0;
+        }
+
+        return migrationTimelock - timeElapsed;
+    }
+
+    /// @notice Checks whether a migration request that is executable exists for a given VaultProxy
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return hasExecutableRequest_ True if a migration request exists and is executable
+    function hasExecutableMigrationRequest(address _vaultProxy)
+        external
+        view
+        override
+        returns (bool hasExecutableRequest_)
+    {
+        uint256 signalTimestamp = vaultProxyToMigrationRequest[_vaultProxy].signalTimestamp;
+
+        return
+            signalTimestamp > 0 &&
+            __getSecondsSinceTimestamp(signalTimestamp) >= migrationTimelock;
+    }
+
+    /// @notice Checks whether a migration request exists for a given VaultProxy
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return hasMigrationRequest_ True if a migration request exists
+    function hasMigrationRequest(address _vaultProxy)
+        external
+        view
+        override
+        returns (bool hasMigrationRequest_)
+    {
+        return vaultProxyToMigrationRequest[_vaultProxy].signalTimestamp > 0;
     }
 }

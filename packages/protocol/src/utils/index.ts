@@ -4,3 +4,4 @@ export * from './bignumber';
 export * from './fees';
 export * from './policies';
 export * from './integrations';
+export * from './migrations';

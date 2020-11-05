@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
+import "../../../persistent/utils/IMigrationHookHandler.sol";
 import "../../infrastructure/engine/AmguConsumer.sol";
 import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
@@ -15,7 +16,7 @@ import "./IFundDeployer.sol";
 /// It primarily coordinates fund deployment and fund migration, but
 /// it is also deferred to for contract access control and for allowed calls
 /// that can be made with a fund's VaultProxy as the msg.sender.
-contract FundDeployer is IFundDeployer, AmguConsumer {
+contract FundDeployer is IFundDeployer, IMigrationHookHandler, AmguConsumer {
     event ComptrollerLibSet(address comptrollerLib);
 
     event ComptrollerProxyDeployed(
@@ -146,7 +147,9 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
 
     /// @notice Gets the current owner of the contract
     /// @return owner_ The contract owner address
-    /// @dev Dynamically gets the owner based on the Protocol status
+    /// @dev Dynamically gets the owner based on the Protocol status. The owner is initially the
+    /// contract's deployer, for convenience in setting up configuration. Ownership is claimed
+    /// when the owner of the Dispatcher contract (the MTC) sets the releaseStatus to `Live`.
     function getOwner() public view override returns (address owner_) {
         if (releaseStatus == ReleaseStatus.PreLaunch) {
             return CREATOR;
@@ -159,17 +162,15 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     // FUND CREATION //
     ///////////////////
 
-    /// @notice Creates fund config, which can be migrated to from a previous release
+    /// @notice Creates a fully-configured ComptrollerProxy, to which a fund from a previous
+    /// release can migrate in a subsequent step
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
     /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
-    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action.
-    /// @dev This should only ever be used to migrate a fund. While it could technically be used
-    /// to setup a fund before deploying a VaultProxy and activating it, it doesn't charge amgu.
-    /// This is why there is no external function to create a vault and activate.
+    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
     function createMigratedFundConfig(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
@@ -177,11 +178,6 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external onlyNotPaused returns (address comptrollerProxy_) {
-        require(
-            _denominationAsset != address(0),
-            "createMigratedFundConfig: _denominationAsset cannot be empty"
-        );
-
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
@@ -196,7 +192,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         return comptrollerProxy_;
     }
 
-    /// @notice Creates a new fund, including fund config and a fund vault
+    /// @notice Creates a new fund
     /// @param _fundOwner The address of the owner for the fund
     /// @param _fundName The name of the fund
     /// @param _denominationAsset The contract address of the denomination asset for the fund
@@ -205,7 +201,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
-    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action.
+    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
     function createNewFund(
         address _fundOwner,
         string calldata _fundName,
@@ -244,10 +240,6 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         bytes memory _policyManagerConfigData
     ) private returns (address comptrollerProxy_, address vaultProxy_) {
         require(_fundOwner != address(0), "__createNewFund: _owner cannot be empty");
-        require(
-            _denominationAsset != address(0),
-            "__createNewFund: _denominationAsset cannot be empty"
-        );
 
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
@@ -283,7 +275,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         return (comptrollerProxy_, vaultProxy_);
     }
 
-    /// @dev Helper function to deploy a new ComptrollerProxy
+    /// @dev Helper function to deploy a configured ComptrollerProxy
     function __deployComptrollerProxy(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
@@ -292,6 +284,11 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         bytes memory _policyManagerConfigData,
         bool _forMigration
     ) private returns (address comptrollerProxy_) {
+        require(
+            _denominationAsset != address(0),
+            "__deployComptrollerProxy: _denominationAsset cannot be empty"
+        );
+
         bytes memory constructData = abi.encodeWithSelector(
             IComptroller.init.selector,
             _denominationAsset,
@@ -317,6 +314,8 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
             _policyManagerConfigData,
             _forMigration
         );
+
+        return comptrollerProxy_;
     }
 
     //////////////////
@@ -349,15 +348,13 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         __executeMigration(_vaultProxy, true);
     }
 
-    function postCancelMigrationTargetHook(
+    function implementMigrationInCancelHook(
         address,
         address,
         address,
-        address,
-        uint256
+        address
     ) external virtual override {
         // UNIMPLEMENTED
-        // TODO: add event if we have cancel migration event
     }
 
     /// @notice Signal a fund migration
@@ -384,8 +381,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassFailure);
     }
 
-    /// @dev Helper to execute a migration.
-    /// A shutdown fund is not blocked from migration.
+    /// @dev Helper to execute a migration
     function __executeMigration(address _vaultProxy, bool _bypassFailure)
         private
         onlyNotPaused
@@ -396,7 +392,6 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         (, address comptrollerProxy, , ) = dispatcherContract
             .getMigrationRequestDetailsForVaultProxy(_vaultProxy);
 
-        // TODO: should executeMigration return values like comptrollerProxy?
         dispatcherContract.executeMigration(_vaultProxy, _bypassFailure);
 
         IComptroller(comptrollerProxy).activate(_vaultProxy, true);
@@ -405,7 +400,6 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     }
 
     /// @dev Helper to signal a migration
-    /// A shutdown fund is not blocked from migration.
     function __signalMigration(
         address _vaultProxy,
         address _comptrollerProxy,
@@ -428,87 +422,53 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     // MIGRATION OUT //
     ///////////////////
 
-    function postCancelMigrationOriginHook(
-        address,
-        address,
-        address,
-        address,
-        uint256
-    ) external virtual override {
-        // UNIMPLEMENTED
-    }
-
-    /// @notice Runs arbitrary logic immediately prior to executing a migration
+    /// @notice Allows "hooking into" specific moments in the migration pipeline
+    /// to execute arbitrary logic during a migration out of this release
     /// @param _vaultProxy The VaultProxy being migrated
-    /// @dev Must use pre-migration hook to be able to get the ComptrollerProxy (prevAccessor)
-    // TODO: Update hooks to include prev accessor?
-    // TODO: Include un-paused only here?
-    function preMigrateOriginHook(
+    function implementMigrationOutHook(
+        MigrationOutHook _hook,
         address _vaultProxy,
         address,
         address,
-        address,
-        uint256
+        address
     ) external override {
+        if (_hook != MigrationOutHook.PreMigrate) {
+            return;
+        }
+
         require(
             msg.sender == DISPATCHER,
             "postMigrateOriginHook: Only Dispatcher can call this function"
         );
 
-        // Wind down fund and destroy its config
+        /// Must use PreMigrate hook to get the ComptrollerProxy from the VaultProxy
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
+
+        // Wind down fund and destroy its config
         IComptroller(comptrollerProxy).destruct();
-    }
-
-    function postMigrateOriginHook(
-        address _vaultProxy,
-        address _nextRelease,
-        address _nextAccessor,
-        address _nextVaultLib,
-        uint256 _signaledTimestamp
-    ) external virtual override {
-        // UNIMPLEMENTED
-    }
-
-    function preSignalMigrationOriginHook(
-        address _vaultProxy,
-        address _nextRelease,
-        address _nextAccessor,
-        address _nextVaultLib
-    ) external virtual override {
-        // UNIMPLEMENTED
-    }
-
-    function postSignalMigrationOriginHook(
-        address _vaultProxy,
-        address _nextRelease,
-        address _nextAccessor,
-        address _nextVaultLib
-    ) external virtual override {
-        // UNIMPLEMENTED
     }
 
     //////////////
     // REGISTRY //
     //////////////
 
-    /// @notice De-registers allowed arbitrary vault calls
+    /// @notice De-registers allowed arbitrary contract calls that can be sent from the VaultProxy
     /// @param _contracts The contracts of the calls to de-register
     /// @param _selectors The selectors of the calls to de-register
     function deregisterVaultCalls(address[] calldata _contracts, bytes4[] calldata _selectors)
         external
         onlyOwner
     {
-        require(_contracts.length > 0, "deregisterVaultCalls: no contracts input");
+        require(_contracts.length > 0, "deregisterVaultCalls: Empty _contracts");
         require(
             _contracts.length == _selectors.length,
-            "deregisterVaultCalls: uneven input arrays"
+            "deregisterVaultCalls: Uneven input arrays"
         );
 
         for (uint256 i; i < _contracts.length; i++) {
             require(
-                contractToSelectorToIsRegisteredVaultCall[_contracts[i]][_selectors[i]],
-                "deregisterVaultCalls: contract + selector pair not registered"
+                isRegisteredVaultCall(_contracts[i], _selectors[i]),
+                "deregisterVaultCalls: Call not registered"
             );
 
             contractToSelectorToIsRegisteredVaultCall[_contracts[i]][_selectors[i]] = false;
@@ -517,14 +477,14 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
         }
     }
 
-    /// @notice Registers allowed arbitrary vault calls
+    /// @notice Registers allowed arbitrary contract calls that can be sent from the VaultProxy
     /// @param _contracts The contracts of the calls to register
     /// @param _selectors The selectors of the calls to register
     function registerVaultCalls(address[] calldata _contracts, bytes4[] calldata _selectors)
         external
         onlyOwner
     {
-        require(_contracts.length > 0, "registerVaultCalls: no contracts input");
+        require(_contracts.length > 0, "registerVaultCalls: Empty _contracts");
 
         __registerVaultCalls(_contracts, _selectors);
     }
@@ -535,13 +495,13 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     {
         require(
             _contracts.length == _selectors.length,
-            "__registerVaultCalls: uneven input arrays"
+            "__registerVaultCalls: Uneven input arrays"
         );
 
         for (uint256 i; i < _contracts.length; i++) {
             require(
-                !contractToSelectorToIsRegisteredVaultCall[_contracts[i]][_selectors[i]],
-                "__registerVaultCalls: contract + selector pair already registered"
+                !isRegisteredVaultCall(_contracts[i], _selectors[i]),
+                "__registerVaultCalls: Call already registered"
             );
 
             contractToSelectorToIsRegisteredVaultCall[_contracts[i]][_selectors[i]] = true;
@@ -599,7 +559,7 @@ contract FundDeployer is IFundDeployer, AmguConsumer {
     /// @param _selector The selector of the call to check
     /// @return isRegistered_ True if the call is registered
     function isRegisteredVaultCall(address _contract, bytes4 _selector)
-        external
+        public
         view
         override
         returns (bool isRegistered_)

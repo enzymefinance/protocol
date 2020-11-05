@@ -1,6 +1,6 @@
 import { constants } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { IMigrationHookHandler, MockVaultLib } from '@melonproject/protocol';
+import { IMigrationHookHandler, MigrationOutHook, MockVaultLib } from '@melonproject/protocol';
 import {
   defaultTestDeployment,
   createNewFund,
@@ -38,7 +38,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Mock a nextFundDeployer contract and nextVaultLib
   const mockNextFundDeployer = await IMigrationHookHandler.mock(config.deployer);
-  await mockNextFundDeployer.postCancelMigrationTargetHook.returns(undefined);
+  await mockNextFundDeployer.implementMigrationInCancelHook.returns(undefined);
   const mockNextVaultLib = await MockVaultLib.deploy(config.deployer);
 
   // Set the mock FundDeployer on Dispatcher
@@ -56,47 +56,62 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('preMigrateOriginHook', () => {
-  it('can only be called by the Dispatcher', async () => {
-    const {
-      accounts: [randomUser],
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
+describe('implementMigrationOutHook', () => {
+  describe('PreMigrate', () => {
+    it('can only be called by the Dispatcher', async () => {
+      const {
+        accounts: [randomUser],
+        deployment: { fundDeployer },
+      } = await provider.snapshot(snapshot);
 
-    await expect(
-      fundDeployer
-        .connect(randomUser)
-        .preMigrateOriginHook(randomAddress(), constants.AddressZero, constants.AddressZero, constants.AddressZero, 0),
-    ).rejects.toBeRevertedWith('Only Dispatcher can call this function');
-  });
+      await expect(
+        fundDeployer
+          .connect(randomUser)
+          .implementMigrationOutHook(
+            MigrationOutHook.PreMigrate,
+            randomAddress(),
+            constants.AddressZero,
+            constants.AddressZero,
+            constants.AddressZero,
+          ),
+      ).rejects.toBeRevertedWith('Only Dispatcher can call this function');
+    });
 
-  it('correctly handles valid call', async () => {
-    const {
-      deployment: { dispatcher, fundDeployer },
-      mockNextFundDeployer,
-      mockNextVaultLib,
-      prevComptrollerProxy,
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
+    it('correctly handles the PreMigrate hook', async () => {
+      const {
+        deployment: { dispatcher, fundDeployer },
+        mockNextFundDeployer,
+        mockNextVaultLib,
+        prevComptrollerProxy,
+        vaultProxy,
+      } = await provider.snapshot(snapshot);
 
-    // Signal migration via mockNextFundDeployer
-    await mockNextFundDeployer.forward(
-      dispatcher.signalMigration,
-      vaultProxy,
-      randomAddress(),
-      mockNextVaultLib,
-      false,
-    );
+      // Signal migration via mockNextFundDeployer
+      const nextAccessorAddresss = randomAddress();
+      await mockNextFundDeployer.forward(
+        dispatcher.signalMigration,
+        vaultProxy,
+        nextAccessorAddresss,
+        mockNextVaultLib,
+        false,
+      );
 
-    // Warp to migratable time
-    const migrationTimelock = await dispatcher.getMigrationTimelock();
-    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+      // Warp to migratable time
+      const migrationTimelock = await dispatcher.getMigrationTimelock();
+      await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    // Execute migrate from nextFundDeployer
-    await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
+      // Execute migrate from nextFundDeployer
+      await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
 
-    // Assert expected calls
-    expect(fundDeployer.preMigrateOriginHook).toHaveBeenCalledOnContract();
-    expect(prevComptrollerProxy.destruct).toHaveBeenCalledOnContract();
+      // Assert expected calls
+      expect(fundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+        MigrationOutHook.PreMigrate,
+        vaultProxy,
+        mockNextFundDeployer,
+        nextAccessorAddresss,
+        mockNextVaultLib,
+      );
+      expect(prevComptrollerProxy.destruct).toHaveBeenCalledOnContract();
+    });
   });
 });

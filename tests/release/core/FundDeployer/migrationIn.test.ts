@@ -1,6 +1,6 @@
 import { constants } from 'ethers';
 import { extractEvent, EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { IMigrationHookHandler, MockVaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
+import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
 import {
   defaultTestDeployment,
   createMigratedFundConfig,
@@ -17,11 +17,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Mock a FundDeployer contract for the prev fund
   const mockPrevFundDeployer = await IMigrationHookHandler.mock(config.deployer);
-  await mockPrevFundDeployer.postCancelMigrationOriginHook.returns(undefined);
-  await mockPrevFundDeployer.preMigrateOriginHook.returns(undefined);
-  await mockPrevFundDeployer.postMigrateOriginHook.returns(undefined);
-  await mockPrevFundDeployer.preSignalMigrationOriginHook.returns(undefined);
-  await mockPrevFundDeployer.postSignalMigrationOriginHook.returns(undefined);
+  await mockPrevFundDeployer.implementMigrationOutHook.returns(undefined);
 
   // Set the mock FundDeployer on Dispatcher
   await deployment.dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
@@ -299,7 +295,9 @@ describe('emergency functions', () => {
 
       // Set a signalMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.preSignalMigrationOriginHook.reverts(revertReason);
+      await mockPrevFundDeployer.implementMigrationOutHook
+        .given(MigrationOutHook.PreSignal, vaultProxyAddress, fundDeployer, nextComptrollerProxy, vaultLib)
+        .reverts(revertReason);
 
       await expect(
         fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy),
@@ -323,7 +321,7 @@ describe('emergency functions', () => {
   describe('executeMigrationEmergency', () => {
     it('correctly handles valid call', async () => {
       const {
-        deployment: { dispatcher, fundDeployer },
+        deployment: { dispatcher, fundDeployer, vaultLib },
         fundOwner,
         mockPrevFundDeployer,
         nextComptrollerProxy,
@@ -338,7 +336,10 @@ describe('emergency functions', () => {
 
       // Set an executeMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.preMigrateOriginHook.reverts(revertReason);
+      await mockPrevFundDeployer.implementMigrationOutHook
+        .given(MigrationOutHook.PreMigrate, vaultProxyAddress, fundDeployer, nextComptrollerProxy, vaultLib)
+        .reverts(revertReason);
+
       await expect(fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
         revertReason,
       );
@@ -355,7 +356,7 @@ describe('emergency functions', () => {
   describe('cancelMigrationEmergency', () => {
     it('correctly handles valid call', async () => {
       const {
-        deployment: { dispatcher, fundDeployer },
+        deployment: { dispatcher, fundDeployer, vaultLib },
         fundOwner,
         mockPrevFundDeployer,
         nextComptrollerProxy,
@@ -366,7 +367,9 @@ describe('emergency functions', () => {
 
       // Set a cancelMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.postCancelMigrationOriginHook.reverts(revertReason);
+      await mockPrevFundDeployer.implementMigrationOutHook
+        .given(MigrationOutHook.PostCancel, vaultProxyAddress, fundDeployer, nextComptrollerProxy, vaultLib)
+        .reverts(revertReason);
 
       await expect(fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
         revertReason,
