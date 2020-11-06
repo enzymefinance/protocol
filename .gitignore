@@ -16,7 +16,7 @@
 # ignore build output and dependencies
 codegen/
 dist/
+cache/
 artifacts/
-hardhat/
 coverage/
 node_modules/

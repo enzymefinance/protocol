@@ -5,10 +5,6 @@ module.exports = {
   solidity: {
     version: '0.6.8',
   },
-  paths: {
-    artifacts: './hardhat/artifacts',
-    cache: './hardhat/cache',
-  },
   contractSizer: {
     disambiguatePaths: false,
   },

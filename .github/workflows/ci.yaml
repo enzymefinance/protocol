@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v2
         if: ${{ matrix.project == 'e2e' }}
         with:
-          path: 'hardhat/cache/hardhat-network-fork'
+          path: 'cache/hardhat-network-fork'
           key: static
 
       - name: Install dependencies
@@ -92,38 +92,38 @@ jobs:
     needs: test
 
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v2
+      - name: Check out repository
+        uses: actions/checkout@v2
 
-    - name: Set up node
-      uses: actions/setup-node@v1
-      with:
-        node-version: 12
-        always-auth: true
-        registry-url: https://npm.fury.io/melonproject/
-        scope: '@melonproject'
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          always-auth: true
+          registry-url: https://npm.fury.io/melonproject/
+          scope: '@melonproject'
 
-    - name: Retrieve dependency cache
-      uses: actions/cache@v2
-      with:
-        path: '**/node_modules'
-        key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+      - name: Retrieve dependency cache
+        uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
-    - name: Retrieve fork cache
-      uses: actions/cache@v2
-      with:
-        path: 'hardhat/cache/hardhat-network-fork'
-        key: static
+      - name: Retrieve fork cache
+        uses: actions/cache@v2
+        with:
+          path: 'cache/hardhat-network-fork'
+          key: static
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Instrument and test with code coverage enabled
-      run: yarn coverage
-      env:
-        MAINNET_ARCHIVE_NODE: ${{ secrets.MAINNET_ARCHIVE_NODE }}
+      - name: Instrument and test with code coverage enabled
+        run: yarn coverage
+        env:
+          MAINNET_ARCHIVE_NODE: ${{ secrets.MAINNET_ARCHIVE_NODE }}
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
