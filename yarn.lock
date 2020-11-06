@@ -1089,56 +1089,56 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@crestproject/codegen@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.1.11.tgz#ad9a014d873f32319f26e5fe59e04be345892e31"
-  integrity sha512-QJJSYnWBAcU8XRz77zW9Rufr6w3WJjFt9EFJJ0OLYWba4BMnKHbPon9/emcipsFNfAPXX+9LwI4UNhCEWRCGNQ==
+"@crestproject/codegen@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@crestproject/codegen/-/codegen-0.1.12.tgz#4cebb5c5d6f47b1313cab44ec30bd12e55f0af5a"
+  integrity sha512-Fs3asXnAj+1U98ColxaWXnXyEa5kjbZmTCIJPYKaDSER9NRrr4H6+yI0bVnQDbzkvVnAxAqeaJjsyO2IxGl2Ww==
   dependencies:
     "@babel/runtime" "^7.12.5"
   optionalDependencies:
     prettier "^2.1.2"
 
-"@crestproject/coverage@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@crestproject/coverage/-/coverage-0.1.11.tgz#ba227a74babb995b7bb5ff23db678646eebc3038"
-  integrity sha512-TzMtcNczq0z70pISvp4BTRPCsW1YQ5QWw1EYS/qVMEhogUX+1j7LpnaRUtvZzA79lvGVtP+TI0lM6wwEl9fqig==
+"@crestproject/coverage@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@crestproject/coverage/-/coverage-0.1.12.tgz#e770a61e941b6d72ea7ce5485f7d1b72d63ad77b"
+  integrity sha512-KvdLK9gOrtwy51s4/dGKppI02lAoP4F/GN4Zd20MyoRJv0MVYsDQVXSVtoA8EbOhE7rcD2m4Y+Q8tYOxKmEPgg==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@solidity-parser/parser" "^0.8.1"
     istanbul-lib-coverage "^3.0.0"
     uuid "^8.3.1"
 
-"@crestproject/crestproject@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.1.11.tgz#aa395b20c1115f2b1fb53cd987c1bd532c75fd46"
-  integrity sha512-MZiIh+k/mdwrWxnaRpnqJgwLyQ7IRLAhEPDKw8Hxw6wHWAqApa8CdmWFH5xz06jn29CERAGYTEbJA/MwhbrgIA==
+"@crestproject/crestproject@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@crestproject/crestproject/-/crestproject-0.1.12.tgz#6165f630189edab9d864864656793a4a33fb16b6"
+  integrity sha512-CsA9dUfmbrCyGiIxQ897ybeK2IpSstvON9Iy36BsxJcfmXPzTUcRaZ5or4Jaw/tVQihwUotA7w/7dc0owVfdKA==
   dependencies:
     "@babel/runtime" "^7.12.5"
-    "@crestproject/codegen" "^0.1.11"
-    "@crestproject/ethers" "^0.1.11"
-    "@crestproject/hardhat" "^0.1.11"
-    "@crestproject/jest" "^0.1.11"
+    "@crestproject/codegen" "^0.1.12"
+    "@crestproject/ethers" "^0.1.12"
+    "@crestproject/hardhat" "^0.1.12"
+    "@crestproject/jest" "^0.1.12"
     glob "^7.1.6"
     jest-worker "^26.6.2"
     throat "^5.0.0"
     yargs "^16.1.0"
 
-"@crestproject/ethers@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.1.11.tgz#9246fc51e244517ac37fe831657df869a512123e"
-  integrity sha512-RQABh5An+cJpSbYOoJ7bn3sZWgZjpoA9IpuTBjMZl+v21/U3eGDJRLSZF6m/r0CEE7OSO6FmB802oq0C6QMySw==
+"@crestproject/ethers@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@crestproject/ethers/-/ethers-0.1.12.tgz#c9ad6a7b02effdf19ba867c0cca10ed539da3f79"
+  integrity sha512-SFGhzIYwZoDXpEPb90/n1s11Vemr9WXVNh5Kncb3q4m6pdaKDiz0pj/IxPkEFgffIRgtVytUdNn1UsFtSvPKWw==
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-"@crestproject/hardhat@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@crestproject/hardhat/-/hardhat-0.1.11.tgz#2b30e36cba53683660c7c1d83890b8c9c2bcf388"
-  integrity sha512-+KOgFIftGhFwkyJvnt1YoVESlmUS9ErDkMcfrLyoOrbXmJvPTFe3jGc5ZVBeJXtUxF5HhSpulASR4uRcNcqPUA==
+"@crestproject/hardhat@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@crestproject/hardhat/-/hardhat-0.1.12.tgz#40088ee006a0ab0b0797a06b17aefbe0a6972cbc"
+  integrity sha512-muifiujporzFOxNhUqxeW7v+obbUvzzk0MJiWKEevs6lxZ7il4+9myuzKlhw5S2CfdirTjxjCF7geKn8V4zj/g==
   dependencies:
     "@babel/runtime" "^7.12.5"
-    "@crestproject/codegen" "^0.1.11"
-    "@crestproject/coverage" "^0.1.11"
-    "@crestproject/ethers" "^0.1.11"
+    "@crestproject/codegen" "^0.1.12"
+    "@crestproject/coverage" "^0.1.12"
+    "@crestproject/ethers" "^0.1.12"
     deepmerge "^4.2.2"
     fs-extra "^9.0.1"
     glob "^7.1.6"
@@ -1147,14 +1147,14 @@
     jest-environment-node "^26.6.2"
     uuid "^8.3.1"
 
-"@crestproject/jest@^0.1.11":
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.1.11.tgz#26ff796aab1965804dc5a4a18f4270f132076fe2"
-  integrity sha512-LGd1tzbb7tmi5fNhcF11Et0RtYP01elcKz8NLadvYyvrvtUCW7ieLMHy7+fLcp1rGtTtnAMXwKOxl6LBpuIbwg==
+"@crestproject/jest@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@crestproject/jest/-/jest-0.1.12.tgz#a890a1200a4e6c5f20cc41bb4166e1e65a3a64bf"
+  integrity sha512-ah7l8fF9WOml0OuUvUcoAOa8aJYd6gLn9YJpEsB+Ha9jISkfDm1l6+O5DWygV0dzdPlMvYVmk/1rzYOZPn3WDQ==
   dependencies:
     "@babel/runtime" "^7.12.5"
-    "@crestproject/ethers" "^0.1.11"
-    "@crestproject/hardhat" "^0.1.11"
+    "@crestproject/ethers" "^0.1.12"
+    "@crestproject/hardhat" "^0.1.12"
     jest-diff "^26.6.2"
     jest-matcher-utils "^26.6.2"
     jest-snapshot "^26.6.2"
