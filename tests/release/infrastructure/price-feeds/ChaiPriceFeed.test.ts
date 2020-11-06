@@ -65,25 +65,4 @@ describe('getRatesToUnderlyings', () => {
       },
     );
   });
-
-  it('calls drip() if necessary', async () => {
-    const {
-      deployment: { chaiPriceFeed, chaiPriceSource },
-      config: {
-        derivatives: { chai },
-      },
-    } = await provider.snapshot(snapshot);
-
-    const before = await provider.getBlock('latest');
-    const rhoBefore = await chaiPriceSource.rho();
-    expect(rhoBefore).toBeLteBigNumber(before.timestamp);
-
-    await chaiPriceFeed.getRatesToUnderlyings(chai);
-
-    const after = await provider.getBlock('latest');
-    const rhoAfter = await chaiPriceSource.rho();
-    expect(rhoAfter).toBeGteBigNumber(after.timestamp);
-
-    expect(chaiPriceSource.drip).toHaveBeenCalledOnContract();
-  });
 });

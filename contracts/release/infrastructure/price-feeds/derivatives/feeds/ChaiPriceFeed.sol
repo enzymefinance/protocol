@@ -50,10 +50,8 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
     }
 
     /// @dev Calculation based on Chai source: https://github.com/dapphub/chai/blob/master/src/chai.sol
-    function __calcChaiRate() private returns (uint256 chaiRate_) {
-        IMakerDaoPot pot = IMakerDaoPot(DSR_POT);
-        uint256 chi = (now > pot.rho()) ? pot.drip() : pot.chi();
-        return chi.div(10**9); // Refactor of mul(chi, 10 ** 18) / 10 ** 27
+    function __calcChaiRate() private view returns (uint256 chaiRate_) {
+        return IMakerDaoPot(DSR_POT).chi().div(10**9);
     }
 
     ///////////////////

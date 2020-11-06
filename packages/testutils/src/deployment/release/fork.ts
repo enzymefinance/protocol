@@ -1,10 +1,4 @@
-import {
-  AddressLike,
-  EthereumTestnetProvider,
-  randomAddress,
-  resolveAddress,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { AddressLike, EthereumTestnetProvider, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
 import { Dispatcher, StandardToken } from '@melonproject/protocol';
 import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
@@ -116,14 +110,14 @@ export async function configureForkRelease({
       rateAssets: chainlinkRateAssets,
     },
     integrationManager: {
-      trackedAssetsLimit: 20, // TODO
+      trackedAssetsLimit: 20,
     },
     derivatives: mainnet.derivatives,
     integratees: {
       kyber: mainnet.kyber,
       makerDao: {
-        dai: randomAddress(), // TODO
-        pot: randomAddress(), // TODO
+        dai: mainnet.maker.dai,
+        pot: mainnet.maker.pot,
       },
       uniswapV2: {
         router: mainnet.uniswapV2.router,
