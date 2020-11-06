@@ -20,7 +20,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Create a VaultLib instance with the deployed VaultProxy address, parsed from the deployment event
   const vaultProxyDeployedEvent = extractEvent(deployVaultProxyReceipt, 'VaultProxyDeployed')[0];
-  const vaultProxy = new VaultLib(vaultProxyDeployedEvent.args.vaultProxy, fundOwner);
+  const vaultProxy = new VaultLib(vaultProxyDeployedEvent.args.vaultProxy, vaultAccessor);
 
   return {
     accounts: remainingAccounts,
@@ -34,7 +34,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-fdescribe('init', () => {
+describe('init', () => {
   it('correctly sets initial proxy values', async () => {
     const {
       deployment: { dispatcher },
@@ -76,27 +76,27 @@ describe('addTrackedAsset', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser],
-      deployment: { vaultLib },
       config: { weth },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultLib.connect(randomUser).addTrackedAsset(weth)).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(randomUser).addTrackedAsset(weth)).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
 
   it('skip if asset balance is 0', async () => {
     const {
-      deployment: { vaultLib },
       config: { weth },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await vaultLib.addTrackedAsset(weth);
+    await vaultProxy.addTrackedAsset(weth);
 
-    const trackedAssets = await vaultLib.getTrackedAssets();
+    const trackedAssets = await vaultProxy.getTrackedAssets();
     expect(trackedAssets).toEqual([]);
 
-    const isTrackedAsset = await vaultLib.isTrackedAsset(weth);
+    const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
     expect(isTrackedAsset).toBe(false);
   });
 
@@ -104,18 +104,18 @@ describe('addTrackedAsset', () => {
     const {
       deployment: {
         tokens: { weth },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await weth.transfer(vaultLib, utils.parseEther('1'));
-    await vaultLib.addTrackedAsset(weth);
-    await vaultLib.addTrackedAsset(weth);
+    await weth.transfer(vaultProxy, utils.parseEther('1'));
+    await vaultProxy.addTrackedAsset(weth);
+    await vaultProxy.addTrackedAsset(weth);
 
-    const trackedAssets = await vaultLib.getTrackedAssets();
-    expect(trackedAssets).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [weth]);
+    const trackedAssets = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
 
-    const isTrackedAsset = await vaultLib.isTrackedAsset(weth);
+    const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
     expect(isTrackedAsset).toBe(true);
   });
 
@@ -123,21 +123,21 @@ describe('addTrackedAsset', () => {
     const {
       deployment: {
         tokens: { weth },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await weth.transfer(vaultLib, utils.parseEther('1'));
+    await weth.transfer(vaultProxy, utils.parseEther('1'));
 
-    const receipt = await vaultLib.addTrackedAsset(weth);
+    const receipt = await vaultProxy.addTrackedAsset(weth);
     assertEvent(receipt, 'TrackedAssetAdded', {
       asset: weth,
     });
 
-    const trackedAssets = await vaultLib.getTrackedAssets();
-    expect(trackedAssets).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [weth]);
+    const trackedAssets = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
 
-    const isTrackedAsset = await vaultLib.isTrackedAsset(weth);
+    const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
     expect(isTrackedAsset).toBe(true);
   });
 });
@@ -146,11 +146,11 @@ describe('removeTrackedAsset', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser],
-      deployment: { vaultLib },
       config: { weth },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultLib.connect(randomUser).removeTrackedAsset(weth)).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(randomUser).removeTrackedAsset(weth)).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
@@ -158,12 +158,12 @@ describe('removeTrackedAsset', () => {
   it('skip if removing a non-tracked asset', async () => {
     const {
       config: { weth },
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await vaultLib.removeTrackedAsset(weth);
+    await vaultProxy.removeTrackedAsset(weth);
 
-    const trackedAssets = await vaultLib.getTrackedAssets();
+    const trackedAssets = await vaultProxy.getTrackedAssets();
     expect(trackedAssets).toEqual([]);
   });
 
@@ -171,39 +171,39 @@ describe('removeTrackedAsset', () => {
     const {
       deployment: {
         tokens: { weth, mln, knc },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await weth.transfer(vaultLib, utils.parseEther('1'));
-    await mln.transfer(vaultLib, utils.parseEther('1'));
-    await knc.transfer(vaultLib, utils.parseEther('1'));
-    await vaultLib.addTrackedAsset(weth);
-    await vaultLib.addTrackedAsset(mln);
-    await vaultLib.addTrackedAsset(knc);
+    await weth.transfer(vaultProxy, utils.parseEther('1'));
+    await mln.transfer(vaultProxy, utils.parseEther('1'));
+    await knc.transfer(vaultProxy, utils.parseEther('1'));
+    await vaultProxy.addTrackedAsset(weth);
+    await vaultProxy.addTrackedAsset(mln);
+    await vaultProxy.addTrackedAsset(knc);
 
-    const receipt1 = await vaultLib.removeTrackedAsset(mln);
+    const receipt1 = await vaultProxy.removeTrackedAsset(mln);
     assertEvent(receipt1, 'TrackedAssetRemoved', {
       asset: mln,
     });
 
-    const trackedAssets1 = await vaultLib.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [weth, knc]);
+    const trackedAssets1 = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth, knc]);
 
-    const receipt2 = await vaultLib.removeTrackedAsset(weth);
+    const receipt2 = await vaultProxy.removeTrackedAsset(weth);
     assertEvent(receipt2, 'TrackedAssetRemoved', {
       asset: weth,
     });
 
-    const trackedAssets2 = await vaultLib.getTrackedAssets();
-    expect(trackedAssets2).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [knc]);
+    const trackedAssets2 = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [knc]);
 
-    const receipt3 = await vaultLib.removeTrackedAsset(knc);
+    const receipt3 = await vaultProxy.removeTrackedAsset(knc);
     assertEvent(receipt3, 'TrackedAssetRemoved', {
       asset: knc,
     });
 
-    const trackedAssets3 = await vaultLib.getTrackedAssets();
+    const trackedAssets3 = await vaultProxy.getTrackedAssets();
     expect(trackedAssets3).toEqual([]);
   });
 });
@@ -212,12 +212,12 @@ describe('withdrawAssetTo', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser],
-      deployment: { vaultLib },
       config: { weth },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultLib.connect(randomUser).withdrawAssetTo(weth, randomAddress(), utils.parseEther('2')),
+      vaultProxy.connect(randomUser).withdrawAssetTo(weth, randomAddress(), utils.parseEther('2')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
@@ -225,12 +225,12 @@ describe('withdrawAssetTo', () => {
     const {
       deployment: {
         tokens: { weth },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await weth.transfer(vaultLib, utils.parseEther('1'));
-    await expect(vaultLib.withdrawAssetTo(weth, randomAddress(), utils.parseEther('2'))).rejects.toBeRevertedWith(
+    await weth.transfer(vaultProxy, utils.parseEther('1'));
+    await expect(vaultProxy.withdrawAssetTo(weth, randomAddress(), utils.parseEther('2'))).rejects.toBeRevertedWith(
       'Insufficient balance',
     );
   });
@@ -240,26 +240,26 @@ describe('withdrawAssetTo', () => {
       accounts: [investor],
       deployment: {
         tokens: { weth },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const preTxInvestorBalance = await weth.balanceOf(investor);
     const amount = utils.parseEther('1');
 
-    await weth.transfer(vaultLib, amount);
-    await vaultLib.addTrackedAsset(weth);
-    const trackedAssets1 = await vaultLib.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [weth]);
+    await weth.transfer(vaultProxy, amount);
+    await vaultProxy.addTrackedAsset(weth);
+    const trackedAssets1 = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
 
-    const receipt = await vaultLib.withdrawAssetTo(weth, investor, amount);
+    const receipt = await vaultProxy.withdrawAssetTo(weth, investor, amount);
     assertEvent(receipt, 'AssetWithdrawn', {
       asset: weth,
       target: investor,
       amount,
     });
 
-    const trackedAssets2 = await vaultLib.getTrackedAssets();
+    const trackedAssets2 = await vaultProxy.getTrackedAssets();
     expect(trackedAssets2).toEqual([]);
 
     const postTxInvestorBalance = await weth.balanceOf(investor);
@@ -271,34 +271,34 @@ describe('withdrawAssetTo', () => {
       accounts: [investor],
       deployment: {
         tokens: { weth },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await weth.transfer(vaultLib, utils.parseEther('1'));
+    await weth.transfer(vaultProxy, utils.parseEther('1'));
 
     const preTxInvestorBalance = await weth.balanceOf(investor);
-    const preTxVaultBalance = await weth.balanceOf(vaultLib);
+    const preTxVaultBalance = await weth.balanceOf(vaultProxy);
     const withdrawAmount = utils.parseEther('0.5');
 
-    await vaultLib.addTrackedAsset(weth);
-    const trackedAssets1 = await vaultLib.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [weth]);
+    await vaultProxy.addTrackedAsset(weth);
+    const trackedAssets1 = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
 
-    const receipt = await vaultLib.withdrawAssetTo(weth, investor, withdrawAmount);
+    const receipt = await vaultProxy.withdrawAssetTo(weth, investor, withdrawAmount);
     assertEvent(receipt, 'AssetWithdrawn', {
       asset: weth,
       target: investor,
       amount: withdrawAmount,
     });
 
-    const trackedAssets2 = await vaultLib.getTrackedAssets();
-    expect(trackedAssets2).toMatchFunctionOutput(vaultLib.getTrackedAssets.fragment, [weth]);
+    const trackedAssets2 = await vaultProxy.getTrackedAssets();
+    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
 
     const postTxInvestorBalance = await weth.balanceOf(investor);
     expect(postTxInvestorBalance).toEqBigNumber(preTxInvestorBalance.add(withdrawAmount));
 
-    const postTxVaultBalance = await weth.balanceOf(vaultLib);
+    const postTxVaultBalance = await weth.balanceOf(vaultProxy);
     expect(postTxVaultBalance).toEqBigNumber(preTxVaultBalance.sub(withdrawAmount));
   });
 });
@@ -307,12 +307,12 @@ describe('approveAssetSpender', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser, investor],
-      deployment: { vaultLib },
       config: { weth },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultLib.connect(randomUser).approveAssetSpender(weth, investor, utils.parseEther('1')),
+      vaultProxy.connect(randomUser).approveAssetSpender(weth, investor, utils.parseEther('1')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
@@ -321,20 +321,20 @@ describe('approveAssetSpender', () => {
       accounts: [investor],
       deployment: {
         tokens: { weth },
-        vaultLib,
       },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
 
-    const receipt = await vaultLib.approveAssetSpender(weth, investor, amount);
+    const receipt = await vaultProxy.approveAssetSpender(weth, investor, amount);
     assertEvent(receipt, 'Approval', {
-      owner: vaultLib,
+      owner: vaultProxy,
       spender: investor,
       value: amount,
     });
 
-    const allowance = await weth.allowance(vaultLib, investor);
+    const allowance = await weth.allowance(vaultProxy, investor);
     expect(allowance).toEqBigNumber(amount);
   });
 });
@@ -343,20 +343,18 @@ describe('mintShares', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser, investor],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultLib.connect(randomUser).mintShares(investor, utils.parseEther('1'))).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(randomUser).mintShares(investor, utils.parseEther('1'))).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
 
   it('does not allow mint to a zero address', async () => {
-    const {
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
+    const { vaultProxy } = await provider.snapshot(snapshot);
 
-    await expect(vaultLib.mintShares(constants.AddressZero, utils.parseEther('1'))).rejects.toBeRevertedWith(
+    await expect(vaultProxy.mintShares(constants.AddressZero, utils.parseEther('1'))).rejects.toBeRevertedWith(
       'mint to the zero address',
     );
   });
@@ -364,25 +362,25 @@ describe('mintShares', () => {
   it('works as expected', async () => {
     const {
       accounts: [investor],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    const preTxTotalSupply = await vaultLib.totalSupply();
+    const preTxTotalSupply = await vaultProxy.totalSupply();
     expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
     const amount = utils.parseEther('1');
 
-    const receipt = await vaultLib.mintShares(investor, amount);
+    const receipt = await vaultProxy.mintShares(investor, amount);
     assertEvent(receipt, 'Transfer', {
       from: constants.AddressZero,
       to: investor,
       value: amount,
     });
 
-    const postTxTotalSupply = await vaultLib.totalSupply();
+    const postTxTotalSupply = await vaultProxy.totalSupply();
     expect(postTxTotalSupply).toEqBigNumber(amount);
 
-    const investorShares = await vaultLib.balanceOf(investor);
+    const investorShares = await vaultProxy.balanceOf(investor);
     expect(investorShares).toEqBigNumber(amount);
   });
 });
@@ -391,20 +389,18 @@ describe('burnShares', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser, investor],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultLib.connect(randomUser).burnShares(investor, utils.parseEther('1'))).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(randomUser).burnShares(investor, utils.parseEther('1'))).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
 
   it('does not allow burn from a zero address', async () => {
-    const {
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
+    const { vaultProxy } = await provider.snapshot(snapshot);
 
-    await expect(vaultLib.burnShares(constants.AddressZero, utils.parseEther('1'))).rejects.toBeRevertedWith(
+    await expect(vaultProxy.burnShares(constants.AddressZero, utils.parseEther('1'))).rejects.toBeRevertedWith(
       'burn from the zero address',
     );
   });
@@ -412,27 +408,27 @@ describe('burnShares', () => {
   it('does not allow burn amount exceeds balance', async () => {
     const {
       accounts: [investor],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
 
     // mint shares
     {
-      const preTxTotalSupply = await vaultLib.totalSupply();
+      const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultLib.mintShares(investor, amount);
+      await vaultProxy.mintShares(investor, amount);
 
-      const postTxTotalSupply = await vaultLib.totalSupply();
+      const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
 
-      const investorShares = await vaultLib.balanceOf(investor);
+      const investorShares = await vaultProxy.balanceOf(investor);
       expect(investorShares).toEqBigNumber(amount);
     }
 
     // burn shares
-    await expect(vaultLib.burnShares(investor, amount.add(BigNumber.from(1)))).rejects.toBeRevertedWith(
+    await expect(vaultProxy.burnShares(investor, amount.add(BigNumber.from(1)))).rejects.toBeRevertedWith(
       'burn amount exceeds balance',
     );
   });
@@ -440,37 +436,37 @@ describe('burnShares', () => {
   it('works as expected', async () => {
     const {
       accounts: [investor],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
 
     // mint shares
     {
-      const preTxTotalSupply = await vaultLib.totalSupply();
+      const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultLib.mintShares(investor, amount);
+      await vaultProxy.mintShares(investor, amount);
 
-      const postTxTotalSupply = await vaultLib.totalSupply();
+      const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
 
-      const investorShares = await vaultLib.balanceOf(investor);
+      const investorShares = await vaultProxy.balanceOf(investor);
       expect(investorShares).toEqBigNumber(amount);
     }
 
     // burn shares
-    const receipt = await vaultLib.burnShares(investor, amount);
+    const receipt = await vaultProxy.burnShares(investor, amount);
     assertEvent(receipt, 'Transfer', {
       from: investor,
       to: constants.AddressZero,
       value: amount,
     });
 
-    const totalSupply = await vaultLib.totalSupply();
+    const totalSupply = await vaultProxy.totalSupply();
     expect(totalSupply).toEqBigNumber(utils.parseEther('0'));
 
-    const investorShares = await vaultLib.balanceOf(investor);
+    const investorShares = await vaultProxy.balanceOf(investor);
     expect(investorShares).toEqBigNumber(utils.parseEther('0'));
   });
 });
@@ -479,96 +475,92 @@ describe('transferShares', () => {
   it('can only be called by the accessor', async () => {
     const {
       accounts: [randomUser, investor1, investor2],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultLib.connect(randomUser).transferShares(investor1, investor2, utils.parseEther('1')),
+      vaultProxy.connect(randomUser).transferShares(investor1, investor2, utils.parseEther('1')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
   it('does not allow sender is an zero address', async () => {
-    const {
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
+    const { vaultProxy } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultLib.transferShares(constants.AddressZero, randomAddress(), BigNumber.from(1)),
+      vaultProxy.transferShares(constants.AddressZero, randomAddress(), BigNumber.from(1)),
     ).rejects.toBeRevertedWith('transfer from the zero address');
   });
 
   it('does not allow recipient is an zero address', async () => {
-    const {
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
+    const { vaultProxy } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultLib.transferShares(randomAddress(), constants.AddressZero, BigNumber.from(1)),
+      vaultProxy.transferShares(randomAddress(), constants.AddressZero, BigNumber.from(1)),
     ).rejects.toBeRevertedWith('transfer to the zero address');
   });
 
   it('does not allow transfer amount to exceed balance', async () => {
     const {
       accounts: [investor1, investor2],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
 
     // mint shares to investor1
     {
-      const preTxTotalSupply = await vaultLib.totalSupply();
+      const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultLib.mintShares(investor1, amount);
+      await vaultProxy.mintShares(investor1, amount);
 
-      const postTxTotalSupply = await vaultLib.totalSupply();
+      const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
 
-      const investorShares = await vaultLib.balanceOf(investor1);
+      const investorShares = await vaultProxy.balanceOf(investor1);
       expect(investorShares).toEqBigNumber(amount);
     }
 
     // transfer shares
-    await expect(vaultLib.transferShares(investor1, investor2, amount.add(BigNumber.from(1)))).rejects.toBeRevertedWith(
-      'transfer amount exceeds balance',
-    );
+    await expect(
+      vaultProxy.transferShares(investor1, investor2, amount.add(BigNumber.from(1))),
+    ).rejects.toBeRevertedWith('transfer amount exceeds balance');
   });
 
   it('works as expected', async () => {
     const {
       accounts: [investor1, investor2],
-      deployment: { vaultLib },
+      vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
 
     // mint shares to investor1
     {
-      const preTxTotalSupply = await vaultLib.totalSupply();
+      const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultLib.mintShares(investor1, amount);
+      await vaultProxy.mintShares(investor1, amount);
 
-      const postTxTotalSupply = await vaultLib.totalSupply();
+      const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
 
-      const investorShares = await vaultLib.balanceOf(investor1);
+      const investorShares = await vaultProxy.balanceOf(investor1);
       expect(investorShares).toEqBigNumber(amount);
     }
 
     // transfer shares
-    const receipt = await vaultLib.transferShares(investor1, investor2, amount);
+    const receipt = await vaultProxy.transferShares(investor1, investor2, amount);
     assertEvent(receipt, 'Transfer', {
       from: investor1,
       to: investor2,
       value: amount,
     });
 
-    const investor1Shares = await vaultLib.balanceOf(investor1);
+    const investor1Shares = await vaultProxy.balanceOf(investor1);
     expect(investor1Shares).toEqBigNumber(BigNumber.from(0));
 
-    const investor2Shares = await vaultLib.balanceOf(investor2);
+    const investor2Shares = await vaultProxy.balanceOf(investor2);
     expect(investor2Shares).toEqBigNumber(amount);
   });
 });
