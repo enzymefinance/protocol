@@ -165,21 +165,21 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
             return _baseAssetRate.mul(10**FEED_PRECISION).div(_quoteAssetRate);
         }
 
-        int256 usdPerEthRate = IChainlinkAggregator(ethUsdAggregator).latestAnswer();
-        if (usdPerEthRate <= 0) {
+        int256 ethPerUsdRate = IChainlinkAggregator(ethUsdAggregator).latestAnswer();
+        if (ethPerUsdRate <= 0) {
             return 0;
         }
 
         // If _baseAsset's rate is in ETH and _quoteAsset's rate is in USD
         if (baseAssetRateAsset == RateAsset.ETH) {
-            return _baseAssetRate.mul(uint256(usdPerEthRate)).div(_quoteAssetRate);
+            return _baseAssetRate.mul(uint256(ethPerUsdRate)).div(_quoteAssetRate);
         }
 
         // If _baseAsset's rate is in USD and _quoteAsset's rate is in ETH
         return
             _baseAssetRate
                 .mul(10**(FEED_PRECISION.add(ETH_PRECISION)))
-                .div(uint256(usdPerEthRate))
+                .div(uint256(ethPerUsdRate))
                 .div(_quoteAssetRate);
     }
 
