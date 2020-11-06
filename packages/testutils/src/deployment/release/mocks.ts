@@ -41,10 +41,12 @@ export interface MockDeploymentOutput {
     kncWeth: MockToken;
   }>;
   compoundTokens: Promise<{
+    cbat: MockToken;
     ccomp: MockToken;
     cdai: MockToken;
     ceth: MockToken;
     crep: MockToken;
+    cuni: MockToken;
     cusdc: MockToken;
     czrx: MockToken;
   }>;
@@ -86,17 +88,19 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   },
   async compoundTokens(config, deployment) {
     const tokens = await deployment.tokens;
-    const [ceth, ccomp, cdai, crep, cusdc, czrx] = await Promise.all([
+    const [ceth, cbat, ccomp, cdai, crep, cuni, cusdc, czrx] = await Promise.all([
       // TODO: deploy MockCEther contract
       MockToken.deploy(config.deployer, 'Compound Ether', 'cETH', 8),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound Basic Attention Token', 'cBAT', 8, tokens.comp),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound Collateral', 'cCOMP', 8, tokens.comp),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound Dai', 'cDAI', 8, tokens.dai),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound Augur', 'cREP', 8, tokens.rep),
+      MockCTokenIntegratee.deploy(config.deployer, 'Compound Uniswap', 'cUNI', 8, tokens.rep),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound USD Coin', 'cUSDC', 8, tokens.usdc),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound 0x', 'cZRX', 8, tokens.zrx),
     ]);
 
-    return { ccomp, cdai, ceth, crep, cusdc, czrx };
+    return { cbat, ccomp, cdai, ceth, crep, cuni, cusdc, czrx };
   },
   async uniswapV2Derivatives(config, deployment) {
     const tokens = await deployment.tokens;
@@ -254,10 +258,12 @@ export async function configureMockRelease({
     derivatives: {
       chai: mocks.chaiIntegratee,
       compound: {
+        cbat: mocks.compoundTokens.cbat,
         ccomp: mocks.compoundTokens.ccomp,
         cdai: mocks.compoundTokens.cdai,
         ceth: mocks.compoundTokens.ceth,
         crep: mocks.compoundTokens.crep,
+        cuni: mocks.compoundTokens.cuni,
         cusdc: mocks.compoundTokens.cusdc,
         czrx: mocks.compoundTokens.czrx,
       },

@@ -1,4 +1,5 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
+import { Dispatcher } from '@melonproject/protocol';
 import { deployPersistent } from '../persistent';
 import { deployRelease } from './deployment';
 import { configureForkRelease } from './fork';
@@ -38,6 +39,38 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
       ...mocks,
       ...persistent,
       ...release,
+    },
+  };
+}
+
+export async function defaultTestRelease(
+  deployer: SignerWithAddress,
+  mgm: SignerWithAddress,
+  accounts: SignerWithAddress[],
+  dispatcher: Dispatcher,
+) {
+  const mocks = await deployMocks({ deployer, accounts });
+  const config = await configureMockRelease({
+    dispatcher,
+    deployer,
+    mgm,
+    mocks,
+    accounts,
+  });
+
+  const release = await deployRelease(config);
+  await dispatcher.setCurrentFundDeployer(release.fundDeployer);
+  await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
+
+  return {
+    config,
+    accounts,
+    deployment: {
+      ...mocks,
+      ...release,
+      persistent: {
+        dispatcher,
+      },
     },
   };
 }

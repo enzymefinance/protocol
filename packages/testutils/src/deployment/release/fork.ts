@@ -1,4 +1,3 @@
-import { constants, utils } from 'ethers';
 import {
   AddressLike,
   EthereumTestnetProvider,
@@ -7,8 +6,9 @@ import {
   SignerWithAddress,
 } from '@crestproject/crestproject';
 import { Dispatcher, StandardToken } from '@melonproject/protocol';
-import { ReleaseDeploymentConfig } from './deployment';
+import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
+import { ReleaseDeploymentConfig } from './deployment';
 
 type MainnetWhales = {
   [TKey in keyof MainnetConfig['whales']]: SignerWithAddress;
@@ -16,6 +16,10 @@ type MainnetWhales = {
 
 type MainnetTokens = {
   [TKey in keyof MainnetConfig['tokens']]: StandardToken;
+};
+
+type MainnetCompoundTokens = {
+  [TKey in keyof MainnetConfig['derivatives']['compound']]: StandardToken;
 };
 
 export interface ForkReleaseDeploymentConfig extends ReleaseDeploymentConfig {
@@ -52,6 +56,14 @@ export async function configureForkRelease({
     return { ...carry, [key]: token };
   }, {} as MainnetTokens);
 
+  const compoundTokens = Object.entries(mainnet.derivatives.compound).reduce(
+    (carry: MainnetCompoundTokens, [key, address]) => {
+      const token = new StandardToken(address, deployer);
+      return { ...carry, [key]: token };
+    },
+    {} as MainnetCompoundTokens,
+  );
+
   const chainlinkConfig = Object.values(mainnet.chainlinkAggregators);
   const chainlinkRateAssets = chainlinkConfig.map(([, b]) => b as number);
   const chainlinkAggregators = chainlinkConfig.map(([a]) => a as string);
@@ -71,8 +83,13 @@ export async function configureForkRelease({
     [...accounts, deployer, mgm].map(async (account) => {
       await Promise.all(
         Object.entries(whales).map(async ([symbol, whale]) => {
-          const token = tokens[symbol as keyof MainnetTokens];
-          await makeTokenRich(token, whale, account);
+          if (Object.keys(tokens).includes(symbol)) {
+            const token = tokens[symbol as keyof MainnetTokens];
+            await makeTokenRich(token, whale, account);
+          } else if (Object.keys(mainnet.derivatives.compound).includes(symbol)) {
+            const token = compoundTokens[symbol as keyof MainnetCompoundTokens];
+            await makeTokenRich(token, whale, account);
+          }
         }),
       );
     }),

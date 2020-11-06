@@ -58,10 +58,12 @@ export interface ReleaseDeploymentConfig {
   derivatives: {
     chai: AddressLike;
     compound: {
+      cbat: AddressLike;
       ccomp: AddressLike;
       cdai: AddressLike;
       ceth: AddressLike;
       crep: AddressLike;
+      cuni: AddressLike;
       cusdc: AddressLike;
       czrx: AddressLike;
     };
