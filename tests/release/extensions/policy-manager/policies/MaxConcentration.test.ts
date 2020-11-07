@@ -8,8 +8,21 @@ import {
   maxConcentrationArgs,
   PolicyHook,
   validateRulePostCoIArgs,
+  policyManagerConfigArgs,
+  addTrackedAssetsArgs,
+  callOnIntegrationArgs,
+  addTrackedAssetsSelector,
+  IntegrationManagerActionId,
+  Dispatcher,
+  VaultLib,
 } from '@melonproject/protocol';
-import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
+import {
+  defaultTestDeployment,
+  assertEvent,
+  createNewFund,
+  createFundDeployer,
+  createMigratedFundConfig,
+} from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -33,12 +46,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const assetGavLimit = BigNumber.from(totalGav).mul(maxConcentrationValue).div(utils.parseEther('1'));
   expect(assetGavLimit).toEqBigNumber(utils.parseEther('0.1'));
 
-  // Only need an address for some contracts
-  const vaultProxyAddress = randomAddress();
+  // Mock the VaultProxy
+  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  await mockVaultProxy.getTrackedAssets.returns([]);
 
   // Mock the ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
-  await mockComptrollerProxy.getVaultProxy.returns(vaultProxyAddress);
+  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
   await mockComptrollerProxy.calcGav.returns(totalGav, true);
   await mockComptrollerProxy.getDenominationAsset.returns(denominationAsset);
 
@@ -56,13 +70,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
     EOAPolicyManager,
     mockComptrollerProxy,
     mockValueInterpreter,
-    vaultProxyAddress,
+    mockVaultProxy,
   };
 }
 
 async function mockValuesAndValidateRule({
   mockComptrollerProxy,
-  vaultProxyAddress,
+  mockVaultProxy,
   mockValueInterpreter,
   maxConcentration,
   incomingAsset,
@@ -70,7 +84,7 @@ async function mockValuesAndValidateRule({
   assetValueIsValid = true,
 }: {
   mockComptrollerProxy: MockContract<ComptrollerLib>;
-  vaultProxyAddress: AddressLike;
+  mockVaultProxy: AddressLike;
   mockValueInterpreter: MockContract<ValueInterpreter>;
   maxConcentration: MaxConcentration;
   incomingAsset: StandardToken;
@@ -78,10 +92,10 @@ async function mockValuesAndValidateRule({
   assetValueIsValid?: boolean;
 }) {
   // Send assetGavLimit of the incomingAsset to vault
-  await incomingAsset.transfer(vaultProxyAddress, incomingAssetGav);
+  await incomingAsset.transfer(mockVaultProxy, incomingAssetGav);
 
   // Set value interpreter to return hardcoded amount
-  await mockValueInterpreter.calcLiveAssetValue.returns(incomingAssetGav.toString(), assetValueIsValid);
+  await mockValueInterpreter.calcLiveAssetValue.returns(incomingAssetGav, assetValueIsValid);
 
   // Only the incoming assets arg matters for this policy
   const postCoIArgs = validateRulePostCoIArgs({
@@ -118,11 +132,59 @@ describe('constructor', () => {
 });
 
 describe('activateForFund', () => {
-  it.todo('does not allow a misc asset with balance >maxConcentration in the fund trackedAssets');
+  fit('does only allow a misc asset with balance <maxConcentration in the fund trackedAssets', async () => {
+    const {
+      deployment: {
+        tokens: { mln: incomingAsset },
+      },
+      mockValueInterpreter,
+      mockComptrollerProxy,
+      mockVaultProxy,
+      maxConcentration,
+      EOAPolicyManager,
+      assetGavLimit,
+    } = await provider.snapshot(snapshot);
 
-  it.todo('allows the denomination asset to have >maxConcentration');
+    // track "incoming asset" and "denomination asset" in the mocked vault proxy
+    await mockVaultProxy.getTrackedAssets.returns([incomingAsset]);
 
-  it.todo('allows a misc asset to have <maxConcentration');
+    // set value interpreter to return exactly the configured asset gav limit.
+    await mockValueInterpreter.calcLiveAssetValue.returns(assetGavLimit, true);
+
+    // should pass because assetGavLimit is still within the allowed range.
+    await expect(
+      maxConcentration.connect(EOAPolicyManager).activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).resolves.toBeReceipt();
+
+    // set value interpreter to return an amount that exceeds the asset gav limit.
+    await mockValueInterpreter.calcLiveAssetValue.returns(assetGavLimit.add(1), true);
+
+    // should fail because "incoming asset" is not the denomination asset and excees the limit
+    await expect(
+      maxConcentration.connect(EOAPolicyManager).activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).rejects.toBeRevertedWith('activateForFund: Max concentration exceeded');
+  });
+
+  it('allows the denomination asset to have >maxConcentration', async () => {
+    const {
+      assetGavLimit,
+      mockValueInterpreter,
+      mockComptrollerProxy,
+      mockVaultProxy,
+      maxConcentration,
+      EOAPolicyManager,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    // track "denomination asset" in the mocked vault proxy
+    await mockVaultProxy.getTrackedAssets.returns([denominationAsset]);
+
+    // set value interpreter to return an amount that exceeds the asset gav limit.
+    await mockValueInterpreter.calcLiveAssetValue.returns(assetGavLimit.add(1), true);
+
+    // send denomination asset to fund with maxConcentration in amount assetGavLimit plus 1
+    await maxConcentration.connect(EOAPolicyManager).activateForFund(mockComptrollerProxy, mockVaultProxy);
+  });
 });
 
 describe('addFundSettings', () => {
@@ -204,12 +266,12 @@ describe('validateRule', () => {
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
-      vaultProxyAddress,
+      mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
     await mockValuesAndValidateRule({
       mockComptrollerProxy,
-      vaultProxyAddress,
+      mockVaultProxy,
       mockValueInterpreter,
       maxConcentration,
       incomingAsset,
@@ -232,12 +294,12 @@ describe('validateRule', () => {
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
-      vaultProxyAddress,
+      mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
     const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
-      vaultProxyAddress,
+      mockVaultProxy,
       mockValueInterpreter,
       maxConcentration,
       incomingAsset,
@@ -256,13 +318,13 @@ describe('validateRule', () => {
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
-      vaultProxyAddress,
+      mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
     // Increase incoming asset balance to be 1 wei over the limit
     const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
-      vaultProxyAddress,
+      mockVaultProxy,
       mockValueInterpreter,
       maxConcentration,
       incomingAsset,
@@ -279,13 +341,13 @@ describe('validateRule', () => {
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
-      vaultProxyAddress,
+      mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
     // Increase incoming asset balance to be 1 wei over the limit
     const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
-      vaultProxyAddress,
+      mockVaultProxy,
       mockValueInterpreter,
       maxConcentration,
       incomingAsset,
@@ -304,12 +366,12 @@ describe('validateRule', () => {
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
-      vaultProxyAddress,
+      mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
     const validateRuleCall = await mockValuesAndValidateRule({
       mockComptrollerProxy,
-      vaultProxyAddress,
+      mockVaultProxy,
       mockValueInterpreter,
       maxConcentration,
       incomingAsset,
@@ -322,7 +384,146 @@ describe('validateRule', () => {
 });
 
 describe('integration tests', () => {
-  it.todo('can create a new fund with this policy, and it works correctly during callOnIntegration');
+  it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
+    const {
+      accounts: [fundOwner],
+      deployment: {
+        fundDeployer,
+        maxConcentration,
+        trackedAssetsAdapter,
+        integrationManager,
+        tokens: { weth: denominationAsset, mln: incomingAsset },
+      },
+    } = await defaultTestDeployment(provider);
 
-  it.todo('can create a migrated fund with this policy');
+    // configure policy
+    const maxConcentrationRate = utils.parseEther('.1'); // 10%
+    const maxConcentrationSettings = maxConcentrationArgs(maxConcentrationRate);
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [maxConcentration],
+      settings: [maxConcentrationSettings],
+    });
+
+    // spin up fund
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'TestFund',
+      policyManagerConfig,
+    });
+
+    const incomingAssetAmount = BigNumber.from(50);
+    // Send incomingAsset to vault
+    await incomingAsset.transfer(vaultProxy.address, incomingAssetAmount);
+
+    // track it and expect to fail
+    const trackedAssetArgs = addTrackedAssetsArgs([incomingAsset]);
+    const trackedAssetCallArgs = callOnIntegrationArgs({
+      adapter: trackedAssetsAdapter,
+      selector: addTrackedAssetsSelector,
+      encodedCallArgs: trackedAssetArgs,
+    });
+
+    const addTrackedAssetsTx = comptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
+
+    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
+      'VM Exception while processing transaction: revert Rule evaluated to false: MAX_CONCENTRATION',
+    );
+  });
+
+  it('can create a migrated fund with this policy', async () => {
+    const {
+      accounts: [fundOwner],
+      deployment: {
+        maxConcentration,
+        trackedAssetsAdapter,
+        feeManager,
+        chainlinkPriceFeed,
+        dispatcher,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        tokens: { weth: denominationAsset, mln: incomingAsset },
+      },
+      config,
+    } = await defaultTestDeployment(provider);
+
+    // configure policy
+    const maxConcentrationRate = utils.parseEther('.1'); // 10%
+    const maxConcentrationSettings = maxConcentrationArgs(maxConcentrationRate);
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [maxConcentration],
+      settings: [maxConcentrationSettings],
+    });
+
+    // spin up fund
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'TestFund',
+      policyManagerConfig,
+    });
+
+    // migrate fund
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      policyManager,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      policyManagerConfigData: policyManagerConfig,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+    });
+
+    const incomingAssetAmount = BigNumber.from(50);
+    // Send incomingAsset to vault
+    await incomingAsset.transfer(vaultProxy.address, incomingAssetAmount);
+
+    // track it and expect to fail
+    const trackedAssetArgs = addTrackedAssetsArgs([incomingAsset]);
+    const trackedAssetCallArgs = callOnIntegrationArgs({
+      adapter: trackedAssetsAdapter,
+      selector: addTrackedAssetsSelector,
+      encodedCallArgs: trackedAssetArgs,
+    });
+
+    const addTrackedAssetsTx = nextComptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
+
+    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
+      'VM Exception while processing transaction: revert Rule evaluated to false: MAX_CONCENTRATION',
+    );
+  });
 });

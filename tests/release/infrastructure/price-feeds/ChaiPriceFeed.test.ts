@@ -58,7 +58,7 @@ describe('getRatesToUnderlyings', () => {
 
     const chi = await chaiPriceSource.chi();
     await expect(chaiPriceFeed.getRatesToUnderlyings.args(chai).call()).resolves.toMatchFunctionOutput(
-      chaiPriceFeed.getRatesToUnderlyings.fragment,
+      chaiPriceFeed.getRatesToUnderlyings,
       {
         rates_: [chi.div(10 ** 9)],
         underlyings_: [dai],

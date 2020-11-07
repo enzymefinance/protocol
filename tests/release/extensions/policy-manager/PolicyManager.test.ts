@@ -1,6 +1,7 @@
 import { utils } from 'ethers';
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
 import {
+  Dispatcher,
   IPolicy,
   PolicyHook,
   policyManagerConfigArgs,
@@ -17,6 +18,9 @@ import {
   mockGenericSwap,
   mockGenericSwapASelector,
   assertEvent,
+  createFundDeployer,
+  createMigratedFundConfig,
+  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -84,13 +88,118 @@ describe('constructor', () => {
     const policyManagerOwner = await policyManager.getOwner();
     const fundDeployerOwner = await fundDeployer.getOwner();
     expect(policyManagerOwner).toMatchAddress(fundDeployerOwner);
-  });
 
-  it.todo('[check policyImplementsHook() against each policy above]');
+    // Check that all policies implements the proper hooks with policyImplementsHook
+    const adapterBlacklistImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
+      adapterBlacklist,
+      PolicyHook.PreCallOnIntegration,
+    );
+    const adapterWhitelistImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
+      adapterWhitelist,
+      PolicyHook.PreCallOnIntegration,
+    );
+    const assetBlacklistImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
+      assetBlacklist,
+      PolicyHook.PostCallOnIntegration,
+    );
+    const assetWhitelistImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
+      assetWhitelist,
+      PolicyHook.PostCallOnIntegration,
+    );
+    const maxConcentrationImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
+      maxConcentration,
+      PolicyHook.PostCallOnIntegration,
+    );
+
+    const investorsWhitelistImplementsPreBuyShares = await policyManager.policyImplementsHook(
+      investorWhitelist,
+      PolicyHook.PreBuyShares,
+    );
+
+    expect(adapterBlacklistImplementsPreCallOnIntegration).toBe(true);
+    expect(adapterWhitelistImplementsPreCallOnIntegration).toBe(true);
+    expect(assetBlacklistImplementsPostCallOnIntegration).toBe(true);
+    expect(assetWhitelistImplementsPostCallOnIntegration).toBe(true);
+    expect(maxConcentrationImplementsPostCallOnIntegration).toBe(true);
+    expect(investorsWhitelistImplementsPreBuyShares).toBe(true);
+  });
 });
 
 describe('activateForFund', () => {
-  it.todo('stores the validated VaultProxy and calls `activateForFund()` on each policy (migrated fund only)');
+  it('stores the validated VaultProxy and calls `activateForFund()` on each policy (migrated fund only)', async () => {
+    // create fund with policies
+    const {
+      config,
+      deployment: {
+        fundDeployer,
+        chainlinkPriceFeed,
+        dispatcher,
+        feeManager,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+      },
+      fundOwner,
+      denominationAsset,
+      orderedPolicies,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // migrate fund
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      policyManagerConfigData: policyManagerConfig,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Migration execution settles the accrued fee
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
+    });
+
+    // check activateForFund called on each policy
+    for (const key in orderedPolicies) {
+      expect(orderedPolicies[key].activateForFund).toHaveBeenCalledOnContract();
+    }
+  });
 });
 
 describe('deactivateForFund', () => {
@@ -98,39 +207,383 @@ describe('deactivateForFund', () => {
 });
 
 describe('disablePolicyForFund', () => {
-  it.todo('does not allow a random caller');
+  it('does not allow a caller other than the fund owner', async () => {
+    const {
+      accounts: [randomAccount],
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow an un-enabled policy');
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
 
-  it.todo('does not allow a policy that implements a non-BuyShares hook');
+    // Disable the policy
+    const disablePolicyForFundCall = policyManager
+      .connect(randomAccount)
+      .disablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy);
 
-  it.todo('removes specified policies and emits an event for each');
+    await expect(disablePolicyForFundCall).rejects.toBeRevertedWith('Only the fund owner can call this function');
+  });
+
+  it('does not allow an already disabled policy', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Attempt to disable a policy that's not in the fund
+    const disablePolicyForFundCall = policyManager
+      .connect(fundOwner)
+      .disablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy);
+
+    await expect(disablePolicyForFundCall).rejects.toBeRevertedWith('Policy not enabled');
+  });
+
+  it('does not allow a policy that implements a non-BuyShares hook', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPostCoIPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // Attempt to disable a non-BuyShares hook policy
+    const disablePolicyForFundCall = policyManager
+      .connect(fundOwner)
+      .disablePolicyForFund(comptrollerProxy, mockPostCoIPolicy);
+
+    await expect(disablePolicyForFundCall).rejects.toBeRevertedWith('Disallowed hook');
+  });
+
+  it('removes specified policy and emits event', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // Assert that the policy enabled on the fund
+    const preMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+    );
+    expect(preMockPreBuySharesPolicyisEnabled).toBe(true);
+
+    // Disable one of the fund's policies
+    const receipt = await policyManager
+      .connect(fundOwner)
+      .disablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy);
+
+    // Assert that the policy is disabled for the fund
+    const postMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+    );
+    expect(postMockPreBuySharesPolicyisEnabled).toBe(false);
+
+    // Assert that the proper event has been emitted
+    const disablePolicyEvent = policyManager.abi.getEvent('PolicyDisabledForFund');
+    assertEvent(receipt, disablePolicyEvent, { comptrollerProxy, policy: mockPreBuySharesPolicy });
+  });
 });
 
 describe('enablePolicyForFund', () => {
-  it.todo('does not allow a random caller');
+  it('does not allow a caller other than the fund owner', async () => {
+    const {
+      accounts: [randomAccount],
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow a policy that implements a non-BuyShares hook');
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
 
-  it.todo('does not allow an already enabled policy');
+    // Add the policy with addFundSettings
+    const enablePolicyForFundCall = policyManager
+      .connect(randomAccount)
+      .enablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy, '0x');
 
-  it.todo('does not allow an unregistered policy');
+    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Only the fund owner can call this function');
+  });
 
-  it.todo(
-    'adds specified policies, calls `addFundSettings` and `activateForFund` on each with the correct params, and emits an event for each',
-  );
+  it('does not allow a policy that implements a non-BuyShares hook', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPostCoIPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
 
-  it.todo(
-    'Policy with no settings: adds the policy and emits an event, does NOT call `addFundSettings()` on fee but DOES call `activateForFund`',
-  );
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Attempt to add a non-BuyShares hook policy with addFundSettings
+    const enablePolicyForFundCall = policyManager
+      .connect(fundOwner)
+      .enablePolicyForFund(comptrollerProxy, mockPostCoIPolicy, '0x');
+
+    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Disallowed hook');
+  });
+
+  it('does not allow an already enabled policy', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund and enable mockPreBuySharesPolicy
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // Attempt to enable an already enabled policy
+    const enablePolicyForFundCall = policyManager
+      .connect(fundOwner)
+      .enablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy, utils.randomBytes(10));
+
+    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('policy already enabled');
+  });
+
+  it('does not allow an unregistered policy', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Deregister the mockPreBuySharesPolicy
+    await policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
+
+    // Assert that the policy has been de-registered
+    const mockPreBuySharesPolicyisRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
+    expect(mockPreBuySharesPolicyisRegistered).toBe(false);
+
+    // Attempt to enable the unregistered policy
+    const enablePolicyForFundCall = policyManager
+      .connect(fundOwner)
+      .enablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy, utils.randomBytes(10));
+
+    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Policy is not registered');
+  });
+
+  it('adds specified policy, calls `addFundSettings` and `activateForFund` with the correct params, and emits event', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Assert that the policy disabled on the fund
+    const preMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+    );
+    expect(preMockPreBuySharesPolicyisEnabled).toBe(false);
+
+    // Enable the mockPreBuySharesPolicy
+    const policySettings = utils.randomBytes(10);
+    const receipt = await policyManager
+      .connect(fundOwner)
+      .enablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy, policySettings);
+
+    // Assert that the policy is enabled for the fund
+    const postMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+    );
+    expect(postMockPreBuySharesPolicyisEnabled).toBe(true);
+
+    // Assert that the proper event has been emitted
+    const enablePolicyEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
+    assertEvent(receipt, enablePolicyEvent, {
+      comptrollerProxy,
+      policy: mockPreBuySharesPolicy,
+      settingsData: utils.hexlify(policySettings),
+    });
+  });
+
+  it('Policy with no settings: adds the policy and emits an event, does NOT call `addFundSettings()` on fee but DOES call `activateForFund`', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    // Create fund without policy config
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Add the policy with addFundSettings
+    const receipt = await policyManager
+      .connect(fundOwner)
+      .enablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy, '0x');
+
+    // Check that the policy has been added
+    const mockPreBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+    );
+    expect(mockPreBuySharesPolicyIsEnabled).toBe(true);
+
+    // Assert that the event has been emitted
+    const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
+    assertEvent(receipt, policyEnabledForFundEvent);
+
+    // Assert that addFundSettings() has NOT been called
+    expect(mockPreBuySharesPolicy.addFundSettings).not.toHaveBeenCalledOnContract();
+  });
 });
 
 describe('setConfigForFund', () => {
-  it.todo('does not allow unequal policies and settingsData array lengths');
+  it('does not allow unequal policies and settingsData array lengths', async () => {
+    const {
+      deployment: { policyManager },
+      policies: { mockPreBuySharesPolicy, mockPostBuySharesPolicy },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow an already enabled policy');
+    const policies = [mockPreBuySharesPolicy, mockPostBuySharesPolicy];
+    const policiesSettings = [utils.randomBytes(10), utils.randomBytes(12), utils.randomBytes(20)];
+    const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
 
-  it.todo('does not allow unregistered policies');
+    const setConfigForFundCall = policyManager.setConfigForFund(policyManagerConfig);
+
+    await expect(setConfigForFundCall).rejects.toBeRevertedWith('policies and settingsData array lengths unequal');
+  });
+
+  it('does not allow an already enabled policy', async () => {
+    const {
+      deployment: { policyManager },
+      policies: { mockPreBuySharesPolicy },
+    } = await provider.snapshot(snapshot);
+
+    // Create config for mockpreBuySharesPolicy
+    const policies = [mockPreBuySharesPolicy];
+    const policiesSettings = [utils.randomBytes(10)];
+    const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
+
+    // Call the setConfigForFund with initial config
+    await policyManager.setConfigForFund(policyManagerConfig);
+
+    // Create new config with an already enabled policy
+    const newPoliciesSettings = [utils.randomBytes(20)];
+    const newPolicyManagerConfig = policyManagerConfigArgs({ policies, settings: newPoliciesSettings });
+
+    // Call the setConfigForFund with this new config
+    const newSetConfigForFundCall = policyManager.setConfigForFund(newPolicyManagerConfig);
+    await expect(newSetConfigForFundCall).rejects.toBeRevertedWith('policy already enabled');
+  });
+
+  it('does not allow unregistered policies', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // De-register mockPreBuySharesPolicy
+    await policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
+
+    // Create config for mockpreBuySharesPolicy
+    const policies = [mockPreBuySharesPolicy];
+    const policiesSettings = [utils.randomBytes(10)];
+    const newPolicyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
+
+    // Call the setConfigForFund with this new config
+    const callSetConfigForFund = policyManager.setConfigForFund(newPolicyManagerConfig);
+    await expect(callSetConfigForFund).rejects.toBeRevertedWith('Policy is not registered');
+  });
 
   it('adds specified policies, calls `addFundSettings` on each with the correct params, and emits an event for each', async () => {
     const {
@@ -152,7 +605,6 @@ describe('setConfigForFund', () => {
 
     // Assert state for fund
     const enabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
-
     expect(enabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, orderedPolicies);
 
     // Assert addFundSettings was called on each policy with its settingsData,
@@ -182,17 +634,153 @@ describe('setConfigForFund', () => {
     }
   });
 
-  it.todo('Policy with no settings: adds the policy and emits an event, does NOT call `addFundSettings()`');
+  it('Policy with no settings: adds the policy and emits an event, does NOT call `addFundSettings()`', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    // Create config with empty settings for mockpreBuySharesPolicy
+    const policies = [mockPreBuySharesPolicy];
+    const policiesSettings = ['0x'];
+    const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
+
+    const { comptrollerProxy, receipt } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // Check that the policy has been added
+    const mockPreBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+    );
+    expect(mockPreBuySharesPolicyIsEnabled).toBe(true);
+
+    // Assert that the event has been emitted
+    const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
+    assertEvent(receipt, policyEnabledForFundEvent);
+
+    // Assert that addFundSettings() has NOT been called
+    expect(mockPreBuySharesPolicy.addFundSettings).not.toHaveBeenCalledOnContract();
+  });
 });
 
 describe('updatePolicySettingsForFund', () => {
-  it.todo('does not allow a random caller');
+  it('does not allow a caller other than the fund owner', async () => {
+    const {
+      accounts: [randomAccount],
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow a policy that implements a non-BuyShares hook');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
 
-  it.todo('does not allow an un-enabled policy');
+    // Update the mockPreBuySharesPolicy with new setting with non-fundOwner account
+    const updatePolicyCall = policyManager
+      .connect(randomAccount)
+      .updatePolicySettingsForFund(comptrollerProxy, mockPreBuySharesPolicy, utils.randomBytes(10));
 
-  it.todo('calls `updateFundSettings` on the policy with the correct params');
+    await expect(updatePolicyCall).rejects.toBeRevertedWith('Only the fund owner can call this function');
+  });
+
+  it('does not allow a policy that implements a non-BuyShares hook', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPostCoIPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // Attempt to update a non-buyshares hook
+    const updatePolicyCall = policyManager
+      .connect(fundOwner)
+      .updatePolicySettingsForFund(comptrollerProxy, mockPostCoIPolicy, utils.randomBytes(10));
+
+    await expect(updatePolicyCall).rejects.toBeRevertedWith('Disallowed hook');
+  });
+
+  it('does not allow an un-enabled policy', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    // Disable mockPreBuySharesPolicy
+    await policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy);
+
+    // Attempt to update mockPreBuySharesPolicy settings
+    const updatePolicyCall = policyManager
+      .connect(fundOwner)
+      .updatePolicySettingsForFund(comptrollerProxy, mockPreBuySharesPolicy, utils.randomBytes(10));
+
+    await expect(updatePolicyCall).rejects.toBeRevertedWith('Policy not enabled');
+  });
+
+  it('calls `updateFundSettings` on the policy with the correct params', async () => {
+    const {
+      deployment: { fundDeployer, policyManager },
+      policies: { mockPreBuySharesPolicy },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    const policySettings = utils.randomBytes(10);
+    // Update the mockPreBuySharesPolicy with new setting
+    await policyManager
+      .connect(fundOwner)
+      .updatePolicySettingsForFund(comptrollerProxy, mockPreBuySharesPolicy, policySettings);
+
+    // Check that updatePolicySettingsForFund has been called with the arguments above
+    expect(policyManager.updatePolicySettingsForFund).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      mockPreBuySharesPolicy,
+      policySettings,
+    );
+  });
 });
 
 describe('validatePolicies', () => {
@@ -370,21 +958,110 @@ describe('validatePolicies', () => {
 
 describe('policy registry', () => {
   describe('deregisterPolicies', () => {
-    it.todo('can only be called by the owner of the FundDeployer contract');
+    it('can only be called by the owner of the FundDeployer contract', async () => {
+      const {
+        accounts: [, randomUser],
+        deployment: { policyManager },
+        policies: { mockPreBuySharesPolicy },
+      } = await provider.snapshot(snapshot);
 
-    it.todo('does not allow empty _policies param');
+      // Attempt to call deregisterPolicies with a random (non-owner) account
+      const deregisterPoliciesCall = policyManager.connect(randomUser).deregisterPolicies([mockPreBuySharesPolicy]);
+      await expect(deregisterPoliciesCall).rejects.toBeRevertedWith(
+        'Only the FundDeployer owner can call this function',
+      );
+    });
 
-    it.todo('does not allow an unregistered policy');
+    it('does not allow empty _policies param', async () => {
+      const {
+        deployment: { policyManager },
+      } = await provider.snapshot(snapshot);
 
-    it.todo('successfully de-registers multiple policies and emits one event per policy');
+      // Attempt to call deregisterPolicies with an empty _policies param
+      const deregisterPoliciesCall = policyManager.deregisterPolicies([]);
+      await expect(deregisterPoliciesCall).rejects.toBeRevertedWith('_policies cannot be empty');
+    });
+
+    it('does not allow an unregistered policy', async () => {
+      const {
+        deployment: { policyManager },
+        policies: { mockPreBuySharesPolicy },
+      } = await provider.snapshot(snapshot);
+
+      // De-register mockPreBuySharesPolicy
+      await policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
+
+      // Confirm that mockPreBuySharesPolicy is deregistered
+      const ismockPreBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
+      expect(ismockPreBuySharesPolicyRegistered).toBe(false);
+
+      // Attempt to de-register mockPreBuySharesPolicy again
+      const deregisterPoliciesCall = policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
+      await expect(deregisterPoliciesCall).rejects.toBeRevertedWith('policy is not registered');
+    });
+
+    it('successfully de-registers multiple policies and emits one event per policy', async () => {
+      const {
+        deployment: { policyManager },
+        policies: { mockPreBuySharesPolicy, mockPostBuySharesPolicy, mockPostCoIPolicy, mockPreCoIPolicy },
+      } = await provider.snapshot(snapshot);
+
+      // De-register multiple policies
+      const policies = [mockPreBuySharesPolicy, mockPostBuySharesPolicy, mockPostCoIPolicy, mockPreCoIPolicy];
+      const receipt = await policyManager.deregisterPolicies(policies);
+
+      const policyDeregisteredEvent = policyManager.abi.getEvent('PolicyDeregistered');
+
+      // One policyDeregisteredEvent should have been emitted for each element in policyArray
+      const events = extractEvent(receipt, policyDeregisteredEvent);
+      expect(events.length).toBe(policies.length);
+
+      for (let i = 0; i < policies.length; i++) {
+        // Make sure that each event contains the corresponding policy addres
+        expect(events[i].args[0]).toBe(policies[i].address);
+      }
+    });
   });
 
   describe('registerPolicies', () => {
-    it.todo('can only be called by the owner of the FundDeployer contract');
+    it('can only be called by the owner of the FundDeployer contract', async () => {
+      const {
+        accounts: [randomAccount],
+        config: { deployer },
+        deployment: { policyManager },
+      } = await provider.snapshot(snapshot);
 
-    it.todo('does not allow empty _policies param');
+      const mockPolicy = await IPolicy.mock(deployer);
 
-    it.todo('does not allow an already registered policy');
+      // Attempt to register the policy with a non-owner account
+      const registerPoliciesCall = policyManager.connect(randomAccount).registerPolicies([mockPolicy]);
+      await expect(registerPoliciesCall).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
+    });
+
+    it('does not allow empty _policies param', async () => {
+      const {
+        deployment: { policyManager },
+      } = await provider.snapshot(snapshot);
+
+      // Attempt to call deregisterPolicies with an empty _policies param
+      const registerPoliciesCall = policyManager.registerPolicies([]);
+      await expect(registerPoliciesCall).rejects.toBeRevertedWith('_policies cannot be empty');
+    });
+
+    it('does not allow an already registered policy', async () => {
+      const {
+        policies: { mockPreBuySharesPolicy },
+        deployment: { policyManager },
+      } = await provider.snapshot(snapshot);
+
+      // Confirm that mockContinuousFee1 is already registered
+      const ismockPreBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
+      expect(ismockPreBuySharesPolicyRegistered).toBe(true);
+
+      // Attempt to re-register mockContinuousFee1
+      const registerPoliciesCall = policyManager.registerPolicies([mockPreBuySharesPolicy]);
+      await expect(registerPoliciesCall).rejects.toBeRevertedWith('policy already registered');
+    });
 
     it('successfully registers a policy with multiple implemented hooks and emits the correct event', async () => {
       const {
@@ -415,7 +1092,7 @@ describe('policy registry', () => {
       // Policies should be registered
       const registeredPolicies = await policyManager.getRegisteredPolicies();
       expect(registeredPolicies).toMatchFunctionOutput(
-        policyManager.getRegisteredPolicies.fragment,
+        policyManager.getRegisteredPolicies,
         expect.arrayContaining([mockPolicy.address]),
       );
 

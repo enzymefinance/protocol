@@ -1,7 +1,26 @@
 import { utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { AdapterWhitelist, adapterWhitelistArgs, PolicyHook, validateRulePreCoIArgs } from '@melonproject/protocol';
-import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
+import {
+  AdapterWhitelist,
+  adapterWhitelistArgs,
+  callOnIntegrationArgs,
+  Dispatcher,
+  IntegrationManagerActionId,
+  kyberTakeOrderArgs,
+  PolicyHook,
+  policyManagerConfigArgs,
+  takeOrderSelector,
+  uniswapV2TakeOrderArgs,
+  validateRulePreCoIArgs,
+} from '@melonproject/protocol';
+import {
+  assertEvent,
+  createFundDeployer,
+  createMigratedFundConfig,
+  createNewFund,
+  defaultTestDeployment,
+  transactionTimestamp,
+} from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -149,7 +168,177 @@ describe('validateRule', () => {
 });
 
 describe('integration tests', () => {
-  it.todo('can create a new fund with this policy, and it works correctly during callOnIntegration');
+  it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
+    const {
+      accounts: [fundOwner],
+      deployment: {
+        fundDeployer,
+        adapterWhitelist,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('can create a migrated fund with this policy');
+    // declare variables for policy config
+    const adapterWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
+    const nonWhitelistedAdaper = randomAddress();
+    const adapterWhitelistSettings = adapterWhitelistArgs(adapterWhitelistAddresses);
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [adapterWhitelist.address],
+      settings: [adapterWhitelistSettings],
+    });
+
+    // create new fund with policyManagerConfig argument
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      policyManagerConfig,
+    });
+
+    // confirm a non-whitelisted adapter is not allowed
+    const failingPreCoIArgs = validateRulePreCoIArgs({
+      adapter: nonWhitelistedAdaper,
+      selector: utils.randomBytes(4),
+    });
+
+    const failingValidateRuleResult = await adapterWhitelist.validateRule
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, failingPreCoIArgs)
+      .call();
+
+    expect(failingValidateRuleResult).toBeFalsy();
+
+    // confirm a whitelisted adapter is allowed
+    const passingPreCoIArgs = validateRulePreCoIArgs({
+      adapter: adapterWhitelistAddresses[0],
+      selector: utils.randomBytes(4),
+    });
+
+    const passingValidateRuleResult = await adapterWhitelist.validateRule
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, passingPreCoIArgs)
+      .call();
+
+    expect(passingValidateRuleResult).toBeTruthy();
+  });
+
+  it('can create a migrated fund with this policy', async () => {
+    const {
+      accounts: [fundOwner],
+      config,
+      deployment: {
+        kyberAdapter,
+        uniswapV2Adapter,
+        chainlinkPriceFeed,
+        dispatcher,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        adapterWhitelist,
+        tokens: { weth: denominationAsset, mln: incomingAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const adapterWhitelistAddresses = [kyberAdapter.address];
+    const adapterWhitelistSettings = adapterWhitelistArgs(adapterWhitelistAddresses);
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [adapterWhitelist.address],
+      settings: [adapterWhitelistSettings],
+    });
+
+    // create new fund with policy as above
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      policyManagerConfig,
+    });
+
+    // migrate fund
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      policyManagerConfigData: policyManagerConfig,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Migration execution settles the accrued fee
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
+    });
+
+    // send money to vault to trade
+    await denominationAsset.transfer(vaultProxy.address, utils.parseEther('10'));
+
+    // trade with an allowed adapter, expect success
+    const kyberArgs = kyberTakeOrderArgs({
+      incomingAsset,
+      minIncomingAssetAmount: utils.parseEther('1'),
+      outgoingAsset: denominationAsset,
+      outgoingAssetAmount: utils.parseEther('1'),
+    });
+
+    const kyberCallArgs = callOnIntegrationArgs({
+      adapter: kyberAdapter,
+      selector: takeOrderSelector,
+      encodedCallArgs: kyberArgs,
+    });
+
+    await nextComptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, kyberCallArgs);
+
+    // trade with an adapter that's not explicitly allowed, expect failure
+    const uniswapArgs = uniswapV2TakeOrderArgs({
+      path: [incomingAsset.address],
+      minIncomingAssetAmount: utils.parseEther('1'),
+      outgoingAssetAmount: utils.parseEther('1'),
+    });
+
+    const uniswapCallArgs = callOnIntegrationArgs({
+      adapter: uniswapV2Adapter,
+      selector: takeOrderSelector,
+      encodedCallArgs: uniswapArgs,
+    });
+
+    const uniswapTx = nextComptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, uniswapCallArgs);
+    await expect(uniswapTx).rejects.toBeRevertedWith(
+      'VM Exception while processing transaction: revert Rule evaluated to false: ADAPTER_WHITELIST',
+    );
+  });
 });

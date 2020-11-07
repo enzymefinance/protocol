@@ -1,11 +1,20 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import {
+  Dispatcher,
   InvestorWhitelist,
   investorWhitelistArgs,
   PolicyHook,
+  policyManagerConfigArgs,
   validateRulePreBuySharesArgs,
 } from '@melonproject/protocol';
-import { defaultTestDeployment, assertEvent } from '@melonproject/testutils';
+import {
+  defaultTestDeployment,
+  assertEvent,
+  createNewFund,
+  createFundDeployer,
+  createMigratedFundConfig,
+  transactionTimestamp,
+} from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -250,7 +259,147 @@ describe('validateRule', () => {
 });
 
 describe('integration tests', () => {
-  it.todo('can create a new fund with this policy, and it works correctly during callOnIntegration');
+  it('can create a new fund with this policy, and it can disable and re-enable the policy for that fund', async () => {
+    const {
+      accounts: [fundOwner],
+      deployment: {
+        fundDeployer,
+        investorWhitelist,
+        policyManager,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('can create a migrated fund with this policy');
+    // declare variables for policy config
+    const investorWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
+    const investorWhitelistSettings = investorWhitelistArgs({ investorsToAdd: investorWhitelistAddresses });
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [investorWhitelist.address],
+      settings: [investorWhitelistSettings],
+    });
+
+    // create new fund with policy as above
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      policyManagerConfig,
+    });
+
+    // confirm the policy has been enabled on fund creation
+    const confirmEnabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy.address);
+    expect(confirmEnabledPolicies).toHaveLength(1);
+    expect(confirmEnabledPolicies[0]).toEqual(investorWhitelist.address);
+
+    // disable investor whitelist and confirm there are no policies enabled
+    await policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, investorWhitelist);
+    const confirmDisabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy.address);
+    expect(confirmDisabledPolicies).toHaveLength(0);
+
+    // re-enable policy with empty settingsData
+    const reEnableInvestorWhitelistConfig = investorWhitelistArgs({
+      investorsToAdd: [],
+    });
+
+    await policyManager
+      .connect(fundOwner)
+      .enablePolicyForFund(comptrollerProxy, investorWhitelist, reEnableInvestorWhitelistConfig);
+
+    // confirm that the policy has been re-enabled for fund
+    const confirmReEnabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy.address);
+    expect(confirmReEnabledPolicies).toHaveLength(1);
+    expect(confirmReEnabledPolicies[0]).toEqual(investorWhitelist.address);
+
+    // confirm that the members of the re-enabled whitelist are those passed in initial config
+    const confirmWhitelistMembers = await investorWhitelist.getList(comptrollerProxy.address);
+    expect(confirmWhitelistMembers).toHaveLength(investorWhitelistAddresses.length);
+    for (let i = 0; i < investorWhitelistAddresses.length; i++) {
+      expect(confirmWhitelistMembers.includes(investorWhitelistAddresses[i])).toBeTruthy;
+    }
+  });
+
+  it('can create a migrated fund with this policy', async () => {
+    const {
+      accounts: [fundOwner],
+      config,
+      deployment: {
+        chainlinkPriceFeed,
+        dispatcher,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        investorWhitelist,
+        tokens: { weth: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // declare variables for policy config
+    const investorWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
+    const investorWhitelistSettings = investorWhitelistArgs({ investorsToAdd: investorWhitelistAddresses });
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [investorWhitelist.address],
+      settings: [investorWhitelistSettings],
+    });
+
+    // create new fund with policy as above
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner,
+      fundName: 'Test Fund!',
+      policyManagerConfig,
+    });
+
+    // migrate fund
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      policyManagerConfigData: policyManagerConfig,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Migration execution settles the accrued fee
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
+    });
+
+    // confirm policy exists on migrated fund
+    const confirmEnabledPolicies = await policyManager.getEnabledPoliciesForFund(nextComptrollerProxy.address);
+    expect(confirmEnabledPolicies).toHaveLength(1);
+    expect(confirmEnabledPolicies[0]).toBe(investorWhitelist.address);
+  });
 });
