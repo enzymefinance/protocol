@@ -74,9 +74,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     /// @notice Deactivates policies for a fund by destroying storage
     function deactivateForFund() external override {
         delete comptrollerProxyToVaultProxy[msg.sender];
-        for (uint256 i; i < comptrollerProxyToPolicies[msg.sender].length(); i++) {
+
+        for (uint256 i = comptrollerProxyToPolicies[msg.sender].length(); i > 0; i--) {
             comptrollerProxyToPolicies[msg.sender].remove(
-                comptrollerProxyToPolicies[msg.sender].at(i)
+                comptrollerProxyToPolicies[msg.sender].at(i - 1)
             );
         }
     }
