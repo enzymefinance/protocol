@@ -159,7 +159,7 @@ describe('activateForFund', () => {
     // set value interpreter to return an amount that exceeds the asset gav limit.
     await mockValueInterpreter.calcLiveAssetValue.returns(assetGavLimit.add(1), true);
 
-    // should fail because "incoming asset" is not the denomination asset and excees the limit
+    // should fail because "incoming asset" is not the denomination asset and exceeds the limit
     await expect(
       maxConcentration.connect(EOAPolicyManager).activateForFund(mockComptrollerProxy, mockVaultProxy),
     ).rejects.toBeRevertedWith('activateForFund: Max concentration exceeded');

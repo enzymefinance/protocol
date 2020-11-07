@@ -43,7 +43,12 @@ describe('constructor', () => {
 
     // Implements expected hooks
     const implementedHooksCall = await entranceRateDirectFee.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([FeeHook.PostBuyShares]);
+    expect(implementedHooksCall).toMatchFunctionOutput(entranceRateDirectFee.implementedHooks.fragment, {
+      implementedHooksForSettle_: [FeeHook.PostBuyShares],
+      implementedHooksForUpdate_: [],
+      usesGavOnSettle_: false,
+      usesGavOnUpdate_: false,
+    });
   });
 });
 
@@ -100,7 +105,7 @@ describe('settle', () => {
     });
 
     await expect(
-      standaloneEntranceRateFee.settle(randomAddress(), randomAddress(), FeeHook.PostBuyShares, settlementData),
+      standaloneEntranceRateFee.settle(randomAddress(), randomAddress(), FeeHook.PostBuyShares, settlementData, 0),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 });

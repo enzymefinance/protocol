@@ -13,7 +13,15 @@ interface IFee {
 
     function identifier() external pure returns (string memory);
 
-    function implementedHooks() external view returns (IFeeManager.FeeHook[] memory);
+    function implementedHooks()
+        external
+        view
+        returns (
+            IFeeManager.FeeHook[] memory,
+            IFeeManager.FeeHook[] memory,
+            bool,
+            bool
+        );
 
     function payout(address, address) external returns (bool);
 
@@ -21,7 +29,8 @@ interface IFee {
         address,
         address,
         IFeeManager.FeeHook,
-        bytes calldata
+        bytes calldata,
+        uint256
     )
         external
         returns (
@@ -29,4 +38,12 @@ interface IFee {
             address,
             uint256
         );
+
+    function update(
+        address,
+        address,
+        IFeeManager.FeeHook,
+        bytes calldata,
+        uint256
+    ) external;
 }

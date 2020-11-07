@@ -7,17 +7,12 @@ export function settlePreBuySharesArgs({
   buyer,
   investmentAmount,
   minSharesQuantity,
-  fundGav,
 }: {
   buyer: AddressLike;
   investmentAmount: BigNumberish;
   minSharesQuantity: BigNumberish;
-  fundGav: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address', 'uint256', 'uint256', 'uint256'],
-    [buyer, investmentAmount, minSharesQuantity, fundGav],
-  );
+  return encodeArgs(['address', 'uint256', 'uint256'], [buyer, investmentAmount, minSharesQuantity]);
 }
 
 export function settlePostBuySharesArgs({

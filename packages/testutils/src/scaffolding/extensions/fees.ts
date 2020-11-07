@@ -30,41 +30,58 @@ export async function generateRegisteredMockFees({
   feeManager: FeeManager;
 }) {
   // Create mock fees
-  const mockContinuousFee1 = await IFee.mock(deployer);
-  const mockContinuousFee2 = await IFee.mock(deployer);
+  const mockContinuousFeeSettleOnly = await IFee.mock(deployer);
+  const mockContinuousFeeWithGavAndUpdates = await IFee.mock(deployer);
   const mockPostBuySharesFee = await IFee.mock(deployer);
 
   // Initialize mock fee return values
   await Promise.all([
-    // Continuous fee 1
-    mockContinuousFee1.identifier.returns(`MOCK_CONTINUOUS_1`),
-    mockContinuousFee1.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
-    mockContinuousFee1.payout.returns(false),
-    mockContinuousFee1.addFundSettings.returns(undefined),
-    mockContinuousFee1.activateForFund.returns(undefined),
-    mockContinuousFee1.implementedHooks.returns([FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares]),
-    // Continuous fee 2
-    mockContinuousFee2.identifier.returns(`MOCK_CONTINUOUS_2`),
-    mockContinuousFee2.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
-    mockContinuousFee2.payout.returns(false),
-    mockContinuousFee2.addFundSettings.returns(undefined),
-    mockContinuousFee2.activateForFund.returns(undefined),
-    mockContinuousFee2.implementedHooks.returns([FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares]),
+    // Continuous fee the mimics ManagementFee
+    mockContinuousFeeSettleOnly.identifier.returns(`MOCK_CONTINUOUS_1`),
+    mockContinuousFeeSettleOnly.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
+    mockContinuousFeeSettleOnly.payout.returns(false),
+    mockContinuousFeeSettleOnly.addFundSettings.returns(undefined),
+    mockContinuousFeeSettleOnly.activateForFund.returns(undefined),
+    mockContinuousFeeSettleOnly.update.returns(undefined),
+    mockContinuousFeeSettleOnly.implementedHooks.returns(
+      [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
+      [],
+      false,
+      false,
+    ),
+    // Continuous fee the mimics PerformanceFee
+    mockContinuousFeeWithGavAndUpdates.identifier.returns(`MOCK_CONTINUOUS_2`),
+    mockContinuousFeeWithGavAndUpdates.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
+    mockContinuousFeeWithGavAndUpdates.payout.returns(false),
+    mockContinuousFeeWithGavAndUpdates.addFundSettings.returns(undefined),
+    mockContinuousFeeWithGavAndUpdates.activateForFund.returns(undefined),
+    mockContinuousFeeWithGavAndUpdates.update.returns(undefined),
+    mockContinuousFeeWithGavAndUpdates.implementedHooks.returns(
+      [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
+      [FeeHook.Continuous, FeeHook.PostBuyShares, FeeHook.PreRedeemShares],
+      true,
+      true,
+    ),
     // PostBuyShares fee
     mockPostBuySharesFee.identifier.returns(`MOCK_POST_BUY_SHARES`),
     mockPostBuySharesFee.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
     mockPostBuySharesFee.payout.returns(false),
     mockPostBuySharesFee.addFundSettings.returns(undefined),
     mockPostBuySharesFee.activateForFund.returns(undefined),
-    mockPostBuySharesFee.implementedHooks.returns([FeeHook.PostBuyShares]),
+    mockPostBuySharesFee.update.returns(undefined),
+    mockPostBuySharesFee.implementedHooks.returns([FeeHook.PostBuyShares], [], false, false),
   ]);
 
   // Register all mock fees
-  await feeManager.registerFees([mockContinuousFee1, mockContinuousFee2, mockPostBuySharesFee]);
+  await feeManager.registerFees([
+    mockContinuousFeeSettleOnly,
+    mockContinuousFeeWithGavAndUpdates,
+    mockPostBuySharesFee,
+  ]);
 
   return {
-    mockContinuousFee1,
-    mockContinuousFee2,
+    mockContinuousFeeSettleOnly,
+    mockContinuousFeeWithGavAndUpdates,
     mockPostBuySharesFee,
   };
 }

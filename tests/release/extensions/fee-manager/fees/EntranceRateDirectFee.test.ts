@@ -86,7 +86,7 @@ describe('settle', () => {
     // Check the return values via a call() to settle()
     const settleCall = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
-      .settle.args(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData)
+      .settle.args(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData, 0)
       .call();
 
     expect(settleCall).toMatchFunctionOutput(standaloneEntranceRateFee.settle, {
@@ -98,7 +98,7 @@ describe('settle', () => {
     // Send the tx to actually settle()
     const receipt = await standaloneEntranceRateFee
       .connect(EOAFeeManager)
-      .settle(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData);
+      .settle(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData, 0);
 
     // Assert the event was emitted
     assertEvent(receipt, 'Settled', {

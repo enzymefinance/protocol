@@ -322,7 +322,7 @@ describe('callOnIntegration', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const nonReceivalbleToken = new StandardToken(randomAddress(), provider);
+    const nonReceivableToken = new StandardToken(randomAddress(), provider);
     await expect(
       mockGenericSwap({
         comptrollerProxy,
@@ -332,7 +332,7 @@ describe('callOnIntegration', () => {
         mockGenericAdapter,
         spendAssets: [outgoingAsset],
         spendAssetAmounts: [utils.parseEther('1')],
-        incomingAssets: [nonReceivalbleToken],
+        incomingAssets: [nonReceivableToken],
         minIncomingAssetAmounts: [utils.parseEther('1')],
       }),
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');

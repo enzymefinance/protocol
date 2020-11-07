@@ -303,11 +303,11 @@ describe('disablePolicyForFund', () => {
     });
 
     // Assert that the policy enabled on the fund
-    const preMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+    const preMockPreBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
       comptrollerProxy,
       mockPreBuySharesPolicy,
     );
-    expect(preMockPreBuySharesPolicyisEnabled).toBe(true);
+    expect(preMockPreBuySharesPolicyIsEnabled).toBe(true);
 
     // Disable one of the fund's policies
     const receipt = await policyManager
@@ -315,11 +315,11 @@ describe('disablePolicyForFund', () => {
       .disablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy);
 
     // Assert that the policy is disabled for the fund
-    const postMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+    const postMockPreBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
       comptrollerProxy,
       mockPreBuySharesPolicy,
     );
-    expect(postMockPreBuySharesPolicyisEnabled).toBe(false);
+    expect(postMockPreBuySharesPolicyIsEnabled).toBe(false);
 
     // Assert that the proper event has been emitted
     const disablePolicyEvent = policyManager.abi.getEvent('PolicyDisabledForFund');
@@ -423,8 +423,8 @@ describe('enablePolicyForFund', () => {
     await policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
 
     // Assert that the policy has been de-registered
-    const mockPreBuySharesPolicyisRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
-    expect(mockPreBuySharesPolicyisRegistered).toBe(false);
+    const mockPreBuySharesPolicyIsRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
+    expect(mockPreBuySharesPolicyIsRegistered).toBe(false);
 
     // Attempt to enable the unregistered policy
     const enablePolicyForFundCall = policyManager
@@ -451,11 +451,11 @@ describe('enablePolicyForFund', () => {
     });
 
     // Assert that the policy disabled on the fund
-    const preMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+    const preMockPreBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
       comptrollerProxy,
       mockPreBuySharesPolicy,
     );
-    expect(preMockPreBuySharesPolicyisEnabled).toBe(false);
+    expect(preMockPreBuySharesPolicyIsEnabled).toBe(false);
 
     // Enable the mockPreBuySharesPolicy
     const policySettings = utils.randomBytes(10);
@@ -464,11 +464,11 @@ describe('enablePolicyForFund', () => {
       .enablePolicyForFund(comptrollerProxy, mockPreBuySharesPolicy, policySettings);
 
     // Assert that the policy is enabled for the fund
-    const postMockPreBuySharesPolicyisEnabled = await policyManager.policyIsEnabledForFund(
+    const postMockPreBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
       comptrollerProxy,
       mockPreBuySharesPolicy,
     );
-    expect(postMockPreBuySharesPolicyisEnabled).toBe(true);
+    expect(postMockPreBuySharesPolicyIsEnabled).toBe(true);
 
     // Assert that the proper event has been emitted
     const enablePolicyEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
@@ -538,7 +538,7 @@ describe('setConfigForFund', () => {
       policies: { mockPreBuySharesPolicy },
     } = await provider.snapshot(snapshot);
 
-    // Create config for mockpreBuySharesPolicy
+    // Create config for mockPreBuySharesPolicy
     const policies = [mockPreBuySharesPolicy];
     const policiesSettings = [utils.randomBytes(10)];
     const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
@@ -575,7 +575,7 @@ describe('setConfigForFund', () => {
     // De-register mockPreBuySharesPolicy
     await policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
 
-    // Create config for mockpreBuySharesPolicy
+    // Create config for mockPreBuySharesPolicy
     const policies = [mockPreBuySharesPolicy];
     const policiesSettings = [utils.randomBytes(10)];
     const newPolicyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
@@ -642,7 +642,7 @@ describe('setConfigForFund', () => {
       denominationAsset,
     } = await provider.snapshot(snapshot);
 
-    // Create config with empty settings for mockpreBuySharesPolicy
+    // Create config with empty settings for mockPreBuySharesPolicy
     const policies = [mockPreBuySharesPolicy];
     const policiesSettings = ['0x'];
     const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
@@ -715,7 +715,7 @@ describe('updatePolicySettingsForFund', () => {
       policyManagerConfig,
     });
 
-    // Attempt to update a non-buyshares hook
+    // Attempt to update a non-buyShares hook
     const updatePolicyCall = policyManager
       .connect(fundOwner)
       .updatePolicySettingsForFund(comptrollerProxy, mockPostCoIPolicy, utils.randomBytes(10));
@@ -811,7 +811,6 @@ describe('validatePolicies', () => {
       investmentAmount,
     });
 
-    // Assert validateRule called on correct policies
     const preRuleArgs = validateRulePreBuySharesArgs({
       buyer,
       investmentAmount,
@@ -826,15 +825,17 @@ describe('validatePolicies', () => {
       preRuleArgs,
     );
 
+    const postRuleArgs = validateRulePostBuySharesArgs({
+      buyer,
+      investmentAmount,
+      sharesBought: investmentAmount,
+      fundGav: investmentAmount,
+    });
     expect(mockPostBuySharesPolicy.validateRule).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       vaultProxy,
       PolicyHook.PostBuyShares,
-      validateRulePostBuySharesArgs({
-        investmentAmount,
-        sharesBought: investmentAmount,
-        buyer,
-      }),
+      postRuleArgs,
     );
 
     // Assert validateRule not called on other policies
@@ -992,8 +993,8 @@ describe('policy registry', () => {
       await policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
 
       // Confirm that mockPreBuySharesPolicy is deregistered
-      const ismockPreBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
-      expect(ismockPreBuySharesPolicyRegistered).toBe(false);
+      const isMockPreBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
+      expect(isMockPreBuySharesPolicyRegistered).toBe(false);
 
       // Attempt to de-register mockPreBuySharesPolicy again
       const deregisterPoliciesCall = policyManager.deregisterPolicies([mockPreBuySharesPolicy]);
@@ -1017,7 +1018,7 @@ describe('policy registry', () => {
       expect(events.length).toBe(policies.length);
 
       for (let i = 0; i < policies.length; i++) {
-        // Make sure that each event contains the corresponding policy addres
+        // Make sure that each event contains the corresponding policy address
         expect(events[i].args[0]).toBe(policies[i].address);
       }
     });
@@ -1054,11 +1055,11 @@ describe('policy registry', () => {
         deployment: { policyManager },
       } = await provider.snapshot(snapshot);
 
-      // Confirm that mockContinuousFee1 is already registered
-      const ismockPreBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
-      expect(ismockPreBuySharesPolicyRegistered).toBe(true);
+      // Confirm that mockPreBuySharesPolicy is already registered
+      const isMockPreBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPreBuySharesPolicy);
+      expect(isMockPreBuySharesPolicyRegistered).toBe(true);
 
-      // Attempt to re-register mockContinuousFee1
+      // Attempt to re-register mockPreBuySharesPolicy
       const registerPoliciesCall = policyManager.registerPolicies([mockPreBuySharesPolicy]);
       await expect(registerPoliciesCall).rejects.toBeRevertedWith('policy already registered');
     });

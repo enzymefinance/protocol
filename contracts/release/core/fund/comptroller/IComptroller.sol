@@ -8,6 +8,8 @@ import "./libs/IPermissionedVaultActionLib.sol";
 interface IComptroller {
     function activate(address, bool) external;
 
+    function calcGav() external returns (uint256, bool);
+
     function calcGrossShareValue() external returns (uint256, bool);
 
     function callOnExtension(

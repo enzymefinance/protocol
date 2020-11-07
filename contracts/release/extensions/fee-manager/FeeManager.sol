@@ -27,6 +27,12 @@ contract FeeManager is
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
 
+    event AllSharesOutstandingForcePaidForFund(
+        address indexed comptrollerProxy,
+        address payee,
+        uint256 sharesDue
+    );
+
     event FeeDeregistered(address indexed fee, string indexed identifier);
 
     event FeeEnabledForFund(
@@ -38,7 +44,10 @@ contract FeeManager is
     event FeeRegistered(
         address indexed fee,
         string indexed identifier,
-        FeeHook[] implementedHooks
+        FeeHook[] implementedHooksForSettle,
+        FeeHook[] implementedHooksForUpdate,
+        bool usesGavOnSettle,
+        bool usesGavOnUpdate
     );
 
     event FeeSettledForFund(
@@ -46,12 +55,6 @@ contract FeeManager is
         address indexed fee,
         SettlementType indexed settlementType,
         address payer,
-        address payee,
-        uint256 sharesDue
-    );
-
-    event AllSharesOutstandingForcePaidForFund(
-        address indexed comptrollerProxy,
         address payee,
         uint256 sharesDue
     );
@@ -70,7 +73,11 @@ contract FeeManager is
     );
 
     EnumerableSet.AddressSet private registeredFees;
-    mapping(address => mapping(FeeHook => bool)) private feeToHookToIsImplemented;
+    mapping(address => bool) private feeToUsesGavOnSettle;
+    mapping(address => bool) private feeToUsesGavOnUpdate;
+    mapping(address => mapping(FeeHook => bool)) private feeToHookToImplementsSettle;
+    mapping(address => mapping(FeeHook => bool)) private feeToHookToImplementsUpdate;
+
     mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => mapping(address => uint256))
         private comptrollerProxyToFeeToSharesOutstanding;
@@ -90,11 +97,10 @@ contract FeeManager is
     }
 
     /// @notice Deactivate fees for a fund
-    /// @dev msg.sender is validated during __settleFeesForHook()
-    /// If we add a SellShares fee hook, this will need to be refactored to not delete those fees.
+    /// @dev msg.sender is validated during __invokeHook()
     function deactivateForFund() external override {
-        // Settle continuous fees one last time
-        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
+        // Settle continuous fees one last time, but without calling Fee.update()
+        __invokeHook(msg.sender, IFeeManager.FeeHook.Continuous, "", 0, false);
 
         // Force payout of remaining shares outstanding
         __forcePayoutAllSharesOutstanding(msg.sender);
@@ -103,17 +109,20 @@ contract FeeManager is
         __deleteFundStorage(msg.sender);
     }
 
-    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy.
-    /// This is the only way for a fund owner to directly call a function in this contract.
+    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
     /// @param _actionId An ID representing the desired action
+    /// @param _callArgs Encoded arguments specific to the _actionId
+    /// @dev This is the only way to call a function on this contract that updates VaultProxy state.
+    /// For both of these actions, any caller is allowed, so we don't use the caller param.
     function receiveCallFromComptroller(
         address,
         uint256 _actionId,
-        bytes calldata
+        bytes calldata _callArgs
     ) external override {
-        // Dispatch the action
         if (_actionId == 0) {
-            __settleContinuousFees();
+            __invokeContinuousHook(msg.sender);
+        } else if (_actionId == 1) {
+            __payoutSharesOutstandingForFee(msg.sender, abi.decode(_callArgs, (address)));
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
@@ -123,8 +132,8 @@ contract FeeManager is
     /// @param _configData Encoded config data
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     /// The order of `fees` determines the order in which fees of the same FeeHook will be applied.
-    /// The recommended order for the currently implemented fees is:
-    /// 1. management fee, 2. performance fee, 3. entrance rate fees
+    /// It is recommended to run ManagementFee before PerformanceFee in order to achieve precise
+    /// PerformanceFee calcs.
     function setConfigForFund(bytes calldata _configData) external override {
         (address[] memory fees, bytes[] memory settingsData) = abi.decode(
             _configData,
@@ -152,12 +161,16 @@ contract FeeManager is
         }
     }
 
-    /// @notice Settles all fees for a particular FeeHook, paying out shares wherever possible.
-    /// @param _hook The FeeHook for which to settle fees
+    /// @notice Allows all fees for a particular FeeHook to implement settle() and update() logic
+    /// @param _hook The FeeHook to invoke
     /// @param _settlementData The encoded settlement parameters specific to the FeeHook
-    /// @dev msg.sender is validated during __settleFeesForHook()
-    function settleFees(FeeHook _hook, bytes calldata _settlementData) external override {
-        __settleFeesForHook(msg.sender, _hook, _settlementData);
+    /// @param _gav The GAV for a fund if known in the invocating code, otherwise 0
+    function invokeHook(
+        FeeHook _hook,
+        bytes calldata _settlementData,
+        uint256 _gav
+    ) external override {
+        __invokeHook(msg.sender, _hook, _settlementData, _gav, true);
     }
 
     // PRIVATE FUNCTIONS
@@ -175,7 +188,7 @@ contract FeeManager is
     /// and are otherwise unrecoverable. We can therefore take the VaultProxy's
     /// shares balance as the totalSharesOutstanding to payout to the fund owner.
     function __forcePayoutAllSharesOutstanding(address _comptrollerProxy) private {
-        address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
+        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
 
         uint256 totalSharesOutstanding = ERC20(vaultProxy).balanceOf(vaultProxy);
         if (totalSharesOutstanding == 0) {
@@ -199,14 +212,98 @@ contract FeeManager is
         );
     }
 
+    /// @dev Calls settle() and update() on all fees that implement the `Continuous` fee hook
+    /// Anyone can call this function, but must do so via ComptrollerProxy.callOnExtension().
+    /// Useful in case there is little investment/redemption activity (fees are automatically
+    /// settled on investment/redemption).
+    function __invokeContinuousHook(address _comptrollerProxy) private {
+        __invokeHook(_comptrollerProxy, IFeeManager.FeeHook.Continuous, "", 0, true);
+    }
+
+    /// @dev Helper to run settle() on all fees that implement a given hook, and then to optionally
+    /// run update() on the same fees. This order allows fees an opportunity to update their local
+    /// state after all VaultProxy state transitions (i.e., minting, burning, transferring shares)
+    /// have finished. To optimize for the expensive operation of calculating GAV,
+    /// once one fee requires GAV, we recycle that `gav` value for subsequent fees.
+    /// Assumes that _gav is either 0 or has already been validated.
+    function __invokeHook(
+        address _comptrollerProxy,
+        FeeHook _hook,
+        bytes memory _settlementData,
+        uint256 _gav,
+        bool _updateFees
+    ) private {
+        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
+        if (fees.length == 0) {
+            return;
+        }
+
+        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
+
+        // This check isn't strictly necessary, but its cost is insignificant,
+        // and helps to preserve data integrity.
+        require(vaultProxy != address(0), "__invokeHook: Fund is not active");
+
+        // Reassign _gav input to actualGav
+        uint256 actualGav = _gav;
+
+        // First, allow all fees to implement settle()
+        for (uint256 i; i < fees.length; i++) {
+            if (!feeSettlesOnHook(fees[i], _hook)) {
+                continue;
+            }
+
+            // Get the canonical value of GAV if not yet set and required by fee
+            if (actualGav == 0 && feeUsesGavOnSettle(fees[i])) {
+                bool gavIsValid;
+                (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav();
+
+                // Assumes that any fee that requires GAV would need to revert
+                require(gavIsValid, "__invokeHook: Invalid GAV");
+            }
+
+            __settleFee(_comptrollerProxy, vaultProxy, fees[i], _hook, _settlementData, actualGav);
+        }
+
+        // Second, allow fees to implement update()
+        // This function does not allow any further altering of VaultProxy state
+        // (i.e., burning, minting, or transferring shares)
+        if (_updateFees) {
+            for (uint256 i; i < fees.length; i++) {
+                if (!feeUpdatesOnHook(fees[i], _hook)) {
+                    continue;
+                }
+
+                // Get the canonical value of GAV if not yet set and required by fee
+                if (actualGav == 0 && feeUsesGavOnUpdate(fees[i])) {
+                    bool gavIsValid;
+                    (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav();
+
+                    // Assumes that any fee that requires GAV would need to revert
+                    require(gavIsValid, "__invokeHook: Invalid GAV");
+                }
+
+                IFee(fees[i]).update(
+                    _comptrollerProxy,
+                    vaultProxy,
+                    _hook,
+                    _settlementData,
+                    actualGav
+                );
+            }
+        }
+    }
+
     /// @dev Helper to payout the shares outstanding for a given fee.
     /// Should be called after settlement has occurred.
-    function __payoutSharesOutstandingForFee(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        address _fee
-    ) private {
-        if (!IFee(_fee).payout(_comptrollerProxy, _vaultProxy)) {
+    function __payoutSharesOutstandingForFee(address _comptrollerProxy, address _fee) private {
+        address vaultProxy = getVaultProxyForFund(msg.sender);
+
+        // This check isn't strictly necessary, but its cost is insignificant,
+        // and helps to preserve data integrity.
+        require(vaultProxy != address(0), "__payoutSharesOutstandingForFee: Fund is not active");
+
+        if (!IFee(_fee).payout(_comptrollerProxy, vaultProxy)) {
             return;
         }
 
@@ -219,20 +316,10 @@ contract FeeManager is
 
         // Delete shares outstanding and distribute from VaultProxy to the fees recipient
         comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = 0;
-        address payee = IVault(_vaultProxy).getOwner();
-        __transferShares(_comptrollerProxy, _vaultProxy, payee, sharesOutstanding);
+        address payee = IVault(vaultProxy).getOwner();
+        __transferShares(_comptrollerProxy, vaultProxy, payee, sharesOutstanding);
 
         emit SharesOutstandingPaidForFund(_comptrollerProxy, _fee, payee, sharesOutstanding);
-    }
-
-    /// @dev Settles all "continuous" fees (e.g., ManagementFee and PerformanceFee),
-    /// paying out shares whenever possible.
-    /// Anyone can call this function, but must do so via the ComptrollerProxy.
-    /// Useful in case there is little investment/redemption activity (fees are automatically
-    /// settled on investment/redemption).
-    /// @dev msg.sender is validated during __settleFeesForHook()
-    function __settleContinuousFees() private {
-        __settleFeesForHook(msg.sender, IFeeManager.FeeHook.Continuous, "");
     }
 
     /// @dev Helper to settle a fee
@@ -241,13 +328,15 @@ contract FeeManager is
         address _vaultProxy,
         address _fee,
         FeeHook _hook,
-        bytes memory _settlementData
+        bytes memory _settlementData,
+        uint256 _gav
     ) private {
         (SettlementType settlementType, address payer, uint256 sharesDue) = IFee(_fee).settle(
             _comptrollerProxy,
             _vaultProxy,
             _hook,
-            _settlementData
+            _settlementData,
+            _gav
         );
         if (settlementType == SettlementType.None) {
             return;
@@ -292,32 +381,6 @@ contract FeeManager is
         emit FeeSettledForFund(_comptrollerProxy, _fee, settlementType, payer, payee, sharesDue);
     }
 
-    /// @dev Helper to settle and then payout shares outstanding for a each fee of a given FeeHook
-    function __settleFeesForHook(
-        address _comptrollerProxy,
-        FeeHook _hook,
-        bytes memory _settlementData
-    ) private {
-        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
-        // activateForFund(), this function does not require further validation of the
-        // sending ComptrollerProxy.
-        // This check isn't strictly necessary, but it doesn't hurt,
-        // and helps to preserve data integrity.
-        address vaultProxy = comptrollerProxyToVaultProxy[_comptrollerProxy];
-        require(vaultProxy != address(0), "__settleFeesForHook: Fund is not active");
-
-        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
-        for (uint256 i; i < fees.length; i++) {
-            if (!feeImplementsHook(fees[i], _hook)) {
-                continue;
-            }
-
-            __settleFee(_comptrollerProxy, vaultProxy, fees[i], _hook, _settlementData);
-
-            __payoutSharesOutstandingForFee(_comptrollerProxy, vaultProxy, fees[i]);
-        }
-    }
-
     /// @dev Helper to validate that the total supply of shares for a fund is not 0
     function __validateNonZeroSharesSupply(address _vaultProxy) private view {
         require(
@@ -346,6 +409,9 @@ contract FeeManager is
 
     /// @notice Add fees to the list of registered fees
     /// @param _fees Addresses of fees to be registered
+    /// @dev Stores the hooks that a fee implements and whether each implementation uses GAV,
+    /// which fronts the gas for calls to check if a hook is implemented, and guarantees
+    /// that these hook implementation return values do not change post-registration.
     function registerFees(address[] calldata _fees) external onlyFundDeployerOwner {
         require(_fees.length > 0, "registerFees: _fees cannot be empty");
 
@@ -354,16 +420,38 @@ contract FeeManager is
 
             registeredFees.add(_fees[i]);
 
-            // Store the hooks that a fee implements for later use.
-            // Fronts the gas for calls to check if a hook is implemented, and guarantees
-            // that the implementsHooks return value does not change post-registration.
             IFee feeContract = IFee(_fees[i]);
-            FeeHook[] memory implementedHooks = feeContract.implementedHooks();
-            for (uint256 j; j < implementedHooks.length; j++) {
-                feeToHookToIsImplemented[_fees[i]][implementedHooks[j]] = true;
+            (
+                FeeHook[] memory implementedHooksForSettle,
+                FeeHook[] memory implementedHooksForUpdate,
+                bool usesGavOnSettle,
+                bool usesGavOnUpdate
+            ) = feeContract.implementedHooks();
+
+            // Stores the hooks for which each fee implements settle() and update()
+            for (uint256 j; j < implementedHooksForSettle.length; j++) {
+                feeToHookToImplementsSettle[_fees[i]][implementedHooksForSettle[j]] = true;
+            }
+            for (uint256 j; j < implementedHooksForUpdate.length; j++) {
+                feeToHookToImplementsUpdate[_fees[i]][implementedHooksForUpdate[j]] = true;
             }
 
-            emit FeeRegistered(_fees[i], feeContract.identifier(), implementedHooks);
+            // Stores whether each fee requires GAV during its implementations for settle() and update()
+            if (usesGavOnSettle) {
+                feeToUsesGavOnSettle[_fees[i]] = true;
+            }
+            if (usesGavOnUpdate) {
+                feeToUsesGavOnUpdate[_fees[i]] = true;
+            }
+
+            emit FeeRegistered(
+                _fees[i],
+                feeContract.identifier(),
+                implementedHooksForSettle,
+                implementedHooksForUpdate,
+                usesGavOnSettle,
+                usesGavOnUpdate
+            );
         }
     }
 
@@ -405,16 +493,42 @@ contract FeeManager is
         return registeredFees_;
     }
 
-    /// @notice Checks if a fee implements a particular hook
-    /// @param _policy The address of the fee to check
+    /// @notice Checks if a fee implements settle() on a particular hook
+    /// @param _fee The address of the fee to check
     /// @param _hook The FeeHook to check
-    /// @return implementsHook_ True if the fee implements the hook
-    function feeImplementsHook(address _policy, FeeHook _hook)
+    /// @return settlesOnHook_ True if the fee settles on the given hook
+    function feeSettlesOnHook(address _fee, FeeHook _hook)
         public
         view
-        returns (bool implementsHook_)
+        returns (bool settlesOnHook_)
     {
-        return feeToHookToIsImplemented[_policy][_hook];
+        return feeToHookToImplementsSettle[_fee][_hook];
+    }
+
+    /// @notice Checks if a fee implements update() on a particular hook
+    /// @param _fee The address of the fee to check
+    /// @param _hook The FeeHook to check
+    /// @return updatesOnHook_ True if the fee updates on the given hook
+    function feeUpdatesOnHook(address _fee, FeeHook _hook)
+        public
+        view
+        returns (bool updatesOnHook_)
+    {
+        return feeToHookToImplementsUpdate[_fee][_hook];
+    }
+
+    /// @notice Checks if a fee uses GAV in its settle() implementation
+    /// @param _fee The address of the fee to check
+    /// @return usesGav_ True if the fee uses GAV during settle() implementation
+    function feeUsesGavOnSettle(address _fee) public view returns (bool usesGav_) {
+        return feeToUsesGavOnSettle[_fee];
+    }
+
+    /// @notice Checks if a fee uses GAV in its update() implementation
+    /// @param _fee The address of the fee to check
+    /// @return usesGav_ True if the fee uses GAV during update() implementation
+    function feeUsesGavOnUpdate(address _fee) public view returns (bool usesGav_) {
+        return feeToUsesGavOnUpdate[_fee];
     }
 
     /// @notice Check whether a fee is registered

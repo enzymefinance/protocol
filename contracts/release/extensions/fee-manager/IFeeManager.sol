@@ -10,5 +10,9 @@ interface IFeeManager {
     enum FeeHook {Continuous, PreBuyShares, PostBuyShares, PreRedeemShares}
     enum SettlementType {None, Direct, Mint, Burn, MintSharesOutstanding, BurnSharesOutstanding}
 
-    function settleFees(FeeHook, bytes calldata) external;
+    function invokeHook(
+        FeeHook,
+        bytes calldata,
+        uint256
+    ) external;
 }

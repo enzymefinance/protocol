@@ -180,7 +180,7 @@ describe('integration tests', () => {
 
     // declare variables for policy config
     const adapterWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
-    const nonWhitelistedAdaper = randomAddress();
+    const nonWhitelistedAdapter = randomAddress();
     const adapterWhitelistSettings = adapterWhitelistArgs(adapterWhitelistAddresses);
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [adapterWhitelist.address],
@@ -199,7 +199,7 @@ describe('integration tests', () => {
 
     // confirm a non-whitelisted adapter is not allowed
     const failingPreCoIArgs = validateRulePreCoIArgs({
-      adapter: nonWhitelistedAdaper,
+      adapter: nonWhitelistedAdapter,
       selector: utils.randomBytes(4),
     });
 

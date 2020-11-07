@@ -162,7 +162,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       ...buySharesArgs,
     });
 
-    expect(buySharesTx).toCostLessThan(310000);
+    expect(buySharesTx).toCostLessThan(340000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');

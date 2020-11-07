@@ -20,16 +20,21 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate, uint256 period);
 
+    event LastSharePriceUpdated(
+        address indexed comptrollerProxy,
+        uint256 prevSharePrice,
+        uint256 nextSharePrice
+    );
+
     event PaidOut(
         address indexed comptrollerProxy,
         uint256 prevHighWaterMark,
-        uint256 nextHighWaterMark
+        uint256 nextHighWaterMark,
+        uint256 aggregateValueDue
     );
 
     event PerformanceUpdated(
         address indexed comptrollerProxy,
-        uint256 prevSharePrice,
-        uint256 nextSharePrice,
         uint256 prevAggregateValueDue,
         uint256 nextAggregateValueDue,
         int256 sharesOutstandingDiff
@@ -102,20 +107,34 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         return "PERFORMANCE";
     }
 
-    /// @notice Gets the implemented FeeHooks for a fee
-    /// @return implementedHooks_ The implemented FeeHooks
+    /// @notice Gets the hooks that are implemented by the fee
+    /// @return implementedHooksForSettle_ The hooks during which settle() is implemented
+    /// @return implementedHooksForUpdate_ The hooks during which update() is implemented
+    /// @return usesGavOnSettle_ True if GAV is used during the settle() implementation
+    /// @return usesGavOnUpdate_ True if GAV is used during the update() implementation
+    /// @dev Used only during fee registration
     function implementedHooks()
         external
         view
         override
-        returns (IFeeManager.FeeHook[] memory implementedHooks_)
+        returns (
+            IFeeManager.FeeHook[] memory implementedHooksForSettle_,
+            IFeeManager.FeeHook[] memory implementedHooksForUpdate_,
+            bool usesGavOnSettle_,
+            bool usesGavOnUpdate_
+        )
     {
-        implementedHooks_ = new IFeeManager.FeeHook[](3);
-        implementedHooks_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooks_[1] = IFeeManager.FeeHook.PreBuyShares;
-        implementedHooks_[2] = IFeeManager.FeeHook.PreRedeemShares;
+        implementedHooksForSettle_ = new IFeeManager.FeeHook[](3);
+        implementedHooksForSettle_[0] = IFeeManager.FeeHook.Continuous;
+        implementedHooksForSettle_[1] = IFeeManager.FeeHook.PreBuyShares;
+        implementedHooksForSettle_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
-        return implementedHooks_;
+        implementedHooksForUpdate_ = new IFeeManager.FeeHook[](3);
+        implementedHooksForUpdate_[0] = IFeeManager.FeeHook.Continuous;
+        implementedHooksForUpdate_[1] = IFeeManager.FeeHook.PostBuyShares;
+        implementedHooksForUpdate_[2] = IFeeManager.FeeHook.PreRedeemShares;
+
+        return (implementedHooksForSettle_, implementedHooksForUpdate_, true, true);
     }
 
     /// @notice Checks whether the shares outstanding for the fee can be paid out, and updates
@@ -137,15 +156,22 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
         uint256 prevHighWaterMark = feeInfo.highWaterMark;
         uint256 nextHighWaterMark = __calcUint256Max(feeInfo.lastSharePrice, prevHighWaterMark);
+        uint256 prevAggregateValueDue = feeInfo.aggregateValueDue;
 
-        emit PaidOut(_comptrollerProxy, prevHighWaterMark, nextHighWaterMark);
-
-        // Return early if HWM did not increase
-        if (nextHighWaterMark == prevHighWaterMark) {
-            return false;
+        // Update state as necessary
+        if (prevAggregateValueDue > 0) {
+            feeInfo.aggregateValueDue = 0;
+        }
+        if (nextHighWaterMark > prevHighWaterMark) {
+            feeInfo.highWaterMark = nextHighWaterMark;
         }
 
-        feeInfo.highWaterMark = nextHighWaterMark;
+        emit PaidOut(
+            _comptrollerProxy,
+            prevHighWaterMark,
+            nextHighWaterMark,
+            prevAggregateValueDue
+        );
 
         return true;
     }
@@ -153,16 +179,16 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// @notice Settles the fee and calculates shares due
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _vaultProxy The VaultProxy of the fund
-    /// @param _hook The FeeHook being executed
-    /// @param _settlementData Encoded args to use in calculating the settlement
+    /// @param _gav The GAV of the fund
     /// @return settlementType_ The type of settlement
     /// @return (unused) The payer of shares due
     /// @return sharesDue_ The amount of shares due
     function settle(
         address _comptrollerProxy,
         address _vaultProxy,
-        IFeeManager.FeeHook _hook,
-        bytes calldata _settlementData
+        IFeeManager.FeeHook,
+        bytes calldata,
+        uint256 _gav
     )
         external
         override
@@ -173,11 +199,14 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
             uint256 sharesDue_
         )
     {
+        if (_gav == 0) {
+            return (IFeeManager.SettlementType.None, address(0), 0);
+        }
+
         int256 settlementSharesDue = __settleAndUpdatePerformance(
             _comptrollerProxy,
             _vaultProxy,
-            _hook,
-            _settlementData
+            _gav
         );
         if (settlementSharesDue == 0) {
             return (IFeeManager.SettlementType.None, address(0), 0);
@@ -196,6 +225,37 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
                 uint256(-settlementSharesDue)
             );
         }
+    }
+
+    /// @notice Updates the fee state after all fees have finished settle()
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
+    /// @param _hook The FeeHook being executed
+    /// @param _settlementData Encoded args to use in calculating the settlement
+    /// @param _gav The GAV of the fund
+    function update(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        IFeeManager.FeeHook _hook,
+        bytes calldata _settlementData,
+        uint256 _gav
+    ) external override onlyFeeManager {
+        uint256 prevSharePrice = comptrollerProxyToFeeInfo[_comptrollerProxy].lastSharePrice;
+        uint256 nextSharePrice = __calcNextSharePrice(
+            _comptrollerProxy,
+            _vaultProxy,
+            _hook,
+            _settlementData,
+            _gav
+        );
+
+        if (nextSharePrice == prevSharePrice) {
+            return;
+        }
+
+        comptrollerProxyToFeeInfo[_comptrollerProxy].lastSharePrice = nextSharePrice;
+
+        emit LastSharePriceUpdated(_comptrollerProxy, prevSharePrice, nextSharePrice);
     }
 
     // PUBLIC FUNCTIONS
@@ -226,6 +286,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     /// @dev Helper to calculate the aggregated value accumulated to a fund since the last
     /// settlement (happening at investment/redemption)
+    /// Validated:
+    /// _netSharesSupply > 0
+    /// _sharePriceWithoutPerformance != _prevSharePrice
     function __calcAggregateValueDue(
         uint256 _netSharesSupply,
         uint256 _sharePriceWithoutPerformance,
@@ -263,86 +326,86 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
     /// @dev Helper to calculate the next `lastSharePrice` value
     function __calcNextSharePrice(
-        ComptrollerLib _comptrollerProxyContract,
+        address _comptrollerProxy,
+        address _vaultProxy,
         IFeeManager.FeeHook _hook,
         bytes memory _settlementData,
-        uint256 _totalSharesSupply,
-        int256 _sharesDue,
-        uint256 _netSharesSupply,
         uint256 _gav
     ) private view returns (uint256 nextSharePrice_) {
-        uint256 sharesSupplyWithSharesDue = uint256(int256(_totalSharesSupply).add(_sharesDue));
         uint256 denominationAssetUnit = 10 **
-            uint256(ERC20(_comptrollerProxyContract.getDenominationAsset()).decimals());
+            uint256(ERC20(ComptrollerLib(_comptrollerProxy).getDenominationAsset()).decimals());
+        if (_gav == 0) {
+            return denominationAssetUnit;
+        }
 
-        uint256 nextNetSharesSupply;
-        uint256 nextGav;
-        if (_hook == IFeeManager.FeeHook.PreBuyShares) {
-            (, uint256 gavIncrease, , ) = __decodePreBuySharesSettlementData(_settlementData);
-            nextGav = _gav.add(gavIncrease);
+        // Get shares outstanding from FeeManager and calc shares supply to get net shares supply
+        uint256 totalSharesSupply = ERC20(_vaultProxy).totalSupply();
+        uint256 nextNetSharesSupply = totalSharesSupply.sub(
+            FeeManager(FEE_MANAGER).getFeeSharesOutstandingForFund(
+                _comptrollerProxy,
+                address(this)
+            )
+        );
+        if (nextNetSharesSupply == 0) {
+            return denominationAssetUnit;
+        }
 
-            uint256 sharesIncrease = gavIncrease
-                .mul(denominationAssetUnit)
-                .mul(sharesSupplyWithSharesDue)
-                .div(_gav)
-                .div(SHARE_UNIT);
-            nextNetSharesSupply = _netSharesSupply.add(sharesIncrease);
-        } else {
-            // If not PreBuyShares, must be PreRedeemShares because Continuous is checked in the
-            // calling function
+        uint256 nextGav = _gav;
+
+        // For both Continuous and PostBuyShares hooks, _gav and shares supply will not change,
+        // we only need additional calculations for PreRedeemShares
+        if (_hook == IFeeManager.FeeHook.PreRedeemShares) {
             (, uint256 sharesDecrease) = __decodePreRedeemSharesSettlementData(_settlementData);
-            nextNetSharesSupply = _netSharesSupply.sub(sharesDecrease);
 
+            // Shares have not yet been burned
+            nextNetSharesSupply = nextNetSharesSupply.sub(sharesDecrease);
+            if (nextNetSharesSupply == 0) {
+                return denominationAssetUnit;
+            }
+
+            // Assets have not yet been withdrawn
             uint256 gavDecrease = sharesDecrease
                 .mul(_gav)
                 .mul(SHARE_UNIT)
-                .div(sharesSupplyWithSharesDue)
+                .div(totalSharesSupply)
                 .div(denominationAssetUnit);
-            nextGav = _gav.sub(gavDecrease);
+
+            nextGav = nextGav.sub(gavDecrease);
+            if (nextGav == 0) {
+                return denominationAssetUnit;
+            }
         }
 
         return nextGav.mul(SHARE_UNIT).div(nextNetSharesSupply);
     }
 
-    /// @dev Helper to calculate the performance metrics for a fund
+    /// @dev Helper to calculate the performance metrics for a fund.
+    /// Validated:
+    /// _totalSharesSupply > 0
+    /// _gav > 0
+    /// _totalSharesSupply != _sharesOutstanding
     function __calcPerformance(
-        ComptrollerLib _comptrollerProxyContract,
-        IFeeManager.FeeHook _hook,
-        bytes memory _settlementData,
         uint256 _totalSharesSupply,
         uint256 _sharesOutstanding,
         uint256 _prevAggregateValueDue,
-        uint256 _prevSharePrice,
-        FeeInfo memory feeInfo
-    )
-        private
-        returns (
-            uint256 nextAggregateValueDue_,
-            uint256 nextSharePrice_,
-            int256 sharesDue_
-        )
-    {
-        // Use the 'shares supply net shares outstanding' for performance calcs
+        FeeInfo memory feeInfo,
+        uint256 _gav
+    ) private pure returns (uint256 nextAggregateValueDue_, int256 sharesDue_) {
+        // Use the 'shares supply net shares outstanding' for performance calcs.
+        // Cannot be 0, as _totalSharesSupply != _sharesOutstanding
         uint256 netSharesSupply = _totalSharesSupply.sub(_sharesOutstanding);
-        uint256 gav;
-        if (_hook == IFeeManager.FeeHook.PreBuyShares) {
-            (, , , gav) = __decodePreBuySharesSettlementData(_settlementData);
-        } else {
-            bool gavIsValid;
-            (gav, gavIsValid) = _comptrollerProxyContract.calcGav();
-            require(gavIsValid, "__calcPerformance: Invalid GAV");
-        }
-        uint256 sharePriceWithoutPerformance = gav.mul(SHARE_UNIT).div(netSharesSupply);
+        uint256 sharePriceWithoutPerformance = _gav.mul(SHARE_UNIT).div(netSharesSupply);
 
         // If gross share price has not changed, can exit early
-        if (sharePriceWithoutPerformance == _prevSharePrice) {
-            return (_prevAggregateValueDue, _prevSharePrice, 0);
+        uint256 prevSharePrice = feeInfo.lastSharePrice;
+        if (sharePriceWithoutPerformance == prevSharePrice) {
+            return (_prevAggregateValueDue, 0);
         }
 
         nextAggregateValueDue_ = __calcAggregateValueDue(
             netSharesSupply,
             sharePriceWithoutPerformance,
-            _prevSharePrice,
+            prevSharePrice,
             _prevAggregateValueDue,
             feeInfo.rate,
             feeInfo.highWaterMark
@@ -350,29 +413,18 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
         sharesDue_ = __calcSharesDue(
             netSharesSupply,
-            gav,
+            _gav,
             _sharesOutstanding,
             nextAggregateValueDue_
         );
 
-        if (_hook == IFeeManager.FeeHook.Continuous) {
-            nextSharePrice_ = sharePriceWithoutPerformance;
-        } else {
-            nextSharePrice_ = __calcNextSharePrice(
-                _comptrollerProxyContract,
-                _hook,
-                _settlementData,
-                _totalSharesSupply,
-                sharesDue_,
-                netSharesSupply,
-                gav
-            );
-        }
-
-        return (nextAggregateValueDue_, nextSharePrice_, sharesDue_);
+        return (nextAggregateValueDue_, sharesDue_);
     }
 
-    /// @dev Helper to calculate sharesDue during settlement
+    /// @dev Helper to calculate sharesDue during settlement.
+    /// Validated:
+    /// _netSharesSupply > 0
+    /// _gav > 0
     function __calcSharesDue(
         uint256 _netSharesSupply,
         uint256 _gav,
@@ -396,15 +448,14 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         return _b;
     }
 
-    /// @dev Helper to settle the fee and update performance state
+    /// @dev Helper to settle the fee and update performance state.
+    /// Validated:
+    /// _gav > 0
     function __settleAndUpdatePerformance(
         address _comptrollerProxy,
         address _vaultProxy,
-        IFeeManager.FeeHook _hook,
-        bytes memory _settlementData
+        uint256 _gav
     ) private returns (int256 sharesDue_) {
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-
         uint256 totalSharesSupply = ERC20(_vaultProxy).totalSupply();
         if (totalSharesSupply == 0) {
             return 0;
@@ -420,34 +471,24 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
         FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
         uint256 prevAggregateValueDue = feeInfo.aggregateValueDue;
-        uint256 prevSharePrice = feeInfo.lastSharePrice;
 
         uint256 nextAggregateValueDue;
-        uint256 nextSharePrice;
-        (nextAggregateValueDue, nextSharePrice, sharesDue_) = __calcPerformance(
-            comptrollerProxyContract,
-            _hook,
-            _settlementData,
+        (nextAggregateValueDue, sharesDue_) = __calcPerformance(
             totalSharesSupply,
             sharesOutstanding,
             prevAggregateValueDue,
-            prevSharePrice,
-            feeInfo
+            feeInfo,
+            _gav
         );
-        if (prevAggregateValueDue == nextAggregateValueDue) {
+        if (nextAggregateValueDue == prevAggregateValueDue) {
             return 0;
         }
 
         // Update fee state
         feeInfo.aggregateValueDue = nextAggregateValueDue;
-        if (prevSharePrice != nextSharePrice) {
-            feeInfo.lastSharePrice = nextSharePrice;
-        }
 
         emit PerformanceUpdated(
             _comptrollerProxy,
-            prevSharePrice,
-            nextSharePrice,
             prevAggregateValueDue,
             nextAggregateValueDue,
             sharesDue_

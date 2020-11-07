@@ -23,12 +23,14 @@ export function validateRulePostBuySharesArgs({
   buyer,
   investmentAmount,
   sharesBought,
+  fundGav,
 }: {
   buyer: AddressLike;
   investmentAmount: BigNumberish;
   sharesBought: BigNumberish;
+  fundGav: BigNumberish;
 }) {
-  return encodeArgs(['address', 'uint256', 'uint256'], [buyer, investmentAmount, sharesBought]);
+  return encodeArgs(['address', 'uint256', 'uint256', 'uint256'], [buyer, investmentAmount, sharesBought, fundGav]);
 }
 
 export function validateRulePreCoIArgs({ adapter, selector }: { adapter: AddressLike; selector: BytesLike }) {

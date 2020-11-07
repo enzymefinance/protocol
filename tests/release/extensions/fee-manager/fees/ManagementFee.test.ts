@@ -70,7 +70,12 @@ describe('constructor', () => {
 
     // Implements expected hooks
     const implementedHooksCall = await managementFee.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares]);
+    expect(implementedHooksCall).toMatchFunctionOutput(managementFee.implementedHooks.fragment, {
+      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
+      implementedHooksForUpdate_: [],
+      usesGavOnSettle_: false,
+      usesGavOnUpdate_: false,
+    });
   });
 });
 
@@ -123,7 +128,7 @@ describe('settle', () => {
     const { mockComptrollerProxy, mockVaultProxy, standaloneManagementFee } = await provider.snapshot(snapshot);
 
     await expect(
-      standaloneManagementFee.settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x'),
+      standaloneManagementFee.settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
@@ -139,7 +144,7 @@ describe('settle', () => {
     // Check the return value via a call
     const settleCall = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle.args(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x')
+      .settle.args(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0)
       .call();
 
     expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle, {
@@ -150,7 +155,7 @@ describe('settle', () => {
     // Send the tx to actually settle
     const receipt = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x');
+      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0);
 
     // Settled event emitted
     assertEvent(receipt, 'Settled', {
@@ -180,7 +185,7 @@ describe('settle', () => {
     // Settle while shares supply is 0 to set lastSettled
     const receiptOne = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x');
+      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0);
     const settlementTimestampOne = await transactionTimestamp(receiptOne);
 
     // Update shares supply on mock
@@ -203,7 +208,7 @@ describe('settle', () => {
     // Check the return values via a call() to settle()
     const settleCall = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle.args(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x')
+      .settle.args(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0)
       .call();
 
     expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle, {
@@ -214,7 +219,7 @@ describe('settle', () => {
     // Send the tx to actually settle()
     const receiptTwo = await standaloneManagementFee
       .connect(EOAFeeManager)
-      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x');
+      .settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0);
     const settlementTimestampTwo = await transactionTimestamp(receiptTwo);
 
     // Get the expected shares due for the actual settlement
@@ -293,7 +298,7 @@ describe('integration', () => {
       signer: fundOwner,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.SettleContinuousFees,
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);
@@ -380,7 +385,7 @@ describe('integration', () => {
       secondsSinceLastSettled: BigNumber.from(secondsElapsedBetweenBuyAndRedeem),
     });
 
-    // Shares minted are what's left when we substract the only investor has redeemed all shares
+    // Shares minted are what's left when we subtract the only investor has redeemed all shares
     const sharesMinted = await vaultProxy.totalSupply();
 
     // Check that the expected shares due  have been minted
@@ -489,7 +494,7 @@ describe('integration', () => {
       signer: fundOwner,
       comptrollerProxy: nextComptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.SettleContinuousFees,
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);

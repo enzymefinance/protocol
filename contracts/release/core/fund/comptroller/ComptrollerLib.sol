@@ -286,9 +286,13 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     /// @return isValid_ True if the conversion rates used to derive the GAV are all valid
     /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
     /// are external to the protocol
-    function calcGav() public returns (uint256 gav_, bool isValid_) {
+    function calcGav() public override returns (uint256 gav_, bool isValid_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
+        if (assets.length == 0) {
+            return (0, true);
+        }
+
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
             balances[i] = __getVaultAssetBalance(vaultProxyAddress, assets[i]);
@@ -456,8 +460,23 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         uint256 prevBuyerShares = sharesContract.balanceOf(_buyer);
         vaultProxyContract.mintShares(_buyer, sharesBought);
 
+        // Transfer the investment asset to the fund.
+        // Does not follow the checks-effects-interactions pattern, but it is preferred
+        // to have the final state of the VaultProxy prior to running __postBuySharesHook().
+        denominationAssetContract.safeTransferFrom(
+            msg.sender,
+            address(vaultProxyContract),
+            _investmentAmount
+        );
+        vaultProxyContract.addTrackedAsset(address(denominationAssetContract));
+
         // Gives Extensions a chance to run logic after the minting of bought shares
-        __postBuySharesHook(_buyer, _investmentAmount, sharesBought);
+        __postBuySharesHook(
+            _buyer,
+            _investmentAmount,
+            sharesBought,
+            preBuySharesGav.add(_investmentAmount)
+        );
 
         // The number of actual shares received may differ from shares bought due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
@@ -466,14 +485,6 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
             sharesReceived_ >= _minSharesQuantity,
             "buyShares: Shares received < _minSharesQuantity"
         );
-
-        // Transfer the investment asset to the fund
-        denominationAssetContract.safeTransferFrom(
-            msg.sender,
-            address(vaultProxyContract),
-            _investmentAmount
-        );
-        vaultProxyContract.addTrackedAsset(address(denominationAssetContract));
 
         emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived_);
 
@@ -495,38 +506,47 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
             );
     }
 
-    /// @dev Helper for Extension actions immediately prior to issuing shares
+    /// @dev Helper for Extension actions immediately prior to issuing shares.
+    /// This could be cleaned up so both Extensions take the same encoded args and handle GAV
+    /// in the same way, but there is not the obvious need for gas savings of recycling
+    /// the GAV value for the current policies as there is for the fees.
     function __preBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity,
         uint256 _gav
     ) private {
-        bytes memory callData = abi.encode(_buyer, _investmentAmount, _minSharesQuantity, _gav);
-
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PreBuyShares, callData);
+        IFeeManager(FEE_MANAGER).invokeHook(
+            IFeeManager.FeeHook.PreBuyShares,
+            abi.encode(_buyer, _investmentAmount, _minSharesQuantity),
+            _gav
+        );
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.PreBuyShares,
-            callData
+            abi.encode(_buyer, _investmentAmount, _minSharesQuantity, _gav)
         );
     }
 
-    /// @dev Helper for Extension actions immediately after issuing shares
+    /// @dev Helper for Extension actions immediately after issuing shares.
+    /// Same comment applies from __preBuySharesHook() above.
     function __postBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
-        uint256 _sharesBought
+        uint256 _sharesBought,
+        uint256 _gav
     ) private {
-        bytes memory callData = abi.encode(_buyer, _investmentAmount, _sharesBought);
-
-        IFeeManager(FEE_MANAGER).settleFees(IFeeManager.FeeHook.PostBuyShares, callData);
+        IFeeManager(FEE_MANAGER).invokeHook(
+            IFeeManager.FeeHook.PostBuyShares,
+            abi.encode(_buyer, _investmentAmount, _sharesBought),
+            _gav
+        );
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.PostBuyShares,
-            callData
+            abi.encode(_buyer, _investmentAmount, _sharesBought, _gav)
         );
     }
 
@@ -614,9 +634,10 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         allowsPermissionedVaultAction
     {
         try
-            IFeeManager(FEE_MANAGER).settleFees(
+            IFeeManager(FEE_MANAGER).invokeHook(
                 IFeeManager.FeeHook.PreRedeemShares,
-                abi.encode(_redeemer, _sharesQuantity)
+                abi.encode(_redeemer, _sharesQuantity),
+                0
             )
          {} catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesQuantity);

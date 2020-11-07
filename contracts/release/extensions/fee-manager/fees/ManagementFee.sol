@@ -50,20 +50,29 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         return "MANAGEMENT";
     }
 
-    /// @notice Gets the implemented FeeHooks for a fee
-    /// @return implementedHooks_ The implemented FeeHooks
+    /// @notice Gets the hooks that are implemented by the fee
+    /// @return implementedHooksForSettle_ The hooks during which settle() is implemented
+    /// @return implementedHooksForUpdate_ The hooks during which update() is implemented
+    /// @return usesGavOnSettle_ True if GAV is used during the settle() implementation
+    /// @return usesGavOnUpdate_ True if GAV is used during the update() implementation
+    /// @dev Used only during fee registration
     function implementedHooks()
         external
         view
         override
-        returns (IFeeManager.FeeHook[] memory implementedHooks_)
+        returns (
+            IFeeManager.FeeHook[] memory implementedHooksForSettle_,
+            IFeeManager.FeeHook[] memory implementedHooksForUpdate_,
+            bool usesGavOnSettle_,
+            bool usesGavOnUpdate_
+        )
     {
-        implementedHooks_ = new IFeeManager.FeeHook[](3);
-        implementedHooks_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooks_[1] = IFeeManager.FeeHook.PreBuyShares;
-        implementedHooks_[2] = IFeeManager.FeeHook.PreRedeemShares;
+        implementedHooksForSettle_ = new IFeeManager.FeeHook[](3);
+        implementedHooksForSettle_[0] = IFeeManager.FeeHook.Continuous;
+        implementedHooksForSettle_[1] = IFeeManager.FeeHook.PreBuyShares;
+        implementedHooksForSettle_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
-        return implementedHooks_;
+        return (implementedHooksForSettle_, new IFeeManager.FeeHook[](0), false, false);
     }
 
     /// @notice Settle the fee and calculate shares due
@@ -76,7 +85,8 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         address _comptrollerProxy,
         address _vaultProxy,
         IFeeManager.FeeHook,
-        bytes calldata
+        bytes calldata,
+        uint256
     )
         external
         override

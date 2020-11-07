@@ -21,13 +21,25 @@ abstract contract FeeBase is IFee {
     /// @notice Allows Fee to run logic during fund activation
     /// @dev Unimplemented by default, may be overrode.
     function activateForFund(address, address) external virtual override {
-        // UNIMPLEMENTED
+        return;
     }
 
     /// @notice Runs payout logic for a fee that utilizes shares outstanding as its settlement type
     /// @dev Returns false by default, can be overridden by fee
     function payout(address, address) external virtual override returns (bool) {
         return false;
+    }
+
+    /// @notice Update fee state after all settlement has occurred during a given fee hook
+    /// @dev Unimplemented by default, can be overridden by fee
+    function update(
+        address,
+        address,
+        IFeeManager.FeeHook,
+        bytes calldata,
+        uint256
+    ) external virtual override {
+        return;
     }
 
     /// @notice Helper to parse settlement arguments from encoded data for PreBuyShares fee hook
@@ -37,11 +49,10 @@ abstract contract FeeBase is IFee {
         returns (
             address buyer_,
             uint256 investmentAmount_,
-            uint256 minSharesQuantity_,
-            uint256 gav_
+            uint256 minSharesQuantity_
         )
     {
-        return abi.decode(_settlementData, (address, uint256, uint256, uint256));
+        return abi.decode(_settlementData, (address, uint256, uint256));
     }
 
     /// @notice Helper to parse settlement arguments from encoded data for PreRedeemShares fee hook
