@@ -8,6 +8,7 @@ import {
   IntegrationManager,
   lendSelector,
   redeemSelector,
+  SpendAssetsHandleType,
   StandardToken,
   takeOrderSelector,
   UniswapV2Adapter,
@@ -100,10 +101,12 @@ async function assertUniswapV2TakeOrder({
     vaultProxy,
     caller: fundOwner,
     adapter: uniswapV2Adapter,
+    selector: takeOrderSelector,
     incomingAssets: [incomingAsset],
     incomingAssetAmounts: [minIncomingAssetAmount],
     outgoingAssets: [outgoingAsset],
     outgoingAssetAmounts: [outgoingAssetAmount],
+    integrationData: expect.anything(),
   });
 
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -208,11 +211,12 @@ describe('parseAssetsForMethod', () => {
     const selector = lendSelector;
     const result = await uniswapV2Adapter.parseAssetsForMethod(selector, lendArgs);
 
-    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [tokenA, tokenB],
       spendAssetAmounts_: [amountADesired, amountBDesired],
       minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
 
@@ -244,11 +248,12 @@ describe('parseAssetsForMethod', () => {
     const selector = redeemSelector;
     const result = await uniswapV2Adapter.parseAssetsForMethod(selector, redeemArgs);
 
-    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [tokenA, tokenB],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [liquidity],
       minIncomingAssetAmounts_: [amountAMin, amountBMin],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
 });
@@ -354,10 +359,12 @@ describe('lend', () => {
       vaultProxy: vaultProxy,
       caller: fundOwner,
       adapter: uniswapV2Adapter,
+      selector: lendSelector,
       incomingAssets: [incomingAssetContract],
       incomingAssetAmounts: [utils.parseEther('1')],
       outgoingAssets: [tokenA, tokenB],
       outgoingAssetAmounts: [amountADesired, amountBDesired],
+      integrationData: expect.anything(),
     });
 
     const [postTxIncomingAssetBalance] = await getAssetBalances({
@@ -467,10 +474,12 @@ describe('redeem', () => {
       vaultProxy: vaultProxy,
       caller: fundOwner,
       adapter: uniswapV2Adapter,
+      selector: redeemSelector,
       incomingAssets: [tokenA, tokenB],
       incomingAssetAmounts: [amountAMin, amountBMin],
       outgoingAssets: [outgoingAssetContract],
       outgoingAssetAmounts: [liquidity],
+      integrationData: expect.anything(),
     });
 
     const postTxIncomingAssetBalances = await getAssetBalances({

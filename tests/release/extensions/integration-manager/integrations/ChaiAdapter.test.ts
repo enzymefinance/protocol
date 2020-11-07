@@ -107,7 +107,7 @@ describe('parseAssetsForMethod', () => {
 
     const selector = lendSelector;
     const result = await chaiAdapter.parseAssetsForMethod(selector, args);
-    expect(result).toMatchFunctionOutput(chaiAdapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(chaiAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
@@ -139,7 +139,7 @@ describe('parseAssetsForMethod', () => {
 
     const selector = redeemSelector;
     const result = await chaiAdapter.parseAssetsForMethod(selector, args);
-    expect(result).toMatchFunctionOutput(chaiAdapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(chaiAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
@@ -209,6 +209,8 @@ describe('lend', () => {
       comptrollerProxy,
       vaultProxy,
       caller: fundOwner,
+      selector: lendSelector,
+      integrationData: expect.anything(),
       adapter: chaiAdapter,
       incomingAssets: [chai],
       incomingAssetAmounts: [minChaiAmount],
@@ -288,6 +290,8 @@ describe('redeem', () => {
       comptrollerProxy,
       vaultProxy,
       caller: fundOwner,
+      selector: redeemSelector,
+      integrationData: expect.anything(),
       adapter: chaiAdapter,
       incomingAssets: [dai],
       incomingAssetAmounts: [minDaiAmount],

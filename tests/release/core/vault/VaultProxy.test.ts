@@ -113,7 +113,7 @@ describe('addTrackedAsset', () => {
     await vaultProxy.addTrackedAsset(weth);
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
+    expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
 
     const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
     expect(isTrackedAsset).toBe(true);
@@ -135,7 +135,7 @@ describe('addTrackedAsset', () => {
     });
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
+    expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
 
     const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
     expect(isTrackedAsset).toBe(true);
@@ -188,7 +188,7 @@ describe('removeTrackedAsset', () => {
     });
 
     const trackedAssets1 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth, knc]);
+    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth, knc]);
 
     const receipt2 = await vaultProxy.removeTrackedAsset(weth);
     assertEvent(receipt2, 'TrackedAssetRemoved', {
@@ -196,7 +196,7 @@ describe('removeTrackedAsset', () => {
     });
 
     const trackedAssets2 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [knc]);
+    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [knc]);
 
     const receipt3 = await vaultProxy.removeTrackedAsset(knc);
     assertEvent(receipt3, 'TrackedAssetRemoved', {
@@ -250,7 +250,7 @@ describe('withdrawAssetTo', () => {
     await weth.transfer(vaultProxy, amount);
     await vaultProxy.addTrackedAsset(weth);
     const trackedAssets1 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
+    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
 
     const receipt = await vaultProxy.withdrawAssetTo(weth, investor, amount);
     assertEvent(receipt, 'AssetWithdrawn', {
@@ -283,7 +283,7 @@ describe('withdrawAssetTo', () => {
 
     await vaultProxy.addTrackedAsset(weth);
     const trackedAssets1 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
+    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
 
     const receipt = await vaultProxy.withdrawAssetTo(weth, investor, withdrawAmount);
     assertEvent(receipt, 'AssetWithdrawn', {
@@ -293,7 +293,7 @@ describe('withdrawAssetTo', () => {
     });
 
     const trackedAssets2 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets.fragment, [weth]);
+    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
 
     const postTxInvestorBalance = await weth.balanceOf(investor);
     expect(postTxInvestorBalance).toEqBigNumber(preTxInvestorBalance.add(withdrawAmount));

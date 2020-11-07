@@ -77,7 +77,7 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     const getRegisteredFeesCall = await feeManager.getRegisteredFees();
-    expect(getRegisteredFeesCall).toMatchFunctionOutput(feeManager.getRegisteredFees.fragment, [
+    expect(getRegisteredFeesCall).toMatchFunctionOutput(feeManager.getRegisteredFees, [
       entranceRateBurnFee,
       entranceRateDirectFee,
       managementFee,
@@ -214,6 +214,7 @@ describe('receiveCallFromComptroller', () => {
       deployment: { feeManager },
       fees: { mockContinuousFee1 },
       createFund,
+      fundOwner,
       denominationAsset,
     } = await provider.snapshot(snapshot);
 
@@ -240,7 +241,12 @@ describe('receiveCallFromComptroller', () => {
     // Check that the FeeSettledForFund event has been emitted
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
     assertEvent(receipt, feeSettledForFundEvent, {
-      actionId: FeeManagerActionId.SettleContinuousFees,
+      settlementType: FeeSettlementType.Mint,
+      comptrollerProxy,
+      fee: mockContinuousFee1,
+      payer: constants.AddressZero,
+      payee: fundOwner,
+      sharesDue: expect.anything(),
     });
   });
 });
@@ -364,11 +370,7 @@ describe('setConfigForFund', () => {
 
     // Assert state for fund
     const getEnabledFeesForFundCall = await feeManager.getEnabledFeesForFund(comptrollerProxy);
-    expect(getEnabledFeesForFundCall).toMatchFunctionOutput(feeManager.getEnabledFeesForFund.fragment, [
-      fees[0],
-      fees[1],
-      fees[2],
-    ]);
+    expect(getEnabledFeesForFundCall).toMatchFunctionOutput(feeManager.getEnabledFeesForFund, fees);
 
     // Assert addFundSettings was called on each fee with its settingsData
     for (let i = 0; i < fees.length; i++) {
@@ -1224,10 +1226,27 @@ describe('fee registry', () => {
       const events = extractEvent(receipt, feeDeregisteredEvent);
       expect(events.length).toBe(fees.length);
 
-      for (let i = 0; i < fees.length; i++) {
-        // Make sure that each event contains the corresponding fee address
-        expect(events[i]).toMatchEventArgs([fees[i].address]);
-      }
+      // Make sure that each event contains the corresponding fee address
+      expect(events[0]).toMatchEventArgs({
+        fee: fees[0],
+        identifier: expect.objectContaining({
+          hash: utils.id('MOCK_CONTINUOUS_1'),
+        }),
+      });
+
+      expect(events[1]).toMatchEventArgs({
+        fee: fees[1],
+        identifier: expect.objectContaining({
+          hash: utils.id('MOCK_CONTINUOUS_2'),
+        }),
+      });
+
+      expect(events[2]).toMatchEventArgs({
+        fee: fees[2],
+        identifier: expect.objectContaining({
+          hash: utils.id('MOCK_POST_BUY_SHARES'),
+        }),
+      });
     });
   });
 
@@ -1290,7 +1309,7 @@ describe('fee registry', () => {
 
       // Assert event
       assertEvent(receipt, 'FeeRegistered', {
-        adapter: mockFee.address,
+        fee: mockFee.address,
         identifier: expect.objectContaining({
           hash: utils.id(identifier),
         }),

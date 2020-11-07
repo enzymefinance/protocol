@@ -157,7 +157,7 @@ async function assertAdjustedPerformance({
     .from(mockFeeManager)
     .call();
 
-  expect(settleCall).toMatchFunctionOutput(performanceFee.settle.fragment, {
+  expect(settleCall).toMatchFunctionOutput(performanceFee.settle, {
     settlementType_: feeSettlementType,
     sharesDue_: sharesDue.abs(),
   });
@@ -255,7 +255,7 @@ describe('addFundSettings', () => {
     // Assert state
     const getFeeInfoForFundCall = await standalonePerformanceFee.getFeeInfoForFund(mockComptrollerProxy);
 
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standalonePerformanceFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standalonePerformanceFee.getFeeInfoForFund, {
       rate: performanceFeeRate,
       period: performanceFeePeriod,
       activated: BigNumber.from(0),
@@ -306,7 +306,7 @@ describe('activateForFund', () => {
     // Assert state
     const getFeeInfoForFundCall = await standalonePerformanceFee.getFeeInfoForFund(mockComptrollerProxy);
     const activationTimestamp = await transactionTimestamp(receipt);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standalonePerformanceFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standalonePerformanceFee.getFeeInfoForFund, {
       rate: performanceFeeRate,
       period: performanceFeePeriod,
       activated: BigNumber.from(activationTimestamp),
@@ -371,7 +371,7 @@ describe('payout', () => {
     const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
 
     const payoutTimestamp = await transactionTimestamp(receipt);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund, {
       rate: feeInfoPrePayout.rate,
       period: feeInfoPrePayout.period,
       activated: feeInfoPrePayout.activated,
@@ -436,7 +436,7 @@ describe('payout', () => {
     // Assert state
     const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
     const payoutTimestamp = await transactionTimestamp(receipt);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund, {
       rate: feeInfoPrePayout.rate,
       period: feeInfoPrePayout.period,
       activated: feeInfoPrePayout.activated,
@@ -578,7 +578,7 @@ describe('settle', () => {
       .from(mockFeeManager)
       .call();
 
-    expect(settleCall).toMatchFunctionOutput(performanceFee.settle.fragment, {
+    expect(settleCall).toMatchFunctionOutput(performanceFee.settle, {
       settlementType_: FeeSettlementType.None,
       sharesDue_: BigNumber.from(0),
     });
@@ -932,7 +932,8 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTimestamp = await transactionTimestamp(signalReceipt);
 
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
@@ -942,9 +943,13 @@ describe('integration', () => {
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
       vaultProxy,
       nextVaultAccessor: nextComptrollerProxy,
+      prevFundDeployer: fundDeployer,
+      nextFundDeployer: nextFundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTimestamp,
     });
 
-    const feeInfo = await performanceFee.getFeeInfoForFund(nextComptrollerProxy.address);
+    const feeInfo = await performanceFee.getFeeInfoForFund(nextComptrollerProxy);
     expect(feeInfo.rate).toEqBigNumber(performanceFeeRate);
     expect(feeInfo.period).toEqBigNumber(performanceFeePeriod);
   });

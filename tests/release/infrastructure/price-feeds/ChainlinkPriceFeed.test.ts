@@ -50,7 +50,7 @@ describe('constructor', () => {
     // Check primitives setup
     for (let i = 0; i < primitives.length; i++) {
       const storedPrimitive = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitives[i]);
-      expect(storedPrimitive).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+      expect(storedPrimitive).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregators[i],
         rateAsset: rateAssets[i],
       });
@@ -78,7 +78,7 @@ describe('addPrimitives', () => {
     // Check primitives added and events emited
     for (let i = 0; i < primitiveMocks.length; i++) {
       const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitiveMocks[i]);
-      expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+      expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregatorMocks[i],
         rateAsset: 0,
       });
@@ -189,7 +189,7 @@ describe('updatePrimitives', () => {
 
     for (let i = 0; i < primitivesToUpdate.length; i++) {
       const aggregator = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitivesToUpdate[i]);
-      expect(aggregator).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+      expect(aggregator).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregatorMocks[i],
         rateAsset: 0,
       });
@@ -260,7 +260,7 @@ describe('removePrimitives', () => {
 
     for (let i = 0; i < primitivesToRemove.length; i++) {
       const aggregatorInfo = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitivesToRemove[i]);
-      expect(aggregatorInfo).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+      expect(aggregatorInfo).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: constants.AddressZero,
         rateAsset: 0,
       });

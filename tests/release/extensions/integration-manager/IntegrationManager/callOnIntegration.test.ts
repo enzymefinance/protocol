@@ -100,6 +100,7 @@ async function seedFundByTrading({
     outgoingAssets: [],
     outgoingAssetAmounts: [],
     selector: mockGenericSwapASelector,
+    integrationData: expect.anything(),
     vaultProxy,
   });
 
@@ -497,6 +498,7 @@ describe('valid calls', () => {
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -584,6 +586,7 @@ describe('valid calls', () => {
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -662,6 +665,7 @@ describe('valid calls', () => {
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -738,6 +742,7 @@ describe('valid calls', () => {
       outgoingAssets: [],
       outgoingAssetAmounts: [],
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -816,6 +821,7 @@ describe('valid calls', () => {
       outgoingAssets: [],
       outgoingAssetAmounts: [],
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -897,6 +903,7 @@ describe('valid calls', () => {
       outgoingAssets: [],
       outgoingAssetAmounts: [],
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -965,6 +972,7 @@ describe('valid calls', () => {
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 
@@ -1042,6 +1050,7 @@ describe('valid calls', () => {
       outgoingAssets: spendAssets,
       outgoingAssetAmounts: spendAssetAmounts,
       selector: mockGenericSwapASelector,
+      integrationData: expect.anything(),
       vaultProxy,
     });
 

@@ -43,7 +43,7 @@ describe('getCanonicalRate', () => {
 
     // Base: weth |  Quote: dai
     const rate = await chainlinkPriceFeed.getCanonicalRate(weth, dai);
-    expect(rate).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate.fragment, {
+    expect(rate).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate, {
       rate_: expectedRate,
       isValid_: true,
     });
@@ -68,7 +68,7 @@ describe('getCanonicalRate', () => {
 
     // Base: ren |  Quote: dai
     const canonicalRateRenDai = await chainlinkPriceFeed.getCanonicalRate(ren, dai);
-    expect(canonicalRateRenDai).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate.fragment, {
+    expect(canonicalRateRenDai).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate, {
       rate_: expectedRateRenDai,
       isValid_: true,
     });
@@ -78,7 +78,7 @@ describe('getCanonicalRate', () => {
 
     // Base: dai, quote: ren
     const canonicalRateDaiRen = await chainlinkPriceFeed.getCanonicalRate(dai, ren);
-    expect(canonicalRateDaiRen).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate.fragment, {
+    expect(canonicalRateDaiRen).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate, {
       rate_: expectedRateDaiRen,
       isValid_: true,
     });
@@ -104,7 +104,7 @@ describe('addPrimitives', () => {
     expect(addPrimitivesReceipt).toCostLessThan('57000');
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(usdc);
-    expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+    expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
       aggregator: usdcAggregator,
       rateAsset: 0,
     });
@@ -142,7 +142,7 @@ describe('updatePrimitives', () => {
     expect(updatePrimitivesReceipt).toCostLessThan('57000');
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(newPrimitive);
-    expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+    expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
       aggregator: renAggregator,
       rateAsset: 0,
     });
@@ -179,7 +179,7 @@ describe('removePrimitives', () => {
     expect(removePrimitivesReceipt).toCostLessThan('22000');
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(dai);
-    expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive.fragment, {
+    expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
       aggregator: constants.AddressZero,
       rateAsset: 0,
     });

@@ -37,7 +37,7 @@ describe('getRatesToUnderlyings', () => {
     const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(derivativeAsset).call();
 
     const ratePricision = BigNumber.from(10).pow(18);
-    expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings.fragment, {
+    expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings, {
       rates_: [mlnAmount.mul(ratePricision).div(totalSupply), wethAmount.mul(ratePricision).div(totalSupply)],
       underlyings_: [mln, weth],
     });
@@ -67,7 +67,7 @@ describe('getRatesToUnderlyings', () => {
     const pow17 = BigNumber.from(10).pow(17);
     const pow18 = BigNumber.from(10).pow(18);
 
-    expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings.fragment, {
+    expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings, {
       rates_: [mlnAmount.mul(pow18).div(pow17).mul(pow18).div(totalSupply), wethAmount.mul(pow18).div(totalSupply)],
       underlyings_: [mln, weth],
     });

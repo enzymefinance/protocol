@@ -81,7 +81,7 @@ async function deployVault({
     vaultAccessor,
     vaultLib,
     fundDeployer: mockFundDeployer,
-    vaultProxy: expect.any(String) as string,
+    vaultProxy: expect.anything(),
   });
 
   return new MockVaultLib(args.vaultProxy, provider);
@@ -401,7 +401,7 @@ describe('signalMigration', () => {
     });
 
     assertEvent(receipt, 'MigrationOutHookFailed', {
-      failureReturnData: expect.any(String),
+      failureReturnData: expect.anything(),
       hook: MigrationOutHook.PreSignal,
       vaultProxy: vaultProxy,
       prevFundDeployer: mockPrevFundDeployer,
@@ -450,7 +450,7 @@ describe('signalMigration', () => {
     const signalTimestamp = await transactionTimestamp(receipt);
     const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
-    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy.fragment, {
+    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
       nextFundDeployer_: mockNextFundDeployer,
       nextVaultAccessor_: nextVaultAccessor,
       nextVaultLib_: nextVaultLib,
@@ -530,7 +530,7 @@ describe('cancelMigration', () => {
     // Removes MigrationRequest
     const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
-    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy.fragment, {
+    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
       nextFundDeployer_: constants.AddressZero,
       nextVaultAccessor_: constants.AddressZero,
       nextVaultLib_: constants.AddressZero,
@@ -668,7 +668,7 @@ describe('executeMigration', () => {
     // Removes MigrationRequest
     const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
-    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy.fragment, {
+    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
       nextFundDeployer_: constants.AddressZero,
       nextVaultAccessor_: constants.AddressZero,
       nextVaultLib_: constants.AddressZero,

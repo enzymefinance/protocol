@@ -102,7 +102,7 @@ describe('addFundSettings', () => {
 
     // managementFeeRate should be set for comptrollerProxy
     const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(mockComptrollerProxy);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund, {
       rate: managementFeeRate,
       lastSettled: BigNumber.from(0),
     });
@@ -142,7 +142,7 @@ describe('settle', () => {
       .settle.args(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x')
       .call();
 
-    expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle.fragment, {
+    expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle, {
       settlementType_: FeeSettlementType.None,
       sharesDue_: BigNumber.from(0),
     });
@@ -162,7 +162,7 @@ describe('settle', () => {
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(mockComptrollerProxy);
     const settlementTimestamp = await transactionTimestamp(receipt);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund, {
       rate: managementFeeRate,
       lastSettled: BigNumber.from(settlementTimestamp),
     });
@@ -206,7 +206,7 @@ describe('settle', () => {
       .settle.args(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x')
       .call();
 
-    expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle.fragment, {
+    expect(settleCall).toMatchFunctionOutput(standaloneManagementFee.settle, {
       settlementType_: FeeSettlementType.Mint,
       sharesDue_: expectedFeeShares,
     });
@@ -233,7 +233,7 @@ describe('settle', () => {
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(mockComptrollerProxy);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund.fragment, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund, {
       rate: managementFeeRate,
       lastSettled: BigNumber.from(settlementTimestampTwo),
     });
@@ -447,7 +447,8 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -458,6 +459,10 @@ describe('integration', () => {
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
       vaultProxy,
       nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
     });
 
     const feeInfo = await managementFee.getFeeInfoForFund(nextComptrollerProxy.address);
@@ -577,7 +582,8 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -589,6 +595,10 @@ describe('integration', () => {
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
       vaultProxy,
       nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
     });
 
     const feeInfo = await managementFee.getFeeInfoForFund(comptrollerProxy.address);

@@ -180,10 +180,12 @@ describe('addTrackedAssets', () => {
       vaultProxy,
       caller: fundOwner,
       adapter: trackedAssetsAdapter,
+      selector: addTrackedAssetsSelector,
       incomingAssets: [mln, weth],
       incomingAssetAmounts: [mlnAmount, wethAmount],
       outgoingAssets: [],
       outgoingAssetAmounts: [],
+      integrationData: expect.anything(),
     });
 
     const trackedAssets = await vaultProxy.getTrackedAssets();

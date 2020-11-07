@@ -22,6 +22,7 @@ import {
   createMigratedFundConfig,
   createNewFund,
   defaultTestDeployment,
+  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -88,7 +89,7 @@ describe('settle', () => {
       .settle.args(comptrollerProxyAddress, randomAddress(), FeeHook.PostBuyShares, settlementData)
       .call();
 
-    expect(settleCall).toMatchFunctionOutput(standaloneEntranceRateFee.settle.fragment, {
+    expect(settleCall).toMatchFunctionOutput(standaloneEntranceRateFee.settle, {
       settlementType_: FeeSettlementType.Burn,
       payer_: buyer,
       sharesDue_: expectedSharesDueForCall,
@@ -212,7 +213,8 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -232,6 +234,10 @@ describe('integration', () => {
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
       vaultProxy,
       nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
     });
 
     // Check the number of shares the user has (check that fee has been paid)
@@ -301,7 +307,8 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -321,6 +328,10 @@ describe('integration', () => {
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
       vaultProxy,
       nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
     });
 
     // Check the number of shares the user has (check that fee has been paid)

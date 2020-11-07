@@ -76,13 +76,13 @@ describe('buyShares', () => {
 
     // Assert calls on ComptrollerProxy
     const calcGavCall = await comptrollerProxy.calcGav.call();
-    expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav.fragment, {
+    expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav, {
       gav_: investmentAmount,
       isValid_: true,
     });
 
     const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
-    expect(calcGrossShareValueCall).toMatchFunctionOutput(comptrollerProxy.calcGrossShareValue.fragment, {
+    expect(calcGrossShareValueCall).toMatchFunctionOutput(comptrollerProxy.calcGrossShareValue, {
       grossShareValue_: utils.parseEther('1'),
       isValid_: true,
     });

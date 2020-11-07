@@ -71,7 +71,7 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     const result = await policyManager.getRegisteredPolicies();
-    expect(result).toMatchFunctionOutput(policyManager.getRegisteredPolicies.fragment, [
+    expect(result).toMatchFunctionOutput(policyManager.getRegisteredPolicies, [
       adapterBlacklist,
       adapterWhitelist,
       assetBlacklist,
@@ -153,7 +153,7 @@ describe('setConfigForFund', () => {
     // Assert state for fund
     const enabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
 
-    expect(enabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund.fragment, orderedPolicies);
+    expect(enabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, orderedPolicies);
 
     // Assert addFundSettings was called on each policy with its settingsData,
     // only if settingsData was passed
@@ -407,7 +407,7 @@ describe('policy registry', () => {
         policy: mockPolicy,
         implementedHooks: hooks,
         // TODO: Improve param matching to automatically derive the sighash for indexed event args.
-        address: expect.objectContaining({
+        identifier: expect.objectContaining({
           hash: utils.id(identifier),
         }),
       });

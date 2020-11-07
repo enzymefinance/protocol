@@ -93,10 +93,12 @@ async function assertKyberTakeOrder({
     vaultProxy,
     caller: fundOwner,
     adapter: kyberAdapter,
+    selector: takeOrderSelector,
     incomingAssets: [incomingAsset],
     incomingAssetAmounts: [minIncomingAssetAmount],
     outgoingAssets: [outgoingAsset],
     outgoingAssetAmounts: [outgoingAssetAmount],
+    integrationData: expect.anything(),
   });
 
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -166,7 +168,7 @@ describe('parseAssetsForMethod', () => {
 
     const result = await kyberAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(kyberAdapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(kyberAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],

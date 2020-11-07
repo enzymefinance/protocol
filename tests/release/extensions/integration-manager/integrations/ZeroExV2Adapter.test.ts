@@ -4,6 +4,7 @@ import {
   createUnsignedZeroExV2Order,
   Dispatcher,
   signZeroExV2Order,
+  SpendAssetsHandleType,
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
 } from '@melonproject/protocol';
@@ -148,11 +149,12 @@ describe('parseAssetsForMethod', () => {
 
     const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [takerAssetFillAmount],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
 
@@ -204,11 +206,12 @@ describe('parseAssetsForMethod', () => {
 
     const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [takerAssetFillAmount],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
 
@@ -257,11 +260,12 @@ describe('parseAssetsForMethod', () => {
 
     const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
 
@@ -311,11 +315,12 @@ describe('parseAssetsForMethod', () => {
 
     const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod.fragment, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset, takerFeeAsset],
       spendAssetAmounts_: [takerAssetFillAmount, expectedTakerFee],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
 });

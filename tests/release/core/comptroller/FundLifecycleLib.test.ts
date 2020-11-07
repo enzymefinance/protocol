@@ -18,7 +18,7 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     const routesCall = await fundLifecycleLib.getLibRoutes();
-    expect(routesCall).toMatchFunctionOutput(fundLifecycleLib.getLibRoutes.fragment, {
+    expect(routesCall).toMatchFunctionOutput(fundLifecycleLib.getLibRoutes, {
       feeManager_: feeManager,
       fundDeployer_: fundDeployer,
       integrationManager_: integrationManager,
