@@ -6,6 +6,10 @@ export function feeManagerConfigArgs({ fees, settings }: { fees: AddressLike[]; 
   return encodeArgs(['address[]', 'bytes[]'], [fees, settings]);
 }
 
-export function payoutSharesOutstandingForFeeArgs(fee: AddressLike) {
-  return encodeArgs(['address'], [fee]);
+export function invokeContinuousHookForFeesArgs(fees: AddressLike[]) {
+  return encodeArgs(['address[]'], [fees]);
+}
+
+export function payoutSharesOutstandingForFeesArgs(fees: AddressLike[]) {
+  return encodeArgs(['address[]'], [fees]);
 }

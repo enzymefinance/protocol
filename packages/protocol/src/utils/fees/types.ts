@@ -8,8 +8,8 @@ export enum FeeHook {
 }
 
 export enum FeeManagerActionId {
-  InvokeContinuousHook,
-  PayoutFee,
+  InvokeContinuousHookForFees,
+  PayoutSharesOutstandingForFees,
 }
 
 export enum FeeSettlementType {

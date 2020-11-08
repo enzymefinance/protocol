@@ -1,18 +1,19 @@
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 import { EthereumTestnetProvider, MockContract } from '@crestproject/crestproject';
 import {
-  StandardToken,
   ComptrollerLib,
-  FeeManager,
-  PerformanceFee,
-  VaultLib,
-  performanceFeeConfigArgs,
-  FeeHook,
-  FeeSettlementType,
-  performanceFeeSharesDue,
-  feeManagerConfigArgs,
-  FeeManagerActionId,
   Dispatcher,
+  FeeHook,
+  FeeManager,
+  FeeManagerActionId,
+  feeManagerConfigArgs,
+  FeeSettlementType,
+  invokeContinuousHookForFeesArgs,
+  PerformanceFee,
+  performanceFeeConfigArgs,
+  performanceFeeSharesDue,
+  StandardToken,
+  VaultLib,
 } from '@melonproject/protocol';
 import {
   addTrackedAssets,
@@ -901,7 +902,8 @@ describe('integration', () => {
       signer: fundOwner,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHook,
+      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
+      callArgs: invokeContinuousHookForFeesArgs([performanceFee]),
     });
 
     // recount shares of the fund

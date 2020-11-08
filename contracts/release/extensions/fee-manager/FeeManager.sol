@@ -62,7 +62,6 @@ contract FeeManager is
     event SharesOutstandingPaidForFund(
         address indexed comptrollerProxy,
         address indexed fee,
-        address payee,
         uint256 sharesDue
     );
 
@@ -120,9 +119,9 @@ contract FeeManager is
         bytes calldata _callArgs
     ) external override {
         if (_actionId == 0) {
-            __invokeContinuousHook(msg.sender);
+            __invokeContinuousHookForFees(msg.sender, _callArgs);
         } else if (_actionId == 1) {
-            __payoutSharesOutstandingForFee(msg.sender, abi.decode(_callArgs, (address)));
+            __payoutSharesOutstandingForFees(msg.sender, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
@@ -212,20 +211,22 @@ contract FeeManager is
         );
     }
 
-    /// @dev Calls settle() and update() on all fees that implement the `Continuous` fee hook
-    /// Anyone can call this function, but must do so via ComptrollerProxy.callOnExtension().
-    /// Useful in case there is little investment/redemption activity (fees are automatically
-    /// settled on investment/redemption).
-    function __invokeContinuousHook(address _comptrollerProxy) private {
-        __invokeHook(_comptrollerProxy, IFeeManager.FeeHook.Continuous, "", 0, true);
+    /// @dev Calls settle() and update() on the specified fees that implement the `Continuous`
+    /// fee hook. Only callable via ComptrollerProxy.callOnExtension().
+    function __invokeContinuousHookForFees(address _comptrollerProxy, bytes memory _callArgs)
+        private
+    {
+        __invokeHookForFees(
+            _comptrollerProxy,
+            IFeeManager.FeeHook.Continuous,
+            "",
+            0,
+            true,
+            abi.decode(_callArgs, (address[]))
+        );
     }
 
-    /// @dev Helper to run settle() on all fees that implement a given hook, and then to optionally
-    /// run update() on the same fees. This order allows fees an opportunity to update their local
-    /// state after all VaultProxy state transitions (i.e., minting, burning, transferring shares)
-    /// have finished. To optimize for the expensive operation of calculating GAV,
-    /// once one fee requires GAV, we recycle that `gav` value for subsequent fees.
-    /// Assumes that _gav is either 0 or has already been validated.
+    /// @dev Helper to run __invokeHookForFees() on all enabled fees for a fund
     function __invokeHook(
         address _comptrollerProxy,
         FeeHook _hook,
@@ -233,8 +234,31 @@ contract FeeManager is
         uint256 _gav,
         bool _updateFees
     ) private {
-        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
-        if (fees.length == 0) {
+        __invokeHookForFees(
+            _comptrollerProxy,
+            _hook,
+            _settlementData,
+            _gav,
+            _updateFees,
+            comptrollerProxyToFees[_comptrollerProxy]
+        );
+    }
+
+    /// @dev Helper to run settle() on the specified fees that implement a given hook, and then to
+    /// optionally run update() on the same fees. This order allows fees an opportunity to update
+    /// their local state after all VaultProxy state transitions (i.e., minting, burning,
+    /// transferring shares) have finished. To optimize for the expensive operation of calculating
+    /// GAV, once one fee requires GAV, we recycle that `gav` value for subsequent fees.
+    /// Assumes that _gav is either 0 or has already been validated.
+    function __invokeHookForFees(
+        address _comptrollerProxy,
+        FeeHook _hook,
+        bytes memory _settlementData,
+        uint256 _gav,
+        bool _updateFees,
+        address[] memory _fees
+    ) private {
+        if (_fees.length == 0) {
             return;
         }
 
@@ -242,48 +266,55 @@ contract FeeManager is
 
         // This check isn't strictly necessary, but its cost is insignificant,
         // and helps to preserve data integrity.
-        require(vaultProxy != address(0), "__invokeHook: Fund is not active");
+        require(vaultProxy != address(0), "__invokeHookForFees: Fund is not active");
 
         // Reassign _gav input to actualGav
         uint256 actualGav = _gav;
 
         // First, allow all fees to implement settle()
-        for (uint256 i; i < fees.length; i++) {
-            if (!feeSettlesOnHook(fees[i], _hook)) {
+        for (uint256 i; i < _fees.length; i++) {
+            if (!feeSettlesOnHook(_fees[i], _hook)) {
                 continue;
             }
 
             // Get the canonical value of GAV if not yet set and required by fee
-            if (actualGav == 0 && feeUsesGavOnSettle(fees[i])) {
+            if (actualGav == 0 && feeUsesGavOnSettle(_fees[i])) {
                 bool gavIsValid;
                 (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav();
 
                 // Assumes that any fee that requires GAV would need to revert
-                require(gavIsValid, "__invokeHook: Invalid GAV");
+                require(gavIsValid, "__invokeHookForFees: Invalid GAV");
             }
 
-            __settleFee(_comptrollerProxy, vaultProxy, fees[i], _hook, _settlementData, actualGav);
+            __settleFee(
+                _comptrollerProxy,
+                vaultProxy,
+                _fees[i],
+                _hook,
+                _settlementData,
+                actualGav
+            );
         }
 
         // Second, allow fees to implement update()
         // This function does not allow any further altering of VaultProxy state
         // (i.e., burning, minting, or transferring shares)
         if (_updateFees) {
-            for (uint256 i; i < fees.length; i++) {
-                if (!feeUpdatesOnHook(fees[i], _hook)) {
+            for (uint256 i; i < _fees.length; i++) {
+                if (!feeUpdatesOnHook(_fees[i], _hook)) {
                     continue;
                 }
 
                 // Get the canonical value of GAV if not yet set and required by fee
-                if (actualGav == 0 && feeUsesGavOnUpdate(fees[i])) {
+                if (actualGav == 0 && feeUsesGavOnUpdate(_fees[i])) {
                     bool gavIsValid;
                     (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav();
 
                     // Assumes that any fee that requires GAV would need to revert
-                    require(gavIsValid, "__invokeHook: Invalid GAV");
+                    require(gavIsValid, "__invokeHookForFees: Invalid GAV");
                 }
 
-                IFee(fees[i]).update(
+                IFee(_fees[i]).update(
                     _comptrollerProxy,
                     vaultProxy,
                     _hook,
@@ -294,32 +325,44 @@ contract FeeManager is
         }
     }
 
-    /// @dev Helper to payout the shares outstanding for a given fee.
-    /// Should be called after settlement has occurred.
-    function __payoutSharesOutstandingForFee(address _comptrollerProxy, address _fee) private {
+    /// @dev Helper to payout the shares outstanding for the specified fees.
+    /// Does not call settle() on fees.
+    /// Only callable via ComptrollerProxy.callOnExtension().
+    function __payoutSharesOutstandingForFees(address _comptrollerProxy, bytes memory _callArgs)
+        private
+    {
+        address[] memory fees = abi.decode(_callArgs, (address[]));
         address vaultProxy = getVaultProxyForFund(msg.sender);
 
-        // This check isn't strictly necessary, but its cost is insignificant,
-        // and helps to preserve data integrity.
-        require(vaultProxy != address(0), "__payoutSharesOutstandingForFee: Fund is not active");
+        uint256 sharesOutstandingDue;
+        for (uint256 i; i < fees.length; i++) {
+            if (!IFee(fees[i]).payout(_comptrollerProxy, vaultProxy)) {
+                continue;
+            }
 
-        if (!IFee(_fee).payout(_comptrollerProxy, vaultProxy)) {
-            return;
+
+                uint256 sharesOutstandingForFee
+             = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]];
+            if (sharesOutstandingForFee == 0) {
+                continue;
+            }
+
+            sharesOutstandingDue = sharesOutstandingDue.add(sharesOutstandingForFee);
+
+            // Delete shares outstanding and distribute from VaultProxy to the fees recipient
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][fees[i]] = 0;
+
+            emit SharesOutstandingPaidForFund(_comptrollerProxy, fees[i], sharesOutstandingForFee);
         }
 
-
-            uint256 sharesOutstanding
-         = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
-        if (sharesOutstanding == 0) {
-            return;
+        if (sharesOutstandingDue > 0) {
+            __transferShares(
+                _comptrollerProxy,
+                vaultProxy,
+                IVault(vaultProxy).getOwner(),
+                sharesOutstandingDue
+            );
         }
-
-        // Delete shares outstanding and distribute from VaultProxy to the fees recipient
-        comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = 0;
-        address payee = IVault(vaultProxy).getOwner();
-        __transferShares(_comptrollerProxy, vaultProxy, payee, sharesOutstanding);
-
-        emit SharesOutstandingPaidForFund(_comptrollerProxy, _fee, payee, sharesOutstanding);
     }
 
     /// @dev Helper to settle a fee
