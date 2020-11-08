@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 
 import "../utils/IMigrationHookHandler.sol";
-import "../vault/IProxiableVault.sol";
+import "../utils/IMigratableVault.sol";
 import "../vault/VaultProxy.sol";
 import "./IDispatcher.sol";
 
@@ -217,7 +217,7 @@ contract Dispatcher is IDispatcher {
         string calldata _fundName
     ) external override onlyCurrentFundDeployer returns (address vaultProxy_) {
         bytes memory constructData = abi.encodeWithSelector(
-            IProxiableVault.init.selector,
+            IMigratableVault.init.selector,
             _owner,
             _vaultAccessor,
             _fundName
@@ -256,7 +256,7 @@ contract Dispatcher is IDispatcher {
 
         // TODO: confirm that if canMigrate() does not exist but the caller is a valid FundDeployer, this still works.
         require(
-            msg.sender == nextFundDeployer || IProxiableVault(_vaultProxy).canMigrate(msg.sender),
+            msg.sender == nextFundDeployer || IMigratableVault(_vaultProxy).canMigrate(msg.sender),
             "cancelMigration: Not an allowed caller"
         );
 
@@ -334,8 +334,8 @@ contract Dispatcher is IDispatcher {
         );
 
         // Upgrade the VaultProxy to a new VaultLib and update the accessor via the new VaultLib
-        IProxiableVault(_vaultProxy).setVaultLib(nextVaultLib);
-        IProxiableVault(_vaultProxy).setAccessor(nextVaultAccessor);
+        IMigratableVault(_vaultProxy).setVaultLib(nextVaultLib);
+        IMigratableVault(_vaultProxy).setAccessor(nextVaultAccessor);
 
         // Update the FundDeployer that migrated the VaultProxy
         vaultProxyToFundDeployer[_vaultProxy] = nextFundDeployer;

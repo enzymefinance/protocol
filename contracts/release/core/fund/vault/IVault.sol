@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../../../../persistent/vault/IProxiableVault.sol";
+import "../../../../persistent/utils/IMigratableVault.sol";
 
 /// @title IVault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
-interface IVault is IProxiableVault {
+interface IVault is IMigratableVault {
     function addTrackedAsset(address) external;
 
     function approveAssetSpender(

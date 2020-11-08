@@ -7,7 +7,7 @@ export { VaultProxy } from './codegen/VaultProxy';
 
 // Persistent release interfaces
 export { IMigrationHookHandler } from './codegen/IMigrationHookHandler';
-export { IProxiableVault } from './codegen/IProxiableVault';
+export { IMigratableVault } from './codegen/IMigratableVault';
 
 // Release core
 export { FundDeployer } from './codegen/FundDeployer';

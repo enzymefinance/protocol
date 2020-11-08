@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-/// @title IProxiableVault Interface
+/// @title IMigratableVault Interface
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @dev DO NOT EDIT CONTRACT
-interface IProxiableVault {
+interface IMigratableVault {
     function canMigrate(address _who) external view returns (bool canMigrate_);
 
     function init(

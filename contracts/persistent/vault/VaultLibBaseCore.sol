@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../utils/Proxiable.sol";
+import "../utils/IMigratableVault.sol";
+import "./utils/ProxiableVaultLib.sol";
 import "./utils/SharesTokenBase.sol";
-import "./IProxiableVault.sol";
 
 /// @title VaultLibBaseCore Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -11,7 +11,7 @@ import "./IProxiableVault.sol";
 /// required functions for a VaultLib implementation
 /// @dev DO NOT EDIT CONTRACT. If new events or storage are necessary, they should be added to
 /// a numbered VaultLibBaseXXX that inherits the previous base. See VaultLibBase1.
-abstract contract VaultLibBaseCore is SharesTokenBase, IProxiableVault, Proxiable {
+abstract contract VaultLibBaseCore is IMigratableVault, ProxiableVaultLib, SharesTokenBase {
     event AccessorSet(address prevAccessor, address nextAccessor);
 
     event MigratorSet(address prevMigrator, address nextMigrator);
