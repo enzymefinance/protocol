@@ -28,10 +28,10 @@ async function snapshotWithMocks(provider: EthereumTestnetProvider) {
   // Create mock FundDeployer instances with hooks implemented.
   // We can unset hooks in individual tests to test failure behavior.
   const mockFundDeployer1 = await IMigrationHookHandler.mock(config.deployer);
-  await mockFundDeployer1.implementMigrationOutHook.returns(undefined);
+  await mockFundDeployer1.invokeMigrationOutHook.returns(undefined);
 
   const mockFundDeployer2 = await IMigrationHookHandler.mock(config.deployer);
-  await mockFundDeployer2.implementMigrationInCancelHook.returns(undefined);
+  await mockFundDeployer2.invokeMigrationInCancelHook.returns(undefined);
 
   return {
     accounts,
@@ -475,10 +475,10 @@ describe('signalMigration', () => {
 
     const nextVaultAccessor = randomAddress();
 
-    // Make MigrationOutHook implementation fail
+    // Make MigrationOutHook invoke fail
     const revertReason = 'test revert';
     // TODO: revert specifically for MigrationOutHook.PreSignal
-    await mockPrevFundDeployer.implementMigrationOutHook
+    await mockPrevFundDeployer.invokeMigrationOutHook
       .given(MigrationOutHook.PreSignal, vaultProxy, mockNextFundDeployer, nextVaultAccessor, nextVaultLib)
       .reverts(revertReason);
 
@@ -531,10 +531,10 @@ describe('signalMigration', () => {
 
     const nextVaultAccessor = randomAddress();
 
-    // Make MigrationOutHook implementation fail
+    // Make MigrationOutHook invoke fail
     const revertReason = 'test revert';
     // TODO: revert specifically for MigrationOutHook.PostSignal
-    await mockPrevFundDeployer.implementMigrationOutHook
+    await mockPrevFundDeployer.invokeMigrationOutHook
       .given(MigrationOutHook.PostSignal, vaultProxy, mockNextFundDeployer, nextVaultAccessor, nextVaultLib)
       .reverts(revertReason);
 
@@ -613,7 +613,7 @@ describe('signalMigration', () => {
       signalTimestamp_: signalTimestamp,
     });
 
-    expect(mockPrevFundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PreSignal,
       vaultProxy,
       mockNextFundDeployer,
@@ -621,7 +621,7 @@ describe('signalMigration', () => {
       nextVaultLib,
     );
 
-    expect(mockPrevFundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PostSignal,
       vaultProxy,
       mockNextFundDeployer,
@@ -742,7 +742,7 @@ describe('cancelMigration', () => {
       signalTimestamp_: BigNumber.from(0),
     });
 
-    expect(mockPrevFundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PreSignal,
       vaultProxy,
       mockNextFundDeployer,
@@ -750,7 +750,7 @@ describe('cancelMigration', () => {
       nextVaultLib,
     );
 
-    expect(mockNextFundDeployer.implementMigrationInCancelHook).toHaveBeenCalledOnContractWith(
+    expect(mockNextFundDeployer.invokeMigrationInCancelHook).toHaveBeenCalledOnContractWith(
       vaultProxy,
       mockPrevFundDeployer,
       nextVaultAccessor,
@@ -1010,7 +1010,7 @@ describe('executeMigration', () => {
       signalTimestamp_: BigNumber.from(0),
     });
 
-    expect(mockPrevFundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PreMigrate,
       vaultProxy,
       mockNextFundDeployer,
@@ -1018,7 +1018,7 @@ describe('executeMigration', () => {
       nextVaultLib,
     );
 
-    expect(mockPrevFundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+    expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PostMigrate,
       vaultProxy,
       mockNextFundDeployer,

@@ -456,7 +456,7 @@ contract Dispatcher is IDispatcher {
     ) private {
         (bool success, bytes memory returnData) = _nextFundDeployer.call(
             abi.encodeWithSelector(
-                IMigrationHookHandler.implementMigrationInCancelHook.selector,
+                IMigrationHookHandler.invokeMigrationInCancelHook.selector,
                 _vaultProxy,
                 _prevFundDeployer,
                 _nextVaultAccessor,
@@ -493,7 +493,7 @@ contract Dispatcher is IDispatcher {
     ) private {
         (bool success, bytes memory returnData) = _prevFundDeployer.call(
             abi.encodeWithSelector(
-                IMigrationHookHandler.implementMigrationOutHook.selector,
+                IMigrationHookHandler.invokeMigrationOutHook.selector,
                 _hook,
                 _vaultProxy,
                 _nextFundDeployer,

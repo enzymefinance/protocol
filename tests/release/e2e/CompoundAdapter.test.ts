@@ -217,8 +217,8 @@ describe('lend', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 357882
-    expect(lendReceipt).toCostLessThan('358000');
+    // Rounding up from 358011
+    expect(lendReceipt).toCostLessThan('359000');
   });
 });
 

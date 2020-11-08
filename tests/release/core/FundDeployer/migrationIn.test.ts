@@ -17,7 +17,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Mock a FundDeployer contract for the prev fund
   const mockPrevFundDeployer = await IMigrationHookHandler.mock(config.deployer);
-  await mockPrevFundDeployer.implementMigrationOutHook.returns(undefined);
+  await mockPrevFundDeployer.invokeMigrationOutHook.returns(undefined);
 
   // Set the mock FundDeployer on Dispatcher
   await deployment.dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
@@ -295,7 +295,7 @@ describe('emergency functions', () => {
 
       // Set a signalMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.implementMigrationOutHook
+      await mockPrevFundDeployer.invokeMigrationOutHook
         .given(MigrationOutHook.PreSignal, vaultProxyAddress, fundDeployer, nextComptrollerProxy, vaultLib)
         .reverts(revertReason);
 
@@ -336,7 +336,7 @@ describe('emergency functions', () => {
 
       // Set an executeMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.implementMigrationOutHook
+      await mockPrevFundDeployer.invokeMigrationOutHook
         .given(MigrationOutHook.PreMigrate, vaultProxyAddress, fundDeployer, nextComptrollerProxy, vaultLib)
         .reverts(revertReason);
 
@@ -367,7 +367,7 @@ describe('emergency functions', () => {
 
       // Set a cancelMigration hook to revert on prevFundDeployer
       const revertReason = 'because testing';
-      await mockPrevFundDeployer.implementMigrationOutHook
+      await mockPrevFundDeployer.invokeMigrationOutHook
         .given(MigrationOutHook.PostCancel, vaultProxyAddress, fundDeployer, nextComptrollerProxy, vaultLib)
         .reverts(revertReason);
 

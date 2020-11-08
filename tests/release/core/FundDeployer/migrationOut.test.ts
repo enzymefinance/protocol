@@ -38,7 +38,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Mock a nextFundDeployer contract and nextVaultLib
   const mockNextFundDeployer = await IMigrationHookHandler.mock(config.deployer);
-  await mockNextFundDeployer.implementMigrationInCancelHook.returns(undefined);
+  await mockNextFundDeployer.invokeMigrationInCancelHook.returns(undefined);
   const mockNextVaultLib = await MockVaultLib.deploy(config.deployer);
 
   // Set the mock FundDeployer on Dispatcher
@@ -67,7 +67,7 @@ describe('implementMigrationOutHook', () => {
       await expect(
         fundDeployer
           .connect(randomUser)
-          .implementMigrationOutHook(
+          .invokeMigrationOutHook(
             MigrationOutHook.PreMigrate,
             randomAddress(),
             constants.AddressZero,
@@ -104,7 +104,7 @@ describe('implementMigrationOutHook', () => {
       await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
 
       // Assert expected calls
-      expect(fundDeployer.implementMigrationOutHook).toHaveBeenCalledOnContractWith(
+      expect(fundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
         MigrationOutHook.PreMigrate,
         vaultProxy,
         mockNextFundDeployer,

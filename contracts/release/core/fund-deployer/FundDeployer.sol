@@ -341,7 +341,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     }
 
     /// @dev Unimplemented
-    function implementMigrationInCancelHook(
+    function invokeMigrationInCancelHook(
         address,
         address,
         address,
@@ -418,7 +418,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @notice Allows "hooking into" specific moments in the migration pipeline
     /// to execute arbitrary logic during a migration out of this release
     /// @param _vaultProxy The VaultProxy being migrated
-    function implementMigrationOutHook(
+    function invokeMigrationOutHook(
         MigrationOutHook _hook,
         address _vaultProxy,
         address,
