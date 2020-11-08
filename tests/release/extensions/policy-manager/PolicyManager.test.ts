@@ -1,4 +1,4 @@
-import { utils } from 'ethers';
+import { utils, constants } from 'ethers';
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
 import {
   Dispatcher,
@@ -203,7 +203,81 @@ describe('activateForFund', () => {
 });
 
 describe('deactivateForFund', () => {
-  it.todo('removes VaultProxy and all policies from local storage');
+  it('removes VaultProxy and all policies from local storage', async () => {
+    const {
+      config,
+      deployment: {
+        fundDeployer,
+        chainlinkPriceFeed,
+        dispatcher,
+        feeManager,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+      },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+    } = await provider.snapshot(snapshot);
+
+    // create new fund
+    const { vaultProxy, comptrollerProxy: oldComptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer: config.deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+      policyManagerConfigData: policyManagerConfig,
+    });
+
+    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
+    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
+    const signalTime = await transactionTimestamp(signalReceipt);
+
+    // Warp to migratable time
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Migration execution settles the accrued fee
+    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+
+    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
+      vaultProxy,
+      nextVaultAccessor: nextComptrollerProxy,
+      nextFundDeployer: nextFundDeployer,
+      prevFundDeployer: fundDeployer,
+      nextVaultLib: vaultLib,
+      signalTimestamp: signalTime,
+    });
+
+    // check old comptrollerProxy to make sure vaultProxy has been deleted
+    const getVaultProxyForFundCall = await policyManager.getVaultProxyForFund(oldComptrollerProxy);
+    expect(getVaultProxyForFundCall).toMatchAddress(constants.AddressZero);
+
+    // check old comptrollerProxy to make sure various policies have been deleted
+    const getPoliciesForFundCall = await policyManager.getEnabledPoliciesForFund(oldComptrollerProxy);
+    expect(getPoliciesForFundCall).toMatchObject([]);
+  });
 });
 
 describe('disablePolicyForFund', () => {
