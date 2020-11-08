@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IMakerDaoPot } from '@melonproject/protocol/src/codegen/IMakerDaoPot';
+import { IMakerDaoPot } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {

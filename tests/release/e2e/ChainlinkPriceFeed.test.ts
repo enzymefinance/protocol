@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { IChainlinkAggregator } from '@melonproject/protocol/src/codegen/IChainlinkAggregator';
+import { IChainlinkAggregator } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
 import { constants, utils } from 'ethers';
 

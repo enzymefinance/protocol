@@ -191,7 +191,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       ...buySharesArgs,
     });
 
-    expect(buySharesTx).toCostLessThan(435000);
+    expect(buySharesTx).toCostLessThan(380000);
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
   });
 
@@ -219,7 +219,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    expect(takeOrder).toCostLessThan(9800000);
+    expect(takeOrder).toCostLessThan(980000);
 
     const balance = await incomingAsset.balanceOf(vaultProxy);
     expect(balance).toBeGteBigNumber(minIncomingAssetAmount);

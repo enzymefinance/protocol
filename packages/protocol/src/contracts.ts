@@ -35,12 +35,6 @@ export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
 export { CompoundPriceFeed } from './codegen/CompoundPriceFeed';
 export { UniswapV2PoolPriceFeed } from './codegen/UniswapV2PoolPriceFeed';
 
-// Integratee interfaces
-export { IUniswapV2Factory } from './codegen/IUniswapV2Factory';
-export { IUniswapV2Pair } from './codegen/IUniswapV2Pair';
-export { IUniswapV2Router2 } from './codegen/IUniswapV2Router2';
-export { IKyberNetworkProxy } from './codegen/IKyberNetworkProxy';
-
 // Integration adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';
 export { KyberAdapter } from './codegen/KyberAdapter';
@@ -85,13 +79,18 @@ export { MockUniswapV2Integratee } from './codegen/MockUniswapV2Integratee';
 export { MockUniswapV2Pair } from './codegen/MockUniswapV2Pair';
 export { WETH } from './codegen/WETH';
 
-// Compound
+// External interfaces
+export { IUniswapV2Factory } from './codegen/IUniswapV2Factory';
+export { IUniswapV2Pair } from './codegen/IUniswapV2Pair';
+export { IUniswapV2Router2 } from './codegen/IUniswapV2Router2';
+export { IKyberNetworkProxy } from './codegen/IKyberNetworkProxy';
+export { IMakerDaoPot } from './codegen/IMakerDaoPot';
+export { IChainlinkAggregator } from './codegen/IChainlinkAggregator';
 export { ICERC20 } from './codegen/ICERC20';
 export { ICEther } from './codegen/ICEther';
 
 // prettier-ignore
 export interface StandardToken extends Contract<StandardToken> {
-  // Shortcuts (using function name of first overload)
   allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>
   approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
   balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>
@@ -99,15 +98,6 @@ export interface StandardToken extends Contract<StandardToken> {
   totalSupply: Call<() => BigNumber, Contract<any>>
   transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
   transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
-
-  // Explicit accessors (using full function signature)
-  'allowance(address,address)': Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>
-  'approve(address,uint256)': Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
-  'balanceOf(address)': Call<(account: AddressLike) => BigNumber, Contract<any>>
-  'decimals()': Call<() => BigNumber, Contract<any>>
-  'totalSupply()': Call<() => BigNumber, Contract<any>>
-  'transfer(address,uint256)': Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
-  'transferFrom(address,address,uint256)': Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
 }
 
 export const StandardToken = contract<StandardToken>()`

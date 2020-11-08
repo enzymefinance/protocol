@@ -20,5 +20,28 @@ module.exports = {
     typescript: {
       path: './packages/protocol/src/codegen',
     },
+    include: [
+      // Explicitly allow inclusion of core release interfaces.
+      'IExtension',
+      'IIntegrationAdapter',
+      'IFee',
+      'IPolicy',
+
+      // TODO: Re-evaluate whether we should include these at all.
+      'IMigrationHookHandler',
+      'IMigratableVault',
+      'IChainlinkAggregator',
+      'IMakerDaoPot',
+      'IUniswapV2Factory',
+      'IUniswapV2Pair',
+      'IUniswapV2Router2',
+      'IKyberNetworkProxy',
+      'ICERC20',
+      'ICEther',
+    ],
+    options: {
+      ignoreContractsWithoutAbi: true,
+      ignoreContractsWithoutBytecode: true,
+    },
   },
 };
