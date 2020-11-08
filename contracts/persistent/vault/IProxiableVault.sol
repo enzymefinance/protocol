@@ -5,15 +5,15 @@ pragma solidity 0.6.8;
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @dev DO NOT EDIT CONTRACT
 interface IProxiableVault {
-    function canMigrate(address) external view returns (bool);
+    function canMigrate(address _who) external view returns (bool canMigrate_);
 
     function init(
-        address,
-        address,
-        string calldata
+        address _owner,
+        address _accessor,
+        string calldata _fundName
     ) external;
 
-    function setAccessor(address) external;
+    function setAccessor(address _nextAccessor) external;
 
-    function setVaultLib(address) external;
+    function setVaultLib(address _nextVaultLib) external;
 }

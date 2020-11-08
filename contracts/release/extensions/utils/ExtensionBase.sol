@@ -14,13 +14,13 @@ abstract contract ExtensionBase is IExtension {
     /// @notice Allows extension to run logic during fund activation
     /// @dev Unimplemented by default, may be overridden.
     function activateForFund(bool) external virtual override {
-        // UNIMPLEMENTED
+        return;
     }
 
     /// @notice Allows extension to run logic during fund deactivation (destruct)
     /// @dev Unimplemented by default, may be overridden.
     function deactivateForFund() external virtual override {
-        // UNIMPLEMENTED
+        return;
     }
 
     /// @notice Receives calls from ComptrollerLib.callOnExtension()
@@ -37,7 +37,7 @@ abstract contract ExtensionBase is IExtension {
     /// @notice Allows extension to run logic during fund configuration
     /// @dev Unimplemented by default, may be overridden.
     function setConfigForFund(bytes calldata) external virtual override {
-        // UNIMPLEMENTED
+        return;
     }
 
     /// @dev Helper to validate a ComptrollerProxy-VaultProxy relation, which we store for both

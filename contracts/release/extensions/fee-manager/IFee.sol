@@ -7,43 +7,45 @@ import "./IFeeManager.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Interface for all fees
 interface IFee {
-    function activateForFund(address, address) external;
+    function activateForFund(address _comptrollerProxy, address _vaultProxy) external;
 
-    function addFundSettings(address, bytes calldata) external;
+    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData) external;
 
-    function identifier() external pure returns (string memory);
+    function identifier() external pure returns (string memory identifier_);
 
     function implementedHooks()
         external
         view
         returns (
-            IFeeManager.FeeHook[] memory,
-            IFeeManager.FeeHook[] memory,
-            bool,
-            bool
+            IFeeManager.FeeHook[] memory implementedHooksForSettle_,
+            IFeeManager.FeeHook[] memory implementedHooksForUpdate_,
+            bool usesGavOnSettle_,
+            bool usesGavOnUpdate_
         );
 
-    function payout(address, address) external returns (bool);
+    function payout(address _comptrollerProxy, address _vaultProxy)
+        external
+        returns (bool isPayable_);
 
     function settle(
-        address,
-        address,
-        IFeeManager.FeeHook,
-        bytes calldata,
-        uint256
+        address _comptrollerProxy,
+        address _vaultProxy,
+        IFeeManager.FeeHook _hook,
+        bytes calldata _settlementData,
+        uint256 _gav
     )
         external
         returns (
-            IFeeManager.SettlementType,
-            address,
-            uint256
+            IFeeManager.SettlementType settlementType_,
+            address payer_,
+            uint256 sharesDue_
         );
 
     function update(
-        address,
-        address,
-        IFeeManager.FeeHook,
-        bytes calldata,
-        uint256
+        address _comptrollerProxy,
+        address _vaultProxy,
+        IFeeManager.FeeHook _hook,
+        bytes calldata _settlementData,
+        uint256 _gav
     ) external;
 }

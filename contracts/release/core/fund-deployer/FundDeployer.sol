@@ -340,13 +340,14 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         __executeMigration(_vaultProxy, true);
     }
 
+    /// @dev Unimplemented
     function implementMigrationInCancelHook(
         address,
         address,
         address,
         address
     ) external virtual override {
-        // UNIMPLEMENTED
+        return;
     }
 
     /// @notice Signal a fund migration

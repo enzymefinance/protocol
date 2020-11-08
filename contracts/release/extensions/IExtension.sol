@@ -5,15 +5,15 @@ pragma solidity 0.6.8;
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Interface for all extensions
 interface IExtension {
-    function activateForFund(bool) external;
+    function activateForFund(bool _isMigration) external;
 
     function deactivateForFund() external;
 
     function receiveCallFromComptroller(
-        address,
-        uint256,
-        bytes calldata
+        address _comptrollerProxy,
+        uint256 _actionId,
+        bytes calldata _callArgs
     ) external;
 
-    function setConfigForFund(bytes calldata) external;
+    function setConfigForFund(bytes calldata _configData) external;
 }

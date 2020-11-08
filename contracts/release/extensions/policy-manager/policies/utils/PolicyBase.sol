@@ -19,9 +19,9 @@ abstract contract PolicyBase is IPolicy {
     }
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
-    /// @dev Disallowed by default, can be overridden by the policy
+    /// @dev Unimplemented by default, can be overridden by the policy
     function activateForFund(address, address) external virtual override {
-        // UNIMPLEMENTED
+        return;
     }
 
     /// @notice Updates the policy settings for a fund

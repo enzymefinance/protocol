@@ -5,7 +5,7 @@ pragma solidity 0.6.8;
 /// See: https://eips.ethereum.org/EIPS/eip-1822
 /// Code position in storage is `bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)`,
 /// which is "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc".
-contract Proxiable {
+abstract contract Proxiable {
     /// @dev Updates the target of the proxy to be the contract at _nextAddress
     function __updateCodeAddress(address _nextAddress) internal {
         require(

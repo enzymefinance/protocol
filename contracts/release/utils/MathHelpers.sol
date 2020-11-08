@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 /// @title MathHelpers Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Helper functions for common math operations
-contract MathHelpers {
+abstract contract MathHelpers {
     using SafeMath for uint256;
 
     /// @dev Calculates a proportional value relative to a known ratio

@@ -215,28 +215,28 @@ contract Dispatcher is IDispatcher {
         address _owner,
         address _vaultAccessor,
         string calldata _fundName
-    ) external override onlyCurrentFundDeployer returns (address) {
+    ) external override onlyCurrentFundDeployer returns (address vaultProxy_) {
         bytes memory constructData = abi.encodeWithSelector(
             IProxiableVault.init.selector,
             _owner,
             _vaultAccessor,
             _fundName
         );
-        address vaultProxy = address(new VaultProxy(constructData, _vaultLib));
+        vaultProxy_ = address(new VaultProxy(constructData, _vaultLib));
 
         address fundDeployer = msg.sender;
-        vaultProxyToFundDeployer[vaultProxy] = fundDeployer;
+        vaultProxyToFundDeployer[vaultProxy_] = fundDeployer;
 
         emit VaultProxyDeployed(
             fundDeployer,
             _owner,
-            vaultProxy,
+            vaultProxy_,
             _vaultLib,
             _vaultAccessor,
             _fundName
         );
 
-        return vaultProxy;
+        return vaultProxy_;
     }
 
     ////////////////

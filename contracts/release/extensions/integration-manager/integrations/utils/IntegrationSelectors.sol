@@ -5,7 +5,7 @@ pragma solidity 0.6.8;
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Selectors for integration actions
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
-contract IntegrationSelectors {
+abstract contract IntegrationSelectors {
     bytes4 public constant ADD_TRACKED_ASSETS_SELECTOR = bytes4(
         keccak256("addTrackedAssets(address,bytes,bytes)")
     );

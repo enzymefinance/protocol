@@ -9,7 +9,7 @@ import "./VaultLibSafeMath.sol";
 /// @dev The logic can be overridden by VaultLib implementations.
 /// Adapted from OpenZeppelin 3.2.0.
 /// DO NOT EDIT THIS CONTRACT.
-contract SharesTokenBase {
+abstract contract SharesTokenBase {
     using VaultLibSafeMath for uint256;
 
     event Approval(address indexed owner, address indexed spender, uint256 value);

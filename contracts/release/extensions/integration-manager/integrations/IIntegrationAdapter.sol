@@ -7,16 +7,16 @@ import "../IIntegrationManager.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Interface for all integration adapters
 interface IIntegrationAdapter {
-    function identifier() external pure returns (string memory);
+    function identifier() external pure returns (string memory identifier_);
 
-    function parseAssetsForMethod(bytes4, bytes calldata)
+    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
         external
         view
         returns (
-            IIntegrationManager.SpendAssetsHandleType,
-            address[] memory,
-            uint256[] memory,
-            address[] memory,
-            uint256[] memory
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
         );
 }
