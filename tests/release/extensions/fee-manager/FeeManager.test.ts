@@ -414,21 +414,21 @@ describe('invokeHook', () => {
     } = await provider.snapshot(snapshot);
 
     // Register new mock fee that will not be activated on fund
-    const unactivatedMockFee = await IFee.mock(deployer);
+    const nonActivatedMockFee = await IFee.mock(deployer);
 
     await Promise.all([
-      unactivatedMockFee.identifier.returns(`UNACTIVATED_MOCK_FEE`),
-      unactivatedMockFee.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
-      unactivatedMockFee.payout.returns(false),
-      unactivatedMockFee.addFundSettings.returns(undefined),
-      unactivatedMockFee.activateForFund.returns(undefined),
-      unactivatedMockFee.implementedHooks.returns([FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares]),
+      nonActivatedMockFee.identifier.returns(`NON_ACTIVATED_MOCK_FEE`),
+      nonActivatedMockFee.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
+      nonActivatedMockFee.payout.returns(false),
+      nonActivatedMockFee.addFundSettings.returns(undefined),
+      nonActivatedMockFee.activateForFund.returns(undefined),
+      nonActivatedMockFee.implementedHooks.returns([FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares]),
     ]);
 
     // Register the mock fee
-    await feeManager.registerFees([unactivatedMockFee]);
+    await feeManager.registerFees([nonActivatedMockFee]);
 
-    const fees = [unactivatedMockFee];
+    const fees = [nonActivatedMockFee];
     const feesSettingsData = [utils.randomBytes(10)];
 
     const feeManagerConfig = feeManagerConfigArgs({

@@ -48,7 +48,7 @@ export async function mockGenericSwap({
   spendAssetAmounts = [],
   incomingAssets = [],
   minIncomingAssetAmounts = [],
-  actualIncomingAssetAmounts = [],
+  incomingAssetAmounts = [],
   seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -61,7 +61,7 @@ export async function mockGenericSwap({
   spendAssetAmounts?: BigNumberish[];
   incomingAssets?: StandardToken[];
   minIncomingAssetAmounts?: BigNumberish[];
-  actualIncomingAssetAmounts?: BigNumberish[];
+  incomingAssetAmounts?: BigNumberish[];
   seedFund?: boolean;
 }) {
   // Seed the VaultProxy with enough spendAssets for the tx
@@ -76,7 +76,7 @@ export async function mockGenericSwap({
     spendAssetAmounts,
     incomingAssets,
     minIncomingAssetAmounts,
-    incomingAssetAmounts: actualIncomingAssetAmounts,
+    incomingAssetAmounts,
   });
 
   const callArgs = callOnIntegrationArgs({

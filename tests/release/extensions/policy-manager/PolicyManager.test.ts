@@ -949,7 +949,7 @@ describe('validatePolicies', () => {
     // the incoming assets are not yet tracked, meaning the final token balance
     // will be the reported incoming asset amount
     // (rather than the diff in token balances from start to finish)
-    const actualIncomingAssetAmounts = [utils.parseEther('10'), utils.parseEther('2')];
+    const incomingAssetAmounts = [utils.parseEther('10'), utils.parseEther('2')];
 
     await mockGenericSwap({
       comptrollerProxy,
@@ -961,7 +961,7 @@ describe('validatePolicies', () => {
       spendAssetAmounts,
       incomingAssets,
       minIncomingAssetAmounts,
-      actualIncomingAssetAmounts,
+      incomingAssetAmounts,
       seedFund: true,
     });
 
@@ -988,7 +988,7 @@ describe('validatePolicies', () => {
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
-        incomingAssetAmounts: actualIncomingAssetAmounts,
+        incomingAssetAmounts,
         outgoingAssets,
         outgoingAssetAmounts,
       }),
@@ -1085,10 +1085,10 @@ describe('policy registry', () => {
       const policies = [mockPreBuySharesPolicy, mockPostBuySharesPolicy, mockPostCoIPolicy, mockPreCoIPolicy];
       const receipt = await policyManager.deregisterPolicies(policies);
 
-      const policyDeregisteredEvent = policyManager.abi.getEvent('PolicyDeregistered');
+      const policyDeRegisteredEvent = policyManager.abi.getEvent('PolicyDeregistered');
 
-      // One policyDeregisteredEvent should have been emitted for each element in policyArray
-      const events = extractEvent(receipt, policyDeregisteredEvent);
+      // One policyDeRegisteredEvent should have been emitted for each element in policyArray
+      const events = extractEvent(receipt, policyDeRegisteredEvent);
       expect(events.length).toBe(policies.length);
 
       for (let i = 0; i < policies.length; i++) {
