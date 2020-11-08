@@ -6,11 +6,11 @@ import {
   AddressLike,
   MockContract,
 } from '@crestproject/crestproject';
-import { assertEvent, defaultPersistetTestDeployment, transactionTimestamp } from '@melonproject/testutils';
+import { assertEvent, defaultPersistentTestDeployment, transactionTimestamp } from '@melonproject/testutils';
 import { Dispatcher, IMigrationHookHandler, MockVaultLib, MigrationOutHook } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, config, deployment } = await defaultPersistetTestDeployment(provider);
+  const { accounts, config, deployment } = await defaultPersistentTestDeployment(provider);
 
   return {
     accounts,
@@ -297,8 +297,6 @@ describe('claimOwnership', () => {
 });
 
 describe('deployVaultProxy', () => {
-  it.todo('does not allow a bad VaultLib');
-
   it('correctly deploys a new VaultProxy', async () => {
     const {
       deployment: { dispatcher },
@@ -309,14 +307,31 @@ describe('deployVaultProxy', () => {
     const owner = randomAddress();
     const vaultAccessor = randomAddress();
     const fundName = 'Mock Fund';
-    const vaultProxy = await deployVault({
-      dispatcher,
-      mockFundDeployer,
+
+    // Set current fund deployer
+    await dispatcher.setCurrentFundDeployer(mockFundDeployer);
+
+    // Deploy vault proxy
+    const receipt = await mockFundDeployer.forward(
+      dispatcher.deployVaultProxy,
       vaultLib,
       owner,
       vaultAccessor,
       fundName,
+    );
+
+    const event = dispatcher.abi.getEvent('VaultProxyDeployed');
+    const args = assertEvent(receipt, event, {
+      fundName,
+      owner,
+      vaultAccessor,
+      vaultLib,
+      fundDeployer: mockFundDeployer,
+      vaultProxy: expect.anything(),
     });
+
+    // Create the Vault proxy object
+    const vaultProxy = new MockVaultLib(args.vaultProxy, provider);
 
     // Assert VaultLib state
     const creatorCall = await vaultProxy.getCreator();
@@ -331,6 +346,9 @@ describe('deployVaultProxy', () => {
     const ownerCall = await vaultProxy.getOwner();
     expect(ownerCall).toMatchAddress(owner);
 
+    const fundDeployerForVaultProxy = await dispatcher.getFundDeployerForVaultProxy(vaultProxy);
+    expect(fundDeployerForVaultProxy).toMatchAddress(mockFundDeployer);
+
     // Assert ERC20 state
     const nameCall = await vaultProxy.name();
     expect(nameCall).toBe(fundName);
@@ -342,18 +360,102 @@ describe('deployVaultProxy', () => {
     const decimalsCall = await vaultProxy.decimals();
     expect(decimalsCall).toBe(18);
 
-    // TODO: Check VaultProxy events and ERC20 events
+    // Assert vaultProxy events
+    const accessorSetEvent = vaultProxy.abi.getEvent('AccessorSet');
+    assertEvent(receipt, accessorSetEvent, { prevAccessor: constants.AddressZero, nextAccessor: vaultAccessor });
+
+    const ownerSetEvent = vaultProxy.abi.getEvent('OwnerSet');
+    assertEvent(receipt, ownerSetEvent, { prevOwner: constants.AddressZero, nextOwner: owner });
+
+    const vaultLibSetEvent = vaultProxy.abi.getEvent('VaultLibSet');
+    assertEvent(receipt, vaultLibSetEvent, { prevVaultLib: constants.AddressZero, nextVaultLib: vaultLib });
   });
 });
 
 describe('signalMigration', () => {
-  it.todo('does not allow empty values');
+  it('can only be called by the current fund deployer', async () => {
+    const {
+      accounts: [randomAccount],
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
 
-  it.todo('does not allow non-existent VaultProxy');
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+    });
+    const nextVaultAccessor = randomAddress();
 
-  it.todo('cannot be called by a previous FundDeployer');
+    // Set current fund deployer
+    await dispatcher.setCurrentFundDeployer(deployer);
 
-  it.todo('cannot be called if fund is already on the current FundDeployer');
+    // Attempt to cancel migration as random account
+    const signalMigrationCall = dispatcher
+      .connect(randomAccount)
+      .signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false);
+
+    await expect(signalMigrationCall).rejects.toBeRevertedWith('Only the current FundDeployer can call this function');
+  });
+
+  it('does not allow non-existent VaultProxy', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockVaultLib1: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Set vaultProxy to a random address
+    const vaultProxy = randomAddress();
+    const nextVaultAccessor = randomAddress();
+
+    // Set current fund deployer
+    await dispatcher.setCurrentFundDeployer(deployer);
+
+    // Attempt to cancel migration as random account
+    const signalMigrationCall = dispatcher
+      .connect(deployer)
+      .signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false);
+
+    await expect(signalMigrationCall).rejects.toBeRevertedWith('_vaultProxy does not exist');
+  });
+
+  it('cannot be called if fund is already on the current FundDeployer', async () => {
+    const {
+      deployment: { dispatcher },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+    });
+
+    const nextVaultAccessor = randomAddress();
+
+    // Confirm that fundDeployer is mockPrevFundDeployer
+    const currentFundDeployer = await dispatcher.getCurrentFundDeployer();
+    expect(currentFundDeployer).toMatchAddress(mockPrevFundDeployer);
+
+    // Attempt to call a migration from the prevFundDeployer
+    const signalMigrationCall = mockPrevFundDeployer.forward(
+      dispatcher.signalMigration,
+      vaultProxy,
+      nextVaultAccessor,
+      nextVaultLib,
+      false,
+    );
+
+    await expect(signalMigrationCall).rejects.toBeRevertedWith('Can only migrate to a new FundDeployer');
+  });
 
   it('correctly handles MigrationOutHook.PreSignal failure', async () => {
     const {
@@ -411,7 +513,61 @@ describe('signalMigration', () => {
     });
   });
 
-  it.todo('correctly handles postSignalMigrationOriginHook failure');
+  it('correctly handles postSignalMigrationOriginHook failure', async () => {
+    const {
+      deployment: { dispatcher },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+    });
+
+    const nextVaultAccessor = randomAddress();
+
+    // Make MigrationOutHook implementation fail
+    const revertReason = 'test revert';
+    // TODO: revert specifically for MigrationOutHook.PostSignal
+    await mockPrevFundDeployer.implementMigrationOutHook
+      .given(MigrationOutHook.PostSignal, vaultProxy, mockNextFundDeployer, nextVaultAccessor, nextVaultLib)
+      .reverts(revertReason);
+
+    await expect(
+      signalMigration({
+        dispatcher,
+        mockNextFundDeployer,
+        nextVaultLib,
+        vaultProxy,
+        nextVaultAccessor,
+      }),
+    ).rejects.toBeRevertedWith(revertReason);
+
+    // Bypassing the failure should allow the tx to succeed and fire the failure event
+    const receipt = await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+      bypassFailure: true,
+    });
+
+    assertEvent(receipt, 'MigrationOutHookFailed', {
+      failureReturnData: expect.anything(),
+      hook: MigrationOutHook.PostSignal,
+      vaultProxy: vaultProxy,
+      prevFundDeployer: mockPrevFundDeployer,
+      nextFundDeployer: mockNextFundDeployer,
+      nextVaultAccessor,
+      nextVaultLib: nextVaultLib,
+    });
+  });
 
   it('correctly signals a migration', async () => {
     const {
@@ -476,11 +632,60 @@ describe('signalMigration', () => {
 });
 
 describe('cancelMigration', () => {
-  it.todo('does not allow empty values');
+  it('does not allow non-existent migration request', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockFundDeployer,
+      mockVaultLib1: vaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
 
-  it.todo('does not allow non-existent migration request');
+    // Deploy a VaultProxy
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer,
+      vaultLib,
+      owner: deployer,
+    });
 
-  it.todo('can only be called by the vaultProxy owner or migrator, or the FundDeployer in the migration request');
+    // Attempt to cancel non-existent migration request
+    const cancelMigrationCall = dispatcher.cancelMigration(vaultProxy, false);
+    await expect(cancelMigrationCall).rejects.toBeRevertedWith('No migration request exists');
+  });
+
+  it('can not be called by an account other the vaultProxy owner or migrator, or the FundDeployer in the migration request', async () => {
+    const {
+      accounts: [randomAccount],
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Change current FundDeployer to mockNextFundDeployer and signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Attempt to cancel migration as random account
+    const cancelMigrationCall = dispatcher.connect(randomAccount).cancelMigration(vaultProxy, false);
+    await expect(cancelMigrationCall).rejects.toBeRevertedWith('Not an allowed caller');
+  });
 
   it.todo('correctly handles postCancelMigrationOriginHook failure');
 
@@ -555,15 +760,145 @@ describe('cancelMigration', () => {
 });
 
 describe('executeMigration', () => {
-  it.todo('does not allow empty values');
+  it('does not allow a bad vaultLib', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
 
-  it.todo('does not allow non-existent migration request');
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
 
-  it.todo('can only be called by the target FundDeployer in the migration request');
+    // Set a bad next vault lib
+    const nextVaultLib = randomAddress();
 
-  it.todo(
-    'cannot be called when the target FundDeployer in the migration request is no longer the current FundDeployer',
-  );
+    // Change current FundDeployer to mockNextFundDeployer and signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp to exactly the timelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Execute migration
+    const executeMigrationCall = mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
+    await expect(executeMigrationCall).rejects.toBeReverted();
+  });
+
+  it('does not allow non-existent migration request', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Attempt to execute migration for vaultProxy without signaled migration
+    const executeMigrationCall = mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
+    await expect(executeMigrationCall).rejects.toBeRevertedWith('No migration request exists for _vaultProxy');
+  });
+
+  it('can only be called by the target FundDeployer in the migration request', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Change current FundDeployer to mockNextFundDeployer and signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp to exactly the timelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Attempt to execute migration from the previous fund deployer
+    const executeMigrationCall = mockPrevFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
+    await expect(executeMigrationCall).rejects.toBeRevertedWith('Only the target FundDeployer can call this function');
+  });
+
+  it('cannot be called when the target FundDeployer in the migration request is no longer the current FundDeployer', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Change current FundDeployer to mockNextFundDeployer and signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp to exactly the timelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
+
+    // Set the currentFundDeployer to a new address
+    await dispatcher.setCurrentFundDeployer(randomAddress());
+
+    // Attempt to execute migration from the previous fund deployer
+    const executeMigrationCall = mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
+    await expect(executeMigrationCall).rejects.toBeRevertedWith(
+      'The target FundDeployer is no longer the current FundDeployer',
+    );
+  });
 
   it('cannot be called when the migration timelock has not yet been met', async () => {
     const {
@@ -632,7 +967,7 @@ describe('executeMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const singalReceipt = await signalMigration({
+    const signalReceipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -640,7 +975,7 @@ describe('executeMigration', () => {
       nextVaultAccessor,
     });
 
-    const signalTimestamp = await transactionTimestamp(singalReceipt);
+    const signalTimestamp = await transactionTimestamp(signalReceipt);
 
     // Warp to exactly the timelock expiry
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -736,5 +1071,73 @@ describe('setMigrationTimelock', () => {
     // migrationTimelock should have updated to the new value
     const getMigrationTimelockCall = await dispatcher.getMigrationTimelock();
     expect(getMigrationTimelockCall).toEqBigNumber(nextTimelock);
+  });
+});
+
+describe('setCurrentFundDeployer', () => {
+  it('disallows calling with account other than owner', async () => {
+    const {
+      accounts: [randomAccount],
+      config: { deployer },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Attempt to set a fund deployer with a non-owner account
+    const setCurrentFundDeployerCall = dispatcher.connect(randomAccount).setCurrentFundDeployer(deployer);
+    expect(setCurrentFundDeployerCall).rejects.toBeRevertedWith('Only the contract owner can call this function');
+  });
+
+  it('disallows empty address as nextFundDeployer', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Attempt to set a fund deployer with a non-owner account
+    const setCurrentFundDeployerCall = dispatcher.setCurrentFundDeployer(constants.AddressZero);
+    expect(setCurrentFundDeployerCall).rejects.toBeRevertedWith('_nextFundDeployer cannot be empty');
+  });
+
+  it("nextFundDeployer can't be the same as currentFundDeployer", async () => {
+    const {
+      config: { deployer },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Setting the current fund deployer a first time
+    await dispatcher.setCurrentFundDeployer(deployer);
+
+    const currentDeployer = await dispatcher.getCurrentFundDeployer();
+    expect(currentDeployer).toMatchAddress(deployer);
+
+    // Attempting to set it again with the same address
+    const setCurrentFundDeployerCall = dispatcher.setCurrentFundDeployer(currentDeployer);
+    await expect(setCurrentFundDeployerCall).rejects.toBeRevertedWith(
+      '_nextFundDeployer is already currentFundDeployer',
+    );
+  });
+
+  it('correctly sets new current fund deployer and emits CurrentFundDeployerSet event', async () => {
+    const {
+      accounts: [prevFundDeployer, nextFundDeployer],
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Setting the initial fund deployer
+    await dispatcher.setCurrentFundDeployer(prevFundDeployer);
+
+    // Checking that the fund deployer has been set
+    const initialFundDeployer = await dispatcher.getCurrentFundDeployer();
+    expect(initialFundDeployer).toMatchAddress(prevFundDeployer);
+
+    // Setting the initial fund deployer
+    const receipt = await dispatcher.setCurrentFundDeployer(nextFundDeployer);
+
+    // Checking that the fund deployer has been updated
+    const updatedFundDeployer = await dispatcher.getCurrentFundDeployer();
+    expect(updatedFundDeployer).toMatchAddress(nextFundDeployer);
+
+    // Checking that the proper event has been emitted
+    const currentFundDeployerSetEvent = dispatcher.abi.getEvent('CurrentFundDeployerSet');
+    assertEvent(receipt, currentFundDeployerSetEvent, { prevFundDeployer, nextFundDeployer });
   });
 });

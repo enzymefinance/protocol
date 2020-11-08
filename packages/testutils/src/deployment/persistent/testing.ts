@@ -1,7 +1,7 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { deployPersistent } from './deployment';
 
-export async function defaultPersistetTestDeployment(provider: EthereumTestnetProvider) {
+export async function defaultPersistentTestDeployment(provider: EthereumTestnetProvider) {
   const [deployer, ...accounts] = await Promise.all([
     provider.getSignerWithAddress(0),
     provider.getSignerWithAddress(1),
