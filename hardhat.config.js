@@ -44,4 +44,7 @@ module.exports = {
       ignoreContractsWithoutBytecode: true,
     },
   },
+  codeCoverage: {
+    exclude: ['/mock/i'], // Ignore anything with the word "mock" in it.
+  },
 };
