@@ -297,6 +297,29 @@ describe('claimOwnership', () => {
 });
 
 describe('deployVaultProxy', () => {
+  it('does not allow a bad VaultLib', async () => {
+    const {
+      config: { deployer },
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshotWithMocks);
+
+    const owner = randomAddress();
+    const vaultAccessor = randomAddress();
+    const fundName = 'Mock Fund';
+
+    // Setting a bad vaultLib
+    const vaultLib = randomAddress();
+
+    // Setting a fund deployer to call deployVaultProxy
+    await dispatcher.setCurrentFundDeployer(deployer);
+
+    // Attempt to deployVaultProxy with bad vaultLib
+    const deployVaultProxyCall = dispatcher
+      .connect(deployer)
+      .deployVaultProxy(vaultLib, owner, vaultAccessor, fundName);
+    await expect(deployVaultProxyCall).rejects.toBeRevertedWith('function call to a non-contract account');
+  });
+
   it('correctly deploys a new VaultProxy', async () => {
     const {
       deployment: { dispatcher },
@@ -394,7 +417,7 @@ describe('signalMigration', () => {
     // Set current fund deployer
     await dispatcher.setCurrentFundDeployer(deployer);
 
-    // Attempt to cancel migration as random account
+    // Attempt to signal migration as random account
     const signalMigrationCall = dispatcher
       .connect(randomAccount)
       .signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false);
@@ -416,7 +439,7 @@ describe('signalMigration', () => {
     // Set current fund deployer
     await dispatcher.setCurrentFundDeployer(deployer);
 
-    // Attempt to cancel migration as random account
+    // Attempt to signal migration as random account
     const signalMigrationCall = dispatcher
       .connect(deployer)
       .signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false);
@@ -1074,6 +1097,293 @@ describe('setMigrationTimelock', () => {
   });
 });
 
+describe('getTimelockRemainingForMigrationRequest', () => {
+  it('returns 0 if vaultProxy is not valid', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Call getTimelockRemainingForMigrationRequest for a random address (not a vaultProxy)
+    const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(randomAddress());
+    expect(getMigrationTimelockCall).toEqBigNumber(0);
+  });
+
+  it('returns 0 if vaultProxy does not have a signaled migration', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockFundDeployer,
+      mockVaultLib1: vaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer,
+      vaultLib,
+      owner: deployer,
+    });
+
+    // Call getTimelockRemainingForMigrationRequest for a vaultProxy without migration request
+    const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(vaultProxy);
+    expect(getMigrationTimelockCall).toEqBigNumber(0);
+  });
+
+  it('returns 0 if elapsedTime >= migrationTimelock', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp past the timelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() + 1000]);
+    // Mine a block after that time delay
+    await provider.send('evm_mine', []);
+
+    // Get migration TimeLock
+    const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(vaultProxy);
+    expect(getMigrationTimelockCall).toEqBigNumber(0);
+  });
+
+  it('returns the remaining time if elapsedTime < migrationTimelock', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp to 5 seconds before the timelock expiry
+    const remainingTime = 5;
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - remainingTime]);
+    // Mine a block after that time delay
+    await provider.send('evm_mine', []);
+
+    // Get migration TimeLock
+    const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(vaultProxy);
+    expect(getMigrationTimelockCall).toEqBigNumber(remainingTime);
+  });
+});
+
+describe('hasExecutableMigrationRequest', () => {
+  it('returns false if vaultProxy is not valid', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Call hasExecutableMigrationRequest for a random address (not a vaultProxy)
+    const getMigrationTimelockCall = await dispatcher.hasExecutableMigrationRequest(randomAddress());
+    expect(getMigrationTimelockCall).toBe(false);
+  });
+  it('returns false if no migration has been signaled', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockFundDeployer,
+      mockVaultLib1: vaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer,
+      vaultLib,
+      owner: deployer,
+    });
+
+    // Call hasExecutableMigrationRequest for a vaultProxy without migration request
+    const hasExecutableMigrationRequestCall = await dispatcher.hasExecutableMigrationRequest(vaultProxy);
+    expect(hasExecutableMigrationRequestCall).toBe(false);
+  });
+  it('returns false if elapsedTime < migrationTimelock', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp 5 seconds before the migrationTimelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - 5]);
+    // Mine a block after that time delay
+    await provider.send('evm_mine', []);
+
+    // Call hasExecutableMigrationRequest
+    const hasExecutableMigrationRequestCall = await dispatcher.hasExecutableMigrationRequest(vaultProxy);
+    expect(hasExecutableMigrationRequestCall).toBe(false);
+  });
+
+  it('returns true if elapsedTime >= migrationTimelock', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Warp past the migrationTimelock expiry
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() + 1000]);
+    // Mine a block after that time delay
+    await provider.send('evm_mine', []);
+
+    // Call hasExecutableMigrationRequest
+    const hasExecutableMigrationRequestCall = await dispatcher.hasExecutableMigrationRequest(vaultProxy);
+    expect(hasExecutableMigrationRequestCall).toBe(true);
+  });
+});
+
+describe('hasMigrationRequest', () => {
+  it('returns false if vaultProxy is not valid', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Call hasMigrationRequest for a random address (not a vaultProxy)
+    const hasMigrationRequestCall = await dispatcher.hasMigrationRequest(randomAddress());
+    expect(hasMigrationRequestCall).toBe(false);
+  });
+
+  it('returns false if no migration has been signaled', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockFundDeployer,
+      mockVaultLib1: vaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer,
+      vaultLib,
+      owner: deployer,
+    });
+
+    // Call hasExecutableMigrationRequest for a vaultProxy without migration request
+    const hasMigrationRequestCall = await dispatcher.hasMigrationRequest(vaultProxy);
+    expect(hasMigrationRequestCall).toBe(false);
+  });
+
+  it('returns true if a migration has been signaled', async () => {
+    const {
+      deployment: { dispatcher },
+      config: { deployer },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshotWithMocks);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultLib: prevVaultLib,
+      owner: deployer,
+    });
+
+    // Signal migration
+    const nextVaultAccessor = randomAddress();
+    await signalMigration({
+      dispatcher,
+      mockNextFundDeployer,
+      nextVaultLib,
+      vaultProxy,
+      nextVaultAccessor,
+    });
+
+    // Call hasMigrationRequest
+    const hasMigrationRequestCall = await dispatcher.hasMigrationRequest(vaultProxy);
+    expect(hasMigrationRequestCall).toBe(true);
+  });
+});
+
 describe('setCurrentFundDeployer', () => {
   it('disallows calling with account other than owner', async () => {
     const {
@@ -1139,5 +1449,32 @@ describe('setCurrentFundDeployer', () => {
     // Checking that the proper event has been emitted
     const currentFundDeployerSetEvent = dispatcher.abi.getEvent('CurrentFundDeployerSet');
     assertEvent(receipt, currentFundDeployerSetEvent, { prevFundDeployer, nextFundDeployer });
+  });
+});
+
+describe('setSharesTokenSymbol', () => {
+  it('disallows a call by a random user', async () => {
+    const {
+      accounts: [randomAccount],
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Attempt to setSharesTokenSymbol with random account
+    const setSharesTokenSymbolCall = dispatcher.connect(randomAccount).setSharesTokenSymbol('TEST');
+    await expect(setSharesTokenSymbolCall).rejects.toBeRevertedWith('Only the contract owner can call this function');
+  });
+
+  it('correctly updates the SharesTokenSymbol and emits event', async () => {
+    const {
+      deployment: { dispatcher },
+    } = await provider.snapshot(snapshot);
+
+    // Call setSharesTokenSymbol
+    const receipt = await dispatcher.setSharesTokenSymbol('TEST');
+    const getSharesTokenSymbolCall = await dispatcher.getSharesTokenSymbol();
+    expect(getSharesTokenSymbolCall).toBe('TEST');
+
+    const setSharesTokenSymbolEvent = dispatcher.abi.getEvent('SharesTokenSymbolSet');
+    assertEvent(receipt, setSharesTokenSymbolEvent, { _nextSymbol: 'TEST' });
   });
 });
