@@ -91,4 +91,29 @@ contract MockUniswapV2Integratee is SimpleMockIntegrateeBase {
     function getPair(address _token0, address _token1) external view returns (address) {
         return assetToAssetToPair[_token0][_token1];
     }
+
+    /// @dev We don't calculate any intermediate values here because they aren't actually
+    /// used or respected in this mock contract's swap function
+    function getAmountsOut(uint256 _amountIn, address[] calldata _path)
+        external
+        view
+        returns (uint256[] memory amounts_)
+    {
+        require(_path.length >= 2, "getAmountsOut: path must be >= 2");
+
+        address assetIn = _path[0];
+        address assetOut = _path[_path.length - 1];
+        uint256 amountOut = __calcDenormalizedQuoteAssetAmount(
+            ERC20(assetIn).decimals(),
+            _amountIn,
+            ERC20(assetOut).decimals(),
+            __getRate(assetIn, assetOut)
+        );
+
+        amounts_ = new uint256[](_path.length);
+        amounts_[0] = _amountIn;
+        amounts_[_path.length - 1] = amountOut;
+
+        return amounts_;
+    }
 }
