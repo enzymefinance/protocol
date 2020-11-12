@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress, resolveAddress } from '@crestproject/crestproject';
-import { MockToken, MockChainlinkPriceSource } from '@melonproject/protocol';
+import { MockChainlinkPriceSource, MockToken } from '@melonproject/protocol';
 import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 import { constants } from 'ethers';
 
@@ -16,10 +16,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
     MockChainlinkPriceSource.deploy(config.deployer, 18),
   ]);
 
+  const rateAssets = [0, 0];
+
   return {
     accounts,
     deployment,
-    mocks: { aggregatorMocks, primitiveMocks },
+    mocks: { aggregatorMocks, primitiveMocks, rateAssets },
     config,
   };
 }
@@ -61,14 +63,11 @@ describe('addPrimitives', () => {
   it('adds multiple primitives and emit events', async () => {
     const {
       deployment: { chainlinkPriceFeed },
-      config: {
-        chainlink: { rateAssets },
-      },
-      mocks: { aggregatorMocks, primitiveMocks },
+      mocks: { aggregatorMocks, primitiveMocks, rateAssets },
     } = await provider.snapshot(snapshot);
 
     // Add primitives
-    const addPrimitivesReceipt = await chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, [0, 0]);
+    const addPrimitivesReceipt = await chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssets);
 
     // Extract events
     const events = extractEvent(addPrimitivesReceipt, 'PrimitiveAdded');
@@ -79,7 +78,7 @@ describe('addPrimitives', () => {
       const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitiveMocks[i]);
       expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregatorMocks[i],
-        rateAsset: 0,
+        rateAsset: rateAssets[i],
       });
 
       expect(events[i]).toMatchEventArgs({
@@ -171,7 +170,7 @@ describe('updatePrimitives', () => {
     const {
       deployment: { chainlinkPriceFeed },
       config: {
-        chainlink: { primitives, aggregators },
+        chainlink: { primitives, aggregators, rateAssets },
       },
       mocks: { aggregatorMocks },
     } = await provider.snapshot(snapshot);
@@ -190,7 +189,7 @@ describe('updatePrimitives', () => {
       const aggregator = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitivesToUpdate[i]);
       expect(aggregator).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregatorMocks[i],
-        rateAsset: 0,
+        rateAsset: rateAssets[i],
       });
 
       expect(events[i]).toMatchEventArgs({

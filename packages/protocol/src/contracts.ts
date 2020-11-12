@@ -95,6 +95,7 @@ export interface StandardToken extends Contract<StandardToken> {
   approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
   balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>
   decimals: Call<() => BigNumber, Contract<any>>
+  symbol: Call<() => string, Contract<any>>
   totalSupply: Call<() => BigNumber, Contract<any>>
   transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
   transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
@@ -107,6 +108,7 @@ export const StandardToken = contract<StandardToken>()`
   function approve(address spender, uint256 amount) returns (bool)
   function balanceOf(address account) view returns (uint256)
   function decimals() view returns (uint8)
+  function symbol() view returns (string)
   function totalSupply() view returns (uint256)
   function transfer(address recipient, uint256 amount) returns (bool)
   function transferFrom(address sender, address recipient, uint256 amount) returns (bool)

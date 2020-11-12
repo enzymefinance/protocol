@@ -1,4 +1,3 @@
-import { constants, utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import {
   addTrackedAssetsArgs,
@@ -15,13 +14,14 @@ import {
   VaultLib,
 } from '@melonproject/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
-  createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
+  createNewFund,
+  defaultTestDeployment,
   transactionTimestamp,
 } from '@melonproject/testutils';
+import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -305,7 +305,7 @@ describe('integration tests', () => {
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
 
     await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert __preProcessCoI: Non-receivable incoming asset',
+      'VM Exception while processing transaction: revert Rule evaluated to false: ASSET_WHITELIST',
     );
   });
 
@@ -426,7 +426,7 @@ describe('integration tests', () => {
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
 
     await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert __preProcessCoI: Non-receivable incoming asset',
+      'VM Exception while processing transaction: revert Rule evaluated to false: ASSET_WHITELIST',
     );
   });
 });

@@ -36,7 +36,7 @@ function fork(name, roots) {
         forking: {
           url: process.env.MAINNET_ARCHIVE_NODE,
           enabled: true,
-          blockNumber: 11091788,
+          blockNumber: 11244410,
         },
         ...(process.env.COVERAGE && {
           allowUnlimitedContractSize: true,

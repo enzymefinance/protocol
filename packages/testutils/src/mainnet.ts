@@ -3,6 +3,7 @@ export type MainnetConfig = typeof mainnet;
 export const mainnet = {
   chaiPriceSource: '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
   chainlinkEthUsdAggregator: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+  // All Chainlink aggregator addresses should be the proxy contracts
   chainlinkAggregators: {
     bat: ['0x0d16d4528239e9ee52fa531af613AcdB23D88c94', 0],
     bnb: ['0x14e613AC84a31f709eadbdF89C6CC390fDc9540A', 1],
@@ -12,6 +13,7 @@ export const mainnet = {
     knc: ['0x656c0544eF4C98A6a98491833A89204Abb045d6b', 0],
     link: ['0xDC530D9457755926550b59e8ECcdaE7624181557', 0],
     mana: ['0x82A44D92D6c329826dc557c5E1Be6ebeC5D5FeB9', 0],
+    mln: ['0xDaeA8386611A157B08829ED4997A8A62B557014C', 0],
     rep: ['0xD4CE430C3b67b3E2F7026D86E7128588629e2455', 0],
     ren: ['0x0f59666EDE214281e956cb3b2D0d69415AfF4A01', 1],
     uni: ['0xD6aA3D25116d8dA79Ea0246c4826EB951872e02e', 0],

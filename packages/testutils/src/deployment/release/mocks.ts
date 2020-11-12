@@ -27,14 +27,21 @@ export interface MockDeploymentConfig {
 export interface MockDeploymentOutput {
   tokens: Promise<{
     weth: WETH;
-    mln: MockToken;
-    rep: MockToken;
-    knc: MockToken;
-    zrx: MockToken;
-    dai: MockToken;
-    ren: MockToken;
+    bat: MockToken;
+    bnb: MockToken;
+    bnt: MockToken;
     comp: MockToken;
+    dai: MockToken;
+    knc: MockToken;
+    link: MockToken;
+    mana: MockToken;
+    mln: MockToken;
+    ren: MockToken;
+    rep: MockToken;
+    uni: MockToken;
     usdc: MockToken;
+    usdt: MockToken;
+    zrx: MockToken;
   }>;
   uniswapV2Derivatives: Promise<{
     mlnWeth: MockToken;
@@ -57,12 +64,21 @@ export interface MockDeploymentOutput {
   mockGenericIntegratee: Promise<MockGenericIntegratee>;
   chainlinkEthUsdAggregator: Promise<MockChainlinkPriceSource>;
   chainlinkAggregators: Promise<{
-    mln: MockChainlinkPriceSource;
-    rep: MockChainlinkPriceSource;
-    knc: MockChainlinkPriceSource;
-    zrx: MockChainlinkPriceSource;
+    bat: MockChainlinkPriceSource;
+    bnb: MockChainlinkPriceSource;
+    bnt: MockChainlinkPriceSource;
+    comp: MockChainlinkPriceSource;
     dai: MockChainlinkPriceSource;
+    knc: MockChainlinkPriceSource;
+    link: MockChainlinkPriceSource;
+    mana: MockChainlinkPriceSource;
+    mln: MockChainlinkPriceSource;
     ren: MockChainlinkPriceSource;
+    rep: MockChainlinkPriceSource;
+    uni: MockChainlinkPriceSource;
+    usdc: MockChainlinkPriceSource;
+    usdt: MockChainlinkPriceSource;
+    zrx: MockChainlinkPriceSource;
   }>;
   chaiPriceSource: Promise<MockChaiPriceSource>;
 }
@@ -72,25 +88,33 @@ export type MockDeployment = Deployment<DeploymentHandlers<MockDeploymentConfig,
 export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeploymentOutput>({
   // Assets
   async tokens(config) {
-    const [weth, mln, rep, knc, zrx, dai, ren, comp, usdc] = await Promise.all([
-      WETH.deploy(config.deployer),
-      MockToken.deploy(config.deployer, 'Melon Token', 'MLN', 18),
-      MockToken.deploy(config.deployer, 'Reputation', 'REP', 18),
-      MockToken.deploy(config.deployer, 'Kyber Network Crystal', 'KNC', 18),
-      MockToken.deploy(config.deployer, '0x Protocol Token', 'ZRX', 18),
-      MockToken.deploy(config.deployer, 'Dai Stablecoin', 'DAI', 18),
-      MockToken.deploy(config.deployer, 'Republic Token', 'REN', 18),
+    const weth = await WETH.deploy(config.deployer);
+
+    const [bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx] = await Promise.all([
+      MockToken.deploy(config.deployer, 'Basic Attention Token', 'BAT', 18),
+      MockToken.deploy(config.deployer, 'BNB', 'BNB', 18),
+      MockToken.deploy(config.deployer, 'Bancor Network Token', 'BNT', 18),
       MockToken.deploy(config.deployer, 'Compound', 'COMP', 18),
+      MockToken.deploy(config.deployer, 'Dai Stablecoin', 'DAI', 18),
+      MockToken.deploy(config.deployer, 'Kyber Network Crystal', 'KNC', 18),
+      MockToken.deploy(config.deployer, 'ChainLink Token', 'LINK', 18),
+      MockToken.deploy(config.deployer, 'Decentraland MANA', 'MANA', 18),
+      MockToken.deploy(config.deployer, 'Melon Token', 'MLN', 18),
+      MockToken.deploy(config.deployer, 'Republic Token', 'REN', 18),
+      MockToken.deploy(config.deployer, 'Reputation', 'REP', 18),
+      MockToken.deploy(config.deployer, 'Uniswap', 'UNI', 18),
       MockToken.deploy(config.deployer, 'USD Coin', 'USDC', 6),
+      MockToken.deploy(config.deployer, 'Tether USD', 'USDT', 6),
+      MockToken.deploy(config.deployer, '0x Protocol Token', 'ZRX', 18),
     ]);
 
-    return { weth, mln, rep, knc, zrx, dai, ren, comp, usdc };
+    return { weth, bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx };
   },
   async compoundTokens(config, deployment) {
     const tokens = await deployment.tokens;
-    const [ceth, cbat, ccomp, cdai, crep, cuni, cusdc, czrx] = await Promise.all([
+    const ceth = await MockToken.deploy(config.deployer, 'Compound Ether', 'cETH', 8);
+    const [cbat, ccomp, cdai, crep, cuni, cusdc, czrx] = await Promise.all([
       // TODO: deploy MockCEther contract
-      MockToken.deploy(config.deployer, 'Compound Ether', 'cETH', 8),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound Basic Attention Token', 'cBAT', 8, tokens.comp),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound Collateral', 'cCOMP', 8, tokens.comp),
       MockCTokenIntegratee.deploy(config.deployer, 'Compound Dai', 'cDAI', 8, tokens.dai),
@@ -116,16 +140,25 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
     return MockChaiPriceSource.deploy(config.deployer);
   },
   async chainlinkAggregators(config) {
-    const [mln, rep, knc, zrx, dai, ren] = await Promise.all([
+    const [bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx] = await Promise.all([
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
-      MockChainlinkPriceSource.deploy(config.deployer, 8),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 6),
+      MockChainlinkPriceSource.deploy(config.deployer, 6),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
     ]);
 
-    return { mln, rep, knc, zrx, dai, ren };
+    return { bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx };
   },
   async chainlinkEthUsdAggregator(config) {
     return MockChainlinkPriceSource.deploy(config.deployer, 8);
@@ -183,14 +216,23 @@ export async function configureMockRelease({
   ];
 
   const tokens = [
-    mocks.tokens.mln as MockToken,
-    mocks.tokens.rep as MockToken,
-    mocks.tokens.knc as MockToken,
-    mocks.tokens.zrx as MockToken,
-    mocks.tokens.dai as MockToken,
-    mocks.tokens.ren as MockToken,
-    mocks.uniswapV2Derivatives.mlnWeth as MockToken,
-    mocks.uniswapV2Derivatives.kncWeth as MockToken,
+    mocks.tokens.bat,
+    mocks.tokens.bnb,
+    mocks.tokens.bnt,
+    mocks.tokens.comp,
+    mocks.tokens.dai,
+    mocks.tokens.knc,
+    mocks.tokens.link,
+    mocks.tokens.mana,
+    mocks.tokens.mln,
+    mocks.tokens.ren,
+    mocks.tokens.rep,
+    mocks.tokens.uni,
+    mocks.tokens.usdc,
+    mocks.tokens.usdt,
+    mocks.tokens.zrx,
+    mocks.uniswapV2Derivatives.mlnWeth,
+    mocks.uniswapV2Derivatives.kncWeth,
     mocks.chaiIntegratee,
     mocks.compoundTokens.ccomp,
     mocks.compoundTokens.cdai,
@@ -200,36 +242,60 @@ export async function configureMockRelease({
     mocks.compoundTokens.czrx,
   ];
 
-  const uniswapV2Derivatives = [
-    mocks.uniswapV2Derivatives.mlnWeth as MockToken,
-    mocks.uniswapV2Derivatives.kncWeth as MockToken,
-  ];
+  const uniswapV2Derivatives = [mocks.uniswapV2Derivatives.mlnWeth, mocks.uniswapV2Derivatives.kncWeth];
 
   const chainlinkPrimitives = [
-    mocks.tokens.mln as MockToken,
-    mocks.tokens.rep as MockToken,
-    mocks.tokens.knc as MockToken,
-    mocks.tokens.zrx as MockToken,
-    mocks.tokens.dai as MockToken,
-    mocks.tokens.ren as MockToken,
+    mocks.tokens.bat,
+    mocks.tokens.bnb,
+    mocks.tokens.bnt,
+    mocks.tokens.comp,
+    mocks.tokens.dai,
+    mocks.tokens.knc,
+    mocks.tokens.link,
+    mocks.tokens.mana,
+    mocks.tokens.mln,
+    mocks.tokens.ren,
+    mocks.tokens.rep,
+    mocks.tokens.uni,
+    mocks.tokens.usdc,
+    mocks.tokens.usdt,
+    mocks.tokens.zrx,
   ];
 
   const chainlinkAggregators = [
-    mocks.chainlinkAggregators.mln,
-    mocks.chainlinkAggregators.rep,
-    mocks.chainlinkAggregators.knc,
-    mocks.chainlinkAggregators.zrx,
+    mocks.chainlinkAggregators.bat,
+    mocks.chainlinkAggregators.bnb,
+    mocks.chainlinkAggregators.bnt,
+    mocks.chainlinkAggregators.comp,
     mocks.chainlinkAggregators.dai,
+    mocks.chainlinkAggregators.knc,
+    mocks.chainlinkAggregators.link,
+    mocks.chainlinkAggregators.mana,
+    mocks.chainlinkAggregators.mln,
     mocks.chainlinkAggregators.ren,
+    mocks.chainlinkAggregators.rep,
+    mocks.chainlinkAggregators.uni,
+    mocks.chainlinkAggregators.usdc,
+    mocks.chainlinkAggregators.usdt,
+    mocks.chainlinkAggregators.zrx,
   ];
 
   const chainlinkRateAssets = [
-    0, // MLN/ETH
-    0, // REP/ETH
-    0, // KNC/ETH
-    0, // ZRX/ETH
-    0, // DAI/ETH
-    1, // REN/USD
+    0, // bat
+    1, // bnb
+    0, // bnt
+    0, // comp
+    0, // dai
+    0, // knc
+    0, // link
+    0, // mana
+    0, // mln
+    1, // ren
+    0, // rep
+    0, // uni
+    0, // usdc
+    0, // usdt
+    0, // zrx
   ];
 
   // Make all accounts rich in WETH and tokens.
