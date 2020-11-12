@@ -14,7 +14,7 @@ import {
   EntranceRateBurnFee,
   EntranceRateDirectFee,
   FeeManager,
-  FundCalculator,
+  FundActionsWrapper,
   FundDeployer,
   FundLifecycleLib,
   IntegrationManager,
@@ -130,7 +130,7 @@ export interface ReleaseDeploymentOutput {
   maxConcentration: Promise<MaxConcentration>;
   investorWhitelist: Promise<InvestorWhitelist>;
   // Peripheral
-  fundCalculator: Promise<FundCalculator>;
+  fundActionsWrapper: Promise<FundActionsWrapper>;
 }
 
 export const deployRelease = describeDeployment<ReleaseDeploymentConfig, ReleaseDeploymentOutput>({
@@ -336,8 +336,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return InvestorWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
   // Peripheral
-  async fundCalculator(config, deployment) {
-    return FundCalculator.deploy(config.deployer, await deployment.feeManager);
+  async fundActionsWrapper(config, deployment) {
+    return FundActionsWrapper.deploy(config.deployer, await deployment.feeManager);
   },
   // Post-deployment config
   async postDeployment(_config, deployment) {

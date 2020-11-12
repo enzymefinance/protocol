@@ -60,7 +60,7 @@ export { MaxConcentration } from './codegen/MaxConcentration';
 export { InvestorWhitelist } from './codegen/InvestorWhitelist';
 
 // Peripheral
-export { FundCalculator } from './codegen/FundCalculator';
+export { FundActionsWrapper } from './codegen/FundActionsWrapper';
 
 // Mocks
 export { MockVaultLib } from './codegen/MockVaultLib';
