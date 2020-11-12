@@ -298,9 +298,10 @@ describe('integration tests', () => {
     const confirmDisabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy.address);
     expect(confirmDisabledPolicies).toHaveLength(0);
 
-    // re-enable policy with empty settingsData
+    // re-enable policy with additional settingsData
+    const newInvestors = [randomAddress(), randomAddress()];
     const reEnableInvestorWhitelistConfig = investorWhitelistArgs({
-      investorsToAdd: [],
+      investorsToAdd: newInvestors,
     });
 
     await policyManager
@@ -312,11 +313,12 @@ describe('integration tests', () => {
     expect(confirmReEnabledPolicies).toHaveLength(1);
     expect(confirmReEnabledPolicies[0]).toEqual(investorWhitelist.address);
 
-    // confirm that the members of the re-enabled whitelist are those passed in initial config
+    // confirm that the members of the re-enabled whitelist are either in the initial config or the additionalSettings data
+    const totalInvestors = investorWhitelistAddresses.concat(newInvestors);
     const confirmWhitelistMembers = await investorWhitelist.getList(comptrollerProxy.address);
-    expect(confirmWhitelistMembers).toHaveLength(investorWhitelistAddresses.length);
-    for (let i = 0; i < investorWhitelistAddresses.length; i++) {
-      expect(confirmWhitelistMembers.includes(investorWhitelistAddresses[i])).toBeTruthy;
+    expect(confirmWhitelistMembers).toHaveLength(totalInvestors.length);
+    for (let i = 0; i < totalInvestors.length; i++) {
+      expect(confirmWhitelistMembers.includes(totalInvestors[i])).toBeTruthy;
     }
   });
 
