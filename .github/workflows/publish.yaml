@@ -36,7 +36,6 @@ jobs:
         run: yarn compile
 
       - name: Publish development packages
-        if: github.ref == 'refs/heads/develop'
         run: |
           yarn manypkg exec -- yarn version --non-interactive --no-git-tag-version --new-version=2.0.0-dev.${{ github.event.inputs.canary }}+${GITHUB_SHA::8}
           yarn manypkg fix && yarn build
