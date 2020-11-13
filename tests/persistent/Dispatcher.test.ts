@@ -1196,16 +1196,23 @@ describe('getTimelockRemainingForMigrationRequest', () => {
       nextVaultAccessor,
     });
 
-    // Warp to 5 seconds before the timelock expiry
-    const remainingTime = 5;
+    // Get timestamp of migration call
+    const signalTimestamp = (await provider.getBlock('latest')).timestamp;
+
+    // Warp to rough 10 seconds before the timelock expiry
     const migrationTimelock = await dispatcher.getMigrationTimelock();
-    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - remainingTime]);
+    await provider.send('evm_increaseTime', [migrationTimelock.toNumber() - 10]);
     // Mine a block after that time delay
     await provider.send('evm_mine', []);
 
+    // Calculate the expected time remaining given the latest block
+    const currentTimestamp = (await provider.getBlock('latest')).timestamp;
+    const secondsElapsed = BigNumber.from(currentTimestamp).sub(signalTimestamp);
+    const expectedTimeRemaining = migrationTimelock.sub(secondsElapsed);
+
     // Get migration TimeLock
     const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(vaultProxy);
-    expect(getMigrationTimelockCall).toEqBigNumber(remainingTime);
+    expect(getMigrationTimelockCall).toEqBigNumber(expectedTimeRemaining);
   });
 });
 

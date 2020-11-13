@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../release/core/fund/comptroller/ComptrollerLib.sol";
+import "../../release/core/fund/comptroller/ComptrollerLib.sol";
 import "./MockToken.sol";
 
 /// @title MockReentrancyToken Contract

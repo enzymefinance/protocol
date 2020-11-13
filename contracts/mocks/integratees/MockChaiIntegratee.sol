@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "../MockToken.sol";
+import "../tokens/MockToken.sol";
 
 // TODO: Consider adding ability to set DAI/CHAI rate.
 contract MockChaiIntegratee is MockToken("Chai", "CHAI", 18) {
