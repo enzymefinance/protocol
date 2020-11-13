@@ -40,8 +40,6 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 `release/extensions/fee-manager/fees/EntranceRateDirectFee.sol`: ef5d15e78a8ef3764d2edca4968fdf5df34722be
 
-`release/extensions/fee-manager/fees/ManagementFee.sol`: 10e1179a7a0f7f24b11ab616f1dc26583a111511
-
 `release/extensions/fee-manager/fees/PerformanceFee.sol`: 10e1179a7a0f7f24b11ab616f1dc26583a111511
 
 `release/extensions/fee-manager/fees/utils/EntranceRateFeeBase.sol`:10e1179a7a0f7f24b11ab616f1dc26583a111511
@@ -114,12 +112,28 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 ## Forthcoming
 
-`release/extensions/integration-manager/integrations/adapters/ParaswapAdapter.sol`
+### Adapters
 
-`release/extensions/integration-manager/integrations/adapters/SynthetixAdapter.sol`
+`ParaswapAdapter.sol`
 
-`release/extensions/integration-manager/integrations/adapters/UniswapV2Adapter.sol`
+`SynthetixAdapter.sol`
 
-`release/infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol`
+`UniswapV2Adapter.sol`
 
-`release/infrastructure/price-feeds/derivatives/feeds/UniswapV2PoolPriceFeed.sol`
+### Policies
+
+`GuaranteedRedemption.sol`
+
+`MinMaxInvestment.sol`
+
+### Fees
+
+`ManagementFee.sol`
+
+### Derivative Price Feeds
+
+`SynthetixPriceFeed.sol`
+
+`UniswapV2PoolPriceFeed.sol`
+
+`WDGLDPriceFeed.sol`
