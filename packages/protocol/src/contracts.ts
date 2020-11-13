@@ -67,6 +67,7 @@ export { MockVaultLib } from './codegen/MockVaultLib';
 export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
 export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
 export { MockDerivativePriceFeed } from './codegen/MockDerivativePriceFeed';
+export { MockPrimitivePriceFeed } from './codegen/MockPrimitivePriceFeed';
 export { MockCTokenIntegratee } from './codegen/MockCTokenIntegratee';
 export { MockGenericAdapter } from './codegen/MockGenericAdapter';
 export { MockGenericIntegratee } from './codegen/MockGenericIntegratee';

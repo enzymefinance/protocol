@@ -4,9 +4,13 @@ pragma solidity 0.6.8;
 import "../../release/infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 
 contract MockDerivativePriceFeed is IDerivativePriceFeed {
-    mapping(address => uint256[]) private derivativeToRates;
-    mapping(address => address[]) private derivativeToUnderlyings;
+    mapping(address => RatesToUnderlyings) private derivativeToRatesToUnderlyings;
     mapping(address => bool) private derivativeToSupported;
+
+    struct RatesToUnderlyings {
+        uint256[] rates;
+        address[] underlyings;
+    }
 
     constructor(address[] memory _derivatives) public {
         for (uint256 i = 0; i < _derivatives.length; i++) {
@@ -19,8 +23,8 @@ contract MockDerivativePriceFeed is IDerivativePriceFeed {
         override
         returns (address[] memory underlyings_, uint256[] memory rates_)
     {
-        underlyings_ = derivativeToUnderlyings[_derivative];
-        rates_ = derivativeToRates[_derivative];
+        underlyings_ = derivativeToRatesToUnderlyings[_derivative].underlyings;
+        rates_ = derivativeToRatesToUnderlyings[_derivative].rates;
     }
 
     function setRatesToUnderlyings(
@@ -28,8 +32,10 @@ contract MockDerivativePriceFeed is IDerivativePriceFeed {
         uint256[] calldata _rates,
         address[] calldata _underlyings
     ) external {
-        derivativeToRates[_derivative] = _rates;
-        derivativeToUnderlyings[_derivative] = _underlyings;
+        derivativeToRatesToUnderlyings[_derivative] = RatesToUnderlyings({
+            rates: _rates,
+            underlyings: _underlyings
+        });
     }
 
     function isSupportedAsset(address _derivative) external view override returns (bool) {
