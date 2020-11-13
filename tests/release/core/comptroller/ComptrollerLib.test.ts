@@ -1,4 +1,4 @@
-import { constants } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
 
@@ -47,4 +47,24 @@ describe('constructor', () => {
   });
 });
 
-it.todo('test that no functions can be called directly (only can be delegatecalled)');
+describe('redeemShares', () => {
+  it('can not be called directly (delegatecalled only)', async () => {
+    const {
+      deployment: { comptrollerLib },
+    } = await provider.snapshot(snapshot);
+
+    await expect(comptrollerLib.redeemShares()).rejects.toBeReverted();
+  });
+});
+
+describe('redeemSharesDetailed', () => {
+  it('can not be called directly (delegatecalled only)', async () => {
+    const {
+      deployment: { comptrollerLib },
+    } = await provider.snapshot(snapshot);
+
+    await expect(comptrollerLib.redeemSharesDetailed(BigNumber.from(0), [], [])).rejects.toBeRevertedWith(
+      'Only delegate callable',
+    );
+  });
+});

@@ -7,7 +7,7 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import { utils, BigNumber, BigNumberish } from 'ethers';
-import { assertEvent, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
+import { assertEvent, callOnExtension, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
 import { encodeArgs, ReleaseStatusTypes, sighash } from '@melonproject/protocol';
 
 // prettier-ignore
@@ -63,7 +63,68 @@ async function snapshot(provider: EthereumTestnetProvider) {
 }
 
 describe('callOnExtension', () => {
-  it.todo('write tests');
+  it('can not call a random extension', async () => {
+    const {
+      deployment: { fundDeployer },
+      fundOwner,
+      denominationAsset,
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    await expect(
+      callOnExtension({
+        signer: fundOwner,
+        comptrollerProxy,
+        extension: randomAddress(),
+        actionId: 0,
+      }),
+    ).rejects.toBeRevertedWith('_extension invalid');
+  });
+
+  it('does not allow a paused release, unless overridePause is set', async () => {
+    const {
+      fundOwner,
+      denominationAsset,
+      deployment: { fundDeployer },
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Pause the release
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
+
+    await expect(
+      callOnExtension({
+        signer: fundOwner,
+        comptrollerProxy,
+        extension: randomAddress(),
+        actionId: 0,
+      }),
+    ).rejects.toBeRevertedWith('Fund is paused');
+
+    // Override the pause
+    await comptrollerProxy.setOverridePause(true);
+
+    await expect(
+      callOnExtension({
+        signer: fundOwner,
+        comptrollerProxy,
+        extension: randomAddress(),
+        actionId: 0,
+      }),
+    ).rejects.toBeRevertedWith('_extension invalid');
+  });
 
   it.todo('does not allow re-entrance');
 });
@@ -116,9 +177,56 @@ describe('setOverridePause', () => {
 });
 
 describe('vaultCallOnContract', () => {
-  it.todo('cannot be called by a random user');
+  it('cannot be called by a random user', async () => {
+    const {
+      accounts: [randomUser],
+      mockExternalContract,
+      registeredVaultCallSelector,
+      fundOwner,
+      denominationAsset,
+      deployment: { fundDeployer },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow a call to an unregistered contract');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+
+    await expect(
+      comptrollerProxy.connect(randomUser).vaultCallOnContract(mockExternalContract, registeredVaultCallSelector, '0x'),
+    ).rejects.toBeRevertedWith('Only fund owner callable');
+  });
+
+  it('does not allow a call to an unregistered contract', async () => {
+    const {
+      mockExternalContract,
+      registeredVaultCallSelector,
+      fundOwner,
+      denominationAsset,
+      deployment: { fundDeployer },
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+
+    await expect(
+      comptrollerProxy.vaultCallOnContract(randomAddress(), registeredVaultCallSelector, '0x'),
+    ).rejects.toBeRevertedWith('Unregistered');
+
+    await expect(
+      comptrollerProxy.vaultCallOnContract(mockExternalContract, '0x9febadf3', '0x'),
+    ).rejects.toBeRevertedWith('Unregistered');
+  });
 
   it('does not allow a paused release, unless overridePause is set', async () => {
     const {

@@ -1,14 +1,15 @@
-import { utils } from 'ethers';
+import { constants, utils } from 'ethers';
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
 import {
   assertEvent,
-  defaultTestDeployment,
   buyShares,
   createNewFund,
+  defaultTestDeployment,
+  generateRegisteredMockFees,
   getAssetBalances,
   redeemShares,
 } from '@melonproject/testutils';
-import { ReleaseStatusTypes } from '@melonproject/protocol';
+import { StandardToken, feeManagerConfigArgs, ReleaseStatusTypes } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -16,6 +17,11 @@ async function snapshot(provider: EthereumTestnetProvider) {
     deployment,
     config,
   } = await defaultTestDeployment(provider);
+
+  const fees = await generateRegisteredMockFees({
+    deployer: config.deployer,
+    feeManager: deployment.feeManager,
+  });
 
   const denominationAsset = deployment.tokens.weth;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -26,6 +32,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   });
 
   return {
+    fees,
     accounts: remainingAccounts,
     config,
     deployment,
@@ -39,7 +46,28 @@ async function snapshot(provider: EthereumTestnetProvider) {
 }
 
 describe('buyShares', () => {
-  it.todo('does not allow re-entrance');
+  it('does not allow re-entrance', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { mrt: denominationAsset },
+      },
+      accounts: [signer, buyer],
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    await denominationAsset.makeItReentracyToken(comptrollerProxy);
+
+    const investmentAmount = utils.parseEther('2');
+    await expect(
+      buyShares({ comptrollerProxy, signer, buyer, denominationAsset, investmentAmount }),
+    ).rejects.toBeRevertedWith('Re-entrance');
+  });
 
   it('works for a fund with no extensions', async () => {
     const {
@@ -281,11 +309,118 @@ describe('allowedBuySharesCallers', () => {
 });
 
 describe('redeemShares', () => {
-  it.todo('cannot be re-entered');
+  it('cannot be re-entered', async () => {
+    const {
+      accounts: [fundManager, investor],
+      deployment: {
+        fundDeployer,
+        tokens: { mrt: denominationAsset },
+      },
+    } = await provider.snapshot(snapshot);
 
-  it.todo('handles the preRedeemSharesHook (can merge with standard test)');
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: investor,
+        buyer: investor,
+        investmentAmount,
+      },
+    });
 
-  it.todo('handles a preRedeemSharesHook failure');
+    await denominationAsset.makeItReentracyToken(comptrollerProxy);
+
+    await expect(redeemShares({ comptrollerProxy, signer: investor })).rejects.toBeRevertedWith('Re-entrance');
+  });
+
+  it('returns the token revert reason on a failed transfer', async () => {
+    const {
+      config: { deployer },
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: [fundManager, investor],
+    } = await provider.snapshot(snapshot);
+
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: investor,
+        buyer: investor,
+        investmentAmount,
+      },
+    });
+
+    const mockFailingToken = await StandardToken.mock(deployer);
+    await mockFailingToken.balanceOf.given(vaultProxy).returns(utils.parseEther('1'));
+
+    await mockFailingToken.transfer.reverts('my message');
+
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+        additionalAssets: [mockFailingToken],
+        quantity: utils.parseEther('1'),
+      }),
+    ).rejects.toBeRevertedWith('my message');
+  });
+
+  it('handles a preRedeemSharesHook failure', async () => {
+    const {
+      accounts: [fundManager, investor],
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      fees: { mockContinuousFeeSettleOnly },
+    } = await provider.snapshot(snapshot);
+
+    const fees = [mockContinuousFeeSettleOnly];
+    const feesSettingsData = [utils.randomBytes(10)];
+
+    const feeManagerConfig = feeManagerConfigArgs({
+      fees: fees,
+      settings: feesSettingsData,
+    });
+
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: investor,
+        buyer: investor,
+        investmentAmount,
+      },
+      feeManagerConfig,
+    });
+
+    const invalidFeeSettlementType = 100;
+    await mockContinuousFeeSettleOnly.settle.returns(
+      invalidFeeSettlementType,
+      constants.AddressZero,
+      utils.parseEther('0.5'),
+    );
+
+    const receipt = await redeemShares({
+      comptrollerProxy,
+      signer: investor,
+    });
+
+    assertEvent(receipt, 'PreRedeemSharesHookFailed', {
+      failureReturnData: expect.any(String),
+      redeemer: investor,
+      sharesQuantity: investmentAmount,
+    });
+  });
 
   it('allows sender to redeem all their shares', async () => {
     const {
@@ -325,15 +460,179 @@ describe('redeemShares', () => {
 });
 
 describe('redeemSharesDetailed', () => {
-  it.todo('does not allow a _sharesQuantity of 0');
+  it('cannot be re-entered', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { mrt: denominationAsset },
+      },
+      accounts: [fundManager, investor],
+    } = await provider.snapshot(snapshot);
 
-  it.todo('does not allow duplicate _additionalAssets');
+    // Create a new fund, and invested in equally by the fund manager and an investor
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: fundManager,
+        buyer: fundManager,
+        investmentAmount,
+      },
+    });
 
-  it.todo('does not allow duplicate _assetsToSkip');
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount,
+    });
 
-  it.todo('does not allow a _sharesQuantity greater than the redeemer balance');
+    const redeemQuantity = investmentAmount;
 
-  it.todo('does not allow a redemption if there are no payoutAssets');
+    await denominationAsset.makeItReentracyToken(comptrollerProxy);
+
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+        quantity: redeemQuantity,
+      }),
+    ).rejects.toBeRevertedWith('Re-entrance');
+  });
+
+  it('does not allow a _sharesQuantity of 0', async () => {
+    const {
+      accounts: [investor],
+      fund: { comptrollerProxy },
+    } = await provider.snapshot(snapshot);
+
+    await expect(
+      redeemShares({ comptrollerProxy, signer: investor, quantity: utils.parseEther('0') }),
+    ).rejects.toBeRevertedWith('_sharesQuantity must be >0');
+  });
+
+  it('does not allow duplicate _additionalAssets', async () => {
+    const {
+      accounts: [investor],
+      deployment: {
+        tokens: { weth },
+      },
+      fund: { comptrollerProxy },
+    } = await provider.snapshot(snapshot);
+
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+        quantity: utils.parseEther('1'),
+        additionalAssets: [weth, weth],
+      }),
+    ).rejects.toBeRevertedWith('_additionalAssets contains duplicates');
+  });
+
+  it('does not allow duplicate _assetsToSkip', async () => {
+    const {
+      accounts: [investor],
+      deployment: {
+        tokens: { weth },
+      },
+      fund: { comptrollerProxy },
+    } = await provider.snapshot(snapshot);
+
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+        quantity: utils.parseEther('1'),
+        assetsToSkip: [weth, weth],
+      }),
+    ).rejects.toBeRevertedWith('_assetsToSkip contains duplicates');
+  });
+
+  it('does not allow a _sharesQuantity greater than the redeemer balance', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: [fundManager, investor],
+    } = await provider.snapshot(snapshot);
+
+    // Create a new fund, and invested in equally by the fund manager and an investor
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: fundManager,
+        buyer: fundManager,
+        investmentAmount,
+      },
+    });
+
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount,
+    });
+
+    const redeemQuantity = investmentAmount.add(1);
+
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+        quantity: redeemQuantity,
+      }),
+    ).rejects.toBeRevertedWith('Insufficient shares');
+  });
+
+  it('does not allow a redemption if there are no payoutAssets', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: [fundManager, investor],
+    } = await provider.snapshot(snapshot);
+
+    // Create a new fund, and invested in equally by the fund manager and an investor
+    const investmentAmount = utils.parseEther('2');
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      investment: {
+        signer: fundManager,
+        buyer: fundManager,
+        investmentAmount,
+      },
+    });
+
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount,
+    });
+
+    // // Redeem half of investor's shares
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+        quantity: investmentAmount.div(2),
+        assetsToSkip: [denominationAsset],
+      }),
+    ).rejects.toBeRevertedWith('No payout assets');
+  });
 
   it('handles a valid call (one additional asset)', async () => {
     const {
