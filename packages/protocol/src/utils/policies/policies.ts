@@ -35,3 +35,13 @@ export function investorWhitelistArgs({
 export function maxConcentrationArgs(maxConcentration: BigNumberish) {
   return encodeArgs(['uint256'], [maxConcentration]);
 }
+
+export function minMaxInvestmentArgs({
+  minInvestmentAmount,
+  maxInvestmentAmount,
+}: {
+  minInvestmentAmount: BigNumberish;
+  maxInvestmentAmount: BigNumberish;
+}) {
+  return encodeArgs(['uint256', 'uint256'], [minInvestmentAmount, maxInvestmentAmount]);
+}

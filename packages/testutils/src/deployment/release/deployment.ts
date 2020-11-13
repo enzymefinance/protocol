@@ -22,6 +22,7 @@ import {
   KyberAdapter,
   ManagementFee,
   MaxConcentration,
+  MinMaxInvestment,
   PerformanceFee,
   PermissionedVaultActionLib,
   PolicyManager,
@@ -128,6 +129,7 @@ export interface ReleaseDeploymentOutput {
   assetBlacklist: Promise<AssetBlacklist>;
   assetWhitelist: Promise<AssetWhitelist>;
   maxConcentration: Promise<MaxConcentration>;
+  minMaxInvestment: Promise<MinMaxInvestment>;
   investorWhitelist: Promise<InvestorWhitelist>;
   // Peripheral
   fundActionsWrapper: Promise<FundActionsWrapper>;
@@ -332,6 +334,9 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async maxConcentration(config, deployment) {
     return MaxConcentration.deploy(config.deployer, await deployment.policyManager, await deployment.valueInterpreter);
   },
+  async minMaxInvestment(config, deployment) {
+    return MinMaxInvestment.deploy(config.deployer, await deployment.policyManager);
+  },
   async investorWhitelist(config, deployment) {
     return InvestorWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
@@ -372,6 +377,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.assetBlacklist,
       await deployment.assetWhitelist,
       await deployment.maxConcentration,
+      await deployment.minMaxInvestment,
       await deployment.investorWhitelist,
     ];
 

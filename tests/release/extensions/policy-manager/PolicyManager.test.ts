@@ -70,6 +70,7 @@ describe('constructor', () => {
         maxConcentration,
         policyManager,
         investorWhitelist,
+        minMaxInvestment,
       },
       policies,
     } = await provider.snapshot(snapshot);
@@ -81,6 +82,7 @@ describe('constructor', () => {
       assetBlacklist,
       assetWhitelist,
       maxConcentration,
+      minMaxInvestment,
       investorWhitelist,
       ...Object.values(policies),
     ]);
@@ -116,12 +118,18 @@ describe('constructor', () => {
       PolicyHook.PreBuyShares,
     );
 
+    const minMaxInvestmentImplementsPreBuyShares = await policyManager.policyImplementsHook(
+      minMaxInvestment,
+      PolicyHook.PreBuyShares,
+    );
+
     expect(adapterBlacklistImplementsPreCallOnIntegration).toBe(true);
     expect(adapterWhitelistImplementsPreCallOnIntegration).toBe(true);
     expect(assetBlacklistImplementsPostCallOnIntegration).toBe(true);
     expect(assetWhitelistImplementsPostCallOnIntegration).toBe(true);
     expect(maxConcentrationImplementsPostCallOnIntegration).toBe(true);
     expect(investorsWhitelistImplementsPreBuyShares).toBe(true);
+    expect(minMaxInvestmentImplementsPreBuyShares).toBe(true);
   });
 });
 

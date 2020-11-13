@@ -57,6 +57,7 @@ export { AdapterWhitelist } from './codegen/AdapterWhitelist';
 export { AssetBlacklist } from './codegen/AssetBlacklist';
 export { AssetWhitelist } from './codegen/AssetWhitelist';
 export { MaxConcentration } from './codegen/MaxConcentration';
+export { MinMaxInvestment } from './codegen/MinMaxInvestment';
 export { InvestorWhitelist } from './codegen/InvestorWhitelist';
 
 // Peripheral
