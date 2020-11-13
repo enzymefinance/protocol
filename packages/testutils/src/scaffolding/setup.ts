@@ -1,8 +1,8 @@
-import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
 import { AddressLike, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
 import { ComptrollerLib, ComptrollerProxy, encodeFunctionData, FundDeployer, VaultLib } from '@melonproject/protocol';
-import { buyShares, BuySharesParams, DenominationAssetInterface } from './shares';
+import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
 import { assertEvent } from '../assertions';
+import { buyShares, BuySharesParams, DenominationAssetInterface } from './shares';
 
 export type InitialInvestmentParams = Omit<BuySharesParams, 'comptrollerProxy' | 'denominationAsset'>;
 
@@ -75,7 +75,7 @@ export async function createMigratedFundConfig({
       policyManagerConfigData,
     );
 
-  const comptrollerDeployedArgs = await assertEvent(receipt, 'ComptrollerProxyDeployed', {
+  const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
     creator: signer,
     comptrollerProxy: expect.any(String) as string,
     denominationAsset,

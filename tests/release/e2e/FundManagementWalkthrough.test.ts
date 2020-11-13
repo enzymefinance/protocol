@@ -18,6 +18,8 @@ import {
 import {
   addTrackedAssets,
   buyShares,
+  chaiLend,
+  chaiRedeem,
   createNewFund,
   defaultForkDeployment,
   ForkReleaseDeploymentConfig,
@@ -50,71 +52,23 @@ export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultForkDeployment(provider);
 
-  const denominationAsset = config.tokens.weth;
-  const manager = accounts[0];
-
-  // fees
-  const managementFeeSettings = managementFeeConfigArgs(utils.parseEther('0.01'));
-  const performanceFeeSettings = performanceFeeConfigArgs({
-    rate: utils.parseEther('0.1'),
-    period: 365 * 24 * 60 * 60,
-  });
-  const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
-
-  const feeManagerConfig = feeManagerConfigArgs({
-    fees: [deployment.managementFee, deployment.performanceFee, deployment.entranceRateBurnFee],
-    settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
-  });
-
-  // policies
-  const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
-  const adapterBlacklistSettings = adapterBlacklistArgs([deployment.compoundAdapter]);
-  const adapterWhitelistSettings = adapterWhitelistArgs([
-    deployment.kyberAdapter,
-    deployment.uniswapV2Adapter,
-    deployment.trackedAssetsAdapter,
-    deployment.chaiAdapter,
-  ]);
-  const assetBlacklistSettings = assetBlacklistArgs([config.tokens.knc]);
-
-  const policyManagerConfig = policyManagerConfigArgs({
-    policies: [
-      deployment.maxConcentration,
-      deployment.adapterBlacklist,
-      deployment.adapterWhitelist,
-      deployment.assetBlacklist,
-    ],
-    settings: [maxConcentrationSettings, adapterBlacklistSettings, adapterWhitelistSettings, assetBlacklistSettings],
-  });
-
-  const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: manager,
-    fundDeployer: deployment.fundDeployer,
-    fundOwner: manager,
-    denominationAsset,
-    feeManagerConfig,
-    policyManagerConfig,
-  });
-
   return {
     accounts,
     deployment,
-    denominationAsset,
     config,
-    comptrollerProxy,
-    vaultProxy,
   };
 }
 
 describe("Walkthrough a fund's lifecycle", () => {
+  let config: ForkReleaseDeploymentConfig;
+  let deployment: Snapshot['deployment'];
+
   let manager: SignerWithAddress;
   let investor: SignerWithAddress;
   let anotherInvestor: SignerWithAddress;
   let comptrollerProxy: ComptrollerLib;
   let vaultProxy: VaultLib;
-  let deployment: Snapshot['deployment'];
   let denominationAsset: StandardToken;
-  let config: ForkReleaseDeploymentConfig;
 
   beforeAll(async () => {
     const forkSnapshot = await provider.snapshot(snapshot);
@@ -122,11 +76,60 @@ describe("Walkthrough a fund's lifecycle", () => {
     manager = forkSnapshot.accounts[0];
     investor = forkSnapshot.accounts[1];
     anotherInvestor = forkSnapshot.accounts[2];
-    comptrollerProxy = forkSnapshot.comptrollerProxy;
-    vaultProxy = forkSnapshot.vaultProxy;
     deployment = forkSnapshot.deployment;
-    denominationAsset = forkSnapshot.denominationAsset;
     config = forkSnapshot.config;
+  });
+
+  it('creates a new fund', async () => {
+    denominationAsset = config.tokens.weth;
+
+    // fees
+    const managementFeeSettings = managementFeeConfigArgs(utils.parseEther('0.01'));
+    const performanceFeeSettings = performanceFeeConfigArgs({
+      rate: utils.parseEther('0.1'),
+      period: 365 * 24 * 60 * 60,
+    });
+    const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
+
+    const feeManagerConfig = feeManagerConfigArgs({
+      fees: [deployment.managementFee, deployment.performanceFee, deployment.entranceRateBurnFee],
+      settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
+    });
+
+    // policies
+    const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
+    const adapterBlacklistSettings = adapterBlacklistArgs([deployment.compoundAdapter]);
+    const adapterWhitelistSettings = adapterWhitelistArgs([
+      deployment.kyberAdapter,
+      deployment.uniswapV2Adapter,
+      deployment.trackedAssetsAdapter,
+      deployment.chaiAdapter,
+    ]);
+    const assetBlacklistSettings = assetBlacklistArgs([config.tokens.knc]);
+
+    const policyManagerConfig = policyManagerConfigArgs({
+      policies: [
+        deployment.maxConcentration,
+        deployment.adapterBlacklist,
+        deployment.adapterWhitelist,
+        deployment.assetBlacklist,
+      ],
+      settings: [maxConcentrationSettings, adapterBlacklistSettings, adapterWhitelistSettings, assetBlacklistSettings],
+    });
+
+    const createFundTx = await createNewFund({
+      signer: manager,
+      fundDeployer: deployment.fundDeployer,
+      fundOwner: manager,
+      denominationAsset,
+      feeManagerConfig,
+      policyManagerConfig,
+    });
+
+    expect(createFundTx.receipt).toCostLessThan(`680000`);
+
+    comptrollerProxy = createFundTx.comptrollerProxy;
+    vaultProxy = createFundTx.vaultProxy;
   });
 
   it('enables the InvestorWhitelist policy for the fund', async () => {
@@ -171,7 +174,7 @@ describe("Walkthrough a fund's lifecycle", () => {
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(utils.parseEther('1').sub(expectedFee));
   });
 
-  it('buys more shares of a fund', async () => {
+  xit('buys more shares of a fund', async () => {
     const previousBalance = await vaultProxy.balanceOf(investor);
 
     const investmentAmount = utils.parseEther('1');
@@ -193,6 +196,12 @@ describe("Walkthrough a fund's lifecycle", () => {
 
     expect(buySharesTx).toCostLessThan(380000);
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
+  });
+
+  it('calculates the GAV of the fund with only the denomination asset', async () => {
+    const calcGavTx = await comptrollerProxy.calcGav();
+
+    expect(calcGavTx).toCostLessThan(`53000`);
   });
 
   it('trades on Kyber', async () => {
@@ -244,37 +253,43 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    expect(takeOrder).toCostLessThan(630000);
+    expect(takeOrder).toCostLessThan(`630000`);
   });
 
-  xit('lends and redeems Chai', async () => {
-    // const daiAmount = utils.parseEther('1');
-    // const lend = await chaiLend({
-    //   comptrollerProxy,
-    //   vaultProxy,
-    //   integrationManager: deployment.integrationManager,
-    //   fundOwner: manager,
-    //   chaiAdapter: deployment.chaiAdapter,
-    //   dai: config.tokens.dai,
-    //   daiAmount,
-    //   minChaiAmount: daiAmount.div(2),
-    // });
-    // expect(lend).toCostLessThan(100000);
-    // const chaiAmount = utils.parseEther('1');
-    // const redeem = await chaiRedeem({
-    //   comptrollerProxy,
-    //   vaultProxy,
-    //   integrationManager: deployment.integrationManager,
-    //   fundOwner: manager,
-    //   chai: config.derivatives.chai,
-    //   chaiAdapter: deployment.chaiAdapter,
-    //   chaiAmount,
-    //   // minDaiAmount: chaiAmount.div(2),
-    // });
-    // expect(lend).toCostLessThan(100000);
+  it('lends and redeems Chai', async () => {
+    const chai = new StandardToken(config.derivatives.chai, provider);
+    const daiAmount = utils.parseEther('1');
+
+    const lend = await chaiLend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager: deployment.integrationManager,
+      fundOwner: manager,
+      chaiAdapter: deployment.chaiAdapter,
+      dai: config.tokens.dai,
+      daiAmount,
+      minChaiAmount: daiAmount.mul(90).div(100),
+    });
+
+    expect(lend).toCostLessThan(`735000`);
+
+    const chaiAmount = await chai.balanceOf(vaultProxy);
+
+    const redeem = await chaiRedeem({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager: deployment.integrationManager,
+      fundOwner: manager,
+      chai,
+      chaiAdapter: deployment.chaiAdapter,
+      chaiAmount,
+      minDaiAmount: chaiAmount.mul(90).div(100),
+    });
+
+    expect(redeem).toCostLessThan(`587000`);
   });
 
-  xit('seeds the fund with all existing assets', async () => {
+  it('seeds the fund with all more assets', async () => {
     const assets = [
       config.tokens.bat,
       config.tokens.bnb,
@@ -288,16 +303,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       config.tokens.usdt,
       config.tokens.zrx,
     ];
-    const compoundAssets = [
-      new StandardToken(config.derivatives.compound.cbat, provider),
-      new StandardToken(config.derivatives.compound.ccomp, provider),
-      new StandardToken(config.derivatives.compound.cdai, provider),
-      new StandardToken(config.derivatives.compound.ceth, provider),
-      new StandardToken(config.derivatives.compound.crep, provider),
-      new StandardToken(config.derivatives.compound.cuni, provider),
-    ];
 
-    for (const asset of [...assets, ...compoundAssets]) {
+    for (const asset of assets) {
       const decimals = await asset.decimals();
       const transferAmount = utils.parseUnits('1', decimals);
 
@@ -314,6 +321,32 @@ describe("Walkthrough a fund's lifecycle", () => {
       trackedAssetsAdapter: deployment.trackedAssetsAdapter,
       incomingAssets: assets,
     });
+  });
+
+  it('calculates the GAV of the fund with 14 assets', async () => {
+    const calcGavTx = await comptrollerProxy.calcGav();
+
+    expect(calcGavTx).toCostLessThan(`635000`);
+  });
+
+  xit('seeds the fund with cTokens', async () => {
+    const compoundAssets = [
+      new StandardToken(config.derivatives.compound.ccomp, provider),
+      new StandardToken(config.derivatives.compound.cdai, provider),
+      new StandardToken(config.derivatives.compound.ceth, provider),
+      new StandardToken(config.derivatives.compound.crep, provider),
+      new StandardToken(config.derivatives.compound.cuni, provider),
+    ];
+
+    for (const asset of compoundAssets) {
+      const decimals = await asset.decimals();
+      const transferAmount = utils.parseUnits('1', decimals);
+
+      await asset.connect(manager).transfer.args(vaultProxy, transferAmount).send();
+
+      const balance = await asset.balanceOf(vaultProxy);
+      expect(balance).toBeGteBigNumber(transferAmount);
+    }
 
     await addTrackedAssets({
       comptrollerProxy,
@@ -322,6 +355,13 @@ describe("Walkthrough a fund's lifecycle", () => {
       trackedAssetsAdapter: deployment.trackedAssetsAdapter,
       incomingAssets: compoundAssets,
     });
+  });
+
+  it('calculates the GAV of the fund with 20 assets', async () => {
+    const calcGavTx = await comptrollerProxy.calcGav();
+
+    // Bumped from 634753
+    expect(calcGavTx).toCostLessThan(`635000`);
   });
 
   it('trades on Kyber again', async () => {
@@ -348,9 +388,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    expect(takeOrder).toBeReceipt();
-    // Bumped from 1071020
-    expect(takeOrder).toCostLessThan(1072000);
+    // Bumped from 1580462
+    expect(takeOrder).toCostLessThan(1581000);
 
     const balance = await incomingAsset.balanceOf(vaultProxy);
     expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
@@ -374,9 +413,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    expect(takeOrder).toBeReceipt();
-    // Bumped from 609852
-    expect(takeOrder).toCostLessThan(610000);
+    // Bumped from 1119296
+    expect(takeOrder).toCostLessThan(1120000);
   });
 
   it("sends an asset amount to the fund's vault", async () => {
@@ -405,12 +443,12 @@ describe("Walkthrough a fund's lifecycle", () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 489718
-    expect(redeemed).toCostLessThan(490000);
+    // Bumped from 1438073
+    expect(redeemed).toCostLessThan(1439000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
   });
 
-  xit("sends an asset amount to the fund's vault again", async () => {
+  it("sends an asset amount to the fund's vault again", async () => {
     const gavBefore = await comptrollerProxy.calcGav.call();
     const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
@@ -427,7 +465,7 @@ describe("Walkthrough a fund's lifecycle", () => {
   });
 
   it('changes the InvestorWhitelist', async () => {
-    const enabled = await deployment.policyManager
+    const updated = await deployment.policyManager
       .connect(manager)
       .updatePolicySettingsForFund.args(
         comptrollerProxy.address,
@@ -439,7 +477,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       )
       .send();
 
-    expect(enabled).toBeReceipt();
+    expect(updated).toCostLessThan(`45000`);
   });
 
   it('buys shares of a fund as another investor', async () => {
@@ -466,8 +504,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       ...buySharesArgs,
     });
 
-    // Bumped from 470761
-    expect(buySharesTx).toCostLessThan(471000);
+    // Bumped from 1006964
+    expect(buySharesTx).toCostLessThan(1007000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
 
@@ -477,8 +515,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: investor,
     });
 
-    // Bumped from 478677
-    expect(redeemed).toCostLessThan(479000);
+    // Bumped from 1407809
+    expect(redeemed).toCostLessThan(1408000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
   });
 
@@ -488,8 +526,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: anotherInvestor,
     });
 
-    // Bumped from 478677
-    expect(redeemed).toCostLessThan(479000);
+    // Bumped from 1412032
+    expect(redeemed).toCostLessThan(1413000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
   });
 });
