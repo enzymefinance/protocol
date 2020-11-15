@@ -4,6 +4,8 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 ## Ready for audit
 
+### Initial scope
+
 `persistent/dispatcher/Dispatcher.sol`: 68f1fd5b1de63d2a7d6cfabb5f0c3b1d032f2916
 
 `persistent/vault/VaultLibBase1.sol`: fcb24a47a2ec9e94d901edc0c2eeb108af8b6751
@@ -110,6 +112,10 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 `release/utils/MathHelpers.sol`: f063f2eb7480bebd59086273e7dace5823801a80
 
+### Added scope - 2020/11/15
+
+`release/extensions/policy-manager/policies/buy-shares/MinMaxInvestment.sol`: 303ad2d3970593a1564d9500cffc1d1559035e26
+
 ## Forthcoming
 
 ### Adapters
@@ -123,8 +129,6 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 ### Policies
 
 `GuaranteedRedemption.sol`
-
-`MinMaxInvestment.sol`
 
 ### Fees
 
