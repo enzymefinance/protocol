@@ -114,7 +114,7 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 ### Added scope - 2020/11/15
 
-`release/extensions/policy-manager/policies/buy-shares/MinMaxInvestment.sol`: 303ad2d3970593a1564d9500cffc1d1559035e26
+`release/extensions/policy-manager/policies/buy-shares/MinMaxInvestment.sol`: a26df25e2fd47152fca768fffb2676f07fcaeb1c
 
 ## Forthcoming
 
