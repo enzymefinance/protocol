@@ -10,7 +10,7 @@ import "./utils/PreBuySharesValidatePolicyBase.sol";
 /// send in a single call to buy shares in a fund
 contract MinMaxInvestment is PreBuySharesValidatePolicyBase {
     event FundSettingsSet(
-        address comptrollerProxy,
+        address indexed comptrollerProxy,
         uint256 minInvestmentAmount,
         uint256 maxInvestmentAmount
     );
