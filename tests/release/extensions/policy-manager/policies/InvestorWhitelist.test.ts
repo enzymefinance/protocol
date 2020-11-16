@@ -19,52 +19,29 @@ import {
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
+  const [EOAPolicyManager, ...remainingAccounts] = accounts;
+  const comptrollerProxy = randomAddress();
+  const whitelistedInvestors = [randomAddress(), randomAddress()];
 
-async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [EOAPolicyManager, ...remainingAccounts],
-    config,
-  } = await provider.snapshot(snapshot);
+  const investorWhitelist1 = await InvestorWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const permissionedInvestorWhitelist = investorWhitelist1.connect(EOAPolicyManager);
 
-  const investorWhitelist = await InvestorWhitelist.deploy(config.deployer, EOAPolicyManager);
-
-  return {
-    accounts: remainingAccounts,
-    investorWhitelist,
-    comptrollerProxy: randomAddress(),
-    EOAPolicyManager,
-    whitelistedInvestors: [randomAddress(), randomAddress()],
-  };
-}
-
-async function snapshotWithConfiguredStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts,
-    comptrollerProxy,
-    EOAPolicyManager,
-    investorWhitelist,
-    whitelistedInvestors,
-  } = await provider.snapshot(snapshotWithStandalonePolicy);
-
-  const permissionedInvestorWhitelist = investorWhitelist.connect(EOAPolicyManager);
+  const investorWhitelist2 = await InvestorWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const configuredInvestorWhitelist = investorWhitelist2.connect(EOAPolicyManager);
 
   const investorWhitelistConfig = investorWhitelistArgs({
     investorsToAdd: whitelistedInvestors,
   });
 
-  await permissionedInvestorWhitelist.addFundSettings(comptrollerProxy, investorWhitelistConfig);
+  await configuredInvestorWhitelist.addFundSettings(comptrollerProxy, investorWhitelistConfig);
 
   return {
-    accounts,
+    accounts: remainingAccounts,
     comptrollerProxy,
-    EOAPolicyManager,
-    investorWhitelist: permissionedInvestorWhitelist,
+    config,
+    configuredInvestorWhitelist,
+    deployment,
+    permissionedInvestorWhitelist,
     whitelistedInvestors,
   };
 }
@@ -85,9 +62,11 @@ describe('constructor', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const { comptrollerProxy, investorWhitelist, whitelistedInvestors } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const {
+      deployment: { investorWhitelist },
+      comptrollerProxy,
+      whitelistedInvestors,
+    } = await provider.snapshot(snapshot);
 
     const investorWhitelistConfig = investorWhitelistArgs({
       investorsToAdd: whitelistedInvestors,
@@ -99,17 +78,13 @@ describe('addFundSettings', () => {
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const { comptrollerProxy, EOAPolicyManager, investorWhitelist, whitelistedInvestors } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const { comptrollerProxy, permissionedInvestorWhitelist, whitelistedInvestors } = await provider.snapshot(snapshot);
 
     const investorWhitelistConfig = investorWhitelistArgs({
       investorsToAdd: whitelistedInvestors,
     });
 
-    const receipt = await investorWhitelist
-      .connect(EOAPolicyManager)
-      .addFundSettings(comptrollerProxy, investorWhitelistConfig);
+    const receipt = await permissionedInvestorWhitelist.addFundSettings(comptrollerProxy, investorWhitelistConfig);
 
     // Assert the AddressesAdded event was emitted
     assertEvent(receipt, 'AddressesAdded', {
@@ -118,8 +93,8 @@ describe('addFundSettings', () => {
     });
 
     // List should be the whitelisted investors
-    const getListCall = await investorWhitelist.getList(comptrollerProxy);
-    expect(getListCall).toMatchObject(whitelistedInvestors);
+    const getListCall = await permissionedInvestorWhitelist.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(permissionedInvestorWhitelist.getList, whitelistedInvestors);
   });
 
   it.todo('handles a valid call (re-enabled policy)');
@@ -127,7 +102,10 @@ describe('addFundSettings', () => {
 
 describe('updateFundSettings', () => {
   it('can only be called by the policy manager', async () => {
-    const { comptrollerProxy, investorWhitelist } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const {
+      deployment: { investorWhitelist },
+      comptrollerProxy,
+    } = await provider.snapshot(snapshot);
 
     const investorWhitelistConfig = investorWhitelistArgs({
       investorsToAdd: [randomAddress()],
@@ -139,18 +117,18 @@ describe('updateFundSettings', () => {
   });
 
   it('correctly handles adding items only', async () => {
-    const { comptrollerProxy, EOAPolicyManager, investorWhitelist, whitelistedInvestors } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { comptrollerProxy, configuredInvestorWhitelist, whitelistedInvestors } = await provider.snapshot(snapshot);
 
     const investorsToAdd = [randomAddress(), randomAddress()];
     const investorWhitelistConfig = investorWhitelistArgs({
       investorsToAdd,
     });
 
-    const receipt = await investorWhitelist
-      .connect(EOAPolicyManager)
-      .updateFundSettings(comptrollerProxy, randomAddress(), investorWhitelistConfig);
+    const receipt = await configuredInvestorWhitelist.updateFundSettings(
+      comptrollerProxy,
+      randomAddress(),
+      investorWhitelistConfig,
+    );
 
     // Assert the AddressesAdded event was emitted
     assertEvent(receipt, 'AddressesAdded', {
@@ -159,14 +137,15 @@ describe('updateFundSettings', () => {
     });
 
     // List should include both previous whitelisted investors and new investors
-    const getListCall = await investorWhitelist.getList(comptrollerProxy);
-    expect(getListCall).toMatchObject([...whitelistedInvestors, ...investorsToAdd]);
+    const getListCall = await configuredInvestorWhitelist.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(
+      configuredInvestorWhitelist.getList,
+      whitelistedInvestors.concat(investorsToAdd),
+    );
   });
 
   it('correctly handles removing items only', async () => {
-    const { comptrollerProxy, EOAPolicyManager, investorWhitelist, whitelistedInvestors } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { comptrollerProxy, configuredInvestorWhitelist, whitelistedInvestors } = await provider.snapshot(snapshot);
 
     const [investorToRemove, ...remainingInvestors] = whitelistedInvestors;
 
@@ -174,9 +153,11 @@ describe('updateFundSettings', () => {
       investorsToRemove: [investorToRemove],
     });
 
-    const receipt = await investorWhitelist
-      .connect(EOAPolicyManager)
-      .updateFundSettings(comptrollerProxy, randomAddress(), investorWhitelistConfig);
+    const receipt = await configuredInvestorWhitelist.updateFundSettings(
+      comptrollerProxy,
+      randomAddress(),
+      investorWhitelistConfig,
+    );
 
     // Assert the AddressesRemoved event was emitted
     assertEvent(receipt, 'AddressesRemoved', {
@@ -185,14 +166,12 @@ describe('updateFundSettings', () => {
     });
 
     // List should remove investor from previously whitelisted investors
-    const getListCall = await investorWhitelist.getList(comptrollerProxy);
-    expect(getListCall).toMatchObject(remainingInvestors);
+    const getListCall = await configuredInvestorWhitelist.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(configuredInvestorWhitelist.getList, remainingInvestors);
   });
 
   it('correctly handles both adding and removing items', async () => {
-    const { comptrollerProxy, EOAPolicyManager, investorWhitelist, whitelistedInvestors } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { comptrollerProxy, configuredInvestorWhitelist, whitelistedInvestors } = await provider.snapshot(snapshot);
 
     const [investorToRemove, ...remainingInvestors] = whitelistedInvestors;
 
@@ -208,21 +187,20 @@ describe('updateFundSettings', () => {
       investorsToRemove,
     });
 
-    await investorWhitelist
-      .connect(EOAPolicyManager)
-      .updateFundSettings(comptrollerProxy, randomAddress(), investorWhitelistConfig);
+    await configuredInvestorWhitelist.updateFundSettings(comptrollerProxy, randomAddress(), investorWhitelistConfig);
 
     // Final list should have removed one investor and added one investor
-    const getListCall = await investorWhitelist.getList(comptrollerProxy);
-    expect(getListCall).toMatchObject([newInvestor, ...remainingInvestors]);
+    const getListCall = await configuredInvestorWhitelist.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(configuredInvestorWhitelist.getList, [
+      newInvestor,
+      ...remainingInvestors,
+    ]);
   });
 });
 
 describe('validateRule', () => {
   it('returns true if an investor is in the whitelist', async () => {
-    const { comptrollerProxy, investorWhitelist, whitelistedInvestors } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { comptrollerProxy, configuredInvestorWhitelist, whitelistedInvestors } = await provider.snapshot(snapshot);
 
     // Only the buyer arg matters for this policy
     const preBuySharesArgs = validateRulePreBuySharesArgs({
@@ -232,15 +210,15 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await investorWhitelist.validateRule
+    const validateRuleCall = await configuredInvestorWhitelist.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
-    expect(validateRuleCall).toBeTruthy();
+    expect(validateRuleCall).toBe(true);
   });
 
   it('returns false if an investor is not in the whitelist', async () => {
-    const { comptrollerProxy, investorWhitelist } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
+    const { comptrollerProxy, configuredInvestorWhitelist } = await provider.snapshot(snapshot);
 
     // Only the buyer arg matters for this policy
     const preBuySharesArgs = validateRulePreBuySharesArgs({
@@ -250,11 +228,11 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await investorWhitelist.validateRule
+    const validateRuleCall = await configuredInvestorWhitelist.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
-    expect(validateRuleCall).toBeFalsy();
+    expect(validateRuleCall).toBe(false);
   });
 });
 
@@ -290,8 +268,7 @@ describe('integration tests', () => {
 
     // confirm the policy has been enabled on fund creation
     const confirmEnabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy.address);
-    expect(confirmEnabledPolicies).toHaveLength(1);
-    expect(confirmEnabledPolicies[0]).toEqual(investorWhitelist.address);
+    expect(confirmEnabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [investorWhitelist]);
 
     // disable investor whitelist and confirm there are no policies enabled
     await policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, investorWhitelist);
@@ -310,16 +287,14 @@ describe('integration tests', () => {
 
     // confirm that the policy has been re-enabled for fund
     const confirmReEnabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy.address);
-    expect(confirmReEnabledPolicies).toHaveLength(1);
-    expect(confirmReEnabledPolicies[0]).toEqual(investorWhitelist.address);
+    expect(confirmReEnabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [
+      investorWhitelist,
+    ]);
 
     // confirm that the members of the re-enabled whitelist are either in the initial config or the additionalSettings data
     const totalInvestors = investorWhitelistAddresses.concat(newInvestors);
     const confirmWhitelistMembers = await investorWhitelist.getList(comptrollerProxy.address);
-    expect(confirmWhitelistMembers).toHaveLength(totalInvestors.length);
-    for (let i = 0; i < totalInvestors.length; i++) {
-      expect(confirmWhitelistMembers.includes(totalInvestors[i])).toBeTruthy;
-    }
+    expect(confirmWhitelistMembers).toMatchFunctionOutput(investorWhitelist.getList, totalInvestors);
   });
 
   it('can create a migrated fund with this policy', async () => {
@@ -401,7 +376,6 @@ describe('integration tests', () => {
 
     // confirm policy exists on migrated fund
     const confirmEnabledPolicies = await policyManager.getEnabledPoliciesForFund(nextComptrollerProxy.address);
-    expect(confirmEnabledPolicies).toHaveLength(1);
-    expect(confirmEnabledPolicies[0]).toBe(investorWhitelist.address);
+    expect(confirmEnabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [investorWhitelist]);
   });
 });

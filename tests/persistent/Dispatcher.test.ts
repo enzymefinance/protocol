@@ -12,16 +12,6 @@ import { Dispatcher, IMigrationHookHandler, MockVaultLib, MigrationOutHook } fro
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, config, deployment } = await defaultPersistentTestDeployment(provider);
 
-  return {
-    accounts,
-    config,
-    deployment,
-  };
-}
-
-async function snapshotWithMocks(provider: EthereumTestnetProvider) {
-  const { accounts, config, deployment } = await snapshot(provider);
-
   const mockVaultLib1 = await MockVaultLib.deploy(config.deployer);
   const mockVaultLib2 = await MockVaultLib.deploy(config.deployer);
 
@@ -301,7 +291,7 @@ describe('deployVaultProxy', () => {
     const {
       config: { deployer },
       deployment: { dispatcher },
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     const owner = randomAddress();
     const vaultAccessor = randomAddress();
@@ -325,7 +315,7 @@ describe('deployVaultProxy', () => {
       deployment: { dispatcher },
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     const owner = randomAddress();
     const vaultAccessor = randomAddress();
@@ -404,7 +394,7 @@ describe('signalMigration', () => {
       mockFundDeployer1: mockPrevFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -430,7 +420,7 @@ describe('signalMigration', () => {
       deployment: { dispatcher },
       config: { deployer },
       mockVaultLib1: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Set vaultProxy to a random address
     const vaultProxy = randomAddress();
@@ -453,7 +443,7 @@ describe('signalMigration', () => {
       mockFundDeployer1: mockPrevFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -487,7 +477,7 @@ describe('signalMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -543,7 +533,7 @@ describe('signalMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -599,7 +589,7 @@ describe('signalMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -661,7 +651,7 @@ describe('cancelMigration', () => {
       config: { deployer },
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy a VaultProxy
     const vaultProxy = await deployVault({
@@ -685,7 +675,7 @@ describe('cancelMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -722,7 +712,7 @@ describe('cancelMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -790,7 +780,7 @@ describe('executeMigration', () => {
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -829,7 +819,7 @@ describe('executeMigration', () => {
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -852,7 +842,7 @@ describe('executeMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -889,7 +879,7 @@ describe('executeMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -931,7 +921,7 @@ describe('executeMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -978,7 +968,7 @@ describe('executeMigration', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -1101,7 +1091,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
   it('returns 0 if vaultProxy is not valid', async () => {
     const {
       deployment: { dispatcher },
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Call getTimelockRemainingForMigrationRequest for a random address (not a vaultProxy)
     const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(randomAddress());
@@ -1114,7 +1104,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
       config: { deployer },
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy
     const vaultProxy = await deployVault({
@@ -1137,7 +1127,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -1176,7 +1166,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -1220,7 +1210,7 @@ describe('hasExecutableMigrationRequest', () => {
   it('returns false if vaultProxy is not valid', async () => {
     const {
       deployment: { dispatcher },
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Call hasExecutableMigrationRequest for a random address (not a vaultProxy)
     const getMigrationTimelockCall = await dispatcher.hasExecutableMigrationRequest(randomAddress());
@@ -1232,7 +1222,7 @@ describe('hasExecutableMigrationRequest', () => {
       config: { deployer },
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy
     const vaultProxy = await deployVault({
@@ -1254,7 +1244,7 @@ describe('hasExecutableMigrationRequest', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -1293,7 +1283,7 @@ describe('hasExecutableMigrationRequest', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
@@ -1329,7 +1319,7 @@ describe('hasMigrationRequest', () => {
   it('returns false if vaultProxy is not valid', async () => {
     const {
       deployment: { dispatcher },
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Call hasMigrationRequest for a random address (not a vaultProxy)
     const hasMigrationRequestCall = await dispatcher.hasMigrationRequest(randomAddress());
@@ -1342,7 +1332,7 @@ describe('hasMigrationRequest', () => {
       config: { deployer },
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy
     const vaultProxy = await deployVault({
@@ -1365,7 +1355,7 @@ describe('hasMigrationRequest', () => {
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
-    } = await provider.snapshot(snapshotWithMocks);
+    } = await provider.snapshot(snapshot);
 
     // Deploy VaultProxy on mockPrevFundDeployer
     const vaultProxy = await deployVault({
