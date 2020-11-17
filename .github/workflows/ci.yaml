@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: ['core', 'infrastructure', 'fee', 'policy', 'integration', 'e2e']
+        project: ['core', 'infrastructure', 'fee', 'policy', 'integration', 'peripheral', 'e2e']
 
     steps:
       - name: Check out repository

@@ -70,7 +70,7 @@ contract FundActionsWrapper {
 
         // Count the continuous fees
         uint256 continuousFeesCount;
-        bool[] memory implementsContinuousHook;
+        bool[] memory implementsContinuousHook = new bool[](fees.length);
         for (uint256 i; i < fees.length; i++) {
             if (feeManagerContract.feeSettlesOnHook(fees[i], IFeeManager.FeeHook.Continuous)) {
                 continuousFeesCount++;
@@ -78,12 +78,12 @@ contract FundActionsWrapper {
             }
         }
 
-        // Return early if no Continuous fees
+        // Return early if no continuous fees
         if (continuousFeesCount == 0) {
             return new address[](0);
         }
 
-        // Create Continuous fees array
+        // Create continuous fees array
         continuousFees_ = new address[](continuousFeesCount);
         uint256 continuousFeesIndex;
         for (uint256 i; i < fees.length; i++) {

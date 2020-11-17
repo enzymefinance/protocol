@@ -81,6 +81,7 @@ const projects = [
   unit('policy', ['tests/release/extensions/policy-manager']),
   unit('integration', ['tests/release/extensions/integration-manager']),
   unit('fee', ['tests/release/extensions/fee-manager']),
+  unit('peripheral', ['tests/release/peripheral']),
   process.env.MAINNET_ARCHIVE_NODE && fork('e2e', ['tests/release/e2e']),
 ].filter((project) => !!project);
 
