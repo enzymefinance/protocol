@@ -2,25 +2,31 @@
 pragma solidity 0.6.8;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../core/fund/vault/VaultLib.sol";
-import "../../utils/SharesInflationMixin.sol";
+import "../../../utils/MakerDaoMath.sol";
 import "./utils/FeeBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A management fee with a configurable annual rate
-contract ManagementFee is FeeBase, SharesInflationMixin {
-    event FundSettingsAdded(address indexed comptrollerProxy, uint256 rate);
+contract ManagementFee is FeeBase, MakerDaoMath {
+    using SafeMath for uint256;
 
-    event Settled(address indexed comptrollerProxy, uint256 sharesQuantity, uint256 prevSettled);
+    event FundSettingsAdded(address indexed comptrollerProxy, uint256 scaledPerSecondRate);
+
+    event Settled(
+        address indexed comptrollerProxy,
+        uint256 sharesQuantity,
+        uint256 secondsSinceSettlement
+    );
 
     struct FeeInfo {
-        uint256 rate;
+        uint256 scaledPerSecondRate;
         uint256 lastSettled;
     }
 
-    uint256 private constant RATE_PERIOD = 365 days;
-    uint256 private constant RATE_DIVISOR = 10**18;
+    uint256 private constant RATE_SCALE_BASE = 10**27;
 
     mapping(address => FeeInfo) private comptrollerProxyToFeeInfo;
 
@@ -36,12 +42,18 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
         override
         onlyFeeManager
     {
-        uint256 feeRate = abi.decode(_settingsData, (uint256));
-        require(feeRate > 0, "addFundSettings: feeRate must be greater than 0");
+        uint256 scaledPerSecondRate = abi.decode(_settingsData, (uint256));
+        require(
+            scaledPerSecondRate > 0,
+            "addFundSettings: scaledPerSecondRate must be greater than 0"
+        );
 
-        comptrollerProxyToFeeInfo[_comptrollerProxy] = FeeInfo({rate: feeRate, lastSettled: 0});
+        comptrollerProxyToFeeInfo[_comptrollerProxy] = FeeInfo({
+            scaledPerSecondRate: scaledPerSecondRate,
+            lastSettled: 0
+        });
 
-        emit FundSettingsAdded(_comptrollerProxy, feeRate);
+        emit FundSettingsAdded(_comptrollerProxy, scaledPerSecondRate);
     }
 
     /// @notice Provides a constant string identifier for a fee
@@ -97,47 +109,43 @@ contract ManagementFee is FeeBase, SharesInflationMixin {
             uint256 sharesDue_
         )
     {
-        uint256 prevSettled = comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled;
-        if (prevSettled == block.timestamp) {
+        FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
+
+        // If this fee was settled in the current block, we can return early
+        uint256 secondsSinceSettlement = block.timestamp.sub(feeInfo.lastSettled);
+        if (secondsSinceSettlement == 0) {
             return (IFeeManager.SettlementType.None, address(0), 0);
         }
 
-        uint256 sharesSupply = VaultLib(_vaultProxy).totalSupply();
-
+        // If there are shares issued for the fund, calculate the shares due
+        VaultLib vaultProxyContract = VaultLib(_vaultProxy);
+        uint256 sharesSupply = vaultProxyContract.totalSupply();
         if (sharesSupply > 0) {
-            sharesDue_ = __calcSettlementSharesDue(_comptrollerProxy, sharesSupply, prevSettled);
+            // This assumes that all shares in the VaultProxy are shares outstanding,
+            // which is fine for this release. Even if they are not, they are still shares that
+            // are only claimable by the fund owner.
+            uint256 netSharesSupply = sharesSupply.sub(vaultProxyContract.balanceOf(_vaultProxy));
+            if (netSharesSupply > 0) {
+                sharesDue_ = netSharesSupply
+                    .mul(
+                    __rpow(feeInfo.scaledPerSecondRate, secondsSinceSettlement, RATE_SCALE_BASE)
+                        .sub(RATE_SCALE_BASE)
+                )
+                    .div(RATE_SCALE_BASE);
+            }
         }
 
         // Must settle even when no shares are due, for the case that settlement is being
         // done when there are no shares in the fund (i.e. at the first investment, or at the
         // first investment after all shares have been redeemed)
         comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
-        emit Settled(_comptrollerProxy, sharesDue_, prevSettled);
+        emit Settled(_comptrollerProxy, sharesDue_, secondsSinceSettlement);
 
         if (sharesDue_ == 0) {
             return (IFeeManager.SettlementType.None, address(0), 0);
         }
 
         return (IFeeManager.SettlementType.Mint, address(0), sharesDue_);
-    }
-
-    // PRIVATE FUNCTIONS
-
-    /// @dev Helper to calculate the shares due at settlement (including inflation)
-    function __calcSettlementSharesDue(
-        address _comptrollerProxy,
-        uint256 _sharesQuantity,
-        uint256 _prevSettled
-    ) private view returns (uint256) {
-        uint256 yearlySharesDueRate = _sharesQuantity
-            .mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate)
-            .div(RATE_DIVISOR);
-
-        return
-            __calcSharesDueWithInflation(
-                yearlySharesDueRate.mul(block.timestamp.sub(_prevSettled)).div(RATE_PERIOD),
-                _sharesQuantity
-            );
     }
 
     ///////////////////

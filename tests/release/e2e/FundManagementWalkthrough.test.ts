@@ -4,6 +4,7 @@ import {
   adapterWhitelistArgs,
   assetBlacklistArgs,
   ComptrollerLib,
+  convertRateToScaledPerSecondRate,
   entranceRateFeeConfigArgs,
   feeManagerConfigArgs,
   investorWhitelistArgs,
@@ -84,7 +85,10 @@ describe("Walkthrough a fund's lifecycle", () => {
     denominationAsset = config.tokens.weth;
 
     // fees
-    const managementFeeSettings = managementFeeConfigArgs(utils.parseEther('0.01'));
+    const rate = 0.01;
+    const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
+
+    const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
     const performanceFeeSettings = performanceFeeConfigArgs({
       rate: utils.parseEther('0.1'),
       period: 365 * 24 * 60 * 60,
@@ -443,8 +447,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 1438073
-    expect(redeemed).toCostLessThan(1439000);
+    // Bumped from 1443427
+    expect(redeemed).toCostLessThan(1444000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
   });
 
@@ -504,8 +508,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       ...buySharesArgs,
     });
 
-    // Bumped from 1006964
-    expect(buySharesTx).toCostLessThan(1007000);
+    // Bumped from 1011812
+    expect(buySharesTx).toCostLessThan(1012000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
 
@@ -515,8 +519,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: investor,
     });
 
-    // Bumped from 1407809
-    expect(redeemed).toCostLessThan(1408000);
+    // Bumped from 1412083
+    expect(redeemed).toCostLessThan(1413000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
   });
 
@@ -526,8 +530,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: anotherInvestor,
     });
 
-    // Bumped from 1412032
-    expect(redeemed).toCostLessThan(1413000);
+    // Bumped from 1416583
+    expect(redeemed).toCostLessThan(1417000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
   });
 });

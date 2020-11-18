@@ -4,6 +4,7 @@ import {
   adapterWhitelistArgs,
   assetBlacklistArgs,
   ComptrollerLib,
+  convertRateToScaledPerSecondRate,
   entranceRateFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
@@ -70,7 +71,10 @@ describe('Walkthrough a fund migration', () => {
     denominationAsset = config.tokens.weth;
 
     // fees
-    const managementFeeSettings = managementFeeConfigArgs(utils.parseEther('0.01'));
+    const rate = 0.01;
+    const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
+
+    const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
     const performanceFeeSettings = performanceFeeConfigArgs({
       rate: utils.parseEther('0.1'),
       period: 365 * 24 * 60 * 60,
@@ -205,8 +209,8 @@ describe('Walkthrough a fund migration', () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 283825
-    expect(redeemed).toCostLessThan(`284000`);
+    // Bumped from 288099
+    expect(redeemed).toCostLessThan(`289000`);
 
     preMigrationShareBalance = await vaultProxy.balanceOf(investor);
     expect(preMigrationShareBalance).toEqBigNumber(balance.sub(redeemQuantity));
