@@ -9,7 +9,7 @@ import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 /// @title GuaranteedRedemption Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A policy that guarantees that shares will either be continuously redeemable or
-/// redeemable within a predictable daily window by preventing trading in a period of time in a day
+/// redeemable within a predictable daily window by preventing trading during a configurable daily period
 contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
@@ -47,6 +47,8 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
         __addRedemptionBlockingAdapters(_redemptionBlockingAdapters);
     }
 
+    // EXTERNAL FUNCTIONS
+
     /// @notice Add the initial policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
@@ -65,9 +67,10 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
             return;
         }
 
+        // Use 23 hours instead of 1 day to allow up to 1 hr of redemptionWindowBuffer
         require(
-            duration > 0 && duration < ONE_DAY,
-            "addFundSettings: duration must be less than one day"
+            duration > 0 && duration <= 23 hours,
+            "addFundSettings: duration must be between 1 second and 23 hours"
         );
 
         comptrollerProxyToRedemptionWindow[_comptrollerProxy].startTimestamp = startTimestamp;
@@ -96,30 +99,49 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
         }
 
 
-            RedemptionWindow storage redemptionWindow
+            RedemptionWindow memory redemptionWindow
          = comptrollerProxyToRedemptionWindow[_comptrollerProxy];
 
-        if (redemptionWindow.startTimestamp == 0 && redemptionWindow.duration == 0) {
+        // If no RedemptionWindow is set, the fund can never use redemption-blocking adapters
+        if (redemptionWindow.startTimestamp == 0) {
             return false;
         }
 
-        uint256 nextRedemptionWindowStartTimestamp = calcNextRedemptionWindowStartTimestamp(
+        uint256 latestRedemptionWindowStart = calcLatestRedemptionWindowStart(
             redemptionWindow.startTimestamp
         );
 
-        // fund can't trade from lowerBound to upperBound timestamp
-        uint256 lowerBound;
-        uint256 upperBound = nextRedemptionWindowStartTimestamp.add(redemptionWindow.duration);
-
-        if (nextRedemptionWindowStartTimestamp >= redemptionWindowBuffer) {
-            lowerBound = nextRedemptionWindowStartTimestamp.sub(redemptionWindowBuffer);
+        // A fund can't trade during its redemption window, nor in the buffer beforehand.
+        // The lower bound is only relevant when the startTimestamp is in the future,
+        // so we check it last.
+        if (
+            block.timestamp >= latestRedemptionWindowStart.add(redemptionWindow.duration) ||
+            block.timestamp <= latestRedemptionWindowStart.sub(redemptionWindowBuffer)
+        ) {
+            return true;
         }
 
-        if (block.timestamp >= lowerBound && block.timestamp <= upperBound) {
-            return false;
-        }
+        return false;
+    }
 
-        return true;
+    /// @notice Sets a new value for the redemptionWindowBuffer variable
+    /// @param _nextRedemptionWindowBuffer The number of seconds for the redemptionWindowBuffer
+    /// @dev The redemptionWindowBuffer is added to the beginning of the redemption window,
+    /// and should always be >= the longest potential block on redemption amongst all adapters.
+    /// (e.g., Synthetix blocks token transfers during a timelock after trading synths)
+    function setRedemptionWindowBuffer(uint256 _nextRedemptionWindowBuffer)
+        external
+        onlyFundDeployerOwner
+    {
+        uint256 prevRedemptionWindowBuffer = redemptionWindowBuffer;
+        require(
+            _nextRedemptionWindowBuffer != prevRedemptionWindowBuffer,
+            "setRedemptionWindowBuffer: Value already set"
+        );
+
+        redemptionWindowBuffer = _nextRedemptionWindowBuffer;
+
+        emit RedemptionWindowBufferSet(prevRedemptionWindowBuffer, _nextRedemptionWindowBuffer);
     }
 
     /// @notice Apply the rule with the specified parameters of a PolicyHook
@@ -137,7 +159,31 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
         return passesRule(_comptrollerProxy, adapter);
     }
 
-    /// @notice Add adapters which can block the redemption
+    // PUBLIC FUNCTIONS
+
+    /// @notice Calculates the start of the most recent redemption window
+    /// @param _startTimestamp The initial startTimestamp for the redemption window
+    /// @return latestRedemptionWindowStart_ The starting timestamp of the most recent redemption window
+    function calcLatestRedemptionWindowStart(uint256 _startTimestamp)
+        public
+        view
+        returns (uint256 latestRedemptionWindowStart_)
+    {
+        if (block.timestamp <= _startTimestamp) {
+            return _startTimestamp;
+        }
+
+        uint256 timeSinceStartTimestamp = block.timestamp.sub(_startTimestamp);
+        uint256 timeSincePeriodStart = timeSinceStartTimestamp.mod(ONE_DAY);
+
+        return block.timestamp.sub(timeSincePeriodStart);
+    }
+
+    ///////////////////////////////////////////
+    // REDEMPTION-BLOCKING ADAPTERS REGISTRY //
+    ///////////////////////////////////////////
+
+    /// @notice Add adapters which can block shares redemption
     /// @param _adapters The addresses of adapters to be added
     function addRedemptionBlockingAdapters(address[] calldata _adapters)
         external
@@ -145,13 +191,13 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
     {
         require(
             _adapters.length > 0,
-            "__addRedemptionBlockingAdapters: _adapters can not be empty"
+            "__addRedemptionBlockingAdapters: _adapters cannot be empty"
         );
 
         __addRedemptionBlockingAdapters(_adapters);
     }
 
-    /// @notice Remove adapters which can block the redemption
+    /// @notice Remove adapters which can block shares redemption
     /// @param _adapters The addresses of adapters to be removed
     function removeRedemptionBlockingAdapters(address[] calldata _adapters)
         external
@@ -159,7 +205,7 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
     {
         require(
             _adapters.length > 0,
-            "removeRedemptionBlockingAdapters: _adapters can not be empty"
+            "removeRedemptionBlockingAdapters: _adapters cannot be empty"
         );
 
         for (uint256 i; i < _adapters.length; i++) {
@@ -174,54 +220,16 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
         }
     }
 
-    /// @notice Sets a new value for the redemptionWindowBuffer
-    /// @param _redemptionWindowBuffer The duration before redemptionWindow to block any
-    /// potential trading that can disrupt the redemption process during redemptionWindow
-    /// (ie: synthetix blocks token transfers during a timelock after trading request submitted)
-    function setRedemptionWindowBuffer(uint256 _redemptionWindowBuffer)
-        external
-        onlyFundDeployerOwner
-    {
-        require(
-            redemptionWindowBuffer != _redemptionWindowBuffer,
-            "setRedemptionWindowBuffer: _redemptionWindowBuffer value is already set"
-        );
-
-        emit RedemptionWindowBufferSet(redemptionWindowBuffer, _redemptionWindowBuffer);
-
-        redemptionWindowBuffer = _redemptionWindowBuffer;
-    }
-
-    /// @notice Calculate the most recent startTimestamp
-    /// @param _startTimestamp The startTimestamp configured
-    /// @return nextRedemptionWindowStartTimestamp_ The startTimestamp of the most recent day
-    function calcNextRedemptionWindowStartTimestamp(uint256 _startTimestamp)
-        public
-        view
-        returns (uint256 nextRedemptionWindowStartTimestamp_)
-    {
-        if (block.timestamp <= _startTimestamp) {
-            return _startTimestamp;
-        } else {
-            uint256 timeSinceStartTimestamp = block.timestamp.sub(_startTimestamp);
-            uint256 timeSincePeriodStart = timeSinceStartTimestamp.mod(ONE_DAY);
-
-            return block.timestamp.sub(timeSincePeriodStart);
-        }
-    }
-
-    // PRIVATE FUNCTIONS
-
-    /// @dev Helper to mark adapters can block redemptions
+    /// @dev Helper to mark adapters that can block shares redemption
     function __addRedemptionBlockingAdapters(address[] memory _adapters) private {
         for (uint256 i; i < _adapters.length; i++) {
             require(
-                !adapterCanBlockRedemption(_adapters[i]),
-                "__addRedemptionBlockingAdapters: adapter already added"
+                _adapters[i] != address(0),
+                "__addRedemptionBlockingAdapters: adapter cannot be empty"
             );
             require(
-                _adapters[i] != address(0),
-                "__addRedemptionBlockingAdapters: adapter can not be address 0"
+                !adapterCanBlockRedemption(_adapters[i]),
+                "__addRedemptionBlockingAdapters: adapter already added"
             );
 
             adapterToCanBlockRedemption[_adapters[i]] = true;
@@ -234,9 +242,15 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the redemptionWindow for a given fund
+    /// @notice Gets the `redemptionWindowBuffer` variable
+    /// @return redemptionWindowBuffer_ The `redemptionWindowBuffer` variable value
+    function getRedemptionWindowBuffer() external view returns (uint256 redemptionWindowBuffer_) {
+        return redemptionWindowBuffer;
+    }
+
+    /// @notice Gets the RedemptionWindow settings for a given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @return redemptionWindow_ The redemption window within which a fund is allowed to redeem
+    /// @return redemptionWindow_ The RedemptionWindow settings
     function getRedemptionWindowForFund(address _comptrollerProxy)
         external
         view
@@ -245,19 +259,13 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
         return comptrollerProxyToRedemptionWindow[_comptrollerProxy];
     }
 
-    /// @notice Gets the redemptionWindowBuffer
-    /// @return redemptionWindowBuffer_ The duration before the redemptionWindow
-    function getRedemptionWindowBuffer() external view returns (uint256 redemptionWindowBuffer_) {
-        return redemptionWindowBuffer;
-    }
-
-    /// @notice Check whether an adapter can block a redemption
+    /// @notice Checks whether an adapter can block shares redemption
     /// @param _adapter The address of the adapter to check
-    /// @return isAddedAdapter_ True if the adapter can block a redemption
+    /// @return canBlockRedemption_ True if the adapter can block shares redemption
     function adapterCanBlockRedemption(address _adapter)
         public
         view
-        returns (bool isAddedAdapter_)
+        returns (bool canBlockRedemption_)
     {
         return adapterToCanBlockRedemption[_adapter];
     }

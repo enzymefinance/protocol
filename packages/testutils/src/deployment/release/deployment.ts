@@ -374,7 +374,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.policyManager,
       await deployment.fundDeployer,
       config.policies.guaranteedRedemption.redemptionWindowBuffer,
-      [],
+      [await deployment.synthetixAdapter],
     );
   },
   async maxConcentration(config, deployment) {
