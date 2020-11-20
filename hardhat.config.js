@@ -38,6 +38,13 @@ module.exports = {
       'IKyberNetworkProxy',
       'ICERC20',
       'ICEther',
+      'ISynthetix',
+      'ISynthetixAddressResolver',
+      'ISynthetixDelegateApprovals',
+      'ISynthetixExchangeRates',
+      'ISynthetixExchanger',
+      'ISynthetixProxyERC20',
+      'ISynthetixSynth',
     ],
     options: {
       ignoreContractsWithoutAbi: true,

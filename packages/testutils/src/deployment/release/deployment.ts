@@ -10,6 +10,7 @@ import {
   ChaiPriceFeed,
   CompoundAdapter,
   CompoundPriceFeed,
+  SynthetixPriceFeed,
   ComptrollerLib,
   EntranceRateBurnFee,
   EntranceRateDirectFee,
@@ -20,6 +21,7 @@ import {
   IntegrationManager,
   InvestorWhitelist,
   KyberAdapter,
+  SynthetixAdapter,
   ManagementFee,
   MaxConcentration,
   MinMaxInvestment,
@@ -75,6 +77,16 @@ export interface ReleaseDeploymentConfig {
   };
   integratees: {
     kyber: AddressLike;
+    synthetix: {
+      addressResolver: AddressLike;
+      delegateApprovals: AddressLike;
+      exchanger: AddressLike;
+      snx: AddressLike;
+      sbtc: AddressLike;
+      susd: AddressLike;
+      originator: AddressLike;
+      trackingCode: BytesLike;
+    };
     makerDao: {
       dai: AddressLike;
       pot: AddressLike;
@@ -110,11 +122,13 @@ export interface ReleaseDeploymentOutput {
   aggregatedDerivativePriceFeed: Promise<AggregatedDerivativePriceFeed>;
   chaiPriceFeed: Promise<ChaiPriceFeed>;
   compoundPriceFeed: Promise<CompoundPriceFeed>;
+  synthetixPriceFeed: Promise<SynthetixPriceFeed>;
   uniswapV2PoolPriceFeed: Promise<UniswapV2PoolPriceFeed>;
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
   compoundAdapter: Promise<CompoundAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
+  synthetixAdapter: Promise<SynthetixAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   uniswapV2Adapter: Promise<UniswapV2Adapter>;
   zeroExV2Adapter: Promise<ZeroExV2Adapter>;
@@ -240,8 +254,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
       config.dispatcher,
-      [config.derivatives.chai, ...cTokens, ...uniswapPoolTokens],
-      [chaiPriceFeed, ...compoundPriceFeeds, ...uniswapPoolPriceFeeds],
+      [config.derivatives.chai, ...cTokens, config.integratees.synthetix.sbtc, ...uniswapPoolTokens],
+      [chaiPriceFeed, ...compoundPriceFeeds, await deployment.synthetixPriceFeed, ...uniswapPoolPriceFeeds],
     );
   },
   async chaiPriceFeed(config) {
@@ -256,6 +270,13 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     const { ceth, ...cTokens } = config.derivatives.compound;
 
     return CompoundPriceFeed.deploy(config.deployer, config.dispatcher, config.weth, ceth, Object.values(cTokens));
+  },
+  async synthetixPriceFeed(config) {
+    return SynthetixPriceFeed.deploy(
+      config.deployer,
+      config.integratees.synthetix.addressResolver,
+      config.integratees.synthetix.susd,
+    );
   },
   async uniswapV2PoolPriceFeed(config) {
     return UniswapV2PoolPriceFeed.deploy(config.deployer);
@@ -283,6 +304,15 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.integrationManager,
       config.integratees.kyber,
       config.weth,
+    );
+  },
+  async synthetixAdapter(config, deployment) {
+    return SynthetixAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      config.integratees.synthetix.addressResolver,
+      config.integratees.synthetix.originator,
+      config.integratees.synthetix.trackingCode,
     );
   },
   async trackedAssetsAdapter(config, deployment) {
@@ -351,6 +381,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.chaiAdapter,
       await deployment.compoundAdapter,
       await deployment.kyberAdapter,
+      await deployment.synthetixAdapter,
       await deployment.trackedAssetsAdapter,
       await deployment.uniswapV2Adapter,
       await deployment.zeroExV2Adapter,

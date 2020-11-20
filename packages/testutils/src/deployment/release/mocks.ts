@@ -10,11 +10,18 @@ import {
   MockGenericIntegratee,
   MockKyberIntegratee,
   MockReentrancyToken,
+  MockSynthetixToken,
+  MockSynthetix,
+  MockSynthetixAddressResolver,
+  MockSynthetixDelegateApprovals,
+  MockSynthetixExchanger,
+  MockSynthetixExchangeRates,
   MockToken,
   MockUniswapV2Integratee,
   MockUniswapV2Pair,
   MockZeroExV2Integratee,
   WETH,
+  sighash,
 } from '@melonproject/protocol';
 import { utils } from 'ethers';
 import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
@@ -64,6 +71,15 @@ export interface MockDeploymentOutput {
   uniswapV2Integratee: Promise<MockUniswapV2Integratee>;
   mockGenericAdapter: Promise<MockGenericAdapter>;
   mockGenericIntegratee: Promise<MockGenericIntegratee>;
+  mockSynthetix: Promise<{
+    addressResolver: MockSynthetixAddressResolver;
+    delegateApprovals: MockSynthetixDelegateApprovals;
+    exchanger: MockSynthetixExchanger;
+    exchangeRates: MockSynthetixExchangeRates;
+    snx: MockSynthetix;
+    susd: MockSynthetixToken;
+    sbtc: MockSynthetixToken;
+  }>;
   chainlinkEthUsdAggregator: Promise<MockChainlinkPriceSource>;
   chainlinkAggregators: Promise<{
     bat: MockChainlinkPriceSource;
@@ -82,6 +98,7 @@ export interface MockDeploymentOutput {
     usdt: MockChainlinkPriceSource;
     zrx: MockChainlinkPriceSource;
     mrt: MockChainlinkPriceSource;
+    susd: MockChainlinkPriceSource;
   }>;
   chaiPriceSource: Promise<MockChaiPriceSource>;
 }
@@ -162,7 +179,25 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
     return MockChaiPriceSource.deploy(config.deployer);
   },
   async chainlinkAggregators(config) {
-    const [bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx, mrt] = await Promise.all([
+    const [
+      bat,
+      bnb,
+      bnt,
+      comp,
+      dai,
+      knc,
+      link,
+      mana,
+      mln,
+      ren,
+      rep,
+      uni,
+      usdc,
+      usdt,
+      zrx,
+      mrt,
+      susd,
+    ] = await Promise.all([
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
@@ -177,11 +212,12 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 6),
       MockChainlinkPriceSource.deploy(config.deployer, 6),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
     ]);
 
-    return { bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx, mrt };
+    return { bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx, mrt, susd };
   },
   async chainlinkEthUsdAggregator(config) {
     return MockChainlinkPriceSource.deploy(config.deployer, 8);
@@ -199,6 +235,44 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   },
   async mockGenericIntegratee(config) {
     return MockGenericIntegratee.deploy(config.deployer);
+  },
+  async mockSynthetix(config) {
+    const susdCurrencyKey = utils.formatBytes32String('sUSD');
+    const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
+
+    const [susd, sbtc] = await Promise.all([
+      MockSynthetixToken.deploy(config.deployer, 'Synth sUSD', 'sUSD', 18, susdCurrencyKey),
+      MockSynthetixToken.deploy(config.deployer, 'Synth sBTC', 'sBTC', 18, sbtcCurrencyKey),
+    ]);
+
+    const addressResolver = await MockSynthetixAddressResolver.deploy(config.deployer);
+    const delegateApprovals = await MockSynthetixDelegateApprovals.deploy(config.deployer);
+    const exchangeRates = await MockSynthetixExchangeRates.deploy(config.deployer);
+
+    const exchanger = await MockSynthetixExchanger.deploy(config.deployer, exchangeRates.address, 5);
+
+    const snx = await MockSynthetix.deploy(config.deployer, delegateApprovals.address, exchanger.address);
+
+    await addressResolver.setAddress(utils.formatBytes32String('DelegateApprovals'), delegateApprovals.address);
+    await addressResolver.setAddress(utils.formatBytes32String('Exchanger'), exchanger.address);
+    await addressResolver.setAddress(utils.formatBytes32String('ExchangeRates'), exchangeRates.address);
+    await addressResolver.setAddress(utils.formatBytes32String('Synthetix'), snx.address);
+
+    await exchangeRates.setRate(susdCurrencyKey, '1000000000000000000');
+    await exchangeRates.setRate(sbtcCurrencyKey, '15317000000000000000000');
+
+    await snx.setSynth(susdCurrencyKey, susd.address);
+    await snx.setSynth(sbtcCurrencyKey, sbtc.address);
+
+    return {
+      addressResolver,
+      delegateApprovals,
+      exchangeRates,
+      exchanger,
+      snx,
+      susd,
+      sbtc,
+    };
   },
   async uniswapV2Integratee(config, deployment) {
     const derivatives = await deployment.uniswapV2Derivatives;
@@ -264,6 +338,8 @@ export async function configureMockRelease({
     mocks.compoundTokens.crep,
     mocks.compoundTokens.cusdc,
     mocks.compoundTokens.czrx,
+    mocks.mockSynthetix.susd,
+    mocks.mockSynthetix.sbtc,
   ];
 
   const uniswapV2Derivatives = [mocks.uniswapV2Derivatives.mlnWeth, mocks.uniswapV2Derivatives.kncWeth];
@@ -285,6 +361,7 @@ export async function configureMockRelease({
     mocks.tokens.usdt,
     mocks.tokens.zrx,
     mocks.tokens.mrt,
+    mocks.mockSynthetix.susd,
   ];
 
   const chainlinkAggregators = [
@@ -304,6 +381,7 @@ export async function configureMockRelease({
     mocks.chainlinkAggregators.usdt,
     mocks.chainlinkAggregators.zrx,
     mocks.chainlinkAggregators.mrt,
+    mocks.chainlinkAggregators.susd,
   ];
 
   const chainlinkRateAssets = [
@@ -323,6 +401,7 @@ export async function configureMockRelease({
     0, // usdt
     0, // zrx
     0, // MRT/ETH
+    0, // susd
   ];
 
   // Make all accounts rich in WETH and tokens.
@@ -370,8 +449,8 @@ export async function configureMockRelease({
     mln: mocks.tokens.mln,
     weth: mocks.tokens.weth,
     registeredVaultCalls: {
-      contracts: [],
-      selectors: [],
+      contracts: [mocks.mockSynthetix.delegateApprovals],
+      selectors: [sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)'))],
     },
     chainlink: {
       ethUsdAggregator: mocks.chainlinkEthUsdAggregator,
@@ -384,7 +463,18 @@ export async function configureMockRelease({
       trackedAssetsLimit: 20, // TODO
     },
     integratees: {
+      // TODO
       kyber: mocks.kyberIntegratee,
+      synthetix: {
+        addressResolver: mocks.mockSynthetix.addressResolver,
+        delegateApprovals: mocks.mockSynthetix.delegateApprovals,
+        exchanger: mocks.mockSynthetix.exchanger,
+        snx: mocks.mockSynthetix.snx,
+        sbtc: mocks.mockSynthetix.sbtc,
+        susd: mocks.mockSynthetix.susd,
+        originator: randomAddress(),
+        trackingCode: utils.formatBytes32String('MELON'),
+      },
       makerDao: {
         dai: mocks.tokens.dai,
         pot: mocks.chaiPriceSource,

@@ -1,5 +1,11 @@
-import { AddressLike, EthereumTestnetProvider, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
-import { Dispatcher, StandardToken } from '@melonproject/protocol';
+import {
+  AddressLike,
+  EthereumTestnetProvider,
+  randomAddress,
+  resolveAddress,
+  SignerWithAddress,
+} from '@crestproject/crestproject';
+import { Dispatcher, StandardToken, sighash } from '@melonproject/protocol';
 import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
 import { ReleaseDeploymentConfig } from './deployment';
@@ -99,8 +105,8 @@ export async function configureForkRelease({
     mln: mainnet.tokens.mln,
     weth: mainnet.tokens.weth,
     registeredVaultCalls: {
-      contracts: [],
-      selectors: [],
+      contracts: [mainnet.synthetix.delegateApprovals],
+      selectors: [sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)'))],
     },
     chainlink: {
       ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
@@ -115,6 +121,16 @@ export async function configureForkRelease({
     derivatives: mainnet.derivatives,
     integratees: {
       kyber: mainnet.kyber,
+      synthetix: {
+        addressResolver: mainnet.synthetix.addressResolver,
+        delegateApprovals: mainnet.synthetix.delegateApprovals,
+        exchanger: mainnet.synthetix.exchanger,
+        snx: mainnet.synthetix.snx,
+        sbtc: mainnet.synthetix.sbtc,
+        susd: tokens.susd,
+        originator: randomAddress(),
+        trackingCode: utils.formatBytes32String('MELON'),
+      },
       makerDao: {
         dai: mainnet.maker.dai,
         pot: mainnet.maker.pot,

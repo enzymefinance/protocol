@@ -7,7 +7,6 @@ export { VaultProxy } from './codegen/VaultProxy';
 
 // Persistent release interfaces
 export { IMigrationHookHandler } from './codegen/IMigrationHookHandler';
-export { IMigratableVault } from './codegen/IMigratableVault';
 
 // Release core
 export { FundDeployer } from './codegen/FundDeployer';
@@ -34,6 +33,9 @@ export { AggregatedDerivativePriceFeed } from './codegen/AggregatedDerivativePri
 export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
 export { CompoundPriceFeed } from './codegen/CompoundPriceFeed';
 export { UniswapV2PoolPriceFeed } from './codegen/UniswapV2PoolPriceFeed';
+export { SynthetixPriceFeed } from './codegen/SynthetixPriceFeed';
+
+// Integratee interfaces
 
 // Integration adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';
@@ -42,6 +44,7 @@ export { TrackedAssetsAdapter } from './codegen/TrackedAssetsAdapter';
 export { ZeroExV2Adapter } from './codegen/ZeroExV2Adapter';
 export { CompoundAdapter } from './codegen/CompoundAdapter';
 export { UniswapV2Adapter } from './codegen/UniswapV2Adapter';
+export { SynthetixAdapter } from './codegen/SynthetixAdapter';
 
 // Fees
 export { IFee } from './codegen/IFee';
@@ -77,6 +80,12 @@ export { MockKyberPriceSource } from './codegen/MockKyberPriceSource';
 export { MockChainlinkPriceSource } from './codegen/MockChainlinkPriceSource';
 export { MockToken } from './codegen/MockToken';
 export { MockReentrancyToken } from './codegen/MockReentrancyToken';
+export { MockSynthetixToken } from './codegen/MockSynthetixToken';
+export { MockSynthetix } from './codegen/MockSynthetix';
+export { MockSynthetixDelegateApprovals } from './codegen/MockSynthetixDelegateApprovals';
+export { MockSynthetixAddressResolver } from './codegen/MockSynthetixAddressResolver';
+export { MockSynthetixExchanger } from './codegen/MockSynthetixExchanger';
+export { MockSynthetixExchangeRates } from './codegen/MockSynthetixExchangeRates';
 export { MockZeroExV2Integratee } from './codegen/MockZeroExV2Integratee';
 export { MockUniswapV2Integratee } from './codegen/MockUniswapV2Integratee';
 export { MockUniswapV2Pair } from './codegen/MockUniswapV2Pair';
@@ -91,6 +100,10 @@ export { IMakerDaoPot } from './codegen/IMakerDaoPot';
 export { IChainlinkAggregator } from './codegen/IChainlinkAggregator';
 export { ICERC20 } from './codegen/ICERC20';
 export { ICEther } from './codegen/ICEther';
+export { ISynthetixAddressResolver } from './codegen/ISynthetixAddressResolver';
+export { ISynthetixDelegateApprovals } from './codegen/ISynthetixDelegateApprovals';
+export { ISynthetixExchangeRates } from './codegen/ISynthetixExchangeRates';
+export { ISynthetixExchanger } from './codegen/ISynthetixExchanger';
 
 // prettier-ignore
 export interface StandardToken extends Contract<StandardToken> {
