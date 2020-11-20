@@ -490,6 +490,11 @@ export async function configureMockRelease({
         erc20Proxy: randomAddress(),
       },
     },
+    policies: {
+      guaranteedRedemption: {
+        redemptionWindowBuffer: 300, // 5 minutes
+      },
+    },
   };
 }
 

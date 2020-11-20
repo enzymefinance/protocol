@@ -22,6 +22,16 @@ export function buySharesPriceFeedToleranceArgs(tolerance: BigNumberish) {
   return encodeArgs(['uint256'], [tolerance]);
 }
 
+export function guaranteedRedemptionArgs({
+  startTimestamp,
+  duration,
+}: {
+  startTimestamp: BigNumberish;
+  duration: BigNumberish;
+}) {
+  return encodeArgs(['uint256', 'uint256'], [startTimestamp, duration]);
+}
+
 export function investorWhitelistArgs({
   investorsToAdd = [],
   investorsToRemove = [],

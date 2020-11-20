@@ -67,6 +67,7 @@ describe('constructor', () => {
         assetBlacklist,
         assetWhitelist,
         fundDeployer,
+        guaranteedRedemption,
         maxConcentration,
         policyManager,
         investorWhitelist,
@@ -81,6 +82,7 @@ describe('constructor', () => {
       adapterWhitelist,
       assetBlacklist,
       assetWhitelist,
+      guaranteedRedemption,
       maxConcentration,
       minMaxInvestment,
       investorWhitelist,
@@ -108,6 +110,10 @@ describe('constructor', () => {
       assetWhitelist,
       PolicyHook.PostCallOnIntegration,
     );
+    const guaranteedRedemptionImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
+      guaranteedRedemption,
+      PolicyHook.PreCallOnIntegration,
+    );
     const maxConcentrationImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
       maxConcentration,
       PolicyHook.PostCallOnIntegration,
@@ -127,6 +133,7 @@ describe('constructor', () => {
     expect(adapterWhitelistImplementsPreCallOnIntegration).toBe(true);
     expect(assetBlacklistImplementsPostCallOnIntegration).toBe(true);
     expect(assetWhitelistImplementsPostCallOnIntegration).toBe(true);
+    expect(guaranteedRedemptionImplementsPreCallOnIntegration).toBe(true);
     expect(maxConcentrationImplementsPostCallOnIntegration).toBe(true);
     expect(investorsWhitelistImplementsPreBuyShares).toBe(true);
     expect(minMaxInvestmentImplementsPreBuyShares).toBe(true);

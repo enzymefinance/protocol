@@ -20,6 +20,7 @@ import {
   FundLifecycleLib,
   IntegrationManager,
   InvestorWhitelist,
+  GuaranteedRedemption,
   KyberAdapter,
   SynthetixAdapter,
   ManagementFee,
@@ -101,6 +102,11 @@ export interface ReleaseDeploymentConfig {
       erc20Proxy: AddressLike;
     };
   };
+  policies: {
+    guaranteedRedemption: {
+      redemptionWindowBuffer: BigNumberish;
+    };
+  };
 }
 
 export interface ReleaseDeploymentOutput {
@@ -142,6 +148,7 @@ export interface ReleaseDeploymentOutput {
   adapterWhitelist: Promise<AdapterWhitelist>;
   assetBlacklist: Promise<AssetBlacklist>;
   assetWhitelist: Promise<AssetWhitelist>;
+  guaranteedRedemption: Promise<GuaranteedRedemption>;
   maxConcentration: Promise<MaxConcentration>;
   minMaxInvestment: Promise<MinMaxInvestment>;
   investorWhitelist: Promise<InvestorWhitelist>;
@@ -361,6 +368,15 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async assetWhitelist(config, deployment) {
     return AssetWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
+  async guaranteedRedemption(config, deployment) {
+    return GuaranteedRedemption.deploy(
+      config.deployer,
+      await deployment.policyManager,
+      await deployment.fundDeployer,
+      config.policies.guaranteedRedemption.redemptionWindowBuffer,
+      [],
+    );
+  },
   async maxConcentration(config, deployment) {
     return MaxConcentration.deploy(config.deployer, await deployment.policyManager, await deployment.valueInterpreter);
   },
@@ -407,6 +423,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.adapterWhitelist,
       await deployment.assetBlacklist,
       await deployment.assetWhitelist,
+      await deployment.guaranteedRedemption,
       await deployment.maxConcentration,
       await deployment.minMaxInvestment,
       await deployment.investorWhitelist,

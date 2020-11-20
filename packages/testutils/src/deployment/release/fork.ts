@@ -145,6 +145,11 @@ export async function configureForkRelease({
         erc20Proxy: mainnet.zeroExV2.erc20Proxy,
       },
     },
+    policies: {
+      guaranteedRedemption: {
+        redemptionWindowBuffer: 300, // 5 minutes
+      },
+    },
   };
 }
 
