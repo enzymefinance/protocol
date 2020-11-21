@@ -116,28 +116,32 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 `release/extensions/policy-manager/policies/buy-shares/MinMaxInvestment.sol`: a26df25e2fd47152fca768fffb2676f07fcaeb1c
 
+### Added scope - 2020/11/22: 220eec3ec7151c09e702a5b47e9d5cc90bcc99e4
+
+`release/extensions/fee-manager/fees/ManagementFee.sol`
+
+`release/extensions/integration-manager/integrations/adapters/SynthetixAdapter.sol`
+
+`release/extensions/integration-manager/integrations/adapters/UniswapV2Adapter.sol`
+
+`release/extensions/policy-manager/policies/call-on-integration/GuaranteedRedemption.sol`
+
+`release/infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol`
+
+`release/infrastructure/price-feeds/derivatives/feeds/UniswapV2PoolPriceFeed.sol`
+
+`release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol`
+
 ## Forthcoming
 
 ### Adapters
 
 `ParaswapAdapter.sol`
 
-`SynthetixAdapter.sol`
-
-`UniswapV2Adapter.sol`
-
-### Policies
-
-`GuaranteedRedemption.sol`
-
-### Fees
-
-`ManagementFee.sol`
-
 ### Derivative Price Feeds
 
-`SynthetixPriceFeed.sol`
-
-`UniswapV2PoolPriceFeed.sol`
-
 `WDGLDPriceFeed.sol`
+
+### Other
+
+`SharesRequestor.sol`
