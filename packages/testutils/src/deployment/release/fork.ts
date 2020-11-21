@@ -126,10 +126,9 @@ export async function configureForkRelease({
         delegateApprovals: mainnet.synthetix.delegateApprovals,
         exchanger: mainnet.synthetix.exchanger,
         snx: mainnet.synthetix.snx,
-        sbtc: mainnet.synthetix.sbtc,
         susd: tokens.susd,
         originator: randomAddress(),
-        trackingCode: utils.formatBytes32String('MELON'),
+        trackingCode: '0x4d454c4f4e000000000000000000000000000000000000000000000000000000',
       },
       makerDao: {
         dai: mainnet.maker.dai,

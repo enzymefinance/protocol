@@ -307,7 +307,7 @@ describe('deployVaultProxy', () => {
     const deployVaultProxyCall = dispatcher
       .connect(deployer)
       .deployVaultProxy(vaultLib, owner, vaultAccessor, fundName);
-    await expect(deployVaultProxyCall).rejects.toBeRevertedWith('function call to a non-contract account');
+    await expect(deployVaultProxyCall).rejects.toBeReverted();
   });
 
   it('correctly deploys a new VaultProxy', async () => {

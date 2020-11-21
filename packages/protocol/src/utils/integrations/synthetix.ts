@@ -1,20 +1,11 @@
-import { BigNumberish, Signer, utils } from 'ethers';
 import { AddressLike } from '@crestproject/crestproject';
-import { ISynthetixAddressResolver } from '../../contracts';
+import { BigNumberish, utils } from 'ethers';
 import { encodeArgs } from '../encoding';
+import { sighash } from '../sighash';
 
-export async function synthetixResolveAddress({
-  addressResolver,
-  name,
-  signer,
-}: {
-  addressResolver: AddressLike;
-  name: string;
-  signer: Signer;
-}) {
-  const synthetixAddressResolver: ISynthetixAddressResolver = new ISynthetixAddressResolver(addressResolver, signer);
-  return synthetixAddressResolver.requireAndGetAddress(utils.formatBytes32String(name), `Missing ${name}`);
-}
+export const synthetixAssignExchangeDelegateSelector = sighash(
+  utils.FunctionFragment.fromString('approveExchangeOnBehalf(address)'),
+);
 
 export function synthetixTakeOrderArgs({
   incomingAsset,

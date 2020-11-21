@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./../../release/interfaces/ISynthetixProxyERC20.sol";
 import "./../../release/interfaces/ISynthetixSynth.sol";
 import "./MockToken.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
-contract MockSynthetixToken is ISynthetixProxyERC20, ISynthetixSynth, MockToken {
+contract MockSynthetixToken is ISynthetixProxyERC20, ISynthetixSynth, MockToken, Ownable {
     using SafeMath for uint256;
 
-    bytes32 public immutable CURRENCY_KEY;
+    bytes32 public override currencyKey;
     uint256 public constant WAITING_PERIOD_SECS = 3 * 60;
 
     mapping(address => uint256) public timelockByAccount;
@@ -21,7 +21,11 @@ contract MockSynthetixToken is ISynthetixProxyERC20, ISynthetixSynth, MockToken 
         uint8 _decimals,
         bytes32 _currencyKey
     ) public MockToken(_name, _symbol, _decimals) {
-        CURRENCY_KEY = _currencyKey;
+        currencyKey = _currencyKey;
+    }
+
+    function setCurrencyKey(bytes32 _currencyKey) external onlyOwner {
+        currencyKey = _currencyKey;
     }
 
     function _isLocked(address account) internal view returns (bool) {
@@ -38,10 +42,6 @@ contract MockSynthetixToken is ISynthetixProxyERC20, ISynthetixSynth, MockToken 
 
     function target() external view override returns (address) {
         return address(this);
-    }
-
-    function currencyKey() external view override returns (bytes32) {
-        return CURRENCY_KEY;
     }
 
     function isLocked(address account) external view returns (bool) {

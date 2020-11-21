@@ -1,15 +1,55 @@
-import { utils, Signer, BigNumberish } from 'ethers';
+import { AddressLike } from '@crestproject/crestproject';
 import {
   callOnIntegrationArgs,
   ComptrollerLib,
+  encodeArgs,
   IntegrationManager,
   IntegrationManagerActionId,
+  ISynthetixAddressResolver,
   StandardToken,
   SynthetixAdapter,
+  synthetixAssignExchangeDelegateSelector,
   synthetixTakeOrderArgs,
   takeOrderSelector,
   VaultLib,
 } from '@melonproject/protocol';
+import { utils, Signer, BigNumberish } from 'ethers';
+
+export async function synthetixAssignExchangeDelegate({
+  comptrollerProxy,
+  addressResolver,
+  fundOwner,
+  delegate,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  addressResolver: AddressLike;
+  fundOwner: Signer;
+  delegate: AddressLike;
+}) {
+  const delegateApprovals = await synthetixResolveAddress({
+    addressResolver,
+    name: 'DelegateApprovals',
+  });
+
+  await comptrollerProxy
+    .connect(fundOwner)
+    .vaultCallOnContract(
+      delegateApprovals,
+      synthetixAssignExchangeDelegateSelector,
+      encodeArgs(['address'], [delegate]),
+    );
+}
+
+export async function synthetixResolveAddress({
+  addressResolver,
+  name,
+}: {
+  addressResolver: AddressLike;
+  name: string;
+}) {
+  const synthetixAddressResolver: ISynthetixAddressResolver = new ISynthetixAddressResolver(addressResolver, provider);
+  return synthetixAddressResolver.requireAndGetAddress(utils.formatBytes32String(name), `Missing ${name}`);
+}
 
 export async function synthetixTakeOrder({
   comptrollerProxy,

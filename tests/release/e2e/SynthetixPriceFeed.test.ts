@@ -1,7 +1,7 @@
-import { utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { synthetixResolveAddress, ISynthetixExchangeRates } from '@melonproject/protocol';
-import { defaultForkDeployment } from '@melonproject/testutils';
+import { ISynthetixExchangeRates } from '@melonproject/protocol';
+import { defaultForkDeployment, synthetixResolveAddress } from '@melonproject/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   return await defaultForkDeployment(provider);
@@ -11,8 +11,11 @@ it('returns rate for underlying token', async () => {
   const {
     config: {
       deployer,
+      derivatives: {
+        synthetix: { sbtc },
+      },
       integratees: {
-        synthetix: { addressResolver, sbtc, susd },
+        synthetix: { addressResolver, susd },
       },
     },
     deployment: { synthetixPriceFeed },
@@ -21,7 +24,6 @@ it('returns rate for underlying token', async () => {
   const exchangeRates = await synthetixResolveAddress({
     addressResolver,
     name: 'ExchangeRates',
-    signer: deployer,
   });
 
   const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, deployer);
@@ -37,20 +39,4 @@ it('returns rate for underlying token', async () => {
     rates_: [expectedRate],
     underlyings_: [susd],
   });
-});
-
-it('returns supported for a valid synth', async () => {
-  const {
-    config: {
-      weth,
-      integratees: {
-        synthetix: { sbtc },
-      },
-    },
-    deployment: { synthetixPriceFeed },
-  } = await provider.snapshot(snapshot);
-
-  await expect(synthetixPriceFeed.isSupportedAsset(sbtc)).resolves.toBe(true);
-
-  await expect(synthetixPriceFeed.isSupportedAsset(weth)).resolves.toBe(false);
 });

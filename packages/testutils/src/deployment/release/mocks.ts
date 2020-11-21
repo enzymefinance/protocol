@@ -439,6 +439,9 @@ export async function configureMockRelease({
         cusdc: mocks.compoundTokens.cusdc,
         czrx: mocks.compoundTokens.czrx,
       },
+      synthetix: {
+        sbtc: mocks.mockSynthetix.sbtc,
+      },
       uniswapV2: {
         mlnWeth: mocks.uniswapV2Derivatives.mlnWeth,
         kncWeth: mocks.uniswapV2Derivatives.kncWeth,
@@ -470,7 +473,6 @@ export async function configureMockRelease({
         delegateApprovals: mocks.mockSynthetix.delegateApprovals,
         exchanger: mocks.mockSynthetix.exchanger,
         snx: mocks.mockSynthetix.snx,
-        sbtc: mocks.mockSynthetix.sbtc,
         susd: mocks.mockSynthetix.susd,
         originator: randomAddress(),
         trackingCode: utils.formatBytes32String('MELON'),

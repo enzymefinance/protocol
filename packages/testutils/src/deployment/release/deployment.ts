@@ -71,6 +71,9 @@ export interface ReleaseDeploymentConfig {
       cusdc: AddressLike;
       czrx: AddressLike;
     };
+    synthetix: {
+      sbtc: AddressLike;
+    };
     uniswapV2: {
       mlnWeth: AddressLike;
       kncWeth: AddressLike;
@@ -83,7 +86,6 @@ export interface ReleaseDeploymentConfig {
       delegateApprovals: AddressLike;
       exchanger: AddressLike;
       snx: AddressLike;
-      sbtc: AddressLike;
       susd: AddressLike;
       originator: AddressLike;
       trackingCode: BytesLike;
@@ -253,6 +255,9 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     const cTokens = Object.values(config.derivatives.compound);
     const compoundPriceFeeds: Array<AddressLike> = new Array(cTokens.length).fill(await deployment.compoundPriceFeed);
 
+    const synths = Object.values(config.derivatives.synthetix);
+    const synthetixPriceFeeds: Array<AddressLike> = new Array(synths.length).fill(await deployment.synthetixPriceFeed);
+
     const uniswapPoolTokens = Object.values(config.derivatives.uniswapV2);
     const uniswapPoolPriceFeeds: Array<AddressLike> = new Array(uniswapPoolTokens.length).fill(
       await deployment.uniswapV2PoolPriceFeed,
@@ -261,8 +266,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return AggregatedDerivativePriceFeed.deploy(
       config.deployer,
       config.dispatcher,
-      [config.derivatives.chai, ...cTokens, config.integratees.synthetix.sbtc, ...uniswapPoolTokens],
-      [chaiPriceFeed, ...compoundPriceFeeds, await deployment.synthetixPriceFeed, ...uniswapPoolPriceFeeds],
+      [config.derivatives.chai, ...cTokens, ...synths, ...uniswapPoolTokens],
+      [chaiPriceFeed, ...compoundPriceFeeds, ...synthetixPriceFeeds, ...uniswapPoolPriceFeeds],
     );
   },
   async chaiPriceFeed(config) {
@@ -281,8 +286,10 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async synthetixPriceFeed(config) {
     return SynthetixPriceFeed.deploy(
       config.deployer,
+      config.dispatcher,
       config.integratees.synthetix.addressResolver,
       config.integratees.synthetix.susd,
+      Object.values(config.derivatives.synthetix),
     );
   },
   async uniswapV2PoolPriceFeed(config) {
@@ -317,8 +324,9 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return SynthetixAdapter.deploy(
       config.deployer,
       await deployment.integrationManager,
-      config.integratees.synthetix.addressResolver,
+      await deployment.synthetixPriceFeed,
       config.integratees.synthetix.originator,
+      config.integratees.synthetix.snx,
       config.integratees.synthetix.trackingCode,
     );
   },

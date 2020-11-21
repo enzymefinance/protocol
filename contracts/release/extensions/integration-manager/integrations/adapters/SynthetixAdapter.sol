@@ -1,27 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
+import "../../../../infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
 import "../../../../interfaces/ISynthetix.sol";
-import "../../../../interfaces/ISynthetixAddressResolver.sol";
-import "../../../../utils/SynthetixHelper.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title SynthetixAdapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Adapter for interacting with Synthetix
-contract SynthetixAdapter is AdapterBase, SynthetixHelper {
-    address private immutable ADDRESS_RESOLVER;
+contract SynthetixAdapter is AdapterBase {
     address private immutable ORIGINATOR;
+    address private immutable SYNTHETIX;
+    address private immutable SYNTHETIX_PRICE_FEED;
     bytes32 private immutable TRACKING_CODE;
 
     constructor(
         address _integrationManager,
-        address _addressResolver,
+        address _synthetixPriceFeed,
         address _originator,
+        address _synthetix,
         bytes32 _trackingCode
     ) public AdapterBase(_integrationManager) {
-        ADDRESS_RESOLVER = _addressResolver;
         ORIGINATOR = _originator;
+        SYNTHETIX = _synthetix;
+        SYNTHETIX_PRICE_FEED = _synthetixPriceFeed;
         TRACKING_CODE = _trackingCode;
     }
 
@@ -55,6 +57,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixHelper {
         )
     {
         require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
+
         (
             address incomingAsset,
             uint256 minIncomingAssetAmount,
@@ -96,19 +99,18 @@ contract SynthetixAdapter is AdapterBase, SynthetixHelper {
             uint256 outgoingAssetAmount
         ) = __decodeCallArgs(_encodedCallArgs);
 
-        // Validate args
-        require(outgoingAssetAmount > 0, "takeOrder: outgoingAssetAmount must be >0");
+        address[] memory synths = new address[](2);
+        synths[0] = outgoingAsset;
+        synths[1] = incomingAsset;
 
-        address synthetix = ISynthetixAddressResolver(ADDRESS_RESOLVER).requireAndGetAddress(
-            "Synthetix",
-            "takeOrder: Missing Synthetix"
-        );
+        bytes32[] memory currencyKeys = SynthetixPriceFeed(SYNTHETIX_PRICE_FEED)
+            .getCurrencyKeysForSynths(synths);
 
-        ISynthetix(synthetix).exchangeOnBehalfWithTracking(
+        ISynthetix(SYNTHETIX).exchangeOnBehalfWithTracking(
             _vaultProxy,
-            getCurrencyKey(outgoingAsset),
+            currencyKeys[0],
             outgoingAssetAmount,
-            getCurrencyKey(incomingAsset),
+            currencyKeys[1],
             ORIGINATOR,
             TRACKING_CODE
         );
@@ -116,7 +118,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixHelper {
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to decode the encoded arguments
+    /// @dev Helper to decode the encoded call arguments
     function __decodeCallArgs(bytes memory _encodedCallArgs)
         private
         pure
@@ -134,15 +136,27 @@ contract SynthetixAdapter is AdapterBase, SynthetixHelper {
     // STATE GETTERS //
     ///////////////////
 
-    function getAddressResolver() external view returns (address) {
-        return ADDRESS_RESOLVER;
-    }
-
-    function getOriginator() external view returns (address) {
+    /// @notice Gets the `ORIGINATOR` variable
+    /// @return originator_ The `ORIGINATOR` variable value
+    function getOriginator() external view returns (address originator_) {
         return ORIGINATOR;
     }
 
-    function getTrackingCode() external view returns (bytes32) {
+    /// @notice Gets the `SYNTHETIX` variable
+    /// @return synthetix_ The `SYNTHETIX` variable value
+    function getSynthetix() external view returns (address synthetix_) {
+        return SYNTHETIX;
+    }
+
+    /// @notice Gets the `SYNTHETIX_PRICE_FEED` variable
+    /// @return synthetixPriceFeed_ The `SYNTHETIX_PRICE_FEED` variable value
+    function getSynthetixPriceFeed() external view returns (address synthetixPriceFeed_) {
+        return SYNTHETIX_PRICE_FEED;
+    }
+
+    /// @notice Gets the `TRACKING_CODE` variable
+    /// @return trackingCode_ The `TRACKING_CODE` variable value
+    function getTrackingCode() external view returns (bytes32 trackingCode_) {
         return TRACKING_CODE;
     }
 }

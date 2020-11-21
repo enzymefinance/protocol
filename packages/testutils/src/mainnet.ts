@@ -35,6 +35,9 @@ export const mainnet = {
       cusdc: '0x39aa39c021dfbae8fac545936693ac917d5e7563',
       czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
     },
+    synthetix: {
+      sbtc: '0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6',
+    },
     uniswapV2: {
       mlnWeth: '0x15ab0333985FD1E289adF4fBBe19261454776642',
       kncWeth: '0xf49C43Ae0fAf37217bDcB00DF478cF793eDd6687',
@@ -50,7 +53,6 @@ export const mainnet = {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     exchanger: '0xc4942df0d3c561c71417BBA09d2DEA7a3CC676Fb',
     snx: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
-    sbtc: '0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6',
   },
   tokens: {
     bat: '0x0d8775f648430679a709e98d2b0cb6250d2887ef',

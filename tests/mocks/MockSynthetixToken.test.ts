@@ -12,8 +12,11 @@ it('it cannot transfer after an exchange', async () => {
     accounts: [sender, recipient],
     config: {
       deployer,
+      derivatives: {
+        synthetix: { sbtc },
+      },
       integratees: {
-        synthetix: { delegateApprovals, sbtc, susd, snx },
+        synthetix: { delegateApprovals, susd, snx },
       },
     },
   } = await provider.snapshot(snapshot);
