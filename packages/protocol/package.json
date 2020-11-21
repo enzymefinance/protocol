@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@crestproject/crestproject": "^0.1.19",
-    "@openzeppelin/contracts": "^3.2.0",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   },

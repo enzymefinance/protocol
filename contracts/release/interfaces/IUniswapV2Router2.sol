@@ -22,11 +22,6 @@ interface IUniswapV2Router2 {
             uint256
         );
 
-    function getAmountsOut(uint256 amountIn, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory);
-
     function removeLiquidity(
         address,
         address,

@@ -246,29 +246,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     );
   },
   // Derivative price feeds
-  async aggregatedDerivativePriceFeed(config, deployment) {
-    // Await all derivative price feeds, since the AggregatedDerivativePriceFeed relies on
-    // isSupportedAsset() calls to each feed
-
-    const chaiPriceFeed = await deployment.chaiPriceFeed;
-
-    const cTokens = Object.values(config.derivatives.compound);
-    const compoundPriceFeeds: Array<AddressLike> = new Array(cTokens.length).fill(await deployment.compoundPriceFeed);
-
-    const synths = Object.values(config.derivatives.synthetix);
-    const synthetixPriceFeeds: Array<AddressLike> = new Array(synths.length).fill(await deployment.synthetixPriceFeed);
-
-    const uniswapPoolTokens = Object.values(config.derivatives.uniswapV2);
-    const uniswapPoolPriceFeeds: Array<AddressLike> = new Array(uniswapPoolTokens.length).fill(
-      await deployment.uniswapV2PoolPriceFeed,
-    );
-
-    return AggregatedDerivativePriceFeed.deploy(
-      config.deployer,
-      config.dispatcher,
-      [config.derivatives.chai, ...cTokens, ...synths, ...uniswapPoolTokens],
-      [chaiPriceFeed, ...compoundPriceFeeds, ...synthetixPriceFeeds, ...uniswapPoolPriceFeeds],
-    );
+  async aggregatedDerivativePriceFeed(config) {
+    return AggregatedDerivativePriceFeed.deploy(config.deployer, config.dispatcher, [], []);
   },
   async chaiPriceFeed(config) {
     return ChaiPriceFeed.deploy(
@@ -292,8 +271,16 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       Object.values(config.derivatives.synthetix),
     );
   },
-  async uniswapV2PoolPriceFeed(config) {
-    return UniswapV2PoolPriceFeed.deploy(config.deployer);
+  async uniswapV2PoolPriceFeed(config, deployment) {
+    return UniswapV2PoolPriceFeed.deploy(
+      config.deployer,
+      config.dispatcher,
+      await deployment.aggregatedDerivativePriceFeed,
+      await deployment.chainlinkPriceFeed,
+      await deployment.valueInterpreter,
+      config.integratees.uniswapV2.factory,
+      Object.values(config.derivatives.uniswapV2),
+    );
   },
   // Adapters
   async chaiAdapter(config, deployment) {
@@ -399,7 +386,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return FundActionsWrapper.deploy(config.deployer, await deployment.feeManager);
   },
   // Post-deployment config
-  async postDeployment(_config, deployment) {
+  async postDeployment(config, deployment) {
     // Register adapters
     const adapters = [
       await deployment.chaiAdapter,
@@ -439,5 +426,25 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
 
     const policyManager = await deployment.policyManager;
     await policyManager.registerPolicies(policies);
+
+    // Add derivatives to the derivative price feed
+    const chaiPriceFeed = await deployment.chaiPriceFeed;
+
+    const cTokens = Object.values(config.derivatives.compound);
+    const compoundPriceFeeds: Array<AddressLike> = new Array(cTokens.length).fill(await deployment.compoundPriceFeed);
+
+    const synths = Object.values(config.derivatives.synthetix);
+    const synthetixPriceFeeds: Array<AddressLike> = new Array(synths.length).fill(await deployment.synthetixPriceFeed);
+
+    const uniswapPoolTokens = Object.values(config.derivatives.uniswapV2);
+    const uniswapPoolPriceFeeds: Array<AddressLike> = new Array(uniswapPoolTokens.length).fill(
+      await deployment.uniswapV2PoolPriceFeed,
+    );
+
+    const aggregatedDerivativePriceFeed = await deployment.aggregatedDerivativePriceFeed;
+    await aggregatedDerivativePriceFeed.addDerivatives(
+      [config.derivatives.chai, ...cTokens, ...synths, ...uniswapPoolTokens],
+      [chaiPriceFeed, ...compoundPriceFeeds, ...synthetixPriceFeeds, ...uniswapPoolPriceFeeds],
+    );
   },
 });

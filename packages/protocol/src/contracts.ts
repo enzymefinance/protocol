@@ -95,7 +95,6 @@ export { WETH } from './codegen/WETH';
 // External interfaces
 export { IUniswapV2Factory } from './codegen/IUniswapV2Factory';
 export { IUniswapV2Pair } from './codegen/IUniswapV2Pair';
-export { IUniswapV2Router2 } from './codegen/IUniswapV2Router2';
 export { IKyberNetworkProxy } from './codegen/IKyberNetworkProxy';
 export { IMakerDaoPot } from './codegen/IMakerDaoPot';
 export { IChainlinkAggregator } from './codegen/IChainlinkAggregator';
@@ -129,4 +128,14 @@ export const StandardToken = contract<StandardToken>()`
   function totalSupply() view returns (uint256)
   function transfer(address recipient, uint256 amount) returns (bool)
   function transferFrom(address sender, address recipient, uint256 amount) returns (bool)
+`;
+
+export interface UniswapV2Router extends Contract<UniswapV2Router> {
+  getAmountsOut: Call<(amountIn: BigNumberish, path: AddressLike[]) => BigNumber[], Contract<any>>;
+  quote: Call<(amountA: BigNumberish, reserveA: BigNumberish, reserveB: BigNumberish) => BigNumber, Contract<any>>;
+}
+
+export const UniswapV2Router = contract<UniswapV2Router>()`
+  function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[])
+  function quote(uint256 amountA, uint256 reserveA, uint256 reserveB) pure returns (uint256)
 `;

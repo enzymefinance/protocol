@@ -1,21 +1,15 @@
-// TODO: NEED TO REVIEW THESE TESTS
-
-import { utils, BigNumberish } from 'ethers';
-import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
+import { utils } from 'ethers';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   assetTransferArgs,
-  ComptrollerLib,
-  IntegrationManager,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
   StandardToken,
   takeOrderSelector,
-  UniswapV2Adapter,
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
   uniswapV2TakeOrderArgs,
-  VaultLib,
 } from '@melonproject/protocol';
 import {
   assertEvent,
@@ -53,73 +47,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-async function assertUniswapV2TakeOrder({
-  comptrollerProxy,
-  vaultProxy,
-  integrationManager,
-  fundOwner,
-  uniswapV2Adapter,
-  path,
-  outgoingAssetAmount,
-  minIncomingAssetAmount,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  vaultProxy: VaultLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  uniswapV2Adapter: UniswapV2Adapter;
-  path: StandardToken[];
-  outgoingAssetAmount: BigNumberish;
-  minIncomingAssetAmount: BigNumberish;
-}) {
-  const outgoingAsset = path[0];
-  const incomingAsset = path[path.length - 1];
-
-  // seed fund
-  await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
-
-  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-    account: vaultProxy,
-    assets: [incomingAsset, outgoingAsset],
-  });
-
-  const receipt = await uniswapV2TakeOrder({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    uniswapV2Adapter,
-    path,
-    outgoingAssetAmount,
-    minIncomingAssetAmount,
-  });
-
-  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-
-  assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-    comptrollerProxy: comptrollerProxy,
-    vaultProxy,
-    caller: fundOwner,
-    adapter: uniswapV2Adapter,
-    selector: takeOrderSelector,
-    incomingAssets: [incomingAsset],
-    incomingAssetAmounts: [minIncomingAssetAmount],
-    outgoingAssets: [outgoingAsset],
-    outgoingAssetAmounts: [outgoingAssetAmount],
-    integrationData: expect.anything(),
-  });
-
-  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
-    account: vaultProxy,
-    assets: [incomingAsset, outgoingAsset],
-  });
-
-  // TODO: if we use rates other than 1:1, need to look up the actual rate
-  const expectedIncomingAssetAmount = outgoingAssetAmount;
-  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
-}
-
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
@@ -145,13 +72,7 @@ describe('constructor', () => {
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
-      config: {
-        mln: tokenA,
-        weth: tokenB,
-        derivatives: {
-          uniswapV2: { mlnWeth: incomingAsset },
-        },
-      },
+      config: { mln: tokenA, weth: tokenB },
       deployment: { uniswapV2Adapter },
     } = await provider.snapshot(snapshot);
 
@@ -159,17 +80,16 @@ describe('parseAssetsForMethod', () => {
     const amountBDesired = utils.parseEther('1');
     const amountAMin = amountADesired;
     const amountBMin = amountBDesired;
-    const minIncomingAssetAmount = utils.parseEther('1');
+    const minPoolTokenAmount = utils.parseEther('1');
 
-    const args = await uniswapV2LendArgs({
+    const args = uniswapV2LendArgs({
       tokenA,
       tokenB,
       amountADesired,
       amountBDesired,
       amountAMin,
       amountBMin,
-      incomingAsset,
-      minIncomingAssetAmount,
+      minPoolTokenAmount,
     });
 
     await expect(uniswapV2Adapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
@@ -185,7 +105,7 @@ describe('parseAssetsForMethod', () => {
         mln: tokenA,
         weth: tokenB,
         derivatives: {
-          uniswapV2: { mlnWeth: incomingAsset },
+          uniswapV2: { mlnWeth: poolToken },
         },
       },
       deployment: { uniswapV2Adapter },
@@ -195,27 +115,26 @@ describe('parseAssetsForMethod', () => {
     const amountBDesired = utils.parseEther('1');
     const amountAMin = amountADesired;
     const amountBMin = amountBDesired;
-    const minIncomingAssetAmount = utils.parseEther('1');
+    const minPoolTokenAmount = utils.parseEther('1');
 
-    const lendArgs = await uniswapV2LendArgs({
+    const lendArgs = uniswapV2LendArgs({
       tokenA,
       tokenB,
       amountADesired,
       amountBDesired,
       amountAMin,
       amountBMin,
-      incomingAsset,
-      minIncomingAssetAmount,
+      minPoolTokenAmount,
     });
 
     const selector = lendSelector;
     const result = await uniswapV2Adapter.parseAssetsForMethod(selector, lendArgs);
 
     expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
-      incomingAssets_: [incomingAsset],
+      incomingAssets_: [poolToken],
       spendAssets_: [tokenA, tokenB],
       spendAssetAmounts_: [amountADesired, amountBDesired],
-      minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      minIncomingAssetAmounts_: [minPoolTokenAmount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
   });
@@ -226,19 +145,18 @@ describe('parseAssetsForMethod', () => {
         mln: tokenA,
         weth: tokenB,
         derivatives: {
-          uniswapV2: { mlnWeth: outgoingAsset },
+          uniswapV2: { mlnWeth: poolToken },
         },
       },
       deployment: { uniswapV2Adapter },
     } = await provider.snapshot(snapshot);
 
-    const liquidity = utils.parseEther('0.5');
+    const poolTokenAmount = utils.parseEther('0.5');
     const amountAMin = utils.parseEther('1');
     const amountBMin = utils.parseEther('1');
 
-    const redeemArgs = await uniswapV2RedeemArgs({
-      outgoingAsset,
-      liquidity,
+    const redeemArgs = uniswapV2RedeemArgs({
+      poolTokenAmount,
       tokenA,
       tokenB,
       amountAMin,
@@ -250,8 +168,8 @@ describe('parseAssetsForMethod', () => {
 
     expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [tokenA, tokenB],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [liquidity],
+      spendAssets_: [poolToken],
+      spendAssetAmounts_: [poolTokenAmount],
       minIncomingAssetAmounts_: [amountAMin, amountBMin],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
     });
@@ -261,32 +179,19 @@ describe('parseAssetsForMethod', () => {
 describe('lend', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
-      config: {
-        mln: tokenA,
-        weth: tokenB,
-        derivatives: {
-          uniswapV2: { mlnWeth: incomingAsset },
-        },
-      },
+      config: { mln: tokenA, weth: tokenB },
       deployment: { uniswapV2Adapter },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const amountADesired = utils.parseEther('1');
-    const amountBDesired = utils.parseEther('1');
-    const amountAMin = amountADesired;
-    const amountBMin = amountBDesired;
-    const minIncomingAssetAmount = utils.parseEther('1');
-
-    const lendArgs = await uniswapV2LendArgs({
+    const lendArgs = uniswapV2LendArgs({
       tokenA,
       tokenB,
-      amountADesired,
-      amountBDesired,
-      amountAMin,
-      amountBMin,
-      incomingAsset,
-      minIncomingAssetAmount,
+      amountADesired: utils.parseEther('1'),
+      amountBDesired: utils.parseEther('1'),
+      amountAMin: utils.parseEther('1'),
+      amountBMin: utils.parseEther('1'),
+      minPoolTokenAmount: utils.parseEther('1'),
     });
 
     const transferArgs = await assetTransferArgs({
@@ -304,7 +209,7 @@ describe('lend', () => {
     const {
       config: {
         derivatives: {
-          uniswapV2: { mlnWeth: incomingAsset },
+          uniswapV2: { mlnWeth: poolToken },
         },
       },
       deployment: {
@@ -315,23 +220,17 @@ describe('lend', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const incomingAssetContract = new StandardToken(incomingAsset, provider);
+    const poolTokenContract = new StandardToken(poolToken, provider);
 
     const amountADesired = utils.parseEther('1');
     const amountBDesired = utils.parseEther('1');
-    const amountAMin = amountADesired;
-    const amountBMin = amountBDesired;
 
     // Seed fund
     await tokenA.transfer(vaultProxy, amountADesired);
     await tokenB.transfer(vaultProxy, amountBDesired);
 
-    const [preTxIncomingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAssetContract],
-    });
-
-    const preTxOutgoingAssetBalances = await getAssetBalances({
+    const preTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
+    const preTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
     });
@@ -346,10 +245,9 @@ describe('lend', () => {
       tokenB,
       amountADesired,
       amountBDesired,
-      amountAMin,
-      amountBMin,
-      incomingAsset,
-      minIncomingAssetAmount: utils.parseEther('1'),
+      amountAMin: amountADesired,
+      amountBMin: amountBDesired,
+      minPoolTokenAmount: utils.parseEther('1'),
     });
 
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
@@ -360,54 +258,39 @@ describe('lend', () => {
       caller: fundOwner,
       adapter: uniswapV2Adapter,
       selector: lendSelector,
-      incomingAssets: [incomingAssetContract],
+      incomingAssets: [poolTokenContract],
       incomingAssetAmounts: [utils.parseEther('1')],
       outgoingAssets: [tokenA, tokenB],
       outgoingAssetAmounts: [amountADesired, amountBDesired],
       integrationData: expect.anything(),
     });
 
-    const [postTxIncomingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAssetContract],
-    });
-
-    const postTxOutgoingAssetBalances = await getAssetBalances({
+    const postTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
+    const postTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
     });
 
-    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amountADesired));
-    expect(postTxOutgoingAssetBalances[0]).toEqBigNumber(preTxOutgoingAssetBalances[0].sub(amountADesired));
-    expect(postTxOutgoingAssetBalances[1]).toEqBigNumber(preTxOutgoingAssetBalances[1].sub(amountBDesired));
+    expect(postTxPoolTokenBalance).toEqBigNumber(preTxPoolTokenBalance.add(amountADesired));
+    expect(postTxTokenBalances[0]).toEqBigNumber(preTxTokenBalances[0].sub(amountADesired));
+    expect(postTxTokenBalances[1]).toEqBigNumber(preTxTokenBalances[1].sub(amountBDesired));
   });
 });
 
 describe('redeem', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
-      config: {
-        mln: tokenA,
-        weth: tokenB,
-        derivatives: {
-          uniswapV2: { mlnWeth: outgoingAsset },
-        },
-      },
+      config: { mln: tokenA, weth: tokenB },
       deployment: { uniswapV2Adapter },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const liquidity = utils.parseEther('0.5');
-    const amountAMin = utils.parseEther('1');
-    const amountBMin = utils.parseEther('1');
-
-    const redeemArgs = await uniswapV2RedeemArgs({
-      outgoingAsset,
-      liquidity,
+    const redeemArgs = uniswapV2RedeemArgs({
+      poolTokenAmount: utils.parseEther('0.5'),
       tokenA,
       tokenB,
-      amountAMin,
-      amountBMin,
+      amountAMin: utils.parseEther('1'),
+      amountBMin: utils.parseEther('1'),
     });
 
     const transferArgs = await assetTransferArgs({
@@ -426,7 +309,7 @@ describe('redeem', () => {
       config: {
         deployer,
         derivatives: {
-          uniswapV2: { mlnWeth: outgoingAsset },
+          uniswapV2: { mlnWeth: poolToken },
         },
       },
       deployment: {
@@ -437,21 +320,18 @@ describe('redeem', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const liquidity = utils.parseEther('0.5');
+    const poolTokenAmount = utils.parseEther('0.5');
     const amountAMin = utils.parseEther('1');
     const amountBMin = utils.parseEther('1');
-    const outgoingAssetContract = new StandardToken(outgoingAsset, provider);
+    const poolTokenContract = new StandardToken(poolToken, provider);
 
     // seed fund
-    await outgoingAssetContract.connect(deployer).transfer(vaultProxy, liquidity);
+    await poolTokenContract.connect(deployer).transfer(vaultProxy, poolTokenAmount);
 
-    const preTxIncomingAssetBalances = await getAssetBalances({
+    const preTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
+    const preTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
-    });
-    const [preTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [outgoingAssetContract],
     });
 
     const receipt = await uniswapV2Redeem({
@@ -459,8 +339,7 @@ describe('redeem', () => {
       integrationManager,
       fundOwner,
       uniswapV2Adapter,
-      outgoingAsset,
-      liquidity,
+      poolTokenAmount,
       tokenA,
       tokenB,
       amountAMin,
@@ -477,23 +356,20 @@ describe('redeem', () => {
       selector: redeemSelector,
       incomingAssets: [tokenA, tokenB],
       incomingAssetAmounts: [amountAMin, amountBMin],
-      outgoingAssets: [outgoingAssetContract],
-      outgoingAssetAmounts: [liquidity],
+      outgoingAssets: [poolTokenContract],
+      outgoingAssetAmounts: [poolTokenAmount],
       integrationData: expect.anything(),
     });
 
-    const postTxIncomingAssetBalances = await getAssetBalances({
+    const postTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
+    const postTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
     });
-    const [postTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [outgoingAssetContract],
-    });
 
-    expect(postTxIncomingAssetBalances[0]).toEqBigNumber(preTxIncomingAssetBalances[0].add(amountAMin));
-    expect(postTxIncomingAssetBalances[1]).toEqBigNumber(preTxIncomingAssetBalances[1].add(amountBMin));
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(liquidity));
+    expect(postTxTokenBalances[0]).toEqBigNumber(preTxTokenBalances[0].add(amountAMin));
+    expect(postTxTokenBalances[1]).toEqBigNumber(preTxTokenBalances[1].add(amountBMin));
+    expect(postTxPoolTokenBalance).toEqBigNumber(preTxPoolTokenBalance.sub(poolTokenAmount));
   });
 });
 
@@ -501,14 +377,14 @@ describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: {
-        tokens: { mln: tokenA, weth: tokenB },
+        tokens: { mln: outgoingAsset, weth: incomingAsset },
         uniswapV2Adapter,
       },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const takeOrderArgs = await uniswapV2TakeOrderArgs({
-      path: [tokenA, tokenB],
+    const takeOrderArgs = uniswapV2TakeOrderArgs({
+      path: [outgoingAsset, incomingAsset],
       outgoingAssetAmount: utils.parseEther('1'),
       minIncomingAssetAmount: utils.parseEther('1'),
     });
@@ -523,12 +399,12 @@ describe('takeOrder', () => {
     );
   });
 
-  it('does not allow empty minimum asset amount', async () => {
+  it('does not allow a path with less than 2 assets', async () => {
     const {
       deployment: {
         uniswapV2Adapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
         integrationManager,
+        tokens: { mln: outgoingAsset },
       },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -540,36 +416,37 @@ describe('takeOrder', () => {
         integrationManager,
         fundOwner,
         uniswapV2Adapter,
-        path: [outgoingAsset, incomingAsset],
+        path: [outgoingAsset],
         outgoingAssetAmount: utils.parseEther('1'),
-        minIncomingAssetAmount: 0,
-        seedFund: true,
+        minIncomingAssetAmount: utils.parseEther('1'),
       }),
-    ).rejects.toBeRevertedWith('minIncomingAssetAmount must be >0');
+    ).rejects.toBeRevertedWith('_path must be >= 2');
   });
 
-  it('works as expected when called by a fund (ETH to ERC20)', async () => {
+  it('works as expected when called by a fund', async () => {
     const {
       deployment: {
         uniswapV2Adapter,
         integrationManager,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
+        tokens: { mln: outgoingAsset, dai: incomingAsset },
       },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
-      // config: {
-      // integratees: { uniswapV2: { router } },
-      // }
     } = await provider.snapshot(snapshot);
 
     const outgoingAssetAmount = utils.parseEther('1');
-    const minIncomingAssetAmount = utils.parseEther('1');
+    const expectedIncomingAssetAmount = utils.parseEther('1');
 
-    // const a = await getAssetBalances({
-    // account: router,
-    // assets: [incomingAsset],
-    // })
+    // Seed fund with outgoing asset
+    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 
-    await assertUniswapV2TakeOrder({
+    // Get the balances of the incoming and outgoing assets pre-trade
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
+
+    // Trade on Uniswap
+    const receipt = await uniswapV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -577,82 +454,32 @@ describe('takeOrder', () => {
       uniswapV2Adapter,
       path: [outgoingAsset, incomingAsset],
       outgoingAssetAmount,
-      minIncomingAssetAmount,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
     });
-  });
 
-  it('works as expected when called by a fund (ERC20 to ETH)', async () => {
-    const {
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: tokenA, weth: tokenB },
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
+    // Get the balances of the incoming and outgoing assets post-trade
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
 
-    const outgoingAssetAmount = utils.parseEther('1');
-    const minIncomingAssetAmount = utils.parseEther('1');
+    // Assert the correct final token balances of incoming and outgoing assets
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 
-    await assertUniswapV2TakeOrder({
-      comptrollerProxy,
+    // Assert the correct event was emitted
+    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
+    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
+      comptrollerProxy: comptrollerProxy,
       vaultProxy,
-      integrationManager,
-      fundOwner,
-      uniswapV2Adapter,
-      path: [tokenA, tokenB],
-      outgoingAssetAmount,
-      minIncomingAssetAmount,
+      caller: fundOwner,
+      adapter: uniswapV2Adapter,
+      selector: takeOrderSelector,
+      incomingAssets: [incomingAsset],
+      incomingAssetAmounts: [expectedIncomingAssetAmount],
+      outgoingAssets: [outgoingAsset],
+      outgoingAssetAmounts: [outgoingAssetAmount],
+      integrationData: expect.anything(),
     });
-  });
-
-  it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
-    const {
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: tokenA, dai: tokenB },
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    const outgoingAssetAmount = utils.parseEther('1');
-    const minIncomingAssetAmount = utils.parseEther('1');
-
-    await assertUniswapV2TakeOrder({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      uniswapV2Adapter,
-      path: [tokenA, tokenB],
-      outgoingAssetAmount,
-      minIncomingAssetAmount,
-    });
-  });
-
-  xit('reverts if the incoming asset amount is too low', async () => {
-    const {
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: tokenA, weth: tokenB },
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    await expect(
-      uniswapV2TakeOrder({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager,
-        fundOwner,
-        uniswapV2Adapter,
-        path: [tokenA, tokenB],
-        outgoingAssetAmount: utils.parseEther('1'),
-        minIncomingAssetAmount: utils.parseEther('1.0001'),
-        seedFund: true,
-      }),
-    ).rejects.toBeRevertedWith('received incoming asset less than expected');
   });
 });

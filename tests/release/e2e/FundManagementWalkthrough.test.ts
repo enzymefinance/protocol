@@ -8,12 +8,12 @@ import {
   entranceRateFeeConfigArgs,
   feeManagerConfigArgs,
   investorWhitelistArgs,
-  IUniswapV2Router2,
   managementFeeConfigArgs,
   maxConcentrationArgs,
   performanceFeeConfigArgs,
   policyManagerConfigArgs,
   StandardToken,
+  UniswapV2Router,
   VaultLib,
 } from '@melonproject/protocol';
 import {
@@ -232,8 +232,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    // Bumped from 1005444
-    expect(takeOrder).toCostLessThan(1006000);
+    // Bumped from 1022790
+    expect(takeOrder).toCostLessThan(1023000);
 
     const balance = await incomingAsset.balanceOf(vaultProxy);
     expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
@@ -243,7 +243,7 @@ describe("Walkthrough a fund's lifecycle", () => {
     const outgoingAssetAmount = utils.parseEther('0.1');
 
     const path = [config.tokens.weth, config.tokens.rep];
-    const routerContract = new IUniswapV2Router2(config.integratees.uniswapV2.router, provider);
+    const routerContract = new UniswapV2Router(config.integratees.uniswapV2.router, provider);
     const amountsOut = await routerContract.getAmountsOut(outgoingAssetAmount, path);
 
     const takeOrder = await uniswapV2TakeOrder({
@@ -257,7 +257,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    expect(takeOrder).toCostLessThan(`630000`);
+    // Bumped from 655885
+    expect(takeOrder).toCostLessThan(`656000`);
   });
 
   it('lends and redeems Chai', async () => {
@@ -275,7 +276,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minChaiAmount: daiAmount.mul(90).div(100),
     });
 
-    expect(lend).toCostLessThan(`735000`);
+    // Bumped from 767466
+    expect(lend).toCostLessThan(`768000`);
 
     const chaiAmount = await chai.balanceOf(vaultProxy);
 
@@ -290,7 +292,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minDaiAmount: chaiAmount.mul(90).div(100),
     });
 
-    expect(redeem).toCostLessThan(`587000`);
+    // Bumped from 611575
+    expect(redeem).toCostLessThan(`612000`);
   });
 
   it('seeds the fund with all more assets', async () => {
@@ -330,6 +333,7 @@ describe("Walkthrough a fund's lifecycle", () => {
   it('calculates the GAV of the fund with 14 assets', async () => {
     const calcGavTx = await comptrollerProxy.calcGav();
 
+    // Bumped from 634753
     expect(calcGavTx).toCostLessThan(`635000`);
   });
 
@@ -403,7 +407,7 @@ describe("Walkthrough a fund's lifecycle", () => {
     const outgoingAssetAmount = utils.parseEther('0.1');
 
     const path = [config.tokens.weth, config.tokens.rep];
-    const routerContract = new IUniswapV2Router2(config.integratees.uniswapV2.router, provider);
+    const routerContract = new UniswapV2Router(config.integratees.uniswapV2.router, provider);
     const amountsOut = await routerContract.getAmountsOut(outgoingAssetAmount, path);
 
     const takeOrder = await uniswapV2TakeOrder({
@@ -417,7 +421,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    // Bumped from 1119296
+    // Bumped from 1119271
     expect(takeOrder).toCostLessThan(1120000);
   });
 
@@ -447,7 +451,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 1443427
+    // Bumped from 1443255
     expect(redeemed).toCostLessThan(1444000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
   });
@@ -508,7 +512,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       ...buySharesArgs,
     });
 
-    // Bumped from 1011812
+    // Bumped from 1011697
     expect(buySharesTx).toCostLessThan(1012000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
@@ -519,8 +523,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: investor,
     });
 
-    // Bumped from 1412083
-    expect(redeemed).toCostLessThan(1413000);
+    // Bumped from 1431679
+    expect(redeemed).toCostLessThan(1432000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
   });
 
@@ -530,7 +534,7 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: anotherInvestor,
     });
 
-    // Bumped from 1416583
+    // Bumped from 1416306
     expect(redeemed).toCostLessThan(1417000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
   });

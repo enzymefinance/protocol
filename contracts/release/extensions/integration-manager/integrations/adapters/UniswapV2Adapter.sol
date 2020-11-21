@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../interfaces/IUniswapV2Factory.sol";
 import "../../../../interfaces/IUniswapV2Router2.sol";
 import "../utils/AdapterBase.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title UniswapV2Adapter Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
@@ -21,8 +20,8 @@ contract UniswapV2Adapter is AdapterBase {
         address _router,
         address _factory
     ) public AdapterBase(_integrationManager) {
-        ROUTER = _router;
         FACTORY = _factory;
+        ROUTER = _router;
     }
 
     // EXTERNAL FUNCTIONS
@@ -59,11 +58,8 @@ contract UniswapV2Adapter is AdapterBase {
                 address[2] memory outgoingAssets,
                 uint256[2] memory maxOutgoingAssetAmounts,
                 ,
-                address incomingAsset,
                 uint256 minIncomingAssetAmount
             ) = __decodeLendCallArgs(_encodedCallArgs);
-
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
 
             spendAssets_ = new address[](2);
             spendAssets_[0] = outgoingAssets[0];
@@ -74,22 +70,27 @@ contract UniswapV2Adapter is AdapterBase {
             spendAssetAmounts_[1] = maxOutgoingAssetAmounts[1];
 
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = incomingAsset;
+            // No need to validate not address(0), this will be caught in IntegrationManager
+            incomingAssets_[0] = IUniswapV2Factory(FACTORY).getPair(
+                outgoingAssets[0],
+                outgoingAssets[1]
+            );
 
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
         } else if (_selector == REDEEM_SELECTOR) {
             (
-                address outgoingAsset,
                 uint256 outgoingAssetAmount,
                 address[2] memory incomingAssets,
                 uint256[2] memory minIncomingAssetAmounts
             ) = __decodeRedeemCallArgs(_encodedCallArgs);
 
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
-
             spendAssets_ = new address[](1);
-            spendAssets_[0] = outgoingAsset;
+            // No need to validate not address(0), this will be caught in IntegrationManager
+            spendAssets_[0] = IUniswapV2Factory(FACTORY).getPair(
+                incomingAssets[0],
+                incomingAssets[1]
+            );
 
             spendAssetAmounts_ = new uint256[](1);
             spendAssetAmounts_[0] = outgoingAssetAmount;
@@ -108,7 +109,7 @@ contract UniswapV2Adapter is AdapterBase {
                 uint256 minIncomingAssetAmount
             ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
 
-            spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
+            require(path.length >= 2, "parseIncomingAssets: _path must be >= 2");
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = path[0];
@@ -124,7 +125,7 @@ contract UniswapV2Adapter is AdapterBase {
         }
 
         return (
-            spendAssetsHandleType_,
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
             spendAssets_,
             spendAssetAmounts_,
             incomingAssets_,
@@ -132,7 +133,7 @@ contract UniswapV2Adapter is AdapterBase {
         );
     }
 
-    /// @notice Lend assets on Uniswap
+    /// @notice Lends assets for pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
@@ -149,7 +150,6 @@ contract UniswapV2Adapter is AdapterBase {
             address[2] memory outgoingAssets,
             uint256[2] memory maxOutgoingAssetAmounts,
             uint256[2] memory minOutgoingAssetAmounts,
-            address incomingAsset,
 
         ) = __decodeLendCallArgs(_encodedCallArgs);
 
@@ -160,12 +160,11 @@ contract UniswapV2Adapter is AdapterBase {
             maxOutgoingAssetAmounts[0],
             maxOutgoingAssetAmounts[1],
             minOutgoingAssetAmounts[0],
-            minOutgoingAssetAmounts[1],
-            incomingAsset
+            minOutgoingAssetAmounts[1]
         );
     }
 
-    /// @notice Redeem assets on Uniswap
+    /// @notice Redeems pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
@@ -179,20 +178,24 @@ contract UniswapV2Adapter is AdapterBase {
         fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
         (
-            address outgoingAsset,
             uint256 outgoingAssetAmount,
             address[2] memory incomingAssets,
             uint256[2] memory minIncomingAssetAmounts
         ) = __decodeRedeemCallArgs(_encodedCallArgs);
 
+        // More efficient to parse pool token from _encodedAssetTransferArgs than external call
+        (, address[] memory spendAssets, , ) = __decodeEncodedAssetTransferArgs(
+            _encodedAssetTransferArgs
+        );
+
         __redeem(
             _vaultProxy,
+            spendAssets[0],
+            outgoingAssetAmount,
             incomingAssets[0],
             incomingAssets[1],
-            outgoingAssetAmount,
             minIncomingAssetAmounts[0],
-            minIncomingAssetAmounts[1],
-            outgoingAsset
+            minIncomingAssetAmounts[1]
         );
     }
 
@@ -220,6 +223,46 @@ contract UniswapV2Adapter is AdapterBase {
 
     // PRIVATE FUNCTIONS
 
+    /// @dev Helper to decode the lend encoded call arguments
+    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            address[2] memory outgoingAssets_,
+            uint256[2] memory maxOutgoingAssetAmounts_,
+            uint256[2] memory minOutgoingAssetAmounts_,
+            uint256 minIncomingAssetAmount_
+        )
+    {
+        return abi.decode(_encodedCallArgs, (address[2], uint256[2], uint256[2], uint256));
+    }
+
+    /// @dev Helper to decode the redeem encoded call arguments
+    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            uint256 outgoingAssetAmount_,
+            address[2] memory incomingAssets_,
+            uint256[2] memory minIncomingAssetAmounts_
+        )
+    {
+        return abi.decode(_encodedCallArgs, (uint256, address[2], uint256[2]));
+    }
+
+    /// @dev Helper to decode the take order encoded call arguments
+    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            address[] memory path_,
+            uint256 outgoingAssetAmount_,
+            uint256 minIncomingAssetAmount_
+        )
+    {
+        return abi.decode(_encodedCallArgs, (address[], uint256, uint256));
+    }
+
     /// @dev Helper to execute lend. Avoids stack-too-deep error.
     function __lend(
         address _vaultProxy,
@@ -228,18 +271,8 @@ contract UniswapV2Adapter is AdapterBase {
         uint256 _amountADesired,
         uint256 _amountBDesired,
         uint256 _amountAMin,
-        uint256 _amountBMin,
-        address _incomingAsset
+        uint256 _amountBMin
     ) private {
-        require(
-            _incomingAsset == IUniswapV2Factory(FACTORY).getPair(_tokenA, _tokenB),
-            "__lend: Invalid incomingAsset"
-        );
-        require(_amountADesired > 0, "__lend: _amountADesired must be > 0");
-        require(_amountBDesired > 0, "__lend: _amountBDesired must be > 0");
-        require(_amountAMin <= _amountADesired, "__lend: _amountAMin must be <= _amountADesired");
-        require(_amountBMin <= _amountBDesired, "__lend: _amountBMin must be <= _amountBDesired");
-
         __approveMaxAsNeeded(_tokenA, ROUTER, _amountADesired);
         __approveMaxAsNeeded(_tokenB, ROUTER, _amountBDesired);
 
@@ -259,27 +292,20 @@ contract UniswapV2Adapter is AdapterBase {
     /// @dev Helper to execute redeem. Avoids stack-too-deep error.
     function __redeem(
         address _vaultProxy,
+        address _poolToken,
+        uint256 _poolTokenAmount,
         address _tokenA,
         address _tokenB,
-        uint256 _liquidity,
         uint256 _amountAMin,
-        uint256 _amountBMin,
-        address _outgoingAsset
+        uint256 _amountBMin
     ) private {
-        require(_liquidity > 0, "__redeem: _liquidity must be > 0");
-
-        require(
-            _outgoingAsset == IUniswapV2Factory(FACTORY).getPair(_tokenA, _tokenB),
-            "__redeem: Invalid _outgoingAsset"
-        );
-
-        __approveMaxAsNeeded(_outgoingAsset, ROUTER, _liquidity);
+        __approveMaxAsNeeded(_poolToken, ROUTER, _poolTokenAmount);
 
         // Execute redeem on Uniswap
         IUniswapV2Router2(ROUTER).removeLiquidity(
             _tokenA,
             _tokenB,
-            _liquidity,
+            _poolTokenAmount,
             _amountAMin,
             _amountBMin,
             _vaultProxy,
@@ -294,11 +320,6 @@ contract UniswapV2Adapter is AdapterBase {
         uint256 _minIncomingAssetAmount,
         address[] memory _path
     ) private {
-        // Validate args
-        require(_path.length >= 2, "__takeOrder: _path must be >= 2");
-        require(_minIncomingAssetAmount > 0, "__takeOrder: _minIncomingAssetAmount must be > 0");
-        require(_outgoingAssetAmount > 0, "__takeOrder: _outgoingAssetAmount must be > 0");
-
         __approveMaxAsNeeded(_path[0], ROUTER, _outgoingAssetAmount);
 
         // Execute fill
@@ -311,62 +332,19 @@ contract UniswapV2Adapter is AdapterBase {
         );
     }
 
-    /// @dev Helper to decode the lend call encoded arguments
-    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
-        private
-        pure
-        returns (
-            address[2] memory outgoingAssets_,
-            uint256[2] memory maxOutgoingAssetAmounts_,
-            uint256[2] memory minOutgoingAssetAmounts_,
-            address incomingAsset_,
-            uint256 minIncomingAssetAmount_
-        )
-    {
-        return
-            abi.decode(_encodedCallArgs, (address[2], uint256[2], uint256[2], address, uint256));
-    }
-
-    /// @dev Helper to decode the redeem call encoded arguments
-    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
-        private
-        pure
-        returns (
-            address outgoingAsset_,
-            uint256 outgoingAssetAmount_,
-            address[2] memory incomingAssets_,
-            uint256[2] memory minIncomingAssetAmounts_
-        )
-    {
-        return abi.decode(_encodedCallArgs, (address, uint256, address[2], uint256[2]));
-    }
-
-    /// @dev Helper to decode the take order call encoded arguments
-    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
-        private
-        pure
-        returns (
-            address[] memory path_,
-            uint256 outgoingAssetAmount_,
-            uint256 minIncomingAssetAmount_
-        )
-    {
-        return abi.decode(_encodedCallArgs, (address[], uint256, uint256));
-    }
-
     ///////////////////
     // STATE GETTERS //
     ///////////////////
-
-    /// @notice Gets the `ROUTER` variable
-    /// @return router_ The `ROUTER` variable value
-    function getRouter() external view returns (address router_) {
-        return ROUTER;
-    }
 
     /// @notice Gets the `FACTORY` variable
     /// @return factory_ The `FACTORY` variable value
     function getFactory() external view returns (address factory_) {
         return FACTORY;
+    }
+
+    /// @notice Gets the `ROUTER` variable
+    /// @return router_ The `ROUTER` variable value
+    function getRouter() external view returns (address router_) {
+        return ROUTER;
     }
 }

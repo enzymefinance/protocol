@@ -14,6 +14,8 @@ interface IUniswapV2Pair {
             uint32
         );
 
+    function kLast() external view returns (uint256);
+
     function token0() external view returns (address);
 
     function token1() external view returns (address);

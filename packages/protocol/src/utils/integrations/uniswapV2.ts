@@ -21,8 +21,7 @@ export function uniswapV2LendArgs({
   amountBDesired,
   amountAMin,
   amountBMin,
-  incomingAsset,
-  minIncomingAssetAmount,
+  minPoolTokenAmount,
 }: {
   tokenA: AddressLike;
   tokenB: AddressLike;
@@ -30,38 +29,29 @@ export function uniswapV2LendArgs({
   amountBDesired: BigNumberish;
   amountAMin: BigNumberish;
   amountBMin: BigNumberish;
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount: BigNumberish;
+  minPoolTokenAmount: BigNumberish;
 }) {
   return encodeArgs(
-    ['address[2]', 'uint256[2]', 'uint256[2]', 'address', 'uint256'],
-    [
-      [tokenA, tokenB],
-      [amountADesired, amountBDesired],
-      [amountAMin, amountBMin],
-      incomingAsset,
-      minIncomingAssetAmount,
-    ],
+    ['address[2]', 'uint256[2]', 'uint256[2]', 'uint256'],
+    [[tokenA, tokenB], [amountADesired, amountBDesired], [amountAMin, amountBMin], minPoolTokenAmount],
   );
 }
 
 export function uniswapV2RedeemArgs({
-  outgoingAsset,
-  liquidity,
+  poolTokenAmount,
   tokenA,
   tokenB,
   amountAMin,
   amountBMin,
 }: {
-  outgoingAsset: AddressLike;
-  liquidity: BigNumberish;
+  poolTokenAmount: BigNumberish;
   tokenA: AddressLike;
   tokenB: AddressLike;
   amountAMin: BigNumberish;
   amountBMin: BigNumberish;
 }) {
   return encodeArgs(
-    ['address', 'uint256', 'address[2]', 'uint256[2]'],
-    [outgoingAsset, liquidity, [tokenA, tokenB], [amountAMin, amountBMin]],
+    ['uint256', 'address[2]', 'uint256[2]'],
+    [poolTokenAmount, [tokenA, tokenB], [amountAMin, amountBMin]],
   );
 }

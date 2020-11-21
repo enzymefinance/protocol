@@ -28,8 +28,7 @@ export async function uniswapV2Lend({
   amountBDesired,
   amountAMin,
   amountBMin,
-  incomingAsset,
-  minIncomingAssetAmount,
+  minPoolTokenAmount,
   seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -43,8 +42,7 @@ export async function uniswapV2Lend({
   amountBDesired: BigNumberish;
   amountAMin: BigNumberish;
   amountBMin: BigNumberish;
-  minIncomingAssetAmount: BigNumberish;
-  incomingAsset: AddressLike;
+  minPoolTokenAmount: BigNumberish;
   seedFund?: boolean;
 }) {
   if (seedFund) {
@@ -53,18 +51,17 @@ export async function uniswapV2Lend({
     await tokenB.transfer(vaultProxy, amountBDesired);
   }
 
-  const lendArgs = await uniswapV2LendArgs({
+  const lendArgs = uniswapV2LendArgs({
     tokenA,
     tokenB,
     amountADesired,
     amountBDesired,
     amountAMin,
     amountBMin,
-    incomingAsset,
-    minIncomingAssetAmount,
+    minPoolTokenAmount,
   });
 
-  const callArgs = await callOnIntegrationArgs({
+  const callArgs = callOnIntegrationArgs({
     adapter: uniswapV2Adapter,
     selector: lendSelector,
     encodedCallArgs: lendArgs,
@@ -83,8 +80,7 @@ export async function uniswapV2Redeem({
   integrationManager,
   fundOwner,
   uniswapV2Adapter,
-  outgoingAsset,
-  liquidity,
+  poolTokenAmount,
   tokenA,
   tokenB,
   amountAMin,
@@ -94,22 +90,20 @@ export async function uniswapV2Redeem({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   uniswapV2Adapter: UniswapV2Adapter;
-  outgoingAsset: AddressLike;
-  liquidity: BigNumberish;
+  poolTokenAmount: BigNumberish;
   tokenA: AddressLike;
   tokenB: AddressLike;
   amountAMin: BigNumberish;
   amountBMin: BigNumberish;
 }) {
-  const redeemArgs = await uniswapV2RedeemArgs({
-    outgoingAsset,
-    liquidity,
+  const redeemArgs = uniswapV2RedeemArgs({
+    poolTokenAmount,
     tokenA,
     tokenB,
     amountAMin,
     amountBMin,
   });
-  const callArgs = await callOnIntegrationArgs({
+  const callArgs = callOnIntegrationArgs({
     adapter: uniswapV2Adapter,
     selector: redeemSelector,
     encodedCallArgs: redeemArgs,
@@ -149,12 +143,12 @@ export async function uniswapV2TakeOrder({
     await path[0].transfer(vaultProxy, outgoingAssetAmount);
   }
 
-  const takeOrderArgs = await uniswapV2TakeOrderArgs({
+  const takeOrderArgs = uniswapV2TakeOrderArgs({
     path,
     outgoingAssetAmount,
     minIncomingAssetAmount,
   });
-  const callArgs = await callOnIntegrationArgs({
+  const callArgs = callOnIntegrationArgs({
     adapter: uniswapV2Adapter,
     selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
