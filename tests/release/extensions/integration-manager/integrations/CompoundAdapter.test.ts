@@ -17,7 +17,15 @@ async function snapshot(provider: EthereumTestnetProvider) {
     denominationAsset: deployment.tokens.weth,
   });
   const token = randomAddress();
-  const cToken = await MockCTokenIntegratee.deploy(config.deployer, 'Mock', 'MCK', 18, token);
+  const cToken = await MockCTokenIntegratee.deploy(
+    config.deployer,
+    'Mock',
+    'MCK',
+    18,
+    token,
+    randomAddress(),
+    utils.parseEther('2'),
+  );
   await deployment.compoundPriceFeed.addCTokens([cToken]);
 
   return {

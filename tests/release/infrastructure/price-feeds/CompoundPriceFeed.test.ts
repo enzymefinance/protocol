@@ -1,6 +1,7 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
 import { MockCTokenIntegratee } from '@melonproject/protocol';
 import { defaultTestDeployment } from '@melonproject/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -14,6 +15,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
     'cMOCK1',
     8,
     newCToken1Underlying,
+    randomAddress(),
+    utils.parseEther('1'),
   );
   const newCToken2 = await MockCTokenIntegratee.deploy(
     config.deployer,
@@ -21,6 +24,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
     'cMOCK2',
     8,
     newCToken2Underlying,
+    randomAddress(),
+    utils.parseEther('1'),
   );
 
   return {

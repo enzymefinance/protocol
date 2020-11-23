@@ -29,6 +29,9 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
   });
 
   const release = await deployRelease(config);
+
+  await mocks.centralizedRateProvider.setValueInterpreter(release.valueInterpreter);
+
   await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
 
@@ -61,6 +64,7 @@ export async function defaultTestRelease(
   const release = await deployRelease(config);
   await dispatcher.setCurrentFundDeployer(release.fundDeployer);
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
+  await mocks.mockCentralizedRateProvider.setValueInterpreter(release.valueInterpreter);
 
   return {
     config,

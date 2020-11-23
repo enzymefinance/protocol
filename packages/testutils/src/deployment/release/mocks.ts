@@ -1,5 +1,6 @@
 import { AddressLike, randomAddress, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
+  CentralizedRateProvider,
   Dispatcher,
   encodeZeroExV2AssetData,
   MockChaiIntegratee,
@@ -57,18 +58,19 @@ export interface MockDeploymentOutput {
     kncWeth: MockToken;
   }>;
   compoundTokens: Promise<{
-    cbat: MockToken;
-    ccomp: MockToken;
-    cdai: MockToken;
-    ceth: MockToken;
-    crep: MockToken;
-    cuni: MockToken;
-    cusdc: MockToken;
-    czrx: MockToken;
+    cbat: MockCTokenIntegratee;
+    ccomp: MockCTokenIntegratee;
+    cdai: MockCTokenIntegratee;
+    ceth: MockCTokenIntegratee;
+    crep: MockCTokenIntegratee;
+    cuni: MockCTokenIntegratee;
+    cusdc: MockCTokenIntegratee;
+    czrx: MockCTokenIntegratee;
   }>;
   kyberIntegratee: Promise<MockKyberIntegratee>;
   chaiIntegratee: Promise<MockChaiIntegratee>;
   uniswapV2Integratee: Promise<MockUniswapV2Integratee>;
+  centralizedRateProvider: Promise<CentralizedRateProvider>;
   mockGenericAdapter: Promise<MockGenericAdapter>;
   mockGenericIntegratee: Promise<MockGenericIntegratee>;
   mockSynthetix: Promise<{
@@ -149,21 +151,84 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       mrt: mrt as MockReentrancyToken,
     };
   },
+  // NOTE: Every mock cToken is initialized with a rate 2 (18 decimals)
   async compoundTokens(config, deployment) {
     const tokens = await deployment.tokens;
-    const ceth = await MockToken.deploy(config.deployer, 'Compound Ether', 'cETH', 8);
+    const ceth = await MockCTokenIntegratee.deploy(
+      config.deployer,
+      'Compound Ether',
+      'cETH',
+      8,
+      tokens.weth,
+      await deployment.centralizedRateProvider,
+      utils.parseEther('2'),
+    );
     const [cbat, ccomp, cdai, crep, cuni, cusdc, czrx] = await Promise.all([
-      // TODO: deploy MockCEther contract
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound Basic Attention Token', 'cBAT', 8, tokens.comp),
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound Collateral', 'cCOMP', 8, tokens.comp),
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound Dai', 'cDAI', 8, tokens.dai),
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound Augur', 'cREP', 8, tokens.rep),
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound Uniswap', 'cUNI', 8, tokens.rep),
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound USD Coin', 'cUSDC', 8, tokens.usdc),
-      MockCTokenIntegratee.deploy(config.deployer, 'Compound 0x', 'cZRX', 8, tokens.zrx),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound Basic Attention Token',
+        'cBAT',
+        8,
+        tokens.comp,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound Collateral',
+        'cCOMP',
+        8,
+        tokens.comp,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound Dai',
+        'cDAI',
+        8,
+        tokens.dai,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound Augur',
+        'cREP',
+        8,
+        tokens.rep,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound Uniswap',
+        'cUNI',
+        8,
+        tokens.rep,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound USD Coin',
+        'cUSDC',
+        8,
+        tokens.usdc,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
+      MockCTokenIntegratee.deploy(
+        config.deployer,
+        'Compound 0x',
+        'cZRX',
+        8,
+        tokens.zrx,
+        await deployment.centralizedRateProvider,
+        utils.parseEther('2'),
+      ),
     ]);
-
-    return { cbat, ccomp, cdai, ceth, crep, cuni, cusdc, czrx };
+    return { ceth, cbat, ccomp, cdai, crep, cuni, cusdc, czrx };
   },
   async uniswapV2Derivatives(config, deployment) {
     const tokens = await deployment.tokens;
@@ -225,16 +290,20 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   // Adapter integratees
   async chaiIntegratee(config, deployment) {
     const tokens = await deployment.tokens;
-    return MockChaiIntegratee.deploy(config.deployer, tokens.dai);
+    return MockChaiIntegratee.deploy(config.deployer, tokens.dai, await deployment.centralizedRateProvider, 18);
   },
-  async kyberIntegratee(config) {
-    return MockKyberIntegratee.deploy(config.deployer, []);
+  async kyberIntegratee(config, deployment) {
+    const tokens = await deployment.tokens;
+    return MockKyberIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, await tokens.weth);
   },
   async mockGenericAdapter(config, deployment) {
     return MockGenericAdapter.deploy(config.deployer, await deployment.mockGenericIntegratee);
   },
   async mockGenericIntegratee(config) {
     return MockGenericIntegratee.deploy(config.deployer);
+  },
+  async centralizedRateProvider(config) {
+    return CentralizedRateProvider.deploy(config.deployer, 5);
   },
   async mockSynthetix(config) {
     const susdCurrencyKey = utils.formatBytes32String('sUSD');
@@ -332,12 +401,6 @@ export async function configureMockRelease({
     mocks.uniswapV2Derivatives.kncWeth,
     mocks.tokens.mrt,
     mocks.chaiIntegratee,
-    mocks.compoundTokens.ccomp,
-    mocks.compoundTokens.cdai,
-    mocks.compoundTokens.ceth,
-    mocks.compoundTokens.crep,
-    mocks.compoundTokens.cusdc,
-    mocks.compoundTokens.czrx,
     mocks.mockSynthetix.susd,
     mocks.mockSynthetix.sbtc,
   ];

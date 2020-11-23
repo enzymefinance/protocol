@@ -70,6 +70,7 @@ export { FundActionsWrapper } from './codegen/FundActionsWrapper';
 // Mocks
 export { MockVaultLib } from './codegen/MockVaultLib';
 export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
+export { CentralizedRateProvider } from './codegen/CentralizedRateProvider';
 export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
 export { MockDerivativePriceFeed } from './codegen/MockDerivativePriceFeed';
 export { MockPrimitivePriceFeed } from './codegen/MockPrimitivePriceFeed';
@@ -100,6 +101,7 @@ export { IMakerDaoPot } from './codegen/IMakerDaoPot';
 export { IChainlinkAggregator } from './codegen/IChainlinkAggregator';
 export { ICERC20 } from './codegen/ICERC20';
 export { ICEther } from './codegen/ICEther';
+export { IChai } from './codegen/IChai';
 export { ISynthetixAddressResolver } from './codegen/ISynthetixAddressResolver';
 export { ISynthetixDelegateApprovals } from './codegen/ISynthetixDelegateApprovals';
 export { ISynthetixExchangeRates } from './codegen/ISynthetixExchangeRates';

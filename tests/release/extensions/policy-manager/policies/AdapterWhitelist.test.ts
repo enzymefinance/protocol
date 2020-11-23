@@ -1,4 +1,3 @@
-import { utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import {
   AdapterWhitelist,
@@ -21,6 +20,7 @@ import {
   defaultTestDeployment,
   transactionTimestamp,
 } from '@melonproject/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -304,9 +304,10 @@ describe('integration tests', () => {
     await denominationAsset.transfer(vaultProxy.address, utils.parseEther('10'));
 
     // trade with an allowed adapter, expect success
+    // NOTE: the minIncomingAsset is set to 92% expecting a worst rate of 7% deviation (5% deviation per sender, 3% deviation per block)
     const kyberArgs = kyberTakeOrderArgs({
       incomingAsset,
-      minIncomingAssetAmount: utils.parseEther('1'),
+      minIncomingAssetAmount: utils.parseEther('0.92'),
       outgoingAsset: denominationAsset,
       outgoingAssetAmount: utils.parseEther('1'),
     });

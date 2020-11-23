@@ -38,6 +38,7 @@ module.exports = {
       'IKyberNetworkProxy',
       'ICERC20',
       'ICEther',
+      'IChai',
       'ISynthetix',
       'ISynthetixAddressResolver',
       'ISynthetixDelegateApprovals',

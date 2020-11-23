@@ -7,6 +7,33 @@ import "./EthConstantMixin.sol";
 abstract contract SwapperBase is EthConstantMixin {
     receive() external payable {}
 
+    function __swapAssets(
+        address payable _trader,
+        address _srcToken,
+        uint256 _srcAmount,
+        address _destToken,
+        uint256 _actualRate
+    ) internal returns (uint256 destAmount_) {
+        address[] memory assetsToIntegratee = new address[](1);
+        assetsToIntegratee[0] = _srcToken;
+        uint256[] memory assetsToIntegrateeAmounts = new uint256[](1);
+        assetsToIntegrateeAmounts[0] = _srcAmount;
+
+        address[] memory assetsFromIntegratee = new address[](1);
+        assetsFromIntegratee[0] = _destToken;
+        uint256[] memory assetsFromIntegrateeAmounts = new uint256[](1);
+        assetsFromIntegrateeAmounts[0] = _actualRate;
+        __swap(
+            _trader,
+            assetsToIntegratee,
+            assetsToIntegrateeAmounts,
+            assetsFromIntegratee,
+            assetsFromIntegrateeAmounts
+        );
+
+        return assetsFromIntegrateeAmounts[0];
+    }
+
     function __swap(
         address payable _trader,
         address[] memory _assetsToIntegratee,

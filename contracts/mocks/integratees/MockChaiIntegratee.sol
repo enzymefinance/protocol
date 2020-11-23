@@ -2,28 +2,50 @@
 pragma solidity 0.6.8;
 
 import "../tokens/MockToken.sol";
+import "../prices/CentralizedRateProvider.sol";
+import "../utils/SwapperBase.sol";
 
-// TODO: Consider adding ability to set DAI/CHAI rate.
-contract MockChaiIntegratee is MockToken("Chai", "CHAI", 18) {
+contract MockChaiIntegratee is MockToken, SwapperBase {
+    address private immutable CENTRALIZED_RATE_PROVIDER;
     address public immutable DAI;
 
-    constructor(address _dai) public {
+    constructor(
+        address _dai,
+        address _centralizedRateProvider,
+        uint8 _decimals
+    ) public MockToken("Chai", "CHAI", _decimals) {
+        _setupDecimals(_decimals);
+        CENTRALIZED_RATE_PROVIDER = _centralizedRateProvider;
         DAI = _dai;
     }
 
-    receive() external payable {}
+    function join(address, uint256 _daiAmount) external {
+        uint256 tokenDecimals = ERC20(DAI).decimals();
+        uint256 chaiDecimals = decimals();
 
-    function join(address payable _trader, uint256 _daiAmount) external {
-        // Mint CHAI for the trader.
-        _mint(_trader, _daiAmount);
-        // Take custody of the trader's DAI.
-        ERC20(DAI).transferFrom(msg.sender, address(this), _daiAmount);
+        // Calculate the amount of tokens per one unit of DAI
+        uint256 daiPerChaiUnit = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER)
+            .calcLiveAssetValue(address(this), 10**uint256(chaiDecimals), DAI);
+
+        // Calculate the inverse rate to know the amount of CHAI to return from a unit of DAI
+        uint256 inverseRate = uint256(10**tokenDecimals).mul(10**uint256(chaiDecimals)).div(
+            daiPerChaiUnit
+        );
+        // Mint and send those CHAI to sender
+        uint256 destAmount = _daiAmount.mul(inverseRate).div(10**tokenDecimals);
+        _mint(address(this), destAmount);
+        __swapAssets(msg.sender, DAI, _daiAmount, address(this), destAmount);
     }
 
     function exit(address payable _trader, uint256 _chaiAmount) external {
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER).calcLiveAssetValue(
+            address(this),
+            _chaiAmount,
+            DAI
+        );
         // Burn CHAI of the trader.
         _burn(_trader, _chaiAmount);
         // Release DAI to the trader.
-        ERC20(DAI).transfer(msg.sender, _chaiAmount);
+        ERC20(DAI).transfer(msg.sender, destAmount);
     }
 }

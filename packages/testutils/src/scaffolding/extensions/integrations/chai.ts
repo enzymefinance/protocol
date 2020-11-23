@@ -1,18 +1,18 @@
-import { BigNumberish, utils } from 'ethers';
 import { SignerWithAddress } from '@crestproject/crestproject';
 import {
-  ChaiAdapter,
-  ComptrollerLib,
-  IntegrationManager,
-  VaultLib,
-  StandardToken,
-  redeemSelector,
   callOnIntegrationArgs,
+  ChaiAdapter,
   chaiLendArgs,
   chaiRedeemArgs,
+  ComptrollerLib,
+  IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
+  redeemSelector,
+  StandardToken,
+  VaultLib,
 } from '@melonproject/protocol';
+import { BigNumberish, utils } from 'ethers';
 
 export async function chaiLend({
   comptrollerProxy,

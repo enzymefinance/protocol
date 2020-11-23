@@ -1,14 +1,14 @@
-import { EthereumTestnetProvider, SignerWithAddress, randomAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
+  assetTransferArgs,
   ComptrollerLib,
   IntegrationManager,
   KyberAdapter,
-  StandardToken,
-  VaultLib,
-  assetTransferArgs,
   kyberTakeOrderArgs,
-  takeOrderSelector,
   SpendAssetsHandleType,
+  StandardToken,
+  takeOrderSelector,
+  VaultLib,
 } from '@melonproject/protocol';
 import {
   assertEvent,
@@ -17,7 +17,7 @@ import {
   getAssetBalances,
   kyberTakeOrder,
 } from '@melonproject/testutils';
-import { BigNumberish, utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -45,6 +45,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
+// NOTE: the minIncomingAsset is set to 92% expecting a worst rate of 8% deviation (5% deviation per sender, 3% deviation per block)
 async function assertKyberTakeOrder({
   comptrollerProxy,
   vaultProxy,
@@ -54,7 +55,7 @@ async function assertKyberTakeOrder({
   outgoingAsset,
   outgoingAssetAmount = utils.parseEther('1'),
   incomingAsset,
-  minIncomingAssetAmount = utils.parseEther('1'),
+  minIncomingAssetAmount = utils.parseEther('0.92'),
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
@@ -62,9 +63,9 @@ async function assertKyberTakeOrder({
   fundOwner: SignerWithAddress;
   kyberAdapter: KyberAdapter;
   outgoingAsset: StandardToken;
-  outgoingAssetAmount?: BigNumberish;
+  outgoingAssetAmount?: BigNumber;
   incomingAsset: StandardToken;
-  minIncomingAssetAmount?: BigNumberish;
+  minIncomingAssetAmount?: BigNumber;
 }) {
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 
@@ -95,7 +96,7 @@ async function assertKyberTakeOrder({
     adapter: kyberAdapter,
     selector: takeOrderSelector,
     incomingAssets: [incomingAsset],
-    incomingAssetAmounts: [minIncomingAssetAmount],
+    incomingAssetAmounts: expect.anything(),
     outgoingAssets: [outgoingAsset],
     outgoingAssetAmounts: [outgoingAssetAmount],
     integrationData: expect.anything(),
@@ -107,8 +108,12 @@ async function assertKyberTakeOrder({
   });
 
   // TODO: if we use rates other than 1:1, need to look up the actual rate
+  // NOTE: the minIncomingAsset is set to 92% expecting a worst rate of 7% deviation (5% deviation per sender, 3% deviation per block)
   const expectedIncomingAssetAmount = outgoingAssetAmount;
-  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+  expect(postTxIncomingAssetBalance).toBeGteBigNumber(
+    preTxIncomingAssetBalance.add(expectedIncomingAssetAmount.mul(92).div(100)),
+  );
+  expect(postTxIncomingAssetBalance).toBeLteBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
