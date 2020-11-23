@@ -165,5 +165,12 @@ async function makeTokenRich(token: StandardToken, sender: SignerWithAddress, re
     .pow(await token.decimals())
     .mul(100);
 
+  const senderBalance = await token.balanceOf(sender);
+  const symbol = await token.symbol();
+
+  if (senderBalance.lt(amount)) {
+    throw new Error(`The current sender's ${symbol} balance is ${senderBalance} which is not enough to send`);
+  }
+
   await token.connect(sender).transfer(receiver, amount);
 }

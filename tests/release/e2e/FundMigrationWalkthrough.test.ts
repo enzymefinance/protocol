@@ -149,7 +149,7 @@ describe('Walkthrough a fund migration', () => {
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(utils.parseEther('1').sub(expectedFee));
   });
 
-  xit('seeds the fund with all existing assets', async () => {
+  it('seeds the fund with all existing assets', async () => {
     const assets = [
       config.tokens.bat,
       config.tokens.bnb,
@@ -209,8 +209,8 @@ describe('Walkthrough a fund migration', () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 288099
-    expect(redeemed).toCostLessThan(`289000`);
+    // Bumped from 2394377
+    expect(redeemed).toCostLessThan(2395000);
 
     preMigrationShareBalance = await vaultProxy.balanceOf(investor);
     expect(preMigrationShareBalance).toEqBigNumber(balance.sub(redeemQuantity));
@@ -287,7 +287,7 @@ describe('Walkthrough a fund migration', () => {
     await newRelease.fundDeployer.connect(manager).executeMigration(vaultProxy);
   });
 
-  xit('checks the number of shares post migration', async () => {
+  it('checks the number of shares post migration', async () => {
     const postMigrationShareNumbers = await vaultProxy.balanceOf(investor);
 
     expect(postMigrationShareNumbers).toEqBigNumber(preMigrationShareBalance);
