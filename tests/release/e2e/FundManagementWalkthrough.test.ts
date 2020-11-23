@@ -85,7 +85,7 @@ describe("Walkthrough a fund's lifecycle", () => {
     denominationAsset = config.tokens.weth;
 
     // fees
-    const rate = 0.01;
+    const rate = utils.parseEther('0.01');
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
     const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);

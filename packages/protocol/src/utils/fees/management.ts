@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 import { encodeArgs } from '../encoding';
 
 export const managementFeeDigits = 27;
@@ -13,8 +13,8 @@ export function managementFeeConfigArgs(scaledPerSecondRate: BigNumberish) {
   return encodeArgs(['uint256'], [scaledPerSecondRate]);
 }
 
-export function convertRateToScaledPerSecondRate(rate: number) {
-  const rateD = new Decimal(rate);
+export function convertRateToScaledPerSecondRate(rate: BigNumberish) {
+  const rateD = new Decimal(utils.formatEther(rate));
   const effectivRate = rateD.div(new Decimal(1).minus(rateD));
 
   const factor = new Decimal(1)
@@ -24,6 +24,15 @@ export function convertRateToScaledPerSecondRate(rate: number) {
     .mul(managementFeeScaleDecimal);
 
   return BigNumber.from(factor.toFixed(0));
+}
+
+export function convertScaledPerSecondRateToRate(scaledPerSecondRate: BigNumberish) {
+  const scaledPerSecondRateD = new Decimal(scaledPerSecondRate.toString()).div(managementFeeScaleDecimal);
+
+  const effectiveRate = scaledPerSecondRateD.pow(secondsPerYear).minus(new Decimal(1));
+  const rate = effectiveRate.div(new Decimal(1).plus(effectiveRate));
+
+  return utils.parseEther(rate.toSignificantDigits(18).toString());
 }
 
 export function rpow(x: BigNumberish, n: BigNumberish, b: BigNumberish) {

@@ -2,6 +2,7 @@ import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
+  convertScaledPerSecondRateToRate,
   Dispatcher,
   FeeHook,
   FeeManagerActionId,
@@ -46,7 +47,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   // Add fee settings for ComptrollerProxy
-  const managementFeeRate = 0.1; // 10%
+  const managementFeeRate = utils.parseEther('0.1'); // 10%
   const scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
   const managementFeeConfig = managementFeeConfigArgs(scaledPerSecondRate);
   await standaloneManagementFee.connect(EOAFeeManager).addFundSettings(mockComptrollerProxy, managementFeeConfig);
@@ -340,8 +341,7 @@ describe('integration', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const rate = 0.1; // 10%
-
+    const rate = utils.parseEther('0.1'); // 10%
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
     const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
@@ -419,7 +419,7 @@ describe('integration', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const rate = 0.1; // 10%
+    const rate = utils.parseEther('0.1'); // 10%
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
     const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
@@ -715,5 +715,16 @@ describe('integration', () => {
     // Check that the fundOwner has received these shares
     const fundOwnerBalance = await vaultProxy.balanceOf(fundOwner);
     expect(fundOwnerBalance).toEqBigNumber(expectedSharesDue);
+  });
+});
+
+describe('utils', () => {
+  it('correctly converts a rate to scaledPerSecondRate and back', async () => {
+    const initialRate = utils.parseEther((Math.random() / 3).toFixed());
+
+    const scaledPerSecondRate = convertRateToScaledPerSecondRate(initialRate);
+    const finalRate = convertScaledPerSecondRateToRate(scaledPerSecondRate);
+
+    expect(initialRate).toEqBigNumber(finalRate);
   });
 });
