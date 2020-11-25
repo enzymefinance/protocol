@@ -172,7 +172,7 @@ describe('lend', () => {
     );
   });
 
-  fit('works as expected when called by a fund', async () => {
+  it('works as expected when called by a fund', async () => {
     const {
       deployment: {
         chaiAdapter,
@@ -213,7 +213,7 @@ describe('lend', () => {
       integrationData: expect.anything(),
       adapter: chaiAdapter,
       incomingAssets: [chai],
-      incomingAssetAmounts: expect.anything(),
+      incomingAssetAmounts: [minChaiAmount],
       outgoingAssets: [dai],
       outgoingAssetAmounts: [daiAmount],
     });

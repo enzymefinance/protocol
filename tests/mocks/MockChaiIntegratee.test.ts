@@ -1,10 +1,10 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { IChai } from '@melonproject/protocol';
+import { randomizedTestDeployment } from '@melonproject/testutils';
 import { utils } from 'ethers';
-import { IChai } from '../../release/dist/codegen/IChai';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+  const { accounts, deployment, config } = await randomizedTestDeployment(provider);
   // Initialize chai mock
   const chaiMock = new IChai(config.derivatives.chai, config.deployer);
   return { accounts, deployment, config, mocks: { chai: chaiMock } };
@@ -22,18 +22,15 @@ it('correctly join with DAI and receives CHAI in exchange', async () => {
   const preDaiBalance = await dai.balanceOf(deployer);
   const preChaiBalance = await chai.balanceOf(deployer);
 
-  const amount = utils.parseEther('2');
+  const amount = utils.parseEther('1');
   await dai.approve(chai, amount);
-  await chai.mint(amount);
+  await chai.join(deployer, amount);
 
   const postDaiBalance = await dai.balanceOf(deployer);
   const postChaiBalance = await chai.balanceOf(deployer);
 
-  // Calculate expected tokens given an initial rate of 2 Token/cToken
-  const expectedCTokens = amount.div(2);
-
   expect(postDaiBalance).toEqBigNumber(preDaiBalance.sub(amount));
-  expect(postChaiBalance).toEqBigNumber(preChaiBalance.add(expectedCTokens));
+  expect(postChaiBalance).toEqBigNumber(preChaiBalance.add(amount));
 });
 
 it('correctly exits receiving DAI in exchange', async () => {
@@ -48,21 +45,19 @@ it('correctly exits receiving DAI in exchange', async () => {
   // Start by minting some tokens
   const joinAmount = utils.parseEther('2');
   await dai.approve(chai, utils.parseEther('2'));
-  await chai.join(joinAmount);
+  await chai.join(deployer, joinAmount);
 
   // Get Balances and redeem received cTokens
   const preDaiBalance = await dai.balanceOf(deployer);
   const preChaiBalance = await chai.balanceOf(deployer);
 
-  const exitAmount = preChaiBalance;
+  const exitAmount = joinAmount;
   await chai.approve(chai, utils.parseEther('2'));
-  await chai.redeem(exitAmount);
+  await chai.exit(deployer, exitAmount);
 
   const postDaiBalance = await dai.balanceOf(deployer);
   const postChaiBalance = await chai.balanceOf(deployer);
 
-  const expectedTokens = exitAmount.mul(2);
-
-  expect(postDaiBalance).toEqBigNumber(preDaiBalance.add(expectedTokens));
+  expect(postDaiBalance).toEqBigNumber(preDaiBalance.add(exitAmount));
   expect(postChaiBalance).toEqBigNumber(preChaiBalance.sub(exitAmount));
 });

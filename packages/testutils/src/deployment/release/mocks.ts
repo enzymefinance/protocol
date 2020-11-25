@@ -11,18 +11,18 @@ import {
   MockGenericIntegratee,
   MockKyberIntegratee,
   MockReentrancyToken,
-  MockSynthetixToken,
   MockSynthetix,
   MockSynthetixAddressResolver,
   MockSynthetixDelegateApprovals,
   MockSynthetixExchanger,
   MockSynthetixExchangeRates,
+  MockSynthetixToken,
   MockToken,
   MockUniswapV2Integratee,
   MockUniswapV2Pair,
   MockZeroExV2Integratee,
-  WETH,
   sighash,
+  WETH,
 } from '@melonproject/protocol';
 import { utils } from 'ethers';
 import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
@@ -294,7 +294,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   },
   async kyberIntegratee(config, deployment) {
     const tokens = await deployment.tokens;
-    return MockKyberIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, await tokens.weth);
+    return MockKyberIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, await tokens.weth, 0);
   },
   async mockGenericAdapter(config, deployment) {
     return MockGenericAdapter.deploy(config.deployer, await deployment.mockGenericIntegratee);
@@ -303,7 +303,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
     return MockGenericIntegratee.deploy(config.deployer);
   },
   async centralizedRateProvider(config) {
-    return CentralizedRateProvider.deploy(config.deployer, 5);
+    return CentralizedRateProvider.deploy(config.deployer, 0);
   },
   async mockSynthetix(config) {
     const susdCurrencyKey = utils.formatBytes32String('sUSD');

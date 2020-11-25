@@ -1,10 +1,10 @@
-import { utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { StandardToken, ISynthetixDelegateApprovals, MockSynthetix, MockSynthetixToken } from '@melonproject/protocol';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { ISynthetixDelegateApprovals, MockSynthetix, MockSynthetixToken, StandardToken } from '@melonproject/protocol';
+import { randomizedTestDeployment } from '@melonproject/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  return provider.snapshot(defaultTestDeployment);
+  return provider.snapshot(randomizedTestDeployment);
 }
 
 it('it cannot transfer after an exchange', async () => {

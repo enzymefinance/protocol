@@ -4,7 +4,6 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../release/infrastructure/value-interpreter/IValueInterpreter.sol";
-import "hardhat/console.sol";
 
 contract CentralizedRateProvider is Ownable {
     using SafeMath for uint256;

@@ -1,9 +1,9 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { randomizedTestDeployment } from '@melonproject/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+  const { accounts, deployment, config } = await randomizedTestDeployment(provider);
   return { accounts, deployment, config };
 }
 
