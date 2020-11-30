@@ -123,25 +123,17 @@ describe('Walkthrough a fund migration', () => {
   });
 
   it('buys shares of the fund', async () => {
-    const investmentAmount = utils.parseEther('1');
-    const minSharesAmount = utils.parseEther('0.00000000001');
-
-    const buySharesArgs = {
-      investmentAmount,
-      amguValue: investmentAmount,
-      minSharesAmount,
-    };
-
     const buySharesTx = await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      ...buySharesArgs,
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
 
-    // Bumped from 321249
-    expect(buySharesTx).toCostLessThan(322000);
+    // Bumped from 401779
+    expect(buySharesTx).toCostLessThan(402000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');

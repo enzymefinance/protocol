@@ -133,7 +133,7 @@ describe('deactivateForFund', () => {
     await buyShares({
       comptrollerProxy,
       signer: buyer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
     });
 
@@ -230,7 +230,7 @@ describe('receiveCallFromComptroller', () => {
     await buyShares({
       comptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
     });
 
@@ -465,7 +465,7 @@ describe('invokeHook', () => {
     await buyShares({
       comptrollerProxy,
       signer: buyer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
     });
 
@@ -502,9 +502,9 @@ describe('invokeHook', () => {
         await buyShares({
           comptrollerProxy,
           signer: buyer,
-          buyer,
+          buyers: [buyer],
           denominationAsset,
-          investmentAmount,
+          investmentAmounts: [investmentAmount],
         });
 
         // Define fee settlement
@@ -569,10 +569,10 @@ describe('invokeHook', () => {
         const receipt = await buyShares({
           comptrollerProxy,
           signer: buyer,
-          buyer,
+          buyers: [buyer],
           denominationAsset,
-          investmentAmount,
-          minSharesAmount: BigNumber.from(investmentAmount).sub(feeAmount),
+          investmentAmounts: [investmentAmount],
+          minSharesAmounts: [BigNumber.from(investmentAmount).sub(feeAmount)],
         });
 
         // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
@@ -625,10 +625,10 @@ describe('invokeHook', () => {
         const receipt = await buyShares({
           comptrollerProxy,
           signer: buyer,
-          buyer,
+          buyers: [buyer],
           denominationAsset,
-          investmentAmount,
-          minSharesAmount: expectedSharesReceived,
+          investmentAmounts: [investmentAmount],
+          minSharesAmounts: [expectedSharesReceived],
         });
 
         // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
@@ -701,7 +701,7 @@ describe('invokeHook', () => {
         await buyShares({
           comptrollerProxy,
           signer: buyer,
-          buyer,
+          buyers: [buyer],
           denominationAsset,
         });
 
@@ -787,7 +787,7 @@ describe('invokeHook', () => {
         await buyShares({
           comptrollerProxy,
           signer: buyer,
-          buyer,
+          buyers: [buyer],
           denominationAsset,
         });
 
@@ -865,7 +865,7 @@ describe('invokeHook', () => {
       await buyShares({
         comptrollerProxy,
         signer: buyer,
-        buyer,
+        buyers: [buyer],
         denominationAsset,
       });
 
@@ -962,7 +962,7 @@ describe('invokeHook', () => {
       await buyShares({
         comptrollerProxy,
         signer: buyer,
-        buyer,
+        buyers: [buyer],
         denominationAsset,
       });
 
@@ -986,9 +986,9 @@ describe('invokeHook', () => {
       await buyShares({
         comptrollerProxy,
         signer: randomUser,
-        buyer: vaultProxy,
+        buyers: [vaultProxy],
         denominationAsset,
-        investmentAmount: utils.parseEther('100'),
+        investmentAmounts: [utils.parseEther('100')],
       });
 
       // Calculate the shares received by VaultProxy
@@ -1049,9 +1049,9 @@ describe('invokeHook', () => {
     await buyShares({
       comptrollerProxy,
       signer: buyer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     // Assert called settle and payout on Continuous fees (called before BuyShares fee hook)
@@ -1111,9 +1111,9 @@ describe('__InvokeContinuousHook', () => {
     await buyShares({
       comptrollerProxy,
       signer: buyer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     await callOnExtension({
@@ -1172,7 +1172,7 @@ describe('__payoutSharesOutstandingForFees', () => {
     await buyShares({
       comptrollerProxy,
       signer: buyer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
     });
 

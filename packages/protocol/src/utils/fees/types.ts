@@ -2,8 +2,10 @@ import { BigNumber } from 'ethers';
 
 export enum FeeHook {
   Continuous,
+  BuySharesSetup,
   PreBuyShares,
   PostBuyShares,
+  BuySharesCompleted,
   PreRedeemShares,
 }
 

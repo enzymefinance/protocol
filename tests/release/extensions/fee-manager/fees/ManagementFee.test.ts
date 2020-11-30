@@ -77,7 +77,7 @@ describe('constructor', () => {
     // Implements expected hooks
     const implementedHooksCall = await managementFee.implementedHooks();
     expect(implementedHooksCall).toMatchFunctionOutput(managementFee.implementedHooks.fragment, {
-      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
+      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.BuySharesSetup, FeeHook.PreRedeemShares],
       implementedHooksForUpdate_: [],
       usesGavOnSettle_: false,
       usesGavOnUpdate_: false,
@@ -366,10 +366,10 @@ describe('integration', () => {
     const buySharesReceipt = await buyShares({
       comptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('1')],
     });
 
     // Mine a block after a time delay
@@ -444,10 +444,10 @@ describe('integration', () => {
     const buySharesReceipt = await buyShares({
       comptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('1')],
     });
 
     // Mine a block after a time delay
@@ -563,10 +563,10 @@ describe('integration', () => {
     const buySharesReceipt = await buyShares({
       comptrollerProxy: nextComptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('1')],
     });
 
     // Mine a block after a time delay
@@ -645,10 +645,10 @@ describe('integration', () => {
     const buySharesReceipt = await buyShares({
       comptrollerProxy: comptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('1')],
     });
 
     const sharesBeforePayout = await vaultProxy.totalSupply(); // 1.0

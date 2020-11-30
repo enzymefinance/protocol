@@ -349,101 +349,153 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
 
     // BUY SHARES
 
-    /// @notice Buy shares in the fund for a specified user
-    /// @param _buyer The account for which to buy shares
-    /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
-    /// @param _minSharesQuantity The minimum quantity of shares to buy with the specified _investmentAmount
-    /// @return sharesReceived_ The actual amount of shares received by the _buyer
-    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls
+    /// @notice Buys shares in the fund for multiple sets of criteria
+    /// @param _buyers The accounts for which to buy shares
+    /// @param _investmentAmounts The amounts of the fund's denomination asset
+    /// with which to buy shares for the corresponding _buyers
+    /// @param _minSharesQuantities The minimum quantities of shares to buy
+    /// with the corresponding _investmentAmounts
+    /// @return sharesReceivedAmounts_ The actual amounts of shares received
+    /// by the corresponding _buyers
+    /// @dev Param arrays have indexes corresponding to individual __buyShares() orders.
+    /// Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls
     function buyShares(
-        address _buyer,
-        uint256 _investmentAmount,
-        uint256 _minSharesQuantity
+        address[] calldata _buyers,
+        uint256[] calldata _investmentAmounts,
+        uint256[] calldata _minSharesQuantities
     )
         external
-        payable
         onlyActive
         onlyNotPaused
-        timelockedSharesAction(_buyer)
         locksReentrance
         allowsPermissionedVaultAction
-        returns (uint256 sharesReceived_)
+        returns (uint256[] memory sharesReceivedAmounts_)
     {
-        return __buyShares(_buyer, _investmentAmount, _minSharesQuantity);
+        require(_buyers.length > 0, "buyShares: Empty _buyers");
+        require(
+            _buyers.length == _investmentAmounts.length &&
+                _buyers.length == _minSharesQuantities.length,
+            "buyShares: Unequal arrays"
+        );
+
+        (uint256 gav, bool gavIsValid) = calcGav();
+        require(gavIsValid, "buyShares: Invalid GAV");
+
+        __buySharesSetupHook(msg.sender, _investmentAmounts, gav);
+
+        address denominationAssetCopy = denominationAsset;
+        uint256 denominationAssetUnit = 10**uint256(ERC20(denominationAssetCopy).decimals());
+        address vaultProxyCopy = vaultProxy;
+        uint256 sharePrice = __calcGrossShareValue(
+            gav,
+            ERC20(vaultProxyCopy).totalSupply(),
+            denominationAssetUnit
+        );
+
+        sharesReceivedAmounts_ = new uint256[](_buyers.length);
+        for (uint256 i; i < _buyers.length; i++) {
+            sharesReceivedAmounts_[i] = __buyShares(
+                _buyers[i],
+                _investmentAmounts[i],
+                _minSharesQuantities[i],
+                vaultProxyCopy,
+                sharePrice,
+                gav,
+                denominationAssetCopy,
+                denominationAssetUnit
+            );
+
+            gav = gav.add(_investmentAmounts[i]);
+        }
+
+        // Add denomination asset to tracked assets if it isn't already included
+        IVault(vaultProxyCopy).addTrackedAsset(denominationAssetCopy);
+
+        __buySharesCompletedHook(msg.sender, sharesReceivedAmounts_, gav);
+
+        return sharesReceivedAmounts_;
     }
 
-    /// @dev Avoids the stack-too-deep error in buyShares()
+    /// @dev Helper to buy shares
     function __buyShares(
         address _buyer,
         uint256 _investmentAmount,
-        uint256 _minSharesQuantity
-    ) private returns (uint256 sharesReceived_) {
-        (uint256 preBuySharesGav, bool gavIsValid) = calcGav();
-        require(gavIsValid, "buyShares: Invalid GAV");
+        uint256 _minSharesQuantity,
+        address _vaultProxy,
+        uint256 _sharePrice,
+        uint256 _preBuySharesGav,
+        address _denominationAsset,
+        uint256 _denominationAssetUnit
+    ) private timelockedSharesAction(_buyer) returns (uint256 sharesReceived_) {
+        require(_investmentAmount > 0, "__buyShares: Empty _investmentAmount");
 
         // Gives Extensions a chance to run logic prior to the minting of bought shares
-        __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, preBuySharesGav);
+        __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, _preBuySharesGav);
 
-        IVault vaultProxyContract = IVault(vaultProxy);
-        ERC20 sharesContract = ERC20(address(vaultProxyContract));
-        ERC20 denominationAssetContract = ERC20(denominationAsset);
-
-        // Calculate the amount of shares to buy with the investment amount
-        uint256 sharesBought = __calcBuyableSharesQuantity(
-            sharesContract,
-            denominationAssetContract,
-            _investmentAmount,
-            preBuySharesGav
-        );
+        // Calculate the amount of shares to issue with the investment amount
+        uint256 sharesIssued = _investmentAmount.mul(_denominationAssetUnit).div(_sharePrice);
 
         // Mint shares to the buyer
-        uint256 prevBuyerShares = sharesContract.balanceOf(_buyer);
-        vaultProxyContract.mintShares(_buyer, sharesBought);
+        uint256 prevBuyerShares = ERC20(_vaultProxy).balanceOf(_buyer);
+        IVault(_vaultProxy).mintShares(_buyer, sharesIssued);
 
         // Transfer the investment asset to the fund.
         // Does not follow the checks-effects-interactions pattern, but it is preferred
         // to have the final state of the VaultProxy prior to running __postBuySharesHook().
-        denominationAssetContract.safeTransferFrom(
-            msg.sender,
-            address(vaultProxyContract),
-            _investmentAmount
-        );
-        vaultProxyContract.addTrackedAsset(address(denominationAssetContract));
+        ERC20(_denominationAsset).safeTransferFrom(msg.sender, _vaultProxy, _investmentAmount);
 
-        // Gives Extensions a chance to run logic after the minting of bought shares
-        __postBuySharesHook(
-            _buyer,
-            _investmentAmount,
-            sharesBought,
-            preBuySharesGav.add(_investmentAmount)
-        );
+        // Gives Extensions a chance to run logic after shares are issued
+        __postBuySharesHook(_buyer, _investmentAmount, sharesIssued, _preBuySharesGav);
 
-        // The number of actual shares received may differ from shares bought due to
+        // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
-        sharesReceived_ = sharesContract.balanceOf(_buyer).sub(prevBuyerShares);
+        sharesReceived_ = ERC20(_vaultProxy).balanceOf(_buyer).sub(prevBuyerShares);
         require(
             sharesReceived_ >= _minSharesQuantity,
-            "buyShares: Shares received < _minSharesQuantity"
+            "__buyShares: Shares received < _minSharesQuantity"
         );
 
-        emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesBought, sharesReceived_);
+        emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesIssued, sharesReceived_);
 
         return sharesReceived_;
     }
 
-    /// @dev Helper to calculate the quantity of shares buyable for a given investment amount.
-    /// Avoids the stack-too-deep error.
-    function __calcBuyableSharesQuantity(
-        ERC20 _sharesContract,
-        ERC20 _denominationAssetContract,
-        uint256 _investmentAmount,
+    /// @dev Helper for Extension actions after all __buyShares() calls are made
+    function __buySharesCompletedHook(
+        address _caller,
+        uint256[] memory _sharesReceivedAmounts,
         uint256 _gav
-    ) private view returns (uint256 sharesQuantity_) {
-        uint256 denominationAssetUnit = 10**uint256(_denominationAssetContract.decimals());
-        return
-            _investmentAmount.mul(denominationAssetUnit).div(
-                __calcGrossShareValue(_gav, _sharesContract.totalSupply(), denominationAssetUnit)
-            );
+    ) private {
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            address(this),
+            IPolicyManager.PolicyHook.BuySharesCompleted,
+            abi.encode(_caller, _sharesReceivedAmounts, _gav)
+        );
+
+        IFeeManager(FEE_MANAGER).invokeHook(
+            IFeeManager.FeeHook.BuySharesCompleted,
+            abi.encode(_caller, _sharesReceivedAmounts),
+            _gav
+        );
+    }
+
+    /// @dev Helper for Extension actions before any __buyShares() calls are made
+    function __buySharesSetupHook(
+        address _caller,
+        uint256[] memory _investmentAmounts,
+        uint256 _gav
+    ) private {
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            address(this),
+            IPolicyManager.PolicyHook.BuySharesSetup,
+            abi.encode(_caller, _investmentAmounts, _gav)
+        );
+
+        IFeeManager(FEE_MANAGER).invokeHook(
+            IFeeManager.FeeHook.BuySharesSetup,
+            abi.encode(_caller, _investmentAmounts),
+            _gav
+        );
     }
 
     /// @dev Helper for Extension actions immediately prior to issuing shares.
@@ -474,19 +526,20 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     function __postBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
-        uint256 _sharesBought,
-        uint256 _gav
+        uint256 _sharesIssued,
+        uint256 _preBuySharesGav
     ) private {
+        uint256 gav = _preBuySharesGav.add(_investmentAmount);
         IFeeManager(FEE_MANAGER).invokeHook(
             IFeeManager.FeeHook.PostBuyShares,
-            abi.encode(_buyer, _investmentAmount, _sharesBought),
-            _gav
+            abi.encode(_buyer, _investmentAmount, _sharesIssued),
+            gav
         );
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.PostBuyShares,
-            abi.encode(_buyer, _investmentAmount, _sharesBought, _gav)
+            abi.encode(_buyer, _investmentAmount, _sharesIssued, gav)
         );
     }
 

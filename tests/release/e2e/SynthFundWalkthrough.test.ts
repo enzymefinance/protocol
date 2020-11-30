@@ -98,10 +98,10 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      investmentAmount: utils.parseEther('100'),
-      minSharesAmount: utils.parseEther('0.00000000001'),
+      investmentAmounts: [utils.parseEther('100')],
+      minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
   });
 

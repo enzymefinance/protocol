@@ -99,9 +99,9 @@ describe('addPrimitives', () => {
     const usdcAggregatorAddress = '0x986b5E1e1755e3C2440e960477f25201B0a8bbD4';
     const usdcAggregator = new IChainlinkAggregator(usdcAggregatorAddress, deployer);
 
-    // Round up from 56178
+    // Round up from 52067
     const addPrimitivesReceipt = await chainlinkPriceFeed.addPrimitives([usdc], [usdcAggregator], [0]);
-    expect(addPrimitivesReceipt).toCostLessThan('57000');
+    expect(addPrimitivesReceipt).toCostLessThan('53000');
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(usdc);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
@@ -137,9 +137,7 @@ describe('updatePrimitives', () => {
     const newPrimitive = randomAddress();
     await chainlinkPriceFeed.addPrimitives([newPrimitive], [daiAggregator], [0]);
 
-    // Round up from 56291
-    const updatePrimitivesReceipt = await chainlinkPriceFeed.updatePrimitives([newPrimitive], [renAggregator]);
-    expect(updatePrimitivesReceipt).toCostLessThan('57000');
+    await chainlinkPriceFeed.updatePrimitives([newPrimitive], [renAggregator]);
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(newPrimitive);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
@@ -174,9 +172,7 @@ describe('removePrimitives', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    // Round up from 21228
-    const removePrimitivesReceipt = await chainlinkPriceFeed.removePrimitives([dai]);
-    expect(removePrimitivesReceipt).toCostLessThan('22000');
+    await chainlinkPriceFeed.removePrimitives([dai]);
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(dai);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {

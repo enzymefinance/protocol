@@ -895,9 +895,9 @@ describe('validatePolicies', () => {
     await buyShares({
       comptrollerProxy,
       signer: buyer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     const preRuleArgs = validateRulePreBuySharesArgs({

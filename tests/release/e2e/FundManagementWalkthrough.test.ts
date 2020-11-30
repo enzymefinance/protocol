@@ -152,24 +152,17 @@ describe("Walkthrough a fund's lifecycle", () => {
   });
 
   it('buys shares of a fund', async () => {
-    const investmentAmount = utils.parseEther('1');
-    const minSharesAmount = utils.parseEther('0.00000000001');
-
-    const buySharesArgs = {
-      investmentAmount,
-      amguValue: investmentAmount,
-      minSharesAmount,
-    };
-
     const buySharesTx = await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      ...buySharesArgs,
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
 
-    expect(buySharesTx).toCostLessThan(340000);
+    // Bumped from 426971
+    expect(buySharesTx).toCostLessThan(427000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');
@@ -181,24 +174,18 @@ describe("Walkthrough a fund's lifecycle", () => {
   it('buys more shares of a fund', async () => {
     const previousBalance = await vaultProxy.balanceOf(investor);
 
-    const investmentAmount = utils.parseEther('1');
     const minSharesAmount = utils.parseEther('0.00000000001');
-
-    const buySharesArgs = {
-      investmentAmount,
-      amguValue: utils.parseEther('1'),
-      minSharesAmount,
-    };
-
     const buySharesTx = await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      ...buySharesArgs,
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [minSharesAmount],
     });
 
-    expect(buySharesTx).toCostLessThan(380000);
+    // Bumped from 467010
+    expect(buySharesTx).toCostLessThan(468000);
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
   });
 
@@ -498,22 +485,17 @@ describe("Walkthrough a fund's lifecycle", () => {
       .mul(95) // deduct 5% for safety
       .div(100);
 
-    const buySharesArgs = {
-      investmentAmount,
-      amguValue: investmentAmount,
-      minSharesAmount,
-    };
-
     const buySharesTx = await buyShares({
       comptrollerProxy,
       signer: anotherInvestor,
-      buyer: anotherInvestor,
+      buyers: [anotherInvestor],
       denominationAsset,
-      ...buySharesArgs,
+      investmentAmounts: [investmentAmount],
+      minSharesAmounts: [minSharesAmount],
     });
 
-    // Bumped from 1421116
-    expect(buySharesTx).toCostLessThan(1422000);
+    // Bumped from 1504635
+    expect(buySharesTx).toCostLessThan(1505000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
 

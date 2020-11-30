@@ -126,12 +126,12 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     {
         implementedHooksForSettle_ = new IFeeManager.FeeHook[](3);
         implementedHooksForSettle_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooksForSettle_[1] = IFeeManager.FeeHook.PreBuyShares;
+        implementedHooksForSettle_[1] = IFeeManager.FeeHook.BuySharesSetup;
         implementedHooksForSettle_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
         implementedHooksForUpdate_ = new IFeeManager.FeeHook[](3);
         implementedHooksForUpdate_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooksForUpdate_[1] = IFeeManager.FeeHook.PostBuyShares;
+        implementedHooksForUpdate_[1] = IFeeManager.FeeHook.BuySharesCompleted;
         implementedHooksForUpdate_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
         return (implementedHooksForSettle_, implementedHooksForUpdate_, true, true);
@@ -352,7 +352,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
         uint256 nextGav = _gav;
 
-        // For both Continuous and PostBuyShares hooks, _gav and shares supply will not change,
+        // For both Continuous and BuySharesCompleted hooks, _gav and shares supply will not change,
         // we only need additional calculations for PreRedeemShares
         if (_hook == IFeeManager.FeeHook.PreRedeemShares) {
             (, uint256 sharesDecrease) = __decodePreRedeemSharesSettlementData(_settlementData);

@@ -81,7 +81,7 @@ contract ManagementFee is FeeBase, MakerDaoMath {
     {
         implementedHooksForSettle_ = new IFeeManager.FeeHook[](3);
         implementedHooksForSettle_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooksForSettle_[1] = IFeeManager.FeeHook.PreBuyShares;
+        implementedHooksForSettle_[1] = IFeeManager.FeeHook.BuySharesSetup;
         implementedHooksForSettle_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
         return (implementedHooksForSettle_, new IFeeManager.FeeHook[](0), false, false);

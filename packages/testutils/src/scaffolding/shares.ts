@@ -1,6 +1,6 @@
-import { BigNumberish, utils } from 'ethers';
 import { AddressLike, Contract, Send, SignerWithAddress } from '@crestproject/crestproject';
 import { ComptrollerLib } from '@melonproject/protocol';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
 // prettier-ignore
 export interface DenominationAssetInterface extends Contract<any> {
@@ -10,10 +10,10 @@ export interface DenominationAssetInterface extends Contract<any> {
 export interface BuySharesParams {
   comptrollerProxy: ComptrollerLib;
   signer: SignerWithAddress;
-  buyer: AddressLike;
+  buyers: AddressLike[];
   denominationAsset: DenominationAssetInterface;
-  investmentAmount?: BigNumberish;
-  minSharesAmount?: BigNumberish;
+  investmentAmounts?: BigNumberish[];
+  minSharesAmounts?: BigNumberish[];
 }
 
 export interface RedeemSharesParams {
@@ -27,16 +27,21 @@ export interface RedeemSharesParams {
 export async function buyShares({
   comptrollerProxy,
   signer,
-  buyer,
+  buyers,
   denominationAsset,
-  investmentAmount = utils.parseEther('1'),
-  minSharesAmount = investmentAmount,
+  investmentAmounts = new Array(buyers.length).fill(utils.parseEther('1')),
+  minSharesAmounts = investmentAmounts,
 }: BuySharesParams) {
+  const totalInvestmentAmount = investmentAmounts.reduce(
+    (total: BigNumber, amount) => total.add(amount),
+    constants.Zero,
+  );
+
   const callerDenominationAsset = denominationAsset.connect(signer);
-  await callerDenominationAsset.approve(comptrollerProxy, investmentAmount);
+  await callerDenominationAsset.approve(comptrollerProxy, totalInvestmentAmount);
 
   const callerComptrollerProxy = comptrollerProxy.connect(signer);
-  return callerComptrollerProxy.buyShares(buyer, investmentAmount, minSharesAmount);
+  return callerComptrollerProxy.buyShares(buyers, investmentAmounts, minSharesAmounts);
 }
 
 export async function redeemShares({

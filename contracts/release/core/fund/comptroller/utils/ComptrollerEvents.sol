@@ -19,7 +19,7 @@ abstract contract ComptrollerEvents {
         address indexed caller,
         address indexed buyer,
         uint256 investmentAmount,
-        uint256 sharesBought,
+        uint256 sharesIssued,
         uint256 sharesReceived
     );
 

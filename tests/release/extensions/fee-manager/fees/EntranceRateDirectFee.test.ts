@@ -140,10 +140,10 @@ describe('integration', () => {
     await buyShares({
       comptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('0.1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('0.1')],
     });
 
     // Check the number of shares we have (check that fee has been paid)
@@ -230,10 +230,10 @@ describe('integration', () => {
     await buyShares({
       comptrollerProxy: nextComptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('0.1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('0.1')],
     });
 
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
@@ -328,10 +328,10 @@ describe('integration', () => {
     await buyShares({
       comptrollerProxy: nextComptrollerProxy,
       signer: fundInvestor,
-      buyer: fundInvestor,
+      buyers: [fundInvestor],
       denominationAsset,
-      investmentAmount: utils.parseEther('1'),
-      minSharesAmount: utils.parseEther('0.1'),
+      investmentAmounts: [utils.parseEther('1')],
+      minSharesAmounts: [utils.parseEther('0.1')],
     });
 
     assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {

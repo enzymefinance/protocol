@@ -1,5 +1,4 @@
-import { constants, utils } from 'ethers';
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
 import {
   assertEvent,
   buyShares,
@@ -10,6 +9,7 @@ import {
   redeemShares,
 } from '@melonproject/testutils';
 import { StandardToken, feeManagerConfigArgs, ReleaseStatusTypes } from '@melonproject/protocol';
+import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -65,11 +65,17 @@ describe('buyShares', () => {
 
     const investmentAmount = utils.parseEther('2');
     await expect(
-      buyShares({ comptrollerProxy, signer, buyer, denominationAsset, investmentAmount }),
+      buyShares({
+        comptrollerProxy,
+        signer,
+        buyers: [buyer],
+        denominationAsset,
+        investmentAmounts: [investmentAmount],
+      }),
     ).rejects.toBeRevertedWith('Re-entrance');
   });
 
-  it('works for a fund with no extensions', async () => {
+  it('works for a fund with no extensions (single buyShares)', async () => {
     const {
       deployment: {
         fundDeployer,
@@ -88,9 +94,9 @@ describe('buyShares', () => {
     const receipt = await buyShares({
       comptrollerProxy,
       signer,
-      buyer,
+      buyers: [buyer],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     // Assert Events
@@ -98,7 +104,7 @@ describe('buyShares', () => {
       caller: await signer.getAddress(),
       buyer: await buyer.getAddress(),
       investmentAmount,
-      sharesBought: investmentAmount,
+      sharesIssued: investmentAmount,
       sharesReceived: investmentAmount,
     });
 
@@ -127,6 +133,54 @@ describe('buyShares', () => {
     expect(isTrackedAssetCall).toBe(true);
   });
 
+  it('fulfills multiple shares orders and emits an event for each', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { weth: denominationAsset },
+      },
+      accounts: [signer, buyer1, buyer2],
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    const investmentAmount = utils.parseEther('2');
+    const receipt = await buyShares({
+      comptrollerProxy,
+      signer,
+      buyers: [buyer1, buyer2],
+      denominationAsset,
+      investmentAmounts: [investmentAmount, investmentAmount],
+    });
+
+    // Assert events
+    const events = extractEvent(receipt, 'SharesBought');
+    expect(events.length).toBe(2);
+    expect(events[0]).toMatchEventArgs({
+      caller: await signer.getAddress(),
+      buyer: await buyer1.getAddress(),
+      investmentAmount,
+      sharesIssued: investmentAmount,
+      sharesReceived: investmentAmount,
+    });
+    expect(events[1]).toMatchEventArgs({
+      caller: await signer.getAddress(),
+      buyer: await buyer2.getAddress(),
+      investmentAmount,
+      sharesIssued: investmentAmount,
+      sharesReceived: investmentAmount,
+    });
+
+    // Assert shares balances
+    expect(await vaultProxy.balanceOf(buyer1)).toEqBigNumber(investmentAmount);
+    expect(await vaultProxy.balanceOf(buyer2)).toEqBigNumber(investmentAmount);
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(investmentAmount.mul(2));
+  });
+
   it('does not allow a paused release, unless overridePause is set', async () => {
     const {
       deployment: {
@@ -151,7 +205,7 @@ describe('buyShares', () => {
       buyShares({
         comptrollerProxy,
         signer,
-        buyer,
+        buyers: [buyer],
         denominationAsset,
       }),
     ).rejects.toBeRevertedWith('Fund is paused');
@@ -164,7 +218,7 @@ describe('buyShares', () => {
       buyShares({
         comptrollerProxy,
         signer,
-        buyer,
+        buyers: [buyer],
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
@@ -188,8 +242,8 @@ describe('redeemShares', () => {
       denominationAsset,
       investment: {
         signer: investor,
-        buyer: investor,
-        investmentAmount,
+        buyers: [investor],
+        investmentAmounts: [investmentAmount],
       },
     });
 
@@ -215,8 +269,8 @@ describe('redeemShares', () => {
       denominationAsset,
       investment: {
         signer: investor,
-        buyer: investor,
-        investmentAmount,
+        buyers: [investor],
+        investmentAmounts: [investmentAmount],
       },
     });
 
@@ -260,8 +314,8 @@ describe('redeemShares', () => {
       denominationAsset,
       investment: {
         signer: investor,
-        buyer: investor,
-        investmentAmount,
+        buyers: [investor],
+        investmentAmounts: [investmentAmount],
       },
       feeManagerConfig,
     });
@@ -303,8 +357,8 @@ describe('redeemShares', () => {
       denominationAsset,
       investment: {
         signer: investor,
-        buyer: investor,
-        investmentAmount,
+        buyers: [investor],
+        investmentAmounts: [investmentAmount],
       },
     });
 
@@ -340,17 +394,17 @@ describe('redeemSharesDetailed', () => {
       denominationAsset,
       investment: {
         signer: fundManager,
-        buyer: fundManager,
-        investmentAmount,
+        buyers: [fundManager],
+        investmentAmounts: [investmentAmount],
       },
     });
 
     await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     const redeemQuantity = investmentAmount;
@@ -432,17 +486,17 @@ describe('redeemSharesDetailed', () => {
       denominationAsset,
       investment: {
         signer: fundManager,
-        buyer: fundManager,
-        investmentAmount,
+        buyers: [fundManager],
+        investmentAmounts: [investmentAmount],
       },
     });
 
     await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     const redeemQuantity = investmentAmount.add(1);
@@ -473,17 +527,17 @@ describe('redeemSharesDetailed', () => {
       denominationAsset,
       investment: {
         signer: fundManager,
-        buyer: fundManager,
-        investmentAmount,
+        buyers: [fundManager],
+        investmentAmounts: [investmentAmount],
       },
     });
 
     await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     // // Redeem half of investor's shares
@@ -514,17 +568,17 @@ describe('redeemSharesDetailed', () => {
       denominationAsset,
       investment: {
         signer: fundManager,
-        buyer: fundManager,
-        investmentAmount,
+        buyers: [fundManager],
+        investmentAmounts: [investmentAmount],
       },
     });
 
     await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     // Send untracked asset directly to fund
@@ -594,17 +648,17 @@ describe('redeemSharesDetailed', () => {
       denominationAsset,
       investment: {
         signer: fundManager,
-        buyer: fundManager,
-        investmentAmount,
+        buyers: [fundManager],
+        investmentAmounts: [investmentAmount],
       },
     });
 
     await buyShares({
       comptrollerProxy,
       signer: investor,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
-      investmentAmount,
+      investmentAmounts: [investmentAmount],
     });
 
     // Send untracked asset directly to fund
@@ -682,7 +736,7 @@ describe('sharesActionTimelock', () => {
     await buyShares({
       comptrollerProxy,
       signer: buySharesCaller,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
     });
 
@@ -690,7 +744,7 @@ describe('sharesActionTimelock', () => {
     await buyShares({
       comptrollerProxy,
       signer: buySharesCaller,
-      buyer: investor,
+      buyers: [investor],
       denominationAsset,
     });
 
@@ -721,12 +775,22 @@ describe('sharesActionTimelock', () => {
       sharesActionTimelock,
     });
 
+    // Attempting to buy multiple shares for the same user should fail
+    await expect(
+      buyShares({
+        comptrollerProxy,
+        signer: buySharesCaller,
+        buyers: [investor, investor],
+        denominationAsset,
+      }),
+    ).rejects.toBeRevertedWith(failureMessage);
+
     // Buy shares to start the timelock
     await expect(
       buyShares({
         comptrollerProxy,
         signer: buySharesCaller,
-        buyer: investor,
+        buyers: [investor],
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
@@ -736,7 +800,7 @@ describe('sharesActionTimelock', () => {
       buyShares({
         comptrollerProxy,
         signer: buySharesCaller,
-        buyer: investor,
+        buyers: [investor],
         denominationAsset,
       }),
     ).rejects.toBeRevertedWith(failureMessage);
@@ -753,7 +817,7 @@ describe('sharesActionTimelock', () => {
       buyShares({
         comptrollerProxy,
         signer: buySharesCaller,
-        buyer: buySharesCaller,
+        buyers: [buySharesCaller],
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
@@ -765,7 +829,7 @@ describe('sharesActionTimelock', () => {
       buyShares({
         comptrollerProxy,
         signer: buySharesCaller,
-        buyer: investor,
+        buyers: [investor],
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
