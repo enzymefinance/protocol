@@ -23,7 +23,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         address comptrollerProxy,
         address indexed denominationAsset,
         uint256 sharesActionTimelock,
-        address[] allowedBuySharesCallers,
         bytes feeManagerConfigData,
         bytes policyManagerConfigData,
         bool indexed forMigration
@@ -37,7 +36,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         string fundName,
         address indexed denominationAsset,
         uint256 sharesActionTimelock,
-        address[] allowedBuySharesCallers,
         bytes feeManagerConfigData,
         bytes policyManagerConfigData
     );
@@ -165,21 +163,18 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
-    /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
     function createMigratedFundConfig(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
-        address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external onlyNotPaused returns (address comptrollerProxy_) {
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
-            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData,
             true
@@ -196,7 +191,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
-    /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
@@ -205,7 +199,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         string calldata _fundName,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
-        address[] calldata _allowedBuySharesCallers,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external payable onlyNotPaused returns (address comptrollerProxy_, address vaultProxy_) {
@@ -215,7 +208,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
                 _fundName,
                 _denominationAsset,
                 _sharesActionTimelock,
-                _allowedBuySharesCallers,
                 _feeManagerConfigData,
                 _policyManagerConfigData
             );
@@ -227,7 +219,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         string memory _fundName,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
-        address[] memory _allowedBuySharesCallers,
         bytes memory _feeManagerConfigData,
         bytes memory _policyManagerConfigData
     ) private returns (address comptrollerProxy_, address vaultProxy_) {
@@ -236,7 +227,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
-            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData,
             false
@@ -259,7 +249,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _fundName,
             _denominationAsset,
             _sharesActionTimelock,
-            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData
         );
@@ -271,7 +260,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     function __deployComptrollerProxy(
         address _denominationAsset,
         uint256 _sharesActionTimelock,
-        address[] memory _allowedBuySharesCallers,
         bytes memory _feeManagerConfigData,
         bytes memory _policyManagerConfigData,
         bool _forMigration
@@ -284,8 +272,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes memory constructData = abi.encodeWithSelector(
             IComptroller.init.selector,
             _denominationAsset,
-            _sharesActionTimelock,
-            _allowedBuySharesCallers
+            _sharesActionTimelock
         );
         comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
 
@@ -301,7 +288,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             comptrollerProxy_,
             _denominationAsset,
             _sharesActionTimelock,
-            _allowedBuySharesCallers,
             _feeManagerConfigData,
             _policyManagerConfigData,
             _forMigration

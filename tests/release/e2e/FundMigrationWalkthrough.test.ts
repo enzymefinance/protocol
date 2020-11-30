@@ -140,7 +140,8 @@ describe('Walkthrough a fund migration', () => {
       ...buySharesArgs,
     });
 
-    expect(buySharesTx).toCostLessThan(312000);
+    // Bumped from 321249
+    expect(buySharesTx).toCostLessThan(322000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');

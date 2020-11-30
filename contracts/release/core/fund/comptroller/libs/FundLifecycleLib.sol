@@ -20,8 +20,6 @@ import "./IFundLifecycleLib.sol";
 /// 2. activate() - called to link a VaultProxy, thereby activating the fund
 /// 3. destruct() - called upon migrating to another release
 contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerEvents {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
     address private immutable FEE_MANAGER;
     address private immutable FUND_DEPLOYER;
     address private immutable INTEGRATION_MANAGER;
@@ -72,15 +70,10 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
     /// @param _denominationAsset The asset in which the fund's value should be denominated
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
-    /// @param _allowedBuySharesCallers The initial authorized callers of the buyShares function
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
-    function init(
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        address[] calldata _allowedBuySharesCallers
-    ) external override {
+    function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
         require(!isLib, "init: Only delegate callable");
         require(denominationAsset == address(0), "init: Already initialized");
         require(
@@ -88,16 +81,6 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
             "init: Bad denomination asset"
         );
 
-        for (uint256 i; i < _allowedBuySharesCallers.length; i++) {
-            require(
-                i == 0 || !allowedBuySharesCallers.contains(_allowedBuySharesCallers[i]),
-                "init: buy shares caller already allowed"
-            );
-
-            allowedBuySharesCallers.add(_allowedBuySharesCallers[i]);
-
-            emit AllowedBuySharesCallerAdded(_allowedBuySharesCallers[i]);
-        }
         denominationAsset = _denominationAsset;
         sharesActionTimelock = _sharesActionTimelock;
     }

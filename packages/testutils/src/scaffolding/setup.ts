@@ -11,7 +11,6 @@ export interface CreateMigratedFundConfigParams {
   fundDeployer: FundDeployer;
   denominationAsset: DenominationAssetInterface;
   sharesActionTimelock?: BigNumberish;
-  allowedBuySharesCallers?: AddressLike[];
   feeManagerConfigData?: BytesLike;
   policyManagerConfigData?: BytesLike;
 }
@@ -21,7 +20,6 @@ export interface CreateNewFundParams {
   fundDeployer: FundDeployer;
   denominationAsset: DenominationAssetInterface;
   sharesActionTimelock?: BigNumberish;
-  allowedBuySharesCallers?: AddressLike[];
   fundOwner?: AddressLike;
   fundName?: string;
   feeManagerConfig?: BytesLike;
@@ -34,19 +32,13 @@ export async function createComptrollerProxy({
   comptrollerLib,
   denominationAsset,
   sharesActionTimelock = 0,
-  allowedBuySharesCallers = [],
 }: {
   signer: SignerWithAddress;
   comptrollerLib: ComptrollerLib;
   denominationAsset: AddressLike;
   sharesActionTimelock?: BigNumberish;
-  allowedBuySharesCallers?: AddressLike[];
 }) {
-  const constructData = encodeFunctionData(comptrollerLib.init.fragment, [
-    denominationAsset,
-    sharesActionTimelock,
-    allowedBuySharesCallers,
-  ]);
+  const constructData = encodeFunctionData(comptrollerLib.init.fragment, [denominationAsset, sharesActionTimelock]);
 
   const comptrollerProxyContract = await ComptrollerProxy.deploy(signer, constructData, comptrollerLib);
 
@@ -61,26 +53,18 @@ export async function createMigratedFundConfig({
   fundDeployer,
   denominationAsset,
   sharesActionTimelock = 0,
-  allowedBuySharesCallers = [],
   feeManagerConfigData = '0x',
   policyManagerConfigData = '0x',
 }: CreateMigratedFundConfigParams) {
   const receipt = await fundDeployer
     .connect(signer)
-    .createMigratedFundConfig(
-      denominationAsset,
-      sharesActionTimelock,
-      allowedBuySharesCallers,
-      feeManagerConfigData,
-      policyManagerConfigData,
-    );
+    .createMigratedFundConfig(denominationAsset, sharesActionTimelock, feeManagerConfigData, policyManagerConfigData);
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
     creator: signer,
     comptrollerProxy: expect.any(String) as string,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    allowedBuySharesCallers,
     feeManagerConfigData: utils.hexlify(feeManagerConfigData),
     policyManagerConfigData: utils.hexlify(policyManagerConfigData),
     forMigration: true,
@@ -98,7 +82,6 @@ export async function createNewFund({
   fundDeployer,
   denominationAsset,
   sharesActionTimelock = 0,
-  allowedBuySharesCallers = [],
   fundOwner = randomAddress(),
   fundName = 'My Fund',
   feeManagerConfig = '0x',
@@ -107,22 +90,13 @@ export async function createNewFund({
 }: CreateNewFundParams) {
   const receipt = await fundDeployer
     .connect(signer)
-    .createNewFund(
-      fundOwner,
-      fundName,
-      denominationAsset,
-      sharesActionTimelock,
-      allowedBuySharesCallers,
-      feeManagerConfig,
-      policyManagerConfig,
-    );
+    .createNewFund(fundOwner, fundName, denominationAsset, sharesActionTimelock, feeManagerConfig, policyManagerConfig);
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
     creator: signer,
     comptrollerProxy: expect.any(String) as string,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    allowedBuySharesCallers,
     feeManagerConfigData: utils.hexlify(feeManagerConfig),
     policyManagerConfigData: utils.hexlify(policyManagerConfig),
     forMigration: false,
@@ -138,7 +112,6 @@ export async function createNewFund({
     fundName,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    allowedBuySharesCallers,
     feeManagerConfigData: utils.hexlify(feeManagerConfig),
     policyManagerConfigData: utils.hexlify(policyManagerConfig),
   });

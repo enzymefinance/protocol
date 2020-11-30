@@ -4,7 +4,6 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
@@ -25,7 +24,6 @@ import "./IComptroller.sol";
 /// unless called directly by the FundDeployer
 contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     using AddressArrayLib for address[];
-    using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
@@ -230,17 +228,12 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     ///////////////
 
     /// @dev Delegated to FundLifecycleLib. See library for Natspec.
-    function init(
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        address[] calldata _allowedBuySharesCallers
-    ) external override {
+    function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
         (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
             abi.encodeWithSelector(
                 IFundLifecycleLib.init.selector,
                 _denominationAsset,
-                _sharesActionTimelock,
-                _allowedBuySharesCallers
+                _sharesActionTimelock
             )
         );
         __assertLowLevelCall(success, returnData);
@@ -356,15 +349,6 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
 
     // BUY SHARES
 
-    /// @notice Add accounts that are allowed to call the `buyShares` function
-    /// @param _callersToAdd The accounts to add
-    /// @dev This could be used instead of an InvestorWhitelist policy, but in practice
-    /// it will allow adding "shares requestor" contracts, which will allow much more granular
-    /// regulation over incoming investments into a fund.
-    function addAllowedBuySharesCallers(address[] calldata _callersToAdd) external onlyOwner {
-        __addAllowedBuySharesCallers(_callersToAdd);
-    }
-
     /// @notice Buy shares in the fund for a specified user
     /// @param _buyer The account for which to buy shares
     /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
@@ -388,56 +372,12 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         return __buyShares(_buyer, _investmentAmount, _minSharesQuantity);
     }
 
-    /// @notice Remove approval of accounts that can call the `buyShares` function
-    /// @param _callersToRemove The accounts for which to remove approval
-    function removeAllowedBuySharesCallers(address[] calldata _callersToRemove)
-        external
-        onlyOwner
-    {
-        require(
-            _callersToRemove.length > 0,
-            "__removeAllowedBuySharesCallers: Empty _callersToRemove"
-        );
-
-        for (uint256 i; i < _callersToRemove.length; i++) {
-            require(
-                isAllowedBuySharesCaller(_callersToRemove[i]),
-                "__removeAllowedBuySharesCallers: Caller already disallowed"
-            );
-
-            allowedBuySharesCallers.remove(_callersToRemove[i]);
-
-            emit AllowedBuySharesCallerRemoved(_callersToRemove[i]);
-        }
-    }
-
-    /// @dev Helper to add allowed callers of the `buyShares` function
-    function __addAllowedBuySharesCallers(address[] memory _callersToAdd) private {
-        require(_callersToAdd.length > 0, "__addAllowedBuySharesCallers: Empty _callersToAdd");
-
-        for (uint256 i; i < _callersToAdd.length; i++) {
-            require(
-                !isAllowedBuySharesCaller(_callersToAdd[i]),
-                "__addAllowedBuySharesCallers: Caller already allowed"
-            );
-
-            allowedBuySharesCallers.add(_callersToAdd[i]);
-
-            emit AllowedBuySharesCallerAdded(_callersToAdd[i]);
-        }
-    }
-
     /// @dev Avoids the stack-too-deep error in buyShares()
     function __buyShares(
         address _buyer,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
     ) private returns (uint256 sharesReceived_) {
-        require(
-            allowedBuySharesCallers.length() == 0 || allowedBuySharesCallers.contains(msg.sender),
-            "buyShares: Unauthorized caller"
-        );
-
         (uint256 preBuySharesGav, bool gavIsValid) = calcGav();
         require(gavIsValid, "buyShares: Invalid GAV");
 
@@ -730,21 +670,6 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets a list of addresses from the `allowedBuySharesCallers` variable
-    /// @return allowedCallers_ The list of addresses from the `allowedBuySharesCallers` variable
-    function getAllowedBuySharesCallers()
-        external
-        view
-        returns (address[] memory allowedCallers_)
-    {
-        allowedCallers_ = new address[](allowedBuySharesCallers.length());
-        for (uint256 i; i < allowedCallers_.length; i++) {
-            allowedCallers_[i] = allowedBuySharesCallers.at(i);
-        }
-
-        return allowedCallers_;
-    }
-
     /// @notice Gets the `denominationAsset` variable
     /// @return denominationAsset_ The `denominationAsset` variable value
     function getDenominationAsset() external view returns (address denominationAsset_) {
@@ -799,12 +724,5 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     /// @return vaultProxy_ The `vaultProxy` variable value
     function getVaultProxy() external view override returns (address vaultProxy_) {
         return vaultProxy;
-    }
-
-    /// @notice Checks if an account is a member of the `allowedBuySharesCallers` variable
-    /// @param _who The account to check
-    /// @return isAllowedCaller_ True if the account is in the `allowedBuySharesCallers` variable
-    function isAllowedBuySharesCaller(address _who) public view returns (bool isAllowedCaller_) {
-        return allowedBuySharesCallers.contains(_who);
     }
 }

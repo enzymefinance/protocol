@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.8;
 
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-
 /// @title ComptrollerEvents Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice Contract containing all the events used in the Comptroller contracts
 abstract contract ComptrollerEvents {
-    event AllowedBuySharesCallerAdded(address indexed caller);
-
-    event AllowedBuySharesCallerRemoved(address indexed caller);
-
     event MigratedSharesDuePaid(uint256 sharesDue);
 
     event OverridePauseSet(bool indexed overridePause);

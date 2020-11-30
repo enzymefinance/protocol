@@ -12,9 +12,5 @@ interface IFundLifecycleLib {
 
     function destruct() external;
 
-    function init(
-        address,
-        uint256,
-        address[] calldata
-    ) external;
+    function init(address, uint256) external;
 }
