@@ -2,6 +2,7 @@ export * from './chai';
 export * from './common';
 export * from './compound';
 export * from './kyber';
+export * from './paraswap';
 export * from './synthetix';
 export * from './trackedAssets';
 export * from './uniswapV2';

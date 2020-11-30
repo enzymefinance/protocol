@@ -134,6 +134,10 @@ export async function configureForkRelease({
         dai: mainnet.maker.dai,
         pot: mainnet.maker.pot,
       },
+      paraswap: {
+        augustusSwapper: mainnet.paraswap.augustusSwapper,
+        tokenTransferProxy: mainnet.paraswap.tokenTransferProxy,
+      },
       uniswapV2: {
         router: mainnet.uniswapV2.router,
         factory: mainnet.uniswapV2.factory,

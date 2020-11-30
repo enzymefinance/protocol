@@ -11,7 +11,6 @@ import {
   ChaiPriceFeed,
   CompoundAdapter,
   CompoundPriceFeed,
-  SynthetixPriceFeed,
   ComptrollerLib,
   EntranceRateBurnFee,
   EntranceRateDirectFee,
@@ -19,17 +18,19 @@ import {
   FundActionsWrapper,
   FundDeployer,
   FundLifecycleLib,
+  GuaranteedRedemption,
   IntegrationManager,
   InvestorWhitelist,
-  GuaranteedRedemption,
   KyberAdapter,
-  SynthetixAdapter,
   ManagementFee,
   MaxConcentration,
   MinMaxInvestment,
+  ParaSwapAdapter,
   PerformanceFee,
   PermissionedVaultActionLib,
   PolicyManager,
+  SynthetixAdapter,
+  SynthetixPriceFeed,
   TrackedAssetsAdapter,
   UniswapV2Adapter,
   UniswapV2PoolPriceFeed,
@@ -95,6 +96,10 @@ export interface ReleaseDeploymentConfig {
       dai: AddressLike;
       pot: AddressLike;
     };
+    paraswap: {
+      augustusSwapper: AddressLike;
+      tokenTransferProxy: AddressLike;
+    };
     uniswapV2: {
       router: AddressLike;
       factory: AddressLike;
@@ -137,6 +142,7 @@ export interface ReleaseDeploymentOutput {
   chaiAdapter: Promise<ChaiAdapter>;
   compoundAdapter: Promise<CompoundAdapter>;
   kyberAdapter: Promise<KyberAdapter>;
+  paraswapAdapter: Promise<ParaSwapAdapter>;
   synthetixAdapter: Promise<SynthetixAdapter>;
   trackedAssetsAdapter: Promise<TrackedAssetsAdapter>;
   uniswapV2Adapter: Promise<UniswapV2Adapter>;
@@ -309,6 +315,15 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       config.weth,
     );
   },
+  async paraswapAdapter(config, deployment) {
+    return ParaSwapAdapter.deploy(
+      config.deployer,
+      await deployment.integrationManager,
+      config.integratees.paraswap.augustusSwapper,
+      config.integratees.paraswap.tokenTransferProxy,
+      config.weth,
+    );
+  },
   async synthetixAdapter(config, deployment) {
     return SynthetixAdapter.deploy(
       config.deployer,
@@ -397,6 +412,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.chaiAdapter,
       await deployment.compoundAdapter,
       await deployment.kyberAdapter,
+      await deployment.paraswapAdapter,
       await deployment.synthetixAdapter,
       await deployment.trackedAssetsAdapter,
       await deployment.uniswapV2Adapter,

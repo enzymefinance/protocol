@@ -39,12 +39,13 @@ export { SynthetixPriceFeed } from './codegen/SynthetixPriceFeed';
 
 // Integration adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';
-export { KyberAdapter } from './codegen/KyberAdapter';
-export { TrackedAssetsAdapter } from './codegen/TrackedAssetsAdapter';
-export { ZeroExV2Adapter } from './codegen/ZeroExV2Adapter';
 export { CompoundAdapter } from './codegen/CompoundAdapter';
-export { UniswapV2Adapter } from './codegen/UniswapV2Adapter';
+export { KyberAdapter } from './codegen/KyberAdapter';
+export { ParaSwapAdapter } from './codegen/ParaSwapAdapter';
 export { SynthetixAdapter } from './codegen/SynthetixAdapter';
+export { TrackedAssetsAdapter } from './codegen/TrackedAssetsAdapter';
+export { UniswapV2Adapter } from './codegen/UniswapV2Adapter';
+export { ZeroExV2Adapter } from './codegen/ZeroExV2Adapter';
 
 // Fees
 export { IFee } from './codegen/IFee';
@@ -82,6 +83,7 @@ export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';
 export { MockKyberPriceSource } from './codegen/MockKyberPriceSource';
 export { MockChainlinkPriceSource } from './codegen/MockChainlinkPriceSource';
 export { MockToken } from './codegen/MockToken';
+export { MockParaSwapIntegratee } from './codegen/MockParaSwapIntegratee';
 export { MockReentrancyToken } from './codegen/MockReentrancyToken';
 export { MockSynthetixToken } from './codegen/MockSynthetixToken';
 export { MockSynthetix } from './codegen/MockSynthetix';

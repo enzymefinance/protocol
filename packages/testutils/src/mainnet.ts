@@ -43,11 +43,15 @@ export const mainnet = {
       kncWeth: '0xf49C43Ae0fAf37217bDcB00DF478cF793eDd6687',
     },
   },
+  kyber: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
   maker: {
     pot: '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
     dai: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   },
-  kyber: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
+  paraswap: {
+    augustusSwapper: '0x9509665d015Bfe3C77AA5ad6Ca20C8Afa1d98989',
+    tokenTransferProxy: '0x0A87c89B5007ff406Ab5280aBdD80fC495ec238e',
+  },
   synthetix: {
     addressResolver: '0x61166014E3f04E40C953fe4EAb9D9E40863C83AE',
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',

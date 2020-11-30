@@ -10,6 +10,7 @@ import {
   MockGenericAdapter,
   MockGenericIntegratee,
   MockKyberIntegratee,
+  MockParaSwapIntegratee,
   MockReentrancyToken,
   MockSynthetix,
   MockSynthetixAddressResolver,
@@ -69,6 +70,7 @@ export interface MockDeploymentOutput {
   }>;
   kyberIntegratee: Promise<MockKyberIntegratee>;
   chaiIntegratee: Promise<MockChaiIntegratee>;
+  paraswapIntegratee: Promise<MockParaSwapIntegratee>;
   uniswapV2Integratee: Promise<MockUniswapV2Integratee>;
   centralizedRateProvider: Promise<CentralizedRateProvider>;
   mockGenericAdapter: Promise<MockGenericAdapter>;
@@ -302,6 +304,9 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   async mockGenericIntegratee(config) {
     return MockGenericIntegratee.deploy(config.deployer);
   },
+  async paraswapIntegratee(config, deployment) {
+    return MockParaSwapIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, 0);
+  },
   async centralizedRateProvider(config) {
     return CentralizedRateProvider.deploy(config.deployer, 0);
   },
@@ -378,6 +383,7 @@ export async function configureMockRelease({
     mocks.chaiIntegratee,
     mocks.kyberIntegratee,
     mocks.mockGenericIntegratee,
+    mocks.paraswapIntegratee,
     mocks.uniswapV2Integratee,
   ];
 
@@ -543,6 +549,10 @@ export async function configureMockRelease({
       makerDao: {
         dai: mocks.tokens.dai,
         pot: mocks.chaiPriceSource,
+      },
+      paraswap: {
+        augustusSwapper: mocks.paraswapIntegratee,
+        tokenTransferProxy: mocks.paraswapIntegratee,
       },
       uniswapV2: {
         router: mocks.uniswapV2Integratee,
