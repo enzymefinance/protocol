@@ -221,51 +221,6 @@ describe('withdrawAssetTo', () => {
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
-  it('insufficient balance', async () => {
-    const {
-      deployment: {
-        tokens: { weth },
-      },
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    await weth.transfer(vaultProxy, utils.parseEther('1'));
-    await expect(vaultProxy.withdrawAssetTo(weth, randomAddress(), utils.parseEther('2'))).rejects.toBeRevertedWith(
-      'Insufficient balance',
-    );
-  });
-
-  it('completely withdraw an asset balance and remove tracked asset', async () => {
-    const {
-      accounts: [investor],
-      deployment: {
-        tokens: { weth },
-      },
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    const preTxInvestorBalance = await weth.balanceOf(investor);
-    const amount = utils.parseEther('1');
-
-    await weth.transfer(vaultProxy, amount);
-    await vaultProxy.addTrackedAsset(weth);
-    const trackedAssets1 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
-
-    const receipt = await vaultProxy.withdrawAssetTo(weth, investor, amount);
-    assertEvent(receipt, 'AssetWithdrawn', {
-      asset: weth,
-      target: investor,
-      amount,
-    });
-
-    const trackedAssets2 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets2).toEqual([]);
-
-    const postTxInvestorBalance = await weth.balanceOf(investor);
-    expect(postTxInvestorBalance).toEqBigNumber(preTxInvestorBalance.add(amount));
-  });
-
   it('partially withdraw an asset balance', async () => {
     const {
       accounts: [investor],

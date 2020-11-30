@@ -516,8 +516,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: anotherInvestor,
     });
 
-    // Bumped from 2324204
-    expect(redeemed).toCostLessThan(2325000);
+    // Bumped from 1753277
+    expect(redeemed).toCostLessThan(1754000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
   });
 });

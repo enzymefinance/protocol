@@ -100,12 +100,6 @@ contract VaultLib is VaultLibBase1, IVault {
         address _target,
         uint256 _amount
     ) external override onlyAccessor {
-        uint256 balance = __getAssetBalance(_asset);
-        require(balance >= _amount, "withdrawAssetTo: Insufficient balance");
-
-        if (balance.sub(_amount) == 0) {
-            __removeTrackedAsset(_asset);
-        }
         ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);

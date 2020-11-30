@@ -1,6 +1,7 @@
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
+  addTrackedAssets,
   assertEvent,
   defaultTestDeployment,
   createNewFund,
@@ -986,6 +987,96 @@ describe('valid calls', () => {
       assets: spendAssets,
     });
     expect(spendAssetBalancesCall).toEqual([spendAssetAmountOnAdapter]);
+  });
+
+  it('handles a spend asset that is entirely transferred to the adapter, but partially used', async () => {
+    const {
+      deployment: {
+        integrationManager,
+        mockGenericAdapter,
+        policyManager,
+        trackedAssetsAdapter,
+        tokens: { mln: spendAsset },
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    const spendAssetAmount = utils.parseEther('1');
+    const spendAssetRebate = utils.parseEther('0.1');
+
+    // Seed and track the spend asset in the VaultProxy
+    spendAsset.transfer(vaultProxy, spendAssetAmount);
+    await addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets: [spendAsset],
+    });
+
+    // Seed the adapter with the spend asset amount to refund
+    await spendAsset.transfer(mockGenericAdapter, spendAssetRebate);
+
+    // Define spend assets and actual incoming assets
+    const spendAssets = [spendAsset];
+    const spendAssetAmounts = [spendAssetAmount];
+    const outgoingAssets = spendAssets;
+    const outgoingAssetAmounts = [spendAssetAmount.sub(spendAssetRebate)];
+
+    // Swap the spend assets and receive the rebate
+    const receipt = await mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      spendAssets,
+      spendAssetAmounts,
+    });
+
+    // Assert that the rebated amount was received and that the spend asset is still tracked
+    expect(await spendAsset.balanceOf(vaultProxy)).toEqual(spendAssetRebate);
+    expect(await vaultProxy.isTrackedAsset(spendAsset)).toBe(true);
+
+    // Assert event emitted correctly
+    assertEvent(receipt, integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund'), {
+      adapter: mockGenericAdapter,
+      comptrollerProxy: comptrollerProxy,
+      caller: fundOwner,
+      incomingAssets: [],
+      incomingAssetAmounts: [],
+      outgoingAssets,
+      outgoingAssetAmounts,
+      selector: mockGenericSwapASelector,
+      integrationData: mockGenericSwapArgs({
+        spendAssets,
+        spendAssetAmounts,
+      }),
+      vaultProxy,
+    });
+
+    // Assert expected calls to PolicyManager
+    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.PreCallOnIntegration,
+      validateRulePreCoIArgs({
+        adapter: mockGenericAdapter,
+        selector: mockGenericSwapASelector,
+      }),
+    );
+
+    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.PostCallOnIntegration,
+      validateRulePostCoIArgs({
+        adapter: mockGenericAdapter,
+        selector: mockGenericSwapASelector,
+        incomingAssets: [],
+        incomingAssetAmounts: [],
+        outgoingAssets,
+        outgoingAssetAmounts,
+      }),
+    );
   });
 
   it('handles empty spend assets and incoming assets', async () => {

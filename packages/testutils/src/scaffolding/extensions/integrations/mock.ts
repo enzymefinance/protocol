@@ -19,17 +19,17 @@ export const mockGenericSwapBSelector = sighash(utils.FunctionFragment.fromStrin
 export const mockGenericSwapCSelector = sighash(utils.FunctionFragment.fromString('swapC(address,bytes,bytes)'));
 
 export function mockGenericSwapArgs({
-  spendAssets,
-  spendAssetAmounts,
-  incomingAssets,
-  minIncomingAssetAmounts,
-  incomingAssetAmounts,
+  spendAssets = [],
+  spendAssetAmounts = [],
+  incomingAssets = [],
+  minIncomingAssetAmounts = [],
+  incomingAssetAmounts = [],
 }: {
-  spendAssets: AddressLike[];
-  spendAssetAmounts: BigNumberish[];
-  incomingAssets: AddressLike[];
-  minIncomingAssetAmounts: BigNumberish[];
-  incomingAssetAmounts: BigNumberish[];
+  spendAssets?: AddressLike[];
+  spendAssetAmounts?: BigNumberish[];
+  incomingAssets?: AddressLike[];
+  minIncomingAssetAmounts?: BigNumberish[];
+  incomingAssetAmounts?: BigNumberish[];
 }) {
   return encodeArgs(
     ['address[]', 'uint256[]', 'address[]', 'uint256[]', 'uint256[]'],
