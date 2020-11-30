@@ -201,7 +201,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external payable onlyNotPaused returns (address comptrollerProxy_, address vaultProxy_) {
+    ) external onlyNotPaused returns (address comptrollerProxy_, address vaultProxy_) {
         return
             __createNewFund(
                 _fundOwner,
