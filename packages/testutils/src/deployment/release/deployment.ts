@@ -5,6 +5,7 @@ import {
   AggregatedDerivativePriceFeed,
   AssetBlacklist,
   AssetWhitelist,
+  BuySharesCallerWhitelist,
   ChaiAdapter,
   ChainlinkPriceFeed,
   ChaiPriceFeed,
@@ -150,6 +151,7 @@ export interface ReleaseDeploymentOutput {
   adapterWhitelist: Promise<AdapterWhitelist>;
   assetBlacklist: Promise<AssetBlacklist>;
   assetWhitelist: Promise<AssetWhitelist>;
+  buySharesCallerWhitelist: Promise<BuySharesCallerWhitelist>;
   guaranteedRedemption: Promise<GuaranteedRedemption>;
   maxConcentration: Promise<MaxConcentration>;
   minMaxInvestment: Promise<MinMaxInvestment>;
@@ -363,6 +365,9 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async assetWhitelist(config, deployment) {
     return AssetWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
+  async buySharesCallerWhitelist(config, deployment) {
+    return BuySharesCallerWhitelist.deploy(config.deployer, await deployment.policyManager);
+  },
   async guaranteedRedemption(config, deployment) {
     return GuaranteedRedemption.deploy(
       config.deployer,
@@ -418,6 +423,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.adapterWhitelist,
       await deployment.assetBlacklist,
       await deployment.assetWhitelist,
+      await deployment.buySharesCallerWhitelist,
       await deployment.guaranteedRedemption,
       await deployment.maxConcentration,
       await deployment.minMaxInvestment,

@@ -59,6 +59,7 @@ export { AdapterBlacklist } from './codegen/AdapterBlacklist';
 export { AdapterWhitelist } from './codegen/AdapterWhitelist';
 export { AssetBlacklist } from './codegen/AssetBlacklist';
 export { AssetWhitelist } from './codegen/AssetWhitelist';
+export { BuySharesCallerWhitelist } from './codegen/BuySharesCallerWhitelist';
 export { GuaranteedRedemption } from './codegen/GuaranteedRedemption';
 export { MaxConcentration } from './codegen/MaxConcentration';
 export { MinMaxInvestment } from './codegen/MinMaxInvestment';

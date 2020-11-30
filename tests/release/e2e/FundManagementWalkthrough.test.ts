@@ -494,8 +494,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minSharesAmounts: [minSharesAmount],
     });
 
-    // Bumped from 1504635
-    expect(buySharesTx).toCostLessThan(1505000);
+    // Bumped from 1508886
+    expect(buySharesTx).toCostLessThan(1509000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
 

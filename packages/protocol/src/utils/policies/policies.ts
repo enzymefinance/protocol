@@ -18,6 +18,16 @@ export function assetWhitelistArgs(assets: AddressLike[]) {
   return encodeArgs(['address[]'], [assets]);
 }
 
+export function buySharesCallerWhitelistArgs({
+  buySharesCallersToAdd = [],
+  buySharesCallersToRemove = [],
+}: {
+  buySharesCallersToAdd?: AddressLike[];
+  buySharesCallersToRemove?: AddressLike[];
+} = {}) {
+  return encodeArgs(['address[]', 'address[]'], [buySharesCallersToAdd, buySharesCallersToRemove]);
+}
+
 export function buySharesPriceFeedToleranceArgs(tolerance: BigNumberish) {
   return encodeArgs(['uint256'], [tolerance]);
 }

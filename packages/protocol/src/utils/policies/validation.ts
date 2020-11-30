@@ -2,6 +2,18 @@ import { AddressLike } from '@crestproject/crestproject';
 import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../encoding';
 
+export function validateRuleBuySharesSetupArgs({
+  caller,
+  investmentAmounts,
+  fundGav,
+}: {
+  caller: AddressLike;
+  investmentAmounts: BigNumberish[];
+  fundGav: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256[]', 'uint256'], [caller, investmentAmounts, fundGav]);
+}
+
 export function validateRulePreBuySharesArgs({
   buyer,
   investmentAmount,
