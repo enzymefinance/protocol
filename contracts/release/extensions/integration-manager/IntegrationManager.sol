@@ -614,20 +614,17 @@ contract IntegrationManager is
         uint256 outgoingAssetsCount;
         uint256 increasedSpendAssetsCount;
         for (uint256 i = 0; i < _spendAssets.length; i++) {
-            // If spend asset's initial balance is 0, then it is an incoming asset.
-            // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing.
-            if (
-                _preCallSpendAssetBalances[i] == 0 ||
-                postCallSpendAssetBalances[i] == _preCallSpendAssetBalances[i]
-            ) {
+            // If spend asset's initial balance is 0, then it is an incoming asset
+            if (_preCallSpendAssetBalances[i] == 0) {
                 continue;
             }
 
             // Determine if the asset is outgoing or incoming, and store the post-balance for later use
             postCallSpendAssetBalances[i] = __getVaultAssetBalance(_vaultProxy, _spendAssets[i]);
+            // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing
             if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
                 outgoingAssetsCount++;
-            } else {
+            } else if (postCallSpendAssetBalances[i] > _preCallSpendAssetBalances[i]) {
                 increasedSpendAssetsCount++;
             }
         }
@@ -640,14 +637,12 @@ contract IntegrationManager is
         uint256 outgoingAssetsIndex;
         uint256 increasedSpendAssetsIndex;
         for (uint256 i = 0; i < _spendAssets.length; i++) {
-            // Ignore these cases, for the reasons above
-            if (
-                _preCallSpendAssetBalances[i] == 0 ||
-                postCallSpendAssetBalances[i] == _preCallSpendAssetBalances[i]
-            ) {
+            // If spend asset's initial balance is 0, then it is an incoming asset.
+            if (_preCallSpendAssetBalances[i] == 0) {
                 continue;
             }
 
+            // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing
             if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
                 if (postCallSpendAssetBalances[i] == 0) {
                     __removeTrackedAsset(msg.sender, _spendAssets[i]);
@@ -660,7 +655,7 @@ contract IntegrationManager is
 
                 outgoingAssets_[outgoingAssetsIndex] = _spendAssets[i];
                 outgoingAssetsIndex++;
-            } else {
+            } else if (postCallSpendAssetBalances[i] > _preCallSpendAssetBalances[i]) {
                 increasedSpendAssetAmounts_[increasedSpendAssetsIndex] = postCallSpendAssetBalances[i]
                     .sub(_preCallSpendAssetBalances[i]);
                 increasedSpendAssets_[increasedSpendAssetsIndex] = _spendAssets[i];
