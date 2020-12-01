@@ -132,16 +132,16 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 `release/infrastructure/price-feeds/utils/UniswapV2PoolTokenValueCalculator.sol`
 
+### Added scope - 2020/12/1: 65236669cda7c59df2ba5c7c1411c51ea7c33363
+
+`release/extensions/integration-manager/integrations/adapters/ParaSwapAdapter.sol`
+
+`release/infrastructure/price-feeds/derivatives/feeds/WDGLDPriceFeed.sol`
+
 ## Forthcoming
 
-### Adapters
-
-`ParaswapAdapter.sol`
-
-### Derivative Price Feeds
-
-`WDGLDPriceFeed.sol`
-
-### Other
-
 `SharesRequestor.sol`
+
+`RariAdapter.sol`
+
+`RariPriceFeed.sol`
