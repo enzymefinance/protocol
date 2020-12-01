@@ -266,7 +266,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       susd,
     ] = await Promise.all([
       MockChainlinkPriceSource.deploy(config.deployer, 18),
-      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 8),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
@@ -287,6 +287,9 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
     return { bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx, mrt, susd };
   },
   async chainlinkEthUsdAggregator(config) {
+    return MockChainlinkPriceSource.deploy(config.deployer, 8);
+  },
+  async chainlinkXauUsdAggregator(config) {
     return MockChainlinkPriceSource.deploy(config.deployer, 8);
   },
   // Adapter integratees
@@ -515,6 +518,7 @@ export async function configureMockRelease({
         mlnWeth: mocks.uniswapV2Derivatives.mlnWeth,
         kncWeth: mocks.uniswapV2Derivatives.kncWeth,
       },
+      wdgld: randomAddress(),
     },
     mgm,
     dispatcher: dispatcher,
@@ -526,6 +530,8 @@ export async function configureMockRelease({
     },
     chainlink: {
       ethUsdAggregator: mocks.chainlinkEthUsdAggregator,
+      xauUsdAggregator: mocks.chainlinkXauUsdAggregator,
+      staleRateThreshold: 259200, // 72 hours
       aggregators: chainlinkAggregators,
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,

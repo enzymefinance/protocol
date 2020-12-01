@@ -36,6 +36,7 @@ import {
   UniswapV2PoolPriceFeed,
   ValueInterpreter,
   VaultLib,
+  WdgldPriceFeed,
   ZeroExV2Adapter,
 } from '@melonproject/protocol';
 import { BigNumberish, BytesLike } from 'ethers';
@@ -56,6 +57,8 @@ export interface ReleaseDeploymentConfig {
   };
   chainlink: {
     ethUsdAggregator: AddressLike;
+    xauUsdAggregator: AddressLike;
+    staleRateThreshold: BigNumberish;
     primitives: AddressLike[];
     aggregators: AddressLike[];
     rateAssets: BigNumberish[];
@@ -79,6 +82,7 @@ export interface ReleaseDeploymentConfig {
       mlnWeth: AddressLike;
       kncWeth: AddressLike;
     };
+    wdgld: AddressLike;
   };
   integratees: {
     kyber: AddressLike;
@@ -137,6 +141,7 @@ export interface ReleaseDeploymentOutput {
   compoundPriceFeed: Promise<CompoundPriceFeed>;
   synthetixPriceFeed: Promise<SynthetixPriceFeed>;
   uniswapV2PoolPriceFeed: Promise<UniswapV2PoolPriceFeed>;
+  wdgldPriceFeed: Promise<WdgldPriceFeed>;
   // Integration adapters
   chaiAdapter: Promise<ChaiAdapter>;
   compoundAdapter: Promise<CompoundAdapter>;
@@ -286,6 +291,15 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.valueInterpreter,
       config.integratees.uniswapV2.factory,
       Object.values(config.derivatives.uniswapV2),
+    );
+  },
+  async wdgldPriceFeed(config) {
+    return WdgldPriceFeed.deploy(
+      config.deployer,
+      config.derivatives.wdgld,
+      config.weth,
+      config.chainlink.ethUsdAggregator,
+      config.chainlink.xauUsdAggregator,
     );
   },
   // Adapters
@@ -461,10 +475,12 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.uniswapV2PoolPriceFeed,
     );
 
+    const wdgldPriceFeed = await deployment.wdgldPriceFeed;
+
     const aggregatedDerivativePriceFeed = await deployment.aggregatedDerivativePriceFeed;
     await aggregatedDerivativePriceFeed.addDerivatives(
-      [config.derivatives.chai, ...cTokens, ...synths, ...uniswapPoolTokens],
-      [chaiPriceFeed, ...compoundPriceFeeds, ...synthetixPriceFeeds, ...uniswapPoolPriceFeeds],
+      [config.derivatives.chai, ...cTokens, ...synths, ...uniswapPoolTokens, config.derivatives.wdgld],
+      [chaiPriceFeed, ...compoundPriceFeeds, ...synthetixPriceFeeds, ...uniswapPoolPriceFeeds, wdgldPriceFeed],
     );
   },
 });

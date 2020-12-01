@@ -1,5 +1,5 @@
 import { AddressLike, EthereumTestnetProvider, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
-import { Dispatcher, StandardToken, sighash } from '@melonproject/protocol';
+import { Dispatcher, sighash, StandardToken } from '@melonproject/protocol';
 import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
 import { ReleaseDeploymentConfig } from './deployment';
@@ -104,6 +104,8 @@ export async function configureForkRelease({
     },
     chainlink: {
       ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
+      xauUsdAggregator: mainnet.chainlinkXauUsdAggregator,
+      staleRateThreshold: 259200, // 72 hours
       aggregators: chainlinkAggregators,
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,

@@ -3,6 +3,7 @@ export type MainnetConfig = typeof mainnet;
 export const mainnet = {
   chaiPriceSource: '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
   chainlinkEthUsdAggregator: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+  chainlinkXauUsdAggregator: '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6',
   // All Chainlink aggregator addresses should be the proxy contracts
   chainlinkAggregators: {
     bat: ['0x0d16d4528239e9ee52fa531af613AcdB23D88c94', 0],
@@ -42,6 +43,7 @@ export const mainnet = {
       mlnWeth: '0x15ab0333985FD1E289adF4fBBe19261454776642',
       kncWeth: '0xf49C43Ae0fAf37217bDcB00DF478cF793eDd6687',
     },
+    wdgld: '0x123151402076fc819B7564510989e475c9cD93CA',
   },
   kyber: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
   maker: {

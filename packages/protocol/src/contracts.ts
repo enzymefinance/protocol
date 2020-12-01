@@ -33,9 +33,8 @@ export { AggregatedDerivativePriceFeed } from './codegen/AggregatedDerivativePri
 export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
 export { CompoundPriceFeed } from './codegen/CompoundPriceFeed';
 export { UniswapV2PoolPriceFeed } from './codegen/UniswapV2PoolPriceFeed';
+export { WdgldPriceFeed } from './codegen/WdgldPriceFeed';
 export { SynthetixPriceFeed } from './codegen/SynthetixPriceFeed';
-
-// Integratee interfaces
 
 // Integration adapters
 export { ChaiAdapter } from './codegen/ChaiAdapter';
