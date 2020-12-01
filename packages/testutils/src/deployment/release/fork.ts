@@ -104,7 +104,6 @@ export async function configureForkRelease({
     },
     chainlink: {
       ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
-      staleRateThreshold: 259200, // 72 hours
       aggregators: chainlinkAggregators,
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,

@@ -56,7 +56,6 @@ export interface ReleaseDeploymentConfig {
   };
   chainlink: {
     ethUsdAggregator: AddressLike;
-    staleRateThreshold: BigNumberish;
     primitives: AddressLike[];
     aggregators: AddressLike[];
     rateAssets: BigNumberish[];
@@ -247,7 +246,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       config.dispatcher,
       config.weth,
       config.chainlink.ethUsdAggregator,
-      config.chainlink.staleRateThreshold,
       config.chainlink.primitives,
       config.chainlink.aggregators,
       config.chainlink.rateAssets,

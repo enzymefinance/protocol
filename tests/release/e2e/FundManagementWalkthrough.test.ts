@@ -263,8 +263,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minChaiAmount: daiAmount.mul(90).div(100),
     });
 
-    // Bumped from 767466
-    expect(lend).toCostLessThan(`768000`);
+    // Bumped from 690050
+    expect(lend).toCostLessThan(`691000`);
 
     const chaiAmount = await chai.balanceOf(vaultProxy);
 
@@ -320,8 +320,8 @@ describe("Walkthrough a fund's lifecycle", () => {
   it('calculates the GAV of the fund with 14 assets', async () => {
     const calcGavTx = await comptrollerProxy.calcGav();
 
-    // Bumped from 634753
-    expect(calcGavTx).toCostLessThan(`635000`);
+    // Bumped from 506597
+    expect(calcGavTx).toCostLessThan(`507000`);
   });
 
   it('seeds the fund with cTokens', async () => {
@@ -355,8 +355,8 @@ describe("Walkthrough a fund's lifecycle", () => {
   it('calculates the GAV of the fund with 20 assets', async () => {
     const calcGavTx = await comptrollerProxy.calcGav();
 
-    // Bumped from 1043853
-    expect(calcGavTx).toCostLessThan(1044000);
+    // Bumped from 932201
+    expect(calcGavTx).toCostLessThan(933000);
   });
 
   it('trades on Kyber again', async () => {
@@ -408,8 +408,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    // Bumped from 1538992
-    expect(takeOrder).toCostLessThan(1539000);
+    // Bumped from 1416224
+    expect(takeOrder).toCostLessThan(1417000);
   });
 
   it("sends an asset amount to the fund's vault", async () => {
@@ -438,8 +438,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 2429233
-    expect(redeemed).toCostLessThan(2430000);
+    // Bumped from 2257864
+    expect(redeemed).toCostLessThan(2258000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
   });
 
@@ -494,8 +494,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minSharesAmounts: [minSharesAmount],
     });
 
-    // Bumped from 1508886
-    expect(buySharesTx).toCostLessThan(1509000);
+    // Bumped from 1392683
+    expect(buySharesTx).toCostLessThan(1393000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
 
@@ -505,8 +505,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: investor,
     });
 
-    // Bumped from 2368108
-    expect(redeemed).toCostLessThan(2369000);
+    // Bumped from 2196797
+    expect(redeemed).toCostLessThan(2197000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
   });
 

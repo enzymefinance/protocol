@@ -25,8 +25,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         address nextAggregator
     );
 
-    event StaleRateThresholdSet(uint256 prevStaleRateThreshold, uint256 nextStaleRateThreshold);
-
     enum RateAsset {ETH, USD}
 
     struct AggregatorInfo {
@@ -39,20 +37,17 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     address private immutable WETH_TOKEN;
 
     address private ethUsdAggregator;
-    uint256 private staleRateThreshold;
     mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
 
     constructor(
         address _dispatcher,
         address _wethToken,
         address _ethUsdAggregator,
-        uint256 _staleRateThreshold,
         address[] memory _primitives,
         address[] memory _aggregators,
         RateAsset[] memory _rateAssets
     ) public DispatcherOwnerMixin(_dispatcher) {
         WETH_TOKEN = _wethToken;
-        __setStaleRateThreshold(_staleRateThreshold);
         __setEthUsdAggregator(_ethUsdAggregator);
         if (_primitives.length > 0) {
             __addPrimitives(_primitives, _aggregators, _rateAssets);
@@ -76,14 +71,12 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
             return (10**FEED_PRECISION, true);
         }
 
-        (int256 baseAssetRate, uint256 baseAssetRateTimestamp) = __getLatestRateData(_baseAsset);
+        int256 baseAssetRate = __getLatestRateData(_baseAsset);
         if (baseAssetRate <= 0) {
             return (0, false);
         }
 
-        (int256 quoteAssetRate, uint256 quoteAssetRateTimestamp) = __getLatestRateData(
-            _quoteAsset
-        );
+        int256 quoteAssetRate = __getLatestRateData(_quoteAsset);
         if (quoteAssetRate <= 0) {
             return (0, false);
         }
@@ -94,20 +87,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
             _quoteAsset,
             uint256(quoteAssetRate)
         );
-        if (rate_ == 0) {
-            return (0, false);
-        }
-
-        // Check the timestamps to confirm rate validity.
-        // The rate is only considered valid if the difference between the current block time
-        // and the oldest timestamp of the two rates is less than the defined threshold.
-        uint256 oldestTimestamp;
-        if (baseAssetRateTimestamp > quoteAssetRateTimestamp) {
-            oldestTimestamp = quoteAssetRateTimestamp;
-        } else {
-            oldestTimestamp = baseAssetRateTimestamp;
-        }
-        if (block.timestamp.sub(oldestTimestamp) <= staleRateThreshold) {
+        if (rate_ > 0) {
             isValid_ = true;
         }
 
@@ -140,12 +120,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
     function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyDispatcherOwner {
         __setEthUsdAggregator(_nextEthUsdAggregator);
-    }
-
-    /// @notice Sets the `staleRateThreshold` variable
-    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
-    function setStaleRateThreshold(uint256 _nextStaleRateThreshold) external onlyDispatcherOwner {
-        __setStaleRateThreshold(_nextStaleRateThreshold);
     }
 
     // PRIVATE FUNCTIONS
@@ -183,22 +157,16 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
                 .div(_quoteAssetRate);
     }
 
-    /// @dev Helper to get the latest rate and timestamp for a given primitive
-    function __getLatestRateData(address _primitive)
-        private
-        view
-        returns (int256 rate_, uint256 timestamp_)
-    {
+    /// @dev Helper to get the latest rate for a given primitive
+    function __getLatestRateData(address _primitive) private view returns (int256 rate_) {
         if (_primitive == WETH_TOKEN) {
-            return (int256(10**ETH_PRECISION), block.timestamp);
+            return int256(10**ETH_PRECISION);
         }
 
         address aggregator = primitiveToAggregatorInfo[_primitive].aggregator;
         require(aggregator != address(0), "__getLatestRateData: Primitive does not exist");
 
-        IChainlinkAggregator aggregatorContract = IChainlinkAggregator(aggregator);
-
-        return (aggregatorContract.latestAnswer(), aggregatorContract.latestTimestamp());
+        return IChainlinkAggregator(aggregator).latestAnswer();
     }
 
     /// @dev Helper to set the `ethUsdAggregator` value
@@ -214,19 +182,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         ethUsdAggregator = _nextEthUsdAggregator;
 
         emit EthUsdAggregatorSet(prevEthUsdAggregator, _nextEthUsdAggregator);
-    }
-
-    /// @dev Helper to set the `staleRateThreshold` variable
-    function __setStaleRateThreshold(uint256 _nextStaleRateThreshold) private {
-        uint256 prevStaleRateThreshold = staleRateThreshold;
-        require(
-            _nextStaleRateThreshold != prevStaleRateThreshold,
-            "__setStaleRateThreshold: Value already set"
-        );
-
-        staleRateThreshold = _nextStaleRateThreshold;
-
-        emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
     }
 
     /////////////////////////
@@ -324,7 +279,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         IChainlinkAggregator aggregatorContract = IChainlinkAggregator(_aggregator);
         require(aggregatorContract.latestAnswer() > 0, "__validateAggregator: No rate detected");
         require(
-            block.timestamp.sub(aggregatorContract.latestTimestamp()) <= staleRateThreshold,
+            block.timestamp.sub(aggregatorContract.latestTimestamp()) <= 7 days,
             "__validateAggregator: Stale rate detected"
         );
     }
@@ -348,12 +303,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     /// @return ethUsdAggregator_ The `ethUsdAggregator` variable value
     function getEthUsdAggregator() external view returns (address ethUsdAggregator_) {
         return ethUsdAggregator;
-    }
-
-    /// @notice Gets the `staleRateThreshold` variable value
-    /// @return staleRateThreshold_ The `staleRateThreshold` variable value
-    function getStaleRateThreshold() external view returns (uint256 staleRateThreshold_) {
-        return staleRateThreshold;
     }
 
     /// @notice Gets the `WETH_TOKEN` variable value

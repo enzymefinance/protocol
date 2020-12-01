@@ -32,7 +32,7 @@ describe('constructor', () => {
       config: {
         dispatcher,
         weth,
-        chainlink: { ethUsdAggregator, staleRateThreshold, primitives, aggregators, rateAssets },
+        chainlink: { ethUsdAggregator, primitives, aggregators, rateAssets },
       },
       deployment: { chainlinkPriceFeed },
     } = await provider.snapshot(snapshot);
@@ -40,13 +40,11 @@ describe('constructor', () => {
     const storedDispatcher = await chainlinkPriceFeed.getDispatcher();
     const storedWeth = await chainlinkPriceFeed.getWethToken();
     const storedEthUsdAggregator = await chainlinkPriceFeed.getEthUsdAggregator();
-    const storedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
 
     // Check variables
     expect(storedDispatcher).toMatchAddress(dispatcher);
     expect(storedWeth).toMatchAddress(weth);
     expect(storedEthUsdAggregator).toMatchAddress(ethUsdAggregator);
-    expect(storedStaleRateThreshold).toEqBigNumber(staleRateThreshold);
 
     // Check primitives setup
     for (let i = 0; i < primitives.length; i++) {
@@ -87,24 +85,6 @@ describe('addPrimitives', () => {
         rateAsset: rateAssets[i],
       });
     }
-  });
-
-  it('reverts when the rate is older than threshold', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks, primitiveMocks },
-    } = await provider.snapshot(snapshot);
-
-    // Set '1' as latest timestamp
-    const nextAnswer = 1;
-    const nextTimestamp = 1;
-
-    await aggregatorMocks[0].setLatestAnswer(nextAnswer, nextTimestamp);
-
-    // Stale rate should have reverted
-    await expect(chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, [0, 0])).rejects.toBeRevertedWith(
-      'Stale rate detected',
-    );
   });
 
   it('reverts when the aggregator is empty', async () => {
@@ -324,6 +304,7 @@ describe('setEthUsdAggregator', () => {
     );
   });
 });
+
 // NOTE: Behaviour tests included under e2e tests
 describe('getCanonicalRate', () => {
   it('reverts when it receives a negative or zero value', async () => {
@@ -344,29 +325,5 @@ describe('getCanonicalRate', () => {
     await expect(
       chainlinkPriceFeed.addPrimitives([primitiveMocks[1]], [aggregatorMocks[1]], [0]),
     ).rejects.toBeRevertedWith('No rate detected');
-  });
-});
-
-describe('setStaleRateThreshold', () => {
-  it('properly sets value', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
-
-    // Get stored staleRateThreshold
-    const storedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
-
-    // Set new value to 1 day
-    const newStaleThreshold = 60 * 60 * 24;
-    const setStaleRateThresholdReceipt = await chainlinkPriceFeed.setStaleRateThreshold(newStaleThreshold);
-
-    //Check events
-    const updatedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
-    expect(updatedStaleRateThreshold).toEqBigNumber(newStaleThreshold);
-
-    assertEvent(setStaleRateThresholdReceipt, 'StaleRateThresholdSet', {
-      prevStaleRateThreshold: storedStaleRateThreshold,
-      nextStaleRateThreshold: newStaleThreshold,
-    });
   });
 });

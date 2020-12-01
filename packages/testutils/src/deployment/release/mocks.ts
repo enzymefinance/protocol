@@ -526,7 +526,6 @@ export async function configureMockRelease({
     },
     chainlink: {
       ethUsdAggregator: mocks.chainlinkEthUsdAggregator,
-      staleRateThreshold: 259200, // 72 hours
       aggregators: chainlinkAggregators,
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,
