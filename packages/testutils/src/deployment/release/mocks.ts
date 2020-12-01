@@ -543,8 +543,8 @@ export async function configureMockRelease({
         exchanger: mocks.mockSynthetix.exchanger,
         snx: mocks.mockSynthetix.snx,
         susd: mocks.mockSynthetix.susd,
-        originator: randomAddress(),
-        trackingCode: utils.formatBytes32String('MELON'),
+        originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
+        trackingCode: utils.formatBytes32String('ENZYME'),
       },
       makerDao: {
         dai: mocks.tokens.dai,

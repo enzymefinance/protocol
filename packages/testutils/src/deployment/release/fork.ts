@@ -1,10 +1,4 @@
-import {
-  AddressLike,
-  EthereumTestnetProvider,
-  randomAddress,
-  resolveAddress,
-  SignerWithAddress,
-} from '@crestproject/crestproject';
+import { AddressLike, EthereumTestnetProvider, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
 import { Dispatcher, StandardToken, sighash } from '@melonproject/protocol';
 import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
@@ -127,8 +121,8 @@ export async function configureForkRelease({
         exchanger: mainnet.synthetix.exchanger,
         snx: mainnet.synthetix.snx,
         susd: tokens.susd,
-        originator: randomAddress(),
-        trackingCode: '0x4d454c4f4e000000000000000000000000000000000000000000000000000000',
+        originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
+        trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
       },
       makerDao: {
         dai: mainnet.maker.dai,
