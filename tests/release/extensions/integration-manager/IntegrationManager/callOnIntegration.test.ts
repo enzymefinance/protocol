@@ -494,6 +494,8 @@ describe('callOnIntegration', () => {
 
     await expect(swapCall).rejects.toBeRevertedWith('Limit exceeded');
   });
+
+  it.todo('does not allow a spendAsset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 });
 
 describe('valid calls', () => {
@@ -1400,6 +1402,10 @@ describe('valid calls', () => {
         incomingAssetAmounts: [utils.parseEther('1')],
       }),
     ).resolves.toBeReceipt();
+
+    it.todo(
+      'attempts to reach finality for an incomingAsset, but does not fail if it cannot settle (e.g., an unsettleable Synth)',
+    );
   });
 
   describe('SpendAssetsHandleType', () => {

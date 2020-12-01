@@ -3,7 +3,7 @@ pragma solidity 0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./../../interfaces/ISynthetixExchanger.sol";
+import "./../../../release/interfaces/ISynthetixExchanger.sol";
 import "./../../../release/interfaces/ISynthetixExchangeRates.sol";
 
 contract MockSynthetixExchanger is ISynthetixExchanger {
@@ -51,5 +51,17 @@ contract MockSynthetixExchanger is ISynthetixExchanger {
         fee = destinationAmount.sub(amountReceived);
 
         return (amountReceived, fee, exchangeFeeRate);
+    }
+
+    function settle(address, bytes32)
+        external
+        override
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        // TODO
     }
 }

@@ -167,6 +167,7 @@ describe('integration', () => {
       accounts: [fundOwner, fundInvestor],
       config,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         entranceRateDirectFee,
@@ -199,6 +200,7 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,
@@ -266,6 +268,7 @@ describe('integration', () => {
       accounts: [fundOwner, fundInvestor],
       config,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         entranceRateDirectFee,
@@ -297,6 +300,7 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

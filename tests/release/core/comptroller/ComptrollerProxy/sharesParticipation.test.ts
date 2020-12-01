@@ -75,6 +75,8 @@ describe('buyShares', () => {
     ).rejects.toBeRevertedWith('Re-entrance');
   });
 
+  it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');
+
   it('works for a fund with no extensions (single buyShares)', async () => {
     const {
       deployment: {
@@ -109,7 +111,7 @@ describe('buyShares', () => {
     });
 
     // Assert calls on ComptrollerProxy
-    const calcGavCall = await comptrollerProxy.calcGav.call();
+    const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
     expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav, {
       gav_: investmentAmount,
       isValid_: true,
@@ -288,6 +290,8 @@ describe('redeemShares', () => {
       }),
     ).rejects.toBeRevertedWith('my message');
   });
+
+  it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 
   it('handles a preRedeemSharesHook failure', async () => {
     const {

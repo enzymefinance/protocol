@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
+import "../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
@@ -51,6 +52,7 @@ contract IntegrationManager is
 
     event TrackedAssetsLimitSet(uint256 nextTrackedAssetsLimit);
 
+    address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
@@ -65,8 +67,10 @@ contract IntegrationManager is
         address _policyManager,
         address _derivativePriceFeed,
         address _primitivePriceFeed,
-        uint256 _trackedAssetsLimit
+        uint256 _trackedAssetsLimit,
+        address _assetFinalityResolver
     ) public FundDeployerOwnerMixin(_fundDeployer) {
+        ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
@@ -354,6 +358,27 @@ contract IntegrationManager is
         require(success, string(returnData));
     }
 
+    /// @dev Helper to achieve asset finality and get finalized asset balance.
+    /// Uses a delegatecall to save gas, as there are no state-changing operations
+    /// or further delgatecalls in AssetFinalityResolver.
+    function __finalizeAndGetVaultProxyAssetBalance(
+        address _vaultProxy,
+        address _asset,
+        bool _requireFinality
+    ) private returns (uint256 assetBalance_) {
+        (bool success, bytes memory returnData) = ASSET_FINALITY_RESOLVER.delegatecall(
+            abi.encodeWithSelector(
+                IAssetFinalityResolver.finalizeAndGetAssetBalance.selector,
+                _vaultProxy,
+                _asset,
+                _requireFinality
+            )
+        );
+        require(success, string(returnData));
+
+        return abi.decode(returnData, (uint256));
+    }
+
     /// @dev Helper to get the vault's balance of a particular asset
     function __getVaultAssetBalance(address _vaultProxy, address _asset)
         private
@@ -443,9 +468,13 @@ contract IntegrationManager is
             // Get pre-call balance of each incoming asset.
             // If the asset is not tracked by the fund, allow the balance to default to 0.
             if (vaultProxyContract.isTrackedAsset(expectedIncomingAssets_[i])) {
-                preCallIncomingAssetBalances_[i] = __getVaultAssetBalance(
+                // We do not require incoming asset finality, but we attempt to finalize so that
+                // the final incoming asset amount is more accurate. There is no need to finalize
+                // post-tx.
+                preCallIncomingAssetBalances_[i] = __finalizeAndGetVaultProxyAssetBalance(
                     _vaultProxy,
-                    expectedIncomingAssets_[i]
+                    expectedIncomingAssets_[i],
+                    false
                 );
             }
         }
@@ -466,9 +495,13 @@ contract IntegrationManager is
 
             // If spend asset is also an incoming asset, no need to record its balance
             if (!expectedIncomingAssets_.contains(spendAssets_[i])) {
-                preCallSpendAssetBalances_[i] = __getVaultAssetBalance(
+                // By requiring spend asset finality before CoI, we will know whether or
+                // not the asset balance was entirely spent during the call. There is no need
+                // to finalize post-tx.
+                preCallSpendAssetBalances_[i] = __finalizeAndGetVaultProxyAssetBalance(
                     _vaultProxy,
-                    spendAssets_[i]
+                    spendAssets_[i],
+                    true
                 );
             }
 
@@ -753,6 +786,12 @@ contract IntegrationManager is
     /// @return isRegistered_ True if the adapter is registered
     function adapterIsRegistered(address _adapter) public view returns (bool isRegistered_) {
         return registeredAdapters.contains(_adapter);
+    }
+
+    /// @notice Gets the `ASSET_FINALITY_RESOLVER` variable
+    /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
+    function getAssetFinalityResolver() external view returns (address assetFinalityResolver_) {
+        return ASSET_FINALITY_RESOLVER;
     }
 
     /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable

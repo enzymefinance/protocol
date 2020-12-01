@@ -227,6 +227,7 @@ describe('integration tests', () => {
       accounts: [fundOwner],
       config,
       deployment: {
+        assetFinalityResolver,
         kyberAdapter,
         uniswapV2Adapter,
         chainlinkPriceFeed,
@@ -262,6 +263,7 @@ describe('integration tests', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

@@ -35,7 +35,7 @@ contract FundActionsWrapper {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
         comptrollerProxyContract.callOnExtension(FEE_MANAGER, 0, abi.encode(continuousFees));
 
-        return comptrollerProxyContract.calcGrossShareValue();
+        return comptrollerProxyContract.calcGrossShareValue(false);
     }
 
     /// @notice Invokes the Continuous fee hook on all specified fees, and then attempts to payout

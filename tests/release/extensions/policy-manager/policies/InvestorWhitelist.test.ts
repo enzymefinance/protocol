@@ -302,6 +302,7 @@ describe('integration tests', () => {
       accounts: [fundOwner],
       config,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -336,6 +337,7 @@ describe('integration tests', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

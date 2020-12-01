@@ -45,12 +45,16 @@ describe('constructor', () => {
       },
       deployment: {
         aggregatedDerivativePriceFeed,
+        assetFinalityResolver,
         chainlinkPriceFeed,
         integrationManager,
         fundDeployer,
         policyManager,
       },
     } = await provider.snapshot(snapshot);
+
+    const getAssetFinalityResolverCall = await integrationManager.getAssetFinalityResolver();
+    expect(getAssetFinalityResolverCall).toMatchAddress(assetFinalityResolver);
 
     const getDerivativePriceFeedCall = await integrationManager.getDerivativePriceFeed();
     expect(getDerivativePriceFeedCall).toMatchAddress(aggregatedDerivativePriceFeed);

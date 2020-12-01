@@ -195,8 +195,8 @@ describe('lend', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 561585
-    expect(lendReceipt).toCostLessThan('562000');
+    // Rounding up from 562253
+    expect(lendReceipt).toCostLessThan('563000');
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -217,8 +217,8 @@ describe('lend', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 368613
-    expect(lendReceipt).toCostLessThan('369000');
+    // Rounding up from 369339
+    expect(lendReceipt).toCostLessThan('370000');
   });
 });
 

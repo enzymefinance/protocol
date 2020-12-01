@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
+import "../../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
@@ -29,6 +30,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
 
     // Constants and immutables - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
+    address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
     address private immutable FUND_LIFECYCLE_LIB;
@@ -130,8 +132,10 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         address _integrationManager,
         address _policyManager,
         address _fundLifecycleLib,
-        address _permissionedVaultActionLib
+        address _permissionedVaultActionLib,
+        address _assetFinalityResolver
     ) public {
+        ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         FUND_LIFECYCLE_LIB = _fundLifecycleLib;
@@ -275,11 +279,12 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     ////////////////
 
     /// @notice Calculates the gross asset value (GAV) of the fund
+    /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return gav_ The fund GAV
     /// @return isValid_ True if the conversion rates used to derive the GAV are all valid
     /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
     /// are external to the protocol
-    function calcGav() public override returns (uint256 gav_, bool isValid_) {
+    function calcGav(bool _requireFinality) public override returns (uint256 gav_, bool isValid_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
         if (assets.length == 0) {
@@ -288,29 +293,35 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
 
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
-            balances[i] = __getVaultAssetBalance(vaultProxyAddress, assets[i]);
+            balances[i] = __finalizeAndGetVaultProxyAssetBalance(
+                vaultProxyAddress,
+                assets[i],
+                _requireFinality
+            );
         }
 
-        return
-            IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
-                assets,
-                balances,
-                denominationAsset
-            );
+        (gav_, isValid_) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
+            assets,
+            balances,
+            denominationAsset
+        );
+
+        return (gav_, isValid_);
     }
 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
+    /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return grossShareValue_ The amount of the denomination asset per share
     /// @return isValid_ True if the conversion rates to derive the value are all valid
     /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
     /// are external to the protocol. Does not account for any fees outstanding.
-    function calcGrossShareValue()
+    function calcGrossShareValue(bool _requireFinality)
         external
         override
         returns (uint256 grossShareValue_, bool isValid_)
     {
         uint256 gav;
-        (gav, isValid_) = calcGav();
+        (gav, isValid_) = calcGav(_requireFinality);
 
         grossShareValue_ = __calcGrossShareValue(
             gav,
@@ -334,13 +345,25 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         return _gav.mul(SHARES_UNIT).div(_sharesSupply);
     }
 
-    /// @dev Helper to get the balance of an asset in a fund's VaultProxy
-    function __getVaultAssetBalance(address _vaultProxy, address _asset)
-        private
-        view
-        returns (uint256 balance_)
-    {
-        return ERC20(_asset).balanceOf(_vaultProxy);
+    /// @dev Helper to achieve asset finality and get finalized asset balance.
+    /// Uses a delegatecall to save gas, as there are no state-changing operations
+    /// or further delgatecalls in AssetFinalityResolver.
+    function __finalizeAndGetVaultProxyAssetBalance(
+        address _vaultProxy,
+        address _asset,
+        bool _requireFinality
+    ) private returns (uint256 assetBalance_) {
+        (bool success, bytes memory returnData) = ASSET_FINALITY_RESOLVER.delegatecall(
+            abi.encodeWithSelector(
+                IAssetFinalityResolver.finalizeAndGetAssetBalance.selector,
+                _vaultProxy,
+                _asset,
+                _requireFinality
+            )
+        );
+        __assertLowLevelCall(success, returnData);
+
+        return abi.decode(returnData, (uint256));
     }
 
     ///////////////////
@@ -378,7 +401,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
             "buyShares: Unequal arrays"
         );
 
-        (uint256 gav, bool gavIsValid) = calcGav();
+        (uint256 gav, bool gavIsValid) = calcGav(true);
         require(gavIsValid, "buyShares: Invalid GAV");
 
         __buySharesSetupHook(msg.sender, _investmentAmounts, gav);
@@ -704,9 +727,10 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         // If all remaining shares are being redeemed, the logic changes slightly
         if (_sharesQuantity == sharesSupply) {
             for (uint256 i; i < payoutAssets_.length; i++) {
-                payoutAmounts_[i] = __getVaultAssetBalance(
+                payoutAmounts_[i] = __finalizeAndGetVaultProxyAssetBalance(
                     address(vaultProxyContract),
-                    payoutAssets_[i]
+                    payoutAssets_[i],
+                    true
                 );
 
                 // Transfer payout asset to redeemer
@@ -723,9 +747,10 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
             }
         } else {
             for (uint256 i; i < payoutAssets_.length; i++) {
-                uint256 assetBalance = __getVaultAssetBalance(
+                uint256 assetBalance = __finalizeAndGetVaultProxyAssetBalance(
                     address(vaultProxyContract),
-                    payoutAssets_[i]
+                    payoutAssets_[i],
+                    true
                 );
 
                 // Asset balance should never be 0 here, but this assures that if an asset remains
@@ -767,6 +792,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     }
 
     /// @notice Gets the routes for the various contracts used by all funds
+    /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
     /// @return fundLifecycleLib_ The `FUND_LIFECYCLE_LIB` variable value
@@ -778,6 +804,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         external
         view
         returns (
+            address assetFinalityResolver_,
             address feeManager_,
             address fundDeployer_,
             address fundLifecycleLib_,
@@ -788,6 +815,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         )
     {
         return (
+            ASSET_FINALITY_RESOLVER,
             FEE_MANAGER,
             FUND_DEPLOYER,
             FUND_LIFECYCLE_LIB,

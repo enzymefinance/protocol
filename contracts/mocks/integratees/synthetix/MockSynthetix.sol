@@ -2,7 +2,7 @@
 pragma solidity 0.6.8;
 
 import "./../../../release/interfaces/ISynthetix.sol";
-import "./../../interfaces/ISynthetixExchanger.sol";
+import "./../../../release/interfaces/ISynthetixExchanger.sol";
 import "./../../interfaces/ISynthetixDelegateApprovals.sol";
 import "./../../tokens/MockSynthetixToken.sol";
 

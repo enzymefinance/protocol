@@ -1,6 +1,7 @@
 import { BytesLike, Signer } from 'ethers';
 import { AddressLike } from '@crestproject/crestproject';
 import {
+  AssetFinalityResolver,
   ChainlinkPriceFeed,
   ComptrollerLib,
   Dispatcher,
@@ -15,6 +16,7 @@ import {
 } from '@melonproject/protocol';
 
 export async function createFundDeployer({
+  assetFinalityResolver,
   deployer,
   chainlinkPriceFeed,
   dispatcher,
@@ -28,6 +30,7 @@ export async function createFundDeployer({
   vaultCallSelectors = [],
   setOnDispatcher = true,
 }: {
+  assetFinalityResolver: AssetFinalityResolver;
   deployer: Signer;
   chainlinkPriceFeed: ChainlinkPriceFeed;
   dispatcher: Dispatcher;
@@ -65,6 +68,7 @@ export async function createFundDeployer({
     policyManager,
     nextFundLifecycleLib,
     permissionedVaultActionLib,
+    assetFinalityResolver,
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 

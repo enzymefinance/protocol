@@ -652,7 +652,7 @@ describe('settle', () => {
     const settlementData = constants.HashZero;
 
     // settle.call() to assert return values and get the sharesOutstanding
-    const gav = (await mockComptrollerProxy.calcGav.call()).gav_;
+    const gav = (await mockComptrollerProxy.calcGav.args(true).call()).gav_;
     const settleCall = await performanceFee.settle
       .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData, gav)
       .from(mockFeeManager)
@@ -957,6 +957,7 @@ describe('integration', () => {
       accounts: [fundOwner],
       config,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -995,6 +996,7 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

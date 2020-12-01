@@ -488,6 +488,7 @@ describe('integration', () => {
       accounts: [fundOwner, fundInvestor],
       config,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -519,6 +520,7 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,
@@ -611,6 +613,7 @@ describe('integration', () => {
       accounts: [fundOwner, fundInvestor],
       config,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -654,6 +657,7 @@ describe('integration', () => {
     const sharesBeforePayout = await vaultProxy.totalSupply(); // 1.0
 
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

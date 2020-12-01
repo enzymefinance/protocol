@@ -161,8 +161,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
 
-    // Bumped from 426971
-    expect(buySharesTx).toCostLessThan(427000);
+    // Bumped from 427248
+    expect(buySharesTx).toCostLessThan(428000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');
@@ -184,15 +184,16 @@ describe("Walkthrough a fund's lifecycle", () => {
       minSharesAmounts: [minSharesAmount],
     });
 
-    // Bumped from 467010
-    expect(buySharesTx).toCostLessThan(468000);
+    // Bumped from 472037
+    expect(buySharesTx).toCostLessThan(473000);
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
   });
 
   it('calculates the GAV of the fund with only the denomination asset', async () => {
-    const calcGavTx = await comptrollerProxy.calcGav();
+    const calcGavTx = await comptrollerProxy.calcGav(true);
 
-    expect(calcGavTx).toCostLessThan(`53000`);
+    // Bumped from 58052
+    expect(calcGavTx).toCostLessThan(`59000`);
   });
 
   it('trades on Kyber', async () => {
@@ -263,8 +264,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minChaiAmount: daiAmount.mul(90).div(100),
     });
 
-    // Bumped from 690050
-    expect(lend).toCostLessThan(`691000`);
+    // Bumped from 715356
+    expect(lend).toCostLessThan(`716000`);
 
     const chaiAmount = await chai.balanceOf(vaultProxy);
 
@@ -318,10 +319,10 @@ describe("Walkthrough a fund's lifecycle", () => {
   });
 
   it('calculates the GAV of the fund with 14 assets', async () => {
-    const calcGavTx = await comptrollerProxy.calcGav();
+    const calcGavTx = await comptrollerProxy.calcGav(true);
 
-    // Bumped from 506597
-    expect(calcGavTx).toCostLessThan(`507000`);
+    // Bumped from 577504
+    expect(calcGavTx).toCostLessThan(`578000`);
   });
 
   it('seeds the fund with cTokens', async () => {
@@ -353,10 +354,10 @@ describe("Walkthrough a fund's lifecycle", () => {
   });
 
   it('calculates the GAV of the fund with 20 assets', async () => {
-    const calcGavTx = await comptrollerProxy.calcGav();
+    const calcGavTx = await comptrollerProxy.calcGav(true);
 
-    // Bumped from 932201
-    expect(calcGavTx).toCostLessThan(933000);
+    // Bumped from 1053404
+    expect(calcGavTx).toCostLessThan(1054000);
   });
 
   it('trades on Kyber again', async () => {
@@ -408,12 +409,12 @@ describe("Walkthrough a fund's lifecycle", () => {
       outgoingAssetAmount,
     });
 
-    // Bumped from 1416224
-    expect(takeOrder).toCostLessThan(1417000);
+    // Bumped from 1527317
+    expect(takeOrder).toCostLessThan(1528000);
   });
 
   it("sends an asset amount to the fund's vault", async () => {
-    const gavBefore = await comptrollerProxy.calcGav.call();
+    const gavBefore = await comptrollerProxy.calcGav.args(true).call();
     const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
     const asset = config.tokens.dai;
@@ -421,7 +422,7 @@ describe("Walkthrough a fund's lifecycle", () => {
 
     await asset.connect(manager).transfer(vaultProxy, amount);
 
-    const gavAfter = await comptrollerProxy.calcGav.call();
+    const gavAfter = await comptrollerProxy.calcGav.args(true).call();
     const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
     expect(gavAfter.gav_).toBeGtBigNumber(gavBefore.gav_);
@@ -438,13 +439,13 @@ describe("Walkthrough a fund's lifecycle", () => {
       quantity: redeemQuantity,
     });
 
-    // Bumped from 2257864
-    expect(redeemed).toCostLessThan(2258000);
+    // Bumped from 2460356
+    expect(redeemed).toCostLessThan(2461000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
   });
 
   it("sends an asset amount to the fund's vault again", async () => {
-    const gavBefore = await comptrollerProxy.calcGav.call();
+    const gavBefore = await comptrollerProxy.calcGav.args(true).call();
     const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
     const asset = config.tokens.zrx;
@@ -452,7 +453,7 @@ describe("Walkthrough a fund's lifecycle", () => {
 
     await asset.connect(manager).transfer(vaultProxy, amount);
 
-    const gavAfter = await comptrollerProxy.calcGav.call();
+    const gavAfter = await comptrollerProxy.calcGav.args(true).call();
     const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
     expect(gavAfter.gav_).toBeGtBigNumber(gavBefore.gav_);
@@ -494,8 +495,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       minSharesAmounts: [minSharesAmount],
     });
 
-    // Bumped from 1392683
-    expect(buySharesTx).toCostLessThan(1393000);
+    // Bumped from 1493765
+    expect(buySharesTx).toCostLessThan(1494000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
   });
 
@@ -505,8 +506,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: investor,
     });
 
-    // Bumped from 2196797
-    expect(redeemed).toCostLessThan(2197000);
+    // Bumped from 2398909
+    expect(redeemed).toCostLessThan(2399000);
     expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
   });
 
@@ -516,8 +517,8 @@ describe("Walkthrough a fund's lifecycle", () => {
       signer: anotherInvestor,
     });
 
-    // Bumped from 1753277
-    expect(redeemed).toCostLessThan(1754000);
+    // Bumped from 1873618
+    expect(redeemed).toCostLessThan(1874000);
     expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
   });
 });

@@ -16,6 +16,7 @@ describe('constructor', () => {
   it('sets initial state for library', async () => {
     const {
       deployment: {
+        assetFinalityResolver,
         comptrollerLib,
         feeManager,
         fundDeployer,
@@ -29,6 +30,7 @@ describe('constructor', () => {
 
     const routesCall = await comptrollerLib.getLibRoutes();
     expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes, {
+      assetFinalityResolver_: assetFinalityResolver,
       feeManager_: feeManager,
       fundDeployer_: fundDeployer,
       fundLifecycleLib_: fundLifecycleLib,

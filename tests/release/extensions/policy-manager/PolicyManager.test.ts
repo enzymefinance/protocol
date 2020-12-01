@@ -153,6 +153,7 @@ describe('activateForFund', () => {
     const {
       config,
       deployment: {
+        assetFinalityResolver,
         fundDeployer,
         chainlinkPriceFeed,
         dispatcher,
@@ -179,6 +180,7 @@ describe('activateForFund', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,
@@ -229,6 +231,7 @@ describe('deactivateForFund', () => {
     const {
       config,
       deployment: {
+        assetFinalityResolver,
         fundDeployer,
         chainlinkPriceFeed,
         dispatcher,
@@ -254,6 +257,7 @@ describe('deactivateForFund', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

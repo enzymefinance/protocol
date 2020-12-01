@@ -56,6 +56,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockPolicyManager,
     fundLifecycleLib, // FundLifecycleLib
     randomAddress(), // PermissionedVaultActionLib
+    randomAddress(), // AssetFinalityResolver
   );
 
   // Deploy configured ComptrollerProxy
@@ -133,7 +134,7 @@ describe('init', () => {
     const { comptrollerProxy } = await provider.snapshot(snapshot);
 
     // ComptrollerProxy has already been created (and init() called)
-    await expect(comptrollerProxy.init(randomAddress(), 0, [])).rejects.toBeRevertedWith('Already initialized');
+    await expect(comptrollerProxy.init(randomAddress(), 0)).rejects.toBeRevertedWith('Already initialized');
   });
 });
 

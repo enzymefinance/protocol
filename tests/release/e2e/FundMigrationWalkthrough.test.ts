@@ -132,8 +132,8 @@ describe('Walkthrough a fund migration', () => {
       minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
 
-    // Bumped from 401779
-    expect(buySharesTx).toCostLessThan(402000);
+    // Bumped from 402056
+    expect(buySharesTx).toCostLessThan(403000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');

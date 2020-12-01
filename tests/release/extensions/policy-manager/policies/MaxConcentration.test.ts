@@ -439,6 +439,7 @@ describe('integration tests', () => {
     const {
       accounts: [fundOwner],
       deployment: {
+        assetFinalityResolver,
         maxConcentration,
         trackedAssetsAdapter,
         feeManager,
@@ -475,6 +476,7 @@ describe('integration tests', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
       deployer: config.deployer,
       chainlinkPriceFeed,
       dispatcher,

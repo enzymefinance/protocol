@@ -279,10 +279,9 @@ contract FeeManager is
 
             // Get the canonical value of GAV if not yet set and required by fee
             if (actualGav == 0 && feeUsesGavOnSettle(_fees[i])) {
+                // Assumes that any fee that requires GAV would need to revert if invalid or not final
                 bool gavIsValid;
-                (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav();
-
-                // Assumes that any fee that requires GAV would need to revert
+                (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav(true);
                 require(gavIsValid, "__invokeHookForFees: Invalid GAV");
             }
 
@@ -307,10 +306,9 @@ contract FeeManager is
 
                 // Get the canonical value of GAV if not yet set and required by fee
                 if (actualGav == 0 && feeUsesGavOnUpdate(_fees[i])) {
+                    // Assumes that any fee that requires GAV would need to revert if invalid or not final
                     bool gavIsValid;
-                    (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav();
-
-                    // Assumes that any fee that requires GAV would need to revert
+                    (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav(true);
                     require(gavIsValid, "__invokeHookForFees: Invalid GAV");
                 }
 

@@ -65,7 +65,7 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
 
         (uint256 grossSharePrice, bool sharePriceIsValid) = ComptrollerLib(_comptrollerProxy)
-            .calcGrossShareValue();
+            .calcGrossShareValue(true);
         require(sharePriceIsValid, "activateForFund: Invalid share price");
 
         feeInfo.highWaterMark = grossSharePrice;

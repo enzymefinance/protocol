@@ -12,6 +12,7 @@ import {
   createNewFund,
   defaultForkDeployment,
   ForkReleaseDeploymentConfig,
+  getAssetBalances,
   redeemShares,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
@@ -29,6 +30,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
     deployment,
     config,
   };
+}
+
+async function warpBeyondWaitingPeriod() {
+  const waitingPeriod = 180;
+  await provider.send('evm_increaseTime', [waitingPeriod]);
+  await provider.send('evm_mine', []);
 }
 
 describe("Walkthrough a synth-based fund's lifecycle", () => {
@@ -106,10 +113,10 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   });
 
   it('calculates the GAV of the fund with only the denomination asset', async () => {
-    const calcGavTx = await comptrollerProxy.calcGav();
+    const calcGavTx = await comptrollerProxy.calcGav(true);
 
-    // Bumped from 65991
-    expect(calcGavTx).toCostLessThan(`66100`);
+    // Bumped from 146865
+    expect(calcGavTx).toCostLessThan(`147000`);
   });
 
   it('attempts to trade on Synthetix within the redemption window', async () => {
@@ -163,11 +170,16 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     const outgoingAsset = susd;
     const incomingAsset = sbtc;
     const outgoingAssetAmount = utils.parseEther('10');
-    const { 0: minIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+    const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
       outgoingAssetAmount,
       susdCurrencyKey,
       sbtcCurrencyKey,
     );
+
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
 
     const takeOrder = await synthetixTakeOrder({
       comptrollerProxy,
@@ -178,39 +190,140 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
-      minIncomingAssetAmount,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
     });
 
-    // Bumped from 691889
-    expect(takeOrder).toCostLessThan(692000);
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
 
-    const balance = await incomingAsset.balanceOf(vaultProxy);
-    expect(balance).toEqBigNumber(minIncomingAssetAmount);
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
+
+    // Bumped from 789692
+    expect(takeOrder).toCostLessThan(790000);
   });
 
-  it('investor attempts to redeem shares immediately after the Synthetix trade', async () => {
+  it('trades again on Synthetix with the same assets', async () => {
+    const outgoingAsset = susd;
+    const incomingAsset = sbtc;
+    const outgoingAssetAmount = utils.parseEther('10');
+    const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+      outgoingAssetAmount,
+      susdCurrencyKey,
+      sbtcCurrencyKey,
+    );
+
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
+
+    await synthetixTakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager: deployment.integrationManager,
+      fundOwner: manager,
+      synthetixAdapter: deployment.synthetixAdapter,
+      outgoingAsset,
+      outgoingAssetAmount,
+      incomingAsset,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
+    });
+
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
+
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
+  });
+
+  it('attempts (and fails) to trade on Synthetix with the same assets in reverse', async () => {
+    const outgoingAsset = sbtc;
+    const incomingAsset = susd;
+    const outgoingAssetAmount = (await outgoingAsset.balanceOf(vaultProxy)).div(10);
+
+    const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+      outgoingAssetAmount,
+      sbtcCurrencyKey,
+      susdCurrencyKey,
+    );
+
+    await expect(
+      synthetixTakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager: deployment.integrationManager,
+        fundOwner: manager,
+        synthetixAdapter: deployment.synthetixAdapter,
+        outgoingAsset,
+        outgoingAssetAmount,
+        incomingAsset,
+        minIncomingAssetAmount: expectedIncomingAssetAmount,
+      }),
+    ).rejects.toBeRevertedWith('Cannot settle Synth');
+  });
+
+  it('warps beyond the waiting period and trades on Synthetix with the same assets in reverse', async () => {
+    await warpBeyondWaitingPeriod();
+
+    const outgoingAsset = sbtc;
+    const incomingAsset = susd;
+    const outgoingAssetAmount = (await outgoingAsset.balanceOf(vaultProxy)).div(10);
+
+    const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+      outgoingAssetAmount,
+      sbtcCurrencyKey,
+      susdCurrencyKey,
+    );
+
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
+
+    await synthetixTakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager: deployment.integrationManager,
+      fundOwner: manager,
+      synthetixAdapter: deployment.synthetixAdapter,
+      outgoingAsset,
+      outgoingAssetAmount,
+      incomingAsset,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
+    });
+
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
+
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
+  });
+
+  it('investor attempts (and fails) to redeem shares immediately after the Synthetix trade', async () => {
     await expect(
       redeemShares({
         comptrollerProxy,
         signer: investor,
       }),
-    ).rejects.toBeRevertedWith('Cannot transfer during waiting period');
+    ).rejects.toBeRevertedWith('Cannot settle Synth');
   });
 
-  it('warps beyond the Synthetix waiting period', async () => {
-    // TODO: get this dynamically from synthetix
-    const waitingPeriod = 180;
-    await provider.send('evm_increaseTime', [waitingPeriod]);
-    await provider.send('evm_mine', []);
-  });
+  it('investor redeems all shares after the waiting period', async () => {
+    await warpBeyondWaitingPeriod();
 
-  it('investor redeems all shares', async () => {
     const redeemed = await redeemShares({
       comptrollerProxy,
       signer: investor,
     });
 
-    // Bumped from 310925
-    expect(redeemed).toCostLessThan(311000);
+    // Bumped from 397036
+    expect(redeemed).toCostLessThan(398000);
   });
 });
