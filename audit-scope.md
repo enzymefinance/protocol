@@ -138,6 +138,10 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 `release/infrastructure/price-feeds/derivatives/feeds/WDGLDPriceFeed.sol`
 
+`release/extensions/policy-manager/policies/buy-shares/BuySharesCallerWhitelist.sol`
+
+`release/extensions/policy-manager/policies/buy-shares/utils/BuySharesSetupPolicyBase.sol`
+
 ## Forthcoming
 
 `SharesRequestor.sol`
