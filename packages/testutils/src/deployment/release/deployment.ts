@@ -82,6 +82,7 @@ export interface ReleaseDeploymentConfig {
     uniswapV2: {
       mlnWeth: AddressLike;
       kncWeth: AddressLike;
+      usdcWeth: AddressLike;
     };
     wdgld: AddressLike;
   };

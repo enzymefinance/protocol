@@ -42,6 +42,7 @@ export const mainnet = {
     uniswapV2: {
       mlnWeth: '0x15ab0333985FD1E289adF4fBBe19261454776642',
       kncWeth: '0xf49C43Ae0fAf37217bDcB00DF478cF793eDd6687',
+      usdcWeth: '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc',
     },
     wdgld: '0x123151402076fc819B7564510989e475c9cD93CA',
   },

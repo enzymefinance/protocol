@@ -1,14 +1,39 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
-import { IUniswapV2Pair, MockToken, MockUniswapV2Pair, StandardToken } from '@melonproject/protocol';
+import { IUniswapV2Pair, MockToken, MockUniswapV2PriceSource, StandardToken } from '@melonproject/protocol';
 import { defaultTestDeployment } from '@melonproject/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
+  const usdc = deployment.tokens.usdc;
+  const weth = deployment.tokens.weth;
+  const mln = deployment.tokens.mln;
+
+  // Denormalized amount of the initial pair seed
+  const defaultSeedAmount = '100';
+
+  // Create a pair formed by different decimal tokens (usdc/weth)
+  const wethUsdcPair = await MockUniswapV2PriceSource.deploy(config.deployer, usdc, weth);
+  await deployment.uniswapV2PoolPriceFeed.addPoolTokens([wethUsdcPair]);
+  await deployment.aggregatedDerivativePriceFeed.addDerivatives([wethUsdcPair], [deployment.uniswapV2PoolPriceFeed]);
+
+  await usdc.transfer(wethUsdcPair, utils.parseUnits(defaultSeedAmount, 6));
+  await weth.transfer(wethUsdcPair, utils.parseEther(defaultSeedAmount));
+
+  // Create a pair formed by same decimal tokens (usdc/weth)
+  const mlnWethPair = await MockUniswapV2PriceSource.deploy(config.deployer, mln, weth);
+  await deployment.uniswapV2PoolPriceFeed.addPoolTokens([mlnWethPair]);
+  await deployment.aggregatedDerivativePriceFeed.addDerivatives([mlnWethPair], [deployment.uniswapV2PoolPriceFeed]);
+
+  await mln.transfer(mlnWethPair, utils.parseEther(defaultSeedAmount));
+  await weth.transfer(mlnWethPair, utils.parseEther(defaultSeedAmount));
+
   return {
     accounts,
     deployment,
+    mocks: { mlnWethPair, wethUsdcPair },
+    defaultSeedAmount,
     config,
   };
 }
@@ -50,63 +75,54 @@ describe('constructor', () => {
 
 // TODO: refactor these tests after fixing the mock contracts
 describe('getRatesToUnderlyings', () => {
-  xit('returns rate for 18 decimals underlying assets', async () => {
+  it('returns rate for 18 decimals underlying assets', async () => {
     const {
-      config: {
-        derivatives: {
-          uniswapV2: { mlnWeth: derivativeAsset },
-        },
-      },
       deployment: {
         uniswapV2PoolPriceFeed,
         tokens: { mln, weth },
       },
+      mocks: { mlnWethPair },
+      defaultSeedAmount,
     } = await provider.snapshot(snapshot);
+    const uniswapWethUsdtPairToken = new StandardToken(mlnWethPair, provider);
+    const totalSupply = await uniswapWethUsdtPairToken.totalSupply();
+    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(mlnWethPair).call();
+    const ratePrecision = BigNumber.from(10).pow(18);
 
-    const derivativeAssetContract = new StandardToken(derivativeAsset, provider);
-    const totalSupply = await derivativeAssetContract.totalSupply();
-    const mlnAmount = utils.parseEther('1');
-    const wethAmount = utils.parseEther('1');
+    const wethAmount = utils.parseEther(defaultSeedAmount);
+    const mlnAmount = utils.parseEther(defaultSeedAmount);
 
-    await mln.transfer(derivativeAsset, mlnAmount);
-    await weth.transfer(derivativeAsset, wethAmount);
-
-    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(derivativeAsset).call();
-
-    const ratePricision = BigNumber.from(10).pow(18);
     expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings, {
-      rates_: [mlnAmount.mul(ratePricision).div(totalSupply), wethAmount.mul(ratePricision).div(totalSupply)],
+      rates_: [wethAmount.mul(ratePrecision).div(totalSupply), mlnAmount.mul(ratePrecision).div(totalSupply)],
       underlyings_: [mln, weth],
     });
   });
 
-  xit('returns rate for non-18 decimals underlying assets', async () => {
+  it('returns rate for non-18 decimals underlying assets', async () => {
     const {
-      config: { deployer },
       deployment: {
         uniswapV2PoolPriceFeed,
-        tokens: { weth },
+        tokens: { weth, usdc },
       },
+      mocks: { wethUsdcPair },
+      defaultSeedAmount,
     } = await provider.snapshot(snapshot);
 
-    const mln = await MockToken.deploy(deployer, 'mln', 'MLN', 17);
-    const derivativeAsset = await MockUniswapV2Pair.deploy(deployer, mln, weth);
-    const derivativeAssetContract = new StandardToken(derivativeAsset, provider);
-    const totalSupply = await derivativeAssetContract.totalSupply();
-    const mlnAmount = utils.parseEther('1');
-    const wethAmount = utils.parseEther('1');
+    const uniswapWethUsdcPairToken = new StandardToken(wethUsdcPair, provider);
+    const totalSupply = await uniswapWethUsdcPairToken.totalSupply();
 
-    await mln.transfer(derivativeAsset, mlnAmount);
-    await weth.transfer(derivativeAsset, wethAmount);
+    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(wethUsdcPair).call();
+    const ratePrecision = utils.parseUnits('1', 18);
 
-    const getRatesToUnderlyings = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(derivativeAsset).call();
-
-    const pow17 = BigNumber.from(10).pow(17);
-    const pow18 = BigNumber.from(10).pow(18);
+    const usdcAmount = utils.parseUnits(defaultSeedAmount, 6);
+    const wethAmount = utils.parseEther(defaultSeedAmount);
 
     expect(getRatesToUnderlyings).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings, {
-      rates_: [mlnAmount.mul(pow18).div(pow17).mul(pow18).div(totalSupply), wethAmount.mul(pow18).div(totalSupply)],
-      underlyings_: [mln, weth],
+      rates_: [
+        usdcAmount.mul(ratePrecision).mul(utils.parseUnits('1', 12)).div(totalSupply),
+        wethAmount.mul(ratePrecision).div(totalSupply),
+      ],
+      underlyings_: [usdc, weth],
     });
   });
 });
@@ -155,17 +171,17 @@ describe('addPoolTokens', () => {
     const unsupportedToken = await MockToken.deploy(deployer, 'Unsupported Token', 'UN', 18);
     const revertReason = 'Unsupported pool token';
 
-    const derivative0Derivative1Pair = await MockUniswapV2Pair.deploy(deployer, cdai, ccomp);
+    const derivative0Derivative1Pair = await MockUniswapV2PriceSource.deploy(deployer, cdai, ccomp);
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([derivative0Derivative1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
 
-    const primitive0Unsupported1Pair = await MockUniswapV2Pair.deploy(deployer, weth, unsupportedToken);
+    const primitive0Unsupported1Pair = await MockUniswapV2PriceSource.deploy(deployer, weth, unsupportedToken);
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([primitive0Unsupported1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
 
-    const Unsupported0Primitive1Pair = await MockUniswapV2Pair.deploy(deployer, unsupportedToken, weth);
+    const Unsupported0Primitive1Pair = await MockUniswapV2PriceSource.deploy(deployer, unsupportedToken, weth);
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([Unsupported0Primitive1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
@@ -182,9 +198,9 @@ describe('addPoolTokens', () => {
     } = await provider.snapshot(snapshot);
 
     // Create valid pool tokens (all possible valid types)
-    const primitive0Primitive1Pair = await MockUniswapV2Pair.deploy(deployer, weth, mln);
-    const primitive0Derivative1Pair = await MockUniswapV2Pair.deploy(deployer, weth, cdai);
-    const derivative0Primitive1Pair = await MockUniswapV2Pair.deploy(deployer, cdai, weth);
+    const primitive0Primitive1Pair = await MockUniswapV2PriceSource.deploy(deployer, weth, mln);
+    const primitive0Derivative1Pair = await MockUniswapV2PriceSource.deploy(deployer, weth, cdai);
+    const derivative0Primitive1Pair = await MockUniswapV2PriceSource.deploy(deployer, cdai, weth);
 
     // The pool tokens should not be supported assets initially
     expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Primitive1Pair)).toBe(false);

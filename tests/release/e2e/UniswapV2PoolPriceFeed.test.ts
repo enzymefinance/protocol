@@ -67,7 +67,28 @@ describe('getRatesToUnderlyings', () => {
     }
   });
 
-  it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');
+  it('returns the expected value from the valueInterpreter', async () => {
+    const {
+      config: {
+        tokens: { usdc },
+        derivatives: {
+          uniswapV2: { usdcWeth },
+        },
+      },
+      deployment: { valueInterpreter },
+    } = await provider.snapshot(snapshot);
 
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(usdcWeth, utils.parseUnits('1', 18), usdc)
+      .call();
+
+    // According to Zerion <https://app.zerion.io/> the cost per UNI-V2 USDC/WETH at 11-12-2020 was $53.8M
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      value_: 53584578776468,
+      isValid_: true,
+    });
+  });
+
+  it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');
   it.todo('[adjust the above tests to assert exact rate calcs]');
 });

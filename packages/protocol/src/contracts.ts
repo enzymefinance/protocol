@@ -93,7 +93,7 @@ export { MockSynthetixExchanger } from './codegen/MockSynthetixExchanger';
 export { MockSynthetixExchangeRates } from './codegen/MockSynthetixExchangeRates';
 export { MockZeroExV2Integratee } from './codegen/MockZeroExV2Integratee';
 export { MockUniswapV2Integratee } from './codegen/MockUniswapV2Integratee';
-export { MockUniswapV2Pair } from './codegen/MockUniswapV2Pair';
+export { MockUniswapV2PriceSource } from './codegen/MockUniswapV2PriceSource';
 export { WETH } from './codegen/WETH';
 
 // External interfaces

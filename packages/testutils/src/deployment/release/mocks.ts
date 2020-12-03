@@ -20,7 +20,7 @@ import {
   MockSynthetixToken,
   MockToken,
   MockUniswapV2Integratee,
-  MockUniswapV2Pair,
+  MockUniswapV2PriceSource,
   MockZeroExV2Integratee,
   sighash,
   WETH,
@@ -57,6 +57,7 @@ export interface MockDeploymentOutput {
   uniswapV2Derivatives: Promise<{
     mlnWeth: MockToken;
     kncWeth: MockToken;
+    usdcWeth: MockToken;
   }>;
   compoundTokens: Promise<{
     cbat: MockCTokenIntegratee;
@@ -234,12 +235,13 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   },
   async uniswapV2Derivatives(config, deployment) {
     const tokens = await deployment.tokens;
-    const [mlnWeth, kncWeth] = await Promise.all([
-      MockUniswapV2Pair.deploy(config.deployer, tokens.mln, tokens.weth),
-      MockUniswapV2Pair.deploy(config.deployer, tokens.knc, tokens.weth),
+    const [mlnWeth, kncWeth, usdcWeth] = await Promise.all([
+      MockUniswapV2PriceSource.deploy(config.deployer, tokens.mln, tokens.weth),
+      MockUniswapV2PriceSource.deploy(config.deployer, tokens.knc, tokens.weth),
+      MockUniswapV2PriceSource.deploy(config.deployer, tokens.usdc, tokens.weth),
     ]);
 
-    return { mlnWeth, kncWeth };
+    return { mlnWeth, kncWeth, usdcWeth };
   },
   // Price feed sources
   async chaiPriceSource(config) {
@@ -274,11 +276,11 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 8),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
-      MockChainlinkPriceSource.deploy(config.deployer, 6),
-      MockChainlinkPriceSource.deploy(config.deployer, 6),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
@@ -408,6 +410,7 @@ export async function configureMockRelease({
     mocks.tokens.zrx,
     mocks.uniswapV2Derivatives.mlnWeth,
     mocks.uniswapV2Derivatives.kncWeth,
+    mocks.uniswapV2Derivatives.usdcWeth,
     mocks.tokens.mrt,
     mocks.chaiIntegratee,
     mocks.mockSynthetix.susd,
@@ -517,6 +520,7 @@ export async function configureMockRelease({
       uniswapV2: {
         mlnWeth: mocks.uniswapV2Derivatives.mlnWeth,
         kncWeth: mocks.uniswapV2Derivatives.kncWeth,
+        usdcWeth: mocks.uniswapV2Derivatives.usdcWeth,
       },
       wdgld: randomAddress(),
     },

@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../prices/MockUniswapV2PriceSource.sol";
 import "./utils/SimpleMockIntegrateeBase.sol";
 
+/// @dev Mocks the integration with `UniswapV2Router02` <https://uniswap.org/docs/v2/smart-contracts/router02/>
 contract MockUniswapV2Integratee is SimpleMockIntegrateeBase {
     // TODO: NOT YET REVIEWED
 
@@ -115,5 +116,10 @@ contract MockUniswapV2Integratee is SimpleMockIntegrateeBase {
         amounts_[_path.length - 1] = amountOut;
 
         return amounts_;
+    }
+
+    /// @dev By default set to 0x0. It is read by UniswapV2PoolTokenValueCalculator: __calcPoolTokenValue
+    function feeTo() external pure returns (address) {
+        return address(0);
     }
 }

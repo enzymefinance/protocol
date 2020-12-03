@@ -5,14 +5,30 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../tokens/MockToken.sol";
 
-contract MockUniswapV2Pair is MockToken("Uniswap V2", "UNI-V2", 18) {
-    // TODO: NOT YET REVIEWED
-
+/// @dev This price source mocks the integration with Uniswap Pair
+/// Docs of Uniswap Pair implementation: <https://uniswap.org/docs/v2/smart-contracts/pair/>
+contract MockUniswapV2PriceSource is MockToken("Uniswap V2", "UNI-V2", 18) {
     address public token0;
     address public token1;
 
     constructor(address _token0, address _token1) public {
         token0 = _token0;
         token1 = _token1;
+    }
+
+    /// @dev returns reserves for each token on the Uniswap Pair
+    /// Reserves will be used to calculate the pair price
+    function getReserves()
+        external
+        view
+        returns (
+            uint112 reserve0,
+            uint112 reserve1,
+            uint32 blockTimestampLast
+        )
+    {
+        reserve0 = uint112(ERC20(token0).balanceOf(address(this)));
+        reserve1 = uint112(ERC20(token1).balanceOf(address(this)));
+        return (reserve0, reserve1, uint32(block.timestamp));
     }
 }
