@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { randomizedTestDeployment } from '@melonproject/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await randomizedTestDeployment(provider);
@@ -16,6 +16,9 @@ describe('calcLiveAssetValueRandomized', () => {
         tokens: { dai, mln },
       },
     } = await provider.snapshot(snapshot);
+
+    await centralizedRateProvider.setMaxDeviationPerSender(BigNumber.from('20'));
+
     const liveAssetValueAccountZero = await centralizedRateProvider
       .connect(accountZero)
       .calcLiveAssetValueRandomized.args(mln, utils.parseEther('1'), dai, 0)
@@ -27,8 +30,8 @@ describe('calcLiveAssetValueRandomized', () => {
       .call();
 
     // Min max values given a sender slippage of 5%
-    const minimumExpectedValue = utils.parseEther('0.95');
-    const maximumExpectedValue = utils.parseEther('1.05');
+    const minimumExpectedValue = utils.parseEther('0.80');
+    const maximumExpectedValue = utils.parseEther('1.20');
 
     // Randomized function has low entropy, there could be a collision here
     expect(liveAssetValueAccountZero).not.toEqBigNumber(liveAssetValueAccountOne);
@@ -48,6 +51,8 @@ describe('calcLiveAssetValueRandomized', () => {
         tokens: { dai, mln },
       },
     } = await provider.snapshot(snapshot);
+
+    await centralizedRateProvider.setMaxDeviationPerSender(BigNumber.from('0'));
 
     const liveAssetValueBlockOne = await centralizedRateProvider
       .connect(account)

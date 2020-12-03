@@ -114,7 +114,7 @@ export async function defaultForkDeployment(provider: EthereumTestnetProvider) {
 export async function randomizedTestDeployment(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
   {
-    await deployment.centralizedRateProvider.setMaxDeviationPerSender(5);
+    await deployment.centralizedRateProvider.setMaxDeviationPerSender(10);
     await deployment.kyberIntegratee.setBlockNumberDeviation(3);
   }
   return {

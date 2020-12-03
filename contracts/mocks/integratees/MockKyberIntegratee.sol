@@ -77,7 +77,7 @@ contract MockKyberIntegratee is SwapperBase, Ownable {
         }
 
         uint256 destAmount = CentralizedRateProvider(MOCK_CENTRALIZED_RATE_PROVIDER)
-            .calcLiveAssetValueRandomized(_srcToken, _amount, _destToken, blockNumberDeviation);
+            .calcLiveAssetValueRandomizedBySender(_srcToken, _amount, _destToken);
         rate_ = destAmount.mul(10**PRECISION).div(_amount);
         worstRate_ = rate_.mul(uint256(100).sub(blockNumberDeviation)).div(100);
     }

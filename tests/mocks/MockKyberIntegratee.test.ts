@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { randomizedTestDeployment } from '@melonproject/testutils';
+import { createNewFund, kyberTakeOrder, randomizedTestDeployment } from '@melonproject/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -58,17 +58,18 @@ it('receives the expected amount of assets from a kyber swap integration', async
 
   await knc.approve(kyberIntegratee.address, utils.parseEther('1'));
 
+  const { rate_, worstRate_ } = await kyberIntegratee.getExpectedRate
+    .args(knc.address, mln.address, utils.parseEther('1'))
+    .call();
+
   const preBalance = await mln.balanceOf(deployer.address);
   await kyberIntegratee.swapTokenToToken(knc.address, utils.parseEther('1'), mln.address, 1);
   const postBalance = await mln.balanceOf(deployer.address);
   const balanceDiff = postBalance.sub(preBalance);
 
-  const { rate_, worstRate_ } = await kyberIntegratee.getExpectedRate
-    .args(knc.address, mln.address, utils.parseEther('1'))
-    .call();
-
-  expect(balanceDiff).toEqBigNumber(rate_);
+  expect(balanceDiff).toBeGteBigNumber(worstRate_);
   expect(worstRate_).toEqBigNumber(rate_.mul(BigNumber.from('97')).div(BigNumber.from('100')));
+  expect(balanceDiff).toBeLteBigNumber(rate_.mul(BigNumber.from('103')).div(BigNumber.from('100')));
 });
 
 it('receives the expected amount of assets from a kyber swap integration (ETH)', async () => {
@@ -97,4 +98,49 @@ it('receives the expected amount of assets from a kyber swap integration (ETH)',
     .call();
 
   expect(rateWeth).toEqBigNumber(rateEthKyberAddress);
+});
+
+it('correctly integrates with kyberAdapter', async () => {
+  const {
+    accounts: [fundOwner],
+    config: { deployer },
+    deployment: {
+      tokens: { dai: outgoingAsset, knc: incomingAsset, weth: denominationAsset },
+      fundDeployer,
+      kyberAdapter,
+      integrationManager,
+      centralizedRateProvider,
+      kyberIntegratee,
+    },
+  } = await provider.snapshot(snapshot);
+
+  // Set a high deviation per sender to test against edge case
+  await centralizedRateProvider.setMaxDeviationPerSender(BigNumber.from('40'));
+  await kyberIntegratee.setBlockNumberDeviation(BigNumber.from('40'));
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: deployer,
+    fundOwner,
+    fundDeployer,
+    denominationAsset,
+  });
+
+  const outgoingAssetAmount = utils.parseEther('1');
+
+  const { worstRate_: minIncomingAssetAmount } = await kyberIntegratee.getExpectedRate
+    .args(outgoingAsset, incomingAsset, outgoingAssetAmount)
+    .call();
+
+  await kyberTakeOrder({
+    comptrollerProxy,
+    vaultProxy,
+    integrationManager,
+    fundOwner,
+    kyberAdapter,
+    outgoingAsset,
+    outgoingAssetAmount,
+    incomingAsset,
+    minIncomingAssetAmount,
+    seedFund: true,
+  });
 });
