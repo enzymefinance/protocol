@@ -724,8 +724,7 @@ describe('integration', () => {
 
 describe('utils', () => {
   it('correctly converts a rate to scaledPerSecondRate and back', async () => {
-    const initialRate = utils.parseEther((Math.random() / 3).toFixed());
-
+    const initialRate = utils.parseEther(`0.01`);
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(initialRate);
     const finalRate = convertScaledPerSecondRateToRate(scaledPerSecondRate);
 

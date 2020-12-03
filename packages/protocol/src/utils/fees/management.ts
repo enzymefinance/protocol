@@ -28,11 +28,10 @@ export function convertRateToScaledPerSecondRate(rate: BigNumberish) {
 
 export function convertScaledPerSecondRateToRate(scaledPerSecondRate: BigNumberish) {
   const scaledPerSecondRateD = new Decimal(scaledPerSecondRate.toString()).div(managementFeeScaleDecimal);
-
   const effectiveRate = scaledPerSecondRateD.pow(secondsPerYear).minus(new Decimal(1));
   const rate = effectiveRate.div(new Decimal(1).plus(effectiveRate));
 
-  return utils.parseEther(rate.toSignificantDigits(18).toString());
+  return utils.parseEther(rate.toFixed(17, Decimal.ROUND_UP));
 }
 
 export function rpow(x: BigNumberish, n: BigNumberish, b: BigNumberish) {
