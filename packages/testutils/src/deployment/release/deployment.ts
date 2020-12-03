@@ -56,6 +56,7 @@ export interface ReleaseDeploymentConfig {
   integrationManager: {
     trackedAssetsLimit: BigNumberish;
   };
+  compoundComptroller: AddressLike;
   chainlink: {
     ethUsdAggregator: AddressLike;
     xauUsdAggregator: AddressLike;

@@ -58,6 +58,7 @@ export async function configureForkRelease({
     {} as MainnetCompoundTokens,
   );
 
+  const compoundComptroller = mainnet.comptroller;
   const chainlinkConfig = Object.values(mainnet.chainlinkAggregators);
   const chainlinkRateAssets = chainlinkConfig.map(([, b]) => b as number);
   const chainlinkAggregators = chainlinkConfig.map(([a]) => a as string);
@@ -102,6 +103,7 @@ export async function configureForkRelease({
       contracts: [mainnet.synthetix.delegateApprovals],
       selectors: [sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)'))],
     },
+    compoundComptroller,
     chainlink: {
       ethUsdAggregator: mainnet.chainlinkEthUsdAggregator,
       xauUsdAggregator: mainnet.chainlinkXauUsdAggregator,

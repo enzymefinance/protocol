@@ -532,6 +532,7 @@ export async function configureMockRelease({
       contracts: [mocks.mockSynthetix.delegateApprovals],
       selectors: [sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)'))],
     },
+    compoundComptroller: randomAddress(),
     chainlink: {
       ethUsdAggregator: mocks.chainlinkEthUsdAggregator,
       xauUsdAggregator: mocks.chainlinkXauUsdAggregator,

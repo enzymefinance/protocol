@@ -1,4 +1,4 @@
-import { resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { AddressLike, Contract, contract, resolveAddress, Send, SignerWithAddress } from '@crestproject/crestproject';
 import {
   callOnIntegrationArgs,
   CompoundAdapter,
@@ -12,6 +12,15 @@ import {
   VaultLib,
 } from '@melonproject/protocol';
 import { BigNumberish, utils } from 'ethers';
+
+// prettier-ignore
+export interface ICompoundComptroller extends Contract<ICompoundComptroller> {
+      claimComp: Send<(_account: AddressLike) => void>;
+    }
+
+export const ICompoundComptroller = contract<ICompoundComptroller>()`
+      function claimComp(address)
+    `;
 
 export async function compoundLend({
   comptrollerProxy,

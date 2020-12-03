@@ -14,6 +14,7 @@ import {
   createNewFund,
   defaultForkDeployment,
   getAssetBalances,
+  ICompoundComptroller,
 } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -263,5 +264,46 @@ describe('redeem', () => {
 
     // Rounding up from 435237
     expect(redeemReceipt).toCostLessThan('436000');
+  });
+});
+
+describe('claimComp', () => {
+  it('should accrue COMP on the fund after lending', async () => {
+    const {
+      config: {
+        compoundComptroller,
+        deployer,
+        tokens: { comp },
+      },
+      derivatives: { cdai: cToken },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
+      fund: { fundOwner, comptrollerProxy, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    await assertCompoundLend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      compoundAdapter,
+      tokenAmount: utils.parseEther('1'),
+      cToken,
+      compoundPriceFeed,
+    });
+
+    const secondsToWarp = 100000000;
+    await provider.send('evm_increaseTime', [secondsToWarp]);
+    await provider.send('evm_mine', []);
+
+    const compComptroller = new ICompoundComptroller(compoundComptroller, deployer);
+
+    await compComptroller.claimComp(vaultProxy.address);
+    await compComptroller.claimComp(compoundAdapter.address);
+
+    const compVaultBalance = await comp.balanceOf(vaultProxy);
+    const compAdapterBalance = await comp.balanceOf(compoundAdapter.address);
+
+    expect(compVaultBalance).toBeGtBigNumber(0);
+    expect(compAdapterBalance).toEqBigNumber(0);
   });
 });
