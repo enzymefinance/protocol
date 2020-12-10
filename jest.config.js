@@ -1,3 +1,5 @@
+const ethers = require('ethers');
+
 if (!process.env.MAINNET_ARCHIVE_NODE) {
   console.warn('=====================================================');
   console.warn('WARNING: Skipping end-to-end tests.');
@@ -32,6 +34,7 @@ function fork(name, roots) {
         accounts: {
           mnemonic,
           count: 5,
+          accountsBalance: ethers.utils.parseUnits('1', 36).toString(),
         },
         forking: {
           url: process.env.MAINNET_ARCHIVE_NODE,
@@ -61,6 +64,7 @@ function unit(name, roots) {
         accounts: {
           mnemonic,
           count: 10,
+          accountsBalance: ethers.utils.parseUnits('1', 36).toString(),
         },
         ...(process.env.COVERAGE && {
           allowUnlimitedContractSize: true,

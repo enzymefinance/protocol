@@ -583,14 +583,18 @@ export async function configureMockRelease({
   };
 }
 
-export async function makeEthRich(sender: SignerWithAddress, receiver: AddressLike, amount = utils.parseEther('100')) {
+export async function makeEthRich(
+  sender: SignerWithAddress,
+  receiver: AddressLike,
+  amount = utils.parseEther('1000000'),
+) {
   return sender.sendTransaction({
     to: resolveAddress(receiver),
     value: amount,
   });
 }
 
-export async function makeWethRich(weth: WETH, account: SignerWithAddress, amount = utils.parseEther('100')) {
+export async function makeWethRich(weth: WETH, account: SignerWithAddress, amount = utils.parseEther('1000000')) {
   const connected = weth.connect(account);
   return connected.deposit.value(amount).send();
 }
