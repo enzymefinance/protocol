@@ -1,4 +1,3 @@
-import { utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   assetTransferArgs,
@@ -20,6 +19,7 @@ import {
   uniswapV2Redeem,
   uniswapV2TakeOrder,
 } from '@melonproject/testutils';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -35,10 +35,16 @@ async function snapshot(provider: EthereumTestnetProvider) {
     denominationAsset: deployment.tokens.weth,
   });
 
+  const token1 = deployment.tokens.mln;
+  const token0 = deployment.tokens.weth;
+
+  const mockPair = config.derivatives.uniswapV2.mlnWeth;
+
   return {
     accounts: remainingAccounts,
     deployment,
     config,
+    mocks: { mockPair, token0, token1 },
     fund: {
       comptrollerProxy,
       fundOwner,
@@ -235,6 +241,17 @@ describe('lend', () => {
       assets: [tokenA, tokenB],
     });
 
+    const poolTokenTotalSupply = await poolTokenContract.totalSupply();
+    const reservesA = await tokenA.balanceOf(poolToken);
+    const reservesB = await tokenB.balanceOf(poolToken);
+    expect(reservesA).toEqBigNumber(reservesB);
+
+    // Rates are calculated under the asumption of equal reserves
+    expect(reservesA).toEqBigNumber(reservesB);
+
+    const expectedRate = poolTokenTotalSupply.mul(utils.parseEther('1')).div(reservesA);
+    const expectedIncomingAmount = amountADesired.mul(expectedRate).div(utils.parseEther('1'));
+
     const receipt = await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
@@ -245,9 +262,9 @@ describe('lend', () => {
       tokenB,
       amountADesired,
       amountBDesired,
-      amountAMin: amountADesired,
-      amountBMin: amountBDesired,
-      minPoolTokenAmount: utils.parseEther('1'),
+      amountAMin: BigNumber.from('1'),
+      amountBMin: BigNumber.from('1'),
+      minPoolTokenAmount: BigNumber.from('1'),
     });
 
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
@@ -259,19 +276,18 @@ describe('lend', () => {
       adapter: uniswapV2Adapter,
       selector: lendSelector,
       incomingAssets: [poolTokenContract],
-      incomingAssetAmounts: [utils.parseEther('1')],
+      incomingAssetAmounts: [expectedIncomingAmount],
       outgoingAssets: [tokenA, tokenB],
       outgoingAssetAmounts: [amountADesired, amountBDesired],
       integrationData: expect.anything(),
     });
-
     const postTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
     const postTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
     });
 
-    expect(postTxPoolTokenBalance).toEqBigNumber(preTxPoolTokenBalance.add(amountADesired));
+    expect(postTxPoolTokenBalance).toEqBigNumber(preTxPoolTokenBalance.add(expectedIncomingAmount));
     expect(postTxTokenBalances[0]).toEqBigNumber(preTxTokenBalances[0].sub(amountADesired));
     expect(postTxTokenBalances[1]).toEqBigNumber(preTxTokenBalances[1].sub(amountBDesired));
   });
@@ -319,11 +335,18 @@ describe('redeem', () => {
       },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
-
-    const poolTokenAmount = utils.parseEther('0.5');
-    const amountAMin = utils.parseEther('1');
-    const amountBMin = utils.parseEther('1');
+    const poolTokenAmount = utils.parseEther('1');
     const poolTokenContract = new StandardToken(poolToken, provider);
+    const poolTokenTotalSupply = await poolTokenContract.totalSupply();
+
+    const reservesA = await tokenA.balanceOf(poolToken);
+    const reservesB = await tokenB.balanceOf(poolToken);
+
+    const expectedRate = reservesA.mul(utils.parseEther('1')).div(poolTokenTotalSupply);
+    const expectedIncomingAmount = poolTokenAmount.mul(expectedRate).div(utils.parseEther('1'));
+
+    // Rates are calculated under the asumption of equal reserves
+    expect(reservesA).toEqBigNumber(reservesB);
 
     // seed fund
     await poolTokenContract.connect(deployer).transfer(vaultProxy, poolTokenAmount);
@@ -342,8 +365,8 @@ describe('redeem', () => {
       poolTokenAmount,
       tokenA,
       tokenB,
-      amountAMin,
-      amountBMin,
+      amountAMin: expectedIncomingAmount,
+      amountBMin: expectedIncomingAmount,
     });
 
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
@@ -355,7 +378,7 @@ describe('redeem', () => {
       adapter: uniswapV2Adapter,
       selector: redeemSelector,
       incomingAssets: [tokenA, tokenB],
-      incomingAssetAmounts: [amountAMin, amountBMin],
+      incomingAssetAmounts: [expectedIncomingAmount, expectedIncomingAmount],
       outgoingAssets: [poolTokenContract],
       outgoingAssetAmounts: [poolTokenAmount],
       integrationData: expect.anything(),
@@ -367,8 +390,8 @@ describe('redeem', () => {
       assets: [tokenA, tokenB],
     });
 
-    expect(postTxTokenBalances[0]).toEqBigNumber(preTxTokenBalances[0].add(amountAMin));
-    expect(postTxTokenBalances[1]).toEqBigNumber(preTxTokenBalances[1].add(amountBMin));
+    expect(postTxTokenBalances[0]).toEqBigNumber(preTxTokenBalances[0].add(expectedIncomingAmount));
+    expect(postTxTokenBalances[1]).toEqBigNumber(preTxTokenBalances[1].add(expectedIncomingAmount));
     expect(postTxPoolTokenBalance).toEqBigNumber(preTxPoolTokenBalance.sub(poolTokenAmount));
   });
 });

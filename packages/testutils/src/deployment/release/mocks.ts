@@ -55,9 +55,9 @@ export interface MockDeploymentOutput {
     mrt: MockReentrancyToken;
   }>;
   uniswapV2Derivatives: Promise<{
-    mlnWeth: MockToken;
-    kncWeth: MockToken;
-    usdcWeth: MockToken;
+    mlnWeth: MockUniswapV2PriceSource;
+    kncWeth: MockUniswapV2PriceSource;
+    usdcWeth: MockUniswapV2PriceSource;
   }>;
   compoundTokens: Promise<{
     cbat: MockCTokenIntegratee;
@@ -301,7 +301,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   },
   async kyberIntegratee(config, deployment) {
     const tokens = await deployment.tokens;
-    return MockKyberIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, await tokens.weth, 0);
+    return MockKyberIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, tokens.weth, 0);
   },
   async mockGenericAdapter(config, deployment) {
     return MockGenericAdapter.deploy(config.deployer, await deployment.mockGenericIntegratee);
@@ -358,10 +358,11 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
     const tokens = await deployment.tokens;
     return MockUniswapV2Integratee.deploy(
       config.deployer,
-      [],
       [tokens.mln, tokens.knc],
       [tokens.weth, tokens.weth],
       [derivatives.mlnWeth, derivatives.kncWeth],
+      await deployment.centralizedRateProvider,
+      0,
     );
   },
   async zeroExV2Integratee(config, deployment) {
@@ -408,9 +409,6 @@ export async function configureMockRelease({
     mocks.tokens.usdc,
     mocks.tokens.usdt,
     mocks.tokens.zrx,
-    mocks.uniswapV2Derivatives.mlnWeth,
-    mocks.uniswapV2Derivatives.kncWeth,
-    mocks.uniswapV2Derivatives.usdcWeth,
     mocks.tokens.mrt,
     mocks.chaiIntegratee,
     mocks.mockSynthetix.susd,
@@ -481,24 +479,25 @@ export async function configureMockRelease({
 
   // Make all accounts rich in WETH and tokens.
   await Promise.all<any>([
-    makeWethRich(mocks.tokens.weth, deployer, utils.parseEther('1000')),
+    makeWethRich(mocks.tokens.weth, deployer),
     makeTokenRich(Object.values(tokens), deployer),
     ...accounts.map(async (account) => {
       await Promise.all([makeTokenRich(Object.values(tokens), account), makeWethRich(mocks.tokens.weth, account)]);
     }),
   ]);
 
-  await makeTokenRich(Object.values(uniswapV2Derivatives), deployer),
-    // Make integratees rich in WETH, ETH, and tokens.
-    await Promise.all(
-      integratees.map(async (integratee) => {
-        await Promise.all([
-          mocks.tokens.weth.transfer(integratee, utils.parseEther('100')),
-          makeEthRich(deployer, integratee),
-          makeTokenRich(tokens, integratee),
-        ]);
-      }),
-    );
+  await seedUniswapPairs(mocks.tokens.weth, Object.values(uniswapV2Derivatives), mocks.uniswapV2Integratee, deployer);
+  // Make integratees rich in WETH, ETH, and tokens.
+
+  await Promise.all(
+    integratees.map(async (integratee) => {
+      await Promise.all([
+        mocks.tokens.weth.transfer(integratee, utils.parseEther('100')),
+        makeEthRich(deployer, integratee),
+        makeTokenRich(tokens, integratee),
+      ]);
+    }),
+  );
 
   return {
     deployer,
@@ -586,7 +585,7 @@ export async function configureMockRelease({
 export async function makeEthRich(
   sender: SignerWithAddress,
   receiver: AddressLike,
-  amount = utils.parseEther('1000000'),
+  amount = utils.parseUnits('1', 22),
 ) {
   return sender.sendTransaction({
     to: resolveAddress(receiver),
@@ -594,13 +593,45 @@ export async function makeEthRich(
   });
 }
 
-export async function makeWethRich(weth: WETH, account: SignerWithAddress, amount = utils.parseEther('1000000')) {
+export async function makeWethRich(weth: WETH, account: SignerWithAddress, amount = utils.parseUnits('1', 22)) {
   const connected = weth.connect(account);
   return connected.deposit.value(amount).send();
 }
 
-export function makeTokenRich(tokens: MockToken[], receiver: AddressLike, amount = utils.parseEther('1000000')) {
-  const promises = tokens.map((token) => {
+export async function seedUniswapPairs(
+  weth: WETH,
+  pairs: MockUniswapV2PriceSource[],
+  integratee: MockUniswapV2Integratee,
+  provider: SignerWithAddress,
+) {
+  const seedAmount = utils.parseUnits('1', 27);
+  const promises = pairs.map(async (pair) => {
+    const token0 = new MockToken(await pair.token0(), provider);
+    const token1 = new MockToken(await pair.token1(), provider);
+
+    // seed integratee with pair tokens
+    // NOTE: In order to avoid liquidity problems, integratees should hold most of the liquidity (in this case, we keep 1% of supply for the deployer).
+    // Thus, pairTokens should not be minted, as doing so we reduce the purchase power of the integratee
+    const pairToken = new MockToken(pair, provider);
+    const totalSupplyPair = await pairToken.totalSupply();
+    const seedIntegrateeWithPair = pairToken.transfer(integratee, totalSupplyPair.mul(99).div(100));
+
+    const seedPairWithTokens = [token0, token1].map(async (token) => {
+      if (token.address == weth.address) {
+        await makeWethRich(weth, provider, seedAmount);
+        return weth.transfer(pair, seedAmount);
+      } else {
+        return makeTokenRich([token], pair, seedAmount);
+      }
+    });
+    return [seedPairWithTokens, seedIntegrateeWithPair];
+  });
+
+  return Promise.all(promises);
+}
+
+export function makeTokenRich(tokens: MockToken[], receiver: AddressLike, amount = utils.parseUnits('1', 22)) {
+  const promises = tokens.map(async (token) => {
     return token.mintFor(receiver, amount);
   });
 

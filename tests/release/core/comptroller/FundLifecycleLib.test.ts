@@ -34,6 +34,6 @@ describe('init', () => {
       deployment: { fundLifecycleLib },
     } = await provider.snapshot(snapshot);
 
-    await expect(fundLifecycleLib.init(randomAddress(), 0, [])).rejects.toBeRevertedWith('Only delegate callable');
+    await expect(fundLifecycleLib.init(randomAddress(), 0)).rejects.toBeRevertedWith('Only delegate callable');
   });
 });

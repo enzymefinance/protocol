@@ -13,7 +13,7 @@ contract MockToken is ERC20Burnable {
         uint8 _decimals
     ) public ERC20(_name, _symbol) {
         _setupDecimals(_decimals);
-        _mint(msg.sender, uint256(1000000).mul(10**uint256(_decimals)));
+        _mint(msg.sender, uint256(100000000).mul(10**uint256(_decimals)));
     }
 
     function mintFor(address _who, uint256 _amount) external {

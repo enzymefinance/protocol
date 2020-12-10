@@ -37,7 +37,14 @@ it('correctly retrieves expectedRate from an integratee', async () => {
     .mul(BigNumber.from('100').sub(worstCaseSlippage))
     .div(100);
 
+  const bestRateExpected = answerKnc
+    .mul(utils.parseEther('1'))
+    .div(answerMln)
+    .mul(BigNumber.from('100').add(worstCaseSlippage))
+    .div(100);
+
   expect(rate_).toBeGteBigNumber(worstRateExpected);
+  expect(rate_).toBeLteBigNumber(bestRateExpected);
 });
 
 it('receives the expected amount of assets from a kyber swap integration', async () => {

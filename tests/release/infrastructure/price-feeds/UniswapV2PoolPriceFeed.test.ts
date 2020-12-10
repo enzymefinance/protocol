@@ -21,7 +21,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await usdc.transfer(wethUsdcPair, utils.parseUnits(defaultSeedAmount, 6));
   await weth.transfer(wethUsdcPair, utils.parseEther(defaultSeedAmount));
 
-  // Create a pair formed by same decimal tokens (usdc/weth)
+  // Create a pair formed by same decimal tokens (mln/weth)
   const mlnWethPair = await MockUniswapV2PriceSource.deploy(config.deployer, mln, weth);
   await deployment.uniswapV2PoolPriceFeed.addPoolTokens([mlnWethPair]);
   await deployment.aggregatedDerivativePriceFeed.addDerivatives([mlnWethPair], [deployment.uniswapV2PoolPriceFeed]);

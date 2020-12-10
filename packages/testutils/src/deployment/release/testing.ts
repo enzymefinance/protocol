@@ -116,6 +116,7 @@ export async function randomizedTestDeployment(provider: EthereumTestnetProvider
   {
     await deployment.centralizedRateProvider.setMaxDeviationPerSender(10);
     await deployment.kyberIntegratee.setBlockNumberDeviation(3);
+    await deployment.uniswapV2Integratee.setBlockNumberDeviation(3);
   }
   return {
     config,

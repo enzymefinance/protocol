@@ -1,4 +1,3 @@
-import { BigNumberish } from 'ethers';
 import { AddressLike, SignerWithAddress } from '@crestproject/crestproject';
 import {
   callOnIntegrationArgs,
@@ -15,6 +14,7 @@ import {
   uniswapV2TakeOrderArgs,
   VaultLib,
 } from '@melonproject/protocol';
+import { BigNumberish } from 'ethers';
 
 export async function uniswapV2Lend({
   comptrollerProxy,
