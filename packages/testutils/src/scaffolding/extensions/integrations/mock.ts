@@ -16,24 +16,39 @@ export const mockGenericSwapASelector = sighash(utils.FunctionFragment.fromStrin
 
 export const mockGenericSwapBSelector = sighash(utils.FunctionFragment.fromString('swapB(address,bytes,bytes)'));
 
-export const mockGenericSwapCSelector = sighash(utils.FunctionFragment.fromString('swapC(address,bytes,bytes)'));
+export const mockGenericSwapDirectFromVaultSelector = sighash(
+  utils.FunctionFragment.fromString('swapDirectFromVault(address,bytes,bytes)'),
+);
+
+export const mockGenericSwapViaApprovalSelector = sighash(
+  utils.FunctionFragment.fromString('swapViaApproval(address,bytes,bytes)'),
+);
 
 export function mockGenericSwapArgs({
   spendAssets = [],
-  spendAssetAmounts = [],
+  actualSpendAssetAmounts = [],
+  maxSpendAssetAmounts = actualSpendAssetAmounts,
   incomingAssets = [],
-  minIncomingAssetAmounts = [],
-  incomingAssetAmounts = [],
+  actualIncomingAssetAmounts = [],
+  minIncomingAssetAmounts = actualIncomingAssetAmounts,
 }: {
   spendAssets?: AddressLike[];
-  spendAssetAmounts?: BigNumberish[];
+  maxSpendAssetAmounts?: BigNumberish[];
+  actualSpendAssetAmounts?: BigNumberish[];
   incomingAssets?: AddressLike[];
   minIncomingAssetAmounts?: BigNumberish[];
-  incomingAssetAmounts?: BigNumberish[];
+  actualIncomingAssetAmounts?: BigNumberish[];
 }) {
   return encodeArgs(
-    ['address[]', 'uint256[]', 'address[]', 'uint256[]', 'uint256[]'],
-    [spendAssets, spendAssetAmounts, incomingAssets, minIncomingAssetAmounts, incomingAssetAmounts],
+    ['address[]', 'uint256[]', 'uint256[]', 'address[]', 'uint256[]', 'uint256[]'],
+    [
+      spendAssets,
+      maxSpendAssetAmounts,
+      actualSpendAssetAmounts,
+      incomingAssets,
+      minIncomingAssetAmounts,
+      actualIncomingAssetAmounts,
+    ],
   );
 }
 
@@ -45,10 +60,11 @@ export async function mockGenericSwap({
   mockGenericAdapter,
   selector = mockGenericSwapASelector,
   spendAssets = [],
-  spendAssetAmounts = [],
+  actualSpendAssetAmounts = [],
+  maxSpendAssetAmounts = actualSpendAssetAmounts,
   incomingAssets = [],
-  minIncomingAssetAmounts = [],
-  incomingAssetAmounts = [],
+  actualIncomingAssetAmounts = [],
+  minIncomingAssetAmounts = actualIncomingAssetAmounts,
   seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -58,25 +74,27 @@ export async function mockGenericSwap({
   mockGenericAdapter: MockGenericAdapter;
   selector?: BytesLike;
   spendAssets?: StandardToken[];
-  spendAssetAmounts?: BigNumberish[];
+  maxSpendAssetAmounts?: BigNumberish[];
+  actualSpendAssetAmounts?: BigNumberish[];
   incomingAssets?: StandardToken[];
   minIncomingAssetAmounts?: BigNumberish[];
-  incomingAssetAmounts?: BigNumberish[];
+  actualIncomingAssetAmounts?: BigNumberish[];
   seedFund?: boolean;
 }) {
   // Seed the VaultProxy with enough spendAssets for the tx
   if (seedFund) {
     for (const key in spendAssets) {
-      await spendAssets[key].transfer(vaultProxy, spendAssetAmounts[key]);
+      await spendAssets[key].transfer(vaultProxy, maxSpendAssetAmounts[key]);
     }
   }
 
   const swapArgs = mockGenericSwapArgs({
     spendAssets,
-    spendAssetAmounts,
+    maxSpendAssetAmounts,
+    actualSpendAssetAmounts,
     incomingAssets,
     minIncomingAssetAmounts,
-    incomingAssetAmounts,
+    actualIncomingAssetAmounts,
   });
 
   const callArgs = callOnIntegrationArgs({

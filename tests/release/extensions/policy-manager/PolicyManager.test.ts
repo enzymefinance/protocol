@@ -967,7 +967,7 @@ describe('validatePolicies', () => {
 
     // Define complex spend and incoming asset values to ensure correct data passed to PolicyManager
     const spendAssets = [weth, dai];
-    const spendAssetAmounts = [utils.parseEther('1'), utils.parseEther('1')];
+    const actualSpendAssetAmounts = [utils.parseEther('1'), utils.parseEther('1')];
     const incomingAssets = [dai, mln];
     const minIncomingAssetAmounts = [1234, 5678];
 
@@ -975,7 +975,7 @@ describe('validatePolicies', () => {
     // the incoming assets are not yet tracked, meaning the final token balance
     // will be the reported incoming asset amount
     // (rather than the diff in token balances from start to finish)
-    const incomingAssetAmounts = [utils.parseEther('10'), utils.parseEther('2')];
+    const actualIncomingAssetAmounts = [utils.parseEther('10'), utils.parseEther('2')];
 
     await mockGenericSwap({
       comptrollerProxy,
@@ -984,10 +984,10 @@ describe('validatePolicies', () => {
       fundOwner,
       mockGenericAdapter,
       spendAssets,
-      spendAssetAmounts,
+      actualSpendAssetAmounts,
       incomingAssets,
       minIncomingAssetAmounts,
-      incomingAssetAmounts,
+      actualIncomingAssetAmounts,
       seedFund: true,
     });
 
@@ -1014,7 +1014,7 @@ describe('validatePolicies', () => {
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
-        incomingAssetAmounts,
+        incomingAssetAmounts: actualIncomingAssetAmounts,
         outgoingAssets,
         outgoingAssetAmounts,
       }),

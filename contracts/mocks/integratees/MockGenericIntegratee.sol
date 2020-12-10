@@ -18,4 +18,20 @@ contract MockGenericIntegratee is SwapperBase {
             _assetsFromIntegrateeAmounts
         );
     }
+
+    function swapOnBehalf(
+        address payable _trader,
+        address[] calldata _assetsToIntegratee,
+        uint256[] calldata _assetsToIntegrateeAmounts,
+        address[] calldata _assetsFromIntegratee,
+        uint256[] calldata _assetsFromIntegrateeAmounts
+    ) external payable {
+        __swap(
+            _trader,
+            _assetsToIntegratee,
+            _assetsToIntegrateeAmounts,
+            _assetsFromIntegratee,
+            _assetsFromIntegrateeAmounts
+        );
+    }
 }
