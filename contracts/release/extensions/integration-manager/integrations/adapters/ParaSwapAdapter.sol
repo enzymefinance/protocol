@@ -221,7 +221,7 @@ contract ParaSwapAdapter is AdapterBase {
         // If there are network fees, unwrap enough WETH to cover the fees
         uint256 totalNetworkFees = __calcTotalNetworkFees(paths);
         if (totalNetworkFees > 0) {
-            IWETH(payable(WETH_TOKEN)).withdraw(totalNetworkFees);
+            __unwrapWeth(totalNetworkFees);
         }
 
         // Get the callData for the low-level multiSwap() call
@@ -240,10 +240,22 @@ contract ParaSwapAdapter is AdapterBase {
 
         // If fees were paid and ETH remains in the contract, wrap it as WETH so it can be returned
         if (totalNetworkFees > 0) {
-            uint256 ethBalance = payable(address(this)).balance;
-            if (ethBalance > 0) {
-                IWETH(payable(WETH_TOKEN)).deposit{value: ethBalance}();
-            }
+            __wrapEth();
+        }
+    }
+
+    /// @dev Helper to unwrap specified amount of WETH into ETH.
+    /// Avoids the stack-too-deep error.
+    function __unwrapWeth(uint256 _amount) private {
+        IWETH(payable(WETH_TOKEN)).withdraw(_amount);
+    }
+
+    /// @dev Helper to wrap all ETH in contract as WETH.
+    /// Avoids the stack-too-deep error.
+    function __wrapEth() private {
+        uint256 ethBalance = payable(address(this)).balance;
+        if (ethBalance > 0) {
+            IWETH(payable(WETH_TOKEN)).deposit{value: ethBalance}();
         }
     }
 

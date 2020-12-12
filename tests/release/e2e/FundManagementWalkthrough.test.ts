@@ -356,8 +356,8 @@ describe("Walkthrough a fund's lifecycle", () => {
   it('calculates the GAV of the fund with 20 assets', async () => {
     const calcGavTx = await comptrollerProxy.calcGav(true);
 
-    // Bumped from 1053404
-    expect(calcGavTx).toCostLessThan(1054000);
+    // Bumped from 927022
+    expect(calcGavTx).toCostLessThan(928000);
   });
 
   it('trades on Kyber again', async () => {
