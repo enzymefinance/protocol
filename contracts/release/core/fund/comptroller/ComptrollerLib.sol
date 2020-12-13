@@ -407,12 +407,11 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         __buySharesSetupHook(msg.sender, _investmentAmounts, gav);
 
         address denominationAssetCopy = denominationAsset;
-        uint256 denominationAssetUnit = 10**uint256(ERC20(denominationAssetCopy).decimals());
         address vaultProxyCopy = vaultProxy;
         uint256 sharePrice = __calcGrossShareValue(
             gav,
             ERC20(vaultProxyCopy).totalSupply(),
-            denominationAssetUnit
+            10**uint256(ERC20(denominationAssetCopy).decimals())
         );
 
         sharesReceivedAmounts_ = new uint256[](_buyers.length);
@@ -424,8 +423,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
                 vaultProxyCopy,
                 sharePrice,
                 gav,
-                denominationAssetCopy,
-                denominationAssetUnit
+                denominationAssetCopy
             );
 
             gav = gav.add(_investmentAmounts[i]);
@@ -447,8 +445,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         address _vaultProxy,
         uint256 _sharePrice,
         uint256 _preBuySharesGav,
-        address _denominationAsset,
-        uint256 _denominationAssetUnit
+        address _denominationAsset
     ) private timelockedSharesAction(_buyer) returns (uint256 sharesReceived_) {
         require(_investmentAmount > 0, "__buyShares: Empty _investmentAmount");
 
@@ -456,7 +453,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         __preBuySharesHook(_buyer, _investmentAmount, _minSharesQuantity, _preBuySharesGav);
 
         // Calculate the amount of shares to issue with the investment amount
-        uint256 sharesIssued = _investmentAmount.mul(_denominationAssetUnit).div(_sharePrice);
+        uint256 sharesIssued = _investmentAmount.mul(SHARES_UNIT).div(_sharePrice);
 
         // Mint shares to the buyer
         uint256 prevBuyerShares = ERC20(_vaultProxy).balanceOf(_buyer);

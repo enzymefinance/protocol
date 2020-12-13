@@ -183,6 +183,62 @@ describe('buyShares', () => {
     expect(await vaultProxy.totalSupply()).toEqBigNumber(investmentAmount.mul(2));
   });
 
+  it('works for a fund with a non-18 decimal denominationAsset', async () => {
+    const {
+      deployment: {
+        fundDeployer,
+        tokens: { usdc: denominationAsset },
+      },
+      accounts: [signer, buyer],
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Define the investment and expected shares amounts.
+    // For 1 unit (10^decimals()) of the denominationAsset, 1 shares unit (10^18) is expected.
+    const investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
+    const expectedSharesAmount = utils.parseEther('1');
+    const receipt = await buyShares({
+      comptrollerProxy,
+      signer,
+      buyers: [buyer],
+      denominationAsset,
+      investmentAmounts: [investmentAmount],
+      minSharesAmounts: [expectedSharesAmount],
+    });
+
+    // Assert correct event was emitted
+    assertEvent(receipt, 'SharesBought', {
+      caller: await signer.getAddress(),
+      buyer: await buyer.getAddress(),
+      investmentAmount,
+      sharesIssued: expectedSharesAmount,
+      sharesReceived: expectedSharesAmount,
+    });
+
+    // Assert GAV is the investment amount
+    const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
+    expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav, {
+      gav_: investmentAmount,
+      isValid_: true,
+    });
+
+    // Assert gross share value is the investment amount
+    const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
+    expect(calcGrossShareValueCall).toMatchFunctionOutput(comptrollerProxy.calcGrossShareValue, {
+      grossShareValue_: investmentAmount,
+      isValid_: true,
+    });
+
+    // Assert the correct amount of shares was minted to the buyer
+    const sharesBuyerBalanceCall = await vaultProxy.balanceOf(buyer);
+    expect(sharesBuyerBalanceCall).toEqBigNumber(expectedSharesAmount);
+  });
+
   it('does not allow a paused release, unless overridePause is set', async () => {
     const {
       deployment: {
