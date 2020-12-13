@@ -33,32 +33,6 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
         _;
     }
 
-    modifier onlyPermissionedAction(VaultAction _action) {
-        require(permissionedVaultActionAllowed, "onlyPermissionedAction: No action allowed");
-
-        bool isValidAction;
-        if (msg.sender == INTEGRATION_MANAGER) {
-            require(
-                _action == VaultAction.ApproveAssetSpender ||
-                    _action == VaultAction.AddTrackedAsset ||
-                    _action == VaultAction.RemoveTrackedAsset ||
-                    _action == VaultAction.WithdrawAssetTo,
-                "onlyPermissionedAction: Not valid for IntegrationManager"
-            );
-        } else if (msg.sender == FEE_MANAGER) {
-            require(
-                _action == VaultAction.BurnShares ||
-                    _action == VaultAction.MintShares ||
-                    _action == VaultAction.TransferShares,
-                "onlyPermissionedAction: Not valid for FeeManager"
-            );
-        } else {
-            revert("onlyPermissionedAction: Not a valid actor");
-        }
-
-        _;
-    }
-
     constructor(
         address _fundDeployer,
         address _feeManager,
@@ -77,8 +51,9 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
         override
         onlyNotPaused
         onlyActive
-        onlyPermissionedAction(_action)
     {
+        __assertPermissionedAction(msg.sender, _action);
+
         if (_action == VaultAction.AddTrackedAsset) {
             __addTrackedAsset(_actionData);
         } else if (_action == VaultAction.ApproveAssetSpender) {
@@ -95,6 +70,33 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
             __withdrawAssetTo(_actionData);
         }
     }
+
+    function __assertPermissionedAction(address _caller, VaultAction _action) private view {
+        require(permissionedVaultActionAllowed, "__assertPermissionedAction: No action allowed");
+
+        if (_caller == INTEGRATION_MANAGER) {
+            require(
+                _action == VaultAction.ApproveAssetSpender ||
+                    _action == VaultAction.AddTrackedAsset ||
+                    _action == VaultAction.RemoveTrackedAsset ||
+                    _action == VaultAction.WithdrawAssetTo,
+                "__assertPermissionedAction: Not valid for IntegrationManager"
+            );
+        } else if (_caller == FEE_MANAGER) {
+            require(
+                _action == VaultAction.BurnShares ||
+                    _action == VaultAction.MintShares ||
+                    _action == VaultAction.TransferShares,
+                "__assertPermissionedAction: Not valid for FeeManager"
+            );
+        } else {
+            revert("__assertPermissionedAction: Not a valid actor");
+        }
+    }
+
+    //////////////////////////
+    // PERMISSIONED ACTIONS //
+    //////////////////////////
 
     /// @dev Helper to add a tracked asset to the fund
     function __addTrackedAsset(bytes memory _actionData) private {
