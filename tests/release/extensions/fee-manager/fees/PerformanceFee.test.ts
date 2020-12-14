@@ -46,6 +46,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   // Mock a VaultProxy
   const mockVaultProxy = await VaultLib.mock(config.deployer);
   await mockVaultProxy.totalSupply.returns(0);
+  await mockVaultProxy.balanceOf.returns(0);
 
   // Mock a ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
@@ -129,7 +130,8 @@ async function assertAdjustedPerformance({
 
   // Calculate expected performance results for next settlement
   const feeInfo = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
-  const prevSharesOutstanding = await mockFeeManager.getFeeSharesOutstandingForFund(
+  const prevTotalSharesOutstanding = await mockVaultProxy.balanceOf(mockVaultProxy);
+  const prevPerformanceFeeSharesOutstanding = await mockFeeManager.getFeeSharesOutstandingForFund(
     mockComptrollerProxy,
     performanceFee,
   );
@@ -137,7 +139,8 @@ async function assertAdjustedPerformance({
   const { nextAggregateValueDue, nextSharePrice, sharesDue } = performanceFeeSharesDue({
     rate: feeInfo.rate,
     totalSharesSupply: prevTotalSharesSupply,
-    sharesOutstanding: prevSharesOutstanding,
+    totalSharesOutstanding: prevTotalSharesOutstanding,
+    performanceFeeSharesOutstanding: prevPerformanceFeeSharesOutstanding,
     gav: nextGav,
     highWaterMark: feeInfo.highWaterMark,
     prevSharePrice: feeInfo.lastSharePrice,
@@ -199,10 +202,10 @@ async function assertAdjustedPerformance({
   });
 
   // Set sharesOutstanding and new shares total supply
+  await mockVaultProxy.balanceOf.given(mockVaultProxy).returns(prevTotalSharesOutstanding.add(sharesDue));
   await mockFeeManager.getFeeSharesOutstandingForFund
     .given(mockComptrollerProxy, performanceFee)
-    .returns(prevSharesOutstanding.add(sharesDue));
-
+    .returns(prevPerformanceFeeSharesOutstanding.add(sharesDue));
   await mockVaultProxy.totalSupply.returns(prevTotalSharesSupply.add(sharesDue));
 
   return { feeSettlementType, settleReceipt };
@@ -812,9 +815,7 @@ describe('settle', () => {
     expect(feeSettlementType).toBe(FeeSettlementType.BurnSharesOutstanding);
 
     // Outstanding shares should be back to 0
-    await expect(
-      mockFeeManager.getFeeSharesOutstandingForFund(mockComptrollerProxy, performanceFee),
-    ).resolves.toEqBigNumber(0);
+    await expect(mockVaultProxy.balanceOf(mockVaultProxy)).resolves.toEqBigNumber(0);
   });
 });
 

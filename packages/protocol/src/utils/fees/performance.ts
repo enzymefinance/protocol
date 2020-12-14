@@ -19,7 +19,8 @@ export interface PerformanceFeeSharesDueInfo {
 export function performanceFeeSharesDue({
   rate,
   totalSharesSupply,
-  sharesOutstanding,
+  totalSharesOutstanding,
+  performanceFeeSharesOutstanding,
   gav,
   highWaterMark,
   prevSharePrice,
@@ -30,7 +31,8 @@ export function performanceFeeSharesDue({
 }: {
   rate: BigNumberish;
   totalSharesSupply: BigNumberish;
-  sharesOutstanding: BigNumberish;
+  totalSharesOutstanding: BigNumberish;
+  performanceFeeSharesOutstanding: BigNumberish;
   gav: BigNumberish;
   highWaterMark: BigNumberish;
   prevSharePrice: BigNumberish;
@@ -44,7 +46,7 @@ export function performanceFeeSharesDue({
 }): PerformanceFeeSharesDueInfo {
   const rateDivisor = utils.parseEther('1');
   const shareUnit = utils.parseEther('1');
-  const netSharesSupply = BigNumber.from(totalSharesSupply).sub(sharesOutstanding);
+  const netSharesSupply = BigNumber.from(totalSharesSupply).sub(totalSharesOutstanding);
 
   const sharePriceWithoutPerformance = BigNumber.from(gav).mul(shareUnit).div(netSharesSupply);
 
@@ -64,7 +66,7 @@ export function performanceFeeSharesDue({
     sharesSupply: netSharesSupply,
   });
 
-  const sharesDue = BigNumber.from(sharesDueForAggregateValueDue).sub(sharesOutstanding);
+  const sharesDue = BigNumber.from(sharesDueForAggregateValueDue).sub(performanceFeeSharesOutstanding);
 
   // Next share price
   let nextSharePrice = BigNumber.from(0);

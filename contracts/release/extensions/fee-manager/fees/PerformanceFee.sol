@@ -13,6 +13,9 @@ import "./utils/FeeBase.sol";
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A performance-based fee with configurable rate and crystallization period, using
 /// a high watermark
+/// @dev This contract assumes that all shares in the VaultProxy are shares outstanding,
+/// which is fine for this release. Even if they are not, they are still shares that
+/// are only claimable by the fund owner.
 contract PerformanceFee is FeeBase, SharesInflationMixin {
     using SignedSafeMath for int256;
 
@@ -338,13 +341,11 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
             return denominationAssetUnit;
         }
 
-        // Get shares outstanding from FeeManager and calc shares supply to get net shares supply
-        uint256 totalSharesSupply = ERC20(_vaultProxy).totalSupply();
+        // Get shares outstanding via VaultProxy balance and calc shares supply to get net shares supply
+        ERC20 vaultProxyContract = ERC20(_vaultProxy);
+        uint256 totalSharesSupply = vaultProxyContract.totalSupply();
         uint256 nextNetSharesSupply = totalSharesSupply.sub(
-            FeeManager(FEE_MANAGER).getFeeSharesOutstandingForFund(
-                _comptrollerProxy,
-                address(this)
-            )
+            vaultProxyContract.balanceOf(_vaultProxy)
         );
         if (nextNetSharesSupply == 0) {
             return denominationAssetUnit;
@@ -383,17 +384,18 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// Validated:
     /// _totalSharesSupply > 0
     /// _gav > 0
-    /// _totalSharesSupply != _sharesOutstanding
+    /// _totalSharesSupply != _totalSharesOutstanding
     function __calcPerformance(
+        address _comptrollerProxy,
         uint256 _totalSharesSupply,
-        uint256 _sharesOutstanding,
+        uint256 _totalSharesOutstanding,
         uint256 _prevAggregateValueDue,
         FeeInfo memory feeInfo,
         uint256 _gav
-    ) private pure returns (uint256 nextAggregateValueDue_, int256 sharesDue_) {
+    ) private view returns (uint256 nextAggregateValueDue_, int256 sharesDue_) {
         // Use the 'shares supply net shares outstanding' for performance calcs.
-        // Cannot be 0, as _totalSharesSupply != _sharesOutstanding
-        uint256 netSharesSupply = _totalSharesSupply.sub(_sharesOutstanding);
+        // Cannot be 0, as _totalSharesSupply != _totalSharesOutstanding
+        uint256 netSharesSupply = _totalSharesSupply.sub(_totalSharesOutstanding);
         uint256 sharePriceWithoutPerformance = _gav.mul(SHARE_UNIT).div(netSharesSupply);
 
         // If gross share price has not changed, can exit early
@@ -412,9 +414,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         );
 
         sharesDue_ = __calcSharesDue(
+            _comptrollerProxy,
             netSharesSupply,
             _gav,
-            _sharesOutstanding,
             nextAggregateValueDue_
         );
 
@@ -426,17 +428,25 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     /// _netSharesSupply > 0
     /// _gav > 0
     function __calcSharesDue(
+        address _comptrollerProxy,
         uint256 _netSharesSupply,
         uint256 _gav,
-        uint256 _sharesOutstanding,
         uint256 _nextAggregateValueDue
-    ) private pure returns (int256 sharesDue_) {
+    ) private view returns (int256 sharesDue_) {
         uint256 sharesDueForAggregateValueDue = __calcSharesDueWithInflation(
             _nextAggregateValueDue.mul(_netSharesSupply).div(_gav),
             _netSharesSupply
         );
         // Shares due is the +/- diff or the total shares outstanding already minted
-        return int256(sharesDueForAggregateValueDue).sub(int256(_sharesOutstanding));
+        return
+            int256(sharesDueForAggregateValueDue).sub(
+                int256(
+                    FeeManager(FEE_MANAGER).getFeeSharesOutstandingForFund(
+                        _comptrollerProxy,
+                        address(this)
+                    )
+                )
+            );
     }
 
     /// @dev Helper to calculate the max of two uint values
@@ -456,16 +466,15 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         address _vaultProxy,
         uint256 _gav
     ) private returns (int256 sharesDue_) {
-        uint256 totalSharesSupply = ERC20(_vaultProxy).totalSupply();
+        ERC20 sharesTokenContract = ERC20(_vaultProxy);
+
+        uint256 totalSharesSupply = sharesTokenContract.totalSupply();
         if (totalSharesSupply == 0) {
             return 0;
         }
 
-        uint256 sharesOutstanding = FeeManager(FEE_MANAGER).getFeeSharesOutstandingForFund(
-            _comptrollerProxy,
-            address(this)
-        );
-        if (sharesOutstanding == totalSharesSupply) {
+        uint256 totalSharesOutstanding = sharesTokenContract.balanceOf(_vaultProxy);
+        if (totalSharesOutstanding == totalSharesSupply) {
             return 0;
         }
 
@@ -474,8 +483,9 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
 
         uint256 nextAggregateValueDue;
         (nextAggregateValueDue, sharesDue_) = __calcPerformance(
+            _comptrollerProxy,
             totalSharesSupply,
-            sharesOutstanding,
+            totalSharesOutstanding,
             prevAggregateValueDue,
             feeInfo,
             _gav
