@@ -9,18 +9,21 @@ import {
   mockGenericSwap,
   mockGenericSwapArgs,
   mockGenericSwapASelector,
+  mockGenericSwapDirectFromVaultSelector,
 } from '@melonproject/testutils';
 import {
-  MockGenericAdapter,
-  StandardToken,
-  ComptrollerLib,
-  IntegrationManager,
-  VaultLib,
   callOnIntegrationArgs,
+  ComptrollerLib,
+  encodeArgs,
+  IntegrationManager,
+  IntegrationManagerActionId,
+  MockGenericAdapter,
   PolicyHook,
+  sighash,
+  StandardToken,
   validateRulePostCoIArgs,
   validateRulePreCoIArgs,
-  IntegrationManagerActionId,
+  VaultLib,
 } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -335,6 +338,51 @@ describe('callOnIntegration', () => {
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
   });
 
+  it('does not allow spendAsset spent to be greater than expected', async () => {
+    const {
+      deployment: {
+        integrationManager,
+        fundDeployer,
+        mockGenericAdapter,
+        mockGenericIntegratee,
+        tokens: { weth: outgoingAsset },
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    const maxSpendAssetAmount = utils.parseEther('1');
+    const actualSpendAssetAmount = maxSpendAssetAmount.add(1);
+
+    // Seed fund with actualSpendAssetAmount
+    await outgoingAsset.transfer(vaultProxy, actualSpendAssetAmount);
+
+    // Approve the adapter's integratee to directly use a VaultProxy's balance of the spendAsset,
+    // by registering the token's approve() function for use in vaultCallOnContract()
+    const approveSelector = sighash(outgoingAsset.approve.fragment);
+    await fundDeployer.registerVaultCalls([outgoingAsset], [approveSelector]);
+    await comptrollerProxy
+      .connect(fundOwner)
+      .vaultCallOnContract(
+        outgoingAsset,
+        approveSelector,
+        encodeArgs(['address', 'uint256'], [mockGenericIntegratee, actualSpendAssetAmount]),
+      );
+
+    await expect(
+      mockGenericSwap({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        mockGenericAdapter,
+        selector: mockGenericSwapDirectFromVaultSelector,
+        spendAssets: [outgoingAsset],
+        maxSpendAssetAmounts: [maxSpendAssetAmount],
+        actualSpendAssetAmounts: [actualSpendAssetAmount],
+      }),
+    ).rejects.toBeRevertedWith('Spent amount greater than expected');
+  });
+
   it('does not allow incomingAsset received to be less than expected', async () => {
     const {
       deployment: {
@@ -444,7 +492,7 @@ describe('callOnIntegration', () => {
         incomingAssets: [incomingAsset],
         minIncomingAssetAmounts: [utils.parseEther('1')],
       }),
-    ).rejects.toBeRevertedWith('Empty spend asset amount');
+    ).rejects.toBeRevertedWith('Empty max spend asset amount');
   });
 
   it('does not allow a fund to exceed the trackedAssetsLimit', async () => {

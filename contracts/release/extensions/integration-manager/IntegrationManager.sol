@@ -260,7 +260,7 @@ contract IntegrationManager is
             uint256[] memory minIncomingAssetAmounts,
             SpendAssetsHandleType spendAssetsHandleType,
             address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
+            uint256[] memory maxSpendAssetAmounts,
             uint256[] memory preCallSpendAssetBalances
         ) = __preProcessCoI(vaultProxy, _callArgs);
 
@@ -270,7 +270,7 @@ contract IntegrationManager is
             abi.encode(
                 spendAssetsHandleType,
                 spendAssets,
-                spendAssetAmounts,
+                maxSpendAssetAmounts,
                 expectedIncomingAssets
             )
         );
@@ -286,6 +286,7 @@ contract IntegrationManager is
             preCallIncomingAssetBalances,
             minIncomingAssetAmounts,
             spendAssets,
+            maxSpendAssetAmounts,
             preCallSpendAssetBalances
         );
 
@@ -413,7 +414,7 @@ contract IntegrationManager is
             uint256[] memory minIncomingAssetAmounts_,
             SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
+            uint256[] memory maxSpendAssetAmounts_,
             uint256[] memory preCallSpendAssetBalances_
         )
     {
@@ -430,12 +431,12 @@ contract IntegrationManager is
         (
             spendAssetsHandleType_,
             spendAssets_,
-            spendAssetAmounts_,
+            maxSpendAssetAmounts_,
             expectedIncomingAssets_,
             minIncomingAssetAmounts_
         ) = IIntegrationAdapter(adapter).parseAssetsForMethod(selector, integrationData);
         require(
-            spendAssets_.length == spendAssetAmounts_.length,
+            spendAssets_.length == maxSpendAssetAmounts_.length,
             "__preProcessCoI: Spend assets arrays unequal"
         );
         require(
@@ -483,7 +484,7 @@ contract IntegrationManager is
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
         for (uint256 i = 0; i < spendAssets_.length; i++) {
             require(spendAssets_[i] != address(0), "__preProcessCoI: Empty spend asset");
-            require(spendAssetAmounts_[i] > 0, "__preProcessCoI: Empty spend asset amount");
+            require(maxSpendAssetAmounts_[i] > 0, "__preProcessCoI: Empty max spend asset amount");
             // A spend asset must either be a tracked asset of the fund or a supported asset,
             // in order to prevent seeding the fund with a malicious token and performing arbitrary
             // actions within an adapter.
@@ -510,9 +511,14 @@ contract IntegrationManager is
             if (spendAssetsHandleType_ == SpendAssetsHandleType.Approve) {
                 // Use exact approve amount rather than increasing allowances,
                 // because all adapters finish their actions atomically.
-                __approveAssetSpender(msg.sender, spendAssets_[i], adapter, spendAssetAmounts_[i]);
+                __approveAssetSpender(
+                    msg.sender,
+                    spendAssets_[i],
+                    adapter,
+                    maxSpendAssetAmounts_[i]
+                );
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Transfer) {
-                __withdrawAssetTo(msg.sender, spendAssets_[i], adapter, spendAssetAmounts_[i]);
+                __withdrawAssetTo(msg.sender, spendAssets_[i], adapter, maxSpendAssetAmounts_[i]);
             }
         }
     }
@@ -547,6 +553,7 @@ contract IntegrationManager is
         uint256[] memory _preCallIncomingAssetBalances,
         uint256[] memory _minIncomingAssetAmounts,
         address[] memory _spendAssets,
+        uint256[] memory _maxSpendAssetAmounts,
         uint256[] memory _preCallSpendAssetBalances
     )
         private
@@ -564,7 +571,12 @@ contract IntegrationManager is
             outgoingAssetAmounts_,
             increasedSpendAssets,
             increasedSpendAssetAmounts
-        ) = __reconcileCoISpendAssets(_vaultProxy, _spendAssets, _preCallSpendAssetBalances);
+        ) = __reconcileCoISpendAssets(
+            _vaultProxy,
+            _spendAssets,
+            _maxSpendAssetAmounts,
+            _preCallSpendAssetBalances
+        );
 
         (incomingAssets_, incomingAssetAmounts_) = __reconcileCoIIncomingAssets(
             _vaultProxy,
@@ -632,6 +644,7 @@ contract IntegrationManager is
     function __reconcileCoISpendAssets(
         address _vaultProxy,
         address[] memory _spendAssets,
+        uint256[] memory _maxSpendAssetAmounts,
         uint256[] memory _preCallSpendAssetBalances
     )
         private
@@ -685,6 +698,10 @@ contract IntegrationManager is
                         postCallSpendAssetBalances[i]
                     );
                 }
+                require(
+                    outgoingAssetAmounts_[outgoingAssetsIndex] <= _maxSpendAssetAmounts[i],
+                    "__reconcileCoISpendAssets: Spent amount greater than expected"
+                );
 
                 outgoingAssets_[outgoingAssetsIndex] = _spendAssets[i];
                 outgoingAssetsIndex++;
