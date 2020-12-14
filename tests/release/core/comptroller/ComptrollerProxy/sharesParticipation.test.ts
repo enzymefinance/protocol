@@ -1,14 +1,16 @@
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
+import { feeManagerConfigArgs, ReleaseStatusTypes, StandardToken } from '@melonproject/protocol';
 import {
   assertEvent,
   buyShares,
+  createFundDeployer,
+  createMigratedFundConfig,
   createNewFund,
   defaultTestDeployment,
   generateRegisteredMockFees,
   getAssetBalances,
   redeemShares,
 } from '@melonproject/testutils';
-import { StandardToken, feeManagerConfigArgs, ReleaseStatusTypes } from '@melonproject/protocol';
 import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -73,6 +75,70 @@ describe('buyShares', () => {
         investmentAmounts: [investmentAmount],
       }),
     ).rejects.toBeRevertedWith('Re-entrance');
+  });
+
+  it('does not allow a fund that is pending migration', async () => {
+    const {
+      accounts: [signer, buyer],
+      config: { deployer },
+      deployment: {
+        assetFinalityResolver,
+        chainlinkPriceFeed,
+        dispatcher,
+        feeManager,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+      },
+      fund: { comptrollerProxy: prevComptrollerProxy, denominationAsset, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    // Create a new FundDeployer to migrate to
+    const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
+      deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    // Create fund config on the new FundDeployer to migrate to
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+    });
+
+    // Signal migration
+    await nextFundDeployer.connect(fundOwner).signalMigration(vaultProxy, nextComptrollerProxy);
+
+    // buyShares() should fail while migration is pending
+    await expect(
+      buyShares({
+        comptrollerProxy: prevComptrollerProxy,
+        signer,
+        buyers: [buyer],
+        denominationAsset,
+      }),
+    ).rejects.toBeRevertedWith('Pending migration');
+
+    // If the migration is cancelled, buyShares() should succeed again
+    await nextFundDeployer.connect(fundOwner).cancelMigration(vaultProxy);
+    await expect(
+      buyShares({
+        comptrollerProxy: prevComptrollerProxy,
+        signer,
+        buyers: [buyer],
+        denominationAsset,
+      }),
+    ).resolves.toBeReceipt();
   });
 
   it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');

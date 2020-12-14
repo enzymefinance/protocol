@@ -4,6 +4,7 @@ pragma solidity 0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
@@ -31,6 +32,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     // Constants and immutables - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable ASSET_FINALITY_RESOLVER;
+    address private immutable DISPATCHER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
     address private immutable FUND_LIFECYCLE_LIB;
@@ -58,7 +60,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     }
 
     modifier onlyActive() {
-        __assertIsActive();
+        __assertIsActive(vaultProxy);
         _;
     }
 
@@ -90,8 +92,8 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
 
     /// @dev Since vaultProxy is set during activate(),
     /// we can check that var rather than storing additional state
-    function __assertIsActive() private view {
-        require(vaultProxy != address(0), "Fund not active");
+    function __assertIsActive(address _vaultProxy) private pure {
+        require(_vaultProxy != address(0), "Fund not active");
     }
 
     function __assertIsDelegateCall() private view {
@@ -126,6 +128,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     }
 
     constructor(
+        address _dispatcher,
         address _fundDeployer,
         address _valueInterpreter,
         address _feeManager,
@@ -136,6 +139,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         address _assetFinalityResolver
     ) public {
         ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
+        DISPATCHER = _dispatcher;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         FUND_LIFECYCLE_LIB = _fundLifecycleLib;
@@ -381,14 +385,13 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     /// @return sharesReceivedAmounts_ The actual amounts of shares received
     /// by the corresponding _buyers
     /// @dev Param arrays have indexes corresponding to individual __buyShares() orders.
-    /// Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls
+    /// Does not use onlyDelegateCall, as __assertIsActive() will only be true in delegate calls.
     function buyShares(
         address[] calldata _buyers,
         uint256[] calldata _investmentAmounts,
         uint256[] calldata _minSharesQuantities
     )
         external
-        onlyActive
         onlyNotPaused
         locksReentrance
         allowsPermissionedVaultAction
@@ -401,13 +404,19 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
             "buyShares: Unequal arrays"
         );
 
+        address vaultProxyCopy = vaultProxy;
+        __assertIsActive(vaultProxyCopy);
+        require(
+            !IDispatcher(DISPATCHER).hasMigrationRequest(vaultProxyCopy),
+            "buyShares: Pending migration"
+        );
+
         (uint256 gav, bool gavIsValid) = calcGav(true);
         require(gavIsValid, "buyShares: Invalid GAV");
 
         __buySharesSetupHook(msg.sender, _investmentAmounts, gav);
 
         address denominationAssetCopy = denominationAsset;
-        address vaultProxyCopy = vaultProxy;
         uint256 sharePrice = __calcGrossShareValue(
             gav,
             ERC20(vaultProxyCopy).totalSupply(),
@@ -790,6 +799,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
 
     /// @notice Gets the routes for the various contracts used by all funds
     /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
+    /// @return dispatcher_ The `DISPATCHER` variable value
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
     /// @return fundLifecycleLib_ The `FUND_LIFECYCLE_LIB` variable value
@@ -802,6 +812,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         view
         returns (
             address assetFinalityResolver_,
+            address dispatcher_,
             address feeManager_,
             address fundDeployer_,
             address fundLifecycleLib_,
@@ -813,6 +824,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     {
         return (
             ASSET_FINALITY_RESOLVER,
+            DISPATCHER,
             FEE_MANAGER,
             FUND_DEPLOYER,
             FUND_LIFECYCLE_LIB,

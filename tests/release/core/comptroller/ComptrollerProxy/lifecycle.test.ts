@@ -49,6 +49,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   const comptrollerLib = await ComptrollerLib.deploy(
     config.deployer,
+    config.dispatcher,
     mockFundDeployer,
     randomAddress(), // ValueInterpreter
     mockFeeManager,

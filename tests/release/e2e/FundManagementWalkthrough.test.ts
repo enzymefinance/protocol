@@ -39,12 +39,12 @@ const expectedGasCosts = {
     usdc: 655000,
   },
   'buy shares: denomination asset only: first investment': {
-    weth: 410000,
-    usdc: 424000,
+    weth: 412000,
+    usdc: 426000,
   },
   'buy shares: denomination asset only: second investment': {
-    weth: 453000,
-    usdc: 469000,
+    weth: 455000,
+    usdc: 471000,
   },
   'calc gav: denomination asset only': {
     weth: 57000,
@@ -65,8 +65,8 @@ const expectedGasCosts = {
     usdc: 2465000,
   },
   'buy shares: max assets': {
-    weth: 1327000,
-    usdc: 1596000,
+    weth: 1329000,
+    usdc: 1598000,
   },
   'redeem all shares: max assets: all remaining': {
     weth: 1661000,

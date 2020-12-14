@@ -179,6 +179,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async comptrollerLib(config, deployment) {
     const comptrollerLib = await ComptrollerLib.deploy(
       config.deployer,
+      config.dispatcher,
       await deployment.fundDeployer,
       await deployment.valueInterpreter,
       await deployment.feeManager,

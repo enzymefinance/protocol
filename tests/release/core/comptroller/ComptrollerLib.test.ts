@@ -18,6 +18,7 @@ describe('constructor', () => {
       deployment: {
         assetFinalityResolver,
         comptrollerLib,
+        dispatcher,
         feeManager,
         fundDeployer,
         fundLifecycleLib,
@@ -31,6 +32,7 @@ describe('constructor', () => {
     const routesCall = await comptrollerLib.getLibRoutes();
     expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes, {
       assetFinalityResolver_: assetFinalityResolver,
+      dispatcher_: dispatcher,
       feeManager_: feeManager,
       fundDeployer_: fundDeployer,
       fundLifecycleLib_: fundLifecycleLib,

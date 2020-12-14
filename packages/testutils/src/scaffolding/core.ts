@@ -61,6 +61,7 @@ export async function createFundDeployer({
   );
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
+    dispatcher,
     nextFundDeployer,
     valueInterpreter,
     feeManager,
