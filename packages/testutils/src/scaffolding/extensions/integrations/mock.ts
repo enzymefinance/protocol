@@ -12,6 +12,10 @@ import {
   IntegrationManagerActionId,
 } from '@melonproject/protocol';
 
+export const mockGenericRemoveOnlySelector = sighash(
+  utils.FunctionFragment.fromString('removeOnly(address,bytes,bytes)'),
+);
+
 export const mockGenericSwapASelector = sighash(utils.FunctionFragment.fromString('swapA(address,bytes,bytes)'));
 
 export const mockGenericSwapBSelector = sighash(utils.FunctionFragment.fromString('swapB(address,bytes,bytes)'));

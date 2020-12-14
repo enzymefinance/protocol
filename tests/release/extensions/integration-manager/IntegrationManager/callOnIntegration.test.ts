@@ -6,6 +6,7 @@ import {
   defaultTestDeployment,
   createNewFund,
   getAssetBalances,
+  mockGenericRemoveOnlySelector,
   mockGenericSwap,
   mockGenericSwapArgs,
   mockGenericSwapASelector,
@@ -1434,17 +1435,111 @@ describe('valid calls', () => {
         actualIncomingAssetAmounts: [utils.parseEther('1')],
       }),
     ).resolves.toBeReceipt();
+  });
 
-    it.todo(
-      'attempts to reach finality for an incomingAsset, but does not fail if it cannot settle (e.g., an unsettleable Synth)',
+  it('handles SpendAssetsTransferType.Remove by removing spend assets from trackedAssets', async () => {
+    const {
+      deployment: {
+        integrationManager,
+        mockGenericAdapter,
+        policyManager,
+        tokens: { mln: spendAsset1, weth: spendAsset2 },
+        trackedAssetsAdapter,
+      },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    const spendAsset1Amount = utils.parseEther('2');
+    const spendAsset2Amount = utils.parseEther('1');
+
+    // Seed and track the spend assets in the VaultProxy
+    spendAsset1.transfer(vaultProxy, spendAsset1Amount);
+    spendAsset2.transfer(vaultProxy, spendAsset2Amount);
+    await addTrackedAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      trackedAssetsAdapter,
+      incomingAssets: [spendAsset1, spendAsset2],
+    });
+
+    // Confirm that both spend assets are tracked assets
+    expect(await vaultProxy.isTrackedAsset(spendAsset1)).toBe(true);
+    expect(await vaultProxy.isTrackedAsset(spendAsset2)).toBe(true);
+
+    const spendAssets = [spendAsset1, spendAsset2];
+    const swapArgs = {
+      spendAssets,
+      actualSpendAssetAmounts: Array(spendAssets.length).fill(BigNumber.from(1)), // actualSpendAssetAmounts being exceeded should not matter
+    };
+    const adapter = mockGenericAdapter;
+    const selector = mockGenericRemoveOnlySelector;
+
+    // Remove both spend assets from the fund
+    const receipt = await mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      selector,
+      ...swapArgs,
+    });
+
+    // Confirm that both spend assets are no longer tracked assets
+    expect(await vaultProxy.isTrackedAsset(spendAsset1)).toBe(false);
+    expect(await vaultProxy.isTrackedAsset(spendAsset2)).toBe(false);
+
+    // The full balance of the removed assets should be the reported outgoingAssetAmounts
+    const outgoingAssetAmounts = [spendAsset1Amount, spendAsset2Amount];
+
+    // Assert the expected event
+    assertEvent(receipt, integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund'), {
+      adapter,
+      comptrollerProxy,
+      caller: fundOwner,
+      incomingAssets: [],
+      incomingAssetAmounts: [],
+      outgoingAssets: spendAssets,
+      outgoingAssetAmounts,
+      selector,
+      integrationData: mockGenericSwapArgs({ ...swapArgs }),
+      vaultProxy,
+    });
+
+    // Assert correct calls to PolicyManager
+    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.PreCallOnIntegration,
+      validateRulePreCoIArgs({
+        adapter,
+        selector,
+      }),
+    );
+
+    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.PostCallOnIntegration,
+      validateRulePostCoIArgs({
+        adapter,
+        selector,
+        incomingAssets: [],
+        incomingAssetAmounts: [],
+        outgoingAssets: spendAssets,
+        outgoingAssetAmounts,
+      }),
     );
   });
 
-  describe('SpendAssetsHandleType', () => {
-    it.todo('does not approve or transfer a spend asset if type is `None`');
+  it.todo(
+    'attempts to reach finality for an incomingAsset, but does not fail if it cannot settle (e.g., an unsettleable Synth)',
+  );
+});
 
-    it.todo('approves adapter with spend asset allowance if type is `Approve`');
+describe('SpendAssetsHandleType', () => {
+  it.todo('does not approve or transfer a spend asset if type is `None`');
 
-    it.todo('transfers spend asset to adapter if type is `Transfer`');
-  });
+  it.todo('approves adapter with spend asset allowance if type is `Approve`');
+
+  it.todo('transfers spend asset to adapter if type is `Transfer`');
 });

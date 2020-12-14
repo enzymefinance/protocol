@@ -285,6 +285,7 @@ contract IntegrationManager is
             expectedIncomingAssets,
             preCallIncomingAssetBalances,
             minIncomingAssetAmounts,
+            spendAssetsHandleType,
             spendAssets,
             maxSpendAssetAmounts,
             preCallSpendAssetBalances
@@ -519,6 +520,8 @@ contract IntegrationManager is
                 );
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Transfer) {
                 __withdrawAssetTo(msg.sender, spendAssets_[i], adapter, maxSpendAssetAmounts_[i]);
+            } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Remove) {
+                __removeTrackedAsset(msg.sender, spendAssets_[i]);
             }
         }
     }
@@ -552,6 +555,7 @@ contract IntegrationManager is
         address[] memory _expectedIncomingAssets,
         uint256[] memory _preCallIncomingAssetBalances,
         uint256[] memory _minIncomingAssetAmounts,
+        SpendAssetsHandleType _spendAssetsHandleType,
         address[] memory _spendAssets,
         uint256[] memory _maxSpendAssetAmounts,
         uint256[] memory _preCallSpendAssetBalances
@@ -573,6 +577,7 @@ contract IntegrationManager is
             increasedSpendAssetAmounts
         ) = __reconcileCoISpendAssets(
             _vaultProxy,
+            _spendAssetsHandleType,
             _spendAssets,
             _maxSpendAssetAmounts,
             _preCallSpendAssetBalances
@@ -643,6 +648,7 @@ contract IntegrationManager is
     /// the spendAsset, which would be transferred to the fund at the end of the tx.
     function __reconcileCoISpendAssets(
         address _vaultProxy,
+        SpendAssetsHandleType _spendAssetsHandleType,
         address[] memory _spendAssets,
         uint256[] memory _maxSpendAssetAmounts,
         uint256[] memory _preCallSpendAssetBalances
@@ -662,6 +668,12 @@ contract IntegrationManager is
         for (uint256 i = 0; i < _spendAssets.length; i++) {
             // If spend asset's initial balance is 0, then it is an incoming asset
             if (_preCallSpendAssetBalances[i] == 0) {
+                continue;
+            }
+
+            // Handle SpendAssetsHandleType.Remove separately
+            if (_spendAssetsHandleType == SpendAssetsHandleType.Remove) {
+                outgoingAssetsCount++;
                 continue;
             }
 
@@ -685,6 +697,15 @@ contract IntegrationManager is
         for (uint256 i = 0; i < _spendAssets.length; i++) {
             // If spend asset's initial balance is 0, then it is an incoming asset.
             if (_preCallSpendAssetBalances[i] == 0) {
+                continue;
+            }
+
+            // Handle SpendAssetsHandleType.Remove separately.
+            // No need to validate the max spend asset amount.
+            if (_spendAssetsHandleType == SpendAssetsHandleType.Remove) {
+                outgoingAssets_[outgoingAssetsIndex] = _spendAssets[i];
+                outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i];
+                outgoingAssetsIndex++;
                 continue;
             }
 

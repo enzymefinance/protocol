@@ -58,7 +58,7 @@ const expectedGasCosts = {
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
     weth: 1864000,
-    usdc: 2615000,
+    usdc: 2616000,
   },
   'redeem partial shares: max assets': {
     weth: 2217000,
