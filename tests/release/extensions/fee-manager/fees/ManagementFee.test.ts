@@ -85,6 +85,64 @@ describe('constructor', () => {
   });
 });
 
+describe('activateForFund', () => {
+  it('can only be called by the FeeManager', async () => {
+    const { mockComptrollerProxy, mockVaultProxy, standaloneManagementFee } = await provider.snapshot(snapshot);
+
+    await expect(
+      standaloneManagementFee.activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
+  });
+
+  // i.e., a new fund
+  it('correctly handles valid call for a fund with no shares (does nothing)', async () => {
+    const {
+      EOAFeeManager,
+      mockComptrollerProxy,
+      mockVaultProxy,
+      scaledPerSecondRate,
+      standaloneManagementFee,
+    } = await provider.snapshot(snapshot);
+
+    // Activate fund
+    await standaloneManagementFee.connect(EOAFeeManager).activateForFund(mockComptrollerProxy, mockVaultProxy);
+
+    // Assert lastSettled has not been set
+    const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(mockComptrollerProxy);
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund, {
+      lastSettled: 0,
+      scaledPerSecondRate,
+    });
+  });
+
+  // i.e., a migrated fund
+  it('correctly handles valid call for a fund with no shares (sets lastSettled)', async () => {
+    const {
+      EOAFeeManager,
+      mockComptrollerProxy,
+      mockVaultProxy,
+      scaledPerSecondRate,
+      standaloneManagementFee,
+    } = await provider.snapshot(snapshot);
+
+    // Set the shares supply to be > 0
+    await mockVaultProxy.totalSupply.returns(1);
+
+    // Activate fund
+    const receipt = await standaloneManagementFee
+      .connect(EOAFeeManager)
+      .activateForFund(mockComptrollerProxy, mockVaultProxy);
+
+    // Assert lastSettled has been set to the tx timestamp
+    const activationTimestamp = await transactionTimestamp(receipt);
+    const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(mockComptrollerProxy);
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund, {
+      lastSettled: activationTimestamp,
+      scaledPerSecondRate,
+    });
+  });
+});
+
 describe('addFundSettings', () => {
   it('can only be called by the FeeManager', async () => {
     const { scaledPerSecondRate, mockComptrollerProxy, standaloneManagementFee } = await provider.snapshot(snapshot);

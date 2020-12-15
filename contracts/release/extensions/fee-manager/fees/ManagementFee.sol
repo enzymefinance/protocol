@@ -34,6 +34,20 @@ contract ManagementFee is FeeBase, MakerDaoMath {
 
     // EXTERNAL FUNCTIONS
 
+    /// @notice Activates the fee for a fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
+    function activateForFund(address _comptrollerProxy, address _vaultProxy)
+        external
+        override
+        onlyFeeManager
+    {
+        // It is only necessary to set `lastSettled` for a migrated fund
+        if (VaultLib(_vaultProxy).totalSupply() > 0) {
+            comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
+        }
+    }
+
     /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the fee for a fund
