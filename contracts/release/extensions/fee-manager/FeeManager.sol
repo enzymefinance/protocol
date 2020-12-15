@@ -119,7 +119,8 @@ contract FeeManager is
         bytes calldata _callArgs
     ) external override {
         if (_actionId == 0) {
-            __invokeContinuousHookForFees(msg.sender, _callArgs);
+            // Settle and update all continuous fees
+            __invokeHook(msg.sender, IFeeManager.FeeHook.Continuous, "", 0, true);
         } else if (_actionId == 1) {
             __payoutSharesOutstandingForFees(msg.sender, _callArgs);
         } else {
@@ -211,22 +212,12 @@ contract FeeManager is
         );
     }
 
-    /// @dev Calls settle() and update() on the specified fees that implement the `Continuous`
-    /// fee hook. Only callable via ComptrollerProxy.callOnExtension().
-    function __invokeContinuousHookForFees(address _comptrollerProxy, bytes memory _callArgs)
-        private
-    {
-        __invokeHookForFees(
-            _comptrollerProxy,
-            IFeeManager.FeeHook.Continuous,
-            "",
-            0,
-            true,
-            abi.decode(_callArgs, (address[]))
-        );
-    }
-
-    /// @dev Helper to run __invokeHookForFees() on all enabled fees for a fund
+    /// @dev Helper to run settle() on all enabled fees for a fund that implement a given hook, and then to
+    /// optionally run update() on the same fees. This order allows fees an opportunity to update
+    /// their local state after all VaultProxy state transitions (i.e., minting, burning,
+    /// transferring shares) have finished. To optimize for the expensive operation of calculating
+    /// GAV, once one fee requires GAV, we recycle that `gav` value for subsequent fees.
+    /// Assumes that _gav is either 0 or has already been validated.
     function __invokeHook(
         address _comptrollerProxy,
         FeeHook _hook,
@@ -234,31 +225,8 @@ contract FeeManager is
         uint256 _gav,
         bool _updateFees
     ) private {
-        __invokeHookForFees(
-            _comptrollerProxy,
-            _hook,
-            _settlementData,
-            _gav,
-            _updateFees,
-            comptrollerProxyToFees[_comptrollerProxy]
-        );
-    }
-
-    /// @dev Helper to run settle() on the specified fees that implement a given hook, and then to
-    /// optionally run update() on the same fees. This order allows fees an opportunity to update
-    /// their local state after all VaultProxy state transitions (i.e., minting, burning,
-    /// transferring shares) have finished. To optimize for the expensive operation of calculating
-    /// GAV, once one fee requires GAV, we recycle that `gav` value for subsequent fees.
-    /// Assumes that _gav is either 0 or has already been validated.
-    function __invokeHookForFees(
-        address _comptrollerProxy,
-        FeeHook _hook,
-        bytes memory _settlementData,
-        uint256 _gav,
-        bool _updateFees,
-        address[] memory _fees
-    ) private {
-        if (_fees.length == 0) {
+        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
+        if (fees.length == 0) {
             return;
         }
 
@@ -266,53 +234,46 @@ contract FeeManager is
 
         // This check isn't strictly necessary, but its cost is insignificant,
         // and helps to preserve data integrity.
-        require(vaultProxy != address(0), "__invokeHookForFees: Fund is not active");
+        require(vaultProxy != address(0), "__invokeHook: Fund is not active");
 
         // Reassign _gav input to actualGav
         uint256 actualGav = _gav;
 
         // First, allow all fees to implement settle()
-        for (uint256 i; i < _fees.length; i++) {
-            if (!feeSettlesOnHook(_fees[i], _hook)) {
+        for (uint256 i; i < fees.length; i++) {
+            if (!feeSettlesOnHook(fees[i], _hook)) {
                 continue;
             }
 
             // Get the canonical value of GAV if not yet set and required by fee
-            if (actualGav == 0 && feeUsesGavOnSettle(_fees[i])) {
+            if (actualGav == 0 && feeUsesGavOnSettle(fees[i])) {
                 // Assumes that any fee that requires GAV would need to revert if invalid or not final
                 bool gavIsValid;
                 (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav(true);
-                require(gavIsValid, "__invokeHookForFees: Invalid GAV");
+                require(gavIsValid, "__invokeHook: Invalid GAV");
             }
 
-            __settleFee(
-                _comptrollerProxy,
-                vaultProxy,
-                _fees[i],
-                _hook,
-                _settlementData,
-                actualGav
-            );
+            __settleFee(_comptrollerProxy, vaultProxy, fees[i], _hook, _settlementData, actualGav);
         }
 
         // Second, allow fees to implement update()
         // This function does not allow any further altering of VaultProxy state
         // (i.e., burning, minting, or transferring shares)
         if (_updateFees) {
-            for (uint256 i; i < _fees.length; i++) {
-                if (!feeUpdatesOnHook(_fees[i], _hook)) {
+            for (uint256 i; i < fees.length; i++) {
+                if (!feeUpdatesOnHook(fees[i], _hook)) {
                     continue;
                 }
 
                 // Get the canonical value of GAV if not yet set and required by fee
-                if (actualGav == 0 && feeUsesGavOnUpdate(_fees[i])) {
+                if (actualGav == 0 && feeUsesGavOnUpdate(fees[i])) {
                     // Assumes that any fee that requires GAV would need to revert if invalid or not final
                     bool gavIsValid;
                     (actualGav, gavIsValid) = IComptroller(_comptrollerProxy).calcGav(true);
                     require(gavIsValid, "__invokeHookForFees: Invalid GAV");
                 }
 
-                IFee(_fees[i]).update(
+                IFee(fees[i]).update(
                     _comptrollerProxy,
                     vaultProxy,
                     _hook,

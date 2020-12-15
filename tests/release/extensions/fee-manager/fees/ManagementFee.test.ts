@@ -8,7 +8,6 @@ import {
   FeeManagerActionId,
   feeManagerConfigArgs,
   FeeSettlementType,
-  invokeContinuousHookForFeesArgs,
   ManagementFee,
   managementFeeConfigArgs,
   managementFeeSharesDue,
@@ -441,8 +440,7 @@ describe('integration', () => {
       signer: fundOwner,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs([managementFee]),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);
@@ -640,8 +638,7 @@ describe('integration', () => {
       signer: fundOwner,
       comptrollerProxy: nextComptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs([managementFee]),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     const buySharesTimestamp = await transactionTimestamp(buySharesReceipt);

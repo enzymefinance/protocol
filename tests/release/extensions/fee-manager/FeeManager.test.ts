@@ -9,7 +9,6 @@ import {
   FeeSettlementType,
   FeeHook,
   FeeManagerActionId,
-  invokeContinuousHookForFeesArgs,
   payoutSharesOutstandingForFeesArgs,
 } from '@melonproject/protocol';
 import {
@@ -245,8 +244,7 @@ describe('receiveCallFromComptroller', () => {
     const receipt = await callOnExtension({
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Check that the FeeSettledForFund event has been emitted
@@ -456,7 +454,6 @@ describe('invokeHook', () => {
       deployment: { feeManager },
       denominationAsset,
       createFund,
-      fees,
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createFund();
@@ -473,8 +470,7 @@ describe('invokeHook', () => {
     const receipt = await callOnExtension({
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs(Object.values(fees)),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Assert that no "FeeSettledForFund" event was emitted
@@ -520,8 +516,7 @@ describe('invokeHook', () => {
         const receipt = await callOnExtension({
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-          callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+          actionId: FeeManagerActionId.InvokeContinuousHook,
         });
 
         // Assert that no "FeeSettledForFund" event was emitted
@@ -677,8 +672,7 @@ describe('invokeHook', () => {
         const callOnExtensionCall = callOnExtension({
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-          callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+          actionId: FeeManagerActionId.InvokeContinuousHook,
         });
 
         await expect(callOnExtensionCall).rejects.toBeRevertedWith('Shares supply is 0');
@@ -718,8 +712,7 @@ describe('invokeHook', () => {
           signer: randomUser,
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-          callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+          actionId: FeeManagerActionId.InvokeContinuousHook,
         });
 
         // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
@@ -763,8 +756,7 @@ describe('invokeHook', () => {
         const callOnExtensionCall = callOnExtension({
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-          callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+          actionId: FeeManagerActionId.InvokeContinuousHook,
         });
 
         await expect(callOnExtensionCall).rejects.toBeRevertedWith('Shares supply is 0');
@@ -809,8 +801,7 @@ describe('invokeHook', () => {
           signer: randomUser,
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-          callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+          actionId: FeeManagerActionId.InvokeContinuousHook,
         });
 
         // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
@@ -889,8 +880,7 @@ describe('invokeHook', () => {
         signer: randomUser,
         comptrollerProxy,
         extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-        callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+        actionId: FeeManagerActionId.InvokeContinuousHook,
       });
 
       const postMintSharesOutstanding = await feeManager.getFeeSharesOutstandingForFund(
@@ -908,8 +898,7 @@ describe('invokeHook', () => {
         signer: randomUser,
         comptrollerProxy,
         extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-        callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+        actionId: FeeManagerActionId.InvokeContinuousHook,
       });
 
       // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
@@ -977,8 +966,7 @@ describe('invokeHook', () => {
       await callOnExtension({
         comptrollerProxy,
         extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-        callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+        actionId: FeeManagerActionId.InvokeContinuousHook,
       });
 
       const preAdditionalInvestVaultProxyShares = await vaultProxy.balanceOf(vaultProxy);
@@ -1008,8 +996,7 @@ describe('invokeHook', () => {
       await callOnExtension({
         comptrollerProxy,
         extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-        callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly]),
+        actionId: FeeManagerActionId.InvokeContinuousHook,
       });
 
       // Get shares outstanding after burn
@@ -1120,8 +1107,7 @@ describe('__InvokeContinuousHook', () => {
       signer: randomUser,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs([mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates]),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Assert called settle on mockContinuousFeeSettleOnly with gav as 0
@@ -1194,8 +1180,7 @@ describe('__payoutSharesOutstandingForFees', () => {
     await callOnExtension({
       comptrollerProxy,
       extension,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs(fees),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Define params for payout shares outstanding calls

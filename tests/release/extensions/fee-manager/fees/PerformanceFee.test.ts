@@ -8,7 +8,6 @@ import {
   FeeManagerActionId,
   feeManagerConfigArgs,
   FeeSettlementType,
-  invokeContinuousHookForFeesArgs,
   PerformanceFee,
   performanceFeeConfigArgs,
   performanceFeeSharesDue,
@@ -915,8 +914,7 @@ describe('integration', () => {
       signer: fundOwner,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHookForFees,
-      callArgs: invokeContinuousHookForFeesArgs([performanceFee]),
+      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // recount shares of the fund

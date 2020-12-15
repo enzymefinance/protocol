@@ -30,10 +30,8 @@ contract FundActionsWrapper {
         external
         returns (uint256 netShareValue_, bool isValid_)
     {
-        address[] memory continuousFees = getContinuousFeesForFund(_comptrollerProxy);
-
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        comptrollerProxyContract.callOnExtension(FEE_MANAGER, 0, abi.encode(continuousFees));
+        comptrollerProxyContract.callOnExtension(FEE_MANAGER, 0, "");
 
         return comptrollerProxyContract.calcGrossShareValue(false);
     }
@@ -50,7 +48,7 @@ contract FundActionsWrapper {
     ) external {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
 
-        comptrollerProxyContract.callOnExtension(FEE_MANAGER, 0, abi.encode(_fees));
+        comptrollerProxyContract.callOnExtension(FEE_MANAGER, 0, "");
         comptrollerProxyContract.callOnExtension(FEE_MANAGER, 1, abi.encode(_fees));
     }
 

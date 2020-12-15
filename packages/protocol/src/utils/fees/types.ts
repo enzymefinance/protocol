@@ -10,7 +10,7 @@ export enum FeeHook {
 }
 
 export enum FeeManagerActionId {
-  InvokeContinuousHookForFees,
+  InvokeContinuousHook,
   PayoutSharesOutstandingForFees,
 }
 
