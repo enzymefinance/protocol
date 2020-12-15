@@ -61,16 +61,16 @@ const expectedGasCosts = {
     usdc: 2616000,
   },
   'redeem partial shares: max assets': {
-    weth: 2217000,
-    usdc: 2465000,
+    weth: 2220000,
+    usdc: 2468000,
   },
   'buy shares: max assets': {
     weth: 1329000,
     usdc: 1598000,
   },
   'redeem all shares: max assets: all remaining': {
-    weth: 1661000,
-    usdc: 1879000,
+    weth: 1664000,
+    usdc: 1881000,
   },
 };
 const gasAssertionTolerance = 0.03; // 3%

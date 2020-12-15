@@ -881,7 +881,7 @@ describe('sharesActionTimelock', () => {
     });
   });
 
-  it('is respected when buying or redeeming shares', async () => {
+  it('is respected when buying or redeeming shares (no pending migration)', async () => {
     const {
       deployment: {
         fundDeployer,
@@ -963,6 +963,88 @@ describe('sharesActionTimelock', () => {
     // Warping forward to the timelock should allow a redemption
     await provider.send('evm_increaseTime', [sharesActionTimelock]);
 
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+      }),
+    ).resolves.toBeReceipt();
+  });
+
+  it('is skipped when redeeming shares if there is a pending migration', async () => {
+    const {
+      config: { deployer },
+      deployment: {
+        assetFinalityResolver,
+        chainlinkPriceFeed,
+        dispatcher,
+        feeManager,
+        fundDeployer,
+        integrationManager,
+        permissionedVaultActionLib,
+        policyManager,
+        tokens: { weth: denominationAsset },
+        valueInterpreter,
+        vaultLib,
+      },
+      accounts: [fundOwner, investor, buySharesCaller],
+    } = await provider.snapshot(snapshot);
+
+    const failureMessage = 'Shares action timelocked';
+
+    // Create a new fund, with a timelock
+    const sharesActionTimelock = 100;
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      sharesActionTimelock,
+    });
+
+    // Buy shares to start the timelock
+    await expect(
+      buyShares({
+        comptrollerProxy,
+        signer: buySharesCaller,
+        buyers: [investor],
+        denominationAsset,
+      }),
+    ).resolves.toBeReceipt();
+
+    // Immediately attempting to redeem shares should fail
+    await expect(
+      redeemShares({
+        comptrollerProxy,
+        signer: investor,
+      }),
+    ).rejects.toBeRevertedWith(failureMessage);
+
+    // Create a new FundDeployer to migrate to
+    const nextFundDeployer = await createFundDeployer({
+      assetFinalityResolver,
+      deployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      permissionedVaultActionLib,
+      policyManager,
+      valueInterpreter,
+      vaultLib,
+    });
+
+    // Create fund config on the new FundDeployer to migrate to
+    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      denominationAsset,
+    });
+
+    // Signal migration
+    await nextFundDeployer.connect(fundOwner).signalMigration(vaultProxy, nextComptrollerProxy);
+
+    // Redeeming shares should succeed now that the fund has a migration pending
     await expect(
       redeemShares({
         comptrollerProxy,

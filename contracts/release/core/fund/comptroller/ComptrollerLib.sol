@@ -683,7 +683,6 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
     )
         private
         onlyDelegateCall
-        timelockedSharesAction(_redeemer)
         locksReentrance
         returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
     {
@@ -694,6 +693,14 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         );
         require(_assetsToSkip.isUniqueSet(), "__redeemShares: _assetsToSkip contains duplicates");
 
+        IVault vaultProxyContract = IVault(vaultProxy);
+
+        // Only apply the sharesActionTimelock when a migration is not pending
+        if (!IDispatcher(DISPATCHER).hasMigrationRequest(address(vaultProxyContract))) {
+            __assertSharesActionNotTimelocked(_redeemer);
+            acctToLastSharesAction[_redeemer] = block.timestamp;
+        }
+
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
             // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
@@ -702,10 +709,8 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
             __preRedeemSharesHook(_redeemer, _sharesQuantity);
         }
 
-        IVault vaultProxyContract = IVault(vaultProxy);
-        ERC20 sharesContract = ERC20(address(vaultProxyContract));
-
         // Check the shares quantity against the user's balance after settling fees
+        ERC20 sharesContract = ERC20(address(vaultProxyContract));
         require(
             _sharesQuantity <= sharesContract.balanceOf(_redeemer),
             "__redeemShares: Insufficient shares"
