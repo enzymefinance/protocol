@@ -142,9 +142,15 @@ The doc defines the scope of the v2 audit by listing all contracts that are in-s
 
 `release/extensions/policy-manager/policies/buy-shares/utils/BuySharesSetupPolicyBase.sol`
 
-## Forthcoming
+### Added scope - 2020/12/16: e007a0deb870b8a611a459e2e08a295067236340
 
-`SharesRequestor.sol`
+`release/peripheral/shares-requestors/AuthUserExecutedSharesRequestorFactory.sol`
+
+`release/peripheral/shares-requestors/AuthUserExecutedSharesRequestorLib.sol`
+
+`release/peripheral/shares-requestors/AuthUserExecutedSharesRequestorProxy.sol`
+
+## Forthcoming
 
 `RariAdapter.sol`
 
