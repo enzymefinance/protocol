@@ -25,6 +25,10 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         address nextAggregator
     );
 
+    event StalePrimitiveRemoved(address indexed primitive);
+
+    event StaleRateThresholdSet(uint256 prevStaleRateThreshold, uint256 nextStaleRateThreshold);
+
     enum RateAsset {ETH, USD}
 
     struct AggregatorInfo {
@@ -37,6 +41,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     address private immutable WETH_TOKEN;
 
     address private ethUsdAggregator;
+    uint256 private staleRateThreshold;
     mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
 
     constructor(
@@ -48,6 +53,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         RateAsset[] memory _rateAssets
     ) public DispatcherOwnerMixin(_dispatcher) {
         WETH_TOKEN = _wethToken;
+        staleRateThreshold = 25 hours; // 24 hour heartbeat + 1hr buffer
         __setEthUsdAggregator(_ethUsdAggregator);
         if (_primitives.length > 0) {
             __addPrimitives(_primitives, _aggregators, _rateAssets);
@@ -219,6 +225,37 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         }
     }
 
+    /// @notice Removes stale primitives from the feed
+    /// @param _primitives The stale primitives to remove
+    /// @dev Callable by anybody
+    function removeStalePrimitives(address[] calldata _primitives) external {
+        require(_primitives.length > 0, "removeStalePrimitives: _primitives cannot be empty");
+
+        for (uint256 i; i < _primitives.length; i++) {
+            address aggregatorAddress = primitiveToAggregatorInfo[_primitives[i]].aggregator;
+            require(aggregatorAddress != address(0), "removeStalePrimitives: Invalid primitive");
+            require(rateIsStale(aggregatorAddress), "removeStalePrimitives: Rate is not stale");
+
+            delete primitiveToAggregatorInfo[_primitives[i]];
+
+            emit StalePrimitiveRemoved(_primitives[i]);
+        }
+    }
+
+    /// @notice Sets the `staleRateThreshold` variable
+    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
+    function setStaleRateThreshold(uint256 _nextStaleRateThreshold) external onlyDispatcherOwner {
+        uint256 prevStaleRateThreshold = staleRateThreshold;
+        require(
+            _nextStaleRateThreshold != prevStaleRateThreshold,
+            "__setStaleRateThreshold: Value already set"
+        );
+
+        staleRateThreshold = _nextStaleRateThreshold;
+
+        emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
+    }
+
     /// @notice Updates the aggregators for given primitives
     /// @param _primitives The primitives to update
     /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
@@ -243,6 +280,15 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
             emit PrimitiveUpdated(_primitives[i], prevAggregator, _aggregators[i]);
         }
+    }
+
+    /// @notice Checks whether the current rate is considered stale for the specified aggregator
+    /// @param _aggregator The Chainlink aggregator of which to check staleness
+    /// @return rateIsStale_ True if the rate is considered stale
+    function rateIsStale(address _aggregator) public view returns (bool rateIsStale_) {
+        return
+            IChainlinkAggregator(_aggregator).latestTimestamp() <
+            block.timestamp.sub(staleRateThreshold);
     }
 
     /// @dev Helper to add primitives to the feed
@@ -276,12 +322,11 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     function __validateAggregator(address _aggregator) private view {
         require(_aggregator != address(0), "__validateAggregator: Empty _aggregator");
 
-        IChainlinkAggregator aggregatorContract = IChainlinkAggregator(_aggregator);
-        require(aggregatorContract.latestAnswer() > 0, "__validateAggregator: No rate detected");
         require(
-            block.timestamp.sub(aggregatorContract.latestTimestamp()) <= 7 days,
-            "__validateAggregator: Stale rate detected"
+            IChainlinkAggregator(_aggregator).latestAnswer() > 0,
+            "__validateAggregator: No rate detected"
         );
+        require(!rateIsStale(_aggregator), "__validateAggregator: Stale rate detected");
     }
 
     ///////////////////
@@ -303,6 +348,12 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     /// @return ethUsdAggregator_ The `ethUsdAggregator` variable value
     function getEthUsdAggregator() external view returns (address ethUsdAggregator_) {
         return ethUsdAggregator;
+    }
+
+    /// @notice Gets the `staleRateThreshold` variable value
+    /// @return staleRateThreshold_ The `staleRateThreshold` variable value
+    function getStaleRateThreshold() external view returns (uint256 staleRateThreshold_) {
+        return staleRateThreshold;
     }
 
     /// @notice Gets the `WETH_TOKEN` variable value

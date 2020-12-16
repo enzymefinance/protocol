@@ -181,3 +181,24 @@ describe('removePrimitives', () => {
     });
   });
 });
+
+describe('removeStalePrimitives', () => {
+  it('allows removing a stale primitive based on the timestamp', async () => {
+    const {
+      accounts: [randomUser],
+      deployment: { chainlinkPriceFeed },
+      config: {
+        tokens: { dai },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Should fail initially because the rate is not stale
+    await expect(chainlinkPriceFeed.connect(randomUser).removeStalePrimitives([dai])).rejects.toBeRevertedWith(
+      'Rate is not stale',
+    );
+
+    // Should succeed after warping beyond staleness threshold
+    await provider.send('evm_increaseTime', [60 * 60 * 49]);
+    await expect(chainlinkPriceFeed.connect(randomUser).removeStalePrimitives([dai])).resolves.toBeReceipt();
+  });
+});

@@ -268,6 +268,62 @@ describe('removePrimitives', () => {
   });
 });
 
+describe('removeStalePrimitives', () => {
+  it('reverts when primitives are empty', async () => {
+    const {
+      deployment: { chainlinkPriceFeed },
+    } = await provider.snapshot(snapshot);
+
+    // Call remove with empty values
+    await expect(chainlinkPriceFeed.removeStalePrimitives([])).rejects.toBeRevertedWith('_primitives cannot be empty');
+  });
+
+  it('reverts when primitives have not yet been added', async () => {
+    const {
+      deployment: { chainlinkPriceFeed },
+    } = await provider.snapshot(snapshot);
+
+    // Call remove on a random (non added) address
+    await expect(chainlinkPriceFeed.removeStalePrimitives([randomAddress()])).rejects.toBeRevertedWith(
+      'Invalid primitive',
+    );
+  });
+
+  it('allows a random user to remove a stale primitive based on the timestamp, and fires the correct event', async () => {
+    const {
+      accounts: [randomUser],
+      deployment: {
+        chainlinkPriceFeed,
+        tokens: { dai, usdc },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const primitivesToRemove = [dai, usdc];
+
+    // Should fail initially because the rate is not stale
+    await expect(
+      chainlinkPriceFeed.connect(randomUser).removeStalePrimitives(primitivesToRemove),
+    ).rejects.toBeRevertedWith('Rate is not stale');
+
+    // Should succeed after warping beyond staleness threshold
+    await provider.send('evm_increaseTime', [60 * 60 * 49]);
+    const receipt = await chainlinkPriceFeed.connect(randomUser).removeStalePrimitives(primitivesToRemove);
+
+    // Assert that the primitive has been removed from storage, and that the correct event fired
+    const events = extractEvent(receipt, 'StalePrimitiveRemoved');
+    expect(events).toHaveLength(primitivesToRemove.length);
+    for (let i = 0; i < primitivesToRemove.length; i++) {
+      const aggregatorInfo = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitivesToRemove[i]);
+      expect(aggregatorInfo).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
+        aggregator: constants.AddressZero,
+        rateAsset: 0,
+      });
+
+      expect(events[i]).toMatchEventArgs({ primitive: resolveAddress(primitivesToRemove[i]) });
+    }
+  });
+});
+
 describe('setEthUsdAggregator', () => {
   it('properly sets eth/usd aggregator', async () => {
     const {
@@ -325,5 +381,41 @@ describe('getCanonicalRate', () => {
     await expect(
       chainlinkPriceFeed.addPrimitives([primitiveMocks[1]], [aggregatorMocks[1]], [0]),
     ).rejects.toBeRevertedWith('No rate detected');
+  });
+});
+
+describe('setStaleRateThreshold', () => {
+  it('does not allow its prev value', async () => {
+    const {
+      deployment: { chainlinkPriceFeed },
+    } = await provider.snapshot(snapshot);
+
+    const storedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
+
+    await expect(chainlinkPriceFeed.setStaleRateThreshold(storedStaleRateThreshold)).rejects.toBeRevertedWith(
+      'Value already set',
+    );
+  });
+
+  it('properly sets value', async () => {
+    const {
+      deployment: { chainlinkPriceFeed },
+    } = await provider.snapshot(snapshot);
+
+    // Get stored staleRateThreshold
+    const storedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
+
+    // Set new value to 1 day
+    const newStaleThreshold = 60 * 60 * 24;
+    const setStaleRateThresholdReceipt = await chainlinkPriceFeed.setStaleRateThreshold(newStaleThreshold);
+
+    //Check events
+    const updatedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
+    expect(updatedStaleRateThreshold).toEqBigNumber(newStaleThreshold);
+
+    assertEvent(setStaleRateThresholdReceipt, 'StaleRateThresholdSet', {
+      prevStaleRateThreshold: storedStaleRateThreshold,
+      nextStaleRateThreshold: newStaleThreshold,
+    });
   });
 });
