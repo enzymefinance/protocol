@@ -654,30 +654,6 @@ describe('invokeHook', () => {
     });
 
     describe('SettlementType.Mint', () => {
-      it('does not allow minting if shares totalSupply is 0', async () => {
-        const {
-          deployment: { feeManager },
-          fees: { mockContinuousFeeSettleOnly },
-          createFund,
-        } = await provider.snapshot(snapshot);
-
-        const { comptrollerProxy } = await createFund();
-
-        // Define fee settlement
-        const feeAmount = utils.parseEther('0.5');
-        const settlementType = FeeSettlementType.Mint;
-        await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, feeAmount);
-
-        // Attempt to settle continuous fees with active fee
-        const callOnExtensionCall = callOnExtension({
-          comptrollerProxy,
-          extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHook,
-        });
-
-        await expect(callOnExtensionCall).rejects.toBeRevertedWith('Shares supply is 0');
-      });
-
       it('mints new shares to the payee and emits the correct event', async () => {
         const {
           accounts: [randomUser, buyer],
@@ -738,30 +714,6 @@ describe('invokeHook', () => {
     });
 
     describe('SettlementType.MintSharesOutstanding', () => {
-      it('does not allow minting if shares totalSupply is 0', async () => {
-        const {
-          deployment: { feeManager },
-          fees: { mockContinuousFeeSettleOnly },
-          createFund,
-        } = await provider.snapshot(snapshot);
-
-        const { comptrollerProxy } = await createFund();
-
-        // Define fee settlement
-        const feeAmount = utils.parseEther('0.5');
-        const settlementType = FeeSettlementType.MintSharesOutstanding;
-        await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, feeAmount);
-
-        // Attempt to settle continuous fees with active fee
-        const callOnExtensionCall = callOnExtension({
-          comptrollerProxy,
-          extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHook,
-        });
-
-        await expect(callOnExtensionCall).rejects.toBeRevertedWith('Shares supply is 0');
-      });
-
       it('mints shares to the VaultProxy, updates sharesOutstanding storage, and emits the correct event', async () => {
         const {
           accounts: [randomUser, buyer],
@@ -933,91 +885,6 @@ describe('invokeHook', () => {
 
       // SharesOutstanding should equal minted fees minus burned fees
       expect(postSharesOutstanding).toEqBigNumber(preSharesOutstanding.add(expectedRemainingSharesOutstanding));
-    });
-
-    it('correctly handles attempt to burn more shares than available (by burning the total amount of shares outstanding)', async () => {
-      const {
-        accounts: [randomUser, buyer],
-        deployment: { feeManager },
-        fees: { mockContinuousFeeSettleOnly },
-        denominationAsset,
-        createFund,
-      } = await provider.snapshot(snapshot);
-
-      const { vaultProxy, comptrollerProxy } = await createFund();
-
-      // Seed fund with initial fund shares,
-      // to give a non-zero totalSupply (so that minting new shares is allowed)
-      await buyShares({
-        comptrollerProxy,
-        signer: buyer,
-        buyers: [buyer],
-        denominationAsset,
-      });
-
-      // Mint shares outstanding
-      const initialSharesOutstandingBal = utils.parseEther('1');
-      await mockContinuousFeeSettleOnly.settle.returns(
-        FeeSettlementType.MintSharesOutstanding,
-        constants.AddressZero,
-        initialSharesOutstandingBal,
-      );
-
-      await callOnExtension({
-        comptrollerProxy,
-        extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHook,
-      });
-
-      const preAdditionalInvestVaultProxyShares = await vaultProxy.balanceOf(vaultProxy);
-      // Buy additional shares and sent them to VaultProxy
-      await buyShares({
-        comptrollerProxy,
-        signer: randomUser,
-        buyers: [vaultProxy],
-        denominationAsset,
-        investmentAmounts: [utils.parseEther('100')],
-      });
-
-      // Calculate the shares received by VaultProxy
-      const postAdditionalInvestVaultProxyShares = await vaultProxy.balanceOf(vaultProxy);
-      const vaultProxySharesReceived = postAdditionalInvestVaultProxyShares.sub(preAdditionalInvestVaultProxyShares);
-
-      const preBurnSharesOutstanding = await feeManager.getFeeSharesOutstandingForFund(
-        comptrollerProxy,
-        mockContinuousFeeSettleOnly,
-      );
-
-      // Then attempt to burn 10x the outstanding shares
-      const feeAmount = preBurnSharesOutstanding.mul(10);
-      const settlementType = FeeSettlementType.BurnSharesOutstanding;
-      await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, feeAmount);
-
-      await callOnExtension({
-        comptrollerProxy,
-        extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHook,
-      });
-
-      // Get shares outstanding after burn
-      const postSharesOutstanding = await feeManager.getFeeSharesOutstandingForFund(
-        comptrollerProxy,
-        mockContinuousFeeSettleOnly,
-      );
-
-      const postSharesTotalSupplyCall = await vaultProxy.totalSupply();
-      const postVaultProxySharesCall = await vaultProxy.balanceOf(vaultProxy);
-
-      // The shares outstanding should be reduced to 0
-      expect(postSharesOutstanding).toEqBigNumber(BigNumber.from(0));
-
-      // All that's left in totalSupply should be the vaultProxySharesReceived (because the rest was outstanding shares that have burnt)
-      expect(postSharesTotalSupplyCall).toEqBigNumber(vaultProxySharesReceived);
-
-      // The VaultProxy balance should have been reduced by the preBurnSharesOutstanding
-      expect(postVaultProxySharesCall).toEqBigNumber(
-        postAdditionalInvestVaultProxyShares.sub(preBurnSharesOutstanding),
-      );
     });
   });
 
