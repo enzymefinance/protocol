@@ -98,31 +98,39 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset
     ) public override returns (uint256 value_, bool isValid_) {
-        // This is the only case where 0 is a valid return value
-        if (_amount == 0) {
-            return (0, true);
-        }
-
         require(_baseAsset != address(0), "calcCanonicalAssetValue: Empty _baseAsset");
         require(_quoteAsset != address(0), "calcCanonicalAssetValue: Empty _quoteAsset");
 
-        IPrimitivePriceFeed primitivePriceFeedContract = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED);
+        if (_baseAsset == _quoteAsset || _amount == 0) {
+            return (_amount, true);
+        }
+
         require(
-            primitivePriceFeedContract.isSupportedAsset(_quoteAsset),
+            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_quoteAsset),
             "calcCanonicalAssetValue: Unsupported _quoteAsset"
         );
 
-        // Handle a _baseAsset that is a primitive, derivative, or unsupported
-        if (primitivePriceFeedContract.isSupportedAsset(_baseAsset)) {
+        return __calcAssetValue(_baseAsset, _amount, _quoteAsset);
+    }
+
+    // PRIVATE FUNCTIONS
+
+    /// @dev Helper to differentially calculate an asset value
+    /// based on if it is a primitive or derivative asset.
+    /// Avoids stack-too-deep error.
+    function __calcAssetValue(
+        address _baseAsset,
+        uint256 _amount,
+        address _quoteAsset
+    ) private returns (uint256 value_, bool isValid_) {
+        if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
             return __calcPrimitiveValue(_baseAsset, _amount, _quoteAsset);
         }
         if (IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
             return __calcDerivativeValue(_baseAsset, _amount, _quoteAsset);
         }
-        revert("calcCanonicalAssetValue: Unsupported _baseAsset");
+        revert("__calcAssetValue: Unsupported _baseAsset");
     }
-
-    // PRIVATE FUNCTIONS
 
     /// @dev Helper to covert from one asset to another via a normalized conversion rate
     function __calcDenormalizedConversionAmount(

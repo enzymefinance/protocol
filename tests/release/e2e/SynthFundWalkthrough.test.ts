@@ -115,8 +115,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   it('calculates the GAV of the fund with only the denomination asset', async () => {
     const calcGavTx = await comptrollerProxy.calcGav(true);
 
-    // Bumped from 146865
-    expect(calcGavTx).toCostLessThan(`147000`);
+    // Bumped from 124796
+    expect(calcGavTx).toCostLessThan(`125000`);
   });
 
   it('attempts to trade on Synthetix within the redemption window', async () => {

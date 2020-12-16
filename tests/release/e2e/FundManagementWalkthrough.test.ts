@@ -43,12 +43,12 @@ const expectedGasCosts = {
     usdc: 426000,
   },
   'buy shares: denomination asset only: second investment': {
-    weth: 455000,
-    usdc: 471000,
+    weth: 435000,
+    usdc: 444000,
   },
   'calc gav: denomination asset only': {
-    weth: 57000,
-    usdc: 67000,
+    weth: 44000,
+    usdc: 47000,
   },
   'calc gav: 20 assets': {
     weth: 889000,
@@ -57,7 +57,7 @@ const expectedGasCosts = {
   // Kyber is used here because it is one of the most expensive.
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
-    weth: 1864000,
+    weth: 1801000,
     usdc: 2618000,
   },
   'redeem partial shares: max assets': {
