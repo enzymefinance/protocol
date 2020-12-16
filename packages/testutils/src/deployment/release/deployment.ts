@@ -6,10 +6,12 @@ import {
   AssetBlacklist,
   AssetFinalityResolver,
   AssetWhitelist,
+  AuthUserExecutedSharesRequestorFactory,
+  AuthUserExecutedSharesRequestorLib,
   BuySharesCallerWhitelist,
   ChaiAdapter,
-  ChainlinkPriceFeed,
   ChaiPriceFeed,
+  ChainlinkPriceFeed,
   CompoundAdapter,
   CompoundPriceFeed,
   ComptrollerLib,
@@ -171,6 +173,8 @@ export interface ReleaseDeploymentOutput {
   minMaxInvestment: Promise<MinMaxInvestment>;
   investorWhitelist: Promise<InvestorWhitelist>;
   // Peripheral
+  authUserExecutedSharesRequestorFactory: Promise<AuthUserExecutedSharesRequestorFactory>;
+  authUserExecutedSharesRequestorLib: Promise<AuthUserExecutedSharesRequestorLib>;
   fundActionsWrapper: Promise<FundActionsWrapper>;
 }
 
@@ -428,6 +432,16 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return InvestorWhitelist.deploy(config.deployer, await deployment.policyManager);
   },
   // Peripheral
+  async authUserExecutedSharesRequestorFactory(config, deployment) {
+    return AuthUserExecutedSharesRequestorFactory.deploy(
+      config.deployer,
+      config.dispatcher,
+      await deployment.authUserExecutedSharesRequestorLib,
+    );
+  },
+  async authUserExecutedSharesRequestorLib(config) {
+    return AuthUserExecutedSharesRequestorLib.deploy(config.deployer);
+  },
   async fundActionsWrapper(config, deployment) {
     return FundActionsWrapper.deploy(config.deployer, await deployment.feeManager);
   },

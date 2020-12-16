@@ -67,6 +67,9 @@ export { MinMaxInvestment } from './codegen/MinMaxInvestment';
 export { InvestorWhitelist } from './codegen/InvestorWhitelist';
 
 // Peripheral
+export { AuthUserExecutedSharesRequestorFactory } from './codegen/AuthUserExecutedSharesRequestorFactory';
+export { AuthUserExecutedSharesRequestorLib } from './codegen/AuthUserExecutedSharesRequestorLib';
+export { AuthUserExecutedSharesRequestorProxy } from './codegen/AuthUserExecutedSharesRequestorProxy';
 export { FundActionsWrapper } from './codegen/FundActionsWrapper';
 
 // Mocks
