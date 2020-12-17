@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "./utils/ProxiableVaultLib.sol";
 
 /// @title VaultProxy Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A proxy contract for all VaultProxy instances, slightly modified from EIP-1822
 /// @dev Adapted from the recommended implementation of a Proxy in EIP-1822, updated for solc 0.6.12,
 /// and using the EIP-1967 storage slot for the proxiable implementation.

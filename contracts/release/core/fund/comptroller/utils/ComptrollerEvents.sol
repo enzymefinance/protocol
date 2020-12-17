@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title ComptrollerEvents Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Contract containing all the events used in the Comptroller contracts
 abstract contract ComptrollerEvents {
     event MigratedSharesDuePaid(uint256 sharesDue);

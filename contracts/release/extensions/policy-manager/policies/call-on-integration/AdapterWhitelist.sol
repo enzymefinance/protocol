@@ -5,7 +5,7 @@ import "../utils/AddressListPolicyMixin.sol";
 import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AdapterWhitelist Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows a configurable whitelist of adapters for use by a fund
 contract AdapterWhitelist is PreCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}

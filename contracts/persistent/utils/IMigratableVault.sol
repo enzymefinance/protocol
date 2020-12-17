@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IMigratableVault Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @dev DO NOT EDIT CONTRACT
 interface IMigratableVault {
     function canMigrate(address _who) external view returns (bool canMigrate_);

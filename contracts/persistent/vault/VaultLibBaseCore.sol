@@ -6,7 +6,7 @@ import "./utils/ProxiableVaultLib.sol";
 import "./utils/SharesTokenBase.sol";
 
 /// @title VaultLibBaseCore Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A persistent contract containing all required storage variables and
 /// required functions for a VaultLib implementation
 /// @dev DO NOT EDIT CONTRACT. If new events or storage are necessary, they should be added to

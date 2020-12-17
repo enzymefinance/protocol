@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IMigrationHookHandler Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IMigrationHookHandler {
     enum MigrationOutHook {PreSignal, PostSignal, PreMigrate, PostMigrate, PostCancel}
 

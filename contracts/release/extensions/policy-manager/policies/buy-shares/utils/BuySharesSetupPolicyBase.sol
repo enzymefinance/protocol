@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../utils/PolicyBase.sol";
 
 /// @title BuySharesSetupPolicyBase Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for policies that only implement the BuySharesSetup policy hook
 abstract contract BuySharesSetupPolicyBase is PolicyBase {
     /// @notice Gets the implemented PolicyHooks for a policy

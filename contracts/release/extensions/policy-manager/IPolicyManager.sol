@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 /// @title PolicyManager Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the PolicyManager
 interface IPolicyManager {
     enum PolicyHook {

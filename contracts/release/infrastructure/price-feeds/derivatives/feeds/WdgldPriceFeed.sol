@@ -7,7 +7,7 @@ import "../../../../utils/MakerDaoMath.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title WdgldPriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for WDGLD <https://dgld.ch/>
 contract WdgldPriceFeed is IDerivativePriceFeed, MakerDaoMath {
     using SafeMath for uint256;

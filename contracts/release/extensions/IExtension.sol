@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IExtension Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all extensions
 interface IExtension {
     function activateForFund(bool _isMigration) external;

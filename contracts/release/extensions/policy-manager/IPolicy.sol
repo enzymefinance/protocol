@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "./IPolicyManager.sol";
 
 /// @title Policy Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IPolicy {
     function activateForFund(address _comptrollerProxy, address _vaultProxy) external;
 

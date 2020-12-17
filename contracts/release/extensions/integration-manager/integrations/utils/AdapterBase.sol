@@ -7,7 +7,7 @@ import "../IIntegrationAdapter.sol";
 import "./IntegrationSelectors.sol";
 
 /// @title AdapterBase Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A base contract for integration adapters
 abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
     using SafeERC20 for ERC20;

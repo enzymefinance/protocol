@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../IPolicy.sol";
 
 /// @title PolicyBase Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Abstract base contract for all policies
 abstract contract PolicyBase is IPolicy {
     address internal immutable POLICY_MANAGER;

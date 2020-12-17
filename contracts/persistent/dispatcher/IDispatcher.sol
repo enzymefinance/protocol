@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IDispatcher Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IDispatcher {
     function cancelMigration(address _vaultProxy, bool _bypassFailure) external;
 

@@ -3,7 +3,7 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title ICERC20 Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Minimal interface for interactions with Compound tokens (cTokens)
 interface ICERC20 is IERC20 {
     function decimals() external view returns (uint8);

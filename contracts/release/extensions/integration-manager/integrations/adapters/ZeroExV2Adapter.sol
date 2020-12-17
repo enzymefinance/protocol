@@ -10,7 +10,7 @@ import "../../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title ZeroExV2Adapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter to 0xV2 Exchange Contract
 contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
     using AddressArrayLib for address[];

@@ -5,7 +5,7 @@ import "../utils/AddressListPolicyMixin.sol";
 import "./utils/PreBuySharesValidatePolicyBase.sol";
 
 /// @title InvestorWhitelist Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows a configurable whitelist of investors to buy shares in a fund
 contract InvestorWhitelist is PreBuySharesValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}

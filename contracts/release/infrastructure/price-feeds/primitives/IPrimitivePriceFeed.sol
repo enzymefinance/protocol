@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IPrimitivePriceFeed Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for primitive price feeds
 /// @dev IMPORTANT: all rates must be "normalized" to 18 decimals
 interface IPrimitivePriceFeed {

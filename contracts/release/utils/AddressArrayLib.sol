@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title AddressArray Library
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library to extend the address array data type
 library AddressArrayLib {
     /// @dev Helper to verify if an array contains a particular value

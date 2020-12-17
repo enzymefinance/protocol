@@ -7,7 +7,7 @@ import "../vault/VaultProxy.sol";
 import "./IDispatcher.sol";
 
 /// @title Dispatcher Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice The top-level contract linking multiple releases.
 /// It handles the deployment of new VaultProxy instances,
 /// and the regulation of fund migration from a previous release to the current one.

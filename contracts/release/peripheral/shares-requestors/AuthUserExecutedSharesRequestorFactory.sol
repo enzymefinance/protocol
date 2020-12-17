@@ -7,7 +7,7 @@ import "./AuthUserExecutedSharesRequestorProxy.sol";
 import "./IAuthUserExecutedSharesRequestor.sol";
 
 /// @title AuthUserExecutedSharesRequestorFactory Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Deploys and maintains a record of AuthUserExecutedSharesRequestorProxy instances
 contract AuthUserExecutedSharesRequestorFactory {
     event SharesRequestorProxyDeployed(

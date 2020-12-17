@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IFundDeployer Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IFundDeployer {
     enum ReleaseStatus {PreLaunch, Live, Paused}
 

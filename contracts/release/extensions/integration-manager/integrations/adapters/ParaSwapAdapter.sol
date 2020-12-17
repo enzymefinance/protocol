@@ -8,7 +8,7 @@ import "../../../../interfaces/IWETH.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title ParaSwapAdapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with ParaSwap
 contract ParaSwapAdapter is AdapterBase {
     using SafeMath for uint256;

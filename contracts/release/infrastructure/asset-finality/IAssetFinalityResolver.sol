@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IAssetFinalityResolver interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for AssetFinalityResolver
 interface IAssetFinalityResolver {
     function finalizeAndGetAssetBalance(

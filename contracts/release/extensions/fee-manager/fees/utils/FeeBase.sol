@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../IFee.sol";
 
 /// @title FeeBase Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Abstract base contract for all fees
 abstract contract FeeBase is IFee {
     address internal immutable FEE_MANAGER;

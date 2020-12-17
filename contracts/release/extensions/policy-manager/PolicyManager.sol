@@ -10,7 +10,7 @@ import "./IPolicy.sol";
 import "./IPolicyManager.sol";
 
 /// @title PolicyManager Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Manages policies for funds
 contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin {
     using EnumerableSet for EnumerableSet.AddressSet;

@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IIntegrationManager interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the IntegrationManager
 interface IIntegrationManager {
     enum SpendAssetsHandleType {None, Approve, Transfer, Remove}

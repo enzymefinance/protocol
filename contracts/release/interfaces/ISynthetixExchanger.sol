@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title ISynthetixExchanger Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface ISynthetixExchanger {
     function getAmountsForExchange(
         uint256,

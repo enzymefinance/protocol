@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IChainlinkAggregator Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IChainlinkAggregator {
     function latestAnswer() external view returns (int256);
 

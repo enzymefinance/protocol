@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @title SharesInflationMixin Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Abstract mixin contract for calculating shares for fees, taking inflation into account
 abstract contract SharesInflationMixin {
     using SafeMath for uint256;

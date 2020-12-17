@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../core/fund-deployer/IFundDeployer.sol";
 
 /// @title FundDeployerOwnerMixin Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract that defers ownership to the owner of FundDeployer
 abstract contract FundDeployerOwnerMixin {
     address internal immutable FUND_DEPLOYER;

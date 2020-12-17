@@ -10,7 +10,7 @@ import "../fund/vault/IVault.sol";
 import "./IFundDeployer.sol";
 
 /// @title FundDeployer Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice The top-level contract of the release.
 /// It primarily coordinates fund deployment and fund migration, but
 /// it is also deferred to for contract access control and for allowed calls

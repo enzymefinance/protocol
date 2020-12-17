@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IDerivativePriceFeed Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Simple interface for derivative price source oracle implementations
 /// @dev IMPORTANT: all rates must be "normalized" to 18 decimals
 interface IDerivativePriceFeed {

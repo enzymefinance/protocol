@@ -10,7 +10,7 @@ import "../FeeManager.sol";
 import "./utils/FeeBase.sol";
 
 /// @title PerformanceFee Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A performance-based fee with configurable rate and crystallization period, using
 /// a high watermark
 /// @dev This contract assumes that all shares in the VaultProxy are shares outstanding,

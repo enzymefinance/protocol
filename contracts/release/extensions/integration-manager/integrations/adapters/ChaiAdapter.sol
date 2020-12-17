@@ -5,7 +5,7 @@ import "../../../../interfaces/IChai.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title ChaiAdapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Chai <https://github.com/dapphub/chai>
 contract ChaiAdapter is AdapterBase {
     address private immutable CHAI;

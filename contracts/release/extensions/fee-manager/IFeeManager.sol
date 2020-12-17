@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 /// @title FeeManager Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the FeeManager
 interface IFeeManager {
     // No fees for the current release are implemented post-redeemShares

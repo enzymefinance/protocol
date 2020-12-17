@@ -8,7 +8,7 @@ import "../../../utils/MakerDaoMath.sol";
 import "./utils/FeeBase.sol";
 
 /// @title ManagementFee Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A management fee with a configurable annual rate
 contract ManagementFee is FeeBase, MakerDaoMath {
     using SafeMath for uint256;

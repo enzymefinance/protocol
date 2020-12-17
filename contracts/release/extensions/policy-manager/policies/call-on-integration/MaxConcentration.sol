@@ -9,7 +9,7 @@ import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
 import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title MaxConcentration Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that defines a configurable threshold for the concentration of any one asset
 /// in a fund's holdings
 contract MaxConcentration is PostCallOnIntegrationValidatePolicyBase {

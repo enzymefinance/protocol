@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IUniswapV2Pair Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Minimal interface for our interactions with the Uniswap V2's Pair contract
 interface IUniswapV2Pair {
     function getReserves()

@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @title MathHelpers Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Helper functions for common math operations
 abstract contract MathHelpers {
     using SafeMath for uint256;

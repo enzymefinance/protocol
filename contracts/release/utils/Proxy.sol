@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title Proxy Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A proxy contract for all Proxy instances
 /// @dev The recommended implementation of a Proxy in EIP-1822, updated for solc 0.6.12,
 /// and using the EIP-1967 storage slot for the proxiable implementation.

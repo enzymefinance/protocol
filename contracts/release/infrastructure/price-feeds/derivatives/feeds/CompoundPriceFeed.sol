@@ -6,7 +6,7 @@ import "../../../utils/DispatcherOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title CompoundPriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for Compound Tokens (cTokens)
 contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     event CTokenAdded(address indexed cToken, address indexed token);

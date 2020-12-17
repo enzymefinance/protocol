@@ -8,7 +8,7 @@ import "../utils/AddressListPolicyMixin.sol";
 import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AssetBlacklist Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that disallows a configurable blacklist of assets in a fund's holdings
 contract AssetBlacklist is PostCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     using AddressArrayLib for address[];

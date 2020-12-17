@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../persistent/vault/VaultLibBaseCore.sol";
 
 /// @title MockVaultLib Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mock VaultLib implementation that only extends VaultLibBaseCore
 contract MockVaultLib is VaultLibBaseCore {
     function getAccessor() external view returns (address) {

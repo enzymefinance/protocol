@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 /// @title AddressListPolicyMixin Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice An abstract mixin contract for policies that use an address list
 abstract contract AddressListPolicyMixin {
     using EnumerableSet for EnumerableSet.AddressSet;

@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "./IFeeManager.sol";
 
 /// @title Fee Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all fees
 interface IFee {
     function activateForFund(address _comptrollerProxy, address _vaultProxy) external;

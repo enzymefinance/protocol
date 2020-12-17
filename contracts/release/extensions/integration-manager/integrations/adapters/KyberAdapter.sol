@@ -8,7 +8,7 @@ import "../../../../utils/MathHelpers.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title KyberAdapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with Kyber Network
 contract KyberAdapter is AdapterBase, MathHelpers {
     address private immutable EXCHANGE;

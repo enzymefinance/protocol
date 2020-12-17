@@ -7,7 +7,7 @@ import "../../../../interfaces/IUniswapV2Router2.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title UniswapV2Adapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with Uniswap v2
 contract UniswapV2Adapter is AdapterBase {
     using SafeMath for uint256;

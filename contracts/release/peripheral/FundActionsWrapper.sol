@@ -5,7 +5,7 @@ import "../core/fund/comptroller/ComptrollerLib.sol";
 import "../extensions/fee-manager/FeeManager.sol";
 
 /// @title FundActionsWrapper Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Logic related to funds, not necessary in the core protocol
 /// @dev This contract is currently unaudited, as it does not involve any
 /// exchange in value, and simply wraps other functions for convenience

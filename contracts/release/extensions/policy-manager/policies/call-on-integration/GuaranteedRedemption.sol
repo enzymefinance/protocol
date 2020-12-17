@@ -7,7 +7,7 @@ import "../../../utils/FundDeployerOwnerMixin.sol";
 import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title GuaranteedRedemption Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that guarantees that shares will either be continuously redeemable or
 /// redeemable within a predictable daily window by preventing trading during a configurable daily period
 contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDeployerOwnerMixin {

@@ -7,7 +7,7 @@ import "../utils/ComptrollerStorage.sol";
 import "./IPermissionedVaultActionLib.sol";
 
 /// @title PermissionedVaultActionLib Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library for permissioned vault actions callable by Extensions
 /// @dev Always delegate-called by a ComptrollerProxy
 contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultActionLib {

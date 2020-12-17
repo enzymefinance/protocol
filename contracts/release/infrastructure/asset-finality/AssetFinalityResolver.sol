@@ -8,7 +8,7 @@ import "../price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
 import "./IAssetFinalityResolver.sol";
 
 /// @title AssetFinalityResolver Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract that helps achieve asset finality
 /// @dev Intended to be delegate-callable
 contract AssetFinalityResolver is IAssetFinalityResolver {

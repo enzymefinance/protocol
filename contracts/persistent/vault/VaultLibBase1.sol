@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "./VaultLibBaseCore.sol";
 
 /// @title VaultLibBase1 Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice The first implementation of VaultLibBaseCore, with additional events and storage
 /// @dev All subsequent implementations should inherit the previous implementation,
 /// e.g., `VaultLibBase2 is VaultLibBase1`

@@ -12,7 +12,7 @@ import "../../utils/UniswapV2PoolTokenValueCalculator.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title UniswapV2PoolPriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price feed for Uniswap lending pool tokens
 contract UniswapV2PoolPriceFeed is
     IDerivativePriceFeed,

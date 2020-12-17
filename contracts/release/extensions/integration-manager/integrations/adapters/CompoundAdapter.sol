@@ -8,7 +8,7 @@ import "../../../../interfaces/IWETH.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title CompoundAdapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Compound <https://compound.finance/>
 contract CompoundAdapter is AdapterBase {
     address private immutable COMPOUND_PRICE_FEED;

@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title ProxiableVaultLib Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract that defines the upgrade behavior for VaultLib instances
 /// @dev The recommended implementation of the target of a proxy according to EIP-1822 and EIP-1967
 /// Code position in storage is `bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)`,

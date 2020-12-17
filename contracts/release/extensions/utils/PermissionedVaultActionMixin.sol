@@ -5,7 +5,7 @@ import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/comptroller/libs/IPermissionedVaultActionLib.sol";
 
 /// @title PermissionedVaultActionMixin Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for extensions that can make permissioned vault calls
 abstract contract PermissionedVaultActionMixin {
     /// @notice Adds a tracked asset to the fund

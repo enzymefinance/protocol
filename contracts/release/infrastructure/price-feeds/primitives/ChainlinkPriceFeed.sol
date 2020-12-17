@@ -8,7 +8,7 @@ import "../../utils/DispatcherOwnerMixin.sol";
 import "./IPrimitivePriceFeed.sol";
 
 /// @title ChainlinkPriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Chainlink oracles as price sources
 contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     using SafeMath for uint256;

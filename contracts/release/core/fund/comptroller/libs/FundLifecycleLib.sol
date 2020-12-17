@@ -11,7 +11,7 @@ import "../utils/ComptrollerStorage.sol";
 import "./IFundLifecycleLib.sol";
 
 /// @title FundLifecycleLib Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library for fund lifecycle actions
 /// @dev Always delegate-called by a ComptrollerProxy.
 /// Ordered function calls for stages in a fund lifecycle:

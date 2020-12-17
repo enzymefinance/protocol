@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title UniswapV2Router2 Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @dev Minimal interface for our interactions with Uniswap V2's Router2
 interface IUniswapV2Router2 {
     function addLiquidity(

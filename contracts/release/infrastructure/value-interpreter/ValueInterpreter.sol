@@ -8,7 +8,7 @@ import "../price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "./IValueInterpreter.sol";
 
 /// @title ValueInterpreter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interprets price feeds to provide covert value between asset pairs
 /// @dev All price feeds are expected to provide rates normalized to 18 decimals.
 /// This contract contains several "live" rate calculations, which for this release are simply

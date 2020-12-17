@@ -17,7 +17,7 @@ import "./integrations/IIntegrationAdapter.sol";
 import "./IIntegrationManager.sol";
 
 /// @title IntegrationManager
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Extension to handle DeFi integration actions for funds
 contract IntegrationManager is
     IIntegrationManager,

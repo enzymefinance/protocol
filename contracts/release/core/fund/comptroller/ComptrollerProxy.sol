@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../../utils/Proxy.sol";
 
 /// @title ComptrollerProxy Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A proxy contract for all ComptrollerProxy instances
 contract ComptrollerProxy is Proxy {
     constructor(bytes memory _constructData, address _comptrollerLib)

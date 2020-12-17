@@ -6,7 +6,7 @@ import "../../core/fund/vault/IVault.sol";
 import "../IExtension.sol";
 
 /// @title ExtensionBase Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Base class for an extension
 abstract contract ExtensionBase is IExtension {
     mapping(address => address) internal comptrollerProxyToVaultProxy;

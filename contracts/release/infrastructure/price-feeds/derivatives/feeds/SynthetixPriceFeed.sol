@@ -10,7 +10,7 @@ import "../../../utils/DispatcherOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title SynthetixPriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Synthetix oracles as price sources
 contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     event SynthAdded(address indexed synth, bytes32 currencyKey);

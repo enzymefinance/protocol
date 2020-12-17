@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../vault/IVault.sol";
 
 /// @title IFundLifecycleLib Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IFundLifecycleLib {
     function activate(address, bool) external;
 

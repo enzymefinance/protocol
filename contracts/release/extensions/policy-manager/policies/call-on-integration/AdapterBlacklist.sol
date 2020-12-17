@@ -5,7 +5,7 @@ import "../utils/AddressListPolicyMixin.sol";
 import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title AdapterBlacklist Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that disallows a configurable blacklist of adapters from use by a fund
 contract AdapterBlacklist is PreCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}

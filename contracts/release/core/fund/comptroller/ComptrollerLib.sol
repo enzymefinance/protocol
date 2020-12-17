@@ -20,7 +20,7 @@ import "./utils/ComptrollerStorage.sol";
 import "./IComptroller.sol";
 
 /// @title ComptrollerLib Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library shared by all funds
 /// @dev All state-changing functions should be marked as onlyDelegateCall,
 /// unless called directly by the FundDeployer

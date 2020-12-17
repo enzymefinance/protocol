@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../release/extensions/integration-manager/integrations/utils/AdapterBase.sol";
 
 /// @title IMockGenericIntegratee Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IMockGenericIntegratee {
     function swap(
         address[] calldata,
@@ -24,7 +24,7 @@ interface IMockGenericIntegratee {
 }
 
 /// @title MockGenericAdapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Provides a generic adapter that:
 /// 1. Provides swapping functions that use various `SpendAssetsTransferType` values
 /// 2. Directly parses the _actual_ values to swap from provided call data (e.g., `actualIncomingAssetAmounts`)

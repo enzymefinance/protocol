@@ -10,7 +10,7 @@ import "../../core/fund/vault/VaultLib.sol";
 import "./IAuthUserExecutedSharesRequestor.sol";
 
 /// @title AuthUserExecutedSharesRequestorLib Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Provides the logic for AuthUserExecutedSharesRequestorProxy instances,
 /// in which shares requests are manually executed by a permissioned user
 /// @dev This will not work with a `denominationAsset` that does not transfer

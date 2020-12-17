@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../IIntegrationManager.sol";
 
 /// @title Integration Adapter interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all integration adapters
 interface IIntegrationAdapter {
     function identifier() external pure returns (string memory identifier_);

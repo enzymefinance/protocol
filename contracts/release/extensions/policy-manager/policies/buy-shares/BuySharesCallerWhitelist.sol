@@ -5,7 +5,7 @@ import "../utils/AddressListPolicyMixin.sol";
 import "./utils/BuySharesSetupPolicyBase.sol";
 
 /// @title BuySharesCallerWhitelist Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows a configurable whitelist of buyShares callers for a fund
 contract BuySharesCallerWhitelist is BuySharesSetupPolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}

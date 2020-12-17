@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./utils/PreBuySharesValidatePolicyBase.sol";
 
 /// @title MinMaxInvestment Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that restricts the amount of the fund's denomination asset that a user can
 /// send in a single call to buy shares in a fund
 contract MinMaxInvestment is PreBuySharesValidatePolicyBase {

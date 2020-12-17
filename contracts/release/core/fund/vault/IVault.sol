@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../../../persistent/utils/IMigratableVault.sol";
 
 /// @title IVault Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface IVault is IMigratableVault {
     function addTrackedAsset(address) external;
 

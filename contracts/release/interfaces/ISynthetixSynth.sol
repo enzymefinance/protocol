@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title ISynthetixSynth Interface
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 interface ISynthetixSynth {
     function currencyKey() external view returns (bytes32);
 }

@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title ComptrollerStorage Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Contract containing all the storage vars (not constants)
 /// used in the Comptroller contracts
 abstract contract ComptrollerStorage {

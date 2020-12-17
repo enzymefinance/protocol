@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "./VaultLibSafeMath.sol";
 
 /// @title StandardERC20 Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Contains the storage, events, and default logic of an ERC20-compliant contract.
 /// @dev The logic can be overridden by VaultLib implementations.
 /// Adapted from OpenZeppelin 3.2.0.

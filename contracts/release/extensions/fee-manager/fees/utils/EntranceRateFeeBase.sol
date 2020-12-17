@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./FeeBase.sol";
 
 /// @title EntranceRateFeeBase Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Calculates a fee based on a rate to be charged to an investor upon entering a fund
 abstract contract EntranceRateFeeBase is FeeBase {
     using SafeMath for uint256;

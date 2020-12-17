@@ -5,7 +5,7 @@ import "../../release/core/fund/comptroller/ComptrollerLib.sol";
 import "./MockToken.sol";
 
 /// @title MockReentrancyToken Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mock ERC20 token implementation that is able to re-entrance redeemShares and buyShares functions
 contract MockReentrancyToken is MockToken("Mock Reentrancy Token", "MRT", 18) {
     bool public bad;

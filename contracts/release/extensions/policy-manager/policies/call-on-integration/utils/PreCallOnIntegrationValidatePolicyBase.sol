@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../../utils/PolicyBase.sol";
 
 /// @title CallOnIntegrationPreValidatePolicyMixin Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for policies that only implement the PreCallOnIntegration policy hook
 abstract contract PreCallOnIntegrationValidatePolicyBase is PolicyBase {
     /// @notice Gets the implemented PolicyHooks for a policy

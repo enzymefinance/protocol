@@ -6,7 +6,7 @@ import "../../../../interfaces/ISynthetix.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title SynthetixAdapter Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with Synthetix
 contract SynthetixAdapter is AdapterBase {
     address private immutable ORIGINATOR;

@@ -5,7 +5,7 @@ import "../../utils/DispatcherOwnerMixin.sol";
 import "./IDerivativePriceFeed.sol";
 
 /// @title AggregatedDerivativePriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Aggregates multiple derivative price feeds (e.g., Compound, Chai) and dispatches
 /// rate requests to the appropriate feed
 contract AggregatedDerivativePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {

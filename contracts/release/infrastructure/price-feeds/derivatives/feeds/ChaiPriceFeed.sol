@@ -6,7 +6,7 @@ import "../../../../interfaces/IMakerDaoPot.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title ChaiPriceFeed Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for Chai
 contract ChaiPriceFeed is IDerivativePriceFeed {
     using SafeMath for uint256;

@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "./utils/EntranceRateFeeBase.sol";
 
 /// @title EntranceRateBurnFee Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice An EntranceRateFee that burns the fee shares
 contract EntranceRateBurnFee is EntranceRateFeeBase {
     constructor(address _feeManager)

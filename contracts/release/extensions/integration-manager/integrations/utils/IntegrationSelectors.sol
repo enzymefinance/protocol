@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 /// @title IntegrationSelectors Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Selectors for integration actions
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
 abstract contract IntegrationSelectors {

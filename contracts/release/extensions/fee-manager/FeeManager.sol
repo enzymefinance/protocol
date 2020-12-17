@@ -15,7 +15,7 @@ import "./IFee.sol";
 import "./IFeeManager.sol";
 
 /// @title FeeManager Contract
-/// @author Melon Council DAO <security@meloncoucil.io>
+/// @author Enzyme Council <security@enzyme.finance>
 /// @notice Manages fees for funds
 contract FeeManager is
     IFeeManager,
