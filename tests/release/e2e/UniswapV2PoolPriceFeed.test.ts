@@ -1,6 +1,12 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { IUniswapV2Pair } from '@melonproject/protocol';
-import { defaultForkDeployment } from '@melonproject/testutils';
+import {
+  addNewAssetsToFund,
+  buyShares,
+  createNewFund,
+  defaultForkDeployment,
+  uniswapV2Lend,
+} from '@melonproject/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -12,6 +18,75 @@ async function snapshot(provider: EthereumTestnetProvider) {
     config,
   };
 }
+
+describe('derivative gas costs', () => {
+  it('adds to calcGav for weth-denominated fund', async () => {
+    const {
+      accounts: [fundOwner],
+      config: {
+        deployer,
+        tokens: { mln, weth },
+      },
+      deployment: { integrationManager, fundDeployer, trackedAssetsAdapter, uniswapV2Adapter },
+    } = await provider.snapshot(snapshot);
+
+    const denominationAsset = weth;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Buy shares to add denomination asset
+    await buyShares({
+      comptrollerProxy,
+      signer: deployer,
+      buyers: [deployer],
+      denominationAsset,
+      investmentAmounts: [initialTokenAmount],
+    });
+
+    // Add mln to be able to buy pool tokens
+    await addNewAssetsToFund({
+      fundOwner,
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      trackedAssetsAdapter,
+      assets: [mln],
+      amounts: [initialTokenAmount],
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Use max of half the asset balances to get MLN-WETH pool tokens
+    await uniswapV2Lend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      uniswapV2Adapter,
+      tokenA: weth,
+      tokenB: mln,
+      amountADesired: initialTokenAmount.div(2),
+      amountBDesired: initialTokenAmount.div(2),
+      amountAMin: 1,
+      amountBMin: 1,
+      minPoolTokenAmount: 1,
+    });
+
+    // Get the calcGav() cost including the pool token
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(120000));
+  });
+});
 
 describe('getRatesToUnderlyings', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {

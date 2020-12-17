@@ -1,3 +1,4 @@
+export * from './assets';
 export * from './chainlink';
 export * from './common';
 export * from './core';
