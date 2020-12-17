@@ -2,6 +2,7 @@ import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   assetTransferArgs,
   ISynthetixExchanger,
+  MockSynthetixIntegratee,
   SpendAssetsHandleType,
   StandardToken,
   synthetixTakeOrderArgs,
@@ -12,7 +13,6 @@ import {
   defaultTestDeployment,
   getAssetBalances,
   synthetixAssignExchangeDelegate,
-  synthetixResolveAddress,
   synthetixTakeOrder,
 } from '@melonproject/testutils';
 import { BigNumber, utils } from 'ethers';
@@ -31,11 +31,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     denominationAsset: new StandardToken(config.integratees.synthetix.susd, config.deployer),
   });
 
-  const exchangerAddress = await synthetixResolveAddress({
-    addressResolver: config.integratees.synthetix.addressResolver,
-    name: 'Exchanger',
-  });
-
   return {
     accounts: remainingAccounts,
     deployment,
@@ -47,7 +42,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     },
     sbtcCurrencyKey: utils.formatBytes32String('sBTC'),
     susdCurrencyKey: utils.formatBytes32String('sUSD'),
-    synthetixExchanger: new ISynthetixExchanger(exchangerAddress, provider),
+    synthetixExchanger: new ISynthetixExchanger(deployment.synthetix.mockSynthetixIntegratee, provider),
   };
 }
 
@@ -183,20 +178,23 @@ describe('takeOrder', () => {
   it('works as expected when called by a fund (synth to synth)', async () => {
     const {
       config: {
+        deployer,
         integratees: {
-          synthetix: { addressResolver },
+          synthetix: { addressResolver, snx },
+        },
+        derivatives: {
+          synthetix: { sbtc, susd },
         },
       },
-      deployment: {
-        integrationManager,
-        mockSynthetix: { sbtc: incomingAsset, susd: outgoingAsset },
-        synthetixAdapter,
-      },
+      deployment: { integrationManager, synthetixAdapter },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
       sbtcCurrencyKey,
       susdCurrencyKey,
       synthetixExchanger,
     } = await provider.snapshot(snapshot);
+
+    const incomingAsset = new StandardToken(sbtc, deployer);
+    const outgoingAsset = new StandardToken(susd, deployer);
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({
@@ -213,12 +211,14 @@ describe('takeOrder', () => {
       susdCurrencyKey,
       sbtcCurrencyKey,
     );
-
     // Get incoming asset balance prior to tx
     const [preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset],
     });
+
+    const synthetixIntegratee = new MockSynthetixIntegratee(snx, deployer);
+    await synthetixIntegratee.approveExchangeOnBehalf(vaultProxy);
 
     // Execute Synthetix order
     await synthetixTakeOrder({

@@ -1,4 +1,10 @@
-import { AddressLike, EthereumTestnetProvider, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
+import {
+  AddressLike,
+  EthereumTestnetProvider,
+  randomAddress,
+  resolveAddress,
+  SignerWithAddress,
+} from '@crestproject/crestproject';
 import { Dispatcher, sighash, StandardToken } from '@melonproject/protocol';
 import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
@@ -119,11 +125,12 @@ export async function configureForkRelease({
     integratees: {
       kyber: mainnet.kyber,
       synthetix: {
+        exchangeRates: randomAddress(), // NOTE: Unused on real deployments (use SNX address registry)
         addressResolver: mainnet.synthetix.addressResolver,
         delegateApprovals: mainnet.synthetix.delegateApprovals,
         exchanger: mainnet.synthetix.exchanger,
         snx: mainnet.synthetix.snx,
-        susd: tokens.susd,
+        susd: tokens.susd.address,
         originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
         trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
       },

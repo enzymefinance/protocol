@@ -43,8 +43,8 @@ const expectedGasCosts = {
     usdc: 426000,
   },
   'buy shares: denomination asset only: second investment': {
-    weth: 435000,
-    usdc: 444000,
+    weth: 435070,
+    usdc: 444100,
   },
   'calc gav: denomination asset only': {
     weth: 44000,

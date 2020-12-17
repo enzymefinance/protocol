@@ -12,11 +12,8 @@ import {
   MockKyberIntegratee,
   MockParaSwapIntegratee,
   MockReentrancyToken,
-  MockSynthetix,
-  MockSynthetixAddressResolver,
-  MockSynthetixDelegateApprovals,
-  MockSynthetixExchanger,
-  MockSynthetixExchangeRates,
+  MockSynthetixIntegratee,
+  MockSynthetixPriceSource,
   MockSynthetixToken,
   MockToken,
   MockUniswapV2Integratee,
@@ -28,6 +25,11 @@ import {
 import { utils } from 'ethers';
 import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
 import { ReleaseDeploymentConfig } from './deployment';
+
+enum RateAssets {
+  ETH,
+  USD,
+}
 
 export interface MockDeploymentConfig {
   deployer: SignerWithAddress;
@@ -76,20 +78,21 @@ export interface MockDeploymentOutput {
   centralizedRateProvider: Promise<CentralizedRateProvider>;
   mockGenericAdapter: Promise<MockGenericAdapter>;
   mockGenericIntegratee: Promise<MockGenericIntegratee>;
-  mockSynthetix: Promise<{
-    addressResolver: MockSynthetixAddressResolver;
-    delegateApprovals: MockSynthetixDelegateApprovals;
-    exchanger: MockSynthetixExchanger;
-    exchangeRates: MockSynthetixExchangeRates;
-    snx: MockSynthetix;
-    susd: MockSynthetixToken;
-    sbtc: MockSynthetixToken;
+  synthetix: Promise<{
+    mockSynthetixIntegratee: MockSynthetixIntegratee;
+    mockSynthetixPriceSource: MockSynthetixPriceSource;
+    synths: Record<string, MockSynthetixToken>;
+    currencyKeys: string[];
+    aggregators: AddressLike[];
+    rateAssets: RateAssets[];
   }>;
   chainlinkEthUsdAggregator: Promise<MockChainlinkPriceSource>;
   chainlinkAggregators: Promise<{
+    aud: MockChainlinkPriceSource;
     bat: MockChainlinkPriceSource;
     bnb: MockChainlinkPriceSource;
     bnt: MockChainlinkPriceSource;
+    btc: MockChainlinkPriceSource;
     comp: MockChainlinkPriceSource;
     dai: MockChainlinkPriceSource;
     knc: MockChainlinkPriceSource;
@@ -101,9 +104,10 @@ export interface MockDeploymentOutput {
     uni: MockChainlinkPriceSource;
     usdc: MockChainlinkPriceSource;
     usdt: MockChainlinkPriceSource;
+    xau: MockChainlinkPriceSource;
     zrx: MockChainlinkPriceSource;
-    mrt: MockChainlinkPriceSource;
     susd: MockChainlinkPriceSource;
+    mrt: MockChainlinkPriceSource;
   }>;
   chaiPriceSource: Promise<MockChaiPriceSource>;
 }
@@ -249,9 +253,11 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   },
   async chainlinkAggregators(config) {
     const [
+      aud,
       bat,
       bnb,
       bnt,
+      btc,
       comp,
       dai,
       knc,
@@ -263,10 +269,14 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       uni,
       usdc,
       usdt,
+      xau,
       zrx,
       mrt,
       susd,
     ] = await Promise.all([
+      MockChainlinkPriceSource.deploy(config.deployer, 8),
+      MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 8),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 8),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
@@ -275,18 +285,18 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
-      MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 8),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
+      MockChainlinkPriceSource.deploy(config.deployer, 8),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
       MockChainlinkPriceSource.deploy(config.deployer, 18),
     ]);
 
-    return { bat, bnb, bnt, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, zrx, mrt, susd };
+    return { aud, bat, bnb, bnt, btc, comp, dai, knc, link, mana, mln, ren, rep, uni, usdc, usdt, xau, zrx, mrt, susd };
   },
   async chainlinkEthUsdAggregator(config) {
     return MockChainlinkPriceSource.deploy(config.deployer, 8);
@@ -315,42 +325,54 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   async centralizedRateProvider(config) {
     return CentralizedRateProvider.deploy(config.deployer, 0);
   },
-  async mockSynthetix(config) {
-    const susdCurrencyKey = utils.formatBytes32String('sUSD');
-    const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
+  async synthetix(config, deployment) {
+    const synthSymbols = ['sAUD', 'sBNB', 'sBTC', 'sUSD'];
+    const rateAssets = [RateAssets.USD, RateAssets.ETH, RateAssets.USD, RateAssets.USD];
+    const aggregators = await deployment.chainlinkAggregators;
+    const synthAggregators = [aggregators.aud, aggregators.bnb, aggregators.btc, aggregators.susd];
 
-    const [susd, sbtc] = await Promise.all([
-      MockSynthetixToken.deploy(config.deployer, 'Synth sUSD', 'sUSD', 18, susdCurrencyKey),
-      MockSynthetixToken.deploy(config.deployer, 'Synth sBTC', 'sBTC', 18, sbtcCurrencyKey),
-    ]);
+    const symbolToCurrencyKeys = synthSymbols.reduce(
+      (carry, current) => ({ ...carry, [current.toLowerCase()]: utils.formatBytes32String(current) }),
+      {},
+    ) as Record<string, string>;
 
-    const addressResolver = await MockSynthetixAddressResolver.deploy(config.deployer);
-    const delegateApprovals = await MockSynthetixDelegateApprovals.deploy(config.deployer);
-    const exchangeRates = await MockSynthetixExchangeRates.deploy(config.deployer);
+    const synthTokens = await Promise.all(
+      synthSymbols.map((synth) =>
+        MockSynthetixToken.deploy(
+          config.deployer,
+          `Synth ${synth}`,
+          synth,
+          18,
+          symbolToCurrencyKeys[synth.toLowerCase()],
+        ),
+      ),
+    );
 
-    const exchanger = await MockSynthetixExchanger.deploy(config.deployer, exchangeRates.address, 5);
+    const symbolToSynth = synthSymbols
+      .map((symbol) => symbol.toLowerCase())
+      .reduce((carry, current, index) => ({ ...carry, [current]: synthTokens[index].address }), {}) as Record<
+      string,
+      MockSynthetixToken
+    >;
 
-    const snx = await MockSynthetix.deploy(config.deployer, delegateApprovals.address, exchanger.address);
+    const mockSynthetixPriceSource = await MockSynthetixPriceSource.deploy(
+      config.deployer,
+      await deployment.chainlinkEthUsdAggregator,
+    );
 
-    await addressResolver.setAddress(utils.formatBytes32String('DelegateApprovals'), delegateApprovals.address);
-    await addressResolver.setAddress(utils.formatBytes32String('Exchanger'), exchanger.address);
-    await addressResolver.setAddress(utils.formatBytes32String('ExchangeRates'), exchangeRates.address);
-    await addressResolver.setAddress(utils.formatBytes32String('Synthetix'), snx.address);
-
-    await exchangeRates.setRate(susdCurrencyKey, '1000000000000000000');
-    await exchangeRates.setRate(sbtcCurrencyKey, '15317000000000000000000');
-
-    await snx.setSynth(susdCurrencyKey, susd.address);
-    await snx.setSynth(sbtcCurrencyKey, sbtc.address);
+    const mockSynthetixIntegratee = await MockSynthetixIntegratee.deploy(
+      config.deployer,
+      5,
+      mockSynthetixPriceSource.address,
+    );
 
     return {
-      addressResolver,
-      delegateApprovals,
-      exchangeRates,
-      exchanger,
-      snx,
-      susd,
-      sbtc,
+      mockSynthetixIntegratee,
+      mockSynthetixPriceSource,
+      currencyKeys: Object.values(symbolToCurrencyKeys),
+      synths: symbolToSynth,
+      aggregators: synthAggregators,
+      rateAssets,
     };
   },
   async uniswapV2Integratee(config, deployment) {
@@ -390,6 +412,7 @@ export async function configureMockRelease({
     mocks.kyberIntegratee,
     mocks.mockGenericIntegratee,
     mocks.paraswapIntegratee,
+    mocks.synthetix.mockSynthetixIntegratee,
     mocks.uniswapV2Integratee,
   ];
 
@@ -411,8 +434,6 @@ export async function configureMockRelease({
     mocks.tokens.zrx,
     mocks.tokens.mrt,
     mocks.chaiIntegratee,
-    mocks.mockSynthetix.susd,
-    mocks.mockSynthetix.sbtc,
   ];
 
   const uniswapV2Derivatives = [mocks.uniswapV2Derivatives.mlnWeth, mocks.uniswapV2Derivatives.kncWeth];
@@ -434,7 +455,7 @@ export async function configureMockRelease({
     mocks.tokens.usdt,
     mocks.tokens.zrx,
     mocks.tokens.mrt,
-    mocks.mockSynthetix.susd,
+    mocks.synthetix.synths.susd,
   ];
 
   const chainlinkAggregators = [
@@ -458,23 +479,23 @@ export async function configureMockRelease({
   ];
 
   const chainlinkRateAssets = [
-    0, // bat
-    1, // bnb
-    0, // bnt
-    0, // comp
-    0, // dai
-    0, // knc
-    0, // link
-    0, // mana
-    0, // mln
-    1, // ren
-    0, // rep
-    0, // uni
-    0, // usdc
-    0, // usdt
-    0, // zrx
-    0, // MRT/ETH
-    0, // susd
+    RateAssets.ETH, // bat
+    RateAssets.USD, // bnb
+    RateAssets.ETH, // bnt
+    RateAssets.ETH, // comp
+    RateAssets.ETH, // dai
+    RateAssets.ETH, // knc
+    RateAssets.ETH, // link
+    RateAssets.ETH, // mana
+    RateAssets.ETH, // mln
+    RateAssets.USD, // ren
+    RateAssets.ETH, // rep
+    RateAssets.ETH, // uni
+    RateAssets.ETH, // usdc
+    RateAssets.ETH, // usdt
+    RateAssets.ETH, // zrx
+    RateAssets.ETH, // MRT/ETH
+    RateAssets.ETH, // susd
   ];
 
   // Make all accounts rich in WETH and tokens.
@@ -489,12 +510,36 @@ export async function configureMockRelease({
   await seedUniswapPairs(mocks.tokens.weth, Object.values(uniswapV2Derivatives), mocks.uniswapV2Integratee, deployer);
   // Make integratees rich in WETH, ETH, and tokens.
 
+  const synthTokens = Object.values(mocks.synthetix.synths).map(
+    (tokenAddress) => new MockSynthetixToken(tokenAddress, deployer),
+  );
+
+  // Make all accounts rich in and tokens.
+  await Promise.all<any>([
+    makeTokenRich(synthTokens, deployer),
+    ...accounts.map(async (account) => {
+      await Promise.all([makeTokenRich(synthTokens, account), makeWethRich(mocks.tokens.weth, account)]);
+    }),
+  ]);
+
+  await mocks.synthetix.mockSynthetixPriceSource.setPriceSourcesForCurrencyKeys(
+    Object.values(mocks.synthetix.currencyKeys),
+    Object.values(mocks.synthetix.aggregators),
+    mocks.synthetix.rateAssets,
+  );
+
+  await mocks.synthetix.mockSynthetixIntegratee.setSynthFromCurrencyKeys(
+    Object.values(mocks.synthetix.currencyKeys),
+    synthTokens,
+  );
+
   await Promise.all(
     integratees.map(async (integratee) => {
       await Promise.all([
         mocks.tokens.weth.transfer(integratee, utils.parseEther('100')),
         makeEthRich(deployer, integratee),
         makeTokenRich(tokens, integratee),
+        makeTokenRich(synthTokens, integratee),
       ]);
     }),
   );
@@ -514,7 +559,10 @@ export async function configureMockRelease({
         czrx: mocks.compoundTokens.czrx,
       },
       synthetix: {
-        sbtc: mocks.mockSynthetix.sbtc,
+        saud: mocks.synthetix.synths.saud,
+        sbnb: mocks.synthetix.synths.sbnb,
+        sbtc: mocks.synthetix.synths.sbtc,
+        susd: mocks.synthetix.synths.susd,
       },
       uniswapV2: {
         mlnWeth: mocks.uniswapV2Derivatives.mlnWeth,
@@ -528,7 +576,7 @@ export async function configureMockRelease({
     mln: mocks.tokens.mln,
     weth: mocks.tokens.weth,
     registeredVaultCalls: {
-      contracts: [mocks.mockSynthetix.delegateApprovals],
+      contracts: [mocks.synthetix.mockSynthetixIntegratee],
       selectors: [sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)'))],
     },
     compoundComptroller: randomAddress(),
@@ -547,11 +595,12 @@ export async function configureMockRelease({
       // TODO
       kyber: mocks.kyberIntegratee,
       synthetix: {
-        addressResolver: mocks.mockSynthetix.addressResolver,
-        delegateApprovals: mocks.mockSynthetix.delegateApprovals,
-        exchanger: mocks.mockSynthetix.exchanger,
-        snx: mocks.mockSynthetix.snx,
-        susd: mocks.mockSynthetix.susd,
+        addressResolver: mocks.synthetix.mockSynthetixIntegratee,
+        delegateApprovals: mocks.synthetix.mockSynthetixIntegratee,
+        exchanger: mocks.synthetix.mockSynthetixPriceSource,
+        exchangeRates: mocks.synthetix.mockSynthetixPriceSource,
+        snx: mocks.synthetix.mockSynthetixIntegratee,
+        susd: mocks.synthetix.synths.susd,
         originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
         trackingCode: utils.formatBytes32String('ENZYME'),
       },

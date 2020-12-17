@@ -37,7 +37,10 @@ export const mainnet = {
       czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
     },
     synthetix: {
+      saud: '0xF48e200EAF9906362BB1442fca31e0835773b8B4',
+      sbnb: '0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848',
       sbtc: '0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6',
+      susd: '0x57Ab1ec28D129707052df4dF418D58a2D46d5f51',
     },
     uniswapV2: {
       mlnWeth: '0x15ab0333985FD1E289adF4fBBe19261454776642',

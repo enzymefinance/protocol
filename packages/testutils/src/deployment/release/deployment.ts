@@ -80,7 +80,10 @@ export interface ReleaseDeploymentConfig {
       czrx: AddressLike;
     };
     synthetix: {
+      saud: AddressLike;
+      sbnb: AddressLike;
       sbtc: AddressLike;
+      susd: AddressLike;
     };
     uniswapV2: {
       mlnWeth: AddressLike;
@@ -95,6 +98,7 @@ export interface ReleaseDeploymentConfig {
       addressResolver: AddressLike;
       delegateApprovals: AddressLike;
       exchanger: AddressLike;
+      exchangeRates: AddressLike;
       snx: AddressLike;
       susd: AddressLike;
       originator: AddressLike;
@@ -297,7 +301,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       config.dispatcher,
       config.integratees.synthetix.addressResolver,
       config.integratees.synthetix.susd,
-      Object.values(config.derivatives.synthetix),
+      Object.values(config.derivatives.synthetix).filter((d) => d != config.integratees.synthetix.susd),
     );
   },
   async uniswapV2PoolPriceFeed(config, deployment) {

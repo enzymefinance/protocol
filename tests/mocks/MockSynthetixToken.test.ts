@@ -1,5 +1,10 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ISynthetixDelegateApprovals, MockSynthetix, MockSynthetixToken, StandardToken } from '@melonproject/protocol';
+import {
+  ISynthetixDelegateApprovals,
+  MockSynthetixIntegratee,
+  MockSynthetixToken,
+  StandardToken,
+} from '@melonproject/protocol';
 import { randomizedTestDeployment } from '@melonproject/testutils';
 import { utils } from 'ethers';
 
@@ -29,7 +34,7 @@ it('it cannot transfer after an exchange', async () => {
   const iDelegateApprovals = new ISynthetixDelegateApprovals(delegateApprovals, sender);
   await iDelegateApprovals.approveExchangeOnBehalf(sender);
 
-  const synthetix = new MockSynthetix(snx, sender);
+  const synthetix = new MockSynthetixIntegratee(snx, sender);
 
   await synthetix.exchangeOnBehalfWithTracking(
     sender,

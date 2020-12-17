@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
-import { MockSynthetixAddressResolver, MockSynthetixExchangeRates, MockSynthetixToken } from '@melonproject/protocol';
+import { MockSynthetixPriceSource, MockSynthetixToken } from '@melonproject/protocol';
 import { defaultTestDeployment } from '@melonproject/testutils';
 import { constants, utils } from 'ethers';
 
@@ -65,23 +65,21 @@ describe('getRatesToUnderlyings', () => {
     const {
       config: {
         deployer,
-        derivatives: {
-          synthetix: { sbtc },
-        },
         integratees: {
-          synthetix: { addressResolver },
+          synthetix: { exchangeRates },
         },
       },
       deployment: { synthetixPriceFeed },
+      newSynth1,
+      newSynth1CurrencyKey,
     } = await provider.snapshot(snapshot);
 
-    const ar = new MockSynthetixAddressResolver(addressResolver, deployer);
-    const exchangeRates = await ar.addresses(utils.formatBytes32String('ExchangeRates'));
-    const er = new MockSynthetixExchangeRates(exchangeRates, deployer);
+    await synthetixPriceFeed.addSynths([newSynth1]);
+    const er = new MockSynthetixPriceSource(exchangeRates, deployer);
 
-    await er.setRate(utils.formatBytes32String('sBTC'), '0');
+    await er.setRate(newSynth1CurrencyKey, '0');
 
-    const getRatesToUnderlyings = synthetixPriceFeed.getRatesToUnderlyings.args(sbtc).call();
+    const getRatesToUnderlyings = synthetixPriceFeed.getRatesToUnderlyings.args(newSynth1).call();
 
     await expect(getRatesToUnderlyings).rejects.toBeRevertedWith(
       'getRatesToUnderlyings: _derivative rate is not valid',
@@ -92,25 +90,24 @@ describe('getRatesToUnderlyings', () => {
     const {
       config: {
         deployer,
-        derivatives: {
-          synthetix: { sbtc },
-        },
         integratees: {
-          synthetix: { addressResolver, susd },
+          synthetix: { susd, exchangeRates },
         },
       },
       deployment: { synthetixPriceFeed },
+      newSynth1,
+      newSynth1CurrencyKey,
     } = await provider.snapshot(snapshot);
 
-    const ar = new MockSynthetixAddressResolver(addressResolver, deployer);
-    const exchangeRates = await ar.addresses(utils.formatBytes32String('ExchangeRates'));
-    const er = new MockSynthetixExchangeRates(exchangeRates, deployer);
+    await synthetixPriceFeed.addSynths([newSynth1]);
+    const expectedRate = utils.parseEther('1');
+    const er = new MockSynthetixPriceSource(exchangeRates, deployer);
+    await er.setRate(newSynth1CurrencyKey, expectedRate);
 
-    const sbtcRate = await er.rates(utils.formatBytes32String('sBTC'));
-    const getRatesToUnderlyings = await synthetixPriceFeed.getRatesToUnderlyings.args(sbtc).call();
+    const getRatesToUnderlyings = await synthetixPriceFeed.getRatesToUnderlyings.args(newSynth1).call();
 
     expect(getRatesToUnderlyings).toMatchFunctionOutput(synthetixPriceFeed.getRatesToUnderlyings.fragment, {
-      rates_: [sbtcRate],
+      rates_: [expectedRate],
       underlyings_: [susd],
     });
   });
@@ -171,10 +168,12 @@ describe('synths registry', () => {
 
     it('does not allow an already-set Synth', async () => {
       const {
-        deployment: {
-          synthetixPriceFeed,
-          mockSynthetix: { sbtc },
+        config: {
+          derivatives: {
+            synthetix: { sbtc },
+          },
         },
+        deployment: { synthetixPriceFeed },
       } = await provider.snapshot(snapshot);
 
       await expect(synthetixPriceFeed.addSynths([sbtc])).rejects.toBeRevertedWith('Value already set');
@@ -246,10 +245,12 @@ describe('synths registry', () => {
 
     it('does not allow a Synth that has the correct currencyKey', async () => {
       const {
-        deployment: {
-          mockSynthetix: { sbtc },
-          synthetixPriceFeed,
+        config: {
+          derivatives: {
+            synthetix: { sbtc },
+          },
         },
+        deployment: { synthetixPriceFeed },
       } = await provider.snapshot(snapshot);
 
       await expect(synthetixPriceFeed.updateSynthCurrencyKeys([sbtc])).rejects.toBeRevertedWith(

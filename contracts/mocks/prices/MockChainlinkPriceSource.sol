@@ -30,4 +30,8 @@ contract MockChainlinkPriceSource {
     function setAggregator(address _nextAggregator) external {
         aggregator = _nextAggregator;
     }
+
+    function decimals() public view returns (uint256) {
+        return DECIMALS;
+    }
 }
