@@ -54,7 +54,7 @@ We use [prettier](https://prettier.io/) for formatting both Solidity and TypeScr
 
 ### Solidity
 
-Please adhere to the recommended [official Solidity style guide for v0.6.8](https://solidity.readthedocs.io/en/v0.6.8/style-guide.html), in addition to the following styling choices:
+Please adhere to the recommended [official Solidity style guide for v0.6.12](https://solidity.readthedocs.io/en/v0.6.12/style-guide.html), in addition to the following styling choices:
 
 #### State variables
 

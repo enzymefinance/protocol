@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.6.8;
+pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
 import "../../../../interfaces/ICERC20.sol";

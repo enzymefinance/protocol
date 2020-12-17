@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.6.8;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
@@ -420,7 +420,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             "postMigrateOriginHook: Only Dispatcher can call this function"
         );
 
-        /// Must use PreMigrate hook to get the ComptrollerProxy from the VaultProxy
+        // Must use PreMigrate hook to get the ComptrollerProxy from the VaultProxy
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
 
         // Wind down fund and destroy its config

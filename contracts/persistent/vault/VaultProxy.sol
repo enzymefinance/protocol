@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.6.8;
+pragma solidity 0.6.12;
 
 import "./utils/ProxiableVaultLib.sol";
 
 /// @title VaultProxy Contract
 /// @author Melon Council DAO <security@meloncoucil.io>
 /// @notice A proxy contract for all VaultProxy instances, slightly modified from EIP-1822
-/// @dev Adapted from the recommended implementation of a Proxy in EIP-1822, updated for solc 0.6.8,
+/// @dev Adapted from the recommended implementation of a Proxy in EIP-1822, updated for solc 0.6.12,
 /// and using the EIP-1967 storage slot for the proxiable implementation.
 /// i.e., `bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)`, which is
 /// "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
