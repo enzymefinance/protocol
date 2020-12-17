@@ -168,9 +168,7 @@ contract ComptrollerLib is IComptroller, ComptrollerEvents, ComptrollerStorage {
         bytes calldata _callArgs
     ) external override onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultAction {
         require(
-            _extension == FEE_MANAGER ||
-                _extension == POLICY_MANAGER ||
-                _extension == INTEGRATION_MANAGER,
+            _extension == FEE_MANAGER || _extension == INTEGRATION_MANAGER,
             "callOnExtension: _extension invalid"
         );
 
