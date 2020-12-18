@@ -9,6 +9,8 @@ import {
 } from '@melonproject/testutils';
 import { utils } from 'ethers';
 
+const gasAssertionTolerance = 0.03; // 3%
+
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultForkDeployment(provider);
 
@@ -84,7 +86,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(125000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(125000), gasAssertionTolerance);
   });
 });
 

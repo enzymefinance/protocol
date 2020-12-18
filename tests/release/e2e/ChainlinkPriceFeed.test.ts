@@ -99,9 +99,7 @@ describe('addPrimitives', () => {
     const usdcAggregatorAddress = '0x986b5E1e1755e3C2440e960477f25201B0a8bbD4';
     const usdcAggregator = new IChainlinkAggregator(usdcAggregatorAddress, deployer);
 
-    // Round up from 51289
-    const addPrimitivesReceipt = await chainlinkPriceFeed.addPrimitives([usdc], [usdcAggregator], [0]);
-    expect(addPrimitivesReceipt).toCostLessThan('52000');
+    await chainlinkPriceFeed.addPrimitives([usdc], [usdcAggregator], [0]);
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(usdc);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {

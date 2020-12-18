@@ -2,6 +2,8 @@ import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { ICERC20 } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
 
+const gasAssertionTolerance = 0.03; // 3%
+
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultForkDeployment(provider);
 
@@ -34,7 +36,7 @@ describe('getRatesToUnderlyings', () => {
     expect(feedRate.underlyings_[0]).toMatchAddress(token);
 
     // Rounding up from 42295
-    expect(getRatesReceipt).toCostLessThan('42300');
+    expect(getRatesReceipt).toCostLessThan('42300', gasAssertionTolerance);
   });
 
   it('returns rate for underlying token (cETH)', async () => {
@@ -55,6 +57,6 @@ describe('getRatesToUnderlyings', () => {
     expect(feedRate.underlyings_[0]).toMatchAddress(token);
 
     // Rounding up from 30991
-    expect(getRatesReceipt).toCostLessThan('31000');
+    expect(getRatesReceipt).toCostLessThan('31000', gasAssertionTolerance);
   });
 });

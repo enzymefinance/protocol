@@ -32,6 +32,8 @@ import { BigNumber, utils } from 'ethers';
 
 export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T : never;
 
+const gasAssertionTolerance = 0.03; // 3%
+
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultForkDeployment(provider);
 
@@ -116,14 +118,12 @@ describe('Walkthrough a fund migration', () => {
       policyManagerConfig,
     });
 
-    expect(createFundTx.receipt).toCostLessThan(`675000`);
-
     comptrollerProxy = createFundTx.comptrollerProxy;
     vaultProxy = createFundTx.vaultProxy;
   });
 
   it('buys shares of the fund', async () => {
-    const buySharesTx = await buyShares({
+    await buyShares({
       comptrollerProxy,
       signer: investor,
       buyers: [investor],
@@ -131,9 +131,6 @@ describe('Walkthrough a fund migration', () => {
       investmentAmounts: [utils.parseEther('1')],
       minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
-
-    // Bumped from 402056
-    expect(buySharesTx).toCostLessThan(403000);
 
     const rate = utils.parseEther('0.05');
     const rateDivisor = utils.parseEther('1');
@@ -196,14 +193,11 @@ describe('Walkthrough a fund migration', () => {
     const balance = await vaultProxy.balanceOf(investor);
     const redeemQuantity = balance.div(2);
 
-    const redeemed = await redeemShares({
+    await redeemShares({
       comptrollerProxy,
       signer: investor,
       quantity: redeemQuantity,
     });
-
-    // Bumped from 2394377
-    expect(redeemed).toCostLessThan(2395000);
 
     preMigrationShareBalance = await vaultProxy.balanceOf(investor);
     expect(preMigrationShareBalance).toEqBigNumber(balance.sub(redeemQuantity));
@@ -253,7 +247,7 @@ describe('Walkthrough a fund migration', () => {
       policyManagerConfigData: policyManagerConfig,
     });
 
-    expect(createMigratedFundTx.receipt).toCostLessThan(`333000`);
+    expect(createMigratedFundTx.receipt).toCostLessThan(`333000`, gasAssertionTolerance);
 
     newComptrollerProxy = createMigratedFundTx.comptrollerProxy;
   });
@@ -263,7 +257,7 @@ describe('Walkthrough a fund migration', () => {
       .connect(manager)
       .signalMigration(vaultProxy, newComptrollerProxy);
 
-    expect(migrationSignal).toCostLessThan(`67000`);
+    expect(migrationSignal).toCostLessThan(`67000`, gasAssertionTolerance);
 
     const getPendingComptrollerProxyCreatorCall = await newRelease.fundDeployer.getPendingComptrollerProxyCreator(
       newComptrollerProxy,

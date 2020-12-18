@@ -18,6 +18,8 @@ import {
 } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
+const gasAssertionTolerance = 0.03; // 3%
+
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
     accounts: [fundOwner, ...remainingAccounts],
@@ -197,7 +199,7 @@ describe('lend', () => {
     });
 
     // Rounding up from 562253
-    expect(lendReceipt).toCostLessThan('563000');
+    expect(lendReceipt).toCostLessThan('563000', gasAssertionTolerance);
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -219,7 +221,7 @@ describe('lend', () => {
     });
 
     // Rounding up from 369339
-    expect(lendReceipt).toCostLessThan('370000');
+    expect(lendReceipt).toCostLessThan('370000', gasAssertionTolerance);
   });
 });
 
@@ -242,7 +244,7 @@ describe('redeem', () => {
     });
 
     // Rounding up from 594224
-    expect(redeemReceipt).toCostLessThan('595000');
+    expect(redeemReceipt).toCostLessThan('595000', gasAssertionTolerance);
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
@@ -263,7 +265,7 @@ describe('redeem', () => {
     });
 
     // Rounding up from 435237
-    expect(redeemReceipt).toCostLessThan('436000');
+    expect(redeemReceipt).toCostLessThan('436000', gasAssertionTolerance);
   });
 });
 

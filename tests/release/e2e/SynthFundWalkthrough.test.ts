@@ -112,13 +112,6 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     });
   });
 
-  it('calculates the GAV of the fund with only the denomination asset', async () => {
-    const calcGavTx = await comptrollerProxy.calcGav(true);
-
-    // Bumped from 124796
-    expect(calcGavTx).toCostLessThan(`125000`);
-  });
-
   it('attempts to trade on Synthetix within the redemption window', async () => {
     await expect(
       synthetixTakeOrder({
@@ -181,7 +174,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       assets: [incomingAsset, outgoingAsset],
     });
 
-    const takeOrder = await synthetixTakeOrder({
+    await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
       integrationManager: deployment.integrationManager,
@@ -200,9 +193,6 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
-
-    // Bumped from 789692
-    expect(takeOrder).toCostLessThan(790000);
   });
 
   it('trades again on Synthetix with the same assets', async () => {
@@ -318,12 +308,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   it('investor redeems all shares after the waiting period', async () => {
     await warpBeyondWaitingPeriod();
 
-    const redeemed = await redeemShares({
+    await redeemShares({
       comptrollerProxy,
       signer: investor,
     });
-
-    // Bumped from 397036
-    expect(redeemed).toCostLessThan(398000);
   });
 });
