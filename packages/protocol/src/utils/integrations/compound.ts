@@ -3,7 +3,7 @@ import { BigNumberish } from 'ethers';
 import { encodeArgs } from '../encoding';
 
 // Note: arguments are valid for both Lend and Redeem functions
-export async function compoundArgs({
+export function compoundArgs({
   cToken,
   outgoingAssetAmount,
   minIncomingAssetAmount,
