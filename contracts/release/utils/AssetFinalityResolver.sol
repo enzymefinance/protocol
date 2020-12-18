@@ -2,16 +2,14 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../interfaces/ISynthetixAddressResolver.sol";
-import "../../interfaces/ISynthetixExchanger.sol";
-import "../price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
-import "./IAssetFinalityResolver.sol";
+import "../infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
+import "../interfaces/ISynthetixAddressResolver.sol";
+import "../interfaces/ISynthetixExchanger.sol";
 
 /// @title AssetFinalityResolver Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract that helps achieve asset finality
-/// @dev Intended to be delegate-callable
-contract AssetFinalityResolver is IAssetFinalityResolver {
+abstract contract AssetFinalityResolver {
     address internal immutable SYNTHETIX_ADDRESS_RESOLVER;
     address internal immutable SYNTHETIX_PRICE_FEED;
 
@@ -20,12 +18,12 @@ contract AssetFinalityResolver is IAssetFinalityResolver {
         SYNTHETIX_PRICE_FEED = _synthetixPriceFeed;
     }
 
-    /// @dev Helper to finalize an asset's balance at a given target address and return its balance
-    function finalizeAndGetAssetBalance(
+    /// @dev Helper to finalize a Synth balance at a given target address and return its balance
+    function __finalizeIfSynthAndGetAssetBalance(
         address _target,
         address _asset,
         bool _requireFinality
-    ) external override returns (uint256 assetBalance_) {
+    ) internal returns (uint256 assetBalance_) {
         bytes32 currencyKey = SynthetixPriceFeed(SYNTHETIX_PRICE_FEED).getCurrencyKeyForSynth(
             _asset
         );

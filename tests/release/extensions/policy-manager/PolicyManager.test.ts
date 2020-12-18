@@ -151,9 +151,13 @@ describe('activateForFund', () => {
   it('stores the validated VaultProxy and calls `activateForFund()` on each policy (migrated fund only)', async () => {
     // create fund with policies
     const {
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         fundDeployer,
         chainlinkPriceFeed,
         dispatcher,
@@ -161,6 +165,7 @@ describe('activateForFund', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
       },
@@ -180,14 +185,15 @@ describe('activateForFund', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
@@ -229,9 +235,13 @@ describe('activateForFund', () => {
 describe('deactivateForFund', () => {
   it('removes VaultProxy and all policies from local storage', async () => {
     const {
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         fundDeployer,
         chainlinkPriceFeed,
         dispatcher,
@@ -239,6 +249,7 @@ describe('deactivateForFund', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
       },
@@ -257,14 +268,15 @@ describe('deactivateForFund', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });

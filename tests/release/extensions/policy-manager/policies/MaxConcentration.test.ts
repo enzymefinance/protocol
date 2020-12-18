@@ -438,8 +438,13 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         maxConcentration,
         trackedAssetsAdapter,
         feeManager,
@@ -449,11 +454,11 @@ describe('integration tests', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
         tokens: { weth: denominationAsset, mln: incomingAsset },
       },
-      config,
     } = await defaultTestDeployment(provider);
 
     // configure policy
@@ -476,14 +481,15 @@ describe('integration tests', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       policyManager,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });

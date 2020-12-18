@@ -42,19 +42,17 @@ describe('constructor', () => {
     const {
       config: {
         integrationManager: { trackedAssetsLimit },
+        integratees: { synthetix },
       },
       deployment: {
         aggregatedDerivativePriceFeed,
-        assetFinalityResolver,
         chainlinkPriceFeed,
         integrationManager,
         fundDeployer,
         policyManager,
+        synthetixPriceFeed,
       },
     } = await provider.snapshot(snapshot);
-
-    const getAssetFinalityResolverCall = await integrationManager.getAssetFinalityResolver();
-    expect(getAssetFinalityResolverCall).toMatchAddress(assetFinalityResolver);
 
     const getDerivativePriceFeedCall = await integrationManager.getDerivativePriceFeed();
     expect(getDerivativePriceFeedCall).toMatchAddress(aggregatedDerivativePriceFeed);
@@ -70,6 +68,13 @@ describe('constructor', () => {
 
     const getTrackedAssetsLimitCall = await integrationManager.getTrackedAssetsLimit();
     expect(getTrackedAssetsLimitCall).toEqBigNumber(trackedAssetsLimit);
+
+    // AssetFinalityResolver
+    const getSynthetixAddressResolverCall = await integrationManager.getSynthetixAddressResolver();
+    expect(getSynthetixAddressResolverCall).toMatchAddress(synthetix.addressResolver);
+
+    const getSynthetixPriceFeedCall = await integrationManager.getSynthetixPriceFeed();
+    expect(getSynthetixPriceFeedCall).toMatchAddress(synthetixPriceFeed);
   });
 });
 

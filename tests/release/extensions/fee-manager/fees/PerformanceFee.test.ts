@@ -954,9 +954,13 @@ describe('integration', () => {
   it('can create a migrated fund with this fee', async () => {
     const {
       accounts: [fundOwner],
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -964,6 +968,7 @@ describe('integration', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
         performanceFee,
@@ -995,14 +1000,15 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });

@@ -4,7 +4,6 @@ import {
   AdapterWhitelist,
   AggregatedDerivativePriceFeed,
   AssetBlacklist,
-  AssetFinalityResolver,
   AssetWhitelist,
   AuthUserExecutedSharesRequestorFactory,
   AuthUserExecutedSharesRequestorLib,
@@ -137,7 +136,6 @@ export interface ReleaseDeploymentOutput {
   permissionedVaultActionLib: Promise<PermissionedVaultActionLib>;
   vaultLib: Promise<VaultLib>;
   // Shared Infrastructure
-  assetFinalityResolver: Promise<AssetFinalityResolver>;
   valueInterpreter: Promise<ValueInterpreter>;
   // Extensions
   feeManager: Promise<FeeManager>;
@@ -195,7 +193,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.policyManager,
       await deployment.fundLifecycleLib,
       await deployment.permissionedVaultActionLib,
-      await deployment.assetFinalityResolver,
+      await deployment.synthetixPriceFeed,
+      config.integratees.synthetix.addressResolver,
     );
 
     const fundDeployer = await deployment.fundDeployer;
@@ -233,14 +232,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
   async vaultLib(config) {
     return VaultLib.deploy(config.deployer);
   },
-  // Shared Infrastructure
-  async assetFinalityResolver(config, deployment) {
-    return AssetFinalityResolver.deploy(
-      config.deployer,
-      await deployment.synthetixPriceFeed,
-      config.integratees.synthetix.addressResolver,
-    );
-  },
   async valueInterpreter(config, deployment) {
     return ValueInterpreter.deploy(
       config.deployer,
@@ -260,7 +251,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.aggregatedDerivativePriceFeed,
       await deployment.chainlinkPriceFeed,
       config.integrationManager.trackedAssetsLimit,
-      await deployment.assetFinalityResolver,
+      await deployment.synthetixPriceFeed,
+      config.integratees.synthetix.addressResolver,
     );
   },
   async policyManager(config, deployment) {

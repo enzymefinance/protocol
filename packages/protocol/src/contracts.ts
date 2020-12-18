@@ -17,7 +17,6 @@ export { VaultLib } from './codegen/VaultLib';
 export { FundLifecycleLib } from './codegen/FundLifecycleLib';
 
 // Infrastructure
-export { AssetFinalityResolver } from './codegen/AssetFinalityResolver';
 export { ValueInterpreter } from './codegen/ValueInterpreter';
 
 // Extensions

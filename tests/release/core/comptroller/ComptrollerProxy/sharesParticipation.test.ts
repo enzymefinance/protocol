@@ -80,15 +80,20 @@ describe('buyShares', () => {
   it('does not allow a fund that is pending migration', async () => {
     const {
       accounts: [signer, buyer],
-      config: { deployer },
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
       },
@@ -97,7 +102,6 @@ describe('buyShares', () => {
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
       deployer,
       chainlinkPriceFeed,
       dispatcher,
@@ -105,6 +109,8 @@ describe('buyShares', () => {
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
@@ -973,9 +979,13 @@ describe('sharesActionTimelock', () => {
 
   it('is skipped when redeeming shares if there is a pending migration', async () => {
     const {
-      config: { deployer },
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -983,6 +993,7 @@ describe('sharesActionTimelock', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         tokens: { weth: denominationAsset },
         valueInterpreter,
         vaultLib,
@@ -1022,7 +1033,6 @@ describe('sharesActionTimelock', () => {
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
       deployer,
       chainlinkPriceFeed,
       dispatcher,
@@ -1030,6 +1040,8 @@ describe('sharesActionTimelock', () => {
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });

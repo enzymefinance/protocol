@@ -542,9 +542,13 @@ describe('integration', () => {
   it('can migrate a fund with this fee, buying shares after migration', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -553,6 +557,7 @@ describe('integration', () => {
         managementFee,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
         tokens: { weth: denominationAsset },
@@ -576,14 +581,15 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
@@ -666,9 +672,13 @@ describe('integration', () => {
   it('can migrate a fund with this fee, buying shares before migration', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -677,6 +687,7 @@ describe('integration', () => {
         managementFee,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
         tokens: { weth: denominationAsset },
@@ -712,14 +723,15 @@ describe('integration', () => {
     const sharesBeforePayout = await vaultProxy.totalSupply(); // 1.0
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });

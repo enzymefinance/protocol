@@ -15,8 +15,10 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('constructor', () => {
   it('sets initial state for library', async () => {
     const {
+      config: {
+        integratees: { synthetix },
+      },
       deployment: {
-        assetFinalityResolver,
         comptrollerLib,
         dispatcher,
         feeManager,
@@ -25,13 +27,13 @@ describe('constructor', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
       },
     } = await provider.snapshot(snapshot);
 
     const routesCall = await comptrollerLib.getLibRoutes();
     expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes, {
-      assetFinalityResolver_: assetFinalityResolver,
       dispatcher_: dispatcher,
       feeManager_: feeManager,
       fundDeployer_: fundDeployer,
@@ -41,6 +43,12 @@ describe('constructor', () => {
       policyManager_: policyManager,
       valueInterpreter_: valueInterpreter,
     });
+
+    const getSynthetixAddressResolverCall = await comptrollerLib.getSynthetixAddressResolver();
+    expect(getSynthetixAddressResolverCall).toMatchAddress(synthetix.addressResolver);
+
+    const getSynthetixPriceFeedCall = await comptrollerLib.getSynthetixPriceFeed();
+    expect(getSynthetixPriceFeedCall).toMatchAddress(synthetixPriceFeed);
 
     // The following should be default values
     const denominationAssetCall = await comptrollerLib.getDenominationAsset();

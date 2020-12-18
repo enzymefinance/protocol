@@ -165,9 +165,13 @@ describe('integration', () => {
   it('can migrate a fund with this fee', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         entranceRateDirectFee,
@@ -176,6 +180,7 @@ describe('integration', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
         tokens: { weth: denominationAsset },
@@ -200,14 +205,15 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
@@ -266,9 +272,13 @@ describe('integration', () => {
   it('can add this fee to a fund on migration', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
-      config,
+      config: {
+        deployer,
+        integratees: {
+          synthetix: { addressResolver: synthetixAddressResolverAddress },
+        },
+      },
       deployment: {
-        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         entranceRateDirectFee,
@@ -277,6 +287,7 @@ describe('integration', () => {
         integrationManager,
         permissionedVaultActionLib,
         policyManager,
+        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
         tokens: { weth: denominationAsset },
@@ -300,14 +311,15 @@ describe('integration', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
-      deployer: config.deployer,
+      deployer,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
       integrationManager,
       permissionedVaultActionLib,
       policyManager,
+      synthetixPriceFeed,
+      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
