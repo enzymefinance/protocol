@@ -414,6 +414,7 @@ export async function configureMockRelease({
     mocks.paraswapIntegratee,
     mocks.synthetix.mockSynthetixIntegratee,
     mocks.uniswapV2Integratee,
+    ...Object.values(mocks.compoundTokens),
   ];
 
   const tokens = [
@@ -509,6 +510,28 @@ export async function configureMockRelease({
 
   await seedUniswapPairs(mocks.tokens.weth, Object.values(uniswapV2Derivatives), mocks.uniswapV2Integratee, deployer);
   // Make integratees rich in WETH, ETH, and tokens.
+
+  const underlyingTokens = [
+    mocks.tokens.bat,
+    mocks.tokens.comp,
+    mocks.tokens.dai,
+    mocks.tokens.rep,
+    mocks.tokens.uni,
+    mocks.tokens.usdc,
+    mocks.tokens.zrx,
+  ];
+
+  const cTokens = [
+    mocks.compoundTokens.cbat,
+    mocks.compoundTokens.ccomp,
+    mocks.compoundTokens.cdai,
+    mocks.compoundTokens.crep,
+    mocks.compoundTokens.cuni,
+    mocks.compoundTokens.cusdc,
+    mocks.compoundTokens.czrx,
+  ];
+
+  await seedCTokens(deployer, underlyingTokens, cTokens, mocks.compoundTokens.ceth);
 
   const synthTokens = Object.values(mocks.synthetix.synths).map(
     (tokenAddress) => new MockSynthetixToken(tokenAddress, deployer),
@@ -677,6 +700,27 @@ export async function seedUniswapPairs(
   });
 
   return Promise.all(promises);
+}
+
+export async function seedCTokens(
+  provider: SignerWithAddress,
+  tokens: MockToken[],
+  cTokens: MockCTokenIntegratee[],
+  ceth: MockCTokenIntegratee,
+  tokenAmount = utils.parseUnits('1', 27),
+  cTokenAmount = utils.parseUnits('1', 27),
+) {
+  const promises = [];
+  for (const index in tokens) {
+    const mockToken = new MockToken(cTokens[index], provider);
+    promises.push(mockToken.mintFor(cTokens[index].address, cTokenAmount));
+
+    const token = new MockToken(tokens[index], provider);
+    promises.push(token.mintFor(cTokens[index].address, tokenAmount));
+  }
+  const cethAsToken = new MockToken(ceth.address, provider);
+  const cethInitPromises = [cethAsToken.mintFor(ceth, cTokenAmount), makeEthRich(provider, cethAsToken.address)];
+  return promises.push(cethInitPromises);
 }
 
 export function makeTokenRich(tokens: MockToken[], receiver: AddressLike, amount = utils.parseUnits('1', 22)) {

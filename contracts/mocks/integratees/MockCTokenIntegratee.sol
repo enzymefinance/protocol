@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "../prices/CentralizedRateProvider.sol";
 import "../utils/SwapperBase.sol";
 
-contract MockCTokenIntegratee is ERC20, SwapperBase {
+contract MockCTokenIntegratee is ERC20, SwapperBase, Ownable {
     address private immutable TOKEN;
     address private immutable CENTRALIZED_RATE_PROVIDER;
     uint256 private RATE;
+
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     constructor(
         string memory _name,
@@ -39,7 +42,12 @@ contract MockCTokenIntegratee is ERC20, SwapperBase {
 
         // Mint and send those cTokens to sender
         uint256 destAmount = _amount.mul(inverseRate).div(10**tokenDecimals);
-        _mint(address(this), destAmount);
+
+        require(
+            ERC20(address(this)).balanceOf(address(this)) >= destAmount,
+            "redeem: Integratee is out of cTokens. Seed cTokens from deployer account"
+        );
+
         __swapAssets(msg.sender, TOKEN, _amount, address(this), destAmount);
         return _amount;
     }
@@ -51,9 +59,45 @@ contract MockCTokenIntegratee is ERC20, SwapperBase {
             TOKEN
         );
 
+        require(
+            ERC20(TOKEN).balanceOf(address(this)) >= destAmount,
+            "redeem: Integratee is out of tokens. Seed tokens from deployer account"
+        );
+
         __swapAssets(msg.sender, address(this), _amount, TOKEN, destAmount);
-        _burn(address(this), _amount);
         return _amount;
+    }
+
+    function approve(address _spender, uint256 _amount) public virtual override returns (bool) {
+        _allowances[msg.sender][_spender] = _amount;
+        return true;
+    }
+
+    // Necessary as this contract doesn't directly inherit from MockToken
+    function mintFor(address _who, uint256 _amount) external onlyOwner {
+        _mint(_who, _amount);
+    }
+
+    function allowance(address _owner, address _spender) public view override returns (uint256) {
+        if (_spender == address(this) || _owner == _spender) {
+            return 2**256 - 1;
+        } else {
+            return _allowances[_owner][_spender];
+        }
+    }
+
+    function transferFrom(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) public virtual override returns (bool) {
+        _transfer(_sender, _recipient, _amount);
+        _approve(
+            _sender,
+            msg.sender,
+            allowance(_sender, msg.sender).sub(_amount, "ERC20: transfer amount exceeds allowance")
+        );
+        return true;
     }
 
     ///////////////////
