@@ -35,8 +35,8 @@ export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T 
 // Note that due to the nature of `toCostLessThan()`,
 const expectedGasCosts = {
   'create fund': {
-    weth: 664000,
-    usdc: 668000,
+    weth: 701000,
+    usdc: 708000,
   },
   'buy shares: denomination asset only: first investment': {
     weth: 418000,
@@ -62,15 +62,15 @@ const expectedGasCosts = {
   },
   'redeem partial shares: max assets': {
     weth: 2138000,
-    usdc: 2394000,
+    usdc: 2395000,
   },
   'buy shares: max assets': {
     weth: 1290000,
     usdc: 1602000,
   },
   'redeem all shares: max assets: all remaining': {
-    weth: 1586000,
-    usdc: 1813000,
+    weth: 1587000,
+    usdc: 1814000,
   },
 };
 const gasAssertionTolerance = 0.03; // 3%

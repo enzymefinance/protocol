@@ -220,8 +220,8 @@ describe('lend', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 347060
-    expect(lendReceipt).toCostLessThan('348000', gasAssertionTolerance);
+    // Rounding up from 336442
+    expect(lendReceipt).toCostLessThan('337000', gasAssertionTolerance);
   });
 });
 
@@ -264,8 +264,8 @@ describe('redeem', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 412511
-    expect(redeemReceipt).toCostLessThan('413000', gasAssertionTolerance);
+    // Rounding up from 396179
+    expect(redeemReceipt).toCostLessThan('397000', gasAssertionTolerance);
   });
 });
 

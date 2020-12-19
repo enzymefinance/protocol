@@ -87,83 +87,22 @@ describe('parseAssetsForMethod', () => {
 });
 
 describe('addTrackedAssets', () => {
-  it('does not allow an already-tracked asset', async () => {
-    const {
-      deployment: {
-        trackedAssetsAdapter,
-        integrationManager,
-        tokens: { mln },
-      },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    // Seed fund with untracked MLN
-    const incomingAssets = [mln];
-    await mln.transfer(vaultProxy, utils.parseEther('1'));
-
-    // Adding MLN as a tracked asset should succeed
-    await expect(
-      addTrackedAssets({
-        comptrollerProxy,
-        integrationManager,
-        fundOwner,
-        trackedAssetsAdapter,
-        incomingAssets,
-      }),
-    ).resolves.toBeReceipt();
-
-    // Attempting to add MLN once already tracked should fail
-    await expect(
-      addTrackedAssets({
-        comptrollerProxy,
-        integrationManager,
-        fundOwner,
-        trackedAssetsAdapter,
-        incomingAssets,
-      }),
-    ).rejects.toBeRevertedWith('Already tracked');
-  });
-
-  it('does not allow an asset with no balance in the vault', async () => {
-    const {
-      deployment: {
-        trackedAssetsAdapter,
-        integrationManager,
-        tokens: { mln },
-      },
-      fund: { comptrollerProxy, fundOwner },
-    } = await provider.snapshot(snapshot);
-
-    // Does NOT seed fund with MLN
-
-    // Attempting to add MLN should fail without any MLN balance in the vault
-    await expect(
-      addTrackedAssets({
-        comptrollerProxy,
-        integrationManager,
-        fundOwner,
-        trackedAssetsAdapter,
-        incomingAssets: [mln],
-      }),
-    ).rejects.toBeRevertedWith('Zero balance');
-  });
-
   it('addTrackedAssets successfully', async () => {
     const {
       deployment: {
         trackedAssetsAdapter,
         integrationManager,
-        tokens: { mln, weth },
+        tokens: { mln, dai },
       },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const incomingAssets = [mln, weth];
+    const incomingAssets = [mln, dai];
 
     const mlnAmount = utils.parseEther('1');
-    const wethAmount = utils.parseEther('1');
+    const daiAmount = utils.parseEther('1');
     await mln.transfer(vaultProxy, mlnAmount);
-    await weth.transfer(vaultProxy, wethAmount);
+    await dai.transfer(vaultProxy, daiAmount);
 
     const receipt = await addTrackedAssets({
       comptrollerProxy,
@@ -181,8 +120,8 @@ describe('addTrackedAssets', () => {
       caller: fundOwner,
       adapter: trackedAssetsAdapter,
       selector: addTrackedAssetsSelector,
-      incomingAssets: [mln, weth],
-      incomingAssetAmounts: [mlnAmount, wethAmount],
+      incomingAssets: [mln, dai],
+      incomingAssetAmounts: [mlnAmount, daiAmount],
       outgoingAssets: [],
       outgoingAssetAmounts: [],
       integrationData: expect.anything(),
@@ -190,6 +129,8 @@ describe('addTrackedAssets', () => {
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
     expect(trackedAssets.includes(mln.address)).toBe(true);
-    expect(trackedAssets.includes(weth.address)).toBe(true);
+    expect(trackedAssets.includes(dai.address)).toBe(true);
+    expect(await vaultProxy.isTrackedAsset(mln)).toBe(true);
+    expect(await vaultProxy.isTrackedAsset(dai)).toBe(true);
   });
 });

@@ -74,6 +74,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Deploy Mock VaultProxy
   const mockVaultProxy = await VaultLib.mock(config.deployer);
+  await mockVaultProxy.addTrackedAsset.returns(undefined);
   await mockVaultProxy.balanceOf.returns(0);
   await mockVaultProxy.getOwner.returns(mockVaultProxyOwner);
   await mockVaultProxy.transferShares.returns(undefined);
@@ -211,6 +212,10 @@ describe('activate', () => {
     expect(vaultProxyResult).toMatchAddress(mockVaultProxy);
 
     // Assert expected calls
+    expect(mockVaultProxy.addTrackedAsset).toHaveBeenCalledOnContractWith(
+      await comptrollerProxy.getDenominationAsset(),
+    );
+
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(false);
     expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContractWith(false);
     expect(mockPolicyManager.activateForFund).toHaveBeenCalledOnContractWith(false);
@@ -258,6 +263,10 @@ describe('activate', () => {
       mockVaultProxy,
       mockVaultProxyOwner,
       sharesDue,
+    );
+
+    expect(mockVaultProxy.addTrackedAsset).toHaveBeenCalledOnContractWith(
+      await comptrollerProxy.getDenominationAsset(),
     );
 
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(true);

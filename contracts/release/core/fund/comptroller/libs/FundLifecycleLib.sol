@@ -128,6 +128,11 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
             }
         }
 
+        // Note: a future release could consider forcing the adding of a tracked asset here,
+        // just in case a fund is migrating from an old configuration where they are not able
+        // to remove an asset to get under the tracked assets limit
+        IVault(_vaultProxy).addTrackedAsset(denominationAsset);
+
         // Activate extensions
         IExtension(FEE_MANAGER).activateForFund(_isMigration);
         IExtension(INTEGRATION_MANAGER).activateForFund(_isMigration);

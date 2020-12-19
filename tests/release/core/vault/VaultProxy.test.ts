@@ -85,21 +85,6 @@ describe('addTrackedAsset', () => {
     );
   });
 
-  it('skip if asset balance is 0', async () => {
-    const {
-      config: { weth },
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    await vaultProxy.addTrackedAsset(weth);
-
-    const trackedAssets = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets).toEqual([]);
-
-    const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
-    expect(isTrackedAsset).toBe(false);
-  });
-
   it('skip if the asset already exists', async () => {
     const {
       deployment: {
@@ -160,7 +145,8 @@ describe('addTrackedAsset', () => {
       denominationAsset,
     });
 
-    // Seed with 20 assets to reach the max assets limit
+    // Seed with 19 assets to reach the max assets limit
+    // (since the denomination asset is already tracked).
     await addNewAssetsToFund({
       fundOwner,
       comptrollerProxy,
@@ -168,7 +154,6 @@ describe('addTrackedAsset', () => {
       integrationManager,
       trackedAssetsAdapter,
       assets: [
-        denominationAsset,
         bat,
         bnb,
         bnt,

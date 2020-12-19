@@ -55,7 +55,7 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @dev Allows addition of already tracked assets to fail silently.
     /// Asserting delegate call is not needed because of access control.
     function addTrackedAsset(address _asset) external override onlyAccessor {
-        if (!isTrackedAsset(_asset) && __getAssetBalance(_asset) > 0) {
+        if (!isTrackedAsset(_asset)) {
             require(
                 trackedAssets.length < TRACKED_ASSETS_LIMIT,
                 "addTrackedAsset: Limit exceeded"

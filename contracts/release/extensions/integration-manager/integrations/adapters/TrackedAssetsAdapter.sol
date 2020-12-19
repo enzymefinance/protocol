@@ -11,27 +11,12 @@ contract TrackedAssetsAdapter is AdapterBase {
     constructor(address _integrationManager) public AdapterBase(_integrationManager) {}
 
     /// @notice Add multiple assets to the Vault's list of tracked assets
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
-    /// @dev No need to validate caller
+    /// @dev No need to perform any validation or implement any logic
     function addTrackedAssets(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        address,
+        bytes calldata,
         bytes calldata
-    ) external view {
-        address[] memory incomingAssets = __decodeCallArgs(_encodedCallArgs);
-
-        for (uint256 i; i < incomingAssets.length; i++) {
-            require(
-                !VaultLib(_vaultProxy).isTrackedAsset(incomingAssets[i]),
-                "addTrackedAssets: Already tracked"
-            );
-            require(
-                ERC20(incomingAssets[i]).balanceOf(_vaultProxy) > 0,
-                "addTrackedAssets: Zero balance"
-            );
-        }
-    }
+    ) external view {}
 
     /// @notice Provides a constant string identifier for an adapter
     /// @return identifier_ The identifer string

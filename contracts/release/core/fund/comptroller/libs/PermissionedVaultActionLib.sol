@@ -128,7 +128,12 @@ contract PermissionedVaultActionLib is ComptrollerStorage, IPermissionedVaultAct
     /// @dev Helper to remove a tracked asset from the fund
     function __removeTrackedAsset(bytes memory _actionData) private {
         address asset = abi.decode(_actionData, (address));
-        IVault(vaultProxy).removeTrackedAsset(asset);
+
+        // Allowing this to fail silently makes it cheaper and simpler
+        // for Extensions to not query for the denomination asset
+        if (asset != denominationAsset) {
+            IVault(vaultProxy).removeTrackedAsset(asset);
+        }
     }
 
     /// @dev Helper to transfer fund shares from one account to another

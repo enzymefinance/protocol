@@ -419,9 +419,6 @@ contract ComptrollerLib is
             gav = gav.add(_investmentAmounts[i]);
         }
 
-        // Add denomination asset to tracked assets if it isn't already included
-        IVault(vaultProxyCopy).addTrackedAsset(denominationAssetCopy);
-
         __buySharesCompletedHook(msg.sender, sharesReceivedAmounts_, gav);
 
         return sharesReceivedAmounts_;
@@ -716,55 +713,28 @@ contract ComptrollerLib is
 
         // Calculate and transfer payout asset amounts due to redeemer
         payoutAmounts_ = new uint256[](payoutAssets_.length);
-        // If all remaining shares are being redeemed, the logic changes slightly
-        if (_sharesQuantity == sharesSupply) {
-            for (uint256 i; i < payoutAssets_.length; i++) {
-                payoutAmounts_[i] = __finalizeIfSynthAndGetAssetBalance(
-                    address(vaultProxyContract),
-                    payoutAssets_[i],
-                    true
-                );
+        address denominationAssetCopy = denominationAsset;
+        for (uint256 i; i < payoutAssets_.length; i++) {
+            uint256 assetBalance = __finalizeIfSynthAndGetAssetBalance(
+                address(vaultProxyContract),
+                payoutAssets_[i],
+                true
+            );
 
-                // Transfer payout asset to redeemer
-                if (payoutAmounts_[i] > 0) {
-                    vaultProxyContract.withdrawAssetTo(
-                        payoutAssets_[i],
-                        _redeemer,
-                        payoutAmounts_[i]
-                    );
-                }
-
-                // Remove tracked asset
-                vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
-            }
-        } else {
-            for (uint256 i; i < payoutAssets_.length; i++) {
-                uint256 assetBalance = __finalizeIfSynthAndGetAssetBalance(
-                    address(vaultProxyContract),
-                    payoutAssets_[i],
-                    true
-                );
-
-                // Asset balance should never be 0 here, but this assures that if an asset remains
-                // tracked with no remaining balance, it will be removed after the next redemption
-                if (assetBalance == 0) {
-                    // This will fail silently if the asset is not tracked,
-                    // i.e., for _additionalAssets
+            // If all remaining shares are being redeemed, the logic changes slightly
+            if (_sharesQuantity == sharesSupply) {
+                payoutAmounts_[i] = assetBalance;
+                // Remove every tracked asset, except the denomination asset
+                if (payoutAssets_[i] != denominationAssetCopy) {
                     vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
-                    continue;
                 }
-
-                // Calculate the redeemer's slice of asset holdings
+            } else {
                 payoutAmounts_[i] = assetBalance.mul(_sharesQuantity).div(sharesSupply);
+            }
 
-                // Transfer payout asset to redeemer
-                if (payoutAmounts_[i] > 0) {
-                    vaultProxyContract.withdrawAssetTo(
-                        payoutAssets_[i],
-                        _redeemer,
-                        payoutAmounts_[i]
-                    );
-                }
+            // Transfer payout asset to redeemer
+            if (payoutAmounts_[i] > 0) {
+                vaultProxyContract.withdrawAssetTo(payoutAssets_[i], _redeemer, payoutAmounts_[i]);
             }
         }
 
