@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
 import { VaultLib } from '@melonproject/protocol';
-import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
+import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -117,6 +117,91 @@ describe('addTrackedAsset', () => {
 
     const isTrackedAsset = await vaultProxy.isTrackedAsset(weth);
     expect(isTrackedAsset).toBe(true);
+  });
+
+  it('does not allow exceeding the tracked assets limit', async () => {
+    const {
+      accounts: [fundOwner],
+      deployment: {
+        compoundTokens: { cbat, ccomp, cdai, ceth, cuni },
+        dispatcher,
+        fundDeployer,
+        integrationManager,
+        tokens: {
+          weth: denominationAsset,
+          mln: extraAsset,
+          bat,
+          bnb,
+          bnt,
+          comp,
+          dai,
+          knc,
+          link,
+          mana,
+          ren,
+          rep,
+          uni,
+          usdc,
+          usdt,
+          zrx,
+        },
+        trackedAssetsAdapter,
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Reset the deployed FundDeployer as the currentFundDeployer
+    await dispatcher.setCurrentFundDeployer(fundDeployer);
+
+    // Create a new fund
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+    });
+
+    // Seed with 20 assets to reach the max assets limit
+    await addNewAssetsToFund({
+      fundOwner,
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      trackedAssetsAdapter,
+      assets: [
+        denominationAsset,
+        bat,
+        bnb,
+        bnt,
+        comp,
+        dai,
+        knc,
+        link,
+        mana,
+        ren,
+        rep,
+        uni,
+        usdc,
+        usdt,
+        zrx,
+        cbat,
+        ccomp,
+        cdai,
+        ceth,
+        cuni,
+      ],
+    });
+
+    // Adding a new asset should fail
+    await expect(
+      addNewAssetsToFund({
+        fundOwner,
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        trackedAssetsAdapter,
+        assets: [extraAsset],
+      }),
+    ).rejects.toBeRevertedWith('Limit exceeded');
   });
 
   it('works as expected', async () => {

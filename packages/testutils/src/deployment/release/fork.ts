@@ -118,9 +118,6 @@ export async function configureForkRelease({
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,
     },
-    integrationManager: {
-      trackedAssetsLimit: 20,
-    },
     derivatives: mainnet.derivatives,
     integratees: {
       kyber: mainnet.kyber,

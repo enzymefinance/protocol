@@ -51,13 +51,10 @@ contract IntegrationManager is
         uint256[] outgoingAssetAmounts
     );
 
-    event TrackedAssetsLimitSet(uint256 nextTrackedAssetsLimit);
-
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
 
-    uint256 private trackedAssetsLimit;
     EnumerableSet.AddressSet private registeredAdapters;
 
     mapping(address => mapping(address => bool)) private comptrollerProxyToAcctToIsAuthUser;
@@ -67,7 +64,6 @@ contract IntegrationManager is
         address _policyManager,
         address _derivativePriceFeed,
         address _primitivePriceFeed,
-        uint256 _trackedAssetsLimit,
         address _synthetixPriceFeed,
         address _synthetixAddressResolver
     )
@@ -78,7 +74,6 @@ contract IntegrationManager is
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
-        trackedAssetsLimit = _trackedAssetsLimit;
     }
 
     /////////////
@@ -256,8 +251,6 @@ contract IntegrationManager is
             uint256[] memory outgoingAssetAmounts_
         )
     {
-        uint256 preTxTrackedAssetsCount = IVault(vaultProxy).getTrackedAssets().length;
-
         (
             address[] memory expectedIncomingAssets,
             uint256[] memory preCallIncomingAssetBalances,
@@ -294,8 +287,6 @@ contract IntegrationManager is
             maxSpendAssetAmounts,
             preCallSpendAssetBalances
         );
-
-        __validateTrackedAssetsLimit(vaultProxy, preTxTrackedAssetsCount);
 
         return (incomingAssets_, incomingAssetAmounts_, outgoingAssets_, outgoingAssetAmounts_);
     }
@@ -725,26 +716,6 @@ contract IntegrationManager is
         );
     }
 
-    /// @dev Helper to validate the global trackedAssetsLimit for all funds.
-    /// A fund must either be below the tracked assets limit,
-    /// or their tracked assets count must not have increased during the CoI.
-    /// We could also perform some more complicated logic to see which assets were
-    /// added and removed in the tx and allow cases where only the denomination asset
-    /// was added, but in practice that would be a corner case that is not too limiting.
-    /// It should be noted that a fund can exceed the trackedAssetsLimit if their
-    /// denomination asset is not tracked and buyShares is called.
-    function __validateTrackedAssetsLimit(address _vaultProxy, uint256 _preTxTrackedAssetsCount)
-        private
-        view
-    {
-        uint256 postTxTrackedAssetsCount = IVault(_vaultProxy).getTrackedAssets().length;
-        require(
-            postTxTrackedAssetsCount <= trackedAssetsLimit ||
-                postTxTrackedAssetsCount <= _preTxTrackedAssetsCount,
-            "__validateTrackedAssetsLimit: Limit exceeded"
-        );
-    }
-
     ///////////////////////////
     // INTEGRATIONS REGISTRY //
     ///////////////////////////
@@ -783,19 +754,6 @@ contract IntegrationManager is
 
             emit AdapterRegistered(_adapters[i], IIntegrationAdapter(_adapters[i]).identifier());
         }
-    }
-
-    /// @notice Set the tracked asset limit for a fund
-    /// @param _nextTrackedAssetsLimit The max number of assets to which to limit any fund
-    /// @dev This is defined and set in IntegrationManager, because it is currently the only point
-    /// at which new assets can become tracked.
-    function setTrackedAssetsLimit(uint256 _nextTrackedAssetsLimit)
-        external
-        onlyFundDeployerOwner
-    {
-        trackedAssetsLimit = _nextTrackedAssetsLimit;
-
-        emit TrackedAssetsLimitSet(_nextTrackedAssetsLimit);
     }
 
     ///////////////////
@@ -840,11 +798,5 @@ contract IntegrationManager is
         }
 
         return registeredAdaptersArray_;
-    }
-
-    /// @notice Gets the `trackedAssetsLimit` variable
-    /// @return trackedAssetsLimit_ The `trackedAssetsLimit` variable value
-    function getTrackedAssetsLimit() external view returns (uint256 trackedAssetsLimit_) {
-        return trackedAssetsLimit;
     }
 }

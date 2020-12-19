@@ -6,7 +6,7 @@ import {
   TrackedAssetsAdapter,
   VaultLib,
 } from '@melonproject/protocol';
-import { BigNumberish, utils } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { addTrackedAssets } from './extensions/integrations/trackedAssets';
 
 export async function addNewAssetsToFund({
@@ -16,7 +16,7 @@ export async function addNewAssetsToFund({
   integrationManager,
   trackedAssetsAdapter,
   assets,
-  amounts = new Array(assets.length).fill(utils.parseEther('1')),
+  amounts = new Array(assets.length).fill(1),
 }: {
   fundOwner: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;

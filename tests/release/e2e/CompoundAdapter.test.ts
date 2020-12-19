@@ -198,8 +198,8 @@ describe('lend', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 562253
-    expect(lendReceipt).toCostLessThan('563000', gasAssertionTolerance);
+    // Rounding up from 539911
+    expect(lendReceipt).toCostLessThan('541000', gasAssertionTolerance);
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -220,8 +220,8 @@ describe('lend', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 369339
-    expect(lendReceipt).toCostLessThan('370000', gasAssertionTolerance);
+    // Rounding up from 347060
+    expect(lendReceipt).toCostLessThan('348000', gasAssertionTolerance);
   });
 });
 
@@ -243,8 +243,8 @@ describe('redeem', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 594224
-    expect(redeemReceipt).toCostLessThan('595000', gasAssertionTolerance);
+    // Rounding up from 565348
+    expect(redeemReceipt).toCostLessThan('566000', gasAssertionTolerance);
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
@@ -264,8 +264,8 @@ describe('redeem', () => {
       compoundPriceFeed,
     });
 
-    // Rounding up from 435237
-    expect(redeemReceipt).toCostLessThan('436000', gasAssertionTolerance);
+    // Rounding up from 412511
+    expect(redeemReceipt).toCostLessThan('413000', gasAssertionTolerance);
   });
 });
 

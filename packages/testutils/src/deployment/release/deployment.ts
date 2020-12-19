@@ -54,9 +54,6 @@ export interface ReleaseDeploymentConfig {
     contracts: AddressLike[];
     selectors: BytesLike[];
   };
-  integrationManager: {
-    trackedAssetsLimit: BigNumberish;
-  };
   compoundComptroller: AddressLike;
   chainlink: {
     ethUsdAggregator: AddressLike;
@@ -250,7 +247,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.policyManager,
       await deployment.aggregatedDerivativePriceFeed,
       await deployment.chainlinkPriceFeed,
-      config.integrationManager.trackedAssetsLimit,
       await deployment.synthetixPriceFeed,
       config.integratees.synthetix.addressResolver,
     );

@@ -18,6 +18,11 @@ import "./IVault.sol";
 contract VaultLib is VaultLibBase1, IVault {
     using SafeERC20 for ERC20;
 
+    // Before updating TRACKED_ASSETS_LIMIT in the future, it is important to consider:
+    // 1. The highest tracked assets limit ever allowed in the protocol
+    // 2. That the next value will need to be respected by all future releases
+    uint256 private constant TRACKED_ASSETS_LIMIT = 20;
+
     modifier onlyAccessor() {
         require(msg.sender == accessor, "Only the designated accessor can make this call");
         _;
@@ -51,6 +56,11 @@ contract VaultLib is VaultLibBase1, IVault {
     /// Asserting delegate call is not needed because of access control.
     function addTrackedAsset(address _asset) external override onlyAccessor {
         if (!isTrackedAsset(_asset) && __getAssetBalance(_asset) > 0) {
+            require(
+                trackedAssets.length < TRACKED_ASSETS_LIMIT,
+                "addTrackedAsset: Limit exceeded"
+            );
+
             assetToIsTracked[_asset] = true;
             trackedAssets.push(_asset);
 

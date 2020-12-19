@@ -22,7 +22,7 @@ import {
   sighash,
   WETH,
 } from '@melonproject/protocol';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
 import { ReleaseDeploymentConfig } from './deployment';
 
@@ -499,17 +499,13 @@ export async function configureMockRelease({
     RateAssets.ETH, // susd
   ];
 
-  // Make all accounts rich in WETH and tokens.
-  await Promise.all<any>([
-    makeWethRich(mocks.tokens.weth, deployer),
-    makeTokenRich(Object.values(tokens), deployer),
-    ...accounts.map(async (account) => {
-      await Promise.all([makeTokenRich(Object.values(tokens), account), makeWethRich(mocks.tokens.weth, account)]);
-    }),
-  ]);
+  // SEED ACCOUNTS AND INTEGRATEES WITH ASSETS
+
+  // Uniswap
 
   await seedUniswapPairs(mocks.tokens.weth, Object.values(uniswapV2Derivatives), mocks.uniswapV2Integratee, deployer);
-  // Make integratees rich in WETH, ETH, and tokens.
+
+  // Compound
 
   const underlyingTokens = [
     mocks.tokens.bat,
@@ -533,17 +529,11 @@ export async function configureMockRelease({
 
   await seedCTokens(deployer, underlyingTokens, cTokens, mocks.compoundTokens.ceth);
 
+  // Synthetix
+
   const synthTokens = Object.values(mocks.synthetix.synths).map(
     (tokenAddress) => new MockSynthetixToken(tokenAddress, deployer),
   );
-
-  // Make all accounts rich in and tokens.
-  await Promise.all<any>([
-    makeTokenRich(synthTokens, deployer),
-    ...accounts.map(async (account) => {
-      await Promise.all([makeTokenRich(synthTokens, account), makeWethRich(mocks.tokens.weth, account)]);
-    }),
-  ]);
 
   await mocks.synthetix.mockSynthetixPriceSource.setPriceSourcesForCurrencyKeys(
     Object.values(mocks.synthetix.currencyKeys),
@@ -556,6 +546,21 @@ export async function configureMockRelease({
     synthTokens,
   );
 
+  // SEED EOAs
+  const allCTokens = [
+    new MockToken(mocks.compoundTokens.ceth, deployer),
+    ...cTokens.map((cToken) => new MockToken(cToken, deployer)),
+  ];
+  const EOATokensToMakeRich = [...Object.values(tokens), ...allCTokens, ...synthTokens];
+  await Promise.all<any>([
+    makeWethRich(mocks.tokens.weth, deployer),
+    makeTokenRich(EOATokensToMakeRich, deployer),
+    ...accounts.map(async (account) => {
+      await Promise.all([makeTokenRich(EOATokensToMakeRich, account), makeWethRich(mocks.tokens.weth, account)]);
+    }),
+  ]);
+
+  // SEED INTEGRATEES
   await Promise.all(
     integratees.map(async (integratee) => {
       await Promise.all([
@@ -610,9 +615,6 @@ export async function configureMockRelease({
       aggregators: chainlinkAggregators,
       primitives: chainlinkPrimitives,
       rateAssets: chainlinkRateAssets,
-    },
-    integrationManager: {
-      trackedAssetsLimit: 20, // TODO
     },
     integratees: {
       // TODO
@@ -723,8 +725,11 @@ export async function seedCTokens(
   return promises.push(cethInitPromises);
 }
 
-export function makeTokenRich(tokens: MockToken[], receiver: AddressLike, amount = utils.parseUnits('1', 22)) {
+export function makeTokenRich(tokens: MockToken[], receiver: AddressLike, amount = BigNumber.from(0)) {
   const promises = tokens.map(async (token) => {
+    if (amount.eq(BigNumber.from(0))) {
+      amount = utils.parseUnits('10000', await token.decimals());
+    }
     return token.mintFor(receiver, amount);
   });
 
