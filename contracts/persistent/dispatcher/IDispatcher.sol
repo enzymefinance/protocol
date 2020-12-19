@@ -31,7 +31,7 @@ interface IDispatcher {
             address nextFundDeployer_,
             address nextVaultAccessor_,
             address nextVaultLib_,
-            uint256 signalTimestamp_
+            uint256 executableTimestamp_
         );
 
     function getMigrationTimelock() external view returns (uint256 migrationTimelock_);

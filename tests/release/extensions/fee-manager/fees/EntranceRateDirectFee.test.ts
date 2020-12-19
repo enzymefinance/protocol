@@ -13,7 +13,6 @@ import {
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
   feeManagerConfigArgs,
-  Dispatcher,
 } from '@melonproject/protocol';
 import {
   assertEvent,
@@ -22,7 +21,6 @@ import {
   createMigratedFundConfig,
   createNewFund,
   defaultTestDeployment,
-  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -226,14 +224,13 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     await buyShares({
       comptrollerProxy: nextComptrollerProxy,
@@ -242,15 +239,6 @@ describe('integration', () => {
       denominationAsset,
       investmentAmounts: [utils.parseEther('1')],
       minSharesAmounts: [utils.parseEther('0.1')],
-    });
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
     });
 
     // Check the number of shares we have (check that fee has been paid)
@@ -332,14 +320,13 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     await buyShares({
       comptrollerProxy: nextComptrollerProxy,
@@ -348,15 +335,6 @@ describe('integration', () => {
       denominationAsset,
       investmentAmounts: [utils.parseEther('1')],
       minSharesAmounts: [utils.parseEther('0.1')],
-    });
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
     });
 
     // Check the number of shares we have (check that fee has been paid)

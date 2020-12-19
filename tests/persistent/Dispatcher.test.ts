@@ -608,22 +608,26 @@ describe('signalMigration', () => {
       nextVaultAccessor,
     });
 
+    // Calculate the timestamp at which the request will be executable
+    const migrationTimelock = await dispatcher.getMigrationTimelock();
+    const executableTimestamp = migrationTimelock.add(await transactionTimestamp(receipt));
+
     assertEvent(receipt, 'MigrationSignaled', {
       vaultProxy,
       prevFundDeployer: mockPrevFundDeployer,
       nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
       nextVaultLib,
+      executableTimestamp,
     });
 
-    const signalTimestamp = await transactionTimestamp(receipt);
     const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
     expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
       nextFundDeployer_: mockNextFundDeployer,
       nextVaultAccessor_: nextVaultAccessor,
       nextVaultLib_: nextVaultLib,
-      signalTimestamp_: signalTimestamp,
+      executableTimestamp_: executableTimestamp,
     });
 
     expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
@@ -724,7 +728,7 @@ describe('cancelMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const signalReceipt = await signalMigration({
+    await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -732,28 +736,28 @@ describe('cancelMigration', () => {
       nextVaultAccessor,
     });
 
-    const signalTimestamp = await transactionTimestamp(signalReceipt);
+    const migrationRequestDetails = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
     // Cancel migration (as owner / deployer)
     const cancelReceipt = await dispatcher.cancelMigration(vaultProxy, false);
     assertEvent(cancelReceipt, 'MigrationCancelled', {
       vaultProxy,
       prevFundDeployer: mockPrevFundDeployer,
-      nextFundDeployer: mockNextFundDeployer,
-      nextVaultAccessor,
-      nextVaultLib,
-      signalTimestamp: BigNumber.from(signalTimestamp),
+      nextFundDeployer: migrationRequestDetails.nextFundDeployer_,
+      nextVaultAccessor: migrationRequestDetails.nextVaultAccessor_,
+      nextVaultLib: migrationRequestDetails.nextVaultLib_,
+      executableTimestamp: migrationRequestDetails.executableTimestamp_,
     });
 
-    // Removes MigrationRequest
-    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
-
-    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
-      nextFundDeployer_: constants.AddressZero,
-      nextVaultAccessor_: constants.AddressZero,
-      nextVaultLib_: constants.AddressZero,
-      signalTimestamp_: BigNumber.from(0),
-    });
+    expect(await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy)).toMatchFunctionOutput(
+      dispatcher.getMigrationRequestDetailsForVaultProxy,
+      {
+        nextFundDeployer_: constants.AddressZero,
+        nextVaultAccessor_: constants.AddressZero,
+        nextVaultLib_: constants.AddressZero,
+        executableTimestamp_: BigNumber.from(0),
+      },
+    );
 
     expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PreSignal,
@@ -943,7 +947,7 @@ describe('executeMigration', () => {
 
     // Try to migrate immediately, which should fail
     await expect(mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false)).rejects.toBeRevertedWith(
-      'The migration timelock has not been met',
+      'The migration timelock has not elapsed',
     );
 
     // Warp to 5 secs prior to the timelock expiry, which should also fail
@@ -952,7 +956,7 @@ describe('executeMigration', () => {
 
     // Try to migrate again, which should fail
     await expect(mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false)).rejects.toBeRevertedWith(
-      'The migration timelock has not been met',
+      'The migration timelock has not elapsed',
     );
   });
 
@@ -980,7 +984,7 @@ describe('executeMigration', () => {
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     const nextVaultAccessor = randomAddress();
-    const signalReceipt = await signalMigration({
+    await signalMigration({
       dispatcher,
       mockNextFundDeployer,
       nextVaultLib,
@@ -988,7 +992,7 @@ describe('executeMigration', () => {
       nextVaultAccessor,
     });
 
-    const signalTimestamp = await transactionTimestamp(signalReceipt);
+    const migrationRequestDetails = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
     // Warp to exactly the timelock expiry
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -1000,10 +1004,10 @@ describe('executeMigration', () => {
     assertEvent(executeReceipt, 'MigrationExecuted', {
       vaultProxy,
       prevFundDeployer: mockPrevFundDeployer,
-      nextFundDeployer: mockNextFundDeployer,
-      nextVaultAccessor,
-      nextVaultLib,
-      signalTimestamp: BigNumber.from(signalTimestamp),
+      nextFundDeployer: migrationRequestDetails.nextFundDeployer_,
+      nextVaultAccessor: migrationRequestDetails.nextVaultAccessor_,
+      nextVaultLib: migrationRequestDetails.nextVaultLib_,
+      executableTimestamp: migrationRequestDetails.executableTimestamp_,
     });
 
     // Assert VaultProxy changes
@@ -1014,14 +1018,15 @@ describe('executeMigration', () => {
     expect(accessorCall).toMatchAddress(nextVaultAccessor);
 
     // Removes MigrationRequest
-    const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
-
-    expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
-      nextFundDeployer_: constants.AddressZero,
-      nextVaultAccessor_: constants.AddressZero,
-      nextVaultLib_: constants.AddressZero,
-      signalTimestamp_: BigNumber.from(0),
-    });
+    expect(await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy)).toMatchFunctionOutput(
+      dispatcher.getMigrationRequestDetailsForVaultProxy,
+      {
+        nextFundDeployer_: constants.AddressZero,
+        nextVaultAccessor_: constants.AddressZero,
+        nextVaultLib_: constants.AddressZero,
+        executableTimestamp_: BigNumber.from(0),
+      },
+    );
 
     expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
       MigrationOutHook.PreMigrate,
@@ -1119,7 +1124,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     expect(getMigrationTimelockCall).toEqBigNumber(0);
   });
 
-  it('returns 0 if elapsedTime >= migrationTimelock', async () => {
+  it('returns 0 if block timestamp >= executableTimestamp', async () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
@@ -1158,7 +1163,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     expect(getMigrationTimelockCall).toEqBigNumber(0);
   });
 
-  it('returns the remaining time if elapsedTime < migrationTimelock', async () => {
+  it('returns the remaining time if block timestamp < executableTimestamp', async () => {
     const {
       deployment: { dispatcher },
       config: { deployer },

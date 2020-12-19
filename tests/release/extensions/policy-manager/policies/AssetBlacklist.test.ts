@@ -7,7 +7,6 @@ import {
   assetBlacklistArgs,
   callOnIntegrationArgs,
   ComptrollerLib,
-  Dispatcher,
   IntegrationManagerActionId,
   PolicyHook,
   policyManagerConfigArgs,
@@ -20,7 +19,6 @@ import {
   createNewFund,
   createMigratedFundConfig,
   createFundDeployer,
-  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -347,24 +345,14 @@ describe('integration tests', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Migration execution settles the accrued fee
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
-    });
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     // confirm a blacklisted asset is not allowed
     const incomingAssetAmount = utils.parseEther('50');

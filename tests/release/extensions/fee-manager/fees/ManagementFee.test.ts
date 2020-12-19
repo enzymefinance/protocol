@@ -3,7 +3,6 @@ import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
   convertScaledPerSecondRateToRate,
-  Dispatcher,
   FeeHook,
   FeeManagerActionId,
   feeManagerConfigArgs,
@@ -602,23 +601,13 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
-    });
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     const feeInfo = await managementFee.getFeeInfoForFund(nextComptrollerProxy.address);
     expect(feeInfo.scaledPerSecondRate).toEqBigNumber(scaledPerSecondRate);
@@ -744,8 +733,7 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
@@ -753,15 +741,6 @@ describe('integration', () => {
 
     // Migration execution settles the accrued fee
     const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
-    });
 
     const feeInfo = await managementFee.getFeeInfoForFund(comptrollerProxy.address);
     expect(feeInfo.scaledPerSecondRate).toEqBigNumber(scaledPerSecondRate);

@@ -1,7 +1,6 @@
 import { utils, constants } from 'ethers';
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
 import {
-  Dispatcher,
   IPolicy,
   PolicyHook,
   policyManagerConfigArgs,
@@ -20,7 +19,6 @@ import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
-  transactionTimestamp,
 } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -206,24 +204,14 @@ describe('activateForFund', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Migration execution settles the accrued fee
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
-    });
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     // check activateForFund called on each policy
     for (const key in orderedPolicies) {
@@ -289,24 +277,14 @@ describe('deactivateForFund', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTime = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Migration execution settles the accrued fee
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      nextFundDeployer: nextFundDeployer,
-      prevFundDeployer: fundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTime,
-    });
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     // check old comptrollerProxy to make sure vaultProxy has been deleted
     const getVaultProxyForFundCall = await policyManager.getVaultProxyForFund(oldComptrollerProxy);

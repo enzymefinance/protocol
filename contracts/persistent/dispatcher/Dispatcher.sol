@@ -22,7 +22,7 @@ contract Dispatcher is IDispatcher {
         address indexed nextFundDeployer,
         address nextVaultAccessor,
         address nextVaultLib,
-        uint256 signalTimestamp
+        uint256 executableTimestamp
     );
 
     event MigrationExecuted(
@@ -31,7 +31,7 @@ contract Dispatcher is IDispatcher {
         address indexed nextFundDeployer,
         address nextVaultAccessor,
         address nextVaultLib,
-        uint256 signalTimestamp
+        uint256 executableTimestamp
     );
 
     event MigrationSignaled(
@@ -39,7 +39,8 @@ contract Dispatcher is IDispatcher {
         address indexed prevFundDeployer,
         address indexed nextFundDeployer,
         address nextVaultAccessor,
-        address nextVaultLib
+        address nextVaultLib,
+        uint256 executableTimestamp
     );
 
     event MigrationTimelockSet(uint256 prevTimelock, uint256 nextTimelock);
@@ -84,7 +85,7 @@ contract Dispatcher is IDispatcher {
         address nextFundDeployer;
         address nextVaultAccessor;
         address nextVaultLib;
-        uint256 signalTimestamp;
+        uint256 executableTimestamp;
     }
 
     address private currentFundDeployer;
@@ -263,7 +264,7 @@ contract Dispatcher is IDispatcher {
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
         address nextVaultAccessor = request.nextVaultAccessor;
         address nextVaultLib = request.nextVaultLib;
-        uint256 signalTimestamp = request.signalTimestamp;
+        uint256 executableTimestamp = request.executableTimestamp;
 
         delete vaultProxyToMigrationRequest[_vaultProxy];
 
@@ -291,7 +292,7 @@ contract Dispatcher is IDispatcher {
             nextFundDeployer,
             nextVaultAccessor,
             nextVaultLib,
-            signalTimestamp
+            executableTimestamp
         );
     }
 
@@ -313,10 +314,10 @@ contract Dispatcher is IDispatcher {
             nextFundDeployer == currentFundDeployer,
             "executeMigration: The target FundDeployer is no longer the current FundDeployer"
         );
-        uint256 signalTimestamp = request.signalTimestamp;
+        uint256 executableTimestamp = request.executableTimestamp;
         require(
-            __getSecondsSinceTimestamp(signalTimestamp) >= migrationTimelock,
-            "executeMigration: The migration timelock has not been met"
+            block.timestamp >= executableTimestamp,
+            "executeMigration: The migration timelock has not elapsed"
         );
 
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
@@ -359,7 +360,7 @@ contract Dispatcher is IDispatcher {
             nextFundDeployer,
             nextVaultAccessor,
             nextVaultLib,
-            signalTimestamp
+            executableTimestamp
         );
     }
 
@@ -407,11 +408,12 @@ contract Dispatcher is IDispatcher {
             _bypassFailure
         );
 
+        uint256 executableTimestamp = block.timestamp + migrationTimelock;
         vaultProxyToMigrationRequest[_vaultProxy] = MigrationRequest({
             nextFundDeployer: nextFundDeployer,
             nextVaultAccessor: _nextVaultAccessor,
             nextVaultLib: _nextVaultLib,
-            signalTimestamp: now
+            executableTimestamp: executableTimestamp
         });
 
         __invokeMigrationOutHook(
@@ -429,19 +431,9 @@ contract Dispatcher is IDispatcher {
             prevFundDeployer,
             nextFundDeployer,
             _nextVaultAccessor,
-            _nextVaultLib
+            _nextVaultLib,
+            executableTimestamp
         );
-    }
-
-    /// @dev Helper to get the number of seconds that have passed since a given timestamp.
-    /// Subtraction here has no chance of underflow, as _timestamp is always
-    /// fetched from a migration request.
-    function __getSecondsSinceTimestamp(uint256 _timestamp)
-        private
-        view
-        returns (uint256 seconds_)
-    {
-        return block.timestamp - _timestamp;
     }
 
     /// @dev Helper to invoke a MigrationInCancelHook on the next FundDeployer being "migrated in" to,
@@ -579,7 +571,7 @@ contract Dispatcher is IDispatcher {
     /// request was made
     /// @return nextVaultAccessor_ The account that will be the next `accessor` on the VaultProxy
     /// @return nextVaultLib_ The next VaultLib library contract address to set on the VaultProxy
-    /// @return signalTimestamp_ The time (in seconds) at which the migration request was made
+    /// @return executableTimestamp_ The timestamp at which the migration request can be executed
     function getMigrationRequestDetailsForVaultProxy(address _vaultProxy)
         external
         view
@@ -588,12 +580,17 @@ contract Dispatcher is IDispatcher {
             address nextFundDeployer_,
             address nextVaultAccessor_,
             address nextVaultLib_,
-            uint256 signalTimestamp_
+            uint256 executableTimestamp_
         )
     {
         MigrationRequest memory r = vaultProxyToMigrationRequest[_vaultProxy];
-        if (r.signalTimestamp > 0) {
-            return (r.nextFundDeployer, r.nextVaultAccessor, r.nextVaultLib, r.signalTimestamp);
+        if (r.executableTimestamp > 0) {
+            return (
+                r.nextFundDeployer,
+                r.nextVaultAccessor,
+                r.nextVaultLib,
+                r.executableTimestamp
+            );
         }
     }
 
@@ -629,25 +626,23 @@ contract Dispatcher is IDispatcher {
     /// @notice Gets the time remaining until the migration request of a given VaultProxy can be executed
     /// @param _vaultProxy The VaultProxy instance
     /// @return secondsRemaining_ The number of seconds remaining on the timelock
-    /// @dev Subtraction here has no chance of underflow, as the signalTimestamp is always
-    /// fetched from a migration request.
     function getTimelockRemainingForMigrationRequest(address _vaultProxy)
         external
         view
         override
         returns (uint256 secondsRemaining_)
     {
-        uint256 signalTimestamp = vaultProxyToMigrationRequest[_vaultProxy].signalTimestamp;
-        if (signalTimestamp == 0) {
+        uint256 executableTimestamp = vaultProxyToMigrationRequest[_vaultProxy]
+            .executableTimestamp;
+        if (executableTimestamp == 0) {
             return 0;
         }
 
-        uint256 timeElapsed = __getSecondsSinceTimestamp(signalTimestamp);
-        if (timeElapsed >= migrationTimelock) {
+        if (block.timestamp >= executableTimestamp) {
             return 0;
         }
 
-        return migrationTimelock - timeElapsed;
+        return executableTimestamp - block.timestamp;
     }
 
     /// @notice Checks whether a migration request that is executable exists for a given VaultProxy
@@ -659,11 +654,10 @@ contract Dispatcher is IDispatcher {
         override
         returns (bool hasExecutableRequest_)
     {
-        uint256 signalTimestamp = vaultProxyToMigrationRequest[_vaultProxy].signalTimestamp;
+        uint256 executableTimestamp = vaultProxyToMigrationRequest[_vaultProxy]
+            .executableTimestamp;
 
-        return
-            signalTimestamp > 0 &&
-            __getSecondsSinceTimestamp(signalTimestamp) >= migrationTimelock;
+        return executableTimestamp > 0 && block.timestamp >= executableTimestamp;
     }
 
     /// @notice Checks whether a migration request exists for a given VaultProxy
@@ -675,6 +669,6 @@ contract Dispatcher is IDispatcher {
         override
         returns (bool hasMigrationRequest_)
     {
-        return vaultProxyToMigrationRequest[_vaultProxy].signalTimestamp > 0;
+        return vaultProxyToMigrationRequest[_vaultProxy].executableTimestamp > 0;
     }
 }

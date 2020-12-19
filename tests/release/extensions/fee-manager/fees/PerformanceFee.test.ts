@@ -2,7 +2,6 @@ import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 import { EthereumTestnetProvider, MockContract } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
-  Dispatcher,
   FeeHook,
   FeeManager,
   FeeManagerActionId,
@@ -1021,22 +1020,12 @@ describe('integration', () => {
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    const signalReceipt = await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-    const signalTimestamp = await transactionTimestamp(signalReceipt);
+    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-      prevFundDeployer: fundDeployer,
-      nextFundDeployer: nextFundDeployer,
-      nextVaultLib: vaultLib,
-      signalTimestamp: signalTimestamp,
-    });
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     const feeInfo = await performanceFee.getFeeInfoForFund(nextComptrollerProxy);
     expect(feeInfo.rate).toEqBigNumber(performanceFeeRate);
