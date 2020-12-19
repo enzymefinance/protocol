@@ -3,10 +3,11 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../release/utils/MathHelpers.sol";
 import "../prices/CentralizedRateProvider.sol";
 import "../utils/SwapperBase.sol";
 
-contract MockKyberIntegratee is SwapperBase, Ownable {
+contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
     using SafeMath for uint256;
 
     address private immutable MOCK_CENTRALIZED_RATE_PROVIDER;
@@ -78,7 +79,12 @@ contract MockKyberIntegratee is SwapperBase, Ownable {
 
         uint256 destAmount = CentralizedRateProvider(MOCK_CENTRALIZED_RATE_PROVIDER)
             .calcLiveAssetValueRandomizedBySender(_srcToken, _amount, _destToken);
-        rate_ = destAmount.mul(10**PRECISION).div(_amount);
+        rate_ = __calcNormalizedRate(
+            ERC20(_srcToken).decimals(),
+            _amount,
+            ERC20(_destToken).decimals(),
+            destAmount
+        );
         worstRate_ = rate_.mul(uint256(100).sub(blockNumberDeviation)).div(100);
     }
 
